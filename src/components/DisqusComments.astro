@@ -1,0 +1,26 @@
+---
+interface Props {
+  pageUrl: string;
+  disqusIdentifier: string;
+}
+
+const { pageUrl, disqusIdentifier } = Astro.props;
+---
+
+<div id="disqus_thread"></div>
+<script is:inline define:vars={{ pageUrl, disqusIdentifier }}>
+  const disqus_config = function () {
+    this.page.url = pageUrl;
+    this.page.identifier = disqusIdentifier;
+  };
+  (function () {
+    const d = document,
+      s = d.createElement("script");
+    s.src = "https://policeconduct.disqus.com/embed.js";
+    s.setAttribute("data-timestamp", Date.now().toString());
+    (d.head || d.body).appendChild(s);
+  })();
+</script>
+<noscript>
+  Please enable JavaScript to view comments powered by Disqus.
+</noscript>

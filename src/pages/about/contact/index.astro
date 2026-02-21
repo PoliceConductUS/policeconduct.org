@@ -1,0 +1,258 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout title="Contact | PoliceConduct.org" pagePath="/about/contact/">
+  <main class="flex-grow-1 py-vh-3">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <nav aria-label="Breadcrumb">
+            <ol class="breadcrumb mb-3">
+              <li class="breadcrumb-item">
+                <a class="link-dark" href="/about/">About</a>
+              </li>
+              <li class="breadcrumb-item active" aria-current="page">
+                Contact
+              </li>
+            </ol>
+          </nav>
+          <h1 class="display-5 fw-bold">Contact us</h1>
+          <p class="lead text-muted">
+            Tell us who you are and how we can help.
+          </p>
+          <div class="alert alert-info rounded-0">
+            You’ll probably see this form a lot—that’s intentional. It helps us
+            learn which features people actually use before we invest in full
+            automation. Your message guides what we build next.
+          </div>
+          <form
+            name="contact"
+            method="POST"
+            data-netlify="true"
+            data-netlify-honeypot="organization"
+            class="needs-validation"
+            novalidate
+          >
+            <input type="hidden" name="form-name" value="contact" />
+            <div class="honeypot visually-hidden">
+              <label>
+                Organization
+                <input type="text" name="organization" />
+              </label>
+            </div>
+            <div class="form-floating mb-3">
+              <select
+                class="form-select"
+                id="whoami"
+                name="whoami"
+                aria-label="I am a/an"
+                required
+              >
+                <option selected disabled>Choose one</option>
+                <option value="individual">
+                  Individual with a complaint or commendation
+                </option>
+                <option value="police">Police department/Officer</option>
+                <option value="oversight">Oversight committee</option>
+                <option value="journalist">Journalist</option>
+                <option value="donor">Donor/Supporter</option>
+                <option value="partner">Partner / Potential Partner</option>
+                <option value="volunteer">Volunteer</option>
+                <option value="profile owner">Profile Owner</option>
+                <option value="subscriber">Subscriber</option>
+                <option value="other">Other</option>
+              </select>
+              <label for="whoami">I am a/an*</label>
+              <div class="invalid-feedback">Please choose one option.</div>
+            </div>
+            <div class="form-floating mb-3">
+              <input
+                type="text"
+                class="form-control"
+                id="firstName"
+                name="firstName"
+                placeholder="First Name"
+                required
+              />
+              <label for="firstName">First Name*</label>
+              <div class="invalid-feedback">Please enter your first name.</div>
+            </div>
+            <div class="form-floating mb-3">
+              <input
+                type="text"
+                class="form-control"
+                id="lastName"
+                name="lastName"
+                placeholder="Last Name"
+                required
+              />
+              <label for="lastName">Last Name*</label>
+              <div class="invalid-feedback">Please enter your last name.</div>
+            </div>
+            <div class="form-floating mb-3">
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                name="email"
+                placeholder="name@example.com"
+                required
+              />
+              <label for="email">Email address*</label>
+              <div class="invalid-feedback">Please enter a valid email.</div>
+            </div>
+            <div class="form-floating mb-3">
+              <input
+                type="tel"
+                class="form-control"
+                id="phone"
+                name="phone"
+                placeholder="Phone Number"
+              />
+              <label for="phone">Phone Number (optional)</label>
+            </div>
+            <div class="form-floating mb-3">
+              <textarea
+                class="form-control"
+                placeholder="Leave a message here"
+                id="message"
+                name="message"
+                style="height: 150px"
+                required></textarea>
+              <label for="message">Message*</label>
+              <div class="invalid-feedback">Please include a message.</div>
+            </div>
+            <div class="form-check mb-3">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                value="Yes"
+                id="rememberContact"
+              />
+              <label class="form-check-label" for="rememberContact">
+                Remember my details on this device (clears when the browser
+                closes).
+              </label>
+            </div>
+            <div data-netlify-recaptcha="true"></div>
+            <button type="submit" class="btn btn-dark btn-lg rounded-0">
+              Submit
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script is:inline>
+    (function () {
+      const select = document.getElementById("whoami");
+      const messageInput = document.getElementById("message");
+      const firstNameInput = document.getElementById("firstName");
+      const lastNameInput = document.getElementById("lastName");
+      const emailInput = document.getElementById("email");
+      const phoneInput = document.getElementById("phone");
+      const rememberInput = document.getElementById("rememberContact");
+      const storageKey = "ipc_contact_session_v1";
+      if (!select) {
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      const value = (
+        params.get("whoami") ||
+        params.get("role") ||
+        ""
+      ).toLowerCase();
+      if (!value) {
+        if (messageInput) {
+          const message = params.get("message");
+          if (message && !messageInput.value.trim()) {
+            messageInput.value = message;
+          }
+        }
+        return;
+      }
+      const options = Array.from(select.options);
+      const match = options.find(
+        (opt) =>
+          opt.value.toLowerCase() === value ||
+          opt.textContent.toLowerCase().includes(value),
+      );
+      if (match) {
+        match.selected = true;
+      }
+      if (messageInput) {
+        const message = params.get("message");
+        if (message && !messageInput.value.trim()) {
+          messageInput.value = message;
+        }
+      }
+      if (
+        firstNameInput &&
+        lastNameInput &&
+        emailInput &&
+        phoneInput &&
+        rememberInput
+      ) {
+        try {
+          const saved = sessionStorage.getItem(storageKey);
+          if (saved) {
+            const data = JSON.parse(saved);
+            if (data.firstName && !firstNameInput.value.trim()) {
+              firstNameInput.value = data.firstName;
+            }
+            if (data.lastName && !lastNameInput.value.trim()) {
+              lastNameInput.value = data.lastName;
+            }
+            if (data.email && !emailInput.value.trim()) {
+              emailInput.value = data.email;
+            }
+            if (data.phone && !phoneInput.value.trim()) {
+              phoneInput.value = data.phone;
+            }
+            rememberInput.checked = true;
+          }
+        } catch (err) {
+          // Ignore storage errors.
+        }
+      }
+    })();
+  </script>
+
+  <script is:inline>
+    (function () {
+      const form = document.querySelector('form[name="contact"]');
+      const rememberInput = document.getElementById("rememberContact");
+      const storageKey = "ipc_contact_session_v1";
+      if (!form) {
+        return;
+      }
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+        if (rememberInput && rememberInput.checked) {
+          try {
+            const payload = {
+              firstName: document.getElementById("firstName")?.value.trim(),
+              lastName: document.getElementById("lastName")?.value.trim(),
+              email: document.getElementById("email")?.value.trim(),
+              phone: document.getElementById("phone")?.value.trim(),
+            };
+            sessionStorage.setItem(storageKey, JSON.stringify(payload));
+          } catch (err) {
+            // Ignore storage errors.
+          }
+        } else if (rememberInput) {
+          try {
+            sessionStorage.removeItem(storageKey);
+          } catch (err) {
+            // Ignore storage errors.
+          }
+        }
+      });
+    })();
+  </script>
+</SiteLayout>

@@ -1,0 +1,56 @@
+project_name = "policeconduct"
+aws_region   = "us-east-1"
+domain_name  = "policeconduct.org"
+
+github_org  = "PoliceConductUS"
+github_repo = "generate.policeconduct.org"
+role_name   = "policeconduct-github-actions"
+
+state_bucket_force_destroy   = false
+preview_bucket_force_destroy = false
+site_bucket_force_destroy    = false
+forms_drafts_bucket_force_destroy      = false
+forms_submissions_bucket_force_destroy = false
+forms_drafts_preview_bucket_force_destroy      = false
+forms_submissions_preview_bucket_force_destroy = false
+forms_draft_active_window_seconds      = 3600
+forms_draft_max_bytes                  = 1048576
+site_rate_limit_per_5m                 = 3000
+forms_api_rate_limit_per_5m            = 500
+forms_api_alarm_5xx_threshold          = 10
+forms_api_alarm_latency_p95_ms_threshold = 2000
+forms_lambda_alarm_throttles_threshold   = 1
+alarm_actions                            = []
+enable_site_bucket_versioning = true
+public_ga_measurement_id_production = null
+public_ga_measurement_id_preview    = null
+public_sentry_dsn_production        = null
+public_sentry_dsn_preview           = null
+sentry_org                          = null
+sentry_project                      = null
+sentry_auth_token                   = null
+
+extra_dns_records = [
+  {
+    name = "@"
+    type = "MX"
+    ttl  = 3600
+    records = [
+      "1 smtp.google.com."
+    ]
+  },
+  {
+    name = "xdvktfq76yak"
+    type = "CNAME"
+    ttl  = 3600
+    records = [
+      "gv-wvopyga6fjhcn2.dv.googlehosted.com."
+    ]
+  }
+]
+
+tags = {
+  Project   = "policeconduct.org"
+  ManagedBy = "Terraform"
+  Stack     = "bootstrap"
+}

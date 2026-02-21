@@ -1,0 +1,62 @@
+export type StateTile = {
+  code: string;
+  name: string;
+  row: number;
+  col: number;
+};
+
+// Simple grid tile positions approximating a US map layout.
+// Based on a 11-column grid; rows count downward.
+export const US_STATE_TILES: StateTile[] = [
+  { code: "AK", name: "Alaska", row: 7, col: 1 },
+  { code: "HI", name: "Hawaii", row: 8, col: 1 },
+  { code: "WA", name: "Washington", row: 1, col: 1 },
+  { code: "OR", name: "Oregon", row: 2, col: 1 },
+  { code: "CA", name: "California", row: 3, col: 1 },
+  { code: "NV", name: "Nevada", row: 3, col: 2 },
+  { code: "ID", name: "Idaho", row: 2, col: 2 },
+  { code: "MT", name: "Montana", row: 1, col: 2 },
+  { code: "WY", name: "Wyoming", row: 3, col: 3 },
+  { code: "UT", name: "Utah", row: 4, col: 2 },
+  { code: "AZ", name: "Arizona", row: 4, col: 1 },
+  { code: "CO", name: "Colorado", row: 4, col: 3 },
+  { code: "NM", name: "New Mexico", row: 5, col: 2 },
+  { code: "ND", name: "North Dakota", row: 1, col: 4 },
+  { code: "SD", name: "South Dakota", row: 2, col: 4 },
+  { code: "NE", name: "Nebraska", row: 3, col: 4 },
+  { code: "KS", name: "Kansas", row: 4, col: 4 },
+  { code: "OK", name: "Oklahoma", row: 5, col: 4 },
+  { code: "TX", name: "Texas", row: 6, col: 4 },
+  { code: "MN", name: "Minnesota", row: 1, col: 5 },
+  { code: "IA", name: "Iowa", row: 2, col: 5 },
+  { code: "MO", name: "Missouri", row: 3, col: 5 },
+  { code: "AR", name: "Arkansas", row: 4, col: 5 },
+  { code: "LA", name: "Louisiana", row: 5, col: 5 },
+  { code: "WI", name: "Wisconsin", row: 1, col: 6 },
+  { code: "IL", name: "Illinois", row: 2, col: 6 },
+  { code: "MS", name: "Mississippi", row: 5, col: 6 },
+  { code: "MI", name: "Michigan", row: 1, col: 7 },
+  { code: "IN", name: "Indiana", row: 2, col: 7 },
+  { code: "KY", name: "Kentucky", row: 3, col: 7 },
+  { code: "TN", name: "Tennessee", row: 4, col: 7 },
+  { code: "AL", name: "Alabama", row: 5, col: 7 },
+  { code: "GA", name: "Georgia", row: 6, col: 7 },
+  { code: "FL", name: "Florida", row: 7, col: 7 },
+  { code: "SC", name: "South Carolina", row: 5, col: 8 },
+  { code: "NC", name: "North Carolina", row: 4, col: 8 },
+  { code: "VA", name: "Virginia", row: 3, col: 8 },
+  { code: "WV", name: "West Virginia", row: 2, col: 8 },
+  { code: "OH", name: "Ohio", row: 1, col: 8 },
+  { code: "PA", name: "Pennsylvania", row: 2, col: 9 },
+  { code: "NY", name: "New York", row: 1, col: 9 },
+  { code: "VT", name: "Vermont", row: 1, col: 10 },
+  { code: "NH", name: "New Hampshire", row: 2, col: 10 },
+  { code: "ME", name: "Maine", row: 1, col: 11 },
+  { code: "MD", name: "Maryland", row: 3, col: 9 },
+  { code: "DE", name: "Delaware", row: 4, col: 9 },
+  { code: "NJ", name: "New Jersey", row: 3, col: 10 },
+  { code: "CT", name: "Connecticut", row: 4, col: 10 },
+  { code: "MA", name: "Massachusetts", row: 2, col: 11 },
+  { code: "RI", name: "Rhode Island", row: 3, col: 11 },
+  { code: "DC", name: "District of Columbia", row: 4, col: 8 },
+];

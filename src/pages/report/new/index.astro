@@ -1,0 +1,2670 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+import { groupBy } from "../../../lib/data.js";
+import { withDb } from "../../../lib/db.js";
+
+const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
+
+const { traits, rubrics } = await withDb(async (client) => {
+  const traits = (await client.query("select * from public.traits")).rows;
+  const rubrics = (await client.query("select * from public.rubrics")).rows;
+  return { traits, rubrics };
+});
+
+const toNumber = (value: unknown) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const getTraitSortValue = (trait: any) =>
+  toNumber(
+    trait.sort_order ??
+      trait.sortOrder ??
+      trait.position ??
+      trait.rank ??
+      trait.sequence ??
+      trait.order,
+  );
+
+const getRubricSortValue = (rubric: any) => {
+  const value = toNumber(rubric.rubric_value);
+  if (value === null) {
+    throw new Error(`Missing rubric_value for rubric ${rubric.id}`);
+  }
+  return value;
+};
+
+const getTraitLabel = (trait: any) => {
+  if (!trait.label) {
+    throw new Error(`Missing label for trait ${trait.id}`);
+  }
+  return trait.label;
+};
+const getTraitDescription = (trait: any) => trait.description || null;
+const getTraitHelp = (trait: any) => trait.help || null;
+const getRubricDescription = (rubric: any) => {
+  if (!rubric.description) {
+    throw new Error(`Missing description for rubric ${rubric.id}`);
+  }
+  return rubric.description;
+};
+const getRubricHelp = (rubric: any) => rubric.help || null;
+
+const rubricsByTrait = groupBy(rubrics, "trait_id");
+const officerSlots = Array.from({ length: 10 }, (_, index) => index);
+
+const sortedTraits = [...traits].sort((a, b) => {
+  const aOrder = getTraitSortValue(a);
+  const bOrder = getTraitSortValue(b);
+  if (aOrder !== null && bOrder !== null && aOrder !== bOrder) {
+    return aOrder - bOrder;
+  }
+  if (aOrder !== null && bOrder === null) {
+    return -1;
+  }
+  if (aOrder === null && bOrder !== null) {
+    return 1;
+  }
+  return nameCollator.compare(getTraitLabel(a), getTraitLabel(b));
+});
+
+const traitsWithRubrics = sortedTraits
+  .map((trait) => {
+    const traitRubrics = [...(rubricsByTrait[trait.id] || [])].sort((a, b) => {
+      const aValue = getRubricSortValue(a);
+      const bValue = getRubricSortValue(b);
+      if (aValue !== null && bValue !== null && aValue !== bValue) {
+        return bValue - aValue;
+      }
+      if (aValue !== null && bValue === null) {
+        return -1;
+      }
+      if (aValue === null && bValue !== null) {
+        return 1;
+      }
+      return nameCollator.compare(
+        getRubricDescription(a),
+        getRubricDescription(b),
+      );
+    });
+    return {
+      ...trait,
+      label: getTraitLabel(trait),
+      description: getTraitDescription(trait),
+      help: getTraitHelp(trait),
+      rubrics: traitRubrics.map((rubric) => ({
+        ...rubric,
+        description: getRubricDescription(rubric),
+        help: getRubricHelp(rubric),
+      })),
+    };
+  })
+  .filter((trait) => trait.rubrics.length);
+---
+
+<SiteLayout
+  title="Submit a Report | PoliceConduct.org"
+  description="Share a first-hand police interaction report with PoliceConduct.org."
+  pagePath="/report/new/"
+>
+  <main class="">
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row justify-content-between align-items-center">
+          <div class="col-lg-7">
+            <p class="text-uppercase small text-muted mb-2">Report intake</p>
+            <h1 class="display-4 fw-bold">Submit a report</h1>
+            <p class="lead mb-0">
+              Share the details of your police interaction—good or bad—so we can
+              verify and publish it in the same format as other
+              PoliceConduct.org reports.
+            </p>
+          </div>
+          <div class="col-lg-4 mt-4 mt-lg-0">
+            <div class="alert alert-light border-dark rounded-0" role="alert">
+              <strong>Privacy note:</strong> We only publish the content you provide
+              for the final report. Contact details are used strictly for follow-up
+              questions.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <form
+          id="reportForm"
+          class="needs-validation"
+          novalidate
+          name="report-new"
+          method="POST"
+          data-netlify="true"
+          data-netlify-honeypot="organization"
+        >
+          <input type="hidden" name="form-name" value="report-new" />
+          <div class="honeypot visually-hidden">
+            <label>
+              Organization
+              <input type="text" name="organization" />
+            </label>
+          </div>
+          <div class="row g-5">
+            <div class="col-12">
+              <h2 class="h4 text-uppercase text-muted">Your contact details</h2>
+            </div>
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="reporterName"
+                  name="reporterName"
+                  placeholder="Full name"
+                  required
+                />
+                <label for="reporterName">Full name*</label>
+                <div class="invalid-feedback">Please provide your name.</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input
+                  type="email"
+                  class="form-control"
+                  id="reporterEmail"
+                  name="reporterEmail"
+                  placeholder="Email"
+                  required
+                />
+                <label for="reporterEmail">Email*</label>
+                <div class="invalid-feedback">
+                  We use email to confirm details about your report.
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input
+                  type="tel"
+                  class="form-control"
+                  id="reporterPhone"
+                  name="reporterPhone"
+                  placeholder="Phone"
+                />
+                <label for="reporterPhone">Phone (optional)</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-floating">
+                <select
+                  class="form-select"
+                  id="preferredContact"
+                  name="preferredContact"
+                >
+                  <option value="Email" selected>Email</option>
+                  <option value="Phone">Phone</option>
+                  <option value="Either">Either</option>
+                </select>
+                <label for="preferredContact">Preferred contact method</label>
+              </div>
+            </div>
+
+            <div class="col-12 pt-2">
+              <h2 class="h4 text-uppercase text-muted">Your role</h2>
+              <p class="text-muted">
+                Selecting the correct role helps us verify the accuracy of the
+                report. If you were not there but have evidence, choose
+                Concerned Citizen or Representative.
+              </p>
+            </div>
+            <div class="col-md-6">
+              <div class="form-floating">
+                <select
+                  class="form-select"
+                  id="reporterRole"
+                  name="reporterRole"
+                  required
+                >
+                  <option value="" selected>Select a role</option>
+                  <option value="Primary Participant (Self)">
+                    Primary Participant (Self)
+                  </option>
+                  <option value="Witness (On-site)">Witness (On-site)</option>
+                  <option value="Representative (On behalf of)">
+                    Representative (On behalf of)
+                  </option>
+                  <option value="Legal/Professional Advocate">
+                    Legal/Professional Advocate
+                  </option>
+                  <option value="Concerned Citizen (Indirect)">
+                    Concerned Citizen (Indirect)
+                  </option>
+                </select>
+                <label for="reporterRole">Role*</label>
+                <div class="invalid-feedback">Please select a role.</div>
+              </div>
+            </div>
+            <div class="col-md-6 d-none" id="relationshipGroup">
+              <div class="form-floating">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="relationship"
+                  name="relationship"
+                  placeholder="Relationship"
+                />
+                <label for="relationship"
+                  >Relationship to primary participant*</label
+                >
+                <div class="invalid-feedback">
+                  Please describe your relationship.
+                </div>
+              </div>
+            </div>
+            <div class="col-12 d-none" id="witnessRecordedGroup">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="witnessRecorded"
+                  name="witnessRecorded"
+                  value="Yes"
+                />
+                <label class="form-check-label" for="witnessRecorded">
+                  I recorded video or audio of the incident.
+                </label>
+              </div>
+            </div>
+
+            <div class="col-12 pt-2">
+              <h2 class="h4 text-uppercase text-muted">Incident basics</h2>
+            </div>
+            <div class="col-md-4 col-lg-2">
+              <div class="form-floating">
+                <input
+                  type="date"
+                  class="form-control"
+                  id="incidentDate"
+                  name="incidentDate"
+                  placeholder="Incident date"
+                  required
+                />
+                <label for="incidentDate">Incident date*</label>
+                <div class="invalid-feedback">
+                  When did the interaction happen?
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 col-lg-5">
+              <div class="form-floating">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="location"
+                  name="location"
+                  placeholder="City, state, street or landmark"
+                  required
+                />
+                <label for="location">Location*</label>
+                <div class="invalid-feedback">
+                  Please describe where the interaction occurred.
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 col-lg-5">
+              <div class="form-floating">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="charges"
+                  name="charges"
+                  placeholder="e.g., Public intoxication"
+                />
+                <label for="charges">Charges or allegations (if any)</label>
+              </div>
+            </div>
+
+            <div class="col-12 pt-2">
+              <h2 class="h4 text-uppercase text-muted">Officers involved</h2>
+              <p class="text-muted">
+                Add each officer you interacted with—name, badge number, and
+                department. If the department is the same as the previous
+                officer, enter "Same."
+              </p>
+              <p class="text-muted mb-0">
+                Rate officer conduct inside each officer card below.
+              </p>
+            </div>
+            <div id="officerList" class="col-12">
+              {
+                officerSlots.map((index) => (
+                  <div
+                    class={`card rounded-0 border-0 shadow-sm mb-3 officer-entry${index === 0 ? "" : " d-none"}`}
+                    data-index={index}
+                  >
+                    <div class="card-body">
+                      <div class="row g-3">
+                        <div class="col-12 d-flex justify-content-between align-items-center">
+                          <h3 class="h6 text-uppercase text-muted mb-0 officer-label">
+                            Officer {index + 1}
+                          </h3>
+                          <button
+                            type="button"
+                            class="btn btn-outline-dark btn-sm rounded-0 remove-officer"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div class="col-md-5 officer-known-fields">
+                          <div class="form-floating">
+                            <input
+                              type="text"
+                              class="form-control officer-name"
+                              name={`officers[${index}][name]`}
+                              placeholder="Officer name"
+                              required
+                            />
+                            <label>Officer name*</label>
+                            <div class="invalid-feedback">
+                              Please provide the officer name.
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-3 officer-known-fields">
+                          <div class="form-floating">
+                            <input
+                              type="text"
+                              class="form-control officer-badge"
+                              name={`officers[${index}][badge]`}
+                              placeholder="Badge #"
+                            />
+                            <label>Badge #</label>
+                          </div>
+                        </div>
+                        <div class="col-md-4 officer-known-fields">
+                          <div class="form-floating">
+                            <input
+                              type="text"
+                              class="form-control officer-department"
+                              name={`officers[${index}][department]`}
+                              placeholder="Department"
+                              required
+                            />
+                            <label>Department*</label>
+                            <div class="invalid-feedback">
+                              Please provide a department.
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-12 officer-unknown-description d-none">
+                          <div class="form-floating">
+                            <textarea
+                              class="form-control officer-description"
+                              name={`officers[${index}][unknownDescription]`}
+                              rows="2"
+                              placeholder="Description"
+                            />
+                            <label>Description*</label>
+                          </div>
+                          <div class="form-text">
+                            Uniform/patches, approximate height/build, gender
+                            presentation, hair/facial hair, vehicle number,
+                            body-worn camera label, partner’s name, any
+                            memorable identifiers.
+                          </div>
+                          <div class="invalid-feedback">
+                            Please provide a description for the unknown
+                            officer.
+                          </div>
+                        </div>
+                        <div class="col-12">
+                          <div class="form-check">
+                            <input
+                              class="form-check-input officer-unknown"
+                              type="checkbox"
+                              id={`officerUnknown-${index}`}
+                              name={`officers[${index}][unknown]`}
+                            />
+                            <label
+                              class="form-check-label"
+                              for={`officerUnknown-${index}`}
+                            >
+                              Name unknown
+                            </label>
+                          </div>
+                        </div>
+                        <div class="col-12 pt-3">
+                          <p class="text-uppercase small text-muted mb-1">
+                            Officer conduct assessment
+                          </p>
+                          <p class="text-muted mb-0">
+                            Choose the statement that best matches what you
+                            observed.
+                          </p>
+                        </div>
+                        <div class="col-12">
+                          <div class="row g-3">
+                            {traitsWithRubrics.map((trait) => (
+                              <div class="col-12 col-lg-6">
+                                <div class="card rounded-0 border-0 shadow-sm h-100">
+                                  <div class="card-body">
+                                    <h4 class="h6 text-uppercase text-muted mb-1">
+                                      {trait.label}
+                                    </h4>
+                                    {trait.help ? (
+                                      <p class="small text-muted mb-1">
+                                        {trait.help}
+                                      </p>
+                                    ) : null}
+                                    {trait.description ? (
+                                      <p class="small text-muted mb-0">
+                                        {trait.description}
+                                      </p>
+                                    ) : null}
+                                    <div class="row g-2">
+                                      {trait.rubrics.map((rubric: any) => (
+                                        <div class="col-12">
+                                          <label class="form-check border rounded-0 p-3 h-100">
+                                            <input
+                                              class="form-check-input"
+                                              type="radio"
+                                              name={`officers[${index}][traits][${trait.id}]`}
+                                              id={`officer-${index}-trait-${trait.id}-${rubric.id}`}
+                                              value={rubric.id}
+                                            />
+                                            <span class="form-check-label d-block fw-semibold">
+                                              {rubric.description}
+                                            </span>
+                                            {rubric.help ? (
+                                              <span class="small text-muted d-block">
+                                                {rubric.help}
+                                              </span>
+                                            ) : null}
+                                          </label>
+                                        </div>
+                                      ))}
+                                      <div class="col-12">
+                                        <label class="form-check border rounded-0 p-3 h-100">
+                                          <input
+                                            class="form-check-input"
+                                            type="radio"
+                                            name={`officers[${index}][traits][${trait.id}]`}
+                                            id={`officer-${index}-trait-${trait.id}-not-observed`}
+                                            value="__not_observed__"
+                                            data-null-option="true"
+                                          />
+                                          <span class="form-check-label d-block fw-semibold">
+                                            Not Observed / Does not apply
+                                          </span>
+                                          <span class="small text-muted d-block">
+                                            Skip rating this trait for this
+                                            officer.
+                                          </span>
+                                        </label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+            <div class="col-12">
+              <button
+                type="button"
+                class="btn btn-outline-dark rounded-0"
+                id="addOfficerBtn"
+              >
+                Add another officer
+              </button>
+            </div>
+
+            <div class="col-12 pt-2">
+              <h2 class="h4 text-uppercase text-muted">Narrative</h2>
+            </div>
+            <div class="col-12">
+              <div class="form-floating">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="title"
+                  name="title"
+                  placeholder="Title"
+                  required
+                />
+                <label for="title">Title*</label>
+              </div>
+              <div class="form-text">
+                Example: “Traffic stop with Officer Smith on I-35”
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="form-floating">
+                <textarea
+                  class="form-control"
+                  id="description"
+                  name="description"
+                  placeholder="Narrative"
+                  maxlength="2500"
+                  style="height: 160px"
+                  required></textarea>
+                <label for="description">Narrative*</label>
+              </div>
+              <div class="border border-dark p-3 mt-2">
+                <p class="text-uppercase small text-muted mb-2">
+                  Writing prompt template
+                </p>
+                <ul class="mb-0">
+                  <li>At approximately [time], I was at [location] when...</li>
+                  <li>
+                    The officer(s) did [action] and said, "[exact quote]".
+                  </li>
+                  <li>I responded by [action]. The officer then [action].</li>
+                  <li>
+                    Badge numbers, patrol car numbers, or names: [details].
+                  </li>
+                  <li>Witnesses, video, or photos: [links or descriptions].</li>
+                </ul>
+              </div>
+              <div class="form-text">
+                Provide a detailed, factual narrative of what happened. Focus on
+                dates, times, locations, actions, and direct quotes. Avoid
+                emotional language, opinions, or conclusions about anyone’s
+                intent or motives, other than your own.
+              </div>
+              <div class="form-text" id="descriptionCount">
+                0 / 2500 characters
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="form-floating">
+                <textarea
+                  class="form-control"
+                  id="outcome"
+                  name="outcome"
+                  placeholder="Desired outcome"
+                  rows="3"
+                  required></textarea>
+                <label for="outcome">Desired outcome*</label>
+              </div>
+            </div>
+
+            <div class="col-12 pt-2">
+              <h2 class="h4 text-uppercase text-muted">Witnesses</h2>
+              <p class="text-muted">
+                Adding a witness means you have confirmed it is okay for us to
+                contact them to verify this report.
+              </p>
+            </div>
+            <div id="witnessList" class="col-12">
+              <div
+                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
+                data-index="0"
+              >
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div
+                      class="col-12 d-flex justify-content-between align-items-center"
+                    >
+                      <h3
+                        class="h6 text-uppercase text-muted mb-0 witness-label"
+                      >
+                        Witness 1
+                      </h3>
+                      <button
+                        type="button"
+                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="text"
+                          class="form-control witness-name"
+                          name="witnesses[0][name]"
+                          placeholder="Name"
+                        />
+                        <label>Name</label>
+                        <div class="invalid-feedback">
+                          Please provide a witness name.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="tel"
+                          class="form-control witness-phone"
+                          name="witnesses[0][phone]"
+                          placeholder="Phone"
+                        />
+                        <label>Phone</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="email"
+                          class="form-control witness-email"
+                          name="witnesses[0][email]"
+                          placeholder="Email"
+                        />
+                        <label>Email</label>
+                        <div class="invalid-feedback">
+                          Provide at least a phone or email.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
+                data-index="1"
+              >
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div
+                      class="col-12 d-flex justify-content-between align-items-center"
+                    >
+                      <h3
+                        class="h6 text-uppercase text-muted mb-0 witness-label"
+                      >
+                        Witness 2
+                      </h3>
+                      <button
+                        type="button"
+                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="text"
+                          class="form-control witness-name"
+                          name="witnesses[1][name]"
+                          placeholder="Name"
+                        />
+                        <label>Name</label>
+                        <div class="invalid-feedback">
+                          Please provide a witness name.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="tel"
+                          class="form-control witness-phone"
+                          name="witnesses[1][phone]"
+                          placeholder="Phone"
+                        />
+                        <label>Phone</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="email"
+                          class="form-control witness-email"
+                          name="witnesses[1][email]"
+                          placeholder="Email"
+                        />
+                        <label>Email</label>
+                        <div class="invalid-feedback">
+                          Provide at least a phone or email.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
+                data-index="2"
+              >
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div
+                      class="col-12 d-flex justify-content-between align-items-center"
+                    >
+                      <h3
+                        class="h6 text-uppercase text-muted mb-0 witness-label"
+                      >
+                        Witness 3
+                      </h3>
+                      <button
+                        type="button"
+                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="text"
+                          class="form-control witness-name"
+                          name="witnesses[2][name]"
+                          placeholder="Name"
+                        />
+                        <label>Name</label>
+                        <div class="invalid-feedback">
+                          Please provide a witness name.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="tel"
+                          class="form-control witness-phone"
+                          name="witnesses[2][phone]"
+                          placeholder="Phone"
+                        />
+                        <label>Phone</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="email"
+                          class="form-control witness-email"
+                          name="witnesses[2][email]"
+                          placeholder="Email"
+                        />
+                        <label>Email</label>
+                        <div class="invalid-feedback">
+                          Provide at least a phone or email.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
+                data-index="3"
+              >
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div
+                      class="col-12 d-flex justify-content-between align-items-center"
+                    >
+                      <h3
+                        class="h6 text-uppercase text-muted mb-0 witness-label"
+                      >
+                        Witness 4
+                      </h3>
+                      <button
+                        type="button"
+                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="text"
+                          class="form-control witness-name"
+                          name="witnesses[3][name]"
+                          placeholder="Name"
+                        />
+                        <label>Name</label>
+                        <div class="invalid-feedback">
+                          Please provide a witness name.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="tel"
+                          class="form-control witness-phone"
+                          name="witnesses[3][phone]"
+                          placeholder="Phone"
+                        />
+                        <label>Phone</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="email"
+                          class="form-control witness-email"
+                          name="witnesses[3][email]"
+                          placeholder="Email"
+                        />
+                        <label>Email</label>
+                        <div class="invalid-feedback">
+                          Provide at least a phone or email.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
+                data-index="4"
+              >
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div
+                      class="col-12 d-flex justify-content-between align-items-center"
+                    >
+                      <h3
+                        class="h6 text-uppercase text-muted mb-0 witness-label"
+                      >
+                        Witness 5
+                      </h3>
+                      <button
+                        type="button"
+                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="text"
+                          class="form-control witness-name"
+                          name="witnesses[4][name]"
+                          placeholder="Name"
+                        />
+                        <label>Name</label>
+                        <div class="invalid-feedback">
+                          Please provide a witness name.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="tel"
+                          class="form-control witness-phone"
+                          name="witnesses[4][phone]"
+                          placeholder="Phone"
+                        />
+                        <label>Phone</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="email"
+                          class="form-control witness-email"
+                          name="witnesses[4][email]"
+                          placeholder="Email"
+                        />
+                        <label>Email</label>
+                        <div class="invalid-feedback">
+                          Provide at least a phone or email.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
+                data-index="5"
+              >
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div
+                      class="col-12 d-flex justify-content-between align-items-center"
+                    >
+                      <h3
+                        class="h6 text-uppercase text-muted mb-0 witness-label"
+                      >
+                        Witness 6
+                      </h3>
+                      <button
+                        type="button"
+                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="text"
+                          class="form-control witness-name"
+                          name="witnesses[5][name]"
+                          placeholder="Name"
+                        />
+                        <label>Name</label>
+                        <div class="invalid-feedback">
+                          Please provide a witness name.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="tel"
+                          class="form-control witness-phone"
+                          name="witnesses[5][phone]"
+                          placeholder="Phone"
+                        />
+                        <label>Phone</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="email"
+                          class="form-control witness-email"
+                          name="witnesses[5][email]"
+                          placeholder="Email"
+                        />
+                        <label>Email</label>
+                        <div class="invalid-feedback">
+                          Provide at least a phone or email.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
+                data-index="6"
+              >
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div
+                      class="col-12 d-flex justify-content-between align-items-center"
+                    >
+                      <h3
+                        class="h6 text-uppercase text-muted mb-0 witness-label"
+                      >
+                        Witness 7
+                      </h3>
+                      <button
+                        type="button"
+                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="text"
+                          class="form-control witness-name"
+                          name="witnesses[6][name]"
+                          placeholder="Name"
+                        />
+                        <label>Name</label>
+                        <div class="invalid-feedback">
+                          Please provide a witness name.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="tel"
+                          class="form-control witness-phone"
+                          name="witnesses[6][phone]"
+                          placeholder="Phone"
+                        />
+                        <label>Phone</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="email"
+                          class="form-control witness-email"
+                          name="witnesses[6][email]"
+                          placeholder="Email"
+                        />
+                        <label>Email</label>
+                        <div class="invalid-feedback">
+                          Provide at least a phone or email.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
+                data-index="7"
+              >
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div
+                      class="col-12 d-flex justify-content-between align-items-center"
+                    >
+                      <h3
+                        class="h6 text-uppercase text-muted mb-0 witness-label"
+                      >
+                        Witness 8
+                      </h3>
+                      <button
+                        type="button"
+                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="text"
+                          class="form-control witness-name"
+                          name="witnesses[7][name]"
+                          placeholder="Name"
+                        />
+                        <label>Name</label>
+                        <div class="invalid-feedback">
+                          Please provide a witness name.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="tel"
+                          class="form-control witness-phone"
+                          name="witnesses[7][phone]"
+                          placeholder="Phone"
+                        />
+                        <label>Phone</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="email"
+                          class="form-control witness-email"
+                          name="witnesses[7][email]"
+                          placeholder="Email"
+                        />
+                        <label>Email</label>
+                        <div class="invalid-feedback">
+                          Provide at least a phone or email.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
+                data-index="8"
+              >
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div
+                      class="col-12 d-flex justify-content-between align-items-center"
+                    >
+                      <h3
+                        class="h6 text-uppercase text-muted mb-0 witness-label"
+                      >
+                        Witness 9
+                      </h3>
+                      <button
+                        type="button"
+                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="text"
+                          class="form-control witness-name"
+                          name="witnesses[8][name]"
+                          placeholder="Name"
+                        />
+                        <label>Name</label>
+                        <div class="invalid-feedback">
+                          Please provide a witness name.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="tel"
+                          class="form-control witness-phone"
+                          name="witnesses[8][phone]"
+                          placeholder="Phone"
+                        />
+                        <label>Phone</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="email"
+                          class="form-control witness-email"
+                          name="witnesses[8][email]"
+                          placeholder="Email"
+                        />
+                        <label>Email</label>
+                        <div class="invalid-feedback">
+                          Provide at least a phone or email.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
+                data-index="9"
+              >
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div
+                      class="col-12 d-flex justify-content-between align-items-center"
+                    >
+                      <h3
+                        class="h6 text-uppercase text-muted mb-0 witness-label"
+                      >
+                        Witness 10
+                      </h3>
+                      <button
+                        type="button"
+                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="text"
+                          class="form-control witness-name"
+                          name="witnesses[9][name]"
+                          placeholder="Name"
+                        />
+                        <label>Name</label>
+                        <div class="invalid-feedback">
+                          Please provide a witness name.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="tel"
+                          class="form-control witness-phone"
+                          name="witnesses[9][phone]"
+                          placeholder="Phone"
+                        />
+                        <label>Phone</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input
+                          type="email"
+                          class="form-control witness-email"
+                          name="witnesses[9][email]"
+                          placeholder="Email"
+                        />
+                        <label>Email</label>
+                        <div class="invalid-feedback">
+                          Provide at least a phone or email.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <button
+                type="button"
+                class="btn btn-outline-dark rounded-0"
+                id="addWitnessBtn"
+              >
+                Add witness
+              </button>
+            </div>
+
+            <div class="col-12 pt-2">
+              <h2 class="h4 text-uppercase text-muted">Evidence links</h2>
+              <p class="text-muted">
+                Link to videos, photos, docket entries, or news coverage.
+              </p>
+            </div>
+            <div id="evidenceLinks" class="col-12">
+              <div
+                class="row g-3 align-items-end evidence-entry mb-3 d-none"
+                data-index="0"
+              >
+                <div
+                  class="col-12 d-flex justify-content-between align-items-center"
+                >
+                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
+                    Evidence 1
+                  </h3>
+                  <button
+                    type="button"
+                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div class="col-md-8">
+                  <div class="form-floating">
+                    <input
+                      type="url"
+                      class="form-control"
+                      name="evidenceLinks[0]"
+                      placeholder="https://"
+                    />
+                    <label>Evidence link</label>
+                  </div>
+                  <div class="form-text">
+                    Example: https://drive.google.com/...
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="evidenceDescriptions[0]"
+                      placeholder="e.g., Bodycam video"
+                    />
+                    <label>Description</label>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="row g-3 align-items-end evidence-entry mb-3 d-none"
+                data-index="1"
+              >
+                <div
+                  class="col-12 d-flex justify-content-between align-items-center"
+                >
+                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
+                    Evidence 2
+                  </h3>
+                  <button
+                    type="button"
+                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div class="col-md-8">
+                  <div class="form-floating">
+                    <input
+                      type="url"
+                      class="form-control"
+                      name="evidenceLinks[1]"
+                      placeholder="https://"
+                    />
+                    <label>Evidence link</label>
+                  </div>
+                  <div class="form-text">
+                    Example: https://drive.google.com/...
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="evidenceDescriptions[1]"
+                      placeholder="e.g., Bodycam video"
+                    />
+                    <label>Description</label>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="row g-3 align-items-end evidence-entry mb-3 d-none"
+                data-index="2"
+              >
+                <div
+                  class="col-12 d-flex justify-content-between align-items-center"
+                >
+                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
+                    Evidence 3
+                  </h3>
+                  <button
+                    type="button"
+                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div class="col-md-8">
+                  <div class="form-floating">
+                    <input
+                      type="url"
+                      class="form-control"
+                      name="evidenceLinks[2]"
+                      placeholder="https://"
+                    />
+                    <label>Evidence link</label>
+                  </div>
+                  <div class="form-text">
+                    Example: https://drive.google.com/...
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="evidenceDescriptions[2]"
+                      placeholder="e.g., Bodycam video"
+                    />
+                    <label>Description</label>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="row g-3 align-items-end evidence-entry mb-3 d-none"
+                data-index="3"
+              >
+                <div
+                  class="col-12 d-flex justify-content-between align-items-center"
+                >
+                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
+                    Evidence 4
+                  </h3>
+                  <button
+                    type="button"
+                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div class="col-md-8">
+                  <div class="form-floating">
+                    <input
+                      type="url"
+                      class="form-control"
+                      name="evidenceLinks[3]"
+                      placeholder="https://"
+                    />
+                    <label>Evidence link</label>
+                  </div>
+                  <div class="form-text">
+                    Example: https://drive.google.com/...
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="evidenceDescriptions[3]"
+                      placeholder="e.g., Bodycam video"
+                    />
+                    <label>Description</label>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="row g-3 align-items-end evidence-entry mb-3 d-none"
+                data-index="4"
+              >
+                <div
+                  class="col-12 d-flex justify-content-between align-items-center"
+                >
+                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
+                    Evidence 5
+                  </h3>
+                  <button
+                    type="button"
+                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div class="col-md-8">
+                  <div class="form-floating">
+                    <input
+                      type="url"
+                      class="form-control"
+                      name="evidenceLinks[4]"
+                      placeholder="https://"
+                    />
+                    <label>Evidence link</label>
+                  </div>
+                  <div class="form-text">
+                    Example: https://drive.google.com/...
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="evidenceDescriptions[4]"
+                      placeholder="e.g., Bodycam video"
+                    />
+                    <label>Description</label>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="row g-3 align-items-end evidence-entry mb-3 d-none"
+                data-index="5"
+              >
+                <div
+                  class="col-12 d-flex justify-content-between align-items-center"
+                >
+                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
+                    Evidence 6
+                  </h3>
+                  <button
+                    type="button"
+                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div class="col-md-8">
+                  <div class="form-floating">
+                    <input
+                      type="url"
+                      class="form-control"
+                      name="evidenceLinks[5]"
+                      placeholder="https://"
+                    />
+                    <label>Evidence link</label>
+                  </div>
+                  <div class="form-text">
+                    Example: https://drive.google.com/...
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="evidenceDescriptions[5]"
+                      placeholder="e.g., Bodycam video"
+                    />
+                    <label>Description</label>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="row g-3 align-items-end evidence-entry mb-3 d-none"
+                data-index="6"
+              >
+                <div
+                  class="col-12 d-flex justify-content-between align-items-center"
+                >
+                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
+                    Evidence 7
+                  </h3>
+                  <button
+                    type="button"
+                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div class="col-md-8">
+                  <div class="form-floating">
+                    <input
+                      type="url"
+                      class="form-control"
+                      name="evidenceLinks[6]"
+                      placeholder="https://"
+                    />
+                    <label>Evidence link</label>
+                  </div>
+                  <div class="form-text">
+                    Example: https://drive.google.com/...
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="evidenceDescriptions[6]"
+                      placeholder="e.g., Bodycam video"
+                    />
+                    <label>Description</label>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="row g-3 align-items-end evidence-entry mb-3 d-none"
+                data-index="7"
+              >
+                <div
+                  class="col-12 d-flex justify-content-between align-items-center"
+                >
+                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
+                    Evidence 8
+                  </h3>
+                  <button
+                    type="button"
+                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div class="col-md-8">
+                  <div class="form-floating">
+                    <input
+                      type="url"
+                      class="form-control"
+                      name="evidenceLinks[7]"
+                      placeholder="https://"
+                    />
+                    <label>Evidence link</label>
+                  </div>
+                  <div class="form-text">
+                    Example: https://drive.google.com/...
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="evidenceDescriptions[7]"
+                      placeholder="e.g., Bodycam video"
+                    />
+                    <label>Description</label>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="row g-3 align-items-end evidence-entry mb-3 d-none"
+                data-index="8"
+              >
+                <div
+                  class="col-12 d-flex justify-content-between align-items-center"
+                >
+                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
+                    Evidence 9
+                  </h3>
+                  <button
+                    type="button"
+                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div class="col-md-8">
+                  <div class="form-floating">
+                    <input
+                      type="url"
+                      class="form-control"
+                      name="evidenceLinks[8]"
+                      placeholder="https://"
+                    />
+                    <label>Evidence link</label>
+                  </div>
+                  <div class="form-text">
+                    Example: https://drive.google.com/...
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="evidenceDescriptions[8]"
+                      placeholder="e.g., Bodycam video"
+                    />
+                    <label>Description</label>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="row g-3 align-items-end evidence-entry mb-3 d-none"
+                data-index="9"
+              >
+                <div
+                  class="col-12 d-flex justify-content-between align-items-center"
+                >
+                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
+                    Evidence 10
+                  </h3>
+                  <button
+                    type="button"
+                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div class="col-md-8">
+                  <div class="form-floating">
+                    <input
+                      type="url"
+                      class="form-control"
+                      name="evidenceLinks[9]"
+                      placeholder="https://"
+                    />
+                    <label>Evidence link</label>
+                  </div>
+                  <div class="form-text">
+                    Example: https://drive.google.com/...
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="evidenceDescriptions[9]"
+                      placeholder="e.g., Bodycam video"
+                    />
+                    <label>Description</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <button
+                type="button"
+                class="btn btn-outline-dark rounded-0"
+                id="addEvidenceBtn"
+              >
+                Add evidence link
+              </button>
+            </div>
+
+            <div class="col-12 pt-2">
+              <h2 class="h4 text-uppercase text-muted">Tags</h2>
+              <p class="text-muted">
+                Select tags that describe the interaction. These help readers
+                scan the report.
+              </p>
+              <div class="row g-4">
+                <div class="col-12 col-md-6">
+                  <h3 class="h6 text-muted fw-semibold mb-2">
+                    Commendation Tags
+                  </h3>
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Appropriate use of force"
+                      id="tagAppropriateForce"
+                    />
+                    <label class="form-check-label" for="tagAppropriateForce"
+                      >Appropriate use of force</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Clear Miranda / Rights explanation"
+                      id="tagMiranda"
+                    />
+                    <label class="form-check-label" for="tagMiranda"
+                      >Clear Miranda / Rights explanation</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Compassionate welfare check"
+                      id="tagWelfareCheck"
+                    />
+                    <label class="form-check-label" for="tagWelfareCheck"
+                      >Compassionate welfare check</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Diligent / Honest investigation"
+                      id="tagHonestInvestigation"
+                    />
+                    <label class="form-check-label" for="tagHonestInvestigation"
+                      >Diligent / Honest investigation</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Effective de-escalation"
+                      id="tagDeescalation"
+                    />
+                    <label class="form-check-label" for="tagDeescalation"
+                      >Effective de-escalation</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Life-saving aid / Medical assistance"
+                      id="tagMedicalAid"
+                    />
+                    <label class="form-check-label" for="tagMedicalAid"
+                      >Life-saving aid / Medical assistance</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Procedural transparency"
+                      id="tagTransparency"
+                    />
+                    <label class="form-check-label" for="tagTransparency"
+                      >Procedural transparency</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Professionalism / Community outreach"
+                      id="tagProfessionalism"
+                    />
+                    <label class="form-check-label" for="tagProfessionalism"
+                      >Professionalism / Community outreach</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Proper use of body-cam / Evidence"
+                      id="tagBodycamProper"
+                    />
+                    <label class="form-check-label" for="tagBodycamProper"
+                      >Proper use of body-cam / Evidence</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Respect for recording / First Amendment"
+                      id="tagRespectRecording"
+                    />
+                    <label class="form-check-label" for="tagRespectRecording"
+                      >Respect for recording / First Amendment</label
+                    >
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <h3 class="h6 text-muted fw-semibold mb-2">
+                    Misconduct Tags
+                  </h3>
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Body-worn camera (e.g., turned off / muted)"
+                      id="tagBWC"
+                    />
+                    <label class="form-check-label" for="tagBWC"
+                      >Body-worn camera (e.g., turned off / muted)</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Coerced questioning"
+                      id="tagQuestioning"
+                    />
+                    <label class="form-check-label" for="tagQuestioning"
+                      >Coerced questioning</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Dishonest report / false statement"
+                      id="tagFalseStatement"
+                    />
+                    <label class="form-check-label" for="tagFalseStatement"
+                      >Dishonest report / false statement</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Excessive force"
+                      id="tagForce"
+                    />
+                    <label class="form-check-label" for="tagForce"
+                      >Excessive force</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Fabricated or planted evidence"
+                      id="tagPlantedEvidence"
+                    />
+                    <label class="form-check-label" for="tagPlantedEvidence"
+                      >Fabricated or planted evidence</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Failure to perform welfare check"
+                      id="tagWelfareFailure"
+                    />
+                    <label class="form-check-label" for="tagWelfareFailure"
+                      >Failure to perform welfare check</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Medical care concern"
+                      id="tagMedical"
+                    />
+                    <label class="form-check-label" for="tagMedical"
+                      >Medical care concern</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Retaliatory stop / abuse of discretion"
+                      id="tagRetaliatoryStop"
+                    />
+                    <label class="form-check-label" for="tagRetaliatoryStop"
+                      >Retaliatory stop / abuse of discretion</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Retaliation for speech / recording"
+                      id="tagRetaliation"
+                    />
+                    <label class="form-check-label" for="tagRetaliation"
+                      >Retaliation for speech / recording</label
+                    >
+                  </div>
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="tags[]"
+                      value="Unlawful detention / denied due process"
+                      id="tagDueProcess"
+                    />
+                    <label class="form-check-label" for="tagDueProcess"
+                      >Unlawful detention / denied due process</label
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="mt-3 form-floating">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="customTags"
+                  name="customTags"
+                  placeholder="e.g., Pilot license, Retaliation"
+                />
+                <label for="customTags">Additional tags (comma separated)</label
+                >
+              </div>
+            </div>
+
+            <div class="col-12 pt-2">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  value="1"
+                  id="consent"
+                  name="consent"
+                  required
+                />
+                <label class="form-check-label" for="consent">
+                  I affirm this report is truthful to the best of my knowledge,
+                  understand reports are public and may be reviewed/redacted,
+                  will not include sensitive personal data (addresses, SSNs,
+                  medical records), and consent to PoliceConduct.org contacting
+                  me.
+                </label>
+                <div class="invalid-feedback">Consent is required.</div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div
+                id="reportErrorSummary"
+                class="alert alert-danger rounded-0 d-none"
+                role="alert"
+              >
+                Please complete the required fields highlighted above before
+                submitting.
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div data-netlify-recaptcha="true"></div>
+              <button type="submit" class="btn btn-dark btn-lg rounded-0">
+                Submit report
+              </button>
+            </div>
+
+            <div class="col-12"></div>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script is:inline>
+    const officerList = document.getElementById("officerList");
+    const addOfficerBtn = document.getElementById("addOfficerBtn");
+    const reporterRole = document.getElementById("reporterRole");
+    const relationshipGroup = document.getElementById("relationshipGroup");
+    const relationshipInput = document.getElementById("relationship");
+    const witnessRecordedGroup = document.getElementById(
+      "witnessRecordedGroup",
+    );
+    const witnessList = document.getElementById("witnessList");
+    const addWitnessBtn = document.getElementById("addWitnessBtn");
+    const evidenceLinks = document.getElementById("evidenceLinks");
+    const addEvidenceBtn = document.getElementById("addEvidenceBtn");
+    const form = document.getElementById("reportForm");
+    const reportErrorSummary = document.getElementById("reportErrorSummary");
+    const descriptionInput = document.getElementById("description");
+    const descriptionCount = document.getElementById("descriptionCount");
+    const searchParams = new URLSearchParams(window.location.search);
+    const departmentParam = searchParams.get("department");
+    const officerNameParam = searchParams.get("officerName");
+    const badgeParam = searchParams.get("badge");
+    function addOfficer() {
+      const next = officerList.querySelector(".officer-entry.d-none");
+      if (!next) {
+        return;
+      }
+      setEntryActive(next, true);
+      updateOfficerRemoveButtons();
+      const previousEntry = Array.from(
+        officerList.querySelectorAll(".officer-entry:not(.d-none)"),
+      ).slice(-2, -1)[0];
+      const previousDept = previousEntry?.querySelector(".officer-department");
+      const newDept = next.querySelector(".officer-department");
+      if (newDept && previousDept && previousDept.value.trim()) {
+        newDept.value = "Same";
+      }
+      syncOfficerUnknown(next);
+      updateAddButtons();
+    }
+    function addEvidenceLink() {
+      const next = evidenceLinks.querySelector(".evidence-entry.d-none");
+      if (!next) {
+        return;
+      }
+      setEntryActive(next, true);
+      updateAddButtons();
+    }
+
+    function syncRoleFields() {
+      const roleValue = reporterRole.value;
+      const isRepresentative = roleValue === "Representative (On behalf of)";
+      const isWitness = roleValue === "Witness (On-site)";
+      relationshipGroup.classList.toggle("d-none", !isRepresentative);
+      witnessRecordedGroup.classList.toggle("d-none", !isWitness);
+      relationshipInput.required = isRepresentative;
+    }
+    function addWitness() {
+      const next = witnessList.querySelector(".witness-entry.d-none");
+      if (!next) {
+        return;
+      }
+      setEntryActive(next, true);
+      updateAddButtons();
+    }
+
+    function updateOfficerLabels() {
+      officerList.querySelectorAll(".officer-entry").forEach((entry, index) => {
+        const label = entry.querySelector(".officer-label");
+        if (label) {
+          const entryIndex = Number(entry.dataset.index || index);
+          label.textContent = `Officer ${entryIndex + 1}`;
+        }
+      });
+    }
+
+    function setEntryActive(entry, isActive) {
+      entry.classList.toggle("d-none", !isActive);
+      entry.querySelectorAll("input, textarea, select").forEach((field) => {
+        field.disabled = !isActive;
+      });
+    }
+
+    function syncOfficerUnknown(entry) {
+      const unknown = entry.querySelector(".officer-unknown");
+      const descriptionGroup = entry.querySelector(
+        ".officer-unknown-description",
+      );
+      const knownFields = entry.querySelectorAll(".officer-known-fields");
+      const description = entry.querySelector(".officer-description");
+      const name = entry.querySelector(".officer-name");
+      const badge = entry.querySelector(".officer-badge");
+      const department = entry.querySelector(".officer-department");
+
+      if (!unknown) {
+        return;
+      }
+
+      const isUnknown = unknown.checked;
+      descriptionGroup?.classList.toggle("d-none", !isUnknown);
+      knownFields.forEach((field) => {
+        field.classList.toggle("d-none", isUnknown);
+      });
+      if (description) {
+        description.required = isUnknown;
+      }
+      if (name) {
+        name.disabled = isUnknown;
+        name.required = !isUnknown;
+      }
+      if (badge) {
+        badge.disabled = isUnknown;
+      }
+      if (department) {
+        department.disabled = isUnknown;
+        department.required = !isUnknown;
+      }
+      if (isUnknown) {
+        name?.setCustomValidity("");
+      }
+    }
+
+    function validateOfficerEntries() {
+      let isValid = true;
+      officerList.querySelectorAll(".officer-entry").forEach((entry) => {
+        if (entry.classList.contains("d-none")) {
+          return;
+        }
+        const unknown = entry.querySelector(".officer-unknown");
+        const name = entry.querySelector(".officer-name");
+        const description = entry.querySelector(".officer-description");
+
+        const isUnknown = unknown?.checked;
+        if (isUnknown) {
+          if (!description || !description.value.trim()) {
+            description?.setCustomValidity(
+              "Please provide a description for the unknown officer.",
+            );
+            isValid = false;
+          } else {
+            description?.setCustomValidity("");
+          }
+          name?.setCustomValidity("");
+        } else {
+          if (!name?.value.trim()) {
+            name?.setCustomValidity("Please provide the officer name.");
+            isValid = false;
+          } else {
+            name?.setCustomValidity("");
+          }
+          description?.setCustomValidity("");
+        }
+      });
+
+      return isValid;
+    }
+
+    function updateEvidenceLabels() {
+      evidenceLinks
+        .querySelectorAll(".evidence-entry")
+        .forEach((entry, index) => {
+          const label = entry.querySelector(".evidence-label");
+          if (label) {
+            const entryIndex = Number(entry.dataset.index || index);
+            label.textContent = `Evidence ${entryIndex + 1}`;
+          }
+        });
+    }
+
+    function updateWitnessLabels() {
+      witnessList.querySelectorAll(".witness-entry").forEach((entry, index) => {
+        const label = entry.querySelector(".witness-label");
+        if (label) {
+          const entryIndex = Number(entry.dataset.index || index);
+          label.textContent = `Witness ${entryIndex + 1}`;
+        }
+      });
+    }
+
+    function initHiddenEntries(list) {
+      list.querySelectorAll(".d-none").forEach((entry) => {
+        setEntryActive(entry, false);
+      });
+    }
+    function updateOfficerRemoveButtons() {
+      const entries = Array.from(
+        officerList.querySelectorAll(".officer-entry"),
+      ).filter((entry) => !entry.classList.contains("d-none"));
+      const shouldHide = entries.length <= 1;
+      entries.forEach((entry) => {
+        const button = entry.querySelector(".remove-officer");
+        if (!button) {
+          return;
+        }
+        button.classList.toggle("d-none", shouldHide);
+        button.disabled = shouldHide;
+      });
+    }
+
+    function updateAddButtons() {
+      const officersRemaining = officerList.querySelector(
+        ".officer-entry.d-none",
+      );
+      const witnessesRemaining = witnessList.querySelector(
+        ".witness-entry.d-none",
+      );
+      const evidenceRemaining = evidenceLinks.querySelector(
+        ".evidence-entry.d-none",
+      );
+      addOfficerBtn.disabled = !officersRemaining;
+      addWitnessBtn.disabled = !witnessesRemaining;
+      addEvidenceBtn.disabled = !evidenceRemaining;
+    }
+
+    addOfficerBtn.addEventListener("click", addOfficer);
+    addWitnessBtn.addEventListener("click", addWitness);
+    addEvidenceBtn.addEventListener("click", addEvidenceLink);
+    reporterRole.addEventListener("change", syncRoleFields);
+    const firstOfficerEntry = officerList.querySelector(".officer-entry");
+    if (firstOfficerEntry) {
+      setEntryActive(firstOfficerEntry, true);
+    }
+    initHiddenEntries(officerList);
+    initHiddenEntries(witnessList);
+    initHiddenEntries(evidenceLinks);
+    updateOfficerRemoveButtons();
+    updateOfficerLabels();
+    updateWitnessLabels();
+    updateEvidenceLabels();
+    updateAddButtons();
+    syncRoleFields();
+    if (departmentParam) {
+      const firstOfficerDepartment = officerList.querySelector(
+        ".officer-entry .officer-department",
+      );
+      if (firstOfficerDepartment && !firstOfficerDepartment.value.trim()) {
+        firstOfficerDepartment.value = departmentParam;
+      }
+    }
+    if (officerNameParam || badgeParam) {
+      const firstOfficer = officerList.querySelector(".officer-entry");
+      if (firstOfficer) {
+        const nameInput = firstOfficer.querySelector(".officer-name");
+        const badgeInput = firstOfficer.querySelector(".officer-badge");
+        if (nameInput && officerNameParam && !nameInput.value.trim()) {
+          nameInput.value = officerNameParam;
+        }
+        if (badgeInput && badgeParam && !badgeInput.value.trim()) {
+          badgeInput.value = badgeParam;
+        }
+      }
+    }
+    if (descriptionInput && descriptionCount) {
+      const updateDescriptionCount = () => {
+        descriptionCount.textContent = `${descriptionInput.value.length} / 2500 characters`;
+      };
+      descriptionInput.addEventListener("input", updateDescriptionCount);
+      updateDescriptionCount();
+    }
+
+    officerList.addEventListener("click", (event) => {
+      const button = event.target.closest(".remove-officer");
+      if (!button) {
+        return;
+      }
+      const entry = button.closest(".officer-entry");
+      entry.querySelectorAll("input, textarea").forEach((field) => {
+        field.value = "";
+        field.checked = false;
+      });
+      setEntryActive(entry, false);
+      updateOfficerLabels();
+      updateOfficerRemoveButtons();
+      updateAddButtons();
+    });
+
+    officerList.addEventListener("change", (event) => {
+      const checkbox = event.target.closest(".officer-unknown");
+      if (!checkbox) {
+        return;
+      }
+      syncOfficerUnknown(checkbox.closest(".officer-entry"));
+    });
+
+    evidenceLinks.addEventListener("click", (event) => {
+      const button = event.target.closest(".remove-evidence");
+      if (!button) {
+        return;
+      }
+      const entry = button.closest(".evidence-entry");
+      entry.querySelectorAll("input, textarea").forEach((field) => {
+        field.value = "";
+      });
+      setEntryActive(entry, false);
+      updateEvidenceLabels();
+      updateAddButtons();
+    });
+
+    witnessList.addEventListener("click", (event) => {
+      const button = event.target.closest(".remove-witness");
+      if (!button) {
+        return;
+      }
+      const entry = button.closest(".witness-entry");
+      entry.querySelectorAll("input, textarea").forEach((field) => {
+        field.value = "";
+      });
+      setEntryActive(entry, false);
+      updateWitnessLabels();
+      updateAddButtons();
+    });
+
+    function validateWitnessEntries() {
+      let isValid = true;
+      witnessList.querySelectorAll(".witness-entry").forEach((entry) => {
+        if (entry.classList.contains("d-none")) {
+          return;
+        }
+        const name = entry.querySelector(".witness-name");
+        const phone = entry.querySelector(".witness-phone");
+        const email = entry.querySelector(".witness-email");
+        const hasAny = [name, phone, email].some(
+          (field) => field && field.value.trim(),
+        );
+
+        if (!hasAny) {
+          name?.setCustomValidity("");
+          email?.setCustomValidity("");
+          return;
+        }
+
+        if (!name.value.trim()) {
+          name.setCustomValidity("Please provide a witness name.");
+          isValid = false;
+        } else {
+          name.setCustomValidity("");
+        }
+
+        if (!phone.value.trim() && !email.value.trim()) {
+          email.setCustomValidity("Provide at least a phone or email.");
+          isValid = false;
+        } else {
+          email.setCustomValidity("");
+        }
+      });
+
+      return isValid;
+    }
+
+    form.addEventListener("submit", (event) => {
+      form.classList.add("was-validated");
+      const officersValid = validateOfficerEntries();
+      const witnessesValid = validateWitnessEntries();
+      if (!form.checkValidity() || !officersValid || !witnessesValid) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (reportErrorSummary) {
+          reportErrorSummary.classList.remove("d-none");
+          reportErrorSummary.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+        return;
+      }
+      if (reportErrorSummary) {
+        reportErrorSummary.classList.add("d-none");
+      }
+      form
+        .querySelectorAll('input[type="radio"][data-null-option="true"]')
+        .forEach((input) => {
+          if (input.checked) {
+            input.disabled = true;
+          }
+        });
+    });
+  </script>
+
+  <script is:inline>
+    (function () {
+      const form = document.getElementById("reportForm");
+      if (!form) {
+        return;
+      }
+
+      const endpoint = "/api/forms/draft";
+      const cookieName = "pc_report_draft";
+      const autosaveDelayMs = 1200;
+      let saveTimer = null;
+      let isRestoring = false;
+
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+          return parts.pop().split(";").shift();
+        }
+        return "";
+      }
+
+      function setCookie(name, value) {
+        const maxAge = 60 * 60;
+        document.cookie = `${name}=${value}; Max-Age=${maxAge}; Path=/report/new/; SameSite=Lax`;
+      }
+
+      function clearCookie(name) {
+        document.cookie = `${name}=; Max-Age=0; Path=/report/new/; SameSite=Lax`;
+      }
+
+      function serializeForm() {
+        const data = {};
+        const formData = new FormData(form);
+        formData.forEach((value, key) => {
+          if (key === "g-recaptcha-response") {
+            return;
+          }
+          if (key in data) {
+            if (!Array.isArray(data[key])) {
+              data[key] = [data[key]];
+            }
+            data[key].push(value);
+          } else {
+            data[key] = value;
+          }
+        });
+
+        const checkboxGroups = new Map();
+        form.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+          if (!input.name) {
+            return;
+          }
+          if (!checkboxGroups.has(input.name)) {
+            checkboxGroups.set(input.name, []);
+          }
+          if (input.checked) {
+            checkboxGroups.get(input.name).push(input.value);
+          }
+        });
+
+        checkboxGroups.forEach((values, name) => {
+          const inputs = form.querySelectorAll(
+            `input[type="checkbox"][name="${CSS.escape(name)}"]`,
+          );
+          if (inputs.length <= 1) {
+            data[name] = values.length > 0;
+          } else {
+            data[name] = values;
+          }
+        });
+
+        const skipRadioNames = new Set();
+        form
+          .querySelectorAll('input[type="radio"][data-null-option="true"]')
+          .forEach((input) => {
+            if (input.name && input.checked) {
+              skipRadioNames.add(input.name);
+            }
+          });
+
+        const radioNames = new Set();
+        form.querySelectorAll('input[type="radio"]').forEach((input) => {
+          if (!input.name || skipRadioNames.has(input.name)) {
+            return;
+          }
+          radioNames.add(input.name);
+          if (input.checked) {
+            data[input.name] = input.value;
+          }
+        });
+        radioNames.forEach((name) => {
+          if (!(name in data)) {
+            data[name] = "";
+          }
+        });
+
+        return data;
+      }
+
+      function getElementList(elements) {
+        if (!elements) {
+          return [];
+        }
+        if (elements instanceof Element) {
+          return [elements];
+        }
+        if (
+          typeof RadioNodeList !== "undefined" &&
+          elements instanceof RadioNodeList
+        ) {
+          return Array.from(elements);
+        }
+        if (elements.length && elements.item) {
+          return Array.from(elements);
+        }
+        return [elements];
+      }
+
+      function applyDraft(data) {
+        isRestoring = true;
+        Object.entries(data || {}).forEach(([name, value]) => {
+          const elements = form.elements.namedItem(name);
+          const elementList = getElementList(elements);
+          elementList.forEach((element) => {
+            if (!element) {
+              return;
+            }
+            if (element.type === "checkbox") {
+              if (Array.isArray(value)) {
+                element.checked = value.includes(element.value);
+              } else {
+                element.checked = Boolean(value);
+              }
+              return;
+            }
+            if (element.type === "radio") {
+              element.checked = element.value === value;
+              return;
+            }
+            element.value = value;
+          });
+        });
+
+        const entryHasValue = (entry) =>
+          Array.from(entry.querySelectorAll("input, textarea, select")).some(
+            (field) => {
+              if (field.type === "checkbox" || field.type === "radio") {
+                return field.checked;
+              }
+              return field.value && field.value.trim();
+            },
+          );
+
+        const activateEntry = (entry) => {
+          if (typeof window.setEntryActive === "function") {
+            window.setEntryActive(entry, true);
+            return;
+          }
+          entry.classList.remove("d-none");
+          entry.querySelectorAll("input, textarea, select").forEach((field) => {
+            field.disabled = false;
+          });
+        };
+
+        ["officer", "witness", "evidence"].forEach((group) => {
+          form.querySelectorAll(`.${group}-entry`).forEach((entry) => {
+            if (!entry.classList.contains("d-none")) {
+              return;
+            }
+            if (entryHasValue(entry)) {
+              activateEntry(entry);
+            }
+          });
+        });
+
+        if (typeof window.updateOfficerLabels === "function") {
+          window.updateOfficerLabels();
+        }
+        if (typeof window.updateWitnessLabels === "function") {
+          window.updateWitnessLabels();
+        }
+        if (typeof window.updateEvidenceLabels === "function") {
+          window.updateEvidenceLabels();
+        }
+        if (typeof window.updateOfficerRemoveButtons === "function") {
+          window.updateOfficerRemoveButtons();
+        }
+        if (typeof window.updateAddButtons === "function") {
+          window.updateAddButtons();
+        }
+        if (typeof window.syncRoleFields === "function") {
+          window.syncRoleFields();
+        }
+        if (typeof window.syncOfficerUnknown === "function") {
+          form.querySelectorAll(".officer-entry").forEach((entry) => {
+            window.syncOfficerUnknown(entry);
+          });
+        }
+        const descriptionInput = document.getElementById("description");
+        if (descriptionInput) {
+          descriptionInput.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        isRestoring = false;
+      }
+
+      async function loadDraft() {
+        const draftId = getCookie(cookieName);
+        if (!draftId) {
+          return;
+        }
+        try {
+          const response = await fetch(
+            `${endpoint}?draftId=${encodeURIComponent(draftId)}`,
+            {
+              headers: { Accept: "application/json" },
+            },
+          );
+          if (response.status === 204) {
+            clearCookie(cookieName);
+            return;
+          }
+          if (!response.ok) {
+            return;
+          }
+          const payload = await response.json();
+          if (payload && payload.data) {
+            applyDraft(payload.data);
+          } else {
+            clearCookie(cookieName);
+          }
+        } catch (error) {
+          return;
+        }
+      }
+
+      async function saveDraft() {
+        const payload = {
+          draftId: getCookie(cookieName) || null,
+          data: serializeForm(),
+        };
+
+        try {
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (!response.ok) {
+            return;
+          }
+          const result = await response.json();
+          if (result && result.draftId) {
+            setCookie(cookieName, result.draftId);
+          }
+        } catch (error) {
+          return;
+        }
+      }
+
+      function scheduleSave() {
+        if (isRestoring) {
+          return;
+        }
+        if (saveTimer) {
+          window.clearTimeout(saveTimer);
+        }
+        saveTimer = window.setTimeout(saveDraft, autosaveDelayMs);
+      }
+
+      form.addEventListener("input", scheduleSave);
+      form.addEventListener("change", scheduleSave);
+      window.addEventListener("beforeunload", () => {
+        if (saveTimer) {
+          saveDraft();
+        }
+      });
+
+      loadDraft();
+    })();
+  </script>
+</SiteLayout>

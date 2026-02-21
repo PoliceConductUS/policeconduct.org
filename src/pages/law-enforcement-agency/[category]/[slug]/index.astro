@@ -1,0 +1,672 @@
+---
+import SiteLayout from "../../../../layouts/SiteLayout.astro";
+import DisqusComments from "../../../../components/DisqusComments.astro";
+import { withDb } from "../../../../lib/db.js";
+import { groupBy, mapBy } from "../../../../lib/data.js";
+import { formatShortDate } from "../../../../lib/format.js";
+import { US_STATE_TILES } from "../../../../lib/geo/states.js";
+import { getReportStateSlug } from "../../../../lib/report-state-stats.js";
+import { caseSlug } from "../../../../lib/slug.js";
+import ProfileTabs from "../../../../components/ProfileTabs.astro";
+import { getSiteUrl } from "../../../../lib/structured-data.js";
+
+export async function getStaticPaths() {
+  const agencies = await withDb(async (client) => {
+    return (
+      await client.query(
+        "select id, name, state, slug, category from public.agency",
+      )
+    ).rows;
+  });
+  return agencies.map(
+    (agency: { id: string; slug: string; category?: string | null }) => {
+      const categoryValue = (agency.category || "federal").toLowerCase();
+      return {
+        params: {
+          category: categoryValue,
+          slug: agency.slug,
+        },
+        props: { agencyId: agency.id },
+      };
+    },
+  );
+}
+
+const { agencyId } = Astro.props;
+const data = await withDb(async (client) => {
+  const agency = (
+    await client.query("select * from public.agency where id = $1", [agencyId])
+  ).rows[0];
+  const agencyLinks = (
+    await client.query(
+      "select * from public.agency_links where agency_id = $1",
+      [agencyId],
+    )
+  ).rows;
+  const agencyPhones = (
+    await client.query(
+      "select * from public.agency_phone_numbers where agency_id = $1",
+      [agencyId],
+    )
+  ).rows;
+  const agencyOfficers = (
+    await client.query(
+      "select * from public.agency_officers where agency_id = $1",
+      [agencyId],
+    )
+  ).rows;
+  const agencyStats = (
+    await client.query("select * from public.agency_stats where id = $1", [
+      agencyId,
+    ])
+  ).rows[0];
+  const officerIds = agencyOfficers.map(
+    (entry: { officer_id: string }) => entry.officer_id,
+  );
+  const officers = officerIds.length
+    ? (
+        await client.query("select * from public.officers where id = any($1)", [
+          officerIds,
+        ])
+      ).rows
+    : [];
+  const officerStats = officerIds.length
+    ? (
+        await client.query(
+          "select * from public.officers_stats where id = any($1)",
+          [officerIds],
+        )
+      ).rows
+    : [];
+  const agencyOfficerIds = agencyOfficers.map(
+    (entry: { id: string }) => entry.id,
+  );
+  const reportOfficers = agencyOfficerIds.length
+    ? (
+        await client.query(
+          "select * from public.review_officers where agency_officer_id = any($1)",
+          [agencyOfficerIds],
+        )
+      ).rows
+    : [];
+  const reportIds = [
+    ...new Set(
+      reportOfficers.map((entry: { review_id: string }) => entry.review_id),
+    ),
+  ];
+  const reports = reportIds.length
+    ? (
+        await client.query("select * from public.reviews where id = any($1)", [
+          reportIds,
+        ])
+      ).rows
+    : [];
+
+  // Find civil cases involving officers from this agency
+  const civilCaseIds = (
+    await client.query(
+      `select distinct cco.civil_case_id
+             from public.agency_officers ao
+             join public.civil_case_officers cco on cco.agency_officer_id = ao.id
+             where ao.agency_id = $1`,
+      [agencyId],
+    )
+  ).rows.map((row: { civil_case_id: string }) => row.civil_case_id);
+  const civilCases = civilCaseIds.length
+    ? (
+        await client.query(
+          "select * from public.civil_cases where id = any($1)",
+          [civilCaseIds],
+        )
+      ).rows
+    : [];
+  const civilCaseLinks = civilCaseIds.length
+    ? (
+        await client.query(
+          "select * from public.civil_case_links where civil_case_id = any($1)",
+          [civilCaseIds],
+        )
+      ).rows
+    : [];
+  // Get agency categories for civil cases through civil_case_officers → agency_officers → agency
+  const civilCaseAgencies = civilCaseIds.length
+    ? (
+        await client.query(
+          `
+              select distinct
+                cco.civil_case_id,
+                upper(a.category) as category
+              from public.civil_case_officers cco
+              join public.agency_officers ao on ao.id = cco.agency_officer_id
+              join public.agency a on ao.agency_id = a.id
+              where cco.civil_case_id = any($1)
+            `,
+          [civilCaseIds],
+        )
+      ).rows
+    : [];
+  const civilCaseOfficers = civilCaseIds.length
+    ? (
+        await client.query(
+          `select cco.civil_case_id, ao.officer_id
+                 from public.civil_case_officers cco
+                 join public.agency_officers ao on ao.id = cco.agency_officer_id
+                 where cco.civil_case_id = any($1)`,
+          [civilCaseIds],
+        )
+      ).rows
+    : [];
+  const civilOfficerIds = [
+    ...new Set(
+      civilCaseOfficers.map(
+        (entry: { officer_id: string }) => entry.officer_id,
+      ),
+    ),
+  ];
+  const civilOfficers = civilOfficerIds.length
+    ? (
+        await client.query("select * from public.officers where id = any($1)", [
+          civilOfficerIds,
+        ])
+      ).rows
+    : [];
+
+  return {
+    agency,
+    agencyLinks,
+    agencyPhones,
+    agencyOfficers,
+    agencyStats,
+    officers,
+    officerStats,
+    reports,
+    reportOfficers,
+    civilCases,
+    civilCaseLinks,
+    civilCaseAgencies,
+    civilCaseOfficers,
+    civilOfficers,
+  };
+});
+
+const officersById = mapBy(data.officers, "id");
+const officerStatsById = mapBy(data.officerStats, "id");
+const civilCaseLinksByCase = groupBy(data.civilCaseLinks, "civil_case_id");
+const civilCaseAgenciesByCase = groupBy(
+  data.civilCaseAgencies,
+  "civil_case_id",
+);
+const civilCaseOfficersByCase = groupBy(
+  data.civilCaseOfficers,
+  "civil_case_id",
+);
+const civilOfficersById = mapBy(data.civilOfficers, "id");
+
+const getCaseCategoryPath = (caseId: string | number) => {
+  const agencies = civilCaseAgenciesByCase[caseId] || [];
+  const normalized = agencies
+    .map((entry: { category?: string | null }) => entry.category?.toLowerCase())
+    .filter(Boolean);
+  if (normalized.includes("federal")) {
+    return "federal";
+  }
+  if (normalized.length) {
+    return normalized[0];
+  }
+  return data.agency.category?.toLowerCase() || "federal";
+};
+
+const employees = data.agencyOfficers
+  .filter((entry: { end_date?: string | null }) => !entry.end_date)
+  .map(
+    (entry: {
+      officer_id: string;
+      badge_number?: string | null;
+      start_date?: string | null;
+      end_date?: string | null;
+    }) => {
+      const officer = officersById[entry.officer_id];
+      const stats = officerStatsById[entry.officer_id];
+      return {
+        entry,
+        officer,
+        reportCount: stats?.review_count ?? 0,
+        rating: stats?.weighted_average ?? null,
+      };
+    },
+  );
+
+const agencyRatingPercent =
+  data.agencyStats && data.agencyStats.review_count > 0
+    ? Math.round(Number(data.agencyStats.weighted_average || 0) * 10)
+    : 0;
+
+const civilCases = data.civilCases.map(
+  (record: {
+    id: string;
+    title?: string | null;
+    cause_number?: string | null;
+    filed_date?: string | null;
+    court?: string | null;
+  }) => {
+    const links = civilCaseLinksByCase[record.id] || [];
+    const officerLinks = (civilCaseOfficersByCase[record.id] || []).map(
+      (entry: { officer_id: string }) => civilOfficersById[entry.officer_id],
+    );
+    const caseSlugValue = caseSlug(record);
+    const caseCategory = getCaseCategoryPath(record.id);
+    return {
+      ...record,
+      links,
+      officers: officerLinks.filter(Boolean),
+      caseSlug: caseSlugValue,
+      caseCategoryPath: caseCategory,
+      caseUrl: `/civil-litigation/${caseCategory}/${caseSlugValue}/`,
+    };
+  },
+);
+
+const reportedReports = data.reports
+  .map(
+    (report: {
+      incident_date: string;
+      slug: string;
+      category?: string | null;
+      agency_slug?: string | null;
+      agencySlug?: string | null;
+    }) => {
+      const reportStateSlug = getReportStateSlug({
+        category: report.category ?? null,
+        agencySlug: report.agencySlug ?? report.agency_slug ?? null,
+      });
+      const reportUrl = reportStateSlug
+        ? `/report/${reportStateSlug}/${report.slug}/`
+        : `/report/${report.slug}/`;
+      return {
+        ...report,
+        incidentDate: formatShortDate(report.incident_date),
+        url: reportUrl,
+      };
+    },
+  )
+  .sort((a, b) => {
+    const left = new Date(b.incident_date).getTime();
+    const right = new Date(a.incident_date).getTime();
+    return left - right;
+  });
+const civilCaseCount = civilCases.length;
+const reportCount = reportedReports.length;
+const personnelCount = employees.length;
+const categorySlug = data.agency.category?.toLowerCase() || "";
+const categoryMeta = US_STATE_TILES.find(
+  (entry) => entry.code.toLowerCase() === categorySlug,
+);
+const categoryLabel =
+  categorySlug === "federal"
+    ? "Federal"
+    : categoryMeta?.name || data.agency.category?.toUpperCase() || "State";
+const categoryPath = categorySlug
+  ? `/law-enforcement-agency/${categorySlug}/`
+  : "/law-enforcement-agency/";
+const agencyPath = `/law-enforcement-agency/${categorySlug}/${data.agency.slug}/`;
+const addCivilCaseHref = `/civil-litigation/new/?${new URLSearchParams({
+  path: agencyPath,
+  state: data.agency.category?.toLowerCase() || "",
+  message: `Add civil case for ${data.agency.name}`,
+}).toString()}`;
+const suggestEditHref = `/law-enforcement-agency/suggest-edit/?${new URLSearchParams(
+  {
+    path: agencyPath,
+    state: data.agency.category?.toLowerCase() || "",
+    message: `Suggest edit for ${data.agency.name}`,
+  },
+).toString()}`;
+const suggestPersonnelHref = `/personnel/new/?${new URLSearchParams({
+  agency: data.agency.name,
+  city: data.agency.city || "",
+  state: data.agency.state || "",
+  path: agencyPath,
+  message: `Suggest new personnel for ${data.agency.name}`,
+}).toString()}`;
+const reportHeroHref = `/report/new/?${new URLSearchParams({
+  department: data.agency.name,
+  path: agencyPath,
+  message: `Submit report for ${data.agency.name}`,
+}).toString()}`;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(agencyPath, siteUrl).toString();
+const disqusIdentifier = `agency:${data.agency.slug}`;
+const addressAvailable =
+  data.agency.address ||
+  data.agency.city ||
+  data.agency.state ||
+  data.agency.zip_code;
+const address = addressAvailable
+  ? {
+      "@type": "PostalAddress",
+      ...(data.agency.address ? { streetAddress: data.agency.address } : {}),
+      ...(data.agency.city ? { addressLocality: data.agency.city } : {}),
+      ...(data.agency.state ? { addressRegion: data.agency.state } : {}),
+      ...(data.agency.zip_code ? { postalCode: data.agency.zip_code } : {}),
+    }
+  : null;
+const contactPoints = data.agencyPhones.map(
+  (phone: { phone_number: string; label?: string | null }) => ({
+    "@type": "ContactPoint",
+    telephone: phone.phone_number,
+    ...(phone.label ? { contactType: phone.label } : {}),
+  }),
+);
+const sameAs = data.agencyLinks
+  .map((link: { url?: string | null }) => link.url)
+  .filter(Boolean);
+const organization = {
+  "@type": "GovernmentOrganization",
+  "@id": `${pageUrl}#organization`,
+  name: data.agency.name,
+  url: pageUrl,
+  ...(address ? { address } : {}),
+  ...(data.agency.contact_email ? { email: data.agency.contact_email } : {}),
+  ...(contactPoints.length ? { contactPoint: contactPoints } : {}),
+  ...(sameAs.length ? { sameAs } : {}),
+  ...(data.agency.state
+    ? { areaServed: { "@type": "AdministrativeArea", name: data.agency.state } }
+    : {}),
+};
+const websiteId = new URL("/", siteUrl).toString();
+const breadcrumb = {
+  "@type": "BreadcrumbList",
+  "@id": `${pageUrl}#breadcrumb`,
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Agencies",
+      item: new URL("/law-enforcement-agency/", siteUrl).toString(),
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: categoryLabel,
+      item: new URL(categoryPath, siteUrl).toString(),
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: data.agency.name,
+      item: pageUrl,
+    },
+  ],
+};
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": websiteId,
+      url: websiteId,
+      name: "PoliceConduct.org",
+    },
+    {
+      "@type": "ProfilePage",
+      "@id": pageUrl,
+      url: pageUrl,
+      name: `${data.agency.name} | PoliceConduct.org`,
+      description: `Profile for ${data.agency.name} with contact information and recent civil litigation references.`,
+      isPartOf: { "@id": websiteId },
+      mainEntity: { "@id": organization["@id"] },
+      breadcrumb: { "@id": breadcrumb["@id"] },
+    },
+    breadcrumb,
+    organization,
+  ],
+};
+---
+
+<SiteLayout
+  title={`${data.agency.name} | PoliceConduct.org`}
+  description={`Profile for ${data.agency.name} with contact information and recent civil litigation references.`}
+  pagePath={agencyPath}
+  structuredData={structuredData}
+>
+  <main class="flex-grow-1 py-vh-3">
+    <div class="container">
+      <nav aria-label="Breadcrumb">
+        <ol class="breadcrumb mb-3">
+          <li class="breadcrumb-item">
+            <a class="link-dark" href="/law-enforcement-agency/">Agencies</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a class="link-dark" href={categoryPath}>{categoryLabel}</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            {data.agency.name}
+          </li>
+        </ol>
+      </nav>
+      <div class="row justify-content-between align-items-start">
+        <div class="col-lg-7">
+          <p class="text-uppercase small text-muted mb-2">Agency profile</p>
+          <h1 class="display-5 fw-bold">{data.agency.name}</h1>
+          <p class="text-muted">
+            {data.agency.city || "Unknown"}, {data.agency.state}
+          </p>
+        </div>
+        <div class="col-lg-4">
+          <div class="border p-4 bg-white shadow-sm">
+            <h2 class="h6 text-uppercase text-muted">Address</h2>
+            <p class="mb-1">{data.agency.address || "Not listed"}</p>
+            <p class="mb-0">
+              {data.agency.city || "Unknown"}, {data.agency.state},{" "}
+              {data.agency.zip_code || "N/A"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-4 g-4">
+        <div class="col-lg-6" data-aos="fade-up">
+          <div class="border p-4 h-100">
+            <h2 class="h6 text-uppercase text-muted">Contact Information</h2>
+            <p class="mb-1">{data.agency.contact_name || "Contact pending"}</p>
+            <p class="mb-2">
+              {
+                data.agency.contact_email ? (
+                  <a href={`mailto:${data.agency.contact_email}`}>
+                    {data.agency.contact_email}
+                  </a>
+                ) : (
+                  "No email listed"
+                )
+              }
+            </p>
+            <h3 class="h6 text-uppercase text-muted mt-3">Phone Numbers</h3>
+            {
+              data.agencyPhones.length ? (
+                data.agencyPhones.map(
+                  (phone: { phone_number: string; label?: string | null }) => (
+                    <p class="mb-1">
+                      {phone.phone_number}{" "}
+                      {phone.label ? `(${phone.label})` : ""}
+                    </p>
+                  ),
+                )
+              ) : (
+                <p class="mb-0">No phone numbers listed.</p>
+              )
+            }
+            {
+              data.agencyLinks.length ? (
+                <>
+                  <h3 class="h6 text-uppercase text-muted mt-3">Links</h3>
+                  {data.agencyLinks.map(
+                    (link: { url?: string | null; label?: string | null }) => (
+                      <p class="mb-1">
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {link.label || link.url}
+                        </a>
+                      </p>
+                    ),
+                  )}
+                </>
+              ) : null
+            }
+          </div>
+        </div>
+        <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
+          <div class="border p-4 h-100">
+            <h2 class="h6 text-uppercase text-muted">Cumulative ratings</h2>
+            <div
+              class="d-flex flex-column flex-md-row align-items-center gap-4"
+            >
+              <div
+                class="position-relative"
+                style="width: 160px; height: 160px"
+              >
+                <svg viewBox="0 0 120 120" class="w-100 h-100">
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="48"
+                    fill="none"
+                    stroke="#e5e7eb"
+                    stroke-width="12"></circle>
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="48"
+                    fill="none"
+                    stroke="#111827"
+                    stroke-width="12"
+                    stroke-dasharray={`${agencyRatingPercent * 3.02} 302`}
+                    stroke-linecap="round"
+                    transform="rotate(-90 60 60)"></circle>
+                </svg>
+                <div
+                  class="position-absolute top-50 start-50 translate-middle text-center"
+                >
+                  <div class="h4 mb-0">{agencyRatingPercent}%</div>
+                  <div class="small text-muted">Rated</div>
+                </div>
+              </div>
+              <div>
+                {
+                  data.agencyStats && data.agencyStats.review_count > 0 ? (
+                    <p class="mb-2 text-muted">
+                      {data.agencyStats.review_count} reports rated for this
+                      agency.
+                    </p>
+                  ) : (
+                    <p class="mb-2 text-muted">
+                      No reports published yet for this agency. Submit a report
+                      to help build a transparent record.
+                    </p>
+                  )
+                }
+                <div class="d-flex flex-wrap gap-2">
+                  <a
+                    class="btn btn-outline-dark rounded-0"
+                    href={reportHeroHref}
+                  >
+                    Submit a report
+                  </a>
+                  <a
+                    class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
+                    href={`/about/contact?whoami=Subscriber&message=Please%20notify%20of%20any%20changes%20to%20the%20following%20page(s):%20/law-enforcement-agency/${data.agency.category}/${data.agency.slug}/`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="lucide lucide-bell"
+                    >
+                      <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
+                      <path
+                        d="M3.262 15a4 4 0 0 0 3.938 3h9.6a4 4 0 0 0 3.938-3"
+                      ></path>
+                      <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
+                    </svg>
+                    <span>Subscribe</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5" data-aos="fade-up">
+        <ProfileTabs
+          tabs={[
+            {
+              id: "agency-litigation",
+              label: "Civil litigation",
+              badge: civilCaseCount,
+              tabType: "litigation",
+            },
+            {
+              id: "agency-reports",
+              label: "Reports",
+              badge: reportCount,
+              tabType: "reports",
+            },
+            {
+              id: "agency-personnel",
+              label: "Personnel",
+              badge: personnelCount,
+              tabType: "personnel",
+            },
+          ]}
+          extraNavClasses="mb-3"
+          litigation={{
+            cases: civilCases,
+            ctaHref: addCivilCaseHref,
+          }}
+          reports={{
+            items: reportedReports,
+            ctaHref: reportHeroHref,
+            layout: "list",
+          }}
+          personnel={{
+            entries: employees,
+            ctaHref: suggestPersonnelHref,
+          }}
+        />
+      </div>
+
+      <div class="alert alert-light border-dark rounded-0 mt-5" role="alert">
+        <p class="mb-3">
+          Have corrections or want to submit a report about this person?
+        </p>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-outline-dark rounded-0" href={suggestEditHref}>
+            Suggest Edit
+          </a>
+        </div>
+        <div class="mt-2">
+          <a
+            class="link-dark small"
+            href={`/about/contact?whoami=Profile%20Owner&message=I%20would%20like%20to%20claim%20ownership%20of%20this%20profile.%0AProfile%20path:%20/law-enforcement-agency/${data.agency.category}/${data.agency.slug}/`}
+          >
+            Claim this profile
+          </a>
+        </div>
+      </div>
+
+      <div class="mt-5">
+        <h2 class="h5 text-uppercase text-muted">Comments</h2>
+        <DisqusComments pageUrl={pageUrl} disqusIdentifier={disqusIdentifier} />
+      </div>
+    </div>
+  </main>
+</SiteLayout>

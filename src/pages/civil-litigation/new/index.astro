@@ -1,0 +1,243 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout
+  title="Submit Civil Litigation | PoliceConduct.org"
+  pagePath="/civil-litigation/new/"
+>
+  <main class="">
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">
+              Civil litigation intake
+            </p>
+            <h1 class="display-5 fw-bold mb-3">Suggest a new civil case</h1>
+            <p class="text-muted mb-0">
+              Provide the public record details we need to add a civil
+              litigation entry to the statewide list.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-8">
+            <div class="border p-4 bg-white shadow-sm">
+              <h2 class="h5 fw-semibold">Case submission form</h2>
+              <p class="text-muted mb-3">
+                We publish verified cases with a public filer or news link.
+              </p>
+              <form
+                name="civil-litigation-new"
+                method="POST"
+                data-netlify="true"
+                data-netlify-honeypot="organization"
+                class="needs-validation"
+                novalidate
+              >
+                <input
+                  type="hidden"
+                  name="form-name"
+                  value="civil-litigation-new"
+                />
+                <div class="honeypot visually-hidden">
+                  <label>
+                    Organization
+                    <input type="text" name="organization" />
+                  </label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="caseTitle"
+                    name="caseTitle"
+                    placeholder="Case title"
+                    required
+                  />
+                  <label for="caseTitle">Case title*</label>
+                  <div class="invalid-feedback">Please add a case title.</div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="jurisdiction"
+                    name="jurisdiction"
+                    placeholder="State code or federal"
+                    required
+                  />
+                  <label for="jurisdiction"
+                    >Jurisdiction (state code or federal)*</label
+                  >
+                  <div class="form-text">
+                    Use the two-letter state abbreviation (e.g., TX) or
+                    "federal".
+                  </div>
+                  <div class="invalid-feedback">
+                    Please add the jurisdiction for this case.
+                  </div>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="causeNumber"
+                        name="causeNumber"
+                        placeholder="Cause number"
+                      />
+                      <label for="causeNumber">Cause number</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="court"
+                        name="court"
+                        placeholder="Court"
+                      />
+                      <label for="court">Court</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="filedDate"
+                    name="filedDate"
+                    placeholder="Filed date"
+                  />
+                  <label for="filedDate">Filed date</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="plaintiff"
+                    name="plaintiff"
+                    placeholder="Plaintiff"
+                  />
+                  <label for="plaintiff">Plaintiff</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="defendants"
+                    name="defendants"
+                    placeholder="Defendants"
+                    style="height: 120px"></textarea>
+                  <label for="defendants"
+                    >Defendants (list officers/agencies)</label
+                  >
+                  <div class="form-text">
+                    List personnel names, badge numbers, or departments
+                    referenced in the suit.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="summary"
+                    name="summary"
+                    placeholder="Summary"
+                    style="height: 130px"></textarea>
+                  <label for="summary">Summary / allegations</label>
+                  <div class="form-text">
+                    Explain the allegations or key facts we can verify.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="links"
+                    name="links"
+                    placeholder="Links"
+                    style="height: 110px"></textarea>
+                  <label for="links">Links (docket, news, filings)</label>
+                  <div class="form-text">
+                    Include URLs to dockets, court records, or reporting.
+                  </div>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="reporterName"
+                        name="reporterName"
+                        placeholder="Your name"
+                      />
+                      <label for="reporterName">Your name</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="email"
+                        class="form-control"
+                        id="reporterEmail"
+                        name="reporterEmail"
+                        placeholder="Email"
+                        required
+                      />
+                      <label for="reporterEmail">Email*</label>
+                      <div class="invalid-feedback">
+                        We need an email to follow up if we have verification
+                        questions.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div data-netlify-recaptcha="true"></div>
+                <button type="submit" class="btn btn-dark rounded-0 w-100 mt-4">
+                  Submit civil litigation
+                </button>
+              </form>
+              <p class="small text-muted mt-3 mb-0">
+                If you have public records, share links in the links field or
+                contact us directly via <a href="/about/contact">Contact Us</a>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script is:inline>
+    (function () {
+      const form = document.querySelector('form[name="civil-litigation-new"]');
+      if (!form) {
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      const jurisdictionInput = document.getElementById("jurisdiction");
+      if (jurisdictionInput) {
+        const jurisdictionParam = params.get("jurisdiction");
+        if (jurisdictionParam) {
+          const trimmed = jurisdictionParam.trim();
+          jurisdictionInput.value =
+            trimmed.length === 2 ? trimmed.toUpperCase() : trimmed;
+        }
+      }
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+      });
+    })();
+  </script>
+</SiteLayout>

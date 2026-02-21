@@ -1,0 +1,50 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+---
+
+<SiteLayout
+  title="Page Not Found | PoliceConduct.org"
+  description="PoliceConduct.org page not found."
+  pagePath="/404/"
+>
+  <main class="flex-grow-1">
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">404 NOT FOUND</p>
+            <h1 class="display-5 fw-bold mb-3">
+              404 — Dispatch Received Your Request
+            </h1>
+            <p class="text-muted">
+              Units attempted to locate the page but it appears to have left the
+              scene.
+            </p>
+            <p class="text-muted mt-4">If you saw it, we'd love a statement.</p>
+            <div class="d-flex flex-wrap gap-2 mt-4">
+              <a class="btn btn-dark rounded-0" href="/">Home</a>
+              <a
+                class="btn btn-outline-dark rounded-0"
+                href="/issue/new/"
+                id="report-issue-link"
+              >
+                Report this issue
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script is:inline>
+    (function () {
+      const link = document.getElementById("report-issue-link");
+      if (!link) {
+        return;
+      }
+      const message = `Page not found: ${window.location.href}`;
+      const params = new URLSearchParams({ message });
+      link.href = `/issue/new/?${params.toString()}`;
+    })();
+  </script>
+</SiteLayout>

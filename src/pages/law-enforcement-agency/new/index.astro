@@ -1,0 +1,233 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout
+  title="Suggest New Agency | PoliceConduct.org"
+  pagePath="/law-enforcement-agency/new/"
+>
+  <main class="">
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">
+              New agency intake
+            </p>
+            <h1 class="display-5 fw-bold mb-3">Suggest a new agency</h1>
+            <p class="text-muted mb-0">
+              Share verified contact details and background information so we
+              can add a new agency profile.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-8">
+            <div class="border p-4 bg-white shadow-sm">
+              <h2 class="h5 fw-semibold">Agency intake form</h2>
+              <p class="text-muted mb-3">
+                Fill in the public-facing details shown on agency profiles.
+                Missing information can be added later by our team.
+              </p>
+              <div class="alert alert-warning rounded-0 small">
+                Avoid submitting private or sensitive data. Provide public
+                records, press coverage, or confirmed contact information only.
+              </div>
+              <form
+                name="agency-new-suggestion"
+                method="POST"
+                data-netlify="true"
+                data-netlify-honeypot="organization"
+                class="needs-validation"
+                novalidate
+              >
+                <input
+                  type="hidden"
+                  name="form-name"
+                  value="agency-new-suggestion"
+                />
+                <div class="honeypot visually-hidden">
+                  <label>
+                    Organization
+                    <input type="text" name="organization" />
+                  </label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="agencyName"
+                    name="agencyName"
+                    placeholder="Agency name"
+                    required
+                  />
+                  <label for="agencyName">Agency name*</label>
+                  <div class="invalid-feedback">
+                    Please provide an agency name.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="category"
+                    name="category"
+                    placeholder="federal or state code (CA)"
+                    required
+                  />
+                  <label for="category">Agency category*</label>
+                  <div class="invalid-feedback">Please specify a category.</div>
+                  <div class="form-text">
+                    Use <code>federal</code> for federal agencies or the lowercase
+                    state abbreviation for other agencies.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="city"
+                    name="city"
+                    placeholder="City"
+                  />
+                  <label for="city">City</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="state"
+                    name="state"
+                    placeholder="State"
+                  />
+                  <label for="state">State (full name)</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="address"
+                    name="address"
+                    placeholder="123 Main St"
+                  />
+                  <label for="address">Address</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="zipCode"
+                    name="zipCode"
+                    placeholder="Zip code"
+                  />
+                  <label for="zipCode">Zip code</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="contactName"
+                    name="contactName"
+                    placeholder="Contact name"
+                  />
+                  <label for="contactName">Contact name</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="contactEmail"
+                    name="contactEmail"
+                    placeholder="contact@example.com"
+                  />
+                  <label for="contactEmail">Contact email</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="url"
+                    class="form-control"
+                    id="website"
+                    name="website"
+                    placeholder="https://"
+                  />
+                  <label for="website">Website</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="phoneNumbers"
+                    name="phoneNumbers"
+                    placeholder="Phone numbers"
+                    style="height: 110px"></textarea>
+                  <label for="phoneNumbers">Phone numbers / labels</label>
+                  <div class="form-text">
+                    List each number on its own line with context (main line,
+                    complaints, etc.).
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="civilLitigation"
+                    name="civilLitigation"
+                    placeholder="Civil litigation references"
+                    style="height: 130px"></textarea>
+                  <label for="civilLitigation"
+                    >Civil litigation references</label
+                  >
+                  <div class="form-text">
+                    Share any public civil litigation cases, press coverage, or
+                    links.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="notes"
+                    name="notes"
+                    placeholder="Additional notes"
+                    style="height: 130px"></textarea>
+                  <label for="notes">Notes</label>
+                  <div class="form-text">
+                    Use this field for mission statements, oversight contacts,
+                    or other context.
+                  </div>
+                </div>
+                <div data-netlify-recaptcha="true"></div>
+                <button type="submit" class="btn btn-dark rounded-0 w-100">
+                  Submit agency suggestion
+                </button>
+              </form>
+              <p class="small text-muted mt-3 mb-0">
+                Need to provide supporting documents? Upload them to a public
+                link and include it in the notes or civil litigation fields, or
+                reach out via
+                <a href="/about/contact">Contact Us</a>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script is:inline>
+    (function () {
+      const form = document.querySelector('form[name="agency-new-suggestion"]');
+      if (!form) {
+        return;
+      }
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+      });
+    })();
+  </script>
+</SiteLayout>

@@ -1,0 +1,19 @@
+channels:
+  - name: LongIslandAudit
+    url: https://www.youtube.com/@LongIslandAudit
+    auditor: SeanPaul Reyes
+  - name: AuditTheAudit
+    url: https://www.youtube.com/@AuditTheAudit
+    auditor: unknown
+  - name: LackLuster
+    url: https://www.youtube.com/@LackLuster
+    auditor: unknown
+  - name: AmagansettPress
+    url: https://www.youtube.com/@AmagansettPress
+    auditor: Jason Gutterman
+  - name: TheCivilRightsLawyer
+    url: https://www.youtube.com/@TheCivilRightsLawyer
+    auditor: John Bryan
+  - name: JamesFreeman
+    url: https://www.youtube.com/@JamesFreeman
+    auditor: unknown

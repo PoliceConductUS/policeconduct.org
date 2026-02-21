@@ -1,0 +1,159 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout
+  title="Edit Civil Litigation | PoliceConduct.org"
+  pagePath="/civil-litigation/suggest-edit/"
+>
+  <main class="">
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">
+              Civil litigation corrections
+            </p>
+            <h1 class="display-5 fw-bold mb-3">Suggest an edit</h1>
+            <p class="text-muted mb-0">
+              Provide verified corrections or updates to a published civil case.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-8">
+            <div class="border p-4 bg-white shadow-sm">
+              <h2 class="h5 fw-semibold">Correction form</h2>
+              <p class="text-muted mb-3">
+                Tell us what to change and share your public source so we can
+                verify the claim.
+              </p>
+              <form
+                name="civil-litigation-edit-suggestion"
+                method="POST"
+                data-netlify="true"
+                data-netlify-honeypot="organization"
+                class="needs-validation"
+                novalidate
+              >
+                <input
+                  type="hidden"
+                  name="form-name"
+                  value="civil-litigation-edit-suggestion"
+                />
+                <div class="honeypot visually-hidden">
+                  <label>
+                    Organization
+                    <input type="text" name="organization" />
+                  </label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="casePath"
+                    name="casePath"
+                    placeholder="/civil-litigation/tx/texas-case/"
+                    required
+                  />
+                  <label for="casePath">Civil litigation path*</label>
+                  <div class="invalid-feedback">
+                    Please include the case path you're updating.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="caseTitle"
+                    name="caseTitle"
+                    placeholder="Case title"
+                  />
+                  <label for="caseTitle">Case title</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="updateDetails"
+                    name="updateDetails"
+                    placeholder="Your correction"
+                    style="height: 130px"></textarea>
+                  <label for="updateDetails">Correction details</label>
+                  <div class="form-text">
+                    Be specific about the field that needs updating and cite any
+                    public source.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="publicSource"
+                    name="publicSource"
+                    placeholder="Source links"
+                    style="height: 110px"></textarea>
+                  <label for="publicSource">Source links</label>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="reporterName"
+                        name="reporterName"
+                        placeholder="Your name"
+                      />
+                      <label for="reporterName">Your name</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="email"
+                        class="form-control"
+                        id="reporterEmail"
+                        name="reporterEmail"
+                        placeholder="Email"
+                        required
+                      />
+                      <label for="reporterEmail">Email*</label>
+                      <div class="invalid-feedback">
+                        We need an email to confirm corrections.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div data-netlify-recaptcha="true"></div>
+                <button type="submit" class="btn btn-dark rounded-0 w-100 mt-4">
+                  Submit correction
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script is:inline>
+    (function () {
+      const form = document.querySelector(
+        'form[name="civil-litigation-edit-suggestion"]',
+      );
+      if (!form) {
+        return;
+      }
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+      });
+    })();
+  </script>
+</SiteLayout>

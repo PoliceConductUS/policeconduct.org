@@ -1,0 +1,25 @@
+name: Cleanup Preview
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    environment: preview
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Delete preview from S3
+        run: |
+          aws s3 rm \
+            s3://${{ vars.S3_BUCKET }}/pr-${{ github.event.pull_request.number }}/ \
+            --recursive

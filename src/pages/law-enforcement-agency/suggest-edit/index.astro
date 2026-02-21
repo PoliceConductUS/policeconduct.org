@@ -1,0 +1,246 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout
+  title="Suggest Agency Edit | PoliceConduct.org"
+  pagePath="/law-enforcement-agency/suggest-edit/"
+>
+  <main class="">
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">
+              Agency profile updates
+            </p>
+            <h1 class="display-5 fw-bold mb-3">Suggest an agency edit</h1>
+            <p class="text-muted mb-0">
+              Share verified corrections or missing information for an agency
+              profile. We review every submission before updating a public
+              profile.
+            </p>
+            <p class="small text-muted mt-3 mb-0">
+              Editing: <span id="agencyPathDisplay">No path provided</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-8">
+            <div class="border p-4 bg-white shadow-sm">
+              <h2 class="h5 fw-semibold">Agency edit form</h2>
+              <p class="text-muted mb-3">
+                Use this form to suggest updates to an agency profile. You can
+                fill in only the fields you are correcting.
+              </p>
+              <div class="alert alert-warning rounded-0 small">
+                Please do not include personal addresses, phone numbers, family
+                details, or other private information. Submissions should focus
+                on public, verifiable facts.
+              </div>
+              <form
+                name="agency-edit-suggestion"
+                method="POST"
+                data-netlify="true"
+                data-netlify-honeypot="organization"
+                class="needs-validation"
+                novalidate
+              >
+                <input
+                  type="hidden"
+                  name="form-name"
+                  value="agency-edit-suggestion"
+                />
+                <div class="honeypot visually-hidden">
+                  <label>
+                    Organization
+                    <input type="text" name="organization" />
+                  </label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="agencyPath"
+                    name="agencyPath"
+                    placeholder="/law-enforcement-agency/tx/irving-police-department/"
+                    required
+                  />
+                  <label for="agencyPath">Agency profile path*</label>
+                  <div class="invalid-feedback">
+                    Please include the agency profile path.
+                  </div>
+                  <div class="form-text">
+                    Example:
+                    /law-enforcement-agency/tx/irving-police-department/
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="agencyName"
+                    name="agencyName"
+                    placeholder="Agency name"
+                  />
+                  <label for="agencyName">Agency name</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="jurisdiction"
+                    name="jurisdiction"
+                    placeholder="Jurisdiction (city/state/federal)"
+                  />
+                  <label for="jurisdiction"
+                    >Jurisdiction (city/state/federal)</label
+                  >
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="departmentWebsite"
+                    name="departmentWebsite"
+                    placeholder="https://"
+                  />
+                  <label for="departmentWebsite">Department website</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="departmentHead"
+                    name="departmentHead"
+                    placeholder="Chief or agency lead"
+                  />
+                  <label for="departmentHead">Chief or agency lead</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="pastAgencyInfo"
+                    name="pastAgencyInfo"
+                    placeholder="Past agency information"
+                    style="height: 110px"></textarea>
+                  <label for="pastAgencyInfo">Past agency information</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="url"
+                    class="form-control"
+                    id="postOrgLink"
+                    name="postOrgLink"
+                    placeholder="P.O.S.T. organization link"
+                  />
+                  <label for="postOrgLink">
+                    Peace Officer's Standards and Training (P.O.S.T.) org link
+                  </label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="url"
+                    class="form-control"
+                    id="profilePhotoLink"
+                    name="profilePhotoLink"
+                    placeholder="Profile picture link"
+                  />
+                  <label for="profilePhotoLink">Profile picture link</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="socialLinks"
+                    name="socialLinks"
+                    placeholder="Social media links"
+                    style="height: 110px"></textarea>
+                  <label for="socialLinks">Social media links</label>
+                  <div class="form-text">
+                    List any official or public social profiles, one per line.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="civilLitigation"
+                    name="civilLitigation"
+                    placeholder="Civil litigation corrections"
+                    style="height: 130px"></textarea>
+                  <label for="civilLitigation"
+                    >Civil litigation corrections</label
+                  >
+                  <div class="form-text">
+                    Include case numbers, court, and links if available.
+                  </div>
+                </div>
+                <div data-netlify-recaptcha="true"></div>
+                <button type="submit" class="btn btn-dark rounded-0 w-100">
+                  Submit edit suggestion
+                </button>
+              </form>
+              <p class="small text-muted mt-3 mb-0">
+                If you have documents or public records, include them in the
+                civil litigation field or submit a separate message via
+                <a href="/about/contact">Contact Us</a>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script is:inline>
+    (function () {
+      const form = document.querySelector(
+        'form[name="agency-edit-suggestion"]',
+      );
+      if (!form) {
+        return;
+      }
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+      });
+    })();
+  </script>
+
+  <script is:inline>
+    (function () {
+      const pathInput = document.getElementById("agencyPath");
+      const pathDisplay = document.getElementById("agencyPathDisplay");
+      if (!pathInput || !pathDisplay) {
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      const rawValue =
+        params.get("path") || params.get("agency") || params.get("profile");
+      if (rawValue) {
+        const value = rawValue.trim();
+        if (value) {
+          pathInput.value = value;
+          pathDisplay.textContent = value;
+        }
+      }
+      const jurisdictionInput = document.getElementById("jurisdiction");
+      if (jurisdictionInput) {
+        const jurisdictionParam = params.get("jurisdiction");
+        if (jurisdictionParam) {
+          jurisdictionInput.value = jurisdictionParam.toUpperCase();
+        }
+      }
+      pathInput.addEventListener("input", function () {
+        const current = pathInput.value.trim();
+        pathDisplay.textContent = current || "No path provided";
+      });
+    })();
+  </script>
+</SiteLayout>

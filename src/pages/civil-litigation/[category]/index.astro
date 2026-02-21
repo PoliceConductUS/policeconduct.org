@@ -1,0 +1,321 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+import { withDb } from "../../../lib/db.js";
+import { groupBy, mapBy } from "../../../lib/data.js";
+import { US_STATE_TILES } from "../../../lib/geo/states.js";
+import {
+  buildItemList,
+  buildWebPage,
+  getSiteUrl,
+} from "../../../lib/structured-data.js";
+
+type OfficerRef = {
+  id: string;
+  slug?: string | null;
+  first_name: string;
+  last_name: string;
+};
+
+export async function getStaticPaths() {
+  return [
+    ...US_STATE_TILES.map((state) => ({
+      params: { category: state.code.toLowerCase() },
+    })),
+    { params: { category: "federal" } },
+  ];
+}
+
+const { category } = Astro.params;
+const categoryParam = (category || "").toLowerCase();
+const categoryCode = categoryParam.toUpperCase();
+const categoryMeta = US_STATE_TILES.find(
+  (entry) => entry.code.toLowerCase() === categoryParam,
+);
+const categoryLabel =
+  categoryParam === "federal" ? "Federal" : categoryMeta?.name || categoryCode;
+
+const {
+  civilCases = [],
+  civilCaseLinks = [],
+  civilCaseOfficers = [],
+  officers = [],
+} = await withDb(async (client) => {
+  // Find case IDs by joining civil_case_officers → agency_officers → agency
+  const caseIdResult = await client.query(
+    `
+      select distinct cco.civil_case_id
+      from public.civil_case_officers cco
+      join public.agency_officers ao on ao.id = cco.agency_officer_id
+      join public.agency a on ao.agency_id = a.id
+      where upper(a.category) = $1
+    `,
+    [categoryCode],
+  );
+  const caseIds = caseIdResult.rows.map(
+    (row: { civil_case_id: string }) => row.civil_case_id,
+  );
+  if (!caseIds.length) {
+    return {
+      civilCases: [],
+      civilCaseLinks: [],
+      civilCaseOfficers: [],
+      officers: [],
+    };
+  }
+
+  const [casesResult, linksResult, caseOfficersResult] = await Promise.all([
+    client.query("select * from public.civil_cases where id = any($1)", [
+      caseIds,
+    ]),
+    client.query(
+      "select * from public.civil_case_links where civil_case_id = any($1)",
+      [caseIds],
+    ),
+    client.query(
+      `select cco.civil_case_id, ao.officer_id
+       from public.civil_case_officers cco
+       join public.agency_officers ao on ao.id = cco.agency_officer_id
+       where cco.civil_case_id = any($1)`,
+      [caseIds],
+    ),
+  ]);
+
+  const officerIds = [
+    ...new Set(
+      caseOfficersResult.rows
+        .map((entry: { officer_id: string }) => entry.officer_id)
+        .filter(Boolean),
+    ),
+  ];
+  const officerDetails = officerIds.length
+    ? (
+        await client.query("select * from public.officers where id = any($1)", [
+          officerIds,
+        ])
+      ).rows
+    : [];
+
+  return {
+    civilCases: casesResult.rows,
+    civilCaseLinks: linksResult.rows,
+    civilCaseOfficers: caseOfficersResult.rows,
+    officers: officerDetails,
+  };
+});
+
+const linksByCase = groupBy(civilCaseLinks, "civil_case_id");
+const officersByCase = groupBy(civilCaseOfficers, "civil_case_id");
+const officersById = mapBy(officers, "id");
+
+const casesWithDetails = [...civilCases]
+  .map((caseItem) => ({
+    ...caseItem,
+    links: linksByCase[caseItem.id] || [],
+    officers: (officersByCase[caseItem.id] || [])
+      .map((entry: { officer_id: string }) => officersById[entry.officer_id])
+      .filter(Boolean),
+  }))
+  .sort((a, b) => {
+    const aDate = new Date(a.filed_date || a.created_at || 0).getTime();
+    const bDate = new Date(b.filed_date || b.created_at || 0).getTime();
+    return bDate - aDate;
+  });
+
+const caseCount = casesWithDetails.length;
+const pagePath = categoryParam
+  ? `/civil-litigation/${categoryParam}/`
+  : "/civil-litigation/";
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const formatIsoDate = (value?: string | null) => {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+};
+const caseItems = casesWithDetails.map((caseItem, index) => {
+  const caseLinks = (caseItem.links || [])
+    .map((link: { url?: string | null }) => link.url)
+    .filter(Boolean);
+  const filedDateIso = caseItem.filed_date
+    ? formatIsoDate(caseItem.filed_date)
+    : null;
+  const legalCase = {
+    "@type": "LegalCase",
+    name: caseItem.title || caseItem.cause_number || "Civil case",
+    ...(caseItem.cause_number ? { identifier: caseItem.cause_number } : {}),
+    ...(filedDateIso ? { dateFiled: filedDateIso } : {}),
+    ...(caseItem.court ? { court: caseItem.court } : {}),
+    ...(caseLinks.length ? { sameAs: caseLinks } : {}),
+  };
+  return {
+    "@type": "ListItem",
+    position: index + 1,
+    item: legalCase,
+  };
+});
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: `Civil litigation in ${categoryLabel} | PoliceConduct.org`,
+  description: `Civil litigation cases tied to ${categoryLabel} agencies and personnel.`,
+  type: "CollectionPage",
+});
+const caseItemList = buildItemList(caseItems);
+if (caseItemList) {
+  structuredData.mainEntity = caseItemList;
+}
+const stateName = categoryLabel;
+---
+
+<SiteLayout
+  title={`Civil litigation in ${categoryLabel} | PoliceConduct.org`}
+  description={`Civil litigation cases tied to ${categoryLabel} agencies and personnel.`}
+  pagePath={pagePath}
+  structuredData={structuredData}
+>
+  <main class="">
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row align-items-end">
+          <div class="col-lg-8">
+            <nav aria-label="Breadcrumb">
+              <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item">
+                  <a class="link-dark" href="/">Home</a>
+                </li>
+                <li class="breadcrumb-item">
+                  <a class="link-dark" href="/civil-litigation/"
+                    >Civil litigation</a
+                  >
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">
+                  {stateName}
+                </li>
+              </ol>
+            </nav>
+            <p class="text-uppercase small text-muted mb-2">
+              Civil litigation • {categoryLabel}
+            </p>
+            <h1 class="display-4 fw-bold mb-3">
+              {categoryLabel} civil litigation
+            </h1>
+            <p class="text-muted">
+              {
+                caseCount
+                  ? `We track ${caseCount} public civil cases referencing agencies categorized for ${categoryLabel}.`
+                  : `No civil litigation has been published for ${categoryLabel} agencies yet.`
+              }
+            </p>
+          </div>
+          <div class="col-lg-4 text-lg-end">
+            <a class="btn btn-outline-dark rounded-0" href="/civil-litigation/">
+              Back to map
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row">
+          <div class="col-12">
+            {
+              caseCount ? (
+                <div class="table-responsive">
+                  <table class="table table-striped align-middle">
+                    <thead>
+                      <tr>
+                        <th scope="col">Year</th>
+                        <th scope="col">Cause #</th>
+                        <th scope="col">Case (plaintiff → defendants)</th>
+                        <th scope="col">Court / notes</th>
+                        <th scope="col">Source</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {casesWithDetails.map((caseItem) => {
+                        const sourceLink = caseItem.links?.[0];
+                        return (
+                          <tr>
+                            <td>
+                              {caseItem.filed_date
+                                ? new Date(caseItem.filed_date).getFullYear()
+                                : "—"}
+                            </td>
+                            <td>
+                              <strong>{caseItem.cause_number || "—"}</strong>
+                            </td>
+                            <td>
+                              <strong>
+                                {caseItem.title || "Unnamed case"}
+                              </strong>
+                              {caseItem.officers.length ? (
+                                <>
+                                  {" "}
+                                  —{" "}
+                                  {caseItem.officers.map(
+                                    (officer: OfficerRef, index: number) => (
+                                      <>
+                                        {index > 0 ? ", " : null}
+                                        {officer.slug ? (
+                                          <a
+                                            href={`/personnel/${officer.slug}/`}
+                                          >
+                                            {officer.first_name}{" "}
+                                            {officer.last_name}
+                                          </a>
+                                        ) : (
+                                          `${officer.first_name} ${officer.last_name}`
+                                        )}
+                                      </>
+                                    ),
+                                  )}
+                                </>
+                              ) : null}
+                            </td>
+                            <td>{caseItem.court || "—"}</td>
+                            <td>
+                              {sourceLink ? (
+                                <a
+                                  href={sourceLink.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {sourceLink.label || "Source"}
+                                </a>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div
+                  class="alert alert-secondary rounded-0 border-dark d-flex flex-column gap-2"
+                  role="status"
+                >
+                  <span>
+                    No civil litigation listed yet for {categoryLabel}.
+                  </span>
+                  <a
+                    class="btn btn-dark rounded-0 w-auto"
+                    href={`/civil-litigation/new/?jurisdiction=${categoryParam}`}
+                  >
+                    Add one now
+                  </a>
+                </div>
+              )
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>

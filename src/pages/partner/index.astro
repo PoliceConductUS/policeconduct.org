@@ -1,0 +1,171 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+
+const partnerTracks = [
+  {
+    slug: "law-enforcement",
+    title: "Law Enforcement Agencies",
+    summary:
+      "Coordinate roster updates, embed accountability tools, and streamline transparency requests.",
+    badge: "Agencies",
+  },
+  {
+    slug: "peace-officer-standards-and-training",
+    title: "POST Commissions",
+    summary:
+      "Share certification data, decertification notices, and training requirements with the public.",
+    badge: "Regulators",
+  },
+  {
+    slug: "prosecutor",
+    title: "Prosecutors",
+    summary:
+      "Surface officer credibility disclosures and share misconduct patterns with your teams.",
+    badge: "Justice partners",
+  },
+  {
+    slug: "law-firm",
+    title: "Law Firms",
+    summary:
+      "Bring case files, subpoenas, and community reports into one unified profile for your matters.",
+    badge: "Legal",
+  },
+  {
+    slug: "bar-association",
+    title: "Bar Associations",
+    summary:
+      "Create referral pathways for civil rights counsel and publish verified disciplinary actions.",
+    badge: "Legal",
+  },
+  {
+    slug: "academic",
+    title: "Academic Researchers",
+    summary:
+      "Collaborate on datasets, annotate records, and co-author transparency studies.",
+    badge: "Research",
+  },
+  {
+    slug: "nonprofit",
+    title: "Nonprofits",
+    summary:
+      "Use our data backbone to power organizing campaigns, advocacy dashboards, or public education.",
+    badge: "Community",
+  },
+  {
+    slug: "media",
+    title: "Media",
+    summary:
+      "Get newsroom briefings, source documents, and verified context for ongoing investigations.",
+    badge: "Press",
+  },
+  {
+    slug: "technology",
+    title: "Technology Partners",
+    summary:
+      "Integrate records via API, build internal tools, or co-develop new accountability products.",
+    badge: "Builders",
+  },
+  {
+    slug: "creator",
+    title: "Creators & Influencers",
+    summary:
+      "Use investigation dashboards, case links, and analytics to scale accountability work.",
+    badge: "Creators",
+  },
+  {
+    slug: "bail-bonds",
+    title: "Bail Bonds & Pretrial",
+    summary:
+      "Understand officer involvement in cases and streamline communication with counsel.",
+    badge: "Justice partners",
+  },
+  {
+    slug: "advertise",
+    title: "Advertise or Sponsor",
+    summary:
+      "Sponsor transparency work that aligns with accountability and public safety goals.",
+    badge: "Support",
+  },
+];
+---
+
+<SiteLayout
+  title="Partner with PoliceConduct.org"
+  description="Explore partnership paths for agencies, researchers, nonprofits, media, and technology teams."
+  pagePath="/partner/"
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row g-4 align-items-end">
+          <div class="col-12 col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">Partnerships</p>
+            <h1 class="display-4 fw-bold">Partner with PoliceConduct.org</h1>
+            <p class="lead text-muted mb-0">
+              Data sharing, research collaborations, newsroom briefings,
+              compliance reviews, and more. Choose the path that fits your team.
+            </p>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card shadow-sm rounded-0 border-dark h-100">
+              <div class="card-body d-flex flex-column gap-3">
+                <div class="text-uppercase small text-muted">
+                  Start a conversation
+                </div>
+                <div class="d-grid gap-2">
+                  <a
+                    class="btn btn-dark rounded-0"
+                    href="/about/contact?whoami=partner&message=I%20want%20to%20partner%20with%20PoliceConduct.org"
+                  >
+                    Contact partnerships
+                  </a>
+                  <a class="btn btn-outline-dark rounded-0" href="/volunteer/">
+                    Volunteer your expertise
+                  </a>
+                </div>
+                <p class="text-muted small mb-0">
+                  Prefer email? Reach us at hello@policeconduct.org and include
+                  your organization, role, and the track you’re interested in.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+          {
+            partnerTracks.map((track) => (
+              <div class="col">
+                <article class="card h-100 shadow-sm border-0 rounded-0">
+                  <div class="card-body d-flex flex-column gap-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                      <span class="badge bg-dark rounded-0">{track.badge}</span>
+                      <span class="text-muted small">
+                        /partner/{track.slug}/
+                      </span>
+                    </div>
+                    <div>
+                      <h2 class="h5 mb-2">
+                        <a
+                          class="link-dark text-decoration-none stretched-link"
+                          href={`/partner/${track.slug}/`}
+                        >
+                          {track.title}
+                        </a>
+                      </h2>
+                      <p class="text-muted mb-0">{track.summary}</p>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>

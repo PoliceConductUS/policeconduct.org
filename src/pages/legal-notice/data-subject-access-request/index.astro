@@ -1,0 +1,369 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout
+  title="Data Subject Access Request | PoliceConduct.org"
+  pagePath="/legal-notice/data-subject-access-request/"
+>
+  <main class="flex-grow-1 py-vh-3">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <nav aria-label="Breadcrumb">
+            <ol class="breadcrumb mb-3">
+              <li class="breadcrumb-item">
+                <a class="link-dark" href="/legal-notice/">Legal Notice</a>
+              </li>
+              <li class="breadcrumb-item active" aria-current="page">
+                Data Subject Access Request
+              </li>
+            </ol>
+          </nav>
+          <h1>Data Subject Access Request</h1>
+          <p>
+            <strong>Last updated:</strong>
+            <strong>January 14, 2026</strong>
+          </p>
+          <form
+            name="data-subject-access-request"
+            method="POST"
+            data-netlify="true"
+            data-netlify-honeypot="organization"
+            class="needs-validation"
+            novalidate
+          >
+            <input
+              type="hidden"
+              name="form-name"
+              value="data-subject-access-request"
+            />
+            <div class="honeypot visually-hidden">
+              <label>
+                Organization
+                <input type="text" name="organization" />
+              </label>
+            </div>
+
+            <div class="form-floating mb-4">
+              <input
+                type="text"
+                class="form-control"
+                id="dsarName"
+                name="name"
+                placeholder="Your name"
+                required
+              />
+              <label for="dsarName">Your name*</label>
+              <div class="invalid-feedback">Please provide your name.</div>
+            </div>
+
+            <div class="form-floating mb-4">
+              <input
+                type="email"
+                class="form-control"
+                id="dsarEmail"
+                name="email"
+                placeholder="Email"
+                required
+              />
+              <label for="dsarEmail"
+                >What email address do you use to access this website?*</label
+              >
+              <div class="invalid-feedback">Please provide a valid email.</div>
+            </div>
+
+            <fieldset class="mb-4">
+              <legend class="h6 text-muted text-uppercase">
+                You are submitting this request as
+              </legend>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="request_as"
+                  id="requestAsPersonal"
+                  value="The person, or the parent / guardian of the person, whose name appears above."
+                  required
+                />
+                <label class="form-check-label" for="requestAsPersonal">
+                  The person, or the parent / guardian of the person, whose name
+                  appears above.
+                </label>
+              </div>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="request_as"
+                  id="requestAsAgent"
+                  value="An agent authorized by the consumer to make this request on their behalf."
+                  required
+                />
+                <label class="form-check-label" for="requestAsAgent">
+                  An agent authorized by the consumer to make this request on
+                  their behalf.
+                </label>
+              </div>
+              <div class="invalid-feedback">Please select one option.</div>
+            </fieldset>
+
+            <div class="form-floating mb-4">
+              <select
+                class="form-select"
+                id="dsarLaw"
+                name="compliance_type"
+                required
+              >
+                <option value="" selected>Please select a law</option>
+                <option value="gdpr">GDPR</option>
+                <option value="ccpa">CCPA</option>
+                <option value="cpa">CPA</option>
+                <option value="ctdpa">CTDPA</option>
+                <option value="ucpa">UCPA</option>
+                <option value="vcdpa">VCDPA</option>
+                <option value="other">Other</option>
+              </select>
+              <label for="dsarLaw"
+                >Under the rights of which law are you making this request?*</label
+              >
+              <div class="invalid-feedback">Please select a law.</div>
+            </div>
+
+            <fieldset class="mb-4">
+              <legend class="h6 text-muted text-uppercase">
+                I am submitting a request to
+              </legend>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="action"
+                  id="actionKnow"
+                  value="Know what information is being collected from me"
+                  required
+                />
+                <label class="form-check-label" for="actionKnow"
+                  >Know what information is being collected from me</label
+                >
+              </div>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="action"
+                  id="actionDelete"
+                  value="Have my information deleted"
+                  required
+                />
+                <label class="form-check-label" for="actionDelete"
+                  >Have my information deleted</label
+                >
+              </div>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="action"
+                  id="actionOptOut"
+                  value="Opt out of having my data sold to third parties"
+                  required
+                />
+                <label class="form-check-label" for="actionOptOut"
+                  >Opt out of having my data sold to third parties</label
+                >
+              </div>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="action"
+                  id="actionOptIn"
+                  value="Opt in to the sale of my personal data"
+                  required
+                />
+                <label class="form-check-label" for="actionOptIn"
+                  >Opt in to the sale of my personal data</label
+                >
+              </div>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="action"
+                  id="actionAccess"
+                  value="Access my personal information"
+                  required
+                />
+                <label class="form-check-label" for="actionAccess"
+                  >Access my personal information</label
+                >
+              </div>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="action"
+                  id="actionFix"
+                  value="Fix inaccurate information"
+                  required
+                />
+                <label class="form-check-label" for="actionFix"
+                  >Fix inaccurate information</label
+                >
+              </div>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="action"
+                  id="actionCopy"
+                  value="Receive a copy of my personal information"
+                  required
+                />
+                <label class="form-check-label" for="actionCopy"
+                  >Receive a copy of my personal information</label
+                >
+              </div>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="action"
+                  id="actionAdvertising"
+                  value="Opt out of having my data shared for cross-context behavioral advertising"
+                  required
+                />
+                <label class="form-check-label" for="actionAdvertising"
+                  >Opt out of having my data shared for cross-context behavioral
+                  advertising</label
+                >
+              </div>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="action"
+                  id="actionSensitive"
+                  value="Limit the use and disclosure of my sensitive personal information"
+                  required
+                />
+                <label class="form-check-label" for="actionSensitive"
+                  >Limit the use and disclosure of my sensitive personal
+                  information</label
+                >
+              </div>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="action"
+                  id="actionOther"
+                  value="Other (please specify in the comment box below)"
+                  required
+                />
+                <label class="form-check-label" for="actionOther"
+                  >Other (please specify in the comment box below)</label
+                >
+              </div>
+              <div class="invalid-feedback">Please select one option.</div>
+            </fieldset>
+
+            <div class="form-floating mb-4">
+              <textarea
+                class="form-control"
+                id="dsarDetails"
+                name="content"
+                placeholder="Details"
+                style="height: 140px"></textarea>
+              <label for="dsarDetails"
+                >Please leave details regarding your action request or question.</label
+              >
+            </div>
+
+            <fieldset class="mb-4">
+              <legend class="h6 text-muted text-uppercase">
+                I confirm that
+              </legend>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="confirmAccurate"
+                  name="declare_information"
+                  value="Yes"
+                  required
+                />
+                <label class="form-check-label" for="confirmAccurate">
+                  Under penalty of perjury, I declare all the above information
+                  to be true and accurate.
+                </label>
+                <div class="invalid-feedback">
+                  This confirmation is required.
+                </div>
+              </div>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="confirmDeletion"
+                  name="understand_deletion"
+                  value="Yes"
+                  required
+                />
+                <label class="form-check-label" for="confirmDeletion">
+                  I understand that the deletion or restriction of my personal
+                  data is irreversible and may result in the termination of
+                  services with PoliceConduct.org.
+                </label>
+                <div class="invalid-feedback">
+                  This confirmation is required.
+                </div>
+              </div>
+              <div class="form-check mt-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="confirmEmail"
+                  name="validate_email"
+                  value="Yes"
+                  required
+                />
+                <label class="form-check-label" for="confirmEmail">
+                  I understand that I will be required to validate my request by
+                  email, and I may be contacted in order to complete the
+                  request.
+                </label>
+                <div class="invalid-feedback">
+                  This confirmation is required.
+                </div>
+              </div>
+            </fieldset>
+
+            <div data-netlify-recaptcha="true"></div>
+            <button type="submit" class="btn btn-dark rounded-0">
+              Submit
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script is:inline>
+    (function () {
+      const form = document.querySelector(
+        'form[name="data-subject-access-request"]',
+      );
+      if (!form) {
+        return;
+      }
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+      });
+    })();
+  </script>
+</SiteLayout>

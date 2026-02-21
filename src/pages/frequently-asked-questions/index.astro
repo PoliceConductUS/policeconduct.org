@@ -1,0 +1,1543 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { buildWebPage, getSiteUrl } from "../../lib/structured-data.js";
+
+const pagePath = "/frequently-asked-questions/";
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const faqEntries = [
+  {
+    question: "What is PoliceConduct.org?",
+    answer:
+      "PoliceConduct.org is a public-interest website for documenting police encounters, positive, negative, and everything in between, using a structured format that encourages clarity, evidence, and accountability.",
+  },
+  {
+    question: "Is this an anti-police site?",
+    answer:
+      "No. PoliceConduct.org is pro good policing. The goal is to recognize officers who serve professionally and respectfully, while also documenting conduct that harms public trust or violates rights.",
+  },
+  {
+    question: "What's the launch status?",
+    answer:
+      "This is a quiet opening. The site is live, but growth is intentionally slow while reporting, verification, privacy safeguards, and corrections workflows mature.",
+  },
+  {
+    question: "What's on the site today?",
+    answer:
+      "The first published report is the founder's account of an encounter in Irving, Texas involving Irving Police Officer James Markham.",
+  },
+  {
+    question: "Do I need to create an account to file a report?",
+    answer:
+      "No. You do not need an account. After you submit, you receive a unique Report ID. Keep it safe because it helps us locate your report later.",
+  },
+  {
+    question: "Do you accept anonymous reports?",
+    answer:
+      "Yes, sort of. We accept anonymous submissions, but during the quiet opening we manually verify reports before publishing. If a report is fully anonymous with no verifiable details, it may not be published. Include dates, locations, agencies, incident numbers, witnesses, or evidence links whenever possible.",
+  },
+  {
+    question: "How can I check the status of my report or request changes?",
+    answer:
+      "Contact our support team and include your Report ID plus the email or phone number used during submission. That information lets us verify your request and locate your report.",
+  },
+  {
+    question: "How long does it take for my report to appear on the site?",
+    answer:
+      "Reports are reviewed manually for accuracy and safety. We are currently working through a backlog, so please allow at least one week for review and publication.",
+  },
+  {
+    question: "Which role should I select for my report?",
+    answer:
+      "Choose the role that best matches your connection to the event: Primary Participant if it happened to you, Witness if you saw it happen, Representative if you are filing for someone else, Legal/Professional Advocate if you are reporting as part of a case, or Concerned Citizen if you are reporting based on secondary evidence.",
+  },
+  {
+    question: "I am a lawyer filing for a client. Which role should I use?",
+    answer:
+      "Select Legal/Professional Advocate or Representative, then use the description field to clarify your professional relationship to the participant while honoring their privacy preferences.",
+  },
+  {
+    question: "What happens if I forget my Report ID?",
+    answer:
+      "Contact support using the email or phone number tied to the report. After verifying your identity, we can help recover the Report ID.",
+  },
+  {
+    question: "What do you mean by evidence-forward?",
+    answer:
+      "We separate personal accounts (what someone says happened), supporting materials (video, documents, public records), and opinion or analysis (clearly labeled). The goal is a usable record that can be evaluated and improved over time.",
+  },
+  {
+    question: "Why should the public report police interactions at all?",
+    answer:
+      "Police encounters can have enormous consequences, and the public deserves a realistic way to describe what happened. A respectful, professional stop deserves recognition. A dehumanizing or retaliatory encounter deserves scrutiny. The in-between is often where patterns start to show.",
+  },
+  {
+    question: "What do you want from the public right now?",
+    answer:
+      "Two things: report positive interactions so great officers are recognized and professionalism is normalized, and report negative or concerning interactions with as much specificity and documentation as possible.",
+  },
+  {
+    question: "How do you handle privacy?",
+    answer:
+      "We avoid unnecessary personally identifying information, especially about private individuals. Reports focus on conduct, context, and verifiable details, not doxxing. If you have specific privacy concerns, add a note in your submission and our team will follow up.",
+  },
+  {
+    question: "Will my name be visible to the public?",
+    answer:
+      "Reports are published anonymously by default. If you want attribution on a published report, contact our team and we will confirm your preference.",
+  },
+  {
+    question: "What if police retaliate after I submit a report?",
+    answer:
+      "If you believe there has been retaliation, file another report about that incident. Retaliation should not go unreported.",
+  },
+  {
+    question: "Are you associated with law enforcement?",
+    answer:
+      "No. PoliceConduct.org is independent and not affiliated with law enforcement agencies or government entities.",
+  },
+  {
+    question: "Can I include personally identifiable information in a report?",
+    answer:
+      "Yes, but it will be redacted before publication. We do not allow doxxing of anyone, including yourself, witnesses, or officers.",
+  },
+  {
+    question: "What types of interactions can I report?",
+    answer:
+      "You can report any law enforcement interaction: good (de-escalation, professionalism, fairness), bad (harassment, retaliation, unnecessary escalation), and everything in between. If it involved an officer or agency, it belongs here.",
+  },
+  {
+    question:
+      "Can I report federal officers or agencies like the FBI, CIA, or ICE?",
+    answer:
+      "Yes. Federal officers and agencies are included. Submit the report with as much detail as you can and we will review it like any other submission.",
+  },
+  {
+    question: "How far back can I go when submitting a report?",
+    answer:
+      "You can submit reports for interactions from any time. Keep in mind that reports older than two years are less likely to be helpful for verification or follow-up.",
+  },
+  {
+    question: "What if I do not know the officer's name?",
+    answer:
+      "That is okay. Share any identifying details you remember and one of our volunteers will do their best to identify the officer.",
+  },
+  {
+    question:
+      "What if I cannot remember the exact date or time of the incident?",
+    answer:
+      "Provide the most accurate estimate you can. If you have photos or digital files, checking file info or metadata can help confirm the date, time, and location.",
+  },
+  {
+    question: "Can I submit a report for an incident that happened years ago?",
+    answer:
+      "Yes. Historical reports are valuable for long-term patterns, though reports older than two years are less likely to be useful for immediate verification.",
+  },
+  {
+    question: "I have multiple videos. Should I submit multiple reports?",
+    answer:
+      "Please submit a single report for the full interaction and include all relevant files or links. This keeps review consistent and easier to process.",
+  },
+  {
+    question: "I have a video of the incident. How should I include it?",
+    answer:
+      'Add a hosted link in the Evidence Links section (Google Drive, Dropbox, YouTube, iCloud, etc.). Make sure sharing is set to "Anyone with the link can view" so reviewers can access it.',
+  },
+  {
+    question: "Should I include witness contact information?",
+    answer:
+      "If a witness agrees to be contacted, include their name and contact details in the Witnesses section. We use this information for verification and do not publish it.",
+  },
+  {
+    question: "Can I report on behalf of someone else?",
+    answer:
+      "Yes. You may submit as a witness or on behalf of a family member or friend. Please explain your relationship to the incident in the description.",
+  },
+  {
+    question: "What if I was a witness and not directly involved?",
+    answer:
+      "Witness reports are valuable and can corroborate a primary account. Note in your description that you are reporting as a witness.",
+  },
+  {
+    question: "Can I get in trouble for submitting a report?",
+    answer:
+      "In general, reporting your experience is protected speech, similar to leaving a review. We cannot guarantee outcomes in every situation, so please submit only truthful information.",
+  },
+  {
+    question: "Will filing a report affect an ongoing legal case?",
+    answer:
+      "Sharing information publicly can affect legal proceedings. If you have an active case, consider consulting an attorney before publishing details.",
+  },
+  {
+    question: "How do you reduce defamation risk?",
+    answer:
+      "We focus on specific, factual descriptions, label allegations versus documentation versus opinion, encourage supporting materials, and maintain a correction process. Reports avoid unnecessary personal details and center on public-interest conduct.",
+  },
+  {
+    question: "Is this legal advice?",
+    answer:
+      "No. PoliceConduct.org is a documentation and public-interest project. Nothing on the site is legal advice.",
+  },
+  {
+    question: "How do I know my report was received?",
+    answer:
+      "After submission, the page shows your Report ID. Save it so you can reference the report later.",
+  },
+  {
+    question: "What's your corrections policy?",
+    answer:
+      "If someone identifies a specific factual error and provides credible evidence, we will correct it. If a dispute cannot be resolved quickly, the entry is updated to reflect the dispute and the evidence available on all sides. Use the Report Issue link in the footer to request a correction.",
+  },
+  {
+    question: "Can officers or agencies respond?",
+    answer:
+      "Yes. PoliceConduct.org supports responses, clarifications, and additional documentation. If new credible information changes a report, we aim to update it prominently.",
+  },
+  {
+    question: "Why would a report be rejected during manual review?",
+    answer:
+      "We aim to publish every report, but submissions may be rejected or heavily redacted if they include hate speech, spam, or private information about uninvolved third parties.",
+  },
+  {
+    question: "Why are you a national nonprofit, and why Delaware?",
+    answer:
+      "Police conduct is a national issue, and we operate a centralized, secure database for all 50 states. We are incorporated in Delaware as a 501(c)(3) and comply with the solicitation laws of the states where we actively fundraise.",
+  },
+  {
+    question: "Does my donation go to a specific state or city?",
+    answer:
+      "Donations go into our general fund to support the national platform. This helps us scale manual review and clear backlogs across jurisdictions so every report gets timely review regardless of location.",
+  },
+  {
+    question: "Are donations tax-deductible?",
+    answer:
+      "Yes. We are a 501(c)(3) nonprofit, so donations are tax-deductible to the fullest extent permitted by law.",
+  },
+  {
+    question: "How can I donate?",
+    answer:
+      "Visit our donation page at policeconduct.org/donate for current ways to support the project.",
+  },
+  {
+    question: "How is my donation processed?",
+    answer:
+      "We use Stripe for secure, encrypted donation processing and receive reduced nonprofit transaction fees through Stripe's Nonprofit Excellence Program. This keeps overhead low so more of your gift funds report review and database integrity. You will receive an automated tax receipt by email immediately after your donation is processed.",
+  },
+  {
+    question: "Why is my report being reviewed manually?",
+    answer:
+      "Manual review helps protect privacy, remove unintended personally identifying information, and maintain data integrity before publication.",
+  },
+  {
+    question:
+      "Can my report be turned into an official complaint or commendation?",
+    answer:
+      "Not yet. We plan to support official complaint and commendation workflows in the future.",
+  },
+];
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: "FAQ | PoliceConduct.org",
+  description: "Frequently asked questions about PoliceConduct.org.",
+  type: "FAQPage",
+});
+structuredData.mainEntity = faqEntries.map((entry) => ({
+  "@type": "Question",
+  name: entry.question,
+  acceptedAnswer: {
+    "@type": "Answer",
+    text: entry.answer,
+  },
+}));
+---
+
+<SiteLayout
+  title="FAQ | PoliceConduct.org"
+  description="Frequently asked questions about PoliceConduct.org."
+  pagePath={pagePath}
+  structuredData={structuredData}
+>
+  <main class="flex-grow-1 py-vh-3">
+    <div class="container">
+      <h1 class="display-5 fw-bold mb-4">Frequently Asked Questions</h1>
+      <h2 class="h5 fw-semibold text-uppercase text-muted mb-3">
+        About PoliceConduct.org
+      </h2>
+      <div class="accordion mb-5" id="faqAccordionOverview">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqOverviewWhat">
+            <button
+              class="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqOverviewWhatPanel"
+              aria-expanded="true"
+              aria-controls="faqOverviewWhatPanel"
+            >
+              What is PoliceConduct.org?
+            </button>
+          </h2>
+          <div
+            id="faqOverviewWhatPanel"
+            class="accordion-collapse collapse show"
+            aria-labelledby="faqOverviewWhat"
+            data-bs-parent="#faqAccordionOverview"
+          >
+            <div class="accordion-body">
+              PoliceConduct.org is a public-interest website for documenting
+              police encounters, positive, negative, and everything in between,
+              using a structured format that encourages clarity, evidence, and
+              accountability.
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqOverviewAntiPolice">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqOverviewAntiPolicePanel"
+              aria-expanded="false"
+              aria-controls="faqOverviewAntiPolicePanel"
+            >
+              Is this an anti-police site?
+            </button>
+          </h2>
+          <div
+            id="faqOverviewAntiPolicePanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqOverviewAntiPolice"
+            data-bs-parent="#faqAccordionOverview"
+          >
+            <div class="accordion-body">
+              No. PoliceConduct.org is pro good policing. The goal is to
+              recognize officers who serve professionally and respectfully,
+              while also documenting conduct that harms public trust or violates
+              rights.
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqOverviewLaunch">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqOverviewLaunchPanel"
+              aria-expanded="false"
+              aria-controls="faqOverviewLaunchPanel"
+            >
+              What's the launch status?
+            </button>
+          </h2>
+          <div
+            id="faqOverviewLaunchPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqOverviewLaunch"
+            data-bs-parent="#faqAccordionOverview"
+          >
+            <div class="accordion-body">
+              This is a quiet opening. The site is live, but growth is
+              intentionally slow while reporting, verification, privacy
+              safeguards, and corrections workflows mature.
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqOverviewToday">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqOverviewTodayPanel"
+              aria-expanded="false"
+              aria-controls="faqOverviewTodayPanel"
+            >
+              What's on the site today?
+            </button>
+          </h2>
+          <div
+            id="faqOverviewTodayPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqOverviewToday"
+            data-bs-parent="#faqAccordionOverview"
+          >
+            <div class="accordion-body">
+              The first published report is the founder's account of an
+              encounter in Irving, Texas involving Irving Police Officer James
+              Markham.
+            </div>
+          </div>
+        </div>
+      </div>
+      <h2 class="h5 fw-semibold text-uppercase text-muted mb-3">
+        Submission and tracking
+      </h2>
+      <div class="accordion mb-5" id="faqAccordionTracking">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqAccount">
+            <button
+              class="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqAccountPanel"
+              aria-expanded="true"
+              aria-controls="faqAccountPanel"
+            >
+              Do I need to create an account to file a report?
+            </button>
+          </h2>
+          <div
+            id="faqAccountPanel"
+            class="accordion-collapse collapse show"
+            aria-labelledby="faqAccount"
+            data-bs-parent="#faqAccordionTracking"
+          >
+            <div class="accordion-body">
+              No. You do not need an account. After you submit, you receive a
+              unique Report ID. Keep it safe because it helps us locate your
+              report later.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqAnonymous">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqAnonymousPanel"
+              aria-expanded="false"
+              aria-controls="faqAnonymousPanel"
+            >
+              Do you accept anonymous reports?
+            </button>
+          </h2>
+          <div
+            id="faqAnonymousPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqAnonymous"
+            data-bs-parent="#faqAccordionTracking"
+          >
+            <div class="accordion-body">
+              Yes, sort of. We accept anonymous submissions, but during the
+              quiet opening we manually verify reports before publishing. If a
+              report is fully anonymous with no verifiable details, it may not
+              be published. Include dates, locations, agencies, incident
+              numbers, witnesses, or evidence links whenever possible.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqStatus">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqStatusPanel"
+              aria-expanded="false"
+              aria-controls="faqStatusPanel"
+            >
+              How can I check the status of my report or request changes?
+            </button>
+          </h2>
+          <div
+            id="faqStatusPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqStatus"
+            data-bs-parent="#faqAccordionTracking"
+          >
+            <div class="accordion-body">
+              Contact our support team and include your Report ID plus the email
+              or phone number used during submission. That information lets us
+              verify your request and locate your report.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqTimeline">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqTimelinePanel"
+              aria-expanded="false"
+              aria-controls="faqTimelinePanel"
+            >
+              How long does it take for my report to appear on the site?
+            </button>
+          </h2>
+          <div
+            id="faqTimelinePanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqTimeline"
+            data-bs-parent="#faqAccordionTracking"
+          >
+            <div class="accordion-body">
+              Reports are reviewed manually for accuracy and safety. We are
+              currently working through a backlog, so please allow at least one
+              week for review and publication.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqRoleSelect">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqRoleSelectPanel"
+              aria-expanded="false"
+              aria-controls="faqRoleSelectPanel"
+            >
+              Which role should I select for my report?
+            </button>
+          </h2>
+          <div
+            id="faqRoleSelectPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqRoleSelect"
+            data-bs-parent="#faqAccordionTracking"
+          >
+            <div class="accordion-body">
+              Choose the role that best matches your connection to the event:
+              Primary Participant if it happened to you, Witness if you saw it
+              happen, Representative if you are filing for someone else,
+              Legal/Professional Advocate if you are reporting as part of a
+              case, or Concerned Citizen if you are reporting based on secondary
+              evidence.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqRoleLawyer">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqRoleLawyerPanel"
+              aria-expanded="false"
+              aria-controls="faqRoleLawyerPanel"
+            >
+              I am a lawyer filing for a client. Which role should I use?
+            </button>
+          </h2>
+          <div
+            id="faqRoleLawyerPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqRoleLawyer"
+            data-bs-parent="#faqAccordionTracking"
+          >
+            <div class="accordion-body">
+              Select Legal/Professional Advocate or Representative, then use the
+              description field to clarify your professional relationship to the
+              participant while honoring their privacy preferences.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqLostId">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqLostIdPanel"
+              aria-expanded="false"
+              aria-controls="faqLostIdPanel"
+            >
+              What happens if I forget my Report ID?
+            </button>
+          </h2>
+          <div
+            id="faqLostIdPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqLostId"
+            data-bs-parent="#faqAccordionTracking"
+          >
+            <div class="accordion-body">
+              Contact support using the email or phone number tied to the
+              report. After verifying your identity, we can help recover the
+              Report ID.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="h5 fw-semibold text-uppercase text-muted mb-3">
+        Reporting standards
+      </h2>
+      <div class="accordion mb-5" id="faqAccordionStandards">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqEvidenceForward">
+            <button
+              class="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqEvidenceForwardPanel"
+              aria-expanded="true"
+              aria-controls="faqEvidenceForwardPanel"
+            >
+              What do you mean by evidence-forward?
+            </button>
+          </h2>
+          <div
+            id="faqEvidenceForwardPanel"
+            class="accordion-collapse collapse show"
+            aria-labelledby="faqEvidenceForward"
+            data-bs-parent="#faqAccordionStandards"
+          >
+            <div class="accordion-body">
+              We separate personal accounts (what someone says happened),
+              supporting materials (video, documents, public records), and
+              opinion or analysis (clearly labeled). The goal is a usable record
+              that can be evaluated and improved over time.
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqWhyReport">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqWhyReportPanel"
+              aria-expanded="false"
+              aria-controls="faqWhyReportPanel"
+            >
+              Why should the public report police interactions at all?
+            </button>
+          </h2>
+          <div
+            id="faqWhyReportPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqWhyReport"
+            data-bs-parent="#faqAccordionStandards"
+          >
+            <div class="accordion-body">
+              Police encounters can have enormous consequences, and the public
+              deserves a realistic way to describe what happened. A respectful,
+              professional stop deserves recognition. A dehumanizing or
+              retaliatory encounter deserves scrutiny. The in-between is often
+              where patterns start to show.
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqPublicRightNow">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqPublicRightNowPanel"
+              aria-expanded="false"
+              aria-controls="faqPublicRightNowPanel"
+            >
+              What do you want from the public right now?
+            </button>
+          </h2>
+          <div
+            id="faqPublicRightNowPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqPublicRightNow"
+            data-bs-parent="#faqAccordionStandards"
+          >
+            <div class="accordion-body">
+              Two things: report positive interactions so great officers are
+              recognized and professionalism is normalized, and report negative
+              or concerning interactions with as much specificity and
+              documentation as possible.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="h5 fw-semibold text-uppercase text-muted mb-3">
+        Privacy and safety
+      </h2>
+      <div class="accordion mb-5" id="faqAccordion">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqSix">
+            <button
+              class="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqSixPanel"
+              aria-expanded="true"
+              aria-controls="faqSixPanel"
+            >
+              How do you handle privacy?
+            </button>
+          </h2>
+          <div
+            id="faqSixPanel"
+            class="accordion-collapse collapse show"
+            aria-labelledby="faqSix"
+            data-bs-parent="#faqAccordion"
+          >
+            <div class="accordion-body">
+              We avoid unnecessary personally identifying information,
+              especially about private individuals. Reports focus on conduct,
+              context, and verifiable details, not doxxing. If you have specific
+              privacy concerns, add a note in your submission and our team will
+              follow up.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqPublicName">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqPublicNamePanel"
+              aria-expanded="false"
+              aria-controls="faqPublicNamePanel"
+            >
+              Will my name be visible to the public?
+            </button>
+          </h2>
+          <div
+            id="faqPublicNamePanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqPublicName"
+            data-bs-parent="#faqAccordion"
+          >
+            <div class="accordion-body">
+              Reports are published anonymously by default. If you want
+              attribution on a published report, contact our team and we will
+              confirm your preference.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqNine">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqNinePanel"
+              aria-expanded="false"
+              aria-controls="faqNinePanel"
+            >
+              What if police retaliate after I submit a report?
+            </button>
+          </h2>
+          <div
+            id="faqNinePanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqNine"
+            data-bs-parent="#faqAccordion"
+          >
+            <div class="accordion-body">
+              If you believe there has been retaliation, file another report
+              about that incident. Retaliation should not go unreported.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqSeven">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqSevenPanel"
+              aria-expanded="false"
+              aria-controls="faqSevenPanel"
+            >
+              Are you associated with law enforcement?
+            </button>
+          </h2>
+          <div
+            id="faqSevenPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqSeven"
+            data-bs-parent="#faqAccordion"
+          >
+            <div class="accordion-body">
+              No. PoliceConduct.org is independent and not affiliated with law
+              enforcement agencies or government entities.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqFive">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqFivePanel"
+              aria-expanded="false"
+              aria-controls="faqFivePanel"
+            >
+              Can I include personally identifiable information in a report?
+            </button>
+          </h2>
+          <div
+            id="faqFivePanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqFive"
+            data-bs-parent="#faqAccordion"
+          >
+            <div class="accordion-body">
+              Yes, but it will be redacted before publication. We do not allow
+              doxxing of anyone, including yourself, witnesses, or officers.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="h5 fw-semibold text-uppercase text-muted mb-3">Scope</h2>
+      <div class="accordion mb-5" id="faqAccordionScope">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqOne">
+            <button
+              class="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqOnePanel"
+              aria-expanded="true"
+              aria-controls="faqOnePanel"
+            >
+              What types of interactions can I report?
+            </button>
+          </h2>
+          <div
+            id="faqOnePanel"
+            class="accordion-collapse collapse show"
+            aria-labelledby="faqOne"
+            data-bs-parent="#faqAccordionScope"
+          >
+            <div class="accordion-body">
+              You can report any law enforcement interaction: good
+              (de-escalation, professionalism, fairness), bad (harassment,
+              retaliation, unnecessary escalation), and everything in between.
+              If it involved an officer or agency, it belongs here.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqTwo">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqTwoPanel"
+              aria-expanded="false"
+              aria-controls="faqTwoPanel"
+            >
+              Can I report federal officers or agencies like the FBI, CIA, or
+              ICE?
+            </button>
+          </h2>
+          <div
+            id="faqTwoPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqTwo"
+            data-bs-parent="#faqAccordionScope"
+          >
+            <div class="accordion-body">
+              Yes. Federal officers and agencies are included. Submit the report
+              with as much detail as you can and we will review it like any
+              other submission.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqThree">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqThreePanel"
+              aria-expanded="false"
+              aria-controls="faqThreePanel"
+            >
+              How far back can I go when submitting a report?
+            </button>
+          </h2>
+          <div
+            id="faqThreePanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqThree"
+            data-bs-parent="#faqAccordionScope"
+          >
+            <div class="accordion-body">
+              You can submit reports for interactions from any time. Keep in
+              mind that reports older than two years are less likely to be
+              helpful for verification or follow-up.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqFour">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqFourPanel"
+              aria-expanded="false"
+              aria-controls="faqFourPanel"
+            >
+              What if I do not know the officer’s name?
+            </button>
+          </h2>
+          <div
+            id="faqFourPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqFour"
+            data-bs-parent="#faqAccordionScope"
+          >
+            <div class="accordion-body">
+              That is okay. Share any identifying details you remember and one
+              of our volunteers will do their best to identify the officer.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="h5 fw-semibold text-uppercase text-muted mb-3">
+        Evidence and details
+      </h2>
+      <div class="accordion mb-5" id="faqAccordionEvidence">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqApproxTime">
+            <button
+              class="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqApproxTimePanel"
+              aria-expanded="true"
+              aria-controls="faqApproxTimePanel"
+            >
+              What if I cannot remember the exact date or time of the incident?
+            </button>
+          </h2>
+          <div
+            id="faqApproxTimePanel"
+            class="accordion-collapse collapse show"
+            aria-labelledby="faqApproxTime"
+            data-bs-parent="#faqAccordionEvidence"
+          >
+            <div class="accordion-body">
+              Provide the most accurate estimate you can. If you have photos or
+              digital files, checking file info or metadata can help confirm the
+              date, time, and location.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqOldIncident">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqOldIncidentPanel"
+              aria-expanded="false"
+              aria-controls="faqOldIncidentPanel"
+            >
+              Can I submit a report for an incident that happened years ago?
+            </button>
+          </h2>
+          <div
+            id="faqOldIncidentPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqOldIncident"
+            data-bs-parent="#faqAccordionEvidence"
+          >
+            <div class="accordion-body">
+              Yes. Historical reports are valuable for long-term patterns,
+              though reports older than two years are less likely to be useful
+              for immediate verification.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqMultipleVideos">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqMultipleVideosPanel"
+              aria-expanded="false"
+              aria-controls="faqMultipleVideosPanel"
+            >
+              I have multiple videos. Should I submit multiple reports?
+            </button>
+          </h2>
+          <div
+            id="faqMultipleVideosPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqMultipleVideos"
+            data-bs-parent="#faqAccordionEvidence"
+          >
+            <div class="accordion-body">
+              Please submit a single report for the full interaction and include
+              all relevant files or links. This keeps review consistent and
+              easier to process.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqVideoLink">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqVideoLinkPanel"
+              aria-expanded="false"
+              aria-controls="faqVideoLinkPanel"
+            >
+              I have a video of the incident. How should I include it?
+            </button>
+          </h2>
+          <div
+            id="faqVideoLinkPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqVideoLink"
+            data-bs-parent="#faqAccordionEvidence"
+          >
+            <div class="accordion-body">
+              Add a hosted link in the Evidence Links section (Google Drive,
+              Dropbox, YouTube, iCloud, etc.). Make sure sharing is set to
+              “Anyone with the link can view” so reviewers can access it.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqWitnessInfo">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqWitnessInfoPanel"
+              aria-expanded="false"
+              aria-controls="faqWitnessInfoPanel"
+            >
+              Should I include witness contact information?
+            </button>
+          </h2>
+          <div
+            id="faqWitnessInfoPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqWitnessInfo"
+            data-bs-parent="#faqAccordionEvidence"
+          >
+            <div class="accordion-body">
+              If a witness agrees to be contacted, include their name and
+              contact details in the Witnesses section. We use this information
+              for verification and do not publish it.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="h5 fw-semibold text-uppercase text-muted mb-3">Witnesses</h2>
+      <div class="accordion mb-5" id="faqAccordionWitnesses">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqOnBehalf">
+            <button
+              class="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqOnBehalfPanel"
+              aria-expanded="true"
+              aria-controls="faqOnBehalfPanel"
+            >
+              Can I report on behalf of someone else?
+            </button>
+          </h2>
+          <div
+            id="faqOnBehalfPanel"
+            class="accordion-collapse collapse show"
+            aria-labelledby="faqOnBehalf"
+            data-bs-parent="#faqAccordionWitnesses"
+          >
+            <div class="accordion-body">
+              Yes. You may submit as a witness or on behalf of a family member
+              or friend. Please explain your relationship to the incident in the
+              description.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqWitnessOnly">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqWitnessOnlyPanel"
+              aria-expanded="false"
+              aria-controls="faqWitnessOnlyPanel"
+            >
+              What if I was a witness and not directly involved?
+            </button>
+          </h2>
+          <div
+            id="faqWitnessOnlyPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqWitnessOnly"
+            data-bs-parent="#faqAccordionWitnesses"
+          >
+            <div class="accordion-body">
+              Witness reports are valuable and can corroborate a primary
+              account. Note in your description that you are reporting as a
+              witness.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="h5 fw-semibold text-uppercase text-muted mb-3">
+        Safety and legal
+      </h2>
+      <div class="accordion mb-5" id="faqAccordionLegal">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqEight">
+            <button
+              class="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqEightPanel"
+              aria-expanded="true"
+              aria-controls="faqEightPanel"
+            >
+              Can I get in trouble for submitting a report?
+            </button>
+          </h2>
+          <div
+            id="faqEightPanel"
+            class="accordion-collapse collapse show"
+            aria-labelledby="faqEight"
+            data-bs-parent="#faqAccordionLegal"
+          >
+            <div class="accordion-body">
+              In general, reporting your experience is protected speech, similar
+              to leaving a review. We cannot guarantee outcomes in every
+              situation, so please submit only truthful information.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqLegalCase">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqLegalCasePanel"
+              aria-expanded="false"
+              aria-controls="faqLegalCasePanel"
+            >
+              Will filing a report affect an ongoing legal case?
+            </button>
+          </h2>
+          <div
+            id="faqLegalCasePanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqLegalCase"
+            data-bs-parent="#faqAccordionLegal"
+          >
+            <div class="accordion-body">
+              Sharing information publicly can affect legal proceedings. If you
+              have an active case, consider consulting an attorney before
+              publishing details.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqDefamationRisk">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqDefamationRiskPanel"
+              aria-expanded="false"
+              aria-controls="faqDefamationRiskPanel"
+            >
+              How do you reduce defamation risk?
+            </button>
+          </h2>
+          <div
+            id="faqDefamationRiskPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqDefamationRisk"
+            data-bs-parent="#faqAccordionLegal"
+          >
+            <div class="accordion-body">
+              We focus on specific, factual descriptions, label allegations
+              versus documentation versus opinion, encourage supporting
+              materials, and maintain a correction process. Reports avoid
+              unnecessary personal details and center on public-interest
+              conduct.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqLegalAdvice">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqLegalAdvicePanel"
+              aria-expanded="false"
+              aria-controls="faqLegalAdvicePanel"
+            >
+              Is this legal advice?
+            </button>
+          </h2>
+          <div
+            id="faqLegalAdvicePanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqLegalAdvice"
+            data-bs-parent="#faqAccordionLegal"
+          >
+            <div class="accordion-body">
+              No. PoliceConduct.org is a documentation and public-interest
+              project. Nothing on the site is legal advice.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="h5 fw-semibold text-uppercase text-muted mb-3">
+        Platform integrity
+      </h2>
+      <div class="accordion mb-5" id="faqAccordionIntegrity">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqReceived">
+            <button
+              class="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqReceivedPanel"
+              aria-expanded="true"
+              aria-controls="faqReceivedPanel"
+            >
+              How do I know my report was received?
+            </button>
+          </h2>
+          <div
+            id="faqReceivedPanel"
+            class="accordion-collapse collapse show"
+            aria-labelledby="faqReceived"
+            data-bs-parent="#faqAccordionIntegrity"
+          >
+            <div class="accordion-body">
+              After submission, the page shows your Report ID. Save it so you
+              can reference the report later.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqMistake">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqMistakePanel"
+              aria-expanded="false"
+              aria-controls="faqMistakePanel"
+            >
+              What's your corrections policy?
+            </button>
+          </h2>
+          <div
+            id="faqMistakePanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqMistake"
+            data-bs-parent="#faqAccordionIntegrity"
+          >
+            <div class="accordion-body">
+              If someone identifies a specific factual error and provides
+              credible evidence, we will correct it. If a dispute cannot be
+              resolved quickly, the entry is updated to reflect the dispute and
+              the evidence available on all sides. Use the Report Issue link in
+              the footer to request a correction.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqResponses">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqResponsesPanel"
+              aria-expanded="false"
+              aria-controls="faqResponsesPanel"
+            >
+              Can officers or agencies respond?
+            </button>
+          </h2>
+          <div
+            id="faqResponsesPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqResponses"
+            data-bs-parent="#faqAccordionIntegrity"
+          >
+            <div class="accordion-body">
+              Yes. PoliceConduct.org supports responses, clarifications, and
+              additional documentation. If new credible information changes a
+              report, we aim to update it prominently.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqRejected">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqRejectedPanel"
+              aria-expanded="false"
+              aria-controls="faqRejectedPanel"
+            >
+              Why would a report be rejected during manual review?
+            </button>
+          </h2>
+          <div
+            id="faqRejectedPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqRejected"
+            data-bs-parent="#faqAccordionIntegrity"
+          >
+            <div class="accordion-body">
+              We aim to publish every report, but submissions may be rejected or
+              heavily redacted if they include hate speech, spam, or private
+              information about uninvolved third parties.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="h5 fw-semibold text-uppercase text-muted mb-3">
+        Donations and nonprofit status
+      </h2>
+      <div class="accordion mb-5" id="faqAccordionDonations">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqDelaware">
+            <button
+              class="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqDelawarePanel"
+              aria-expanded="true"
+              aria-controls="faqDelawarePanel"
+            >
+              Why are you a national nonprofit, and why Delaware?
+            </button>
+          </h2>
+          <div
+            id="faqDelawarePanel"
+            class="accordion-collapse collapse show"
+            aria-labelledby="faqDelaware"
+            data-bs-parent="#faqAccordionDonations"
+          >
+            <div class="accordion-body">
+              Police conduct is a national issue, and we operate a centralized,
+              secure database for all 50 states. We are incorporated in Delaware
+              as a 501(c)(3) and comply with the solicitation laws of the states
+              where we actively fundraise.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqDonationUse">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqDonationUsePanel"
+              aria-expanded="false"
+              aria-controls="faqDonationUsePanel"
+            >
+              Does my donation go to a specific state or city?
+            </button>
+          </h2>
+          <div
+            id="faqDonationUsePanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqDonationUse"
+            data-bs-parent="#faqAccordionDonations"
+          >
+            <div class="accordion-body">
+              Donations go into our general fund to support the national
+              platform. This helps us scale manual review and clear backlogs
+              across jurisdictions so every report gets timely review regardless
+              of location.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqDonationTax">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqDonationTaxPanel"
+              aria-expanded="false"
+              aria-controls="faqDonationTaxPanel"
+            >
+              Are donations tax-deductible?
+            </button>
+          </h2>
+          <div
+            id="faqDonationTaxPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqDonationTax"
+            data-bs-parent="#faqAccordionDonations"
+          >
+            <div class="accordion-body">
+              Yes. We are a 501(c)(3) nonprofit, so donations are tax-deductible
+              to the fullest extent permitted by law.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqDonationHow">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqDonationHowPanel"
+              aria-expanded="false"
+              aria-controls="faqDonationHowPanel"
+            >
+              How can I donate?
+            </button>
+          </h2>
+          <div
+            id="faqDonationHowPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqDonationHow"
+            data-bs-parent="#faqAccordionDonations"
+          >
+            <div class="accordion-body">
+              Visit our donation page at
+              <a href="/donate/">policeconduct.org/donate</a> for current ways to
+              support the project.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqDonationProcessing">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqDonationProcessingPanel"
+              aria-expanded="false"
+              aria-controls="faqDonationProcessingPanel"
+            >
+              How is my donation processed?
+            </button>
+          </h2>
+          <div
+            id="faqDonationProcessingPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqDonationProcessing"
+            data-bs-parent="#faqAccordionDonations"
+          >
+            <div class="accordion-body">
+              We use Stripe for secure, encrypted donation processing and
+              receive reduced nonprofit transaction fees through Stripe’s
+              Nonprofit Excellence Program. This keeps overhead low so more of
+              your gift funds report review and database integrity. You will
+              receive an automated tax receipt by email immediately after your
+              donation is processed.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="h5 fw-semibold text-uppercase text-muted mb-3">Process</h2>
+      <div class="accordion" id="faqAccordionProcess">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqReview">
+            <button
+              class="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqReviewPanel"
+              aria-expanded="true"
+              aria-controls="faqReviewPanel"
+            >
+              Why is my report being reviewed manually?
+            </button>
+          </h2>
+          <div
+            id="faqReviewPanel"
+            class="accordion-collapse collapse show"
+            aria-labelledby="faqReview"
+            data-bs-parent="#faqAccordionProcess"
+          >
+            <div class="accordion-body">
+              Manual review helps protect privacy, remove unintended personally
+              identifiable information, and maintain data integrity before
+              publication.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faqTen">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faqTenPanel"
+              aria-expanded="false"
+              aria-controls="faqTenPanel"
+            >
+              Can my report be turned into an official complaint or
+              commendation?
+            </button>
+          </h2>
+          <div
+            id="faqTenPanel"
+            class="accordion-collapse collapse"
+            aria-labelledby="faqTen"
+            data-bs-parent="#faqAccordionProcess"
+          >
+            <div class="accordion-body">
+              Not yet. We plan to support official complaint and commendation
+              workflows in the future.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="alert alert-light border-dark rounded-0">
+        You review your doctor — good, bad, or otherwise. Why not the police?
+      </div>
+    </div>
+  </main>
+</SiteLayout>

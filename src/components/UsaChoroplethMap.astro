@@ -1,0 +1,214 @@
+---
+import { USA_STATE_PATHS } from "../lib/geo/us-state-paths.js";
+
+type StateStat = {
+  code: string;
+  count: number;
+  href?: string;
+};
+
+const {
+  stats = [],
+  title = "United States",
+  subtitle = "",
+  emptyLabel = "No data yet",
+  interactionLabel = "Click a state to drill down.",
+} = Astro.props as {
+  stats: StateStat[];
+  title?: string;
+  subtitle?: string;
+  emptyLabel?: string;
+  interactionLabel?: string;
+};
+
+const byCode = new Map(stats.map((entry) => [entry.code.toLowerCase(), entry]));
+
+const maxCount = Math.max(0, ...stats.map((entry) => Number(entry.count || 0)));
+
+const getFill = (count: number) => {
+  if (!count) {
+    return "var(--bs-gray-100)";
+  }
+  if (!maxCount) {
+    return "rgba(21, 21, 21, 0.250)";
+  }
+  // Use log scale for better visibility of small counts
+  const logCount = Math.log10(count + 1);
+  const logMax = Math.log10(maxCount + 1);
+  const intensity = Math.min(1, logCount / logMax);
+  // Minimum alpha of 0.25 for any state with data
+  const alpha = 0.25 + intensity * 0.35;
+  return `rgba(21, 21, 21, ${alpha.toFixed(3)})`;
+};
+---
+
+<div class="card shadow-sm border-0 rounded-0 h-100">
+  <div class="card-body d-flex flex-column gap-3">
+    <div>
+      <p class="text-uppercase small text-muted mb-1">{title}</p>
+      <h2 class="h5 mb-1">Coverage map</h2>
+      {subtitle ? <p class="text-muted small mb-0">{subtitle}</p> : null}
+    </div>
+    <div class="map-wrap">
+      <svg
+        viewBox="192 9 1028 746"
+        role="img"
+        aria-label={`${title} coverage map`}
+        class="usa-map"
+      >
+        {
+          USA_STATE_PATHS.map((state) => {
+            const stat = byCode.get(state.id.toLowerCase()) || {
+              code: state.id,
+              count: 0,
+            };
+            const href = stat.href;
+            const count = Number(stat.count || 0);
+            const fill = getFill(count);
+            const isInteractive = Boolean(href);
+            const stateLabel = state.label;
+            const label = count ? `${stateLabel}: ${count}` : stateLabel;
+            const pathEl = (
+              <path
+                id={`state-${state.id}`}
+                d={state.d}
+                fill={fill}
+                stroke="#111"
+                stroke-width="1"
+                aria-label={label}
+                class:list={{
+                  "has-data": Boolean(count),
+                  "no-data": !count,
+                  "is-interactive": isInteractive,
+                }}
+              >
+                <title>{label}</title>
+              </path>
+            );
+            return href ? (
+              <a href={href} aria-label={`View ${label}`}>
+                {pathEl}
+              </a>
+            ) : (
+              pathEl
+            );
+          })
+        }
+      </svg>
+    </div>
+    <div class="d-flex align-items-center text-muted small gap-2">
+      <span class="legend-swatch"></span>
+      <span>{emptyLabel}</span>
+      {
+        interactionLabel ? (
+          <span class="ms-auto">{interactionLabel}</span>
+        ) : null
+      }
+    </div>
+  </div>
+</div>
+
+<style>
+  .map-wrap {
+    width: 100%;
+    background: var(--bs-gray-100);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.04);
+  }
+
+  .usa-map {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .usa-map path {
+    cursor: default;
+    transition:
+      transform 120ms ease,
+      fill 160ms ease,
+      stroke 160ms ease;
+  }
+
+  .usa-map path.is-interactive {
+    cursor: pointer;
+  }
+
+  .usa-map a,
+  .usa-map a path {
+    cursor: pointer;
+  }
+
+  .usa-map path.is-interactive:hover,
+  .usa-map path.is-interactive:focus-visible {
+    transform: translateY(-1px);
+    stroke-width: 2;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  .state-tiles-wrap {
+    overflow-x: auto;
+  }
+
+  .state-tiles {
+    display: grid;
+    grid-template-columns: repeat(11, minmax(2.2rem, 1fr));
+    grid-auto-rows: minmax(2.6rem, auto);
+    gap: 0.45rem;
+    min-width: 420px;
+    padding: 0.75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .state-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--bs-border-color);
+    text-decoration: none;
+    text-align: center;
+    color: #111;
+    font-size: 0.75rem;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    min-height: 2.6rem;
+  }
+
+  .state-tile.is-empty {
+    color: var(--bs-gray-600);
+  }
+
+  .state-tile .tile-code {
+    font-size: 0.6rem;
+  }
+
+  .state-tile .tile-count {
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .state-tile.is-interactive:hover,
+  .state-tile.is-interactive:focus-visible {
+    outline: 2px solid rgba(0, 0, 0, 0.2);
+    outline-offset: 1px;
+  }
+
+  .legend-swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1px solid var(--bs-border-color);
+    background: var(--bs-gray-100);
+  }
+</style>

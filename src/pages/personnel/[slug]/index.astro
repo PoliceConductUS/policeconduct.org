@@ -1,0 +1,498 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+import DisqusComments from "../../../components/DisqusComments.astro";
+import { withDb } from "../../../lib/db.js";
+import { groupBy, mapBy, normalizeAgencyHistory } from "../../../lib/data.js";
+import { formatShortDate } from "../../../lib/format.js";
+import { getPersonnelImageById } from "../../../lib/personnel-images.js";
+import { getReportStateSlug } from "../../../lib/report-state-stats.js";
+import { caseSlug } from "../../../lib/slug.js";
+import ProfileTabs from "../../../components/ProfileTabs.astro";
+import { getSiteUrl } from "../../../lib/structured-data.js";
+
+export async function getStaticPaths() {
+  const officers = await withDb(async (client) => {
+    return (
+      await client.query(
+        `select distinct o.id, o.first_name, o.last_name, o.suffix, o.slug
+         from public.officers o
+         join public.agency_officers ao on ao.officer_id = o.id`,
+      )
+    ).rows;
+  });
+
+  return officers.map((officer: { id: string; slug: string }) => ({
+    params: { slug: officer.slug },
+    props: { officerId: officer.id },
+  }));
+}
+
+const { officerId } = Astro.props;
+const data = await withDb(async (client) => {
+  const officer = (
+    await client.query("select * from public.officers where id = $1", [
+      officerId,
+    ])
+  ).rows[0];
+  const officerStats = (
+    await client.query("select * from public.officers_stats where id = $1", [
+      officerId,
+    ])
+  ).rows[0];
+  const agencyOfficers = (
+    await client.query(
+      "select * from public.agency_officers where officer_id = $1",
+      [officerId],
+    )
+  ).rows;
+  const agencyIds = agencyOfficers.map(
+    (entry: { agency_id: string }) => entry.agency_id,
+  );
+  const agencies = agencyIds.length
+    ? (
+        await client.query("select * from public.agency where id = any($1)", [
+          agencyIds,
+        ])
+      ).rows
+    : [];
+  const agencyOfficerIds = agencyOfficers.map(
+    (entry: { id: string }) => entry.id,
+  );
+  const reportOfficers = agencyOfficerIds.length
+    ? (
+        await client.query(
+          "select * from public.review_officers where agency_officer_id = any($1)",
+          [agencyOfficerIds],
+        )
+      ).rows
+    : [];
+  const reportIds = reportOfficers.map(
+    (entry: { review_id: string }) => entry.review_id,
+  );
+  const reports = reportIds.length
+    ? (
+        await client.query("select * from public.reviews where id = any($1)", [
+          reportIds,
+        ])
+      ).rows
+    : [];
+
+  const civilCaseIds = (
+    await client.query(
+      `select distinct cco.civil_case_id
+       from public.civil_case_officers cco
+       join public.agency_officers ao on ao.id = cco.agency_officer_id
+       where ao.officer_id = $1`,
+      [officerId],
+    )
+  ).rows.map((row: { civil_case_id: string }) => row.civil_case_id);
+  const civilCases = civilCaseIds.length
+    ? (
+        await client.query(
+          "select * from public.civil_cases where id = any($1)",
+          [civilCaseIds],
+        )
+      ).rows
+    : [];
+  const civilCaseLinks = civilCaseIds.length
+    ? (
+        await client.query(
+          "select * from public.civil_case_links where civil_case_id = any($1)",
+          [civilCaseIds],
+        )
+      ).rows
+    : [];
+  // Get agency categories for civil cases through civil_case_officers → agency_officers → agency
+  const civilCaseAgencies = civilCaseIds.length
+    ? (
+        await client.query(
+          `
+            select distinct cco.civil_case_id, upper(a.category) as category
+            from public.civil_case_officers cco
+            join public.agency_officers ao on ao.id = cco.agency_officer_id
+            join public.agency a on ao.agency_id = a.id
+            where cco.civil_case_id = any($1)
+          `,
+          [civilCaseIds],
+        )
+      ).rows
+    : [];
+
+  return {
+    officer,
+    officerStats,
+    agencyOfficers,
+    agencies,
+    reports,
+    civilCases,
+    civilCaseLinks,
+    civilCaseAgencies,
+  };
+});
+
+const agenciesById = mapBy(data.agencies, "id");
+const history = normalizeAgencyHistory(data.agencyOfficers);
+const currentAssignment = history[history.length - 1];
+const currentBadge = currentAssignment?.badge_number || null;
+const currentAgency = currentAssignment
+  ? agenciesById[currentAssignment.agency_id]
+  : null;
+const civilCaseLinksByCase = groupBy(data.civilCaseLinks, "civil_case_id");
+const civilCaseAgenciesByCase = groupBy(
+  data.civilCaseAgencies,
+  "civil_case_id",
+);
+
+const getCaseCategoryPath = (caseId: string | number) => {
+  const agencies = civilCaseAgenciesByCase[caseId] || [];
+  const normalized = agencies
+    .map((entry: { category?: string | null }) => entry.category?.toLowerCase())
+    .filter(Boolean);
+  if (!normalized.length) {
+    return "federal";
+  }
+  if (normalized.includes("federal")) {
+    return "federal";
+  }
+  return normalized[0];
+};
+
+const civilCasesWithPaths = data.civilCases.map(
+  (caseItem: {
+    id: string;
+    title?: string | null;
+    cause_number?: string | null;
+    filed_date?: string | null;
+    court?: string | null;
+  }) => {
+    const caseSlugValue = caseSlug(caseItem);
+    const caseCategory = getCaseCategoryPath(caseItem.id);
+    const links = civilCaseLinksByCase[caseItem.id] || [];
+    return {
+      ...caseItem,
+      caseSlug: caseSlugValue,
+      caseCategoryPath: caseCategory,
+      caseUrl: `/civil-litigation/${caseCategory}/${caseSlugValue}/`,
+      links,
+    };
+  },
+);
+
+const reportItems = data.reports.map(
+  (report: {
+    incident_date: string;
+    slug: string;
+    category?: string | null;
+    agency_slug?: string | null;
+    agencySlug?: string | null;
+  }) => {
+    const stateSlug = getReportStateSlug({
+      category: report.category ?? null,
+      agencySlug: report.agencySlug ?? report.agency_slug ?? null,
+    });
+    const reportUrl = stateSlug
+      ? `/report/${stateSlug}/${report.slug}/`
+      : `/report/${report.slug}/`;
+    return {
+      ...report,
+      incidentDate: formatShortDate(report.incident_date),
+      url: reportUrl,
+    };
+  },
+);
+
+const officerPath = `/personnel/${data.officer.slug}/`;
+const officerName =
+  `${data.officer.first_name} ${data.officer.last_name}`.trim();
+const addCivilCaseHref = `/civil-litigation/new/?${new URLSearchParams({
+  path: officerPath,
+  state: currentAgency?.category?.toLowerCase() || "",
+  message: `Add civil case referencing ${officerName}`,
+}).toString()}`;
+const reportHref = `/report/new/?${new URLSearchParams({
+  department: currentAgency?.name || "",
+  officerName,
+  path: officerPath,
+  message: `Submit report for ${officerName}`,
+}).toString()}`;
+const pastEmployerHref = `/personnel/new/?${new URLSearchParams({
+  agency: currentAgency?.name || "",
+  path: officerPath,
+  message: `Submit past employer information for ${officerName}`,
+}).toString()}`;
+
+const pastEmployers = history
+  .slice(0, -1)
+  .map((entry) => ({
+    ...entry,
+    agency: agenciesById[entry.agency_id],
+  }))
+  .filter((entry) => entry.agency);
+
+const defaultPersonnelImagePath = "/img/personnel/default.webp";
+const personnelImageSrc =
+  getPersonnelImageById(data.officer.id) || defaultPersonnelImagePath;
+const civilCaseCount = data.civilCases.length;
+const reportCount = data.reports.length;
+const pastEmployerCount = pastEmployers.length;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(officerPath, siteUrl).toString();
+const disqusIdentifier = `personnel:${data.officer.slug}`;
+const agencyUrl = currentAgency
+  ? new URL(
+      `/law-enforcement-agency/${currentAgency.category}/${currentAgency.slug}/`,
+      siteUrl,
+    ).toString()
+  : null;
+const organization =
+  currentAgency && agencyUrl
+    ? {
+        "@type": "GovernmentOrganization",
+        "@id": `${agencyUrl}#organization`,
+        name: currentAgency.name,
+        url: agencyUrl,
+      }
+    : null;
+const person = {
+  "@type": "Person",
+  "@id": `${pageUrl}#person`,
+  name: officerName,
+  url: pageUrl,
+  image: new URL(personnelImageSrc, siteUrl).toString(),
+  ...(organization ? { worksFor: { "@id": organization["@id"] } } : {}),
+};
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": new URL("/", siteUrl).toString(),
+      url: new URL("/", siteUrl).toString(),
+      name: "PoliceConduct.org",
+    },
+    {
+      "@type": "ProfilePage",
+      "@id": pageUrl,
+      url: pageUrl,
+      name: `Personnel ${data.officer.first_name} ${data.officer.last_name} | ${currentAgency!.name}`,
+      description: `Public profile for ${data.officer.first_name} ${data.officer.last_name}, compiled from public records and community submitted reports.`,
+      isPartOf: { "@id": new URL("/", siteUrl).toString() },
+      mainEntity: { "@id": person["@id"] },
+    },
+    ...(organization ? [organization] : []),
+    person,
+  ],
+};
+---
+
+<SiteLayout
+  title={`Personnel ${data.officer.first_name} ${data.officer.last_name} | ${
+    currentAgency!.name
+  }`}
+  description={`Public profile for ${data.officer.first_name} ${data.officer.last_name}, compiled from public records and community submitted reports.`}
+  pagePath={`/personnel/${data.officer.slug}/`}
+  structuredData={structuredData}
+>
+  <main class="">
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <nav aria-label="Breadcrumb">
+          <ol class="breadcrumb mb-3">
+            <li class="breadcrumb-item">
+              <a class="link-dark" href="/personnel/">Personnel</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+              {data.officer.first_name}
+              {data.officer.last_name}{
+                data.officer.suffix ? ` ${data.officer.suffix}` : ""
+              }
+            </li>
+          </ol>
+        </nav>
+        <div class="row align-items-center">
+          <div class="col-lg-12">
+            <p class="text-uppercase small text-muted mb-2">
+              {currentAgency!.name} • {currentAgency!.city || "Unknown"},{" "}
+              {currentAgency!.state}
+            </p>
+            <h1 class="display-4 fw-bold mb-3">
+              {data.officer.first_name}
+              {data.officer.last_name}
+            </h1>
+            <p class="text-muted small mb-0">
+              Last updated {formatShortDate(data.officer.updated_at)}. Compiled
+              from public records and community submitted reports.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-10">
+            <h2 class="h4 text-uppercase text-muted">Basic details</h2>
+            <div class="row align-items-start">
+              <div class="col-12 col-lg-7">
+                <dl class="row mb-4 mb-lg-0">
+                  <dt class="col-sm-4">Badge number</dt>
+                  <dd class="col-sm-8">
+                    {currentBadge || "Not publicly listed"}
+                  </dd>
+                  <dt class="col-sm-4">Agency</dt>
+                  <dd class="col-sm-8">
+                    {
+                      currentAgency ? (
+                        <a
+                          href={`/law-enforcement-agency/${currentAgency.category}/${currentAgency.slug}/`}
+                        >
+                          {currentAgency.name}
+                        </a>
+                      ) : (
+                        "Not listed"
+                      )
+                    }
+                    {
+                      currentAssignment?.start_date
+                        ? ` since: ${formatShortDate(currentAssignment.start_date)}`
+                        : ""
+                    }
+                  </dd>
+                  <dt class="col-sm-4">Civil litigation</dt>
+                  <dd class="col-sm-8">{data.civilCases.length}</dd>
+                  <dt class="col-sm-4">Reports</dt>
+                  <dd class="col-sm-8">{reportCount}</dd>
+                  <dt class="col-sm-4">Past employers</dt>
+                  <dd class="col-sm-8">{pastEmployers.length}</dd>
+                </dl>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                  <a
+                    class="btn btn-dark rounded-0"
+                    href={`/report/new/?department=${encodeURIComponent(
+                      currentAgency!.name,
+                    )}&officerName=${encodeURIComponent(
+                      `${data.officer.first_name} ${data.officer.last_name}`,
+                    )}`}
+                  >
+                    Submit Report
+                  </a>
+                  <a
+                    class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
+                    href={`/about/contact?whoami=Subscriber&message=Please%20notify%20of%20any%20changes%20to%20the%20following%20page(s):%20/personnel/${data.officer.slug}/`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="lucide lucide-bell"
+                    >
+                      <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
+                      <path
+                        d="M3.262 15a4 4 0 0 0 3.938 3h9.6a4 4 0 0 0 3.938-3"
+                      ></path>
+                      <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
+                    </svg>
+                    <span>Subscribe</span>
+                  </a>
+                </div>
+              </div>
+              <div class="col-12 col-lg-5 text-center">
+                <img
+                  src={personnelImageSrc}
+                  class="img-fluid rounded shadow"
+                  alt={`Portrait of ${data.officer.first_name} ${data.officer.last_name}`}
+                />
+                {
+                  personnelImageSrc === defaultPersonnelImagePath ? (
+                    <p class="small text-muted mt-2">
+                      Official portrait not yet available — placeholder image
+                      shown.
+                    </p>
+                  ) : null
+                }
+              </div>
+            </div>
+
+            <hr class="my-5" />
+
+            <ProfileTabs
+              tabs={[
+                {
+                  id: "officer-litigation",
+                  label: "Civil litigation",
+                  badge: civilCaseCount,
+                  tabType: "litigation",
+                },
+                {
+                  id: "officer-reports",
+                  label: "Reports",
+                  badge: reportCount,
+                  tabType: "reports",
+                },
+                {
+                  id: "officer-past",
+                  label: "Past employers",
+                  badge: pastEmployerCount,
+                  tabType: "pastEmployers",
+                },
+              ]}
+              litigation={{
+                cases: civilCasesWithPaths,
+                ctaHref: addCivilCaseHref,
+              }}
+              reports={{
+                items: reportItems,
+                ctaHref: reportHref,
+                layout: "table",
+              }}
+              pastEmployers={{
+                entries: pastEmployers,
+                ctaHref: pastEmployerHref,
+              }}
+            />
+
+            <div class="my-5">
+              <h2 class="h5 text-uppercase text-muted">Comments</h2>
+              <DisqusComments
+                pageUrl={pageUrl}
+                disqusIdentifier={disqusIdentifier}
+              />
+            </div>
+
+            <div
+              class="alert alert-light border-dark rounded-0 mt-5"
+              role="alert"
+            >
+              <p class="mb-3">
+                Have corrections or want to submit a report about this person?
+              </p>
+              <div class="d-flex flex-wrap gap-2">
+                <a
+                  class="btn btn-outline-dark rounded-0"
+                  href={`/personnel/suggest-edit/?path=/personnel/${data.officer.slug}/`}
+                >
+                  Suggest Edit
+                </a>
+              </div>
+              <div class="mt-2">
+                <a
+                  class="link-dark small"
+                  href={`/about/contact?whoami=Profile%20Owner&message=I%20would%20like%20to%20claim%20ownership%20of%20this%20profile.%0AProfile%20path:%20/personnel/${data.officer.slug}/`}
+                >
+                  Claim this profile
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>

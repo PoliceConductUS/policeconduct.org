@@ -1,0 +1,269 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+import { US_STATE_TILES } from "../../../lib/geo/states.js";
+import { loadReportSummaries } from "../../../lib/data/summaries.js";
+import { getReportStateSlug } from "../../../lib/report-state-stats.js";
+import { buildItemList, getSiteUrl } from "../../../lib/structured-data.js";
+
+const PAGE_SIZE = 50;
+
+export async function getStaticPaths() {
+  return US_STATE_TILES.map((state) => ({
+    params: { state: state.code.toLowerCase() },
+  }));
+}
+
+const { state } = Astro.params;
+const stateSlug = (state as string).toLowerCase();
+const stateCode = stateSlug.toUpperCase();
+const stateMeta = US_STATE_TILES.find((entry) => entry.code === stateCode);
+const allReports = (await loadReportSummaries()).filter(
+  (report) => getReportStateSlug(report) === stateSlug,
+);
+const totalCount = allReports.length;
+const pageReports = allReports.slice(0, PAGE_SIZE);
+const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+const title = stateMeta ? `${stateMeta.name} Reports` : `${stateCode} Reports`;
+const pagePath = `/report/${stateSlug}/`;
+const nextUrl = totalPages > 1 ? `/report/${stateSlug}/page/2/` : null;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const stateName = stateMeta?.name || stateCode;
+const reportItems = pageReports.map((report, index) => ({
+  "@type": "ListItem",
+  position: index + 1,
+  item: {
+    "@type": "Report",
+    name: report.title,
+    url: new URL(`/report/${stateSlug}/${report.slug}/`, siteUrl).toString(),
+    ...(report.agencyName
+      ? {
+          about: {
+            "@type": "GovernmentOrganization",
+            name: report.agencyName,
+          },
+        }
+      : {}),
+  },
+}));
+const reportItemList = buildItemList(reportItems);
+const websiteId = new URL("/", siteUrl).toString();
+const breadcrumb = {
+  "@type": "BreadcrumbList",
+  "@id": `${pageUrl}#breadcrumb`,
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: websiteId,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Reports",
+      item: new URL("/report/", siteUrl).toString(),
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: stateName,
+      item: pageUrl,
+    },
+  ],
+};
+const reportItemListId = reportItemList ? `${pageUrl}#itemlist` : null;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": websiteId,
+      url: websiteId,
+      name: "PoliceConduct.org",
+    },
+    {
+      "@type": "CollectionPage",
+      "@id": pageUrl,
+      url: pageUrl,
+      name: title,
+      description: `Reports recorded within ${stateMeta?.name || stateCode}.`,
+      isPartOf: { "@id": websiteId },
+      ...(reportItemListId ? { mainEntity: { "@id": reportItemListId } } : {}),
+      breadcrumb: { "@id": breadcrumb["@id"] },
+    },
+    breadcrumb,
+    ...(reportItemList ? [{ ...reportItemList, "@id": reportItemListId }] : []),
+  ],
+};
+
+const formatDisplayDate = (value?: string | null) => {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+---
+
+<SiteLayout
+  title={title}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row g-4 align-items-end">
+          <div class="col-12 col-lg-8">
+            <nav aria-label="Breadcrumb">
+              <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item">
+                  <a class="link-dark" href="/">Home</a>
+                </li>
+                <li class="breadcrumb-item">
+                  <a class="link-dark" href="/report/">Reports</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">
+                  {stateName}
+                </li>
+              </ol>
+            </nav>
+            <p class="text-uppercase small text-muted mb-2">State reports</p>
+            <h1 class="display-4 fw-bold">{title}</h1>
+            <p class="lead text-muted mb-0">
+              Showing reports recorded within {stateName}.
+            </p>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card shadow-sm rounded-0 border-dark">
+              <div class="card-body d-flex flex-column gap-2">
+                <div class="text-uppercase small text-muted">Reports</div>
+                <div class="d-flex align-items-end justify-content-between">
+                  <span class="display-6 fw-bold">{totalCount}</span>
+                </div>
+                <div class="text-muted small">
+                  Page 1 of {totalPages}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        {
+          pageReports.length === 0 ? (
+            <div
+              class="alert alert-secondary rounded-0 border-dark d-flex flex-column gap-2"
+              role="status"
+            >
+              <span>
+                No reports published for {stateMeta?.name || stateCode} yet.
+              </span>
+              <a
+                class="btn btn-dark rounded-0 w-auto"
+                href={`/report/new/?jurisdiction=${stateSlug}`}
+              >
+                Submit a report
+              </a>
+            </div>
+          ) : (
+            <div class="row row-cols-1 g-3">
+              {pageReports.map((report) => (
+                <div class="col">
+                  <article class="card shadow-sm border-0 rounded-0 h-100">
+                    <div class="card-body d-flex flex-column gap-3">
+                      <div class="row g-3 align-items-start">
+                        <div class="col-auto">
+                          <div class="text-uppercase small text-muted">
+                            Date
+                          </div>
+                          <div class="fw-bold">
+                            {formatDisplayDate(report.incidentDate)}
+                          </div>
+                        </div>
+                        <div class="col-12 col-md">
+                          <div class="text-uppercase small text-muted">
+                            Title
+                          </div>
+                          <div class="d-flex align-items-center flex-wrap gap-2">
+                            <a
+                              class="link-dark fw-semibold"
+                              href={`/report/${stateSlug}/${report.slug}/`}
+                            >
+                              {report.title}
+                            </a>
+                            {report.ratingOverall ? (
+                              <span class="badge bg-warning text-dark rounded-0">
+                                Rating {report.ratingOverall}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div class="col-12 col-md">
+                          <div class="text-uppercase small text-muted">
+                            Location
+                          </div>
+                          <div>{report.address || "—"}</div>
+                        </div>
+                        <div class="col-12 col-md">
+                          <div class="text-uppercase small text-muted">
+                            Personnel
+                          </div>
+                          {report.personnel?.length ? (
+                            <div class="d-flex flex-wrap align-items-center gap-1">
+                              {report.personnel.map((person, index) => (
+                                <>
+                                  {index > 0 ? (
+                                    <span class="mx-1 text-muted">•</span>
+                                  ) : null}
+                                  {person.slug ? (
+                                    <a
+                                      class="link-dark text-decoration-none"
+                                      href={`/personnel/${person.slug}/`}
+                                    >
+                                      {person.name}
+                                    </a>
+                                  ) : (
+                                    <span>{person.name}</span>
+                                  )}
+                                </>
+                              ))}
+                            </div>
+                          ) : (
+                            <span class="text-muted">—</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+              ))}
+            </div>
+          )
+        }
+        {
+          nextUrl ? (
+            <nav aria-label="Pagination" class="mt-4">
+              <a class="btn btn-outline-dark rounded-0" href={nextUrl}>
+                Next
+              </a>
+            </nav>
+          ) : null
+        }
+      </div>
+    </section>
+  </main>
+  <script
+    is:inline
+    id="dsq-count-scr"
+    src="https://policeconduct.disqus.com/count.js"
+    async></script>
+</SiteLayout>

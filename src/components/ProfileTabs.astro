@@ -1,0 +1,435 @@
+---
+import { formatShortDate } from "../lib/format.js";
+
+type OfficerRef = {
+  slug: string;
+  first_name: string;
+  last_name: string;
+};
+
+type CaseLink = {
+  url: string;
+  label?: string | null;
+};
+
+type LitigationCase = {
+  title?: string | null;
+  caseUrl: string;
+  cause_number?: string | null;
+  filed_date?: string | null;
+  court?: string | null;
+  links?: CaseLink[] | null;
+  officers?: OfficerRef[] | null;
+};
+
+type ReportItem = {
+  incidentDate?: string | null;
+  title?: string | null;
+  url: string;
+};
+
+type PersonnelEntry = {
+  entry: {
+    start_date?: string | null;
+    end_date?: string | null;
+    badge_number?: string | null;
+  };
+  officer?: OfficerRef | null;
+  reportCount?: number;
+  rating?: number | null;
+};
+
+type PastEmployerEntry = {
+  start_date?: string | null;
+  end_date?: string | null;
+  badge_number?: string | null;
+  reportCount?: number;
+  rating?: number | null;
+  agency?: {
+    category?: string | null;
+    slug?: string | null;
+    name?: string | null;
+  } | null;
+};
+
+type TabType = "litigation" | "reports" | "personnel" | "pastEmployers";
+type TabDescriptor = {
+  id: string;
+  label: string;
+  badge?: number;
+  tabType?: TabType;
+  slotName?: string;
+};
+
+type ProfileTabsProps = {
+  tabs?: TabDescriptor[];
+  activeId?: string;
+  extraNavClasses?: string;
+  litigation?: {
+    cases?: LitigationCase[];
+    ctaHref?: string;
+    ctaLabel?: string;
+    emptyMessage?: string;
+  };
+  reports?: {
+    items?: ReportItem[];
+    ctaHref?: string;
+    ctaLabel?: string;
+    emptyMessage?: string;
+    layout?: "table" | "list";
+  };
+  personnel?: {
+    entries?: PersonnelEntry[];
+    ctaHref?: string;
+    ctaLabel?: string;
+  };
+  pastEmployers?: {
+    entries?: PastEmployerEntry[];
+    ctaHref?: string;
+    ctaLabel?: string;
+  };
+};
+
+const {
+  tabs = [],
+  activeId,
+  extraNavClasses = "",
+  litigation = null,
+  reports = null,
+  personnel = null,
+  pastEmployers = null,
+} = Astro.props as ProfileTabsProps;
+
+const normalizedTabs = tabs.map((tab, index) => ({
+  ...tab,
+  slotName: tab.slotName || tab.id,
+  tabType: tab.tabType || null,
+  isActive: tab.id === activeId || (!activeId && index === 0),
+}));
+
+const litigationCases = litigation?.cases || [];
+const reportsItems = reports?.items || [];
+const personnelEntries = personnel?.entries || [];
+const pastEmployerEntries = pastEmployers?.entries || [];
+const hasLitigation = litigationCases.length > 0;
+const hasReports = reportsItems.length > 0;
+const hasPersonnel = personnelEntries.length > 0;
+const hasPastEmployers = pastEmployerEntries.length > 0;
+
+const formatCaseYear = (date?: string | null) =>
+  date ? new Date(date).getFullYear() : "—";
+const formatLinkLabel = (link?: CaseLink | null) => link?.label || "Source";
+const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
+---
+
+<ul class={`nav nav-tabs ${extraNavClasses}`} role="tablist">
+  {
+    normalizedTabs.map((tab) => (
+      <li class="nav-item" role="presentation">
+        <button
+          class={`nav-link${tab.isActive ? " active" : ""}`}
+          id={`${tab.id}-tab`}
+          data-bs-toggle="tab"
+          data-bs-target={`#${tab.id}`}
+          type="button"
+          role="tab"
+          aria-controls={tab.id}
+          aria-selected={tab.isActive ? "true" : "false"}
+        >
+          {tab.label}
+          {typeof tab.badge === "number" ? (
+            <span class="badge bg-dark ms-2 rounded-pill">{tab.badge}</span>
+          ) : null}
+        </button>
+      </li>
+    ))
+  }
+</ul>
+<div class="tab-content border border-top-0 p-4" id="profileTabsContent">
+  {
+    normalizedTabs.map((tab) => (
+      <div
+        class={`tab-pane fade${tab.isActive ? " show active" : ""}`}
+        id={tab.id}
+        role="tabpanel"
+        aria-labelledby={`${tab.id}-tab`}
+      >
+        {tab.tabType === "litigation" ? (
+          <>
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+              <span class="text-uppercase small text-muted mb-0">Cases</span>
+              {litigation?.ctaHref ? (
+                <a
+                  class="btn btn-outline-dark rounded-0 btn-sm"
+                  href={litigation.ctaHref}
+                >
+                  {litigation.ctaLabel || "Add a civil case"}
+                </a>
+              ) : null}
+            </div>
+            {hasLitigation ? (
+              <div class="d-grid gap-3">
+                {litigationCases.map((caseItem) => (
+                  <div class="border rounded-2 p-3 mb-3">
+                    <div class="mb-2">
+                      <span class="text-uppercase small text-muted">Case</span>
+                      <div>
+                        <a
+                          class="text-decoration-none text-dark fw-semibold"
+                          href={caseItem.caseUrl}
+                        >
+                          {caseItem.title || "Civil case"}
+                        </a>
+                      </div>
+                      {caseItem.officers?.length ? (
+                        <div class="small text-muted">
+                          —{" "}
+                          {caseItem.officers.map((officer, index) => (
+                            <>
+                              {index > 0 ? ", " : null}
+                              <a href={`/personnel/${officer.slug}/`}>
+                                {officer.first_name} {officer.last_name}
+                              </a>
+                            </>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                    <div class="case-grid">
+                      <span class="case-grid-label">Year</span>
+                      <span>{formatCaseYear(caseItem.filed_date)}</span>
+                      <span class="case-grid-label">Cause</span>
+                      <span>
+                        <strong>{caseItem.cause_number || "—"}</strong>
+                      </span>
+                      <span class="case-grid-label">Court</span>
+                      <span>{caseItem.court || "—"}</span>
+                      <span class="case-grid-label">Source</span>
+                      <span>
+                        {caseItem.links?.length ? (
+                          <a
+                            href={caseItem.links[0].url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {formatLinkLabel(caseItem.links[0])}
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p class="text-muted">
+                {litigation?.emptyMessage ?? "No civil litigation listed yet."}
+              </p>
+            )}
+          </>
+        ) : tab.tabType === "reports" ? (
+          <>
+            <div class="d-flex justify-content-end mb-3">
+              {reports?.ctaHref ? (
+                <a
+                  class="btn btn-outline-dark rounded-0 btn-sm"
+                  href={reports.ctaHref}
+                >
+                  {reports.ctaLabel || "Submit report"}
+                </a>
+              ) : null}
+            </div>
+            {hasReports ? (
+              <div class="d-grid gap-3">
+                {reportsItems.map((report) => (
+                  <article class="border rounded-2 p-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-baseline mb-2">
+                      <span class="text-uppercase small text-muted">Date</span>
+                      <strong>{formatReportDate(report)}</strong>
+                    </div>
+                    <div class="mb-3">
+                      <a class="fw-bold text-dark" href={report.url}>
+                        {report.title}
+                      </a>
+                    </div>
+                    <a class="btn btn-sm btn-outline-dark" href={report.url}>
+                      View report
+                    </a>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p class="text-muted">
+                {reports?.emptyMessage ?? "No reports published yet."}
+              </p>
+            )}
+          </>
+        ) : tab.tabType === "personnel" ? (
+          <>
+            <div class="d-flex justify-content-end mb-3">
+              {personnel?.ctaHref ? (
+                <a
+                  class="btn btn-outline-dark rounded-0 btn-sm"
+                  href={personnel.ctaHref}
+                >
+                  {personnel.ctaLabel || "Suggest new personnel"}
+                </a>
+              ) : null}
+            </div>
+            {hasPersonnel ? (
+              <div class="list-group">
+                {personnelEntries.map((employee) => (
+                  <div class="list-group-item">
+                    <div class="row g-3 align-items-start">
+                      <div class="col-auto">
+                        <div class="text-uppercase small text-muted">Start</div>
+                        <div class="fw-semibold">
+                          {employee.entry.start_date
+                            ? formatShortDate(employee.entry.start_date)
+                            : "Unknown"}
+                        </div>
+                      </div>
+                      <div class="col-auto">
+                        <div class="text-uppercase small text-muted">End</div>
+                        <div>
+                          {employee.entry.end_date
+                            ? formatShortDate(employee.entry.end_date)
+                            : "Current"}
+                        </div>
+                      </div>
+                      <div class="col-12 col-md">
+                        <div class="text-uppercase small text-muted">Name</div>
+                        {employee.officer ? (
+                          <a href={`/personnel/${employee.officer.slug}/`}>
+                            {employee.officer.first_name}{" "}
+                            {employee.officer.last_name}
+                          </a>
+                        ) : (
+                          "Unknown"
+                        )}
+                      </div>
+                      <div class="col-6 col-md-2">
+                        <div class="text-uppercase small text-muted">
+                          Badge #
+                        </div>
+                        <div>{employee.entry.badge_number || "Unknown"}</div>
+                      </div>
+                      <div class="col-6 col-md-2">
+                        <div class="text-uppercase small text-muted">
+                          Reports
+                        </div>
+                        <div>{employee.reportCount}</div>
+                      </div>
+                      <div class="col-12 col-md-2">
+                        <div class="text-uppercase small text-muted">
+                          Rating
+                        </div>
+                        <div>
+                          {employee.rating && employee.rating > 0
+                            ? employee.rating.toFixed(1)
+                            : "Not rated"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p class="text-muted">No personnel listed yet.</p>
+            )}
+          </>
+        ) : tab.tabType === "pastEmployers" ? (
+          <>
+            <div class="d-flex justify-content-end mb-3">
+              {pastEmployers?.ctaHref ? (
+                <a
+                  class="btn btn-outline-dark rounded-0 btn-sm"
+                  href={pastEmployers.ctaHref}
+                >
+                  {pastEmployers.ctaLabel || "Submit past employer"}
+                </a>
+              ) : null}
+            </div>
+            {hasPastEmployers ? (
+              <div class="list-group">
+                {pastEmployerEntries.map((entry) => (
+                  <div class="list-group-item">
+                    <div class="row g-3 align-items-start">
+                      <div class="col-auto">
+                        <div class="text-uppercase small text-muted">Start</div>
+                        <div class="fw-semibold">
+                          {entry.start_date
+                            ? formatShortDate(entry.start_date)
+                            : "Unknown"}
+                        </div>
+                      </div>
+                      <div class="col-auto">
+                        <div class="text-uppercase small text-muted">End</div>
+                        <div>
+                          {entry.end_date
+                            ? formatShortDate(entry.end_date)
+                            : "Current"}
+                        </div>
+                      </div>
+                      <div class="col-12 col-md">
+                        <div class="text-uppercase small text-muted">Name</div>
+                        {entry.agency ? (
+                          <a
+                            href={`/law-enforcement-agency/${entry.agency.category}/${entry.agency.slug}/`}
+                          >
+                            {entry.agency.name}
+                          </a>
+                        ) : (
+                          "Unknown"
+                        )}
+                      </div>
+                      <div class="col-6 col-md-2">
+                        <div class="text-uppercase small text-muted">
+                          Badge #
+                        </div>
+                        <div>{entry.badge_number || "Unknown"}</div>
+                      </div>
+                      <div class="col-6 col-md-2">
+                        <div class="text-uppercase small text-muted">
+                          Reports
+                        </div>
+                        <div>{entry.reportCount || 0}</div>
+                      </div>
+                      <div class="col-12 col-md-2">
+                        <div class="text-uppercase small text-muted">
+                          Rating
+                        </div>
+                        <div>
+                          {entry.rating && entry.rating > 0
+                            ? entry.rating.toFixed(1)
+                            : "Not rated"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p class="text-muted mb-0">No past employers listed yet.</p>
+            )}
+          </>
+        ) : null}
+      </div>
+    ))
+  }
+</div>
+<style is:global>
+  .case-grid {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 0.25rem 0.75rem;
+    align-items: baseline;
+  }
+  .case-grid-label {
+    text-transform: uppercase;
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    color: #6c757d;
+  }
+</style>

@@ -1,0 +1,253 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout
+  title="Suggest New Personnel | PoliceConduct.org"
+  pagePath="/personnel/new/"
+>
+  <main class="">
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">New personnel</p>
+            <h1 class="display-5 fw-bold mb-3">Suggest new personnel</h1>
+            <p class="text-muted mb-0">
+              Share public, verifiable details so we can add a new personnel
+              profile.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-8">
+            <div class="border p-4 bg-white shadow-sm">
+              <h2 class="h5 fw-semibold">Personnel intake form</h2>
+              <p class="text-muted mb-3">
+                Provide the same details shown on personnel profiles. Leave any
+                field blank if you are unsure.
+              </p>
+              <div class="alert alert-warning rounded-0 small">
+                Please do not include personal addresses, phone numbers, family
+                details, or other private information. Submissions should focus
+                on public, verifiable facts.
+              </div>
+              <form
+                name="personnel-new-suggestion"
+                method="POST"
+                data-netlify="true"
+                data-netlify-honeypot="organization"
+                class="needs-validation"
+                novalidate
+              >
+                <input
+                  type="hidden"
+                  name="form-name"
+                  value="personnel-new-suggestion"
+                />
+                <div class="honeypot visually-hidden">
+                  <label>
+                    Organization
+                    <input type="text" name="organization" />
+                  </label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="firstName"
+                    name="firstName"
+                    placeholder="First name"
+                    required
+                  />
+                  <label for="firstName">First name*</label>
+                  <div class="invalid-feedback">
+                    Please provide a first name.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="lastName"
+                    name="lastName"
+                    placeholder="Last name"
+                    required
+                  />
+                  <label for="lastName">Last name*</label>
+                  <div class="invalid-feedback">
+                    Please provide a last name.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="suffix"
+                    name="suffix"
+                    placeholder="Suffix"
+                  />
+                  <label for="suffix">Suffix</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="badgeNumber"
+                    name="badgeNumber"
+                    placeholder="Badge number"
+                  />
+                  <label for="badgeNumber">Badge number</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="currentAgency"
+                    name="currentAgency"
+                    placeholder="Current agency"
+                    required
+                  />
+                  <label for="currentAgency">Current agency*</label>
+                  <div class="invalid-feedback">
+                    Please provide the current agency name.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="currentAgencyCity"
+                    name="currentAgencyCity"
+                    placeholder="City"
+                  />
+                  <label for="currentAgencyCity">Current agency city</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="currentAgencyState"
+                    name="currentAgencyState"
+                    placeholder="State"
+                  />
+                  <label for="currentAgencyState">Current agency state</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="currentAgencyStart"
+                    name="currentAgencyStart"
+                    placeholder="Start date"
+                  />
+                  <label for="currentAgencyStart"
+                    >Current agency start date</label
+                  >
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="pastEmployers"
+                    name="pastEmployers"
+                    placeholder="Past employers"
+                    style="height: 110px"></textarea>
+                  <label for="pastEmployers">Past employers</label>
+                  <div class="form-text">
+                    List previous agencies and dates, one per line if possible.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="civilLitigation"
+                    name="civilLitigation"
+                    placeholder="Civil litigation"
+                    style="height: 130px"></textarea>
+                  <label for="civilLitigation">Civil litigation</label>
+                  <div class="form-text">
+                    Include case numbers, court, and links if available.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="reportLinks"
+                    name="reportLinks"
+                    placeholder="Report links"
+                    style="height: 130px"></textarea>
+                  <label for="reportLinks">Reports</label>
+                  <div class="form-text">
+                    Share report or news links that mention this person.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="url"
+                    class="form-control"
+                    id="profilePhotoLink"
+                    name="profilePhotoLink"
+                    placeholder="Profile photo link"
+                  />
+                  <label for="profilePhotoLink">Profile photo link</label>
+                </div>
+                <div data-netlify-recaptcha="true"></div>
+                <button type="submit" class="btn btn-dark rounded-0 w-100">
+                  Submit personnel suggestion
+                </button>
+              </form>
+              <p class="small text-muted mt-3 mb-0">
+                If you have documents or public records, include them in the
+                civil litigation or reports fields or submit a separate message
+                via
+                <a href="/about/contact">Contact Us</a>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script is:inline>
+    (function () {
+      const form = document.querySelector(
+        'form[name="personnel-new-suggestion"]',
+      );
+      if (!form) {
+        return;
+      }
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+      });
+    })();
+  </script>
+  <script is:inline>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const mappings = [
+        { param: "agency", elementId: "currentAgency" },
+        { param: "city", elementId: "currentAgencyCity" },
+        { param: "state", elementId: "currentAgencyState" },
+      ];
+      mappings.forEach(({ param, elementId }) => {
+        const element = document.getElementById(elementId);
+        if (!element) {
+          return;
+        }
+        const value = params.get(param);
+        if (value && !element.value.trim()) {
+          element.value = value.trim();
+        }
+      });
+    })();
+  </script>
+</SiteLayout>

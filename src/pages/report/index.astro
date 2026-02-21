@@ -1,0 +1,144 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import UsaChoroplethMap from "../../components/UsaChoroplethMap.astro";
+import {
+  loadAgencySummaries,
+  loadReportSummaries,
+} from "../../lib/data/summaries.js";
+import { buildReportStateStats } from "../../lib/report-state-stats.js";
+import {
+  buildItemList,
+  buildWebPage,
+  getSiteUrl,
+} from "../../lib/structured-data.js";
+
+const reports = await loadReportSummaries();
+const agencies = await loadAgencySummaries();
+const stateStats = buildReportStateStats(reports);
+const federalAgencies = agencies.filter(
+  (agency) => agency.category === "federal",
+);
+const totalReports = reports.length;
+const pagePath = "/report/";
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const federalAgencyItems = federalAgencies.map((agency, index) => {
+  const item = {
+    "@type": "GovernmentOrganization",
+    name: agency.name,
+    url: new URL(
+      `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+      siteUrl,
+    ).toString(),
+  };
+  return {
+    "@type": "ListItem",
+    position: index + 1,
+    item,
+  };
+});
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: "Reports | PoliceConduct.org",
+  description: "Reports submitted by users documenting police interactions.",
+  type: "CollectionPage",
+});
+const federalItemList = buildItemList(federalAgencyItems);
+if (federalItemList) {
+  structuredData.mainEntity = federalItemList;
+}
+---
+
+<SiteLayout
+  title="Reports | PoliceConduct.org"
+  description="Reports submitted by users documenting police interactions."
+  pagePath={pagePath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row g-4 align-items-end">
+          <div class="col-12 col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">Reports</p>
+            <h1 class="display-4 fw-bold">Reports</h1>
+            <p class="lead text-muted mb-0">
+              Reports submitted by users documenting police interactions.
+            </p>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card shadow-sm rounded-0 border-dark">
+              <div class="card-body d-flex flex-column gap-2">
+                <div class="text-uppercase small text-muted">
+                  Reports listed
+                </div>
+                <div class="d-flex align-items-end justify-content-between">
+                  <span class="display-6 fw-bold">{totalReports}</span>
+                </div>
+                <div class="text-muted small">
+                  Hover over a state to see the report count; click to view
+                  reports by sate. Federal agencies are listed separately.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-12 col-lg-8">
+            <UsaChoroplethMap
+              stats={stateStats}
+              title="States"
+              subtitle="Counts of reports by agency state."
+              emptyLabel="No reports yet"
+              interactionLabel="Hover over a state to see the count."
+            />
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card shadow-sm rounded-0 border-dark h-100">
+              <div class="card-body d-flex flex-column gap-3">
+                <div class="d-flex align-items-center justify-content-between">
+                  <p class="text-uppercase small text-muted mb-0">
+                    Federal agencies
+                  </p>
+                  <span class="badge bg-dark rounded-pill"
+                    >{federalAgencies.length}</span
+                  >
+                </div>
+                <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
+                  {
+                    federalAgencies.map((agency) => (
+                      <li class="d-flex align-items-start justify-content-between gap-2">
+                        <a
+                          class="text-decoration-none fw-semibold"
+                          href={`/law-enforcement-agency/${agency.category}/${agency.slug}/`}
+                        >
+                          {agency.name}
+                        </a>
+                        <div class="d-flex align-items-center gap-2">
+                          <span class="badge bg-light text-dark border rounded-pill">
+                            Reports: {agency.reportCount}
+                          </span>
+                        </div>
+                      </li>
+                    ))
+                  }
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script
+    is:inline
+    id="dsq-count-scr"
+    src="https://policeconduct.disqus.com/count.js"
+    async></script>
+</SiteLayout>

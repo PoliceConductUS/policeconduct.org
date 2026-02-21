@@ -1,0 +1,616 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+
+type DonationFrequency = "monthly" | "oneTime";
+type PresetAmountKey =
+  | "amount10"
+  | "amount25"
+  | "amount50"
+  | "amount100"
+  | "amount250"
+  | "amountOther";
+
+type DonatePageConfiguration = {
+  pageTitle: string;
+  pageSubtitle: string;
+  ein: string;
+  financialReportsPath: string;
+
+  presetAmounts: Array<{ key: PresetAmountKey; label: string }>;
+
+  stripeLinks: {
+    presets: Record<DonationFrequency, Record<PresetAmountKey, string>>;
+    clubs: Record<
+      DonationFrequency,
+      Record<
+        "civilian" | "sentinel" | "vanguard" | "patron" | "guardian",
+        string | null
+      >
+    >;
+  };
+
+  clubs: Array<{
+    key: "civilian" | "sentinel" | "vanguard" | "patron" | "guardian";
+    name: string;
+    monthlyAmountLabel: string;
+    description: string;
+    perks: string[];
+  }>;
+
+  guardrailSentence: string;
+};
+
+type DonationPageCopy = {
+  eyebrow: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  impactTitle: string;
+  impactItems: string[];
+  donationCardTitle: string;
+  donationCardSubtitle: string;
+  frequencyLegend: string;
+  frequencyOptions: Array<{ key: DonationFrequency; label: string }>;
+  trustStripSegments: string[];
+  trustStripLinkLabel: string;
+  presetHeading: string;
+  clubsTitle: string;
+  clubsSubtitle: string;
+  clubsContactPath: string;
+  clubsContactLabel: string;
+  clubMonthlyButtonLabel: string;
+  clubAnnualButtonLabel: string;
+  clubDisabledHint: string;
+  clubBenefitsLabel: string;
+  otherWaysTitle: string;
+  otherWays: Array<{ title: string; body: string }>;
+  processingTitle: string;
+  processingParagraphs: string[];
+  financialFooterPrompt: string;
+  financialFooterLabel: string;
+};
+
+const donatePageConfiguration: DonatePageConfiguration = {
+  pageTitle: "Donate",
+  pageSubtitle:
+    "Your support powers report review, privacy protection, and a transparent public record of police interactions nationwide.",
+  ein: "99-3296620",
+  financialReportsPath: "/about/financial-reports",
+  presetAmounts: [
+    { key: "amount10", label: "$10" },
+    { key: "amount25", label: "$25" },
+    { key: "amount50", label: "$50" },
+    { key: "amount100", label: "$100" },
+    { key: "amount250", label: "$250" },
+    { key: "amountOther", label: "Other" },
+  ],
+  stripeLinks: {
+    presets: {
+      monthly: {
+        amount10: "https://donate.stripe.com/5kQ00dcZSe2g8sf6Tx9EI00",
+        amount25: "https://donate.stripe.com/bJe28l6Bu4rGaAn6Tx9EI07",
+        amount50: "https://donate.stripe.com/00w9ANaRKgao37V0v99EI0g",
+        amount100: "https://donate.stripe.com/14AbIV1ha2jy5g34Lp9EI0e",
+        amount250: "https://donate.stripe.com/9B65kxaRK5vKdMzdhV9EI0i",
+        amountOther: "",
+      },
+      oneTime: {
+        amount10: "https://donate.stripe.com/5kQ5kx9NGcYc37Vb9N9EI09",
+        amount25: "https://donate.stripe.com/4gM28l2le4rG7ob0v99EI0a",
+        amount50: "https://donate.stripe.com/00weV7bVOaQ44bZ91F9EI0b",
+        amount100: "https://donate.stripe.com/4gMaER1ha1fu8sffq39EI0c",
+        amount250: "https://donate.stripe.com/fZu6oB6Bu9M0aAn91F9EI0d",
+        amountOther: "https://donate.stripe.com/9B6bIVe3W3nCbEr1zd9EI05",
+      },
+    },
+    clubs: {
+      monthly: {
+        civilian: "https://donate.stripe.com/5kQ00dcZSe2g8sf6Tx9EI00",
+        sentinel: "https://donate.stripe.com/bJe28l6Bu4rGaAn6Tx9EI07",
+        vanguard: "https://donate.stripe.com/00w9ANaRKgao37V0v99EI0g",
+        patron: "https://donate.stripe.com/14AbIV1ha2jy5g34Lp9EI0e",
+        guardian: "https://donate.stripe.com/9B65kxaRK5vKdMzdhV9EI0i",
+      },
+      oneTime: {
+        civilian: "https://donate.stripe.com/14A6oB1ha2jy6k7a5J9EI06",
+        sentinel: "https://donate.stripe.com/6oU5kx3pi4rG37V3Hl9EI08",
+        vanguard: "https://donate.stripe.com/aFa6oB4tm2jy23R4Lp9EI0h",
+        patron: "https://donate.stripe.com/3cI00de3WbU8bErb9N9EI0f",
+        guardian: "https://donate.stripe.com/fZubIV7FyaQ437V3Hl9EI0j",
+      },
+    },
+  },
+  clubs: [
+    {
+      key: "sentinel",
+      name: "Sentinel Club",
+      monthlyAmountLabel: "$25/mo (or $300/yr)",
+      description: "Sustains review capacity and public transparency.",
+      perks: [
+        "Everything in Civilian Club",
+        "Quarterly regional insights",
+        "Supporter update briefings",
+      ],
+    },
+    {
+      key: "vanguard",
+      name: "Vanguard Club",
+      monthlyAmountLabel: "$50/mo (or $600/yr)",
+      description: "Supports scaling tools and long-term data integrity.",
+      perks: [
+        "Everything in Sentinel Club",
+        "Beta access to new tools",
+        "Quarterly video briefings",
+      ],
+    },
+    {
+      key: "patron",
+      name: "Patron Club",
+      monthlyAmountLabel: "$100/mo (or $1,200/yr)",
+      description: "Sustains the team that keeps the national record accurate.",
+      perks: [
+        "Everything in Vanguard Club",
+        "Early access to major releases",
+        "Annual supporter briefing",
+      ],
+    },
+    {
+      key: "guardian",
+      name: "Guardian Club",
+      monthlyAmountLabel: "$250/mo (or $3,000/yr)",
+      description: "Sustains long-term operations and strategic initiatives.",
+      perks: [
+        "Everything in Patron Club",
+        "Annual impact briefing",
+        "Annual report recognition",
+      ],
+    },
+  ],
+  guardrailSentence:
+    "Donations never affect whether a report is accepted, reviewed, published, or how it is presented.",
+};
+
+const donatePageCopy: DonationPageCopy = {
+  eyebrow: "Support the mission",
+  heroTitle: donatePageConfiguration.pageTitle,
+  heroSubtitle: donatePageConfiguration.pageSubtitle,
+  impactTitle: "Your gift supports",
+  impactItems: [
+    "Manual review that verifies submissions and protects privacy.",
+    "Secure technology for evidence links, storage, and access.",
+    "National outreach to partners, advocates, and agencies.",
+  ],
+  donationCardTitle: "Make a donation",
+  donationCardSubtitle: "Choose monthly support or a one-time gift.",
+  frequencyLegend: "Donation frequency",
+  frequencyOptions: [
+    { key: "monthly", label: "Monthly" },
+    { key: "oneTime", label: "One-time" },
+  ],
+  trustStripSegments: [
+    "501(c)(3)",
+    `EIN ${donatePageConfiguration.ein}`,
+    "Secure checkout",
+    "Instant emailed receipt",
+  ],
+  trustStripLinkLabel: "Financial reports",
+  presetHeading: "Choose an amount",
+  clubsTitle: "Giving clubs",
+  clubsSubtitle:
+    "Giving clubs are recurring (monthly by default), with an annual option if you prefer. Cancel anytime.",
+  clubsContactPath: "/about/contact?whoami=Donor",
+  clubsContactLabel: "Ask about club benefits",
+  clubMonthlyButtonLabel: "Give monthly",
+  clubAnnualButtonLabel: "Give annually",
+  clubDisabledHint: "Monthly or annual only",
+  clubBenefitsLabel: "See benefits",
+  otherWaysTitle: "Other ways to give",
+  otherWays: [
+    {
+      title: "Donate by check",
+      body: "Make checks payable to Institute for Police Conduct, Inc. Mail to: 8 The Green #11026, Dover, DE 19901.",
+    },
+    {
+      title: "Employer match",
+      body: "Ask your HR team about matching gifts. If they need details, contact us and we will provide everything required.",
+    },
+    {
+      title: "PayPal / Venmo",
+      body: "Coming soon.",
+    },
+  ],
+  processingTitle: "How your donation is processed",
+  processingParagraphs: [
+    "We use Stripe to ensure your gift is handled with the highest level of security and encryption. As a registered 501(c)(3), we have been approved for Stripe's Nonprofit Excellence Program, which provides reduced transaction fees.",
+    "By using Stripe's nonprofit tools, we keep overhead low so more of your donation goes toward clearing our report backlog and maintaining the integrity of our national database.",
+    "You will receive an automated tax receipt via email immediately after your donation is processed.",
+  ],
+  financialFooterPrompt: "Want more details on our finances?",
+  financialFooterLabel: "View financial reports",
+};
+
+const defaultFrequency: DonationFrequency = "monthly";
+const primaryPresetKey: PresetAmountKey = "amount25";
+
+type StripeLinkEntry = { key: string; url: string };
+
+const collectStripeLinks = (
+  donateConfiguration: DonatePageConfiguration,
+): StripeLinkEntry[] => {
+  const entries: StripeLinkEntry[] = [];
+
+  const presetLinks = donateConfiguration.stripeLinks.presets;
+  (Object.keys(presetLinks) as DonationFrequency[]).forEach((frequency) => {
+    const links = presetLinks[frequency];
+    (Object.keys(links) as PresetAmountKey[]).forEach((amountKey) => {
+      entries.push({
+        key: `presets.${frequency}.${amountKey}`,
+        url: links[amountKey],
+      });
+    });
+  });
+
+  const clubLinks = donateConfiguration.stripeLinks.clubs;
+  (Object.keys(clubLinks) as DonationFrequency[]).forEach((frequency) => {
+    const links = clubLinks[frequency];
+    (
+      Object.keys(links) as Array<
+        "civilian" | "sentinel" | "vanguard" | "patron" | "guardian"
+      >
+    ).forEach((clubKey) => {
+      const link = links[clubKey] ?? "";
+      entries.push({ key: `clubs.${frequency}.${clubKey}`, url: link });
+    });
+  });
+
+  return entries;
+};
+
+const getStripeHostname = (url: string, key: string): string | null => {
+  if (!url || url.trim().length === 0) {
+    return null;
+  }
+  try {
+    return new URL(url).hostname;
+  } catch {
+    throw new Error(`Invalid Stripe URL for "${key}": "${url}"`);
+  }
+};
+
+const validateStripeHostnames = (links: StripeLinkEntry[]) => {
+  const nonEmptyLinks = links.filter((entry) => entry.url.trim().length > 0);
+  if (nonEmptyLinks.length === 0) {
+    return;
+  }
+  const firstHostname = getStripeHostname(
+    nonEmptyLinks[0].url,
+    nonEmptyLinks[0].key,
+  );
+  if (!firstHostname) {
+    return;
+  }
+  const mismatches: string[] = [];
+  nonEmptyLinks.forEach((entry) => {
+    const hostname = getStripeHostname(entry.url, entry.key);
+    if (hostname && hostname !== firstHostname) {
+      mismatches.push(`${entry.key} (${hostname})`);
+    }
+  });
+  if (mismatches.length > 0) {
+    throw new Error(
+      `Stripe link hostname mismatch. Expected "${firstHostname}". Offending keys: ${mismatches.join(
+        ", ",
+      )}`,
+    );
+  }
+};
+
+validateStripeHostnames(collectStripeLinks(donatePageConfiguration));
+---
+
+<SiteLayout title="Donate | PoliceConduct.org" pagePath="/donate/">
+  <main class="flex-grow-1 py-vh-3" data-donation-root>
+    <div class="container">
+      <div class="row align-items-start mb-5">
+        <div class="col-lg-6">
+          <p class="text-uppercase small text-muted mb-2">
+            {donatePageCopy.eyebrow}
+          </p>
+          <h1 class="display-5 fw-bold">{donatePageCopy.heroTitle}</h1>
+          <p class="lead text-muted">{donatePageCopy.heroSubtitle}</p>
+          <div class="mt-4">
+            <p class="text-uppercase small text-muted mb-2">
+              {donatePageCopy.impactTitle}
+            </p>
+            <ul class="list-unstyled text-muted mb-0">
+              {
+                donatePageCopy.impactItems.map((item) => (
+                  <li class="mb-2">{item}</li>
+                ))
+              }
+            </ul>
+          </div>
+        </div>
+        <div class="col-lg-6 mt-4 mt-lg-0">
+          <div class="border p-4 bg-white shadow-sm">
+            <h2 class="h5 fw-semibold">{donatePageCopy.donationCardTitle}</h2>
+            <p class="text-muted mb-3">{donatePageCopy.donationCardSubtitle}</p>
+
+            <fieldset
+              class="btn-group w-100 mb-3"
+              role="radiogroup"
+              aria-label={donatePageCopy.frequencyLegend}
+            >
+              <legend class="visually-hidden">
+                {donatePageCopy.frequencyLegend}
+              </legend>
+              {
+                donatePageCopy.frequencyOptions.map((option) => (
+                  <>
+                    <input
+                      class="btn-check"
+                      type="radio"
+                      name="donation-frequency"
+                      id={`frequency-${option.key}`}
+                      value={option.key}
+                      checked={option.key === defaultFrequency}
+                    />
+                    <label
+                      class="btn btn-outline-dark"
+                      for={`frequency-${option.key}`}
+                    >
+                      {option.label}
+                    </label>
+                  </>
+                ))
+              }
+            </fieldset>
+
+            <p class="text-uppercase small text-muted mb-2">
+              {donatePageCopy.presetHeading}
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+              {
+                donatePageConfiguration.presetAmounts.map((amount) => {
+                  const monthlyLink =
+                    donatePageConfiguration.stripeLinks.presets.monthly[
+                      amount.key
+                    ];
+                  const oneTimeLink =
+                    donatePageConfiguration.stripeLinks.presets.oneTime[
+                      amount.key
+                    ];
+                  const isPrimary = amount.key === primaryPresetKey;
+                  const initialLink =
+                    defaultFrequency === "monthly" ? monthlyLink : oneTimeLink;
+                  const isDisabled = !initialLink;
+                  return (
+                    <a
+                      class={`btn rounded-0 ${
+                        isPrimary ? "btn-dark" : "btn-outline-dark"
+                      } ${isDisabled ? "disabled" : ""}`}
+                      data-preset-button
+                      data-link-monthly={monthlyLink}
+                      data-link-onetime={oneTimeLink}
+                      href={initialLink || undefined}
+                      aria-disabled={isDisabled ? "true" : "false"}
+                      tabindex={isDisabled ? -1 : 0}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {amount.label}
+                    </a>
+                  );
+                })
+              }
+            </div>
+            <div class="border rounded-0 p-3 bg-gray-100 my-3">
+              <div class="d-flex flex-wrap gap-2 small text-muted">
+                <span>{donatePageCopy.trustStripSegments.join(" • ")}</span>
+              </div>
+              <a
+                class="small text-decoration-none d-inline-block mt-2"
+                href={donatePageConfiguration.financialReportsPath}
+              >
+                {donatePageCopy.trustStripLinkLabel}
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="border p-4 mb-4">
+        <div class="row align-items-center">
+          <div class="col-lg-7">
+            <h2 class="h4 fw-semibold mb-2">{donatePageCopy.clubsTitle}</h2>
+            <p class="text-muted mb-2">{donatePageCopy.clubsSubtitle}</p>
+            <p class="text-muted mb-0">
+              {donatePageConfiguration.guardrailSentence}
+            </p>
+          </div>
+          <div class="col-lg-5 text-lg-end mt-3 mt-lg-0">
+            <a
+              class="btn btn-outline-dark rounded-0"
+              href={donatePageCopy.clubsContactPath}
+            >
+              {donatePageCopy.clubsContactLabel}
+            </a>
+          </div>
+        </div>
+
+        <div class="row g-4 mt-3" data-club-grid>
+          {
+            donatePageConfiguration.clubs.map((club) => {
+              const monthlyLink =
+                donatePageConfiguration.stripeLinks.clubs.monthly[club.key] ||
+                "";
+              const annualLink =
+                donatePageConfiguration.stripeLinks.clubs.oneTime[club.key] ||
+                "";
+              return (
+                <div class="col-md-6 col-lg-3" data-club-card>
+                  <div class="border p-3 h-100 d-flex flex-column">
+                    <h3 class="h6 text-uppercase text-muted mb-1">
+                      {club.name}
+                    </h3>
+                    <p class="small fw-bold mb-2">{club.monthlyAmountLabel}</p>
+                    <p class="x-small text-muted font-italic mb-2">
+                      {club.description}
+                    </p>
+                    <details class="small text-muted mb-4">
+                      <summary class="text-muted">
+                        {donatePageCopy.clubBenefitsLabel}
+                      </summary>
+                      <ul class="mt-2 ps-3 mb-0">
+                        {club.perks.map((perk) => (
+                          <li>{perk}</li>
+                        ))}
+                      </ul>
+                    </details>
+                    <div class="mt-auto d-grid gap-2">
+                      <a
+                        class="btn btn-sm btn-dark rounded-0"
+                        data-club-button
+                        data-club-frequency="monthly"
+                        data-link={monthlyLink}
+                        href={monthlyLink || undefined}
+                        aria-disabled={monthlyLink ? "false" : "true"}
+                        tabindex={monthlyLink ? 0 : -1}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {donatePageCopy.clubMonthlyButtonLabel}
+                      </a>
+                      <a
+                        class="btn btn-sm btn-outline-dark rounded-0"
+                        data-club-button
+                        data-club-frequency="annual"
+                        data-link={annualLink}
+                        href={annualLink || undefined}
+                        aria-disabled={annualLink ? "false" : "true"}
+                        tabindex={annualLink ? 0 : -1}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {donatePageCopy.clubAnnualButtonLabel}
+                      </a>
+                      <span class="small text-muted" data-club-hint>
+                        {donatePageCopy.clubDisabledHint}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          }
+        </div>
+      </div>
+
+      <div class="border p-4 mb-4">
+        <h2 class="h5 fw-semibold mb-3">{donatePageCopy.otherWaysTitle}</h2>
+        <div class="row g-3">
+          {
+            donatePageCopy.otherWays.map((item) => (
+              <div class="col-md-4">
+                <div class="border p-3 h-100">
+                  <h3 class="h6 text-uppercase text-muted mb-2">
+                    {item.title}
+                  </h3>
+                  <p class="small mb-0">{item.body}</p>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="border p-4 mb-4">
+        <h2 class="h5 fw-semibold mb-3">{donatePageCopy.processingTitle}</h2>
+        {
+          donatePageCopy.processingParagraphs.map((paragraph) => (
+            <p class="text-muted mb-2">{paragraph}</p>
+          ))
+        }
+      </div>
+
+      <div class="mt-5 border-top pt-4">
+        <p class="text-muted mb-2">{donatePageCopy.financialFooterPrompt}</p>
+        <a
+          href={donatePageConfiguration.financialReportsPath}
+          class="link-dark"
+        >
+          {donatePageCopy.financialFooterLabel}
+        </a>
+      </div>
+    </div>
+  </main>
+</SiteLayout>
+
+<script is:inline>
+  const rootElement = document.querySelector("[data-donation-root]");
+  if (rootElement) {
+    const frequencyInputs = rootElement.querySelectorAll(
+      'input[name="donation-frequency"]',
+    );
+    const presetButtons = rootElement.querySelectorAll("[data-preset-button]");
+    const clubButtons = rootElement.querySelectorAll("[data-club-button]");
+    const clubHints = rootElement.querySelectorAll("[data-club-hint]");
+
+    const setButtonState = (anchorElement, link) => {
+      if (link && link.length > 0) {
+        anchorElement.href = link;
+        anchorElement.classList.remove("disabled");
+        anchorElement.removeAttribute("aria-disabled");
+        anchorElement.tabIndex = 0;
+      } else {
+        anchorElement.removeAttribute("href");
+        anchorElement.classList.add("disabled");
+        anchorElement.setAttribute("aria-disabled", "true");
+        anchorElement.tabIndex = -1;
+      }
+    };
+
+    const updatePresetButtons = (frequency) => {
+      presetButtons.forEach((anchorElement) => {
+        const monthlyLink = anchorElement.dataset.linkMonthly || "";
+        const oneTimeLink = anchorElement.dataset.linkOnetime || "";
+        const targetLink = frequency === "monthly" ? monthlyLink : oneTimeLink;
+        setButtonState(anchorElement, targetLink);
+      });
+    };
+
+    const updateClubButtons = (frequency) => {
+      clubButtons.forEach((anchorElement) => {
+        const link = anchorElement.dataset.link || "";
+        setButtonState(anchorElement, link);
+      });
+    };
+
+    const setFrequency = (frequency) => {
+      rootElement.dataset.frequency = frequency;
+      updatePresetButtons(frequency);
+      updateClubButtons(frequency);
+    };
+
+    frequencyInputs.forEach((inputElement) => {
+      inputElement.addEventListener("change", (event) => {
+        const target = event.target;
+        if (target && target.value) {
+          setFrequency(target.value);
+        }
+      });
+    });
+
+    setFrequency("monthly");
+  }
+</script>
+
+<style>
+  [data-donation-root] .btn-group > .btn {
+    flex: 1 1 0;
+  }
+
+  [data-donation-root] .btn-group > .btn:focus-visible {
+    outline: 2px solid #111;
+    outline-offset: 2px;
+  }
+</style>

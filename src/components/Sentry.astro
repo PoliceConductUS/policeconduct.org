@@ -1,0 +1,57 @@
+---
+const sentryDsn =
+  typeof import.meta.env.PUBLIC_SENTRY_DSN === "string"
+    ? import.meta.env.PUBLIC_SENTRY_DSN.trim()
+    : "";
+const sentryEnvironment =
+  typeof import.meta.env.PUBLIC_SENTRY_ENVIRONMENT === "string" &&
+  import.meta.env.PUBLIC_SENTRY_ENVIRONMENT.trim().length > 0
+    ? import.meta.env.PUBLIC_SENTRY_ENVIRONMENT.trim()
+    : "production";
+const sentryRelease = (
+  process.env.GIT_COMMIT_SHA ||
+  process.env.GITHUB_SHA ||
+  "unknown"
+).trim();
+const sentryCdnKey = (() => {
+  const start = sentryDsn.indexOf("//");
+  if (start === -1) return "";
+
+  const end = sentryDsn.indexOf("@", start + 2);
+  if (end === -1) return "";
+
+  return sentryDsn.slice(start + 2, end);
+})();
+const sentryEnabled = sentryDsn.length > 0 && sentryCdnKey.length > 0;
+---
+
+{
+  sentryEnabled && (
+    <>
+      <script
+        type="text/javascript"
+        is:inline
+        src={`https://js.sentry-cdn.com/${sentryCdnKey}.min.js`}
+        crossorigin="anonymous"
+      />
+      <script
+        type="text/javascript"
+        is:inline
+        define:vars={{
+          sentryDsn,
+          sentryEnvironment,
+          sentryRelease,
+        }}
+      >
+        if (typeof window.Sentry !== "undefined") {
+          window.Sentry.init({
+            dsn: sentryDsn,
+            environment: sentryEnvironment,
+            release: sentryRelease,
+            tracesSampleRate: 0,
+          });
+        }
+      </script>
+    </>
+  )
+}

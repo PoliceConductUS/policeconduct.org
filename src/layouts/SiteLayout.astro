@@ -1,0 +1,706 @@
+---
+import "../styles/theme.css";
+import GoogleAnalytics from "../components/GoogleAnalytics.astro";
+import Sentry from "../components/Sentry.astro";
+
+const { title, description, pagePath, canonicalUrl, robots, structuredData } =
+  Astro.props;
+const resolvedPath = pagePath || Astro.url?.pathname || "/";
+const encodedPath = encodeURIComponent(resolvedPath);
+const canonicalHref = canonicalUrl || resolvedPath;
+const robotsContent = robots || "index,follow";
+const structuredDataEntries = structuredData
+  ? Array.isArray(structuredData)
+    ? structuredData
+    : [structuredData]
+  : [];
+const serializeStructuredData = (value: unknown) =>
+  JSON.stringify(value).replace(/</g, "\\u003c");
+const fullCommitSha = (
+  process.env.GIT_COMMIT_SHA ||
+  process.env.GITHUB_SHA ||
+  "unknown"
+).trim();
+const commitDirtyRaw = (process.env.GIT_COMMIT_DIRTY || "")
+  .trim()
+  .toLowerCase();
+const isDirtyBuild =
+  commitDirtyRaw === "1" ||
+  commitDirtyRaw === "true" ||
+  commitDirtyRaw === "yes";
+
+const navItems = [
+  { label: "Reports", href: "/report/", title: "User submitted reports" },
+  {
+    label: "LEAs",
+    href: "/law-enforcement-agency/",
+    title: "Law Enforcement Agencies",
+  },
+  {
+    label: "LEA Personnel",
+    href: "/personnel/",
+    title: "Law Enforcement Agency Personnel",
+  },
+  {
+    label: "Civil Litigation",
+    href: "/civil-litigation/",
+    title: "Civil litigation cases",
+  },
+  { label: "News", href: "/news/", title: "Police conduct news" },
+];
+
+const isActivePath = (href: string) =>
+  resolvedPath === href || (href !== "/" && resolvedPath.startsWith(href));
+---
+
+<!doctype html>
+<html class="h-100" lang="en">
+  <head>
+    <GoogleAnalytics />
+    <Sentry />
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,shrink-to-fit=no"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/img/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/img/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/img/favicon-16x16.png"
+    />
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+    <link rel="canonical" href={canonicalHref} />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    {description ? <meta name="description" content={description} /> : null}
+    <meta name="robots" content={robotsContent} />
+    <meta name="author" content="Institute for Police Conduct, Inc." />
+    <meta name="build-commit" content={fullCommitSha} />
+    <meta name="build-commit-dirty" content={isDirtyBuild ? "true" : "false"} />
+    <meta name="HandheldFriendly" content="true" />
+    {
+      structuredDataEntries.length
+        ? structuredDataEntries.map((entry) => (
+            <script
+              type="application/ld+json"
+              set:html={serializeStructuredData(entry)}
+              is:inline
+            />
+          ))
+        : null
+    }
+    <title>{title}</title>
+  </head>
+  <body data-bs-spy="scroll" data-bs-target="#navScroll">
+    <nav
+      id="navScroll"
+      class="navbar navbar-expand-lg navbar-light sticky-top"
+      tabindex="0"
+    >
+      <div class="container">
+        <a class="navbar-brand pe-4 fs-4" href="/">
+          <span class="ms-1 fw-bolder">PoliceConduct.org</span>
+        </a>
+        <div class="primary-nav d-none d-lg-flex align-items-center">
+          {
+            navItems.map((item) => (
+              <a
+                class:list={[
+                  "nav-link",
+                  "primary-nav-link",
+                  { "is-active": isActivePath(item.href) },
+                ]}
+                href={item.href}
+                title={item.title}
+              >
+                {item.label}
+              </a>
+            ))
+          }
+        </div>
+
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <div
+            class="primary-nav d-flex d-lg-none align-items-center flex-wrap"
+          >
+            {
+              navItems.map((item) => (
+                <a
+                  class:list={[
+                    "nav-link",
+                    "primary-nav-link",
+                    { "is-active": isActivePath(item.href) },
+                  ]}
+                  href={item.href}
+                  title={item.title}
+                >
+                  {item.label}
+                </a>
+              ))
+            }
+          </div>
+          <div
+            class="d-flex gap-2 align-items-stretch align-items-lg-center mt-3 mt-lg-0 flex-column flex-lg-row w-100 nav-cta justify-content-lg-end ms-lg-auto"
+          >
+            <a
+              class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
+              href="/donate/"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="lucide lucide-heart"
+              >
+                <path
+                  d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3.41.81-4.5 2.09A6 6 0 0 0 7.5 3 5.5 5.5 0 0 0 2 8.5c0 2.29 1.5 4.04 3 5.5l7 7Z"
+                ></path>
+              </svg>
+              <span>Donate</span>
+            </a>
+            <a
+              class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
+              href="/volunteer/"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="lucide lucide-users"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <span>Volunteer</span>
+            </a>
+            <a
+              class="btn btn-dark rounded-0 d-flex align-items-center gap-2"
+              href="/report/new/"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="lucide lucide-file-text"
+              >
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                ></path>
+                <path d="M14 2v6h6"></path>
+                <path d="M16 13H8"></path>
+                <path d="M16 17H8"></path>
+                <path d="M10 9H8"></path>
+              </svg>
+              <span>Submit a report</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <div
+      class="alert alert-warning alert-dismissible fade show rounded-0 mb-0 beta-banner"
+      role="alert"
+    >
+      <div
+        class="container d-flex flex-wrap justify-content-between align-items-center gap-3"
+      >
+        <div class="me-3">
+          Early beta: We have limited capacity and manually review submissions.
+          If you want this to exist, please <a href="/donate">donate</a>.
+        </div>
+        <button type="button" class="btn-close" aria-label="Close"></button>
+      </div>
+    </div>
+
+    <slot />
+
+    <footer class="border-top mt-auto d-print-none">
+      <div class="container py-5">
+        <div
+          class="d-flex justify-content-center align-items-center gap-4 mb-4"
+        >
+          <a
+            href="https://facebook.com/PoliceConductUS"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-muted"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-facebook"
+            >
+              <path
+                d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
+              ></path>
+            </svg>
+            <span class="visually-hidden">Facebook</span>
+          </a>
+          <a
+            href="https://twitter.com/PoliceConductUS"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-muted"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-x"
+            >
+              <path d="M18 6 6 18"></path>
+              <path d="m6 6 12 12"></path>
+            </svg>
+            <span class="visually-hidden">X (formerly Twitter)</span>
+          </a>
+          <a
+            href="https://instagram.com/PoliceConductUS"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-muted"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-instagram"
+            >
+              <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
+            </svg>
+            <span class="visually-hidden">Instagram</span>
+          </a>
+          <a
+            href="https://www.tiktok.com/@policeconductus"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-muted"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="currentColor"
+              class="bi bi-tiktok"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M9 0h1.98c.144.715.54 1.617 1.235 2.512C12.895 3.389 13.797 4 15 4v2c-1.753 0-3.07-.814-4-1.829V11a5 5 0 1 1-5-5v2a3 3 0 1 0 3 3z"
+              ></path>
+            </svg>
+            <span class="visually-hidden">TikTok</span>
+          </a>
+          <a
+            href="https://linkedin.com/company/PoliceConductUS"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-muted"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-linkedin"
+            >
+              <path
+                d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"
+              ></path>
+              <rect width="4" height="12" x="2" y="9"></rect>
+              <circle cx="4" cy="4" r="2"></circle>
+            </svg>
+            <span class="visually-hidden">LinkedIn</span>
+          </a>
+          <a
+            href="https://youtube.com/@PoliceConductUS"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-muted"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-youtube"
+            >
+              <path
+                d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"
+              ></path>
+              <path d="m10 15 5-3-5-3z"></path>
+            </svg>
+            <span class="visually-hidden">YouTube</span>
+          </a>
+          <a
+            href="https://www.reddit.com/user/PoliceConductUS/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-muted"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="currentColor"
+              class="bi bi-reddit"
+              viewBox="0 0 16 16"
+            >
+              <path
+                d="M6.167 8a.83.83 0 0 0-.83.83c0 .459.372.84.83.831a.831.831 0 0 0 0-1.661m1.843 3.647c.315 0 1.403-.038 1.976-.611a.23.23 0 0 0 0-.306.213.213 0 0 0-.306 0c-.353.363-1.126.487-1.67.487-.545 0-1.308-.124-1.671-.487a.213.213 0 0 0-.306 0 .213.213 0 0 0 0 .306c.564.563 1.652.61 1.977.61zm.992-2.807c0 .458.373.83.831.83s.83-.381.83-.83a.831.831 0 0 0-1.66 0z"
+              ></path>
+              <path
+                d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.828-1.165c-.315 0-.602.124-.812.325-.801-.573-1.9-.945-3.121-.993l.534-2.501 1.738.372a.83.83 0 1 0 .83-.869.83.83 0 0 0-.744.468l-1.938-.41a.2.2 0 0 0-.153.028.2.2 0 0 0-.086.134l-.592 2.788c-1.24.038-2.358.41-3.17.992-.21-.2-.496-.324-.81-.324a1.163 1.163 0 0 0-.478 2.224q-.03.17-.029.353c0 1.795 2.091 3.256 4.669 3.256s4.668-1.451 4.668-3.256c0-.114-.01-.238-.029-.353.401-.181.688-.592.688-1.069 0-.65-.525-1.165-1.165-1.165"
+              ></path>
+            </svg>
+            <span class="visually-hidden">Reddit</span>
+          </a>
+          <a
+            href="https://github.com/PoliceConductUS"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-muted"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              class="bi bi-github"
+            >
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2 .37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"
+              ></path>
+            </svg>
+            <span class="visually-hidden">GitHub</span>
+          </a>
+        </div>
+        <div class="row g-4 mb-4">
+          <div class="col-12 col-md-3">
+            <h3 class="h6 fw-semibold mb-3">About</h3>
+            <ul class="list-unstyled text-muted mb-0">
+              <li class="mb-2">
+                <a class="text-muted text-decoration-none" href="/about"
+                  >About Us</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/about/financial-reports">Financial Reports</a
+                >
+              </li>
+              <li class="mb-2">
+                <a class="text-muted text-decoration-none" href="/about/board"
+                  >Board of Directors</a
+                >
+              </li>
+              <li class="mb-2">
+                <a class="text-muted text-decoration-none" href="/about/contact"
+                  >Contact Us</a
+                >
+              </li>
+              <li class="mb-2">
+                <a class="text-muted text-decoration-none" href="/donate/"
+                  >Donate</a
+                >
+              </li>
+              <li class="mb-2">
+                <a class="text-muted text-decoration-none" href="/volunteer/"
+                  >Volunteer</a
+                >
+              </li>
+            </ul>
+            <p class="text-muted small mt-3 mb-0">
+              The Institute for Police Conduct, Inc is a 501(c)(3) nonprofit
+              organization dedicated to advancing transparency, accountability,
+              and public trust in policing.
+            </p>
+            <p class="text-muted small mt-2 mb-0">
+              Status: IRS determination approved - nonprofit designation is
+              active.
+            </p>
+            <p class="text-muted small mt-2 mb-0">
+              Donations are tax-deductible to the fullest extent permitted by
+              law.
+            </p>
+            <p class="text-muted small mt-2 mb-0">
+              Federal Tax ID (EIN): 99-3296620
+            </p>
+          </div>
+          <div class="col-12 col-md-3">
+            <h3 class="h6 fw-semibold mb-3">Partner</h3>
+            <ul class="list-unstyled text-muted mb-0">
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/partner/academic">Academic / Research Institutions</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/partner/auditor">Creator / Youtuber</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/partner/bail-bonds">Bail Bonds</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/partner/bar-association">Bar Association</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/partner/law-enforcement-agency"
+                  >Law Enforcement Agency</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/partner/law-enforcement-officer"
+                  >Law Enforcement Officer</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/partner/law-firm">Law Firm</a
+                >
+              </li>
+              <li class="mb-2">
+                <a class="text-muted text-decoration-none" href="/partner/media"
+                  >Media and Journalism</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/partner/nonprofit">Non profit / Advocacy Group</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/partner/peace-officer-standards-and-training"
+                  >Peace Officer Standards and Training</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/partner/prosecutor">Prosecutors (DA / CA / City)</a
+                >
+              </li>
+              <li>
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/partner/technology">Technology Companies</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div class="col-12 col-md-3">
+            <h3 class="h6 fw-semibold mb-3">Support</h3>
+            <ul class="list-unstyled text-muted mb-0">
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href={`/issue/new/?message=Issue%20reported%20from%3A%20${encodedPath}`}
+                  >Report Issue 🐞</a
+                >
+              </li>
+              <li class="mb-2">
+                <a class="text-muted text-decoration-none" href="/help-center"
+                  >Help Center</a
+                >
+              </li>
+
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/frequently-asked-questions/"
+                >
+                  FAQ
+                </a>
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="https://www.Section1893.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Section1893.org
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div class="col-12 col-md-3">
+            <h3 class="h6 fw-semibold mb-3">Legal Notices</h3>
+            <ul class="list-unstyled text-muted mb-0">
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/legal-notice/acceptable-use">Acceptable Use Policy</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/legal-notice/comment-policy">Comment Policy</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/legal-notice/community-guidelines"
+                  >Community Guidelines</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/legal-notice/cookie">Cookie Policy</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/legal-notice/data-subject-access-request"
+                  >Data Subject Access Request</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/legal-notice/disclaimer">Disclaimer Policy</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/legal-notice/eula">End User License Agreement</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/legal-notice/privacy">Privacy Policy</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/legal-notice/refund">Refund Policy</a
+                >
+              </li>
+              <li>
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/legal-notice/terms-of-service">Terms of Service</a
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="text-center text-muted small">
+          <p class="mb-1">
+            All information on this site is compiled from public records and
+            community submitted information. Information is deemed reliable but
+            is not guaranteed.
+          </p>
+          <p class="mb-1">Institute for Police Conduct, Inc.</p>
+          <p class="mb-1">8 The Green #11026</p>
+          <p class="mb-1">Dover, DE 19901, United States</p>
+          <p class="mb-0">
+            © 2026 Institute for Police Conduct, Inc. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      import "../scripts/site.js";
+    </script>
+  </body>
+</html>

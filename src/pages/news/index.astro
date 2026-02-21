@@ -1,0 +1,101 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout
+  title="News | PoliceConduct.org"
+  description="News and updates from PoliceConduct.org."
+  pagePath="/news/"
+>
+  <main class="">
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row">
+          <div class="col-12 col-lg-10">
+            <p class="text-uppercase small text-muted mb-2">News</p>
+            <h1 class="display-4 fw-bold">News</h1>
+            <p class="lead mb-0">
+              Product updates, policy notes, and community announcements.
+            </p>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+              <a
+                class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
+                href="/about/contact?whoami=Subscriber&message=Please%20notify%20of%20any%20changes%20to%20the%20following%20page(s):%20/news/"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-bell"
+                >
+                  <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
+                  <path d="M3.262 15a4 4 0 0 0 3.938 3h9.6a4 4 0 0 0 3.938-3"
+                  ></path>
+                  <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
+                </svg>
+                <span>Subscribe</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="list-group shadow-sm">
+          <a
+            class="list-group-item list-group-item-action"
+            href="/news/2026/02/17/section1983-org-launches-free-guide-for-pro-se-plaintiffs/"
+          >
+            <div class="row g-2 align-items-start">
+              <div class="col">
+                <div class="text-uppercase small text-muted">
+                  February 17, 2026
+                </div>
+                <div class="fw-semibold">
+                  Section1983.org Launches Free Legal Guide for Pro Se Civil Rights Plaintiffs
+                </div>
+                <p class="mb-1 text-muted">
+                  The Institute for Police Conduct releases Section1983.org — a free,
+                  370-page legal resource for people representing themselves in federal
+                  civil rights lawsuits against law enforcement.
+                </p>
+              </div>
+              <div class="col-auto">
+                <span class="badge bg-dark rounded-pill">New</span>
+              </div>
+            </div>
+          </a>
+          <a
+            class="list-group-item list-group-item-action"
+            href="/news/2025/01/19/institute-for-police-conduct-begins-soft-launch/"
+          >
+            <div class="row g-2 align-items-start">
+              <div class="col">
+                <div class="text-uppercase small text-muted">
+                  January 19, 2025
+                </div>
+                <div class="fw-semibold">
+                  A New Chapter for Accountability: Institute for Police Conduct
+                  Begins Soft Launch
+                </div>
+                <p class="mb-1 text-muted">
+                  Institute for Police Conduct launches its soft beta to refine
+                  its tools, verify early data, and invite community support
+                  before a broader rollout.
+                </p>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>

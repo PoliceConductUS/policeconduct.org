@@ -1,0 +1,178 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { loadPersonnelSummaries } from "../../lib/data/summaries.js";
+import UsaChoroplethMap from "../../components/UsaChoroplethMap.astro";
+import { US_STATE_TILES } from "../../lib/geo/states.js";
+import { withDb } from "../../lib/db.js";
+import {
+  buildItemList,
+  buildWebPage,
+  getSiteUrl,
+} from "../../lib/structured-data.js";
+
+const personnelRows = await loadPersonnelSummaries();
+const federalAgencies = await withDb(async (client) => {
+  const agencies = (
+    await client.query(
+      `
+        select
+          a.id,
+          a.name,
+          a.slug,
+          a.category,
+          count(distinct ao.officer_id) as active_personnel_count
+        from public.agency a
+        left join public.agency_officers ao
+          on ao.agency_id = a.id
+         and ao.end_date is null
+        where lower(a.category) = 'federal'
+        group by a.id, a.name, a.slug, a.category
+        order by a.name
+      `,
+    )
+  ).rows;
+  return agencies.map((agency: any) => ({
+    id: agency.id,
+    name: agency.name,
+    slug: agency.slug,
+    category: agency.category,
+    activePersonnelCount: Number(agency.active_personnel_count || 0),
+  }));
+});
+const stateStats = US_STATE_TILES.map((state) => {
+  const count = personnelRows.filter(
+    (person) => person.agencyCategory?.toUpperCase() === state.code,
+  ).length;
+  return {
+    code: state.code,
+    count,
+    href: `/law-enforcement-agency/${state.code.toLowerCase()}/`,
+  };
+});
+const totalPersonnel = personnelRows.length;
+const pagePath = "/personnel/";
+const suggestPersonnelHref = `/personnel/new/?${new URLSearchParams({
+  message: "Suggest new personnel from list",
+}).toString()}`;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const federalAgencyItems = federalAgencies.map((agency, index) => ({
+  "@type": "ListItem",
+  position: index + 1,
+  item: {
+    "@type": "GovernmentOrganization",
+    name: agency.name,
+    url: new URL(
+      `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+      siteUrl,
+    ).toString(),
+  },
+}));
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: "Personnel",
+  description: "Personnel profiles currently listed on PoliceConduct.org.",
+  type: "CollectionPage",
+});
+const federalItemList = buildItemList(federalAgencyItems);
+if (federalItemList) {
+  structuredData.mainEntity = federalItemList;
+}
+---
+
+<SiteLayout
+  title="Personnel"
+  description="Personnel profiles currently listed on PoliceConduct.org."
+  pagePath={pagePath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row g-4 align-items-end">
+          <div class="col-12 col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">Personnel</p>
+            <h1 class="display-4 fw-bold">Personnel</h1>
+            <p class="lead text-muted mb-0">
+              Profiles of law enforcement personnel with listed agencies.
+            </p>
+            <div class="mt-3">
+              <a
+                class="btn btn-outline-dark rounded-0"
+                href={suggestPersonnelHref}
+              >
+                Suggest new person
+              </a>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card shadow-sm rounded-0 border-dark">
+              <div class="card-body d-flex flex-column gap-2">
+                <div class="text-uppercase small text-muted">
+                  Listed personnel
+                </div>
+                <div class="d-flex align-items-end justify-content-between">
+                  <span class="display-6 fw-bold">{totalPersonnel}</span>
+                </div>
+                <div class="text-muted small">
+                  Hover over a state to see the count; click to view agencies.
+                  Federal agencies are listed separately.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-12 col-lg-8">
+            <UsaChoroplethMap
+              stats={stateStats}
+              title="States"
+              subtitle="Counts of active personnel by agency state."
+              emptyLabel="No personnel yet"
+              interactionLabel="Hover over a state to see the count."
+            />
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card shadow-sm rounded-0 border-dark h-100">
+              <div class="card-body d-flex flex-column gap-3">
+                <div class="d-flex align-items-center justify-content-between">
+                  <p class="text-uppercase small text-muted mb-0">
+                    Federal agencies
+                  </p>
+                  <span class="badge bg-dark rounded-pill"
+                    >{federalAgencies.length}</span
+                  >
+                </div>
+                <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
+                  {
+                    federalAgencies.map((agency) => (
+                      <li class="d-flex align-items-start justify-content-between gap-2">
+                        <a
+                          class="text-decoration-none fw-semibold"
+                          href={`/law-enforcement-agency/${agency.category}/${agency.slug}/`}
+                        >
+                          {agency.name}
+                        </a>
+                        <div class="d-flex align-items-center gap-2">
+                          <span class="badge bg-light text-dark border rounded-pill">
+                            Personnel: {agency.activePersonnelCount}
+                          </span>
+                        </div>
+                      </li>
+                    ))
+                  }
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>

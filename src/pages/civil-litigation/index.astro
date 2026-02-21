@@ -1,0 +1,236 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import UsaChoroplethMap from "../../components/UsaChoroplethMap.astro";
+import { withDb } from "../../lib/db.js";
+import { US_STATE_TILES } from "../../lib/geo/states.js";
+import {
+  buildItemList,
+  buildWebPage,
+  getSiteUrl,
+} from "../../lib/structured-data.js";
+
+type CategoryCount = {
+  category: string;
+  count: number;
+};
+
+type FederalAgency = {
+  id: string;
+  name: string;
+  category: string;
+  slug: string;
+  count: number;
+};
+
+const { totalCases, categoryCounts, federalAgencies } = await withDb(
+  async (client) => {
+    const totalResult = await client.query(
+      "select count(*) as count from public.civil_cases",
+    );
+    // Get category counts by joining civil_case_officers → agency_officers → agency
+    const categoryResult = await client.query(
+      `
+        select upper(a.category) as category, count(distinct cco.civil_case_id) as case_count
+        from public.civil_case_officers cco
+        join public.agency_officers ao on ao.id = cco.agency_officer_id
+        join public.agency a on ao.agency_id = a.id
+        where a.category is not null
+        group by upper(a.category)
+      `,
+    );
+    const federalAgenciesResult = await client.query(
+      `
+        select a.id, a.name, a.category, a.slug,
+          count(distinct cco.civil_case_id) as case_count
+        from public.agency a
+        left join public.agency_officers ao on ao.agency_id = a.id
+        left join public.civil_case_officers cco on cco.agency_officer_id = ao.id
+        where upper(a.category) = 'FEDERAL'
+        group by a.id, a.name, a.category, a.slug
+        order by case_count desc, a.name
+      `,
+    );
+    return {
+      totalCases: Number(totalResult.rows[0]?.count ?? 0),
+      categoryCounts: categoryResult.rows.map(
+        (row: { category: string; case_count: string | number }) => ({
+          category: row.category,
+          count: Number(row.case_count),
+        }),
+      ),
+      federalAgencies: federalAgenciesResult.rows.map(
+        (row: {
+          id: string;
+          name: string;
+          category: string;
+          slug: string;
+          case_count?: string | number | null;
+        }) => ({
+          id: row.id,
+          name: row.name,
+          category: row.category,
+          slug: row.slug,
+          count: Number(row.case_count || 0),
+        }),
+      ),
+    };
+  },
+);
+
+const countsByCategory = new Map(
+  (categoryCounts as CategoryCount[]).map((entry) => [
+    entry.category,
+    entry.count,
+  ]),
+);
+const totalCaseCount = totalCases;
+
+const stateStats = US_STATE_TILES.map((state) => ({
+  code: state.code,
+  count: countsByCategory.get(state.code) ?? 0,
+  href: `/civil-litigation/${state.code.toLowerCase()}/`,
+}));
+
+const civilLandingPath = "/civil-litigation/";
+const newCivilLandingHref = `/civil-litigation/new/?${new URLSearchParams({
+  path: civilLandingPath,
+  message: "Suggest a new civil case from the map",
+}).toString()}`;
+const editCivilLandingHref = `/civil-litigation/suggest-edit/?${new URLSearchParams(
+  {
+    path: civilLandingPath,
+    message: "Suggest a correction for a listed civil case",
+  },
+).toString()}`;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(civilLandingPath, siteUrl).toString();
+const federalAgencyItems = (federalAgencies as FederalAgency[]).map(
+  (agency, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    item: {
+      "@type": "GovernmentOrganization",
+      name: agency.name,
+      url: new URL(
+        `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+        siteUrl,
+      ).toString(),
+    },
+  }),
+);
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: "Civil Litigation | PoliceConduct.org",
+  description:
+    "Browse civil litigation cases linked to law enforcement agencies and personnel.",
+  type: "CollectionPage",
+});
+const federalItemList = buildItemList(federalAgencyItems);
+if (federalItemList) {
+  structuredData.mainEntity = federalItemList;
+}
+---
+
+<SiteLayout
+  title="Civil Litigation | PoliceConduct.org"
+  description="Browse civil litigation cases linked to law enforcement agencies and personnel."
+  pagePath={civilLandingPath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row g-5 align-items-end">
+          <div class="col-12 col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">Civil Litigation</p>
+            <h1 class="display-4 fw-bold">Civil Litigation Cases</h1>
+            <p class="lead text-muted mb-0">
+              Civil cases that reference a law enforcement agency or personnel
+              by state.
+            </p>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card shadow-sm rounded-0 border-dark">
+              <div class="card-body d-flex flex-column gap-2">
+                <div class="text-uppercase small text-muted">Cases listed</div>
+                <div class="d-flex align-items-end justify-content-between">
+                  <span class="display-6 fw-bold">{totalCaseCount}</span>
+                </div>
+                <div class="text-muted small">
+                  Hover over a state to see the count; click to view cases.
+                  Federal agencies are listed separately.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-12 col-lg-8">
+            <UsaChoroplethMap
+              stats={stateStats}
+              title="States"
+              subtitle="Civil litigation by agency category"
+              emptyLabel="No cases yet"
+              interactionLabel="Click a state to view its cases."
+            />
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card shadow-sm rounded-0 border-dark h-100">
+              <div class="card-body d-flex flex-column gap-3">
+                <div class="card-body d-flex flex-column gap-3">
+                  <div
+                    class="d-flex align-items-center justify-content-between"
+                  >
+                    <p class="text-uppercase small text-muted mb-0">
+                      Federal agencies
+                    </p>
+                    <span class="badge bg-dark rounded-pill"
+                      >{federalAgencies.length}</span
+                    >
+                  </div>
+                  <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
+                    {
+                      (federalAgencies as FederalAgency[]).map((agency) => (
+                        <li class="d-flex align-items-start justify-content-between gap-2">
+                          <a
+                            class="text-decoration-none fw-semibold"
+                            href={`/law-enforcement-agency/${agency.category}/${agency.slug}/`}
+                          >
+                            {agency.name}
+                          </a>
+                          <span class="badge bg-light text-dark border rounded-pill">
+                            Cases: {agency.count}
+                          </span>
+                        </li>
+                      ))
+                    }
+                  </ul>
+                </div>
+                <div class="mt-auto">
+                  <a
+                    class="btn btn-outline-dark rounded-0 w-100"
+                    href={newCivilLandingHref}
+                  >
+                    Suggest a new civil case
+                  </a>
+                  <a
+                    class="btn btn-outline-dark rounded-0 w-100 mt-2"
+                    href={editCivilLandingHref}
+                  >
+                    Suggest a correction
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>

@@ -1,0 +1,496 @@
+---
+import SiteLayout from "../../../../layouts/SiteLayout.astro";
+import DisqusComments from "../../../../components/DisqusComments.astro";
+import { formatLongDate } from "../../../../lib/format.js";
+import { loadReportDetail } from "../../../../lib/report-detail.js";
+import { loadReportSummaries } from "../../../../lib/data/summaries.js";
+import { getReportStateSlug } from "../../../../lib/report-state-stats.js";
+import { US_STATE_TILES } from "../../../../lib/geo/states.js";
+import type { ReportSummary } from "../../../../lib/data/types.js";
+import RatingBadge from "../../../../components/RatingBadge.astro";
+import { getSiteUrl } from "../../../../lib/structured-data.js";
+
+export async function getStaticPaths() {
+  const reports = await loadReportSummaries();
+  return reports
+    .map((report) => {
+      const stateSlug = getReportStateSlug(report);
+      if (!stateSlug) {
+        return null;
+      }
+      return {
+        params: {
+          state: stateSlug,
+          slug: report.slug,
+        },
+      };
+    })
+    .filter(Boolean);
+}
+
+const { state, slug } = Astro.params;
+const stateSlug = (state as string).toLowerCase();
+const stateCode = stateSlug.toUpperCase();
+const stateMeta = US_STATE_TILES.find((entry) => entry.code === stateCode);
+const stateName = stateMeta?.name || stateCode;
+const data = await loadReportDetail(slug);
+if (!data) {
+  throw new Error(`Report ${slug} not found.`);
+}
+const primaryAgency = data.officers[0]?.agency;
+if (!primaryAgency) {
+  throw new Error(`Report ${slug} is missing a primary agency.`);
+}
+const primaryAgencyCategory = primaryAgency.category as string | null;
+const primaryAgencySlug = primaryAgency.slug as string | null;
+if (!primaryAgencyCategory || !primaryAgencySlug) {
+  throw new Error(`Report ${slug} primary agency is missing category or slug.`);
+}
+const reportStateSlug = getReportStateSlug({
+  category: (data.report as ReportSummary).category ?? null,
+  agencySlug: `${primaryAgencyCategory}/${primaryAgencySlug}`,
+});
+if (!reportStateSlug) {
+  throw new Error(`Report ${slug} is not associated with a state.`);
+}
+if (reportStateSlug !== stateSlug) {
+  return Astro.redirect(`/report/${reportStateSlug}/${slug}/`, 301);
+}
+const pagePath = `/report/${stateSlug}/${slug}/`;
+const tags = data.tags;
+const officers = data.officers;
+const evidenceLinks = data.evidenceLinks;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const disqusIdentifier = `report:${slug}`;
+const normalizeIsoDate = (value?: string | Date | null) => {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+};
+const stripHtml = (value?: string | null) =>
+  value
+    ? value
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+    : "";
+const reportTitle =
+  typeof data.report.title === "string" ? data.report.title : "Report";
+const reportDescriptionSource =
+  typeof data.report.description === "string" ? data.report.description : "";
+const reportDescription = reportDescriptionSource
+  ? stripHtml(reportDescriptionSource)
+  : "";
+const reportAddress =
+  typeof data.report.address === "string" ? data.report.address : "";
+const createdAtIso = normalizeIsoDate(
+  data.report.created_at as string | Date | null,
+);
+const updatedAtIso = normalizeIsoDate(
+  data.report.updated_at as string | Date | null,
+);
+const officerEntities = officers
+  .map((entry) => {
+    if (!entry.officer) {
+      return null;
+    }
+    const officerName =
+      `${entry.officer.first_name} ${entry.officer.last_name}${entry.officer.suffix ? ` ${entry.officer.suffix}` : ""}`.trim();
+    return {
+      "@type": "Person",
+      name: officerName,
+      ...(entry.path ? { url: new URL(entry.path, siteUrl).toString() } : {}),
+    };
+  })
+  .filter(Boolean);
+const agencyEntities = officers.flatMap((entry) => {
+  const agency = entry.agency as {
+    name?: string;
+    slug?: string;
+    category?: string;
+  } | null;
+  if (!agency || !agency.name) {
+    return [];
+  }
+  return [
+    {
+      "@type": "GovernmentOrganization",
+      name: agency.name,
+      ...(agency.slug && agency.category
+        ? {
+            url: new URL(
+              `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+              siteUrl,
+            ).toString(),
+          }
+        : {}),
+    },
+  ];
+});
+const reportEntity = {
+  "@type": "Report",
+  "@id": `${pageUrl}#report`,
+  name: reportTitle,
+  url: pageUrl,
+  ...(reportDescription ? { description: reportDescription } : {}),
+  ...(createdAtIso ? { datePublished: createdAtIso } : {}),
+  ...(updatedAtIso ? { dateModified: updatedAtIso } : {}),
+  author: {
+    "@type": "Person",
+    name: "Anonymous",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "Institute for Police Conduct, Inc.",
+    url: new URL("/", siteUrl).toString(),
+  },
+  ...(tags.length ? { keywords: tags.join(", ") } : {}),
+  ...(reportAddress
+    ? { contentLocation: { "@type": "Place", name: reportAddress } }
+    : {}),
+  ...(officerEntities.length || agencyEntities.length
+    ? { about: [...officerEntities, ...agencyEntities] }
+    : {}),
+};
+const websiteId = new URL("/", siteUrl).toString();
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": websiteId,
+      url: websiteId,
+      name: "PoliceConduct.org",
+    },
+    {
+      "@type": "WebPage",
+      "@id": pageUrl,
+      url: pageUrl,
+      name: `Report: ${reportTitle} | PoliceConduct.org`,
+      description: reportDescription,
+      isPartOf: { "@id": websiteId },
+      mainEntity: { "@id": reportEntity["@id"] },
+    },
+    reportEntity,
+  ],
+};
+
+const ratedOfficers = officers
+  .filter((entry) => entry.ratings.length)
+  .map((entry) => {
+    const badgeColor =
+      entry.ratingOverall !== null && entry.ratingOverall <= 1.5
+        ? "#ef4444"
+        : "#f59e0b";
+    const badgeLabel =
+      entry.ratingOverall !== null && entry.ratingOverall <= 1.5
+        ? "Unacceptable"
+        : "Needs Improvement";
+    return { ...entry, badgeColor, badgeLabel };
+  });
+---
+
+<SiteLayout
+  title={`Report: ${reportTitle} | PoliceConduct.org`}
+  description={reportDescriptionSource}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+  structuredData={structuredData}
+>
+  <main class="">
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-10 col-xl-8">
+            <nav aria-label="Breadcrumb">
+              <ol class="breadcrumb mb-3">
+                <li class="breadcrumb-item">
+                  <a class="link-dark" href="/report/">Reports</a>
+                </li>
+                <li class="breadcrumb-item">
+                  <a class="link-dark" href={`/report/${stateSlug}/`}
+                    >{stateName}</a
+                  >
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">
+                  {reportTitle}
+                </li>
+              </ol>
+            </nav>
+            <p class="text-uppercase small text-muted mb-2">Published report</p>
+            <h1 class="display-4 fw-bold">{data.report.title}</h1>
+            <p class="lead">
+              Submitted by anonymous user on{" "}
+              {formatLongDate(data.report.created_at)}.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+              <a
+                class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
+                href={`/about/contact?whoami=Subscriber&message=Please%20notify%20of%20any%20changes%20to%20the%20following%20page(s):%20/report/${stateSlug}/${data.report.slug}/`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-bell"
+                >
+                  <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
+                  <path d="M3.262 15a4 4 0 0 0 3.938 3h9.6a4 4 0 0 0 3.938-3"
+                  ></path>
+                  <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
+                </svg>
+                <span>Subscribe</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row justify-content-center">
+          <article class="col-12 col-lg-10 col-xl-8">
+            <h2 class="h4 text-uppercase text-muted mt-4">Incident basics</h2>
+            <dl class="row">
+              <dt class="col-sm-4">Incident date</dt>
+              <dd class="col-sm-8">
+                {formatLongDate(data.report.incident_date)}
+              </dd>
+              <dt class="col-sm-4">Location</dt>
+              <dd class="col-sm-8">{data.report.address!}</dd>
+              <dt class="col-sm-4">Charges or allegations</dt>
+              <dd class="col-sm-8">
+                {data.report.charges}
+              </dd>
+            </dl>
+            {
+              tags.length ? (
+                <div class="mt-4">
+                  <h3 class="h6 text-uppercase text-muted mb-2">Tags</h3>
+                  <div class="d-flex flex-wrap gap-2">
+                    {tags.map((tag) => (
+                      <span class="badge bg-dark rounded-1 px-3 py-2">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null
+            }
+
+            <hr class="my-5" />
+
+            <h2 class="h4 text-uppercase text-muted">Personnel involved</h2>
+
+            {
+              officers.map((entry) =>
+                entry.ratings.length ? (
+                  <div
+                    class="accordion mb-2"
+                    id={`rating-${entry.officer!.id}`}
+                  >
+                    <div class="accordion-item">
+                      <h2
+                        class="accordion-header"
+                        id={`rating-heading-${entry.officer!.id}`}
+                      >
+                        <button
+                          class="accordion-button collapsed"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          data-bs-target={`#rating-collapse-${entry.officer!.id}`}
+                          aria-expanded="false"
+                          aria-controls={`rating-collapse-${entry.officer!.id}`}
+                        >
+                          <div class="d-flex flex-column flex-md-row w-100 align-items-start align-items-md-center justify-content-between gap-2">
+                            <span class="fw-semibold">
+                              {entry.officer!.first_name}{" "}
+                              {entry.officer!.last_name}{" "}
+                              {entry.officer!.suffix
+                                ? ` ${entry.officer!.suffix}`
+                                : ""}
+                            </span>
+                            <RatingBadge rating={entry.ratingOverall} />
+                          </div>
+                        </button>
+                      </h2>
+                      <div
+                        id={`rating-collapse-${entry.officer!.id}`}
+                        class="accordion-collapse collapse"
+                        aria-labelledby={`rating-heading-${entry.officer!.id}`}
+                        data-bs-parent={`#rating-${entry.officer!.id}`}
+                      >
+                        <div class="accordion-body">
+                          <div class="mb-3">
+                            <a
+                              class="fw-semibold link-dark d-inline-block mb-1"
+                              href={entry.path}
+                            >
+                              {entry.officer!.first_name}{" "}
+                              {entry.officer!.last_name}
+                              {entry.officer!.suffix
+                                ? ` ${entry.officer!.suffix}`
+                                : ""}
+                            </a>
+
+                            <a
+                              class="link-secondary small"
+                              href={`/law-enforcement-agency/${entry.agency!.category}/${entry.agency!.slug}/`}
+                            >
+                              {entry.agency!.name}
+                            </a>
+                          </div>
+                          <div class="row g-3">
+                            {entry.ratings.map((rating) => (
+                              <div class="col-12 col-lg-6">
+                                <div class="border rounded-1 p-3 h-100">
+                                  <p class="fw-semibold mb-1">
+                                    {rating.traitLabel}
+                                  </p>
+                                  <p class="mb-0 text-muted">
+                                    {rating.rubricDescription}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null,
+              )
+            }
+
+            <hr class="my-5" />
+
+            <h2 class="h4 text-uppercase text-muted">Narrative</h2>
+            <div class="fs-5" set:html={data.report.description!} />
+
+            <hr class="my-5" />
+
+            <h2 class="h4 text-uppercase text-muted">Desired outcome</h2>
+            <p>{data.report.desired_outcome!}</p>
+
+            <hr class="my-5" />
+
+            <h2 class="h4 text-uppercase text-muted">Witnesses</h2>
+            {
+              data.reportWitnesses.length ? (
+                <ul class="list-unstyled mb-0">
+                  {data.reportWitnesses.map((witness) => (
+                    <li class="mb-2">{witness.statement}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p class="text-muted">No witnesses listed.</p>
+              )
+            }
+
+            <hr class="my-5" />
+
+            <h2 class="h4 text-uppercase text-muted">Evidence links</h2>
+            {
+              evidenceLinks.length ? (
+                <>
+                  {evidenceLinks.map((link) => (
+                    <div class="mb-4">
+                      <p class="fs-5 mb-2">
+                        <a href={link.url} target="_blank" rel="noopener">
+                          {link.title}
+                        </a>
+                      </p>
+                      {link.embed ? (
+                        <div class="ratio ratio-16x9 border">
+                          <iframe
+                            src={link.embed}
+                            title={link.title}
+                            allow="
+                            accelerometer;
+                            autoplay;
+                            clipboard-write;
+                            encrypted-media;
+                            gyroscope;
+                            picture-in-picture;
+                            web-share;
+                          "
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            allowfullscreen
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <p class="text-muted">No evidence links listed.</p>
+              )
+            }
+
+            {
+              data.reportAttachments.length ? (
+                <>
+                  <hr class="my-5" />
+                  <h2 class="h4 text-uppercase text-muted">Attachments</h2>
+                  <ul class="list-unstyled mb-0">
+                    {data.reportAttachments.map((attachment) => (
+                      <li class="mb-2">
+                        {attachment.file_name} ({attachment.content_type})
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null
+            }
+          </article>
+        </div>
+      </div>
+    </section>
+    <section class="py-vh-2 border-top">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-10 col-xl-8">
+            <h2 class="h5 text-uppercase text-muted">Comments</h2>
+            <DisqusComments
+              pageUrl={pageUrl}
+              disqusIdentifier={disqusIdentifier}
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="py-vh-2 border-top">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-10 col-xl-8">
+            <div class="small text-muted">
+              <p class="mb-1">
+                Reports are user-submitted accounts published for transparency.
+                We do not verify every claim before publication, and publication
+                does not imply endorsement. Allegations are unproven and reflect
+                the reporter’s perspective.
+              </p>
+              <p class="mb-0">
+                See our{" "}
+                <a class="link-secondary" href="/legal-notice/terms-of-service">
+                  Terms of Service
+                </a>{" "}
+                for full disclaimers and conditions of use.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>

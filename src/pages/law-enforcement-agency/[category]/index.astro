@@ -1,0 +1,242 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+import { loadAgencySummaries } from "../../../lib/data/summaries.js";
+import { US_STATE_TILES } from "../../../lib/geo/states.js";
+import AgencyCard from "../../../components/AgencyCard.astro";
+import { buildItemList, getSiteUrl } from "../../../lib/structured-data.js";
+
+export async function getStaticPaths() {
+  const agencies = await loadAgencySummaries();
+  const agenciesByCategory = new Map<string, typeof agencies>();
+
+  agencies.forEach((agency) => {
+    const category = agency.category?.toLowerCase();
+    if (!category) {
+      return;
+    }
+    const list = agenciesByCategory.get(category) || [];
+    list.push(agency);
+    agenciesByCategory.set(category, list);
+  });
+
+  const allCategories = new Set<string>(
+    US_STATE_TILES.map((stateEntry) => stateEntry.code.toLowerCase()),
+  );
+  allCategories.add("federal");
+
+  return Array.from(allCategories).map((category) => {
+    const categoryAgencies = agenciesByCategory.get(category) || [];
+    return {
+      params: { category },
+      props: {
+        agencies: categoryAgencies,
+        totalCount: categoryAgencies.length,
+      },
+    };
+  });
+}
+
+const { category } = Astro.params;
+const categoryParam = (category as string) ?? "";
+const categoryCode = categoryParam.toUpperCase();
+const { agencies = [], totalCount = 0 } = Astro.props;
+const pageSize = 50;
+const pageAgencies = agencies.slice(0, pageSize);
+const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+const categoryMeta = US_STATE_TILES.find(
+  (entry) => entry.code === categoryCode,
+);
+const categoryLabel =
+  categoryParam.toLowerCase() === "federal"
+    ? "Federal"
+    : categoryMeta?.name || categoryCode;
+const title =
+  categoryParam.toLowerCase() === "federal"
+    ? "Federal Law Enforcement Agencies"
+    : categoryMeta
+      ? `${categoryMeta.name} Law Enforcement Agencies`
+      : `${categoryCode} Law Enforcement Agencies`;
+const pagePath = `/law-enforcement-agency/${categoryParam.toLowerCase()}/`;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const pageDescription = `Showing agencies with at least two active personnel assignments in ${categoryLabel}.`;
+const agencyItems = pageAgencies.map((agency, index) => {
+  const addressAvailable =
+    agency.address || agency.city || agency.state || agency.zipCode;
+  const address = addressAvailable
+    ? {
+        "@type": "PostalAddress",
+        ...(agency.address ? { streetAddress: agency.address } : {}),
+        ...(agency.city ? { addressLocality: agency.city } : {}),
+        ...(agency.state ? { addressRegion: agency.state } : {}),
+        ...(agency.zipCode ? { postalCode: agency.zipCode } : {}),
+      }
+    : null;
+  const categorySlugValue = agency.category || categoryParam.toLowerCase();
+  const item = {
+    "@type": "GovernmentOrganization",
+    name: agency.name,
+    url: new URL(
+      `/law-enforcement-agency/${categorySlugValue}/${agency.slug}/`,
+      siteUrl,
+    ).toString(),
+    ...(address ? { address } : {}),
+    ...(agency.phoneNumber ? { telephone: agency.phoneNumber } : {}),
+  };
+  return {
+    "@type": "ListItem",
+    position: index + 1,
+    item,
+  };
+});
+const agencyItemList = buildItemList(agencyItems);
+const websiteId = new URL("/", siteUrl).toString();
+const breadcrumb = {
+  "@type": "BreadcrumbList",
+  "@id": `${pageUrl}#breadcrumb`,
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: websiteId,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Agencies",
+      item: new URL("/law-enforcement-agency/", siteUrl).toString(),
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: categoryLabel,
+      item: pageUrl,
+    },
+  ],
+};
+const agencyItemListId = agencyItemList ? `${pageUrl}#itemlist` : null;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": websiteId,
+      url: websiteId,
+      name: "PoliceConduct.org",
+    },
+    {
+      "@type": "CollectionPage",
+      "@id": pageUrl,
+      url: pageUrl,
+      name: title,
+      description: pageDescription,
+      isPartOf: { "@id": websiteId },
+      ...(agencyItemListId ? { mainEntity: { "@id": agencyItemListId } } : {}),
+      breadcrumb: { "@id": breadcrumb["@id"] },
+    },
+    breadcrumb,
+    ...(agencyItemList ? [{ ...agencyItemList, "@id": agencyItemListId }] : []),
+  ],
+};
+---
+
+<SiteLayout
+  title={title}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row g-4 align-items-end">
+          <div class="col-12 col-lg-8">
+            <nav aria-label="Breadcrumb">
+              <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item">
+                  <a class="link-dark" href="/">Home</a>
+                </li>
+                <li class="breadcrumb-item">
+                  <a class="link-dark" href="/law-enforcement-agency/"
+                    >Agencies</a
+                  >
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">
+                  {categoryLabel}
+                </li>
+              </ol>
+            </nav>
+            <p class="text-uppercase small text-muted mb-2">
+              {
+                categoryParam.toLowerCase() === "federal"
+                  ? "Federal view"
+                  : "State view"
+              }
+            </p>
+            <h1 class="display-4 fw-bold">{title}</h1>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card shadow-sm rounded-0 border-dark">
+              <div class="card-body d-flex flex-column gap-2">
+                <div class="text-uppercase small text-muted">Agencies</div>
+                <div class="d-flex align-items-end justify-content-between">
+                  <span class="display-6 fw-bold">{totalCount}</span>
+                </div>
+                <div class="text-muted small">
+                  Page 1 of {totalPages}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        {
+          agencies.length === 0 ? (
+            <div
+              class="alert alert-secondary rounded-0 border-dark d-flex flex-column gap-2"
+              role="status"
+            >
+              <span>No agencies listed yet for {categoryLabel}.</span>
+              <a
+                class="btn btn-dark rounded-0 w-auto"
+                href={`/law-enforcement-agency/suggest-edit/?jurisdiction=${categoryParam.toLowerCase()}`}
+              >
+                Add one now
+              </a>
+            </div>
+          ) : (
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+              {pageAgencies.map((agency) => (
+                <div class="col">
+                  <AgencyCard agency={agency} />
+                </div>
+              ))}
+            </div>
+          )
+        }
+        {
+          totalPages > 1 ? (
+            <nav aria-label="Pagination" class="mt-4">
+              <a
+                class="btn btn-outline-dark rounded-0"
+                href={`/law-enforcement-agency/${categoryParam.toLowerCase()}/page/2/`}
+              >
+                Next
+              </a>
+            </nav>
+          ) : null
+        }
+      </div>
+    </section>
+  </main>
+  <script
+    is:inline
+    id="dsq-count-scr"
+    src="https://policeconduct.disqus.com/count.js"
+    async></script>
+</SiteLayout>

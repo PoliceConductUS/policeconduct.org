@@ -1,0 +1,234 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout
+  title="Suggest Officer Edit | PoliceConduct.org"
+  pagePath="/personnel/suggest-edit/"
+>
+  <main class="">
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">
+              Officer profile updates
+            </p>
+            <h1 class="display-5 fw-bold mb-3">Suggest an edit</h1>
+            <p class="text-muted mb-0">
+              Share verified corrections or missing information for an officer
+              profile. We review every submission before updating a public
+              profile.
+            </p>
+            <p class="small text-muted mt-3 mb-0">
+              Editing: <span id="officerPathDisplay">No path provided</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-8">
+            <div class="border p-4 bg-white shadow-sm">
+              <h2 class="h5 fw-semibold">Officer edit form</h2>
+              <p class="text-muted mb-3">
+                Use this form to suggest updates to an officer profile. You can
+                fill in only the fields you are correcting.
+              </p>
+              <div class="alert alert-warning rounded-0 small">
+                Please do not include personal addresses, phone numbers, family
+                details, or other private information. Submissions should focus
+                on public, verifiable facts.
+              </div>
+              <form
+                name="officer-edit-suggestion"
+                method="POST"
+                data-netlify="true"
+                data-netlify-honeypot="organization"
+                class="needs-validation"
+                novalidate
+              >
+                <input
+                  type="hidden"
+                  name="form-name"
+                  value="officer-edit-suggestion"
+                />
+                <div class="honeypot visually-hidden">
+                  <label>
+                    Organization
+                    <input type="text" name="organization" />
+                  </label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="officerPath"
+                    name="officerPath"
+                    placeholder="/personnel/"
+                    required
+                  />
+                  <label for="officerPath">Officer profile path*</label>
+                  <div class="invalid-feedback">
+                    Please include the officer profile path.
+                  </div>
+                  <div class="form-text">
+                    Example: /personnel/james-marhkam-1379/
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="officerName"
+                    name="officerName"
+                    placeholder="Officer name"
+                  />
+                  <label for="officerName">Officer name</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="badgeNumber"
+                    name="badgeNumber"
+                    placeholder="Badge number"
+                  />
+                  <label for="badgeNumber">Badge number</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="currentEmployer"
+                    name="currentEmployer"
+                    placeholder="Current employer"
+                  />
+                  <label for="currentEmployer">Current employer</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="currentSupervisor"
+                    name="currentSupervisor"
+                    placeholder="Current supervisor"
+                  />
+                  <label for="currentSupervisor">Current supervisor</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="pastEmployers"
+                    name="pastEmployers"
+                    placeholder="Past employers"
+                    style="height: 110px"></textarea>
+                  <label for="pastEmployers">Past employers</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="url"
+                    class="form-control"
+                    id="postOrgLink"
+                    name="postOrgLink"
+                    placeholder="P.O.S.T. organization link"
+                  />
+                  <label for="postOrgLink">
+                    Peace Officer's Standards and Training (P.O.S.T.) org link
+                  </label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="url"
+                    class="form-control"
+                    id="profilePhotoLink"
+                    name="profilePhotoLink"
+                    placeholder="Profile picture link"
+                  />
+                  <label for="profilePhotoLink">Profile picture link</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="socialLinks"
+                    name="socialLinks"
+                    placeholder="Social media links"
+                    style="height: 110px"></textarea>
+                  <label for="socialLinks">Social media links</label>
+                  <div class="form-text">
+                    List any official or public social profiles, one per line.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="civilLitigation"
+                    name="civilLitigation"
+                    placeholder="Civil litigation"
+                    style="height: 130px"></textarea>
+                  <label for="civilLitigation">Civil litigation</label>
+                  <div class="form-text">
+                    Include case numbers, court, and links if available.
+                  </div>
+                </div>
+                <div data-netlify-recaptcha="true"></div>
+                <button type="submit" class="btn btn-dark rounded-0 w-100">
+                  Submit edit suggestion
+                </button>
+              </form>
+              <p class="small text-muted mt-3 mb-0">
+                If you have documents or public records, include them in the
+                civil litigation field or submit a separate message via
+                <a href="/about/contact">Contact Us</a>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script is:inline>
+    (function () {
+      const form = document.querySelector(
+        'form[name="officer-edit-suggestion"]',
+      );
+      if (!form) {
+        return;
+      }
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+      });
+    })();
+  </script>
+
+  <script is:inline>
+    (function () {
+      const pathInput = document.getElementById("officerPath");
+      const pathDisplay = document.getElementById("officerPathDisplay");
+      if (!pathInput || !pathDisplay) {
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      const rawValue =
+        params.get("path") || params.get("officer") || params.get("profile");
+      if (rawValue) {
+        const value = rawValue.trim();
+        if (value) {
+          pathInput.value = value;
+          pathDisplay.textContent = value;
+        }
+      }
+      pathInput.addEventListener("input", function () {
+        const current = pathInput.value.trim();
+        pathDisplay.textContent = current || "No path provided";
+      });
+    })();
+  </script>
+</SiteLayout>

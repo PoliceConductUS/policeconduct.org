@@ -1,0 +1,131 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout title="Report an Issue | PoliceConduct.org" pagePath="/issue/new/">
+  <main class="flex-grow-1 py-vh-3">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <h1 class="display-5 fw-bold">Report an Issue</h1>
+          <p class="lead text-muted">
+            Tell us what’s broken or confusing so we can fix it.
+          </p>
+          <form
+            name="issue"
+            method="POST"
+            data-netlify="true"
+            data-netlify-honeypot="organization"
+            class="needs-validation"
+            novalidate
+          >
+            <input type="hidden" name="form-name" value="issue" />
+            <div class="honeypot visually-hidden">
+              <label>
+                Organization
+                <input type="text" name="organization" />
+              </label>
+            </div>
+            <input type="hidden" name="whoami" value="reporter" />
+            <div class="form-floating mb-3">
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                name="email"
+                placeholder="name@example.com"
+                required
+              />
+              <label for="email">Email address*</label>
+              <div class="invalid-feedback">Please enter a valid email.</div>
+            </div>
+            <div class="form-floating mb-3">
+              <textarea
+                class="form-control"
+                placeholder="Leave a message here"
+                id="message"
+                name="message"
+                style="height: 220px"
+                required></textarea>
+              <label for="message">What happened?*</label>
+              <div class="invalid-feedback">Please describe the issue.</div>
+            </div>
+            <div class="form-text mb-3">
+              Include the page URL, what you expected, and what happened.
+            </div>
+            <div data-netlify-recaptcha="true"></div>
+            <button type="submit" class="btn btn-dark btn-lg rounded-0">
+              Submit
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script is:inline>
+    (function () {
+      const form = document.querySelector('form[name="issue"]');
+      if (!form) {
+        return;
+      }
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+      });
+    })();
+  </script>
+
+  <script is:inline>
+    (function () {
+      const messageInput = document.getElementById("message");
+      if (!messageInput) {
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      const message = params.get("message");
+      if (message && !messageInput.value.trim()) {
+        messageInput.value = message;
+      }
+    })();
+  </script>
+
+  <script is:inline>
+    (function () {
+      const form = document.querySelector('form[name="contact"]');
+      const rememberInput = document.getElementById("rememberContact");
+      const storageKey = "ipc_contact_session_v1";
+      if (!form) {
+        return;
+      }
+      form.addEventListener("submit", function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add("was-validated");
+        if (rememberInput && rememberInput.checked) {
+          try {
+            const payload = {
+              firstName: document.getElementById("firstName")?.value.trim(),
+              lastName: document.getElementById("lastName")?.value.trim(),
+              email: document.getElementById("email")?.value.trim(),
+              phone: document.getElementById("phone")?.value.trim(),
+            };
+            sessionStorage.setItem(storageKey, JSON.stringify(payload));
+          } catch (err) {
+            // Ignore storage errors.
+          }
+        } else if (rememberInput) {
+          try {
+            sessionStorage.removeItem(storageKey);
+          } catch (err) {
+            // Ignore storage errors.
+          }
+        }
+      });
+    })();
+  </script>
+</SiteLayout>
