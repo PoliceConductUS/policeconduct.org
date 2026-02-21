@@ -1,6 +1,9 @@
 # Terraform Bootstrap (One-Time Infra)
 
 This is the single Terraform entrypoint for infrastructure.
+This stack is for `policeconduct.org` and related application infrastructure.
+`iceconduct.org` redirect infrastructure is managed independently in
+`infrastructure/bootstrap-iceconduct`.
 
 It creates:
 
@@ -49,11 +52,12 @@ If `PHASE` is omitted, `scripts/apply.sh` defaults to `full`.
 
 ## Using .env
 
-You can keep local values in `.env` (gitignored), then load before Terraform:
+This stack syncs Terraform outputs into `.env-policeconduct` (gitignored).
+You can keep local values there and load before Terraform:
 
 ```bash
 set -a
-source .env
+source .env-policeconduct
 set +a
 bash infrastructure/bootstrap/scripts/apply.sh
 ```
@@ -73,8 +77,8 @@ Example `.env` keys:
 - `S3_BUCKET`
 - `CLOUDFRONT_DIST_ID`
 
-`scripts/apply.sh` runs Terraform apply and then syncs `.env` after each phase.
-The sync step comments any existing matching `KEY=...` line in `.env` and appends the latest value from Terraform outputs.
+`scripts/apply.sh` runs Terraform apply and then syncs `.env-policeconduct` after each phase.
+The sync step comments any existing matching `KEY=...` line in `.env-policeconduct` and appends the latest value from Terraform outputs.
 It also writes all outputs as `TF_OUT_<OUTPUT_NAME>` keys (uppercase, non-alphanumeric chars replaced with `_`).
 
 ## Which AWS Account Is Used?
@@ -129,7 +133,6 @@ And sets these environment variables automatically:
 
 - `production`: `AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`
 - `preview`: `AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`
-
 
 Optional GA inputs in `terraform.tfvars`:
 

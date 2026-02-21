@@ -1,7 +1,25 @@
-import AWS from "aws-sdk";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
+import { createId } from "@paralleldrive/cuid2";
 import crypto from "crypto";
 
-const s3 = new AWS.S3();
+const s3 = new S3Client({});
+const ALLOWED_FORM_NAMES = new Set([
+  "contact",
+  "volunteer",
+  "issue",
+  "civil-litigation-new",
+  "civil-litigation-edit-suggestion",
+  "agency-new-suggestion",
+  "agency-edit-suggestion",
+  "personnel-new-suggestion",
+  "officer-edit-suggestion",
+  "data-subject-access-request",
+  "report-new",
+]);
 
 function json(statusCode, body, extraHeaders = {}) {
   return {
@@ -40,7 +58,8 @@ async function saveDraft(event) {
   }
 
   const payload = parseJsonBody(event);
-  const data = payload?.data && typeof payload.data === "object" ? payload.data : {};
+  const data =
+    payload?.data && typeof payload.data === "object" ? payload.data : {};
   const dataSize = Buffer.byteLength(JSON.stringify(data), "utf8");
 
   if (Number.isFinite(maxDraftBytes) && dataSize > maxDraftBytes) {
@@ -51,14 +70,14 @@ async function saveDraft(event) {
   const key = `${prefix}${draftId}.json`;
   const updatedAt = new Date().toISOString();
 
-  await s3
-    .putObject({
+  await s3.send(
+    new PutObjectCommand({
       Bucket: bucket,
       Key: key,
       Body: JSON.stringify({ data, updatedAt }),
       ContentType: "application/json",
-    })
-    .promise();
+    }),
+  );
 
   return json(200, { draftId, updatedAt });
 }
@@ -66,7 +85,9 @@ async function saveDraft(event) {
 async function getDraft(event) {
   const bucket = process.env.DRAFTS_BUCKET;
   const prefix = process.env.DRAFTS_PREFIX ?? "drafts/";
-  const activeWindowMs = Number(process.env.DRAFT_ACTIVE_WINDOW_MS || "3600000");
+  const activeWindowMs = Number(
+    process.env.DRAFT_ACTIVE_WINDOW_MS || "3600000",
+  );
   const draftId = event?.queryStringParameters?.draftId || "";
 
   if (!bucket) {
@@ -81,13 +102,13 @@ async function getDraft(event) {
   let rawDraft = "";
 
   try {
-    const object = await s3
-      .getObject({
+    const object = await s3.send(
+      new GetObjectCommand({
         Bucket: bucket,
         Key: key,
-      })
-      .promise();
-    rawDraft = object?.Body ? object.Body.toString("utf8") : "";
+      }),
+    );
+    rawDraft = object?.Body ? await object.Body.transformToString("utf8") : "";
   } catch (error) {
     if (error && typeof error === "object" && error.code === "NoSuchKey") {
       return json(200, {});
@@ -126,25 +147,35 @@ async function submitForm(event) {
   }
 
   const payload = parseJsonBody(event);
-  const submissionId = payload?.submissionId || crypto.randomUUID();
-  const key = `${prefix}${submissionId}.json`;
+  const formName =
+    typeof payload?.formName === "string" ? payload.formName.trim() : "";
+  if (!formName) {
+    return json(400, { error: "Missing required formName." });
+  }
+  if (!ALLOWED_FORM_NAMES.has(formName)) {
+    return json(400, { error: "Unsupported formName." });
+  }
+  const submissionId = createId();
+  const receivedAt = new Date().toISOString();
+  const receivedDate = receivedAt.slice(0, 10);
+  const key = `${prefix}${receivedDate}/${formName}/${submissionId}.json`;
 
   const record = {
     submissionId,
-    receivedAt: new Date().toISOString(),
+    receivedAt,
     sourceIp: event?.requestContext?.http?.sourceIp ?? null,
     userAgent: event?.requestContext?.http?.userAgent ?? null,
     payload,
   };
 
-  await s3
-    .putObject({
+  await s3.send(
+    new PutObjectCommand({
       Bucket: bucket,
       Key: key,
       Body: JSON.stringify(record),
       ContentType: "application/json",
-    })
-    .promise();
+    }),
+  );
 
   return json(200, { submissionId });
 }
@@ -175,7 +206,11 @@ export const handler = async (event) => {
       };
     }
 
-    return json(405, { error: "Method not allowed." }, { Allow: "GET, POST, OPTIONS" });
+    return json(
+      405,
+      { error: "Method not allowed." },
+      { Allow: "GET, POST, OPTIONS" },
+    );
   } catch (error) {
     return json(400, {
       error: error instanceof Error ? error.message : "Invalid request",

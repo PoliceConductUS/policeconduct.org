@@ -4,7 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 TF_DIR="${REPO_ROOT}/infrastructure/bootstrap"
-ENV_FILE="${REPO_ROOT}/.env"
+ENV_FILE_NAME="${ENV_FILE_NAME:-.env-policeconduct}"
+ENV_FILE="${REPO_ROOT}/${ENV_FILE_NAME}"
 
 touch "${ENV_FILE}"
 

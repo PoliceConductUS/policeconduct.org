@@ -1,8 +1,9 @@
 # Infrastructure
 
-This repo uses one Terraform entrypoint:
+This repo uses two Terraform entrypoints:
 
-1. `infrastructure/bootstrap` (one-time foundation + static-site infra)
+1. `infrastructure/bootstrap` (policeconduct.org foundation + static-site infra)
+2. `infrastructure/bootstrap-iceconduct` (independent iceconduct.org redirect infra)
 
 ## Zero-to-Deploy
 
@@ -115,3 +116,4 @@ Credentials used by deploy workflows:
 ## More Detail
 
 1. `infrastructure/bootstrap/README.md`
+2. `infrastructure/bootstrap-iceconduct/`

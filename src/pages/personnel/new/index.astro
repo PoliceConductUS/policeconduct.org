@@ -221,12 +221,60 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
       if (!form) {
         return;
       }
-      form.addEventListener("submit", function (event) {
+      form.addEventListener("submit", async function (event) {
+        event.preventDefault();
         if (!form.checkValidity()) {
-          event.preventDefault();
           event.stopPropagation();
+          form.classList.add("was-validated");
+          return;
         }
         form.classList.add("was-validated");
+
+        const formData = new FormData(form);
+        const data = {};
+        formData.forEach((value, key) => {
+          if (key === "form-name" || key === "g-recaptcha-response") {
+            return;
+          }
+          if (key in data) {
+            if (!Array.isArray(data[key])) {
+              data[key] = [data[key]];
+            }
+            data[key].push(value);
+          } else {
+            data[key] = value;
+          }
+        });
+
+        const response = await fetch("/api/forms/submit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            formName: "personnel-new-suggestion",
+            data,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to submit form.");
+        }
+
+        const result = await response.json();
+        const submissionId =
+          typeof result?.submissionId === "string" ? result.submissionId : "";
+        if (!submissionId) {
+          throw new Error(
+            "Submission succeeded but no submission ID was returned.",
+          );
+        }
+
+        form.reset();
+        form.classList.remove("was-validated");
+        alert(
+          `Submission received.\n\nSubmission ID: ${submissionId}\n\nSave this ID in a safe place. It cannot be recovered or displayed again. Use it for follow-up questions or change requests.`,
+        );
       });
     })();
   </script>

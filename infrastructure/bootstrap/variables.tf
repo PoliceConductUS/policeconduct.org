@@ -74,13 +74,25 @@ variable "github_org" {
 variable "github_repo" {
   description = "GitHub repository name."
   type        = string
-  default     = "generate.policeconduct.org"
+  default     = "policeconduct.org"
 }
 
 variable "role_name" {
   description = "IAM role name for GitHub Actions OIDC."
   type        = string
   default     = "policeconduct-github-actions"
+}
+
+variable "forms_readonly_role_name" {
+  description = "IAM role name for least-privilege read access to form submissions."
+  type        = string
+  default     = null
+}
+
+variable "forms_readonly_role_assume_principals" {
+  description = "Principal ARNs allowed to assume the form submissions read-only role. Defaults to the current account root if empty."
+  type        = list(string)
+  default     = []
 }
 
 variable "existing_oidc_provider_arn" {
@@ -209,6 +221,12 @@ variable "forms_lambda_alarm_throttles_threshold" {
   default     = 1
 }
 
+variable "lambda_nodejs_runtime" {
+  description = "Node.js runtime identifier for forms API Lambda functions."
+  type        = string
+  default     = "nodejs22.x"
+}
+
 variable "alarm_actions" {
   description = "Optional list of SNS topic ARNs (or other alarm action ARNs) to notify when alarms trigger."
   type        = list(string)
@@ -259,6 +277,51 @@ variable "waf_web_acl_arn" {
   description = "WAFv2 Web ACL ARN for CloudFront. Leave null for a pure static site."
   type        = string
   default     = null
+}
+
+variable "redirect_domains" {
+  description = "Additional domains that should 301 redirect to redirect_target_url using the primary CloudFront distribution."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition = alltrue([
+      for domain in var.redirect_domains :
+      length(split(".", trimspace(domain))) >= 2
+    ])
+    error_message = "Each redirect_domains value must be a fully qualified domain name."
+  }
+}
+
+variable "redirect_domain_zone_ids" {
+  description = "Optional map of redirect domain name to Route 53 hosted zone ID for automated DNS record management."
+  type        = map(string)
+  default     = {}
+}
+
+variable "managed_redirect_zones" {
+  description = "Apex redirect domains for which Terraform should create public Route 53 hosted zones (for example, iceconduct.org)."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition = alltrue([
+      for zone in var.managed_redirect_zones :
+      length(split(".", trimspace(zone))) >= 2
+    ])
+    error_message = "Each managed_redirect_zones value must be a valid apex domain."
+  }
+}
+
+variable "redirect_target_url" {
+  description = "Absolute https URL used as the redirect destination for redirect_domains. Leave null to disable."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.redirect_target_url == null || can(regex("^https://", trimspace(var.redirect_target_url)))
+    error_message = "redirect_target_url must be an absolute https URL when set."
+  }
 }
 
 variable "extra_dns_records" {

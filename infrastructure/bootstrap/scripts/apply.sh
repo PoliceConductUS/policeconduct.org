@@ -7,6 +7,30 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 DOTENV_FILE="${REPO_ROOT}/.env"
 PHASE="${PHASE:-full}"
 
+parse_github_repo_path() {
+  local origin_url="$1"
+  local repo_path=""
+  case "${origin_url}" in
+    git@github.com:*)
+      repo_path="${origin_url#git@github.com:}"
+      ;;
+    https://github.com/*)
+      repo_path="${origin_url#https://github.com/}"
+      ;;
+    ssh://git@github.com/*)
+      repo_path="${origin_url#ssh://git@github.com/}"
+      ;;
+    git://github.com/*)
+      repo_path="${origin_url#git://github.com/}"
+      ;;
+  esac
+  repo_path="${repo_path%.git}"
+  if [[ "${repo_path}" == */* ]]; then
+    printf "%s\n" "${repo_path}"
+  fi
+  return 0
+}
+
 load_dotenv_if_present() {
   if [[ ! -f "${DOTENV_FILE}" ]]; then
     return 0
@@ -34,6 +58,37 @@ map_common_env_to_tf_vars() {
   fi
   if [[ -n "${PUBLIC_SENTRY_DSN_PREVIEW+x}" ]] && [[ -z "${TF_VAR_public_sentry_dsn_preview+x}" ]] && [[ -z "${TF_VAR_PUBLIC_SENTRY_DSN_PREVIEW+x}" ]]; then
     export TF_VAR_public_sentry_dsn_preview="${PUBLIC_SENTRY_DSN_PREVIEW}"
+  fi
+}
+
+set_github_tf_vars_from_origin() {
+  local origin_url repo_path github_org github_repo
+
+  if [[ -n "${TF_VAR_github_org+x}" ]] && [[ -n "${TF_VAR_github_repo+x}" ]]; then
+    return 0
+  fi
+  if [[ -n "${TF_VAR_GITHUB_ORG+x}" ]] && [[ -n "${TF_VAR_GITHUB_REPO+x}" ]]; then
+    return 0
+  fi
+
+  origin_url="$(git -C "${REPO_ROOT}" remote get-url origin 2>/dev/null || true)"
+  if [[ -z "${origin_url}" ]]; then
+    return 0
+  fi
+
+  repo_path="$(parse_github_repo_path "${origin_url}")"
+  if [[ "${repo_path}" != */* ]]; then
+    return 0
+  fi
+
+  github_org="${repo_path%%/*}"
+  github_repo="${repo_path##*/}"
+
+  if [[ -z "${TF_VAR_github_org+x}" ]] && [[ -z "${TF_VAR_GITHUB_ORG+x}" ]]; then
+    export TF_VAR_github_org="${github_org}"
+  fi
+  if [[ -z "${TF_VAR_github_repo+x}" ]] && [[ -z "${TF_VAR_GITHUB_REPO+x}" ]]; then
+    export TF_VAR_github_repo="${github_repo}"
   fi
 }
 
@@ -173,6 +228,20 @@ preflight_account_check() {
   fi
 }
 
+prepare_forms_lambda_package() {
+  local lambda_dir="${ROOT_DIR}/lambdas/forms-api"
+  local package_json="${lambda_dir}/package.json"
+  if [[ ! -f "${package_json}" ]]; then
+    return 0
+  fi
+  if ! command -v npm >/dev/null 2>&1; then
+    echo "Error: npm is required to prepare Lambda dependencies." >&2
+    exit 1
+  fi
+  echo "Preparing forms-api Lambda dependencies..."
+  npm --prefix "${lambda_dir}" install --omit=dev --no-audit --no-fund
+}
+
 run_foundation_apply() {
   local -a targets=(
     "aws_s3_bucket.terraform_state"
@@ -247,11 +316,13 @@ run_foundation_apply() {
 
 load_dotenv_if_present
 map_common_env_to_tf_vars
+set_github_tf_vars_from_origin
 normalize_tf_var_names
 preflight_explicit_tf_var_secrets
 preflight_sentry_upload_requirements
 warn_if_sentry_tf_var_missing
 preflight_account_check
+prepare_forms_lambda_package
 case "${PHASE}" in
   foundation)
     echo "Running bootstrap apply phase: foundation"
@@ -266,6 +337,6 @@ case "${PHASE}" in
     exit 1
     ;;
 esac
-bash "${SCRIPT_DIR}/sync-env.sh"
+ENV_FILE_NAME="${ENV_FILE_NAME:-.env-policeconduct}" bash "${SCRIPT_DIR}/sync-env.sh"
 
 echo "Bootstrap apply (${PHASE}) complete and .env synced."

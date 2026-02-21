@@ -1,4 +1,4 @@
-# generate.policeconduct.org
+# policeconduct.org
 
 Astro site with AWS infrastructure managed by Terraform.
 
@@ -29,7 +29,7 @@ These are emitted into page meta tags:
 
 Terraform bootstrap stack:
 
-- `/Users/dalelotts/dev/PoliceConductUS/generate.policeconduct.org/infrastructure/bootstrap`
+- `infrastructure/bootstrap`
 
 It provisions:
 
@@ -50,16 +50,16 @@ bash infrastructure/bootstrap/scripts/apply.sh
 
 See:
 
-- `/Users/dalelotts/dev/PoliceConductUS/generate.policeconduct.org/infrastructure/README.md`
-- `/Users/dalelotts/dev/PoliceConductUS/generate.policeconduct.org/infrastructure/bootstrap/README.md`
+- `infrastructure/README.md`
+- `infrastructure/bootstrap/README.md`
 
 ## Deploy
 
 GitHub Actions workflows:
 
-- `/Users/dalelotts/dev/PoliceConductUS/generate.policeconduct.org/.github/workflows/deploy.yml`
-- `/Users/dalelotts/dev/PoliceConductUS/generate.policeconduct.org/.github/workflows/preview.yml`
-- `/Users/dalelotts/dev/PoliceConductUS/generate.policeconduct.org/.github/workflows/preview-cleanup.yml`
+- `.github/workflows/deploy.yml`
+- `.github/workflows/preview.yml`
+- `.github/workflows/preview-cleanup.yml`
 
 ## Local Deploy (Recommended)
 

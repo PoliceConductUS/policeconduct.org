@@ -11,19 +11,36 @@ locals {
   forms_submissions_bucket_name         = var.forms_submissions_bucket_name == null || trimspace(var.forms_submissions_bucket_name) == "" ? "${var.project_name}-submissions-${data.aws_caller_identity.current.account_id}" : trimspace(var.forms_submissions_bucket_name)
   forms_drafts_preview_bucket_name      = var.forms_drafts_preview_bucket_name == null || trimspace(var.forms_drafts_preview_bucket_name) == "" ? "${var.project_name}-preview-drafts-${data.aws_caller_identity.current.account_id}" : trimspace(var.forms_drafts_preview_bucket_name)
   forms_submissions_preview_bucket_name = var.forms_submissions_preview_bucket_name == null || trimspace(var.forms_submissions_preview_bucket_name) == "" ? "${var.project_name}-preview-submissions-${data.aws_caller_identity.current.account_id}" : trimspace(var.forms_submissions_preview_bucket_name)
+  forms_readonly_role_name              = var.forms_readonly_role_name == null || trimspace(var.forms_readonly_role_name) == "" ? "${var.project_name}-forms-readonly" : trimspace(var.forms_readonly_role_name)
+  forms_readonly_role_assume_principals = length(var.forms_readonly_role_assume_principals) > 0 ? var.forms_readonly_role_assume_principals : ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
   effective_site_bucket_names = [
     local.site_bucket_name,
     local.preview_bucket_name,
   ]
-  github_repo_sub                      = "repo:${var.github_org}/${var.github_repo}:*"
-  www_domain                           = "www.${var.domain_name}"
-  include_www                          = var.www_record_mode != "none"
-  create_www_alias_records             = var.www_record_mode == "alias"
-  create_www_cname_record              = var.www_record_mode == "cname"
-  preview_wildcard_domain              = "*.preview.${var.domain_name}"
-  distribution_aliases                 = local.include_www ? [var.domain_name, local.www_domain] : [var.domain_name]
-  preview_distribution_aliases         = [local.preview_wildcard_domain]
-  certificate_san_names                = local.include_www ? [local.www_domain, local.preview_wildcard_domain] : [local.preview_wildcard_domain]
+  github_repo_sub          = "repo:${var.github_org}/${var.github_repo}:*"
+  www_domain               = "www.${var.domain_name}"
+  include_www              = var.www_record_mode != "none"
+  create_www_alias_records = var.www_record_mode == "alias"
+  create_www_cname_record  = var.www_record_mode == "cname"
+  preview_wildcard_domain  = "*.preview.${var.domain_name}"
+  redirect_domains = distinct([
+    for domain in var.redirect_domains : lower(trimspace(domain))
+    if trimspace(domain) != ""
+  ])
+  redirect_target_url = var.redirect_target_url == null || trimspace(var.redirect_target_url) == "" ? null : trimspace(var.redirect_target_url)
+  managed_redirect_zones = distinct([
+    for zone in var.managed_redirect_zones : lower(trimspace(zone))
+    if trimspace(zone) != ""
+  ])
+  distribution_aliases = distinct(concat(
+    local.include_www ? [var.domain_name, local.www_domain] : [var.domain_name],
+    local.redirect_domains
+  ))
+  preview_distribution_aliases = [local.preview_wildcard_domain]
+  certificate_san_names = distinct(concat(
+    local.include_www ? [local.www_domain, local.preview_wildcard_domain] : [local.preview_wildcard_domain],
+    local.redirect_domains
+  ))
   origin_id                            = "s3-${local.site_bucket_name}"
   preview_origin_id                    = "s3-${local.preview_bucket_name}"
   forms_api_origin_id                  = "forms-api-prod-url"
@@ -37,6 +54,49 @@ locals {
   manage_hosted_zone                   = local.provided_hosted_zone_id == null
   route53_zone_id                      = local.manage_hosted_zone ? aws_route53_zone.site[0].zone_id : local.provided_hosted_zone_id
   cloudfront_hosted_zone_id            = "Z2FDTNDATAQYW2"
+  normalized_redirect_domain_zone_ids = {
+    for domain, zone_id in var.redirect_domain_zone_ids :
+    lower(trimspace(domain)) => trimspace(zone_id)
+    if trimspace(domain) != "" && trimspace(zone_id) != ""
+  }
+  managed_redirect_domain_zone_ids = merge([
+    for zone_name, zone in aws_route53_zone.redirect :
+    {
+      (zone_name)          = zone.zone_id
+      ("www.${zone_name}") = zone.zone_id
+    }
+  ]...)
+  managed_redirect_domain_names = distinct(flatten([
+    for zone_name in local.managed_redirect_zones : [
+      zone_name,
+      "www.${zone_name}"
+    ]
+  ]))
+  configured_redirect_domain_names = distinct(concat(
+    keys(local.normalized_redirect_domain_zone_ids),
+    local.managed_redirect_domain_names
+  ))
+  redirect_domains_for_records = {
+    for domain in local.redirect_domains :
+    domain => domain
+    if contains(local.configured_redirect_domain_names, domain)
+  }
+  acm_validation_domains = distinct(concat(
+    [var.domain_name, local.preview_wildcard_domain],
+    local.include_www ? [local.www_domain] : [],
+    [
+      for domain in local.redirect_domains :
+      domain
+      if contains(local.configured_redirect_domain_names, domain)
+    ]
+  ))
+  redirect_domain_set = {
+    for domain in local.redirect_domains : domain => true
+  }
+  unmanaged_acm_validation_domains = [
+    for domain in local.certificate_san_names : domain
+    if !contains(local.acm_validation_domains, domain)
+  ]
   normalized_extra_dns_records = [
     for record in var.extra_dns_records : merge(record, {
       name = trimspace(record.name) == "" || trimspace(record.name) == "@" ? var.domain_name : trimspace(record.name)
@@ -120,8 +180,9 @@ locals {
 
 data "archive_file" "forms_api_lambda" {
   type        = "zip"
-  source_file = "${path.module}/lambdas/forms-api/index.mjs"
+  source_dir  = "${path.module}/lambdas/forms-api"
   output_path = "${path.module}/lambdas/forms-api.zip"
+  excludes    = ["*.zip"]
 }
 
 resource "aws_s3_bucket" "terraform_state" {
@@ -846,11 +907,73 @@ resource "aws_iam_role_policy" "forms_lambda_permissions" {
   policy = data.aws_iam_policy_document.forms_lambda_permissions.json
 }
 
+data "aws_iam_policy_document" "forms_readonly_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "AWS"
+      identifiers = local.forms_readonly_role_assume_principals
+    }
+  }
+}
+
+resource "aws_iam_role" "forms_readonly" {
+  name               = local.forms_readonly_role_name
+  assume_role_policy = data.aws_iam_policy_document.forms_readonly_assume_role.json
+}
+
+data "aws_iam_policy_document" "forms_readonly_permissions" {
+  statement {
+    sid    = "ReadSubmissionsBuckets"
+    effect = "Allow"
+    actions = [
+      "s3:ListBucket",
+    ]
+    resources = [
+      aws_s3_bucket.forms_submissions.arn,
+      aws_s3_bucket.forms_submissions_preview.arn,
+    ]
+  }
+
+  statement {
+    sid    = "ReadSubmissionObjects"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = [
+      "${aws_s3_bucket.forms_submissions.arn}/*",
+      "${aws_s3_bucket.forms_submissions_preview.arn}/*",
+    ]
+  }
+
+  statement {
+    sid    = "DecryptSubmissionObjects"
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+    ]
+    resources = [
+      aws_kms_key.forms_submissions.arn,
+      aws_kms_key.forms_submissions_preview.arn,
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "forms_readonly_permissions" {
+  name   = "${var.project_name}-forms-readonly"
+  role   = aws_iam_role.forms_readonly.id
+  policy = data.aws_iam_policy_document.forms_readonly_permissions.json
+}
+
 resource "aws_lambda_function" "forms_api_prod" {
   function_name = "${var.project_name}-forms-api-prod"
   role          = aws_iam_role.forms_lambda.arn
   handler       = "index.handler"
-  runtime       = "nodejs18.x"
+  runtime       = var.lambda_nodejs_runtime
   timeout       = 10
 
   filename         = data.archive_file.forms_api_lambda.output_path
@@ -872,7 +995,7 @@ resource "aws_lambda_function" "forms_api_preview" {
   function_name = "${var.project_name}-forms-api-preview"
   role          = aws_iam_role.forms_lambda.arn
   handler       = "index.handler"
-  runtime       = "nodejs18.x"
+  runtime       = var.lambda_nodejs_runtime
   timeout       = 10
 
   filename         = data.archive_file.forms_api_lambda.output_path
@@ -1369,6 +1492,12 @@ resource "aws_route53_zone" "site" {
   name = var.domain_name
 }
 
+resource "aws_route53_zone" "redirect" {
+  for_each = toset(local.managed_redirect_zones)
+
+  name = each.key
+}
+
 resource "aws_s3_bucket" "site" {
   bucket        = local.site_bucket_name
   force_destroy = var.site_bucket_force_destroy
@@ -1436,6 +1565,7 @@ resource "aws_route53_record" "acm_validation" {
       type   = dvo.resource_record_type
       record = dvo.resource_record_value
     }
+    if contains(local.acm_validation_domains, dvo.domain_name)
   }
 
   allow_overwrite = true
@@ -1443,7 +1573,13 @@ resource "aws_route53_record" "acm_validation" {
   records         = [each.value.record]
   ttl             = 60
   type            = each.value.type
-  zone_id         = local.route53_zone_id
+  zone_id = (
+    each.key == var.domain_name || each.key == local.preview_wildcard_domain || (local.include_www && each.key == local.www_domain)
+    ) ? local.route53_zone_id : (
+    contains(keys(local.normalized_redirect_domain_zone_ids), each.key)
+    ? local.normalized_redirect_domain_zone_ids[each.key]
+    : aws_route53_zone.redirect[replace(each.key, "www.", "")].zone_id
+  )
 }
 
 resource "aws_acm_certificate_validation" "site" {
@@ -1461,7 +1597,21 @@ resource "aws_cloudfront_function" "index_rewrite" {
   code    = <<-EOF
 function handler(event) {
   var request = event.request;
+  var host = request.headers.host && request.headers.host.value ? request.headers.host.value.toLowerCase() : '';
+  var redirectDomains = ${jsonencode(local.redirect_domain_set)};
+  var redirectTarget = ${jsonencode(local.redirect_target_url)};
   var uri = request.uri;
+
+  if (redirectTarget && redirectDomains[host]) {
+    return {
+      statusCode: 301,
+      statusDescription: 'Moved Permanently',
+      headers: {
+        location: { value: redirectTarget },
+        'cache-control': { value: 'public, max-age=3600' }
+      }
+    };
+  }
 
   if (uri.endsWith('/')) {
     request.uri += 'index.html';
@@ -1804,6 +1954,40 @@ resource "aws_route53_record" "www_cname" {
   type    = "CNAME"
   ttl     = 300
   records = [aws_cloudfront_distribution.site.domain_name]
+}
+
+resource "aws_route53_record" "redirect_domains_a" {
+  for_each = local.redirect_domains_for_records
+
+  allow_overwrite = true
+  zone_id = contains(keys(local.normalized_redirect_domain_zone_ids), each.key) ? local.normalized_redirect_domain_zone_ids[each.key] : aws_route53_zone.redirect[
+    replace(each.key, "www.", "")
+  ].zone_id
+  name = each.key
+  type = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.site.domain_name
+    zone_id                = local.cloudfront_hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "redirect_domains_aaaa" {
+  for_each = local.redirect_domains_for_records
+
+  allow_overwrite = true
+  zone_id = contains(keys(local.normalized_redirect_domain_zone_ids), each.key) ? local.normalized_redirect_domain_zone_ids[each.key] : aws_route53_zone.redirect[
+    replace(each.key, "www.", "")
+  ].zone_id
+  name = each.key
+  type = "AAAA"
+
+  alias {
+    name                   = aws_cloudfront_distribution.site.domain_name
+    zone_id                = local.cloudfront_hosted_zone_id
+    evaluate_target_health = false
+  }
 }
 
 resource "aws_route53_record" "preview_wildcard_a" {

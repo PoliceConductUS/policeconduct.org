@@ -58,6 +58,31 @@ output "acm_certificate_arn" {
   value       = aws_acm_certificate_validation.site.certificate_arn
 }
 
+output "acm_validation_records_by_domain" {
+  description = "DNS validation records required by ACM, keyed by domain name."
+  value = {
+    for dvo in aws_acm_certificate.site.domain_validation_options :
+    dvo.domain_name => {
+      name  = dvo.resource_record_name
+      type  = dvo.resource_record_type
+      value = dvo.resource_record_value
+    }
+  }
+}
+
+output "acm_validation_records_unmanaged" {
+  description = "ACM DNS validation records for domains Terraform is not managing in Route53."
+  value = {
+    for dvo in aws_acm_certificate.site.domain_validation_options :
+    dvo.domain_name => {
+      name  = dvo.resource_record_name
+      type  = dvo.resource_record_type
+      value = dvo.resource_record_value
+    }
+    if contains(local.unmanaged_acm_validation_domains, dvo.domain_name)
+  }
+}
+
 output "route53_zone_id" {
   description = "Route 53 hosted zone ID used for DNS records."
   value       = local.route53_zone_id
@@ -66,6 +91,22 @@ output "route53_zone_id" {
 output "route53_name_servers" {
   description = "Route 53 nameservers (only when this stack creates the hosted zone)."
   value       = local.manage_hosted_zone ? aws_route53_zone.site[0].name_servers : []
+}
+
+output "managed_redirect_zone_ids" {
+  description = "Route 53 hosted zone IDs for managed redirect zones."
+  value = {
+    for zone_name, zone in aws_route53_zone.redirect :
+    zone_name => zone.zone_id
+  }
+}
+
+output "managed_redirect_zone_name_servers" {
+  description = "Route 53 nameservers for managed redirect zones; update registrar delegation for each domain."
+  value = {
+    for zone_name, zone in aws_route53_zone.redirect :
+    zone_name => zone.name_servers
+  }
 }
 
 output "site_url" {
@@ -121,6 +162,16 @@ output "forms_drafts_kms_key_arn" {
 output "forms_submissions_kms_key_arn" {
   description = "KMS key ARN used to encrypt form submissions."
   value       = aws_kms_key.forms_submissions.arn
+}
+
+output "forms_readonly_role_arn" {
+  description = "IAM role ARN for least-privilege read access to form submissions buckets and KMS keys."
+  value       = aws_iam_role.forms_readonly.arn
+}
+
+output "forms_readonly_role_name" {
+  description = "IAM role name for least-privilege read access to form submissions."
+  value       = aws_iam_role.forms_readonly.name
 }
 
 output "forms_api_waf_web_acl_arn" {

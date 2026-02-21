@@ -1,0 +1,11 @@
+aws_region           = "us-east-1"
+domain_name          = "iceconduct.org"
+redirect_target_url  = "https://policeconduct.org/law-enforcement-agency/federal/ice/"
+project_name         = "iceconduct-redirect"
+price_class          = "PriceClass_100"
+
+tags = {
+  ManagedBy = "Terraform"
+  Project   = "iceconduct.org"
+  Stack     = "bootstrap-iceconduct"
+}
