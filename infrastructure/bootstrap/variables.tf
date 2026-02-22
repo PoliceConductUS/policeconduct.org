@@ -227,6 +227,31 @@ variable "lambda_nodejs_runtime" {
   default     = "nodejs22.x"
 }
 
+variable "recaptcha_enterprise_project_id" {
+  description = "Google Cloud project ID for reCAPTCHA Enterprise assessments."
+  type        = string
+  default     = null
+}
+
+variable "public_recaptcha_site_key" {
+  description = "Google reCAPTCHA site key exposed to the frontend as PUBLIC_RECAPTCHA_SITE_KEY."
+  type        = string
+  default     = null
+}
+
+variable "recaptcha_enterprise_api_key" {
+  description = "Google API key used by Lambda to call reCAPTCHA Enterprise assessments."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "recaptcha_enterprise_min_score" {
+  description = "Minimum acceptable risk score for reCAPTCHA Enterprise submissions."
+  type        = number
+  default     = 0.5
+}
+
 variable "alarm_actions" {
   description = "Optional list of SNS topic ARNs (or other alarm action ARNs) to notify when alarms trigger."
   type        = list(string)

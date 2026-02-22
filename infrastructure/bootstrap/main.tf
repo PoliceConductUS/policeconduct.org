@@ -114,6 +114,9 @@ locals {
   sentry_org                          = var.sentry_org == null || trimspace(var.sentry_org) == "" ? null : trimspace(var.sentry_org)
   sentry_project                      = var.sentry_project == null || trimspace(var.sentry_project) == "" ? null : trimspace(var.sentry_project)
   sentry_auth_token                   = var.sentry_auth_token == null || trimspace(var.sentry_auth_token) == "" ? null : trimspace(var.sentry_auth_token)
+  recaptcha_enterprise_project_id     = var.recaptcha_enterprise_project_id == null || trimspace(var.recaptcha_enterprise_project_id) == "" ? null : trimspace(var.recaptcha_enterprise_project_id)
+  recaptcha_enterprise_api_key        = var.recaptcha_enterprise_api_key == null || trimspace(var.recaptcha_enterprise_api_key) == "" ? null : trimspace(var.recaptcha_enterprise_api_key)
+  public_recaptcha_site_key           = var.public_recaptcha_site_key == null || trimspace(var.public_recaptcha_site_key) == "" ? null : trimspace(var.public_recaptcha_site_key)
   has_sentry_auth_token               = nonsensitive(local.sentry_auth_token != null)
   github_environment_names            = toset(["production", "preview"])
   github_environment_variables = {
@@ -135,6 +138,9 @@ locals {
       },
       local.sentry_project == null ? {} : {
         SENTRY_PROJECT = local.sentry_project
+      },
+      local.public_recaptcha_site_key == null ? {} : {
+        PUBLIC_RECAPTCHA_SITE_KEY = local.public_recaptcha_site_key
       }
     )
     preview = merge(
@@ -155,6 +161,9 @@ locals {
       },
       local.sentry_project == null ? {} : {
         SENTRY_PROJECT = local.sentry_project
+      },
+      local.public_recaptcha_site_key == null ? {} : {
+        PUBLIC_RECAPTCHA_SITE_KEY = local.public_recaptcha_site_key
       }
     )
   }
@@ -982,9 +991,15 @@ resource "aws_lambda_function" "forms_api_prod" {
   environment {
     variables = {
       DRAFTS_BUCKET          = aws_s3_bucket.forms_drafts.id
+      DRAFTS_KMS_KEY_ID      = aws_kms_key.forms_drafts.arn
       DRAFTS_PREFIX          = "drafts/"
       SUBMISSIONS_BUCKET     = aws_s3_bucket.forms_submissions.id
+      SUBMISSIONS_KMS_KEY_ID = aws_kms_key.forms_submissions.arn
       SUBMISSIONS_PREFIX     = "submissions/"
+      RECAPTCHA_ENTERPRISE_PROJECT_ID = local.recaptcha_enterprise_project_id == null ? "" : local.recaptcha_enterprise_project_id
+      RECAPTCHA_ENTERPRISE_API_KEY    = local.recaptcha_enterprise_api_key == null ? "" : local.recaptcha_enterprise_api_key
+      RECAPTCHA_ENTERPRISE_SITE_KEY   = local.public_recaptcha_site_key == null ? "" : local.public_recaptcha_site_key
+      RECAPTCHA_ENTERPRISE_MIN_SCORE  = tostring(var.recaptcha_enterprise_min_score)
       DRAFT_ACTIVE_WINDOW_MS = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES        = tostring(var.forms_draft_max_bytes)
     }
@@ -1004,9 +1019,15 @@ resource "aws_lambda_function" "forms_api_preview" {
   environment {
     variables = {
       DRAFTS_BUCKET          = aws_s3_bucket.forms_drafts_preview.id
+      DRAFTS_KMS_KEY_ID      = aws_kms_key.forms_drafts_preview.arn
       DRAFTS_PREFIX          = "drafts/"
       SUBMISSIONS_BUCKET     = aws_s3_bucket.forms_submissions_preview.id
+      SUBMISSIONS_KMS_KEY_ID = aws_kms_key.forms_submissions_preview.arn
       SUBMISSIONS_PREFIX     = "submissions/"
+      RECAPTCHA_ENTERPRISE_PROJECT_ID = local.recaptcha_enterprise_project_id == null ? "" : local.recaptcha_enterprise_project_id
+      RECAPTCHA_ENTERPRISE_API_KEY    = local.recaptcha_enterprise_api_key == null ? "" : local.recaptcha_enterprise_api_key
+      RECAPTCHA_ENTERPRISE_SITE_KEY   = local.public_recaptcha_site_key == null ? "" : local.public_recaptcha_site_key
+      RECAPTCHA_ENTERPRISE_MIN_SCORE  = tostring(var.recaptcha_enterprise_min_score)
       DRAFT_ACTIVE_WINDOW_MS = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES        = tostring(var.forms_draft_max_bytes)
     }

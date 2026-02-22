@@ -218,7 +218,9 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
                 </label>
                 <div class="invalid-feedback">Consent is required.</div>
               </div>
-              <div data-netlify-recaptcha="true"></div>
+              <div class="small text-muted mb-3">
+                Protected by reCAPTCHA Enterprise.
+              </div>
               <button type="submit" class="btn btn-dark rounded-0 w-100">
                 Submit volunteer interest
               </button>
@@ -246,59 +248,130 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
         return;
       }
       form.addEventListener("submit", async function (event) {
-        event.preventDefault();
-        if (!form.checkValidity()) {
-          event.stopPropagation();
-          form.classList.add("was-validated");
-          return;
+        const submitButton = form.querySelector('button[type="submit"]');
+        let inlineError = form.querySelector("[data-form-submit-error]");
+        if (!inlineError) {
+          inlineError = document.createElement("div");
+          inlineError.setAttribute("data-form-submit-error", "true");
+          inlineError.className = "alert alert-danger rounded-0 mt-3 d-none";
+          inlineError.setAttribute("role", "alert");
+          form.appendChild(inlineError);
         }
-        form.classList.add("was-validated");
 
-        const formData = new FormData(form);
-        const data = {};
-        formData.forEach((value, key) => {
-          if (key === "form-name" || key === "g-recaptcha-response") {
+        event.preventDefault();
+        if (submitButton) submitButton.disabled = true;
+        inlineError.classList.add("d-none");
+        inlineError.textContent = "";
+
+        try {
+          if (!form.checkValidity()) {
+            event.stopPropagation();
+            form.classList.add("was-validated");
             return;
           }
-          if (key in data) {
-            if (!Array.isArray(data[key])) {
-              data[key] = [data[key]];
-            }
-            data[key].push(value);
-          } else {
-            data[key] = value;
+          form.classList.add("was-validated");
+
+          const formData = new FormData(form);
+          const recaptchaSiteKey = String(
+            window.__RECAPTCHA_SITE_KEY__ || "",
+          ).trim();
+          if (
+            !recaptchaSiteKey ||
+            !window.grecaptcha ||
+            !window.grecaptcha.enterprise
+          ) {
+            throw new Error("reCAPTCHA is not configured.");
           }
-        });
 
-        const response = await fetch("/api/forms/submit", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            formName: "volunteer",
-            data,
-          }),
-        });
+          const recaptchaToken = await new Promise((resolve, reject) => {
+            window.grecaptcha.enterprise.ready(async function () {
+              try {
+                const token = await window.grecaptcha.enterprise.execute(
+                  recaptchaSiteKey,
+                  {
+                    action: "volunteer_submit",
+                  },
+                );
+                resolve(token);
+              } catch (error) {
+                reject(error);
+              }
+            });
+          });
 
-        if (!response.ok) {
-          throw new Error("Failed to submit form.");
-        }
+          if (!recaptchaToken) {
+            throw new Error("Unable to validate reCAPTCHA.");
+          }
 
-        const result = await response.json();
-        const submissionId =
-          typeof result?.submissionId === "string" ? result.submissionId : "";
-        if (!submissionId) {
-          throw new Error(
-            "Submission succeeded but no submission ID was returned.",
+          const data = {};
+          formData.forEach((value, key) => {
+            if (key === "form-name" || key === "g-recaptcha-response") {
+              return;
+            }
+            if (key in data) {
+              if (!Array.isArray(data[key])) {
+                data[key] = [data[key]];
+              }
+              data[key].push(value);
+            } else {
+              data[key] = value;
+            }
+          });
+
+          const response = await fetch("/api/forms/submit", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              formName: "volunteer",
+              recaptchaToken,
+              data,
+            }),
+          });
+
+          if (!response.ok) {
+            let message =
+              "We could not submit your form right now. Please print this page and email it to hello@policeconduct.org so we have your submission while we fix the issue.";
+            try {
+              const errorPayload = await response.json();
+              if (
+                errorPayload &&
+                typeof errorPayload.error === "string" &&
+                errorPayload.error.trim()
+              ) {
+                message = errorPayload.error.trim();
+              }
+            } catch (_error) {
+              // Ignore malformed error payloads.
+            }
+            throw new Error(message);
+          }
+
+          const result = await response.json();
+          const submissionId =
+            typeof result?.submissionId === "string" ? result.submissionId : "";
+          if (!submissionId) {
+            throw new Error(
+              "Submission succeeded but no submission ID was returned.",
+            );
+          }
+
+          form.reset();
+          form.classList.remove("was-validated");
+          alert(
+            `Submission received.\n\nSubmission ID: ${submissionId}\n\nSave this ID in a safe place. It cannot be recovered or displayed again. Use it for follow-up questions or change requests.`,
           );
+        } catch (error) {
+          const message =
+            error instanceof Error && error.message
+              ? error.message
+              : "Unable to submit the form. Please try again.";
+          inlineError.textContent = message;
+          inlineError.classList.remove("d-none");
+        } finally {
+          if (submitButton) submitButton.disabled = false;
         }
-
-        form.reset();
-        form.classList.remove("was-validated");
-        alert(
-          `Submission received.\n\nSubmission ID: ${submissionId}\n\nSave this ID in a safe place. It cannot be recovered or displayed again. Use it for follow-up questions or change requests.`,
-        );
       });
     })();
   </script>

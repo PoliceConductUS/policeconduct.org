@@ -7,7 +7,31 @@ const { title, description, pagePath, canonicalUrl, robots, structuredData } =
   Astro.props;
 const resolvedPath = pagePath || Astro.url?.pathname || "/";
 const encodedPath = encodeURIComponent(resolvedPath);
-const canonicalHref = canonicalUrl || resolvedPath;
+const siteOrigin = (() => {
+  const envSite = (import.meta.env.PUBLIC_SITE_URL || "").trim();
+  if (envSite) {
+    try {
+      return new URL(envSite).toString();
+    } catch (_error) {
+      // Fall back to configured site URL.
+    }
+  }
+  if (Astro.site) {
+    return Astro.site.toString();
+  }
+  return "https://www.policeconduct.org/";
+})();
+const canonicalSource = canonicalUrl || resolvedPath;
+const canonicalHref = (() => {
+  try {
+    return new URL(canonicalSource, siteOrigin).toString();
+  } catch (_error) {
+    return new URL(resolvedPath, siteOrigin).toString();
+  }
+})();
+const recaptchaSiteKey = (
+  import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY || ""
+).trim();
 const robotsContent = robots || "index,follow";
 const structuredDataEntries = structuredData
   ? Array.isArray(structuredData)
@@ -89,6 +113,21 @@ const isActivePath = (href: string) =>
     <meta name="build-commit" content={fullCommitSha} />
     <meta name="build-commit-dirty" content={isDirtyBuild ? "true" : "false"} />
     <meta name="HandheldFriendly" content="true" />
+    {
+      recaptchaSiteKey ? (
+        <>
+          <script
+            src={`https://www.google.com/recaptcha/enterprise.js?render=${encodeURIComponent(recaptchaSiteKey)}`}
+            async
+            defer
+          />
+          <script
+            is:inline
+            set:html={`window.__RECAPTCHA_SITE_KEY__ = ${JSON.stringify(recaptchaSiteKey)};`}
+          />
+        </>
+      ) : null
+    }
     {
       structuredDataEntries.length
         ? structuredDataEntries.map((entry) => (
