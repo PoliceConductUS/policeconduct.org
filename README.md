@@ -9,27 +9,8 @@ npm ci
 npm run dev
 ```
 
-### Local Forms API (Lambda Handler)
-
-Run the forms Lambda locally and proxy `/api` to it from Astro dev:
-
-```bash
-npm run forms:lambda:local
-FORMS_API_PROXY_TARGET=http://127.0.0.1:8787 npm run dev
-```
-
-`FORMS_API_PROXY_TARGET` is dev-only. In production, forms submit to relative
-`/api/*` routes on the deployed site domain and do not use this variable.
-
-Defaults:
-
-- Runner host: `127.0.0.1`
-- Runner port: `8787`
-
-Override with:
-
-- `FORMS_LAMBDA_LOCAL_HOST`
-- `FORMS_LAMBDA_LOCAL_PORT`
+Set `FORMS_API_PROXY_TARGET` to the preview forms API URL in `.env-policeconduct`
+for local UI testing against deployed forms infrastructure.
 
 ## Build
 

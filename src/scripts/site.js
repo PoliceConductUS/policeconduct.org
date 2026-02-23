@@ -76,9 +76,6 @@ const BLOCKED_SUBMIT_FALLBACK =
 
 let recaptchaReadyPromise = null;
 
-const withBlockedFallback = (message) =>
-  `${message} ${BLOCKED_SUBMIT_FALLBACK}`.trim();
-
 const setSubmitBusy = (button, isBusy, busyLabel = "Submitting...") => {
   if (!button) {
     return;
@@ -104,7 +101,9 @@ const setSubmitBusy = (button, isBusy, busyLabel = "Submitting...") => {
 const getRecaptchaToken = async (action) => {
   const siteKey = String(window.__RECAPTCHA_SITE_KEY__ || "").trim();
   if (!siteKey || !window.grecaptcha || !window.grecaptcha.enterprise) {
-    throw new Error(withBlockedFallback("reCAPTCHA is not configured."));
+    throw new Error(
+      `reCAPTCHA is not configured. ${BLOCKED_SUBMIT_FALLBACK}`.trim(),
+    );
   }
 
   if (!recaptchaReadyPromise) {
@@ -116,7 +115,9 @@ const getRecaptchaToken = async (action) => {
 
   const token = await window.grecaptcha.enterprise.execute(siteKey, { action });
   if (!token) {
-    throw new Error(withBlockedFallback("Unable to validate reCAPTCHA."));
+    throw new Error(
+      `Unable to validate reCAPTCHA. ${BLOCKED_SUBMIT_FALLBACK}`.trim(),
+    );
   }
   return token;
 };
@@ -173,7 +174,6 @@ const ensureSubmissionUi = ({ form, submitButton, onReset }) => {
 window.__IPC_FORMS__ = {
   ...(window.__IPC_FORMS__ || {}),
   blockedSubmitFallback: BLOCKED_SUBMIT_FALLBACK,
-  withBlockedFallback,
   setSubmitBusy,
   prewarmRecaptcha,
   getRecaptchaToken,
