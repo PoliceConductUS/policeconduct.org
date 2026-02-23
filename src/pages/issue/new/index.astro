@@ -124,8 +124,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
           form.classList.add("was-validated");
 
           const formData = new FormData(form);
-          const recaptchaToken =
-            await formsUi.getRecaptchaToken("issue_submit");
+          const recaptchaToken = await formsUi.getRecaptchaToken("issueSubmit");
 
           const data = {};
           formData.forEach((value, key) => {

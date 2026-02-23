@@ -27,7 +27,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
             <strong>January 14, 2026</strong>
           </p>
           <form
-            name="data-subject-access-request"
+            name="dataSubjectAccessRequest"
             method="POST"
             data-netlify="true"
             data-netlify-honeypot="organization"
@@ -37,7 +37,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
             <input
               type="hidden"
               name="form-name"
-              value="data-subject-access-request"
+              value="dataSubjectAccessRequest"
             />
             <div class="honeypot visually-hidden">
               <label>
@@ -355,7 +355,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
   <script is:inline>
     (function () {
       const form = document.querySelector(
-        'form[name="data-subject-access-request"]',
+        'form[name="dataSubjectAccessRequest"]',
       );
       if (!form) {
         return;
@@ -411,7 +411,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
 
           const formData = new FormData(form);
           const recaptchaToken = await formsUi.getRecaptchaToken(
-            "data-subject-access-request_submit",
+            "dataSubjectAccessRequestSubmit",
           );
 
           const data = {};
@@ -435,7 +435,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              formName: "data-subject-access-request",
+              formName: "dataSubjectAccessRequest",
               recaptchaToken,
               data,
             }),

@@ -304,7 +304,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
 
           const formData = new FormData(form);
           const recaptchaToken =
-            await formsUi.getRecaptchaToken("contact_submit");
+            await formsUi.getRecaptchaToken("contactSubmit");
 
           const data = {};
           formData.forEach((value, key) => {

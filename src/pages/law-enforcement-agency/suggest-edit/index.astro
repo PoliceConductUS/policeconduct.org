@@ -45,18 +45,14 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
                 on public, verifiable facts.
               </div>
               <form
-                name="agency-edit-suggestion"
+                name="agencyEdit"
                 method="POST"
                 data-netlify="true"
                 data-netlify-honeypot="organization"
                 class="needs-validation"
                 novalidate
               >
-                <input
-                  type="hidden"
-                  name="form-name"
-                  value="agency-edit-suggestion"
-                />
+                <input type="hidden" name="form-name" value="agencyEdit" />
                 <div class="honeypot visually-hidden">
                   <label>
                     Organization
@@ -200,9 +196,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
   </main>
   <script is:inline>
     (function () {
-      const form = document.querySelector(
-        'form[name="agency-edit-suggestion"]',
-      );
+      const form = document.querySelector('form[name="agencyEdit"]');
       if (!form) {
         return;
       }
@@ -256,9 +250,8 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
           form.classList.add("was-validated");
 
           const formData = new FormData(form);
-          const recaptchaToken = await formsUi.getRecaptchaToken(
-            "agency-edit-suggestion_submit",
-          );
+          const recaptchaToken =
+            await formsUi.getRecaptchaToken("agencyEditSubmit");
 
           const data = {};
           formData.forEach((value, key) => {
@@ -281,7 +274,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              formName: "agency-edit-suggestion",
+              formName: "agencyEdit",
               recaptchaToken,
               data,
             }),

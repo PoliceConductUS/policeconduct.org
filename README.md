@@ -18,6 +18,17 @@ for local UI testing against deployed forms infrastructure.
 npm run build
 ```
 
+## End-to-End Form Tests
+
+Run browser E2E tests for form submission flows:
+
+```bash
+npm run test:e2e
+```
+
+These tests mock reCAPTCHA and `/api/forms/*` responses to keep runs stable and
+independent from external services.
+
 Build metadata is embedded automatically:
 
 - `GIT_COMMIT_SHA` (defaults to current git commit)

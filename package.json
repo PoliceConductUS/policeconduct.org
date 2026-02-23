@@ -10,6 +10,7 @@
     "deploy:preview": "bash scripts/deploy-preview.sh",
     "seo:audit": "node scripts/seo-audit.mjs",
     "audit:a11y": "node scripts/audit-dist.mjs",
+    "test:e2e": "playwright test",
     "preflight:publish": "npm run seo:audit && npm run audit:a11y",
     "preflight:publish:full": "npm run build && npm run preflight:publish",
     "format": "prettier --write .",

@@ -35,7 +35,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
                 We publish verified cases with a public filer or news link.
               </p>
               <form
-                name="civil-litigation-new"
+                name="civilLitigationNew"
                 method="POST"
                 data-netlify="true"
                 data-netlify-honeypot="organization"
@@ -45,7 +45,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
                 <input
                   type="hidden"
                   name="form-name"
-                  value="civil-litigation-new"
+                  value="civilLitigationNew"
                 />
                 <div class="honeypot visually-hidden">
                   <label>
@@ -220,7 +220,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
   </main>
   <script is:inline>
     (function () {
-      const form = document.querySelector('form[name="civil-litigation-new"]');
+      const form = document.querySelector('form[name="civilLitigationNew"]');
       if (!form) {
         return;
       }
@@ -285,7 +285,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
 
           const formData = new FormData(form);
           const recaptchaToken = await formsUi.getRecaptchaToken(
-            "civil-litigation-new_submit",
+            "civilLitigationNewSubmit",
           );
 
           const data = {};
@@ -309,7 +309,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              formName: "civil-litigation-new",
+              formName: "civilLitigationNew",
               recaptchaToken,
               data,
             }),

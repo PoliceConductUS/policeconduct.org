@@ -35,7 +35,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
                 verify the claim.
               </p>
               <form
-                name="civil-litigation-edit-suggestion"
+                name="civilLitigationEdit"
                 method="POST"
                 data-netlify="true"
                 data-netlify-honeypot="organization"
@@ -45,7 +45,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
                 <input
                   type="hidden"
                   name="form-name"
-                  value="civil-litigation-edit-suggestion"
+                  value="civilLitigationEdit"
                 />
                 <div class="honeypot visually-hidden">
                   <label>
@@ -144,9 +144,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
   </main>
   <script is:inline>
     (function () {
-      const form = document.querySelector(
-        'form[name="civil-litigation-edit-suggestion"]',
-      );
+      const form = document.querySelector('form[name="civilLitigationEdit"]');
       if (!form) {
         return;
       }
@@ -201,7 +199,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
 
           const formData = new FormData(form);
           const recaptchaToken = await formsUi.getRecaptchaToken(
-            "civil-litigation-edit-suggestion_submit",
+            "civilLitigationEditSubmit",
           );
 
           const data = {};
@@ -225,7 +223,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              formName: "civil-litigation-edit-suggestion",
+              formName: "civilLitigationEdit",
               recaptchaToken,
               data,
             }),

@@ -13,14 +13,14 @@ const ALLOWED_FORM_NAMES = new Set([
   "contact",
   "volunteer",
   "issue",
-  "civil-litigation-new",
-  "civil-litigation-edit-suggestion",
-  "agency-new-suggestion",
-  "agency-edit-suggestion",
-  "personnel-new-suggestion",
-  "officer-edit-suggestion",
-  "data-subject-access-request",
-  "report-new",
+  "civilLitigationNew",
+  "civilLitigationEdit",
+  "agencyNew",
+  "agencyEdit",
+  "personnelNew",
+  "officerEdit",
+  "dataSubjectAccessRequest",
+  "reportNew",
 ]);
 
 let recaptchaClientPromise;
@@ -449,11 +449,13 @@ async function submitForm(event, requestId) {
     return json(400, { error: "Unsupported formName." });
   }
 
+  const expectedAction = `${formName}Submit`;
+
   const recaptcha = await verifyRecaptchaEnterprise(
     recaptchaToken,
     sourceIp,
     userAgent,
-    `${formName}_submit`,
+    expectedAction,
   );
   if (!recaptcha.ok) {
     console.info(
@@ -461,7 +463,7 @@ async function submitForm(event, requestId) {
         msg: "forms.submit.recaptcha_failed",
         requestId,
         formName,
-        expectedAction: `${formName}_submit`,
+        expectedAction,
         error: recaptcha.error,
         details: recaptcha.details || null,
       }),

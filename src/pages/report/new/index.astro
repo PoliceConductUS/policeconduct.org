@@ -138,12 +138,12 @@ const traitsWithRubrics = sortedTraits
           id="reportForm"
           class="needs-validation"
           novalidate
-          name="report-new"
+          name="reportNew"
           method="POST"
           data-netlify="true"
           data-netlify-honeypot="organization"
         >
-          <input type="hidden" name="form-name" value="report-new" />
+          <input type="hidden" name="form-name" value="reportNew" />
           <div class="honeypot visually-hidden">
             <label>
               Organization
@@ -2225,6 +2225,37 @@ const traitsWithRubrics = sortedTraits
       addEvidenceBtn.disabled = !evidenceRemaining;
     }
 
+    function syncEntryDisabledState() {
+      form
+        .querySelectorAll(".officer-entry, .witness-entry, .evidence-entry")
+        .forEach((entry) => {
+          const isHidden = entry.classList.contains("d-none");
+          entry.querySelectorAll("input, textarea, select").forEach((field) => {
+            if (isHidden) {
+              field.disabled = true;
+              return;
+            }
+            if (
+              entry.classList.contains("officer-entry") &&
+              field.classList.contains("officer-name")
+            ) {
+              const unknown = entry.querySelector(".officer-unknown");
+              field.disabled = Boolean(unknown?.checked);
+              return;
+            }
+            if (
+              entry.classList.contains("officer-entry") &&
+              field.classList.contains("officer-department")
+            ) {
+              const unknown = entry.querySelector(".officer-unknown");
+              field.disabled = Boolean(unknown?.checked);
+              return;
+            }
+            field.disabled = false;
+          });
+        });
+    }
+
     addOfficerBtn.addEventListener("click", addOfficer);
     addWitnessBtn.addEventListener("click", addWitness);
     addEvidenceBtn.addEventListener("click", addEvidenceLink);
@@ -2242,6 +2273,7 @@ const traitsWithRubrics = sortedTraits
     updateEvidenceLabels();
     updateAddButtons();
     syncRoleFields();
+    syncEntryDisabledState();
     if (departmentParam) {
       const firstOfficerDepartment = officerList.querySelector(
         ".officer-entry .officer-department",
@@ -2293,6 +2325,7 @@ const traitsWithRubrics = sortedTraits
         return;
       }
       syncOfficerUnknown(checkbox.closest(".officer-entry"));
+      syncEntryDisabledState();
     });
 
     evidenceLinks.addEventListener("click", (event) => {
@@ -2360,6 +2393,165 @@ const traitsWithRubrics = sortedTraits
       return isValid;
     }
 
+    function humanizeName(name) {
+      if (!name) {
+        return "";
+      }
+      return name
+        .replace(/\[\]$/, "")
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/^\w/, (c) => c.toUpperCase());
+    }
+
+    function getSectionHeading(field) {
+      if (!(field instanceof Element)) {
+        return "";
+      }
+      const section = field.closest(".col-12, .col-md-6, .col-md-4");
+      if (!section) {
+        return "";
+      }
+      const heading = section.querySelector("h2, h3, h4, legend");
+      return heading?.textContent?.trim() || "";
+    }
+
+    function getIndexedPrefix(name) {
+      if (!name) {
+        return "";
+      }
+      const officerMatch = name.match(/^officers\[(\d+)\]/);
+      if (officerMatch) {
+        return `Officer ${Number(officerMatch[1]) + 1}`;
+      }
+      const witnessMatch = name.match(/^witnesses\[(\d+)\]/);
+      if (witnessMatch) {
+        return `Witness ${Number(witnessMatch[1]) + 1}`;
+      }
+      const evidenceMatch = name.match(/^evidence\[(\d+)\]/);
+      if (evidenceMatch) {
+        return `Evidence ${Number(evidenceMatch[1]) + 1}`;
+      }
+      return "";
+    }
+
+    function getFieldLabel(field) {
+      if (!(field instanceof Element)) {
+        return "";
+      }
+
+      if (field.id) {
+        const explicitLabel = document.querySelector(
+          `label[for="${CSS.escape(field.id)}"]`,
+        );
+        if (explicitLabel?.textContent?.trim()) {
+          return explicitLabel.textContent.replace("*", "").trim();
+        }
+      }
+
+      const floating = field.closest(".form-floating");
+      if (floating) {
+        const floatingLabel = floating.querySelector("label");
+        if (floatingLabel?.textContent?.trim()) {
+          return floatingLabel.textContent.replace("*", "").trim();
+        }
+      }
+
+      if (
+        field instanceof HTMLInputElement &&
+        field.type === "radio" &&
+        field.name
+      ) {
+        const firstRadio = form.querySelector(
+          `input[type="radio"][name="${CSS.escape(field.name)}"]`,
+        );
+        if (firstRadio?.id) {
+          const radioLabel = document.querySelector(
+            `label[for="${CSS.escape(firstRadio.id)}"]`,
+          );
+          if (radioLabel?.textContent?.trim()) {
+            const heading = getSectionHeading(firstRadio);
+            const label = radioLabel.textContent.trim();
+            return heading ? `${heading} (${label})` : label;
+          }
+        }
+      }
+
+      const groupHeading = getSectionHeading(field);
+      if (groupHeading) {
+        return groupHeading;
+      }
+
+      return humanizeName(field.name || "");
+    }
+
+    function collectValidationErrors() {
+      const invalidFields = Array.from(
+        form.querySelectorAll(":invalid"),
+      ).filter((field) => field instanceof HTMLElement && !field.disabled);
+      const seen = new Set();
+      const errors = [];
+
+      for (const field of invalidFields) {
+        const containerEntry = field.closest(
+          ".officer-entry, .witness-entry, .evidence-entry",
+        );
+        if (containerEntry?.classList.contains("d-none")) {
+          continue;
+        }
+        const isRadio =
+          field instanceof HTMLInputElement && field.type === "radio";
+        const key = isRadio
+          ? `radio:${field.name}`
+          : field.id || field.name || "";
+        if (key && seen.has(key)) {
+          continue;
+        }
+        if (key) {
+          seen.add(key);
+        }
+        let message = field.validationMessage?.trim() || "";
+        if (isRadio && message === "Please fill out this field.") {
+          message = "Select one option.";
+        }
+        if (!isRadio && message === "Please fill out this field.") {
+          message = "This field is required.";
+        }
+        if (!message) {
+          continue;
+        }
+        const label = getFieldLabel(field);
+        const prefix = getIndexedPrefix(field.name || "");
+        const effectiveLabel =
+          prefix && label ? `${prefix} - ${label}` : prefix || label;
+        errors.push({
+          label: effectiveLabel,
+          message,
+        });
+      }
+
+      return errors;
+    }
+
+    function renderValidationSummary() {
+      if (!reportErrorSummary) {
+        return;
+      }
+      const errors = collectValidationErrors();
+      const listItems = errors
+        .map((error) => {
+          const prefix = error.label ? `${error.label}: ` : "";
+          return `<li>${prefix}${error.message}</li>`;
+        })
+        .join("");
+      reportErrorSummary.innerHTML = `
+        <p class="mb-2">Please complete the required fields highlighted above before submitting.</p>
+        ${listItems ? `<ul class="mb-0">${listItems}</ul>` : ""}
+      `;
+    }
+
     const reportDraftCookieName = "pc_report_draft";
 
     function getReportDraftId() {
@@ -2420,11 +2612,13 @@ const traitsWithRubrics = sortedTraits
 
       try {
         form.classList.add("was-validated");
+        syncEntryDisabledState();
         const officersValid = validateOfficerEntries();
         const witnessesValid = validateWitnessEntries();
         if (!form.checkValidity() || !officersValid || !witnessesValid) {
           event.stopPropagation();
           if (reportErrorSummary) {
+            renderValidationSummary();
             reportErrorSummary.classList.remove("d-none");
             reportErrorSummary.scrollIntoView({
               behavior: "smooth",
@@ -2447,7 +2641,7 @@ const traitsWithRubrics = sortedTraits
           );
         }
         const [recaptchaToken] = await Promise.all([
-          formsUi.getRecaptchaToken("report-new_submit"),
+          formsUi.getRecaptchaToken("reportNewSubmit"),
           draftSync.ensureServerDraftSyncedForSubmit(),
         ]);
 
@@ -2474,7 +2668,7 @@ const traitsWithRubrics = sortedTraits
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            formName: "report-new",
+            formName: "reportNew",
             recaptchaToken,
             draftId: getReportDraftId() || null,
             data,
@@ -2569,6 +2763,11 @@ const traitsWithRubrics = sortedTraits
 
       function setDraftStatus(kind, message) {
         const node = ensureDraftStatusNode();
+        if (kind !== "warning" && kind !== "error") {
+          node.classList.add("d-none");
+          node.textContent = "";
+          return;
+        }
         node.classList.remove(
           "d-none",
           "alert-success",
