@@ -2360,6 +2360,21 @@ const traitsWithRubrics = sortedTraits
       return isValid;
     }
 
+    const reportDraftCookieName = "pc_report_draft";
+
+    function getReportDraftId() {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${reportDraftCookieName}=`);
+      if (parts.length === 2) {
+        return parts.pop().split(";").shift();
+      }
+      return "";
+    }
+
+    function clearReportDraftCookie() {
+      document.cookie = `${reportDraftCookieName}=; Max-Age=0; Path=/report/new/; SameSite=Lax`;
+    }
+
     form.addEventListener("submit", async (event) => {
       const submitButton = form.querySelector('button[type="submit"]');
       let inlineError = form.querySelector("[data-form-submit-error]");
@@ -2370,11 +2385,38 @@ const traitsWithRubrics = sortedTraits
         inlineError.setAttribute("role", "alert");
         form.appendChild(inlineError);
       }
+      const formsUi = window.__IPC_FORMS__;
+      if (!formsUi || typeof formsUi.ensureSubmissionUi !== "function") {
+        inlineError.textContent =
+          "Unable to submit the form right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
+        inlineError.classList.remove("d-none");
+        return;
+      }
+      formsUi.prewarmRecaptcha?.();
+      const { inlineSuccess } = formsUi.ensureSubmissionUi({
+        form,
+        submitButton,
+        onReset: function () {
+          form.classList.remove("was-validated");
+          if (reportErrorSummary) {
+            reportErrorSummary.classList.add("d-none");
+          }
+        },
+      });
+
+      let submissionCompleted = false;
+
+      if (form.dataset.submitLocked === "true") {
+        event.preventDefault();
+        return;
+      }
 
       event.preventDefault();
-      if (submitButton) submitButton.disabled = true;
+      form.dataset.submitLocked = "true";
+      formsUi.setSubmitBusy(submitButton, true);
       inlineError.classList.add("d-none");
       inlineError.textContent = "";
+      inlineSuccess.classList.add("d-none");
 
       try {
         form.classList.add("was-validated");
@@ -2395,37 +2437,21 @@ const traitsWithRubrics = sortedTraits
           reportErrorSummary.classList.add("d-none");
         }
 
-        const formData = new FormData(form);
-        const recaptchaSiteKey = String(
-          window.__RECAPTCHA_SITE_KEY__ || "",
-        ).trim();
+        const draftSync = window.__IPC_REPORT_DRAFT__;
         if (
-          !recaptchaSiteKey ||
-          !window.grecaptcha ||
-          !window.grecaptcha.enterprise
+          !draftSync ||
+          typeof draftSync.ensureServerDraftSyncedForSubmit !== "function"
         ) {
-          throw new Error("reCAPTCHA is not configured.");
+          throw new Error(
+            "Unable to submit safely right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.",
+          );
         }
+        const [recaptchaToken] = await Promise.all([
+          formsUi.getRecaptchaToken("report-new_submit"),
+          draftSync.ensureServerDraftSyncedForSubmit(),
+        ]);
 
-        const recaptchaToken = await new Promise((resolve, reject) => {
-          window.grecaptcha.enterprise.ready(async function () {
-            try {
-              const token = await window.grecaptcha.enterprise.execute(
-                recaptchaSiteKey,
-                {
-                  action: "report-new_submit",
-                },
-              );
-              resolve(token);
-            } catch (error) {
-              reject(error);
-            }
-          });
-        });
-
-        if (!recaptchaToken) {
-          throw new Error("Unable to validate reCAPTCHA.");
-        }
+        const formData = new FormData(form);
 
         const data = {};
         formData.forEach((value, key) => {
@@ -2450,6 +2476,7 @@ const traitsWithRubrics = sortedTraits
           body: JSON.stringify({
             formName: "report-new",
             recaptchaToken,
+            draftId: getReportDraftId() || null,
             data,
           }),
         });
@@ -2481,20 +2508,35 @@ const traitsWithRubrics = sortedTraits
           );
         }
 
-        form.reset();
         form.classList.remove("was-validated");
-        alert(
-          `Submission received.\n\nSubmission ID: ${submissionId}\n\nSave this ID in a safe place. It cannot be recovered or displayed again. Use it for follow-up questions or change requests.`,
+        const submissionIdNode = inlineSuccess.querySelector(
+          "[data-submission-id]",
         );
+        if (submissionIdNode) {
+          submissionIdNode.textContent = submissionId;
+        }
+        formsUi.setSubmitBusy(submitButton, false);
+        if (submitButton) submitButton.disabled = true;
+        inlineSuccess.classList.remove("d-none");
+        inlineSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
+        clearReportDraftCookie();
+        draftSync.onSubmitSuccess?.();
+        submissionCompleted = true;
       } catch (error) {
         const message =
           error instanceof Error && error.message
             ? error.message
             : "Unable to submit the form. Please try again.";
-        inlineError.textContent = message;
+        const fallback =
+          formsUi.blockedSubmitFallback ||
+          "If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
+        inlineError.textContent = message.includes("hello@policeconduct.org")
+          ? message
+          : message + " " + fallback;
         inlineError.classList.remove("d-none");
       } finally {
-        if (submitButton) submitButton.disabled = false;
+        if (!submissionCompleted) formsUi.setSubmitBusy(submitButton, false);
+        if (!submissionCompleted) form.dataset.submitLocked = "false";
       }
     });
   </script>
@@ -2508,9 +2550,80 @@ const traitsWithRubrics = sortedTraits
 
       const endpoint = "/api/forms/draft";
       const cookieName = "pc_report_draft";
+      const sessionBackupKey = "pc_report_draft_session_v1";
       const autosaveDelayMs = 1200;
       let saveTimer = null;
       let isRestoring = false;
+
+      function ensureDraftStatusNode() {
+        let node = form.querySelector("[data-draft-status]");
+        if (!node) {
+          node = document.createElement("div");
+          node.setAttribute("data-draft-status", "true");
+          node.className = "alert rounded-0 mt-3 d-none";
+          node.setAttribute("role", "status");
+          form.appendChild(node);
+        }
+        return node;
+      }
+
+      function setDraftStatus(kind, message) {
+        const node = ensureDraftStatusNode();
+        node.classList.remove(
+          "d-none",
+          "alert-success",
+          "alert-warning",
+          "alert-danger",
+          "alert-secondary",
+        );
+        const classByKind = {
+          saving: "alert-secondary",
+          saved: "alert-success",
+          warning: "alert-warning",
+          error: "alert-danger",
+        };
+        node.classList.add(classByKind[kind] || "alert-secondary");
+        node.textContent = message;
+      }
+
+      function writeSessionBackup(data) {
+        try {
+          sessionStorage.setItem(
+            sessionBackupKey,
+            JSON.stringify({
+              savedAt: new Date().toISOString(),
+              data,
+            }),
+          );
+        } catch (error) {
+          console.error("report.draft.backup_write_failed", error);
+        }
+      }
+
+      function readSessionBackup() {
+        try {
+          const raw = sessionStorage.getItem(sessionBackupKey);
+          if (!raw) {
+            return null;
+          }
+          const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== "object" || !parsed.data) {
+            return null;
+          }
+          return parsed.data;
+        } catch (error) {
+          console.error("report.draft.backup_read_failed", error);
+          return null;
+        }
+      }
+
+      function clearSessionBackup() {
+        try {
+          sessionStorage.removeItem(sessionBackupKey);
+        } catch (error) {
+          console.error("report.draft.backup_clear_failed", error);
+        }
+      }
 
       function getCookie(name) {
         const value = `; ${document.cookie}`;
@@ -2707,7 +2820,15 @@ const traitsWithRubrics = sortedTraits
 
       async function loadDraft() {
         const draftId = getCookie(cookieName);
+        const sessionBackup = readSessionBackup();
         if (!draftId) {
+          if (sessionBackup) {
+            applyDraft(sessionBackup);
+            setDraftStatus(
+              "warning",
+              "Restored a temporary in-browser backup for this session.",
+            );
+          }
           return;
         }
         try {
@@ -2719,18 +2840,57 @@ const traitsWithRubrics = sortedTraits
           );
           if (response.status === 204) {
             clearCookie(cookieName);
+            if (sessionBackup) {
+              applyDraft(sessionBackup);
+              setDraftStatus(
+                "warning",
+                "Server draft no longer exists. Restored a temporary in-browser backup for this session.",
+              );
+            }
             return;
           }
           if (!response.ok) {
+            if (sessionBackup) {
+              applyDraft(sessionBackup);
+              setDraftStatus(
+                "warning",
+                "Could not load server draft. Restored a temporary in-browser backup for this session.",
+              );
+            } else {
+              setDraftStatus(
+                "error",
+                "Could not load draft from server. Changes will not be protected until autosave succeeds.",
+              );
+            }
             return;
           }
           const payload = await response.json();
           if (payload && payload.data) {
             applyDraft(payload.data);
+            setDraftStatus("saved", "Draft loaded and autosave is ready.");
           } else {
             clearCookie(cookieName);
+            if (sessionBackup) {
+              applyDraft(sessionBackup);
+              setDraftStatus(
+                "warning",
+                "Server draft was empty. Restored a temporary in-browser backup for this session.",
+              );
+            }
           }
         } catch (error) {
+          if (sessionBackup) {
+            applyDraft(sessionBackup);
+            setDraftStatus(
+              "warning",
+              "Could not load server draft. Restored a temporary in-browser backup for this session.",
+            );
+          } else {
+            setDraftStatus(
+              "error",
+              "Could not load draft from server. Changes will not be protected until autosave succeeds.",
+            );
+          }
           return;
         }
       }
@@ -2740,7 +2900,8 @@ const traitsWithRubrics = sortedTraits
           draftId: getCookie(cookieName) || null,
           data: serializeForm(),
         };
-
+        writeSessionBackup(payload.data);
+        setDraftStatus("saving", "Saving draft...");
         try {
           const response = await fetch(endpoint, {
             method: "POST",
@@ -2748,14 +2909,24 @@ const traitsWithRubrics = sortedTraits
             body: JSON.stringify(payload),
           });
           if (!response.ok) {
-            return;
+            setDraftStatus(
+              "warning",
+              "Autosave to server failed. A temporary in-browser backup is available for this session.",
+            );
+            return false;
           }
           const result = await response.json();
           if (result && result.draftId) {
             setCookie(cookieName, result.draftId);
           }
+          setDraftStatus("saved", "Draft saved.");
+          return true;
         } catch (error) {
-          return;
+          setDraftStatus(
+            "warning",
+            "Autosave to server failed. A temporary in-browser backup is available for this session.",
+          );
+          return false;
         }
       }
 
@@ -2776,6 +2947,25 @@ const traitsWithRubrics = sortedTraits
           saveDraft();
         }
       });
+
+      window.__IPC_REPORT_DRAFT__ = {
+        async ensureServerDraftSyncedForSubmit() {
+          if (saveTimer) {
+            window.clearTimeout(saveTimer);
+            saveTimer = null;
+          }
+          const saved = await saveDraft();
+          if (!saved) {
+            throw new Error(
+              "We could not safely save your progress to the server. Please try again. Your temporary in-browser backup is still available for this session. If you cannot submit this form, print this page and email it to hello@policeconduct.org.",
+            );
+          }
+        },
+        onSubmitSuccess() {
+          clearSessionBackup();
+          setDraftStatus("saved", "Draft submitted successfully.");
+        },
+      };
 
       loadDraft();
     })();

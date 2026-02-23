@@ -21,28 +21,17 @@ forms_api_alarm_5xx_threshold          = 10
 forms_api_alarm_latency_p95_ms_threshold = 2000
 forms_lambda_alarm_throttles_threshold   = 1
 lambda_nodejs_runtime                    = "nodejs22.x"
-recaptcha_enterprise_project_id          = ""
-recaptcha_service_account_secret_arn     = "arn:aws:secretsmanager:us-east-1:123456789012:secret:policeconduct/recaptcha-service-account"
-recaptcha_enterprise_min_score           = 0.5
-public_recaptcha_site_key                = ""
+recaptcha_min_score                      = 0.5
 alarm_actions                            = []
 enable_site_bucket_versioning = true
-public_ga_measurement_id_production = null
-public_ga_measurement_id_preview    = null
-public_sentry_dsn_production        = null
-public_sentry_dsn_preview           = null
+ga_measurement_id_production = null
+ga_measurement_id_preview    = null
+sentry_dsn_production        = null
+sentry_dsn_preview           = null
 sentry_org                          = null
 sentry_project                      = null
 sentry_auth_token                   = null
 
-redirect_domains    = ["iceconduct.org", "www.iceconduct.org"]
-redirect_target_url = "https://www.policeconduct.org/law-enforcement-agency/federal/ice/"
-redirect_domain_zone_ids = {
-  # Set only for domains whose DNS zone is hosted in this AWS account.
-  # "iceconduct.org"     = "ZXXXXXXXXXXXXXX"
-  # "www.iceconduct.org" = "ZXXXXXXXXXXXXXX"
-}
-managed_redirect_zones = ["iceconduct.org"]
 
 extra_dns_records = [
   {

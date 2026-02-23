@@ -1,5 +1,5 @@
 aws_region     = "us-east-1"
-gcp_project_id = "your-gcp-project-id"
+recaptcha_project_id = "ipc-policeconduct"
 
 # Keep this list tight. Include local dev hosts only if you need local token generation.
 allowed_domains = [
@@ -9,7 +9,9 @@ allowed_domains = [
   "127.0.0.1",
 ]
 
-service_account_account_id   = "policeconduct-recaptcha-assessor"
+service_account_account_id   = "ipc-recaptcha-assessor"
 service_account_display_name = "policeconduct reCAPTCHA assessor"
-service_account_secret_name  = "policeconduct/recaptcha-service-account"
-recaptcha_key_display_name = "policeconduct-site"
+recaptcha_key_display_name   = "policeconduct-site"
+aws_forms_lambda_role_name   = "policeconduct-forms-lambda"
+workload_identity_pool_id    = "policeconduct-aws-pool"
+workload_identity_provider_id = "policeconduct-aws-provider"

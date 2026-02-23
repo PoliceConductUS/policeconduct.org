@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.840.0",
     "@aws-sdk/client-s3": "^3.840.0",
     "@google-cloud/recaptcha-enterprise": "^5.9.0",
+    "google-auth-library": "^9.15.1",
     "@paralleldrive/cuid2": "^2.2.2"
   }
 }

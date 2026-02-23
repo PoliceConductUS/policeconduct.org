@@ -17,30 +17,15 @@ locals {
     local.site_bucket_name,
     local.preview_bucket_name,
   ]
-  github_repo_sub          = "repo:${var.github_org}/${var.github_repo}:*"
-  www_domain               = "www.${var.domain_name}"
-  include_www              = var.www_record_mode != "none"
-  create_www_alias_records = var.www_record_mode == "alias"
-  create_www_cname_record  = var.www_record_mode == "cname"
-  preview_wildcard_domain  = "*.preview.${var.domain_name}"
-  redirect_domains = distinct([
-    for domain in var.redirect_domains : lower(trimspace(domain))
-    if trimspace(domain) != ""
-  ])
-  redirect_target_url = var.redirect_target_url == null || trimspace(var.redirect_target_url) == "" ? null : trimspace(var.redirect_target_url)
-  managed_redirect_zones = distinct([
-    for zone in var.managed_redirect_zones : lower(trimspace(zone))
-    if trimspace(zone) != ""
-  ])
-  distribution_aliases = distinct(concat(
-    local.include_www ? [var.domain_name, local.www_domain] : [var.domain_name],
-    local.redirect_domains
-  ))
-  preview_distribution_aliases = [local.preview_wildcard_domain]
-  certificate_san_names = distinct(concat(
-    local.include_www ? [local.www_domain, local.preview_wildcard_domain] : [local.preview_wildcard_domain],
-    local.redirect_domains
-  ))
+  github_repo_sub                      = "repo:${var.github_org}/${var.github_repo}:*"
+  www_domain                           = "www.${var.domain_name}"
+  include_www                          = var.www_record_mode != "none"
+  create_www_alias_records             = var.www_record_mode == "alias"
+  create_www_cname_record              = var.www_record_mode == "cname"
+  preview_wildcard_domain              = "*.preview.${var.domain_name}"
+  distribution_aliases                 = local.include_www ? [var.domain_name, local.www_domain] : [var.domain_name]
+  preview_distribution_aliases         = [local.preview_wildcard_domain]
+  certificate_san_names                = local.include_www ? [local.www_domain, local.preview_wildcard_domain] : [local.preview_wildcard_domain]
   origin_id                            = "s3-${local.site_bucket_name}"
   preview_origin_id                    = "s3-${local.preview_bucket_name}"
   forms_api_origin_id                  = "forms-api-prod-url"
@@ -54,45 +39,7 @@ locals {
   manage_hosted_zone                   = local.provided_hosted_zone_id == null
   route53_zone_id                      = local.manage_hosted_zone ? aws_route53_zone.site[0].zone_id : local.provided_hosted_zone_id
   cloudfront_hosted_zone_id            = "Z2FDTNDATAQYW2"
-  normalized_redirect_domain_zone_ids = {
-    for domain, zone_id in var.redirect_domain_zone_ids :
-    lower(trimspace(domain)) => trimspace(zone_id)
-    if trimspace(domain) != "" && trimspace(zone_id) != ""
-  }
-  managed_redirect_domain_zone_ids = merge([
-    for zone_name, zone in aws_route53_zone.redirect :
-    {
-      (zone_name)          = zone.zone_id
-      ("www.${zone_name}") = zone.zone_id
-    }
-  ]...)
-  managed_redirect_domain_names = distinct(flatten([
-    for zone_name in local.managed_redirect_zones : [
-      zone_name,
-      "www.${zone_name}"
-    ]
-  ]))
-  configured_redirect_domain_names = distinct(concat(
-    keys(local.normalized_redirect_domain_zone_ids),
-    local.managed_redirect_domain_names
-  ))
-  redirect_domains_for_records = {
-    for domain in local.redirect_domains :
-    domain => domain
-    if contains(local.configured_redirect_domain_names, domain)
-  }
-  acm_validation_domains = distinct(concat(
-    [var.domain_name, local.preview_wildcard_domain],
-    local.include_www ? [local.www_domain] : [],
-    [
-      for domain in local.redirect_domains :
-      domain
-      if contains(local.configured_redirect_domain_names, domain)
-    ]
-  ))
-  redirect_domain_set = {
-    for domain in local.redirect_domains : domain => true
-  }
+  acm_validation_domains               = local.include_www ? [var.domain_name, local.preview_wildcard_domain, local.www_domain] : [var.domain_name, local.preview_wildcard_domain]
   unmanaged_acm_validation_domains = [
     for domain in local.certificate_san_names : domain
     if !contains(local.acm_validation_domains, domain)
@@ -107,15 +54,15 @@ locals {
   extra_dns_records_map = {
     for idx, record in local.normalized_extra_dns_records : tostring(idx) => record
   }
-  public_ga_measurement_id_production = var.public_ga_measurement_id_production == null || trimspace(var.public_ga_measurement_id_production) == "" ? null : trimspace(var.public_ga_measurement_id_production)
-  public_ga_measurement_id_preview    = var.public_ga_measurement_id_preview == null || trimspace(var.public_ga_measurement_id_preview) == "" ? null : trimspace(var.public_ga_measurement_id_preview)
-  public_sentry_dsn_production        = var.public_sentry_dsn_production == null || trimspace(var.public_sentry_dsn_production) == "" ? null : trimspace(var.public_sentry_dsn_production)
-  public_sentry_dsn_preview           = var.public_sentry_dsn_preview == null || trimspace(var.public_sentry_dsn_preview) == "" ? null : trimspace(var.public_sentry_dsn_preview)
+  ga_measurement_id_production = var.ga_measurement_id_production == null || trimspace(var.ga_measurement_id_production) == "" ? null : trimspace(var.ga_measurement_id_production)
+  ga_measurement_id_preview    = var.ga_measurement_id_preview == null || trimspace(var.ga_measurement_id_preview) == "" ? null : trimspace(var.ga_measurement_id_preview)
+  sentry_dsn_production        = var.sentry_dsn_production == null || trimspace(var.sentry_dsn_production) == "" ? null : trimspace(var.sentry_dsn_production)
+  sentry_dsn_preview           = var.sentry_dsn_preview == null || trimspace(var.sentry_dsn_preview) == "" ? null : trimspace(var.sentry_dsn_preview)
   sentry_org                          = var.sentry_org == null || trimspace(var.sentry_org) == "" ? null : trimspace(var.sentry_org)
   sentry_project                      = var.sentry_project == null || trimspace(var.sentry_project) == "" ? null : trimspace(var.sentry_project)
   sentry_auth_token                   = var.sentry_auth_token == null || trimspace(var.sentry_auth_token) == "" ? null : trimspace(var.sentry_auth_token)
-  recaptcha_enterprise_project_id     = var.recaptcha_enterprise_project_id == null || trimspace(var.recaptcha_enterprise_project_id) == "" ? null : trimspace(var.recaptcha_enterprise_project_id)
-  public_recaptcha_site_key           = var.public_recaptcha_site_key == null || trimspace(var.public_recaptcha_site_key) == "" ? null : trimspace(var.public_recaptcha_site_key)
+  recaptcha_project_id                = var.recaptcha_project_id == null || trimspace(var.recaptcha_project_id) == "" ? null : trimspace(var.recaptcha_project_id)
+  recaptcha_site_key                  = var.recaptcha_site_key == null || trimspace(var.recaptcha_site_key) == "" ? null : trimspace(var.recaptcha_site_key)
   has_sentry_auth_token               = nonsensitive(local.sentry_auth_token != null)
   github_environment_names            = toset(["production", "preview"])
   github_environment_variables = {
@@ -124,13 +71,14 @@ locals {
         AWS_ROLE_ARN       = aws_iam_role.github_actions.arn
         S3_BUCKET          = aws_s3_bucket.site.id
         CLOUDFRONT_DIST_ID = aws_cloudfront_distribution.site.id
+        FORMS_API_URL      = "/api"
       },
-      local.public_ga_measurement_id_production == null ? {} : {
-        PUBLIC_GA_MEASUREMENT_ID = local.public_ga_measurement_id_production
+      local.ga_measurement_id_production == null ? {} : {
+        GA_MEASUREMENT_ID = local.ga_measurement_id_production
       },
-      local.public_sentry_dsn_production == null ? {} : {
-        PUBLIC_SENTRY_DSN         = local.public_sentry_dsn_production
-        PUBLIC_SENTRY_ENVIRONMENT = "production"
+      local.sentry_dsn_production == null ? {} : {
+        SENTRY_DSN         = local.sentry_dsn_production
+        SENTRY_ENVIRONMENT = "production"
       },
       local.sentry_org == null ? {} : {
         SENTRY_ORG = local.sentry_org
@@ -138,8 +86,8 @@ locals {
       local.sentry_project == null ? {} : {
         SENTRY_PROJECT = local.sentry_project
       },
-      local.public_recaptcha_site_key == null ? {} : {
-        PUBLIC_RECAPTCHA_SITE_KEY = local.public_recaptcha_site_key
+      local.recaptcha_site_key == null ? {} : {
+        RECAPTCHA_SITE_KEY = local.recaptcha_site_key
       }
     )
     preview = merge(
@@ -147,13 +95,14 @@ locals {
         AWS_ROLE_ARN       = aws_iam_role.github_actions.arn
         S3_BUCKET          = aws_s3_bucket.preview.id
         CLOUDFRONT_DIST_ID = aws_cloudfront_distribution.preview.id
+        FORMS_API_URL      = "/api"
       },
-      local.public_ga_measurement_id_preview == null ? {} : {
-        PUBLIC_GA_MEASUREMENT_ID = local.public_ga_measurement_id_preview
+      local.ga_measurement_id_preview == null ? {} : {
+        GA_MEASUREMENT_ID = local.ga_measurement_id_preview
       },
-      local.public_sentry_dsn_preview == null ? {} : {
-        PUBLIC_SENTRY_DSN         = local.public_sentry_dsn_preview
-        PUBLIC_SENTRY_ENVIRONMENT = "preview"
+      local.sentry_dsn_preview == null ? {} : {
+        SENTRY_DSN         = local.sentry_dsn_preview
+        SENTRY_ENVIRONMENT = "preview"
       },
       local.sentry_org == null ? {} : {
         SENTRY_ORG = local.sentry_org
@@ -161,8 +110,8 @@ locals {
       local.sentry_project == null ? {} : {
         SENTRY_PROJECT = local.sentry_project
       },
-      local.public_recaptcha_site_key == null ? {} : {
-        PUBLIC_RECAPTCHA_SITE_KEY = local.public_recaptcha_site_key
+      local.recaptcha_site_key == null ? {} : {
+        RECAPTCHA_SITE_KEY = local.recaptcha_site_key
       }
     )
   }
@@ -854,15 +803,6 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
   }
 
   statement {
-    sid    = "ReadRecaptchaServiceAccountSecret"
-    effect = "Allow"
-    actions = [
-      "secretsmanager:GetSecretValue",
-    ]
-    resources = [var.recaptcha_service_account_secret_arn]
-  }
-
-  statement {
     sid    = "DraftBucketKmsEncrypt"
     effect = "Allow"
     actions = [
@@ -1004,10 +944,12 @@ resource "aws_lambda_function" "forms_api_prod" {
       SUBMISSIONS_BUCKET                   = aws_s3_bucket.forms_submissions.id
       SUBMISSIONS_KMS_KEY_ID               = aws_kms_key.forms_submissions.arn
       SUBMISSIONS_PREFIX                   = "submissions/"
-      RECAPTCHA_SERVICE_ACCOUNT_SECRET_ARN = var.recaptcha_service_account_secret_arn
-      RECAPTCHA_ENTERPRISE_PROJECT_ID      = local.recaptcha_enterprise_project_id == null ? "" : local.recaptcha_enterprise_project_id
-      RECAPTCHA_ENTERPRISE_SITE_KEY        = local.public_recaptcha_site_key == null ? "" : local.public_recaptcha_site_key
-      RECAPTCHA_ENTERPRISE_MIN_SCORE       = tostring(var.recaptcha_enterprise_min_score)
+      RECAPTCHA_PROJECT_ID                 = local.recaptcha_project_id == null ? "" : local.recaptcha_project_id
+      RECAPTCHA_SITE_KEY                   = local.recaptcha_site_key == null ? "" : local.recaptcha_site_key
+      RECAPTCHA_SERVICE_ACCOUNT_EMAIL      = var.recaptcha_service_account_email
+      RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME = var.recaptcha_wif_provider_resource_name
+      RECAPTCHA_WIF_AUDIENCE               = var.recaptcha_wif_audience
+      RECAPTCHA_MIN_SCORE                  = tostring(var.recaptcha_min_score)
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
     }
@@ -1032,10 +974,12 @@ resource "aws_lambda_function" "forms_api_preview" {
       SUBMISSIONS_BUCKET                   = aws_s3_bucket.forms_submissions_preview.id
       SUBMISSIONS_KMS_KEY_ID               = aws_kms_key.forms_submissions_preview.arn
       SUBMISSIONS_PREFIX                   = "submissions/"
-      RECAPTCHA_SERVICE_ACCOUNT_SECRET_ARN = var.recaptcha_service_account_secret_arn
-      RECAPTCHA_ENTERPRISE_PROJECT_ID      = local.recaptcha_enterprise_project_id == null ? "" : local.recaptcha_enterprise_project_id
-      RECAPTCHA_ENTERPRISE_SITE_KEY        = local.public_recaptcha_site_key == null ? "" : local.public_recaptcha_site_key
-      RECAPTCHA_ENTERPRISE_MIN_SCORE       = tostring(var.recaptcha_enterprise_min_score)
+      RECAPTCHA_PROJECT_ID                 = local.recaptcha_project_id == null ? "" : local.recaptcha_project_id
+      RECAPTCHA_SITE_KEY                   = local.recaptcha_site_key == null ? "" : local.recaptcha_site_key
+      RECAPTCHA_SERVICE_ACCOUNT_EMAIL      = var.recaptcha_service_account_email
+      RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME = var.recaptcha_wif_provider_resource_name
+      RECAPTCHA_WIF_AUDIENCE               = var.recaptcha_wif_audience
+      RECAPTCHA_MIN_SCORE                  = tostring(var.recaptcha_min_score)
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
     }
@@ -1521,12 +1465,6 @@ resource "aws_route53_zone" "site" {
   name = var.domain_name
 }
 
-resource "aws_route53_zone" "redirect" {
-  for_each = toset(local.managed_redirect_zones)
-
-  name = each.key
-}
-
 resource "aws_s3_bucket" "site" {
   bucket        = local.site_bucket_name
   force_destroy = var.site_bucket_force_destroy
@@ -1602,13 +1540,7 @@ resource "aws_route53_record" "acm_validation" {
   records         = [each.value.record]
   ttl             = 60
   type            = each.value.type
-  zone_id = (
-    each.key == var.domain_name || each.key == local.preview_wildcard_domain || (local.include_www && each.key == local.www_domain)
-    ) ? local.route53_zone_id : (
-    contains(keys(local.normalized_redirect_domain_zone_ids), each.key)
-    ? local.normalized_redirect_domain_zone_ids[each.key]
-    : aws_route53_zone.redirect[replace(each.key, "www.", "")].zone_id
-  )
+  zone_id         = local.route53_zone_id
 }
 
 resource "aws_acm_certificate_validation" "site" {
@@ -1627,8 +1559,6 @@ resource "aws_cloudfront_function" "index_rewrite" {
 function handler(event) {
   var request = event.request;
   var host = request.headers.host && request.headers.host.value ? request.headers.host.value.toLowerCase() : '';
-  var redirectDomains = ${jsonencode(local.redirect_domain_set)};
-  var redirectTarget = ${jsonencode(local.redirect_target_url)};
   var apexHost = ${jsonencode(var.domain_name)};
   var wwwHost = ${jsonencode(local.www_domain)};
   var enforceWwwRedirect = ${local.include_www ? "true" : "false"};
@@ -1652,17 +1582,6 @@ function handler(event) {
       }
       qs = '?' + parts.join('&');
     }
-  }
-
-  if (redirectTarget && redirectDomains[host]) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: redirectTarget },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
   }
 
   if (enforceWwwRedirect && host === apexHost) {
@@ -2019,39 +1938,6 @@ resource "aws_route53_record" "www_cname" {
   records = [aws_cloudfront_distribution.site.domain_name]
 }
 
-resource "aws_route53_record" "redirect_domains_a" {
-  for_each = local.redirect_domains_for_records
-
-  allow_overwrite = true
-  zone_id = contains(keys(local.normalized_redirect_domain_zone_ids), each.key) ? local.normalized_redirect_domain_zone_ids[each.key] : aws_route53_zone.redirect[
-    replace(each.key, "www.", "")
-  ].zone_id
-  name = each.key
-  type = "A"
-
-  alias {
-    name                   = aws_cloudfront_distribution.site.domain_name
-    zone_id                = local.cloudfront_hosted_zone_id
-    evaluate_target_health = false
-  }
-}
-
-resource "aws_route53_record" "redirect_domains_aaaa" {
-  for_each = local.redirect_domains_for_records
-
-  allow_overwrite = true
-  zone_id = contains(keys(local.normalized_redirect_domain_zone_ids), each.key) ? local.normalized_redirect_domain_zone_ids[each.key] : aws_route53_zone.redirect[
-    replace(each.key, "www.", "")
-  ].zone_id
-  name = each.key
-  type = "AAAA"
-
-  alias {
-    name                   = aws_cloudfront_distribution.site.domain_name
-    zone_id                = local.cloudfront_hosted_zone_id
-    evaluate_target_health = false
-  }
-}
 
 resource "aws_route53_record" "preview_wildcard_a" {
   allow_overwrite = true

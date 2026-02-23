@@ -8,7 +8,7 @@ const { title, description, pagePath, canonicalUrl, robots, structuredData } =
 const resolvedPath = pagePath || Astro.url?.pathname || "/";
 const encodedPath = encodeURIComponent(resolvedPath);
 const siteOrigin = (() => {
-  const envSite = (import.meta.env.PUBLIC_SITE_URL || "").trim();
+  const envSite = (process.env.SITE_URL || "").trim();
   if (envSite) {
     try {
       return new URL(envSite).toString();
@@ -29,9 +29,7 @@ const canonicalHref = (() => {
     return new URL(resolvedPath, siteOrigin).toString();
   }
 })();
-const recaptchaSiteKey = (
-  import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY || ""
-).trim();
+const recaptchaSiteKey = (process.env.RECAPTCHA_SITE_KEY || "").trim();
 const robotsContent = robots || "index,follow";
 const structuredDataEntries = structuredData
   ? Array.isArray(structuredData)
@@ -113,6 +111,8 @@ const isActivePath = (href: string) =>
     <meta name="build-commit" content={fullCommitSha} />
     <meta name="build-commit-dirty" content={isDirtyBuild ? "true" : "false"} />
     <meta name="HandheldFriendly" content="true" />
+    <link rel="preconnect" href="https://www.google.com" crossorigin />
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     {
       recaptchaSiteKey ? (
         <>

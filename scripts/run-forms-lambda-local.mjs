@@ -1,8 +1,33 @@
 import http from "node:http";
-import { handler } from "../infrastructure/bootstrap/lambdas/forms-api/index.mjs";
+import { handler } from "../infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.mjs";
 
 const host = process.env.FORMS_LAMBDA_LOCAL_HOST || "127.0.0.1";
 const port = Number(process.env.FORMS_LAMBDA_LOCAL_PORT || "8787");
+const REQUIRED_ENV_VARS = [
+  "DRAFTS_BUCKET",
+  "DRAFTS_KMS_KEY_ID",
+  "SUBMISSIONS_BUCKET",
+  "SUBMISSIONS_KMS_KEY_ID",
+  "RECAPTCHA_PROJECT_ID",
+  "RECAPTCHA_SITE_KEY",
+  "RECAPTCHA_SERVICE_ACCOUNT_EMAIL",
+  "RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME",
+  "RECAPTCHA_WIF_AUDIENCE",
+];
+
+function validateRequiredEnvVars() {
+  const missing = REQUIRED_ENV_VARS.filter((name) => {
+    const value = process.env[name];
+    return typeof value !== "string" || value.trim() === "";
+  });
+
+  if (missing.length > 0) {
+    console.error(
+      `forms-api local lambda missing required env vars:\n- ${missing.join("\n- ")}`,
+    );
+    process.exit(1);
+  }
+}
 
 function readRequestBody(req) {
   return new Promise((resolve, reject) => {
@@ -22,6 +47,8 @@ function toQueryParams(url) {
   }
   return Object.keys(result).length > 0 ? result : null;
 }
+
+validateRequiredEnvVars();
 
 const server = http.createServer(async (req, res) => {
   try {

@@ -4,15 +4,16 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
-variable "gcp_project_id" {
+variable "recaptcha_project_id" {
   description = "Google Cloud project ID that will host reCAPTCHA Enterprise resources."
   type        = string
+  default     = "ipc-policeconduct"
 }
 
 variable "service_account_account_id" {
   description = "Google service account ID used by the forms API for reCAPTCHA assessments."
   type        = string
-  default     = "policeconduct-recaptcha-assessor"
+  default     = "ipc-recaptcha-assessor"
 }
 
 variable "service_account_display_name" {
@@ -21,16 +22,40 @@ variable "service_account_display_name" {
   default     = "policeconduct reCAPTCHA assessor"
 }
 
+variable "aws_forms_lambda_role_name" {
+  description = "AWS IAM role name used by the forms Lambda functions."
+  type        = string
+  default     = "policeconduct-forms-lambda"
+}
+
+variable "workload_identity_pool_id" {
+  description = "ID for the Google Workload Identity Pool used by AWS federation."
+  type        = string
+  default     = "policeconduct-aws-pool"
+}
+
+variable "workload_identity_pool_display_name" {
+  description = "Display name for the Google Workload Identity Pool."
+  type        = string
+  default     = "PoliceConduct AWS Pool"
+}
+
+variable "workload_identity_provider_id" {
+  description = "ID for the Google Workload Identity Pool Provider (AWS)."
+  type        = string
+  default     = "policeconduct-aws-provider"
+}
+
+variable "workload_identity_provider_display_name" {
+  description = "Display name for the Google Workload Identity Provider."
+  type        = string
+  default     = "PoliceConduct AWS Provider"
+}
+
 variable "recaptcha_key_display_name" {
   description = "Display name for the reCAPTCHA Enterprise site key."
   type        = string
   default     = "policeconduct-site"
-}
-
-variable "service_account_secret_name" {
-  description = "AWS Secrets Manager secret name that stores the Google service account JSON."
-  type        = string
-  default     = "policeconduct/recaptcha-service-account"
 }
 
 variable "allowed_domains" {

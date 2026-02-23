@@ -1,12 +1,12 @@
 ---
 const sentryDsn =
-  typeof import.meta.env.PUBLIC_SENTRY_DSN === "string"
-    ? import.meta.env.PUBLIC_SENTRY_DSN.trim()
+  typeof process.env.SENTRY_DSN === "string"
+    ? process.env.SENTRY_DSN.trim()
     : "";
 const sentryEnvironment =
-  typeof import.meta.env.PUBLIC_SENTRY_ENVIRONMENT === "string" &&
-  import.meta.env.PUBLIC_SENTRY_ENVIRONMENT.trim().length > 0
-    ? import.meta.env.PUBLIC_SENTRY_ENVIRONMENT.trim()
+  typeof process.env.SENTRY_ENVIRONMENT === "string" &&
+  process.env.SENTRY_ENVIRONMENT.trim().length > 0
+    ? process.env.SENTRY_ENVIRONMENT.trim()
     : "production";
 const sentryRelease = (
   process.env.GIT_COMMIT_SHA ||

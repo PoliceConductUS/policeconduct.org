@@ -27,7 +27,7 @@ It creates:
 ## Usage
 
 ```bash
-cd infrastructure/bootstrap
+cd infrastructure/bootstrap-policeconduct
 cp terraform.tfvars.example terraform.tfvars
 export GITHUB_TOKEN=<github-token-with-repo-admin-access>
 terraform init
@@ -50,6 +50,25 @@ PHASE=full bash scripts/apply.sh
 
 If `PHASE` is omitted, `scripts/apply.sh` defaults to `full`.
 
+## Dependency Order
+
+Run reCAPTCHA bootstrap first so WIF outputs are available to this stack:
+
+```bash
+bash infrastructure/bootstrap-recaptcha/scripts/apply.sh
+```
+
+Then run this stack:
+
+```bash
+bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
+```
+
+If reCAPTCHA apply fails with Google auth errors (`invalid_grant` /
+`invalid_rapt`), use the troubleshooting steps in:
+
+- `infrastructure/bootstrap-recaptcha/README.md`
+
 ## Using .env
 
 This stack syncs Terraform outputs into `.env-policeconduct` (gitignored).
@@ -59,22 +78,28 @@ You can keep local values there and load before Terraform:
 set -a
 source .env-policeconduct
 set +a
-bash infrastructure/bootstrap/scripts/apply.sh
+bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
 ```
 
 Example `.env` keys:
 
 - `GITHUB_TOKEN`
-- `TF_VAR_public_ga_measurement_id_production`
-- `TF_VAR_public_ga_measurement_id_preview`
-- `TF_VAR_public_sentry_dsn_production`
-- `TF_VAR_public_sentry_dsn_preview`
-- `TF_VAR_sentry_org`
-- `TF_VAR_sentry_project`
-- `TF_VAR_sentry_auth_token`
-- `TF_VAR_recaptcha_enterprise_project_id`
-- `TF_VAR_public_recaptcha_site_key`
-- `TF_VAR_recaptcha_service_account_secret_arn`
+- `GA_MEASUREMENT_ID_PRODUCTION`
+- `GA_MEASUREMENT_ID_PREVIEW`
+- `SENTRY_DSN_PRODUCTION`
+- `SENTRY_DSN_PREVIEW`
+- `SENTRY_ORG`
+- `SENTRY_PROJECT`
+- `SENTRY_AUTH_TOKEN`
+- `RECAPTCHA_PROJECT_ID`
+- `RECAPTCHA_SITE_KEY`
+- `RECAPTCHA_SERVICE_ACCOUNT_EMAIL`
+- `RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME`
+- `RECAPTCHA_WIF_AUDIENCE`
+- `DRAFTS_BUCKET`
+- `DRAFTS_KMS_KEY_ID`
+- `SUBMISSIONS_BUCKET`
+- `SUBMISSIONS_KMS_KEY_ID`
 - `TF_STATE_BUCKET`
 - `AWS_ROLE_ARN`
 - `S3_BUCKET`
@@ -83,6 +108,8 @@ Example `.env` keys:
 `scripts/apply.sh` runs Terraform apply and then syncs `.env-policeconduct` after each phase.
 The sync step comments any existing matching `KEY=...` line in `.env-policeconduct` and appends the latest value from Terraform outputs.
 It also writes all outputs as `TF_OUT_<OUTPUT_NAME>` keys (uppercase, non-alphanumeric chars replaced with `_`).
+For reCAPTCHA values, sync falls back to `.env-recaptcha` and fails fast if any required key is still missing.
+Result: `.env-policeconduct` remains the complete runtime env for local site/forms work.
 
 ## Which AWS Account Is Used?
 
@@ -104,7 +131,7 @@ aws sts get-caller-identity
 After first apply, update your registrar nameservers:
 
 ```bash
-terraform -chdir=infrastructure/bootstrap output route53_name_servers
+terraform -chdir=infrastructure/bootstrap-policeconduct output route53_name_servers
 dig +short NS <your-domain>
 ```
 
@@ -134,25 +161,25 @@ Terraform manages these GitHub environments automatically:
 
 And sets these environment variables automatically:
 
-- `production`: `AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`
-- `preview`: `AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`
+- `production`: `AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`, `FORMS_API_URL`
+- `preview`: `AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`, `FORMS_API_URL`
 
 Optional GA inputs in `terraform.tfvars`:
 
-- `public_ga_measurement_id_production`
-- `public_ga_measurement_id_preview`
+- `ga_measurement_id_production`
+- `ga_measurement_id_preview`
 
-If set, Terraform also creates `PUBLIC_GA_MEASUREMENT_ID` in the matching GitHub environment.
+If set, Terraform also creates `GA_MEASUREMENT_ID` in the matching GitHub environment.
 If unset/null, no GA variable is written and the GA component renders nothing.
 
 Optional Sentry inputs in `terraform.tfvars`:
 
-- `public_sentry_dsn_production`
-- `public_sentry_dsn_preview`
+- `sentry_dsn_production`
+- `sentry_dsn_preview`
 - `sentry_org`
 - `sentry_project`
 
-If set, Terraform creates `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT` in the matching GitHub environment.
+If set, Terraform creates `SENTRY_DSN` and `SENTRY_ENVIRONMENT` in the matching GitHub environment.
 If unset/null, Sentry is not initialized in that environment.
 If `sentry_org` and `sentry_project` are set, workflows can upload source maps to Sentry.
 If `sentry_auth_token` is set, Terraform also writes `SENTRY_AUTH_TOKEN` as a GitHub environment secret in both `production` and `preview`.

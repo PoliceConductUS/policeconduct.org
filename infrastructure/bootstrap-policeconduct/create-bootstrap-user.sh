@@ -76,6 +76,6 @@ Recommended next steps:
    aws sts get-caller-identity
 
 3) Run bootstrap Terraform:
-   terraform -chdir=infrastructure/bootstrap init
-   terraform -chdir=infrastructure/bootstrap apply
+   terraform -chdir=infrastructure/bootstrap-policeconduct init
+   terraform -chdir=infrastructure/bootstrap-policeconduct apply
 EOF

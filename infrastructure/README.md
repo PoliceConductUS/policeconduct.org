@@ -2,7 +2,7 @@
 
 This repo uses two Terraform entrypoints:
 
-1. `infrastructure/bootstrap` (policeconduct.org foundation + static-site infra)
+1. `infrastructure/bootstrap-policeconduct` (policeconduct.org foundation + static-site infra)
 2. `infrastructure/bootstrap-iceconduct` (independent iceconduct.org redirect infra)
 3. `infrastructure/bootstrap-recaptcha` (independent Google reCAPTCHA Enterprise infra)
 
@@ -26,8 +26,8 @@ aws sts get-caller-identity
 
 ```bash
 export GITHUB_TOKEN=<github-token-with-repo-admin-access>
-terraform -chdir=infrastructure/bootstrap init
-terraform -chdir=infrastructure/bootstrap apply
+terraform -chdir=infrastructure/bootstrap-policeconduct init
+terraform -chdir=infrastructure/bootstrap-policeconduct apply
 ```
 
 Or load from local `.env` (gitignored):
@@ -36,45 +36,45 @@ Or load from local `.env` (gitignored):
 set -a
 source .env
 set +a
-terraform -chdir=infrastructure/bootstrap init
-terraform -chdir=infrastructure/bootstrap apply
+terraform -chdir=infrastructure/bootstrap-policeconduct init
+terraform -chdir=infrastructure/bootstrap-policeconduct apply
 ```
 
 Optional phased bootstrap (create buckets/KMS/forms API first, sync `.env`, then finish DNS/CDN):
 
 ```bash
-PHASE=foundation bash infrastructure/bootstrap/scripts/apply.sh
-PHASE=full bash infrastructure/bootstrap/scripts/apply.sh
+PHASE=foundation bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
+PHASE=full bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
 ```
 
 7. If bootstrap created a new hosted zone, update nameservers at your registrar to the Route 53 values:
 
 ```bash
-terraform -chdir=infrastructure/bootstrap output route53_name_servers
+terraform -chdir=infrastructure/bootstrap-policeconduct output route53_name_servers
 dig +short NS <your-domain>
 ```
 
 8. Wait for DNS propagation, then re-run bootstrap apply if ACM is still pending:
 
 ```bash
-terraform -chdir=infrastructure/bootstrap apply
+terraform -chdir=infrastructure/bootstrap-policeconduct apply
 ```
 
 If apply is waiting at `aws_acm_certificate_validation.site`, fetch nameservers from the just-created zone and update your registrar:
 
 ```bash
-terraform -chdir=infrastructure/bootstrap output route53_name_servers
+terraform -chdir=infrastructure/bootstrap-policeconduct output route53_name_servers
 ```
 
 9. Bootstrap also creates GitHub environments and environment variables for workflows:
    `production` (`AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`) and
    `preview` (`AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`).
-   If GA IDs are set in bootstrap tfvars, it also writes `PUBLIC_GA_MEASUREMENT_ID` per environment.
-   If Sentry DSNs are set in bootstrap tfvars, it also writes `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT` per environment.
+   If GA IDs are set in bootstrap tfvars, it also writes `GA_MEASUREMENT_ID` per environment.
+   If Sentry DSNs are set in bootstrap tfvars, it also writes `SENTRY_DSN` and `SENTRY_ENVIRONMENT` per environment.
    If `sentry_org`/`sentry_project` are set, workflows can upload source maps to Sentry.
    If `sentry_auth_token` is set in bootstrap inputs, bootstrap also writes `SENTRY_AUTH_TOKEN` as a GitHub environment secret for both environments.
 
-If `bucket_name` is omitted in `infrastructure/bootstrap/terraform.tfvars`, bootstrap uses `<project_name>-site-<account_id>`.
+If `bucket_name` is omitted in `infrastructure/bootstrap-policeconduct/terraform.tfvars`, bootstrap uses `<project_name>-site-<account_id>`.
 
 10. Optional hardening: remove `AdministratorAccess` from `policeconduct-setup-admin`, then disable or delete its access key.
 
@@ -107,7 +107,7 @@ aws sts get-caller-identity
 
 Bootstrap is manual/local only and creates infra.
 
-1. Run `infrastructure/bootstrap` locally once.
+1. Run `infrastructure/bootstrap-policeconduct` locally once.
 2. Then GitHub deploy workflows (`deploy.yml`, `preview.yml`, `preview-cleanup.yml`) only publish content and assume infra already exists.
 
 Credentials used by deploy workflows:
@@ -116,6 +116,6 @@ Credentials used by deploy workflows:
 
 ## More Detail
 
-1. `infrastructure/bootstrap/README.md`
+1. `infrastructure/bootstrap-policeconduct/README.md`
 2. `infrastructure/bootstrap-iceconduct/`
 3. `infrastructure/bootstrap-recaptcha/`

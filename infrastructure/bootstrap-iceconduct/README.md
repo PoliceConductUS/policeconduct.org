@@ -1,6 +1,6 @@
 # Terraform Bootstrap (iceconduct.org Redirect)
 
-This stack is intentionally independent from `infrastructure/bootstrap`.
+This stack is intentionally independent from `infrastructure/bootstrap-policeconduct`.
 It manages only `iceconduct.org` redirect infrastructure:
 
 - Route53 public hosted zone for `iceconduct.org`

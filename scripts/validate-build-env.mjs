@@ -1,4 +1,4 @@
-const requiredVars = ["PUBLIC_RECAPTCHA_SITE_KEY"];
+const requiredVars = ["RECAPTCHA_SITE_KEY"];
 
 const missingVars = requiredVars.filter((name) => {
   const value = process.env[name];

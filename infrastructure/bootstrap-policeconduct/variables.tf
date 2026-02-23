@@ -22,26 +22,26 @@ variable "bucket_name" {
   default     = null
 }
 
-variable "public_ga_measurement_id_production" {
+variable "ga_measurement_id_production" {
   description = "GA4 Measurement ID for production builds (example: G-XXXXXXXXXX). Leave null/empty to disable GA."
   type        = string
   default     = null
 }
 
-variable "public_ga_measurement_id_preview" {
+variable "ga_measurement_id_preview" {
   description = "GA4 Measurement ID for preview builds. Leave null/empty to disable GA."
   type        = string
   default     = null
 }
 
-variable "public_sentry_dsn_production" {
-  description = "Sentry DSN exposed to production frontend as PUBLIC_SENTRY_DSN. Leave null/empty to disable Sentry in production."
+variable "sentry_dsn_production" {
+  description = "Sentry DSN for production frontend. Leave null/empty to disable Sentry in production."
   type        = string
   default     = null
 }
 
-variable "public_sentry_dsn_preview" {
-  description = "Sentry DSN exposed to preview frontend as PUBLIC_SENTRY_DSN. Leave null/empty to disable Sentry in preview."
+variable "sentry_dsn_preview" {
+  description = "Sentry DSN for preview frontend. Leave null/empty to disable Sentry in preview."
   type        = string
   default     = null
 }
@@ -227,29 +227,62 @@ variable "lambda_nodejs_runtime" {
   default     = "nodejs22.x"
 }
 
-variable "recaptcha_enterprise_project_id" {
+variable "recaptcha_project_id" {
   description = "Google Cloud project ID for reCAPTCHA Enterprise assessments."
-  type        = string
-  default     = null
-}
-
-variable "public_recaptcha_site_key" {
-  description = "Google reCAPTCHA site key exposed to the frontend as PUBLIC_RECAPTCHA_SITE_KEY."
-  type        = string
-  default     = null
-}
-
-variable "recaptcha_service_account_secret_arn" {
-  description = "AWS Secrets Manager ARN containing Google service account JSON used for reCAPTCHA Enterprise assessment calls."
   type        = string
 
   validation {
-    condition     = trimspace(var.recaptcha_service_account_secret_arn) != ""
-    error_message = "recaptcha_service_account_secret_arn must be set to a non-empty Secrets Manager ARN."
+    condition     = trimspace(var.recaptcha_project_id) != ""
+    error_message = "recaptcha_project_id must be set to a non-empty Google Cloud project ID."
   }
 }
 
-variable "recaptcha_enterprise_min_score" {
+variable "recaptcha_site_key" {
+  description = "Canonical Google reCAPTCHA site key used by frontend and forms runtime."
+  type        = string
+
+  validation {
+    condition     = trimspace(var.recaptcha_site_key) != ""
+    error_message = "recaptcha_site_key must be set to a non-empty site key."
+  }
+
+  validation {
+    condition     = !can(regex("(?i)replace_", trimspace(var.recaptcha_site_key)))
+    error_message = "recaptcha_site_key must be an actual key value, not a placeholder."
+  }
+}
+
+variable "recaptcha_service_account_email" {
+  description = "Google service account email used for reCAPTCHA Enterprise assessment calls."
+  type        = string
+
+  validation {
+    condition     = trimspace(var.recaptcha_service_account_email) != ""
+    error_message = "recaptcha_service_account_email must be set to a non-empty service account email."
+  }
+}
+
+variable "recaptcha_wif_provider_resource_name" {
+  description = "GCP WIF provider resource name used for AWS external-account auth."
+  type        = string
+
+  validation {
+    condition     = trimspace(var.recaptcha_wif_provider_resource_name) != ""
+    error_message = "recaptcha_wif_provider_resource_name must be set to a non-empty provider resource name."
+  }
+}
+
+variable "recaptcha_wif_audience" {
+  description = "Audience for GCP external-account auth (typically //iam.googleapis.com/<provider-resource-name>)."
+  type        = string
+
+  validation {
+    condition     = trimspace(var.recaptcha_wif_audience) != ""
+    error_message = "recaptcha_wif_audience must be set to a non-empty audience value."
+  }
+}
+
+variable "recaptcha_min_score" {
   description = "Minimum acceptable risk score for reCAPTCHA Enterprise submissions."
   type        = number
   default     = 0.5
@@ -305,51 +338,6 @@ variable "waf_web_acl_arn" {
   description = "WAFv2 Web ACL ARN for CloudFront. Leave null for a pure static site."
   type        = string
   default     = null
-}
-
-variable "redirect_domains" {
-  description = "Additional domains that should 301 redirect to redirect_target_url using the primary CloudFront distribution."
-  type        = list(string)
-  default     = []
-
-  validation {
-    condition = alltrue([
-      for domain in var.redirect_domains :
-      length(split(".", trimspace(domain))) >= 2
-    ])
-    error_message = "Each redirect_domains value must be a fully qualified domain name."
-  }
-}
-
-variable "redirect_domain_zone_ids" {
-  description = "Optional map of redirect domain name to Route 53 hosted zone ID for automated DNS record management."
-  type        = map(string)
-  default     = {}
-}
-
-variable "managed_redirect_zones" {
-  description = "Apex redirect domains for which Terraform should create public Route 53 hosted zones (for example, iceconduct.org)."
-  type        = list(string)
-  default     = []
-
-  validation {
-    condition = alltrue([
-      for zone in var.managed_redirect_zones :
-      length(split(".", trimspace(zone))) >= 2
-    ])
-    error_message = "Each managed_redirect_zones value must be a valid apex domain."
-  }
-}
-
-variable "redirect_target_url" {
-  description = "Absolute https URL used as the redirect destination for redirect_domains. Leave null to disable."
-  type        = string
-  default     = null
-
-  validation {
-    condition     = var.redirect_target_url == null || can(regex("^https://", trimspace(var.redirect_target_url)))
-    error_message = "redirect_target_url must be an absolute https URL when set."
-  }
 }
 
 variable "extra_dns_records" {

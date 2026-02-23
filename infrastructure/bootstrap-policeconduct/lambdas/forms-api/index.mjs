@@ -3,16 +3,12 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import {
-  GetSecretValueCommand,
-  SecretsManagerClient,
-} from "@aws-sdk/client-secrets-manager";
+import { GoogleAuth } from "google-auth-library";
 import { RecaptchaEnterpriseServiceClient } from "@google-cloud/recaptcha-enterprise";
 import { createId } from "@paralleldrive/cuid2";
 import crypto from "crypto";
 
 const s3 = new S3Client({});
-const secretsManager = new SecretsManagerClient({});
 const ALLOWED_FORM_NAMES = new Set([
   "contact",
   "volunteer",
@@ -94,44 +90,52 @@ function baseLogContext(event, requestId) {
   };
 }
 
-async function loadRecaptchaCredentialsFromSecret() {
-  const secretArn = process.env.RECAPTCHA_SERVICE_ACCOUNT_SECRET_ARN;
-  if (!secretArn) {
-    throw new Error("Missing RECAPTCHA_SERVICE_ACCOUNT_SECRET_ARN");
+function buildRecaptchaWifCredentials() {
+  const serviceAccountEmail = process.env.RECAPTCHA_SERVICE_ACCOUNT_EMAIL;
+  const providerResourceName = process.env.RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME;
+  const audience = process.env.RECAPTCHA_WIF_AUDIENCE;
+
+  if (!serviceAccountEmail) {
+    throw new Error("Missing RECAPTCHA_SERVICE_ACCOUNT_EMAIL");
   }
-
-  const response = await secretsManager.send(
-    new GetSecretValueCommand({ SecretId: secretArn }),
-  );
-
-  if (!response.SecretString) {
-    throw new Error("reCAPTCHA service account secret is missing SecretString");
+  if (!providerResourceName) {
+    throw new Error("Missing RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME");
   }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(response.SecretString);
-  } catch (_error) {
-    throw new Error("reCAPTCHA service account secret is not valid JSON");
+  if (!audience) {
+    throw new Error("Missing RECAPTCHA_WIF_AUDIENCE");
   }
-
-  if (!parsed.client_email || !parsed.private_key) {
+  if (!audience.endsWith(providerResourceName)) {
     throw new Error(
-      "reCAPTCHA service account secret must include client_email and private_key",
+      "RECAPTCHA_WIF_AUDIENCE must reference RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME",
     );
   }
 
+  // AWS external-account credentials: Lambda role credentials are exchanged for
+  // short-lived Google access tokens via workload identity federation.
   return {
-    client_email: parsed.client_email,
-    private_key: parsed.private_key,
+    type: "external_account",
+    audience,
+    subject_token_type: "urn:ietf:params:aws:token-type:aws4_request",
+    token_url: "https://sts.googleapis.com/v1/token",
+    service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${serviceAccountEmail}:generateAccessToken`,
+    credential_source: {
+      environment_id: "aws1",
+      region_url: "http://169.254.169.254/latest/meta-data/placement/region",
+      url: "http://169.254.169.254/latest/meta-data/iam/security-credentials",
+      regional_cred_verification_url:
+        "https://sts.{region}.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+    },
   };
 }
 
 async function getRecaptchaClient() {
   if (!recaptchaClientPromise) {
     recaptchaClientPromise = (async () => {
-      const credentials = await loadRecaptchaCredentialsFromSecret();
-      return new RecaptchaEnterpriseServiceClient({ credentials });
+      const auth = new GoogleAuth({
+        credentials: buildRecaptchaWifCredentials(),
+        scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+      });
+      return new RecaptchaEnterpriseServiceClient({ auth });
     })();
   }
   return recaptchaClientPromise;
@@ -143,15 +147,15 @@ async function verifyRecaptchaEnterprise(
   userAgent,
   expectedAction,
 ) {
-  const projectId = process.env.RECAPTCHA_ENTERPRISE_PROJECT_ID;
-  const siteKey = process.env.RECAPTCHA_ENTERPRISE_SITE_KEY;
-  const minScore = Number(process.env.RECAPTCHA_ENTERPRISE_MIN_SCORE || "0.5");
+  const projectId = process.env.RECAPTCHA_PROJECT_ID;
+  const siteKey = process.env.RECAPTCHA_SITE_KEY;
+  const minScore = Number(process.env.RECAPTCHA_MIN_SCORE || "0.5");
 
   if (!projectId) {
-    return { ok: false, error: "Missing RECAPTCHA_ENTERPRISE_PROJECT_ID" };
+    return { ok: false, error: "Missing RECAPTCHA_PROJECT_ID" };
   }
   if (!siteKey) {
-    return { ok: false, error: "Missing RECAPTCHA_ENTERPRISE_SITE_KEY" };
+    return { ok: false, error: "Missing RECAPTCHA_SITE_KEY" };
   }
   if (!token) {
     return { ok: false, error: "Missing reCAPTCHA token." };
@@ -301,6 +305,13 @@ async function getDraft(event) {
     return json(200, {});
   }
 
+  if (
+    typeof draft?.submissionId === "string" &&
+    draft.submissionId.trim().length > 0
+  ) {
+    return json(200, {});
+  }
+
   const updatedAtMs = new Date(draft?.updatedAt || 0).getTime();
   if (!updatedAtMs || Date.now() - updatedAtMs > activeWindowMs) {
     return json(200, {});
@@ -311,6 +322,69 @@ async function getDraft(event) {
     data: draft.data || {},
     updatedAt: draft.updatedAt,
   });
+}
+
+async function markDraftSubmitted(draftId, submissionId, requestId, formName) {
+  const bucket = process.env.DRAFTS_BUCKET;
+  const kmsKeyId = process.env.DRAFTS_KMS_KEY_ID;
+  const prefix = process.env.DRAFTS_PREFIX ?? "drafts/";
+  if (!draftId || !bucket || !kmsKeyId) {
+    return;
+  }
+
+  const key = `${prefix}${draftId}.json`;
+  let existing = {};
+  try {
+    const object = await s3.send(
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      }),
+    );
+    const raw = object?.Body ? await object.Body.transformToString("utf8") : "";
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        existing = parsed;
+      }
+    }
+  } catch (error) {
+    if (error && typeof error === "object" && error.code === "NoSuchKey") {
+      return;
+    }
+    throw error;
+  }
+
+  const now = new Date().toISOString();
+  const next = {
+    ...existing,
+    data: {},
+    updatedAt: now,
+    submissionId,
+    submittedAt: now,
+    submittedFormName: formName,
+  };
+
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: JSON.stringify(next),
+      ContentType: "application/json",
+      ServerSideEncryption: "aws:kms",
+      SSEKMSKeyId: kmsKeyId,
+    }),
+  );
+
+  console.info(
+    JSON.stringify({
+      msg: "forms.submit.draft_marked_submitted",
+      requestId,
+      formName,
+      draftId,
+      key,
+    }),
+  );
 }
 
 async function submitForm(event, requestId) {
@@ -331,6 +405,8 @@ async function submitForm(event, requestId) {
     typeof payload?.recaptchaToken === "string"
       ? payload.recaptchaToken.trim()
       : "";
+  const draftId =
+    typeof payload?.draftId === "string" ? payload.draftId.trim() : "";
   const sourceIp = event?.requestContext?.http?.sourceIp ?? null;
   const userAgent = event?.requestContext?.http?.userAgent ?? null;
   const data =
@@ -343,6 +419,7 @@ async function submitForm(event, requestId) {
       requestId,
       formName,
       hasRecaptchaToken: Boolean(recaptchaToken),
+      hasDraftId: Boolean(draftId),
       dataFieldCount: dataKeys.length,
       dataFields: dataKeys.slice(0, 50),
       sourceIp,
@@ -437,6 +514,22 @@ async function submitForm(event, requestId) {
       SSEKMSKeyId: kmsKeyId,
     }),
   );
+
+  if (draftId) {
+    try {
+      await markDraftSubmitted(draftId, submissionId, requestId, formName);
+    } catch (error) {
+      console.error(
+        JSON.stringify({
+          msg: "forms.submit.draft_mark_submitted_failed",
+          requestId,
+          formName,
+          draftId,
+          error: errorInfo(error),
+        }),
+      );
+    }
+  }
 
   console.info(
     JSON.stringify({

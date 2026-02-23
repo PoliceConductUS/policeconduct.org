@@ -18,6 +18,9 @@ npm run forms:lambda:local
 FORMS_API_PROXY_TARGET=http://127.0.0.1:8787 npm run dev
 ```
 
+`FORMS_API_PROXY_TARGET` is dev-only. In production, forms submit to relative
+`/api/*` routes on the deployed site domain and do not use this variable.
+
 Defaults:
 
 - Runner host: `127.0.0.1`
@@ -68,7 +71,7 @@ Optional tuning for large sites:
 
 Terraform bootstrap stack:
 
-- `infrastructure/bootstrap`
+- `infrastructure/bootstrap-policeconduct`
 
 It provisions:
 
@@ -81,16 +84,80 @@ It provisions:
 Bootstrap usage:
 
 ```bash
-cp infrastructure/bootstrap/terraform.tfvars.example infrastructure/bootstrap/terraform.tfvars
+cp infrastructure/bootstrap-policeconduct/terraform.tfvars.example infrastructure/bootstrap-policeconduct/terraform.tfvars
 export GITHUB_TOKEN=<github-token-with-repo-admin-access>
-terraform -chdir=infrastructure/bootstrap init
-bash infrastructure/bootstrap/scripts/apply.sh
+terraform -chdir=infrastructure/bootstrap-policeconduct init
+bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
 ```
 
 See:
 
 - `infrastructure/README.md`
-- `infrastructure/bootstrap/README.md`
+- `infrastructure/bootstrap-policeconduct/README.md`
+
+## Environment Variables (Canonical)
+
+After running:
+
+- `bash infrastructure/bootstrap-recaptcha/scripts/apply.sh`
+- `bash infrastructure/bootstrap-policeconduct/scripts/apply.sh`
+
+your `.env-recaptcha` and `.env-policeconduct` should include the canonical
+runtime/build variables below.
+
+`.env-policeconduct` is the assembled runtime file for site/forms local runs.
+`bootstrap-policeconduct` sync merges Terraform outputs and required reCAPTCHA
+values (fallback from `.env-recaptcha`) and fails if required keys are missing.
+
+### Required For Local Forms Runtime
+
+- `DRAFTS_BUCKET`
+- `DRAFTS_KMS_KEY_ID`
+- `SUBMISSIONS_BUCKET`
+- `SUBMISSIONS_KMS_KEY_ID`
+- `RECAPTCHA_PROJECT_ID`
+- `RECAPTCHA_SITE_KEY`
+- `RECAPTCHA_SERVICE_ACCOUNT_EMAIL`
+- `RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME`
+- `RECAPTCHA_WIF_AUDIENCE`
+
+### Required For Frontend Build/Client
+
+- `RECAPTCHA_SITE_KEY`
+
+### Canonical Apply Inputs (non-`TF_VAR` env names)
+
+- `RECAPTCHA_PROJECT_ID`
+- `RECAPTCHA_SITE_KEY`
+- `RECAPTCHA_SERVICE_ACCOUNT_EMAIL`
+- `RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME`
+- `RECAPTCHA_WIF_AUDIENCE`
+
+Optional examples:
+
+- `GA_MEASUREMENT_ID_PRODUCTION`
+- `GA_MEASUREMENT_ID_PREVIEW`
+- `SENTRY_DSN_PRODUCTION`
+- `SENTRY_DSN_PREVIEW`
+- `SENTRY_ORG`
+- `SENTRY_PROJECT`
+- `SENTRY_AUTH_TOKEN`
+
+### Canonical Deploy/Infra Convenience
+
+- `TF_STATE_BUCKET`
+- `AWS_ROLE_ARN`
+- `S3_BUCKET`
+- `S3_BUCKET_PREVIEW`
+- `CLOUDFRONT_DIST_ID`
+- `CLOUDFRONT_DIST_PREVIEW`
+- `DRAFTS_BUCKET`
+- `SUBMISSIONS_BUCKET`
+
+### Canonical Terraform Output Mirror
+
+- `TF_OUT_*` keys are generated automatically for every Terraform output.
+- Treat these as generated read-only values.
 
 ## Deploy
 
@@ -125,8 +192,8 @@ Both scripts also load `.env` automatically if present.
 
 Frontend Sentry is enabled when these are set:
 
-- `PUBLIC_SENTRY_DSN`
-- `PUBLIC_SENTRY_ENVIRONMENT`
+- `SENTRY_DSN`
+- `SENTRY_ENVIRONMENT`
 
 Terraform bootstrap can manage GitHub environment vars/secrets for the same org and project:
 

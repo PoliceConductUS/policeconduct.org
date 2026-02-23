@@ -93,22 +93,6 @@ output "route53_name_servers" {
   value       = local.manage_hosted_zone ? aws_route53_zone.site[0].name_servers : []
 }
 
-output "managed_redirect_zone_ids" {
-  description = "Route 53 hosted zone IDs for managed redirect zones."
-  value = {
-    for zone_name, zone in aws_route53_zone.redirect :
-    zone_name => zone.zone_id
-  }
-}
-
-output "managed_redirect_zone_name_servers" {
-  description = "Route 53 nameservers for managed redirect zones; update registrar delegation for each domain."
-  value = {
-    for zone_name, zone in aws_route53_zone.redirect :
-    zone_name => zone.name_servers
-  }
-}
-
 output "site_url" {
   description = "Primary site URL."
   value       = "https://${var.domain_name}"
@@ -132,6 +116,16 @@ output "forms_api_function_url" {
 output "forms_api_preview_function_url" {
   description = "Lambda Function URL backing the preview forms API origin."
   value       = aws_lambda_function_url.forms_api_preview.function_url
+}
+
+output "recaptcha_site_key" {
+  description = "Canonical reCAPTCHA site key used by frontend and forms runtime."
+  value       = local.recaptcha_site_key
+}
+
+output "recaptcha_project_id" {
+  description = "Canonical Google Cloud project ID used by forms runtime for reCAPTCHA assessments."
+  value       = local.recaptcha_project_id
 }
 
 output "forms_drafts_bucket_name" {

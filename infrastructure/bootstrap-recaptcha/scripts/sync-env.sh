@@ -48,21 +48,26 @@ upsert_key() {
   printf "%s\n" "${rendered_line}" >> "${ENV_FILE}"
 }
 
-PROJECT_ID="$(tf_output recaptcha_enterprise_project_id)"
-SITE_KEY="$(tf_output recaptcha_enterprise_site_key)"
-SECRET_ARN="$(tf_output recaptcha_service_account_secret_arn)"
+PROJECT_ID="$(tf_output recaptcha_project_id)"
+SITE_KEY="$(tf_output recaptcha_site_key)"
+SERVICE_ACCOUNT_EMAIL="$(tf_output recaptcha_service_account_email)"
+WIF_PROVIDER_RESOURCE_NAME="$(tf_output recaptcha_wif_provider_resource_name)"
+WIF_AUDIENCE="$(tf_output recaptcha_wif_audience)"
 
 if [[ -n "${PROJECT_ID}" ]]; then
-  upsert_key "RECAPTCHA_ENTERPRISE_PROJECT_ID" "${PROJECT_ID}"
-  upsert_key "TF_VAR_recaptcha_enterprise_project_id" "${PROJECT_ID}"
+  upsert_key "RECAPTCHA_PROJECT_ID" "${PROJECT_ID}"
 fi
 if [[ -n "${SITE_KEY}" ]]; then
-  upsert_key "PUBLIC_RECAPTCHA_SITE_KEY" "${SITE_KEY}"
-  upsert_key "TF_VAR_public_recaptcha_site_key" "${SITE_KEY}"
+  upsert_key "RECAPTCHA_SITE_KEY" "${SITE_KEY}"
 fi
-if [[ -n "${SECRET_ARN}" ]]; then
-  upsert_key "RECAPTCHA_SERVICE_ACCOUNT_SECRET_ARN" "${SECRET_ARN}"
-  upsert_key "TF_VAR_recaptcha_service_account_secret_arn" "${SECRET_ARN}"
+if [[ -n "${SERVICE_ACCOUNT_EMAIL}" ]]; then
+  upsert_key "RECAPTCHA_SERVICE_ACCOUNT_EMAIL" "${SERVICE_ACCOUNT_EMAIL}"
+fi
+if [[ -n "${WIF_PROVIDER_RESOURCE_NAME}" ]]; then
+  upsert_key "RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME" "${WIF_PROVIDER_RESOURCE_NAME}"
+fi
+if [[ -n "${WIF_AUDIENCE}" ]]; then
+  upsert_key "RECAPTCHA_WIF_AUDIENCE" "${WIF_AUDIENCE}"
 fi
 
 echo "Updated ${ENV_FILE} from Terraform outputs."

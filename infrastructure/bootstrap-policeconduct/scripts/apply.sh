@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 DOTENV_FILE="${REPO_ROOT}/.env"
+RECAPTCHA_DOTENV_FILE="${REPO_ROOT}/.env-recaptcha"
 PHASE="${PHASE:-full}"
 
 parse_github_repo_path() {
@@ -31,33 +32,88 @@ parse_github_repo_path() {
   return 0
 }
 
-load_dotenv_if_present() {
-  if [[ ! -f "${DOTENV_FILE}" ]]; then
+load_env_file_if_present() {
+  local file_path="$1"
+  if [[ ! -f "${file_path}" ]]; then
     return 0
   fi
-
   set -a
   # shellcheck disable=SC1090
-  source "${DOTENV_FILE}"
+  source "${file_path}"
   set +a
+}
+
+load_dotenv_if_present() {
+  load_env_file_if_present "${DOTENV_FILE}"
+  load_env_file_if_present "${RECAPTCHA_DOTENV_FILE}"
 }
 
 map_common_env_to_tf_vars() {
   # Support plain env names in .env and map them to Terraform inputs.
-  if [[ -n "${SENTRY_AUTH_TOKEN+x}" ]] && [[ -z "${TF_VAR_sentry_auth_token+x}" ]] && [[ -z "${TF_VAR_SENTRY_AUTH_TOKEN+x}" ]]; then
+  if [[ -n "${SENTRY_AUTH_TOKEN+x}" ]] && [[ -z "${TF_VAR_sentry_auth_token+x}" ]]; then
     export TF_VAR_sentry_auth_token="${SENTRY_AUTH_TOKEN}"
   fi
-  if [[ -n "${SENTRY_ORG+x}" ]] && [[ -z "${TF_VAR_sentry_org+x}" ]] && [[ -z "${TF_VAR_SENTRY_ORG+x}" ]]; then
+  if [[ -n "${SENTRY_ORG+x}" ]] && [[ -z "${TF_VAR_sentry_org+x}" ]]; then
     export TF_VAR_sentry_org="${SENTRY_ORG}"
   fi
-  if [[ -n "${SENTRY_PROJECT+x}" ]] && [[ -z "${TF_VAR_sentry_project+x}" ]] && [[ -z "${TF_VAR_SENTRY_PROJECT+x}" ]]; then
+  if [[ -n "${SENTRY_PROJECT+x}" ]] && [[ -z "${TF_VAR_sentry_project+x}" ]]; then
     export TF_VAR_sentry_project="${SENTRY_PROJECT}"
   fi
-  if [[ -n "${PUBLIC_SENTRY_DSN_PRODUCTION+x}" ]] && [[ -z "${TF_VAR_public_sentry_dsn_production+x}" ]] && [[ -z "${TF_VAR_PUBLIC_SENTRY_DSN_PRODUCTION+x}" ]]; then
-    export TF_VAR_public_sentry_dsn_production="${PUBLIC_SENTRY_DSN_PRODUCTION}"
+  if [[ -n "${SENTRY_DSN_PRODUCTION+x}" ]] && [[ -z "${TF_VAR_sentry_dsn_production+x}" ]]; then
+    export TF_VAR_sentry_dsn_production="${SENTRY_DSN_PRODUCTION}"
   fi
-  if [[ -n "${PUBLIC_SENTRY_DSN_PREVIEW+x}" ]] && [[ -z "${TF_VAR_public_sentry_dsn_preview+x}" ]] && [[ -z "${TF_VAR_PUBLIC_SENTRY_DSN_PREVIEW+x}" ]]; then
-    export TF_VAR_public_sentry_dsn_preview="${PUBLIC_SENTRY_DSN_PREVIEW}"
+  if [[ -n "${SENTRY_DSN_PREVIEW+x}" ]] && [[ -z "${TF_VAR_sentry_dsn_preview+x}" ]]; then
+    export TF_VAR_sentry_dsn_preview="${SENTRY_DSN_PREVIEW}"
+  fi
+  if [[ -n "${GA_MEASUREMENT_ID_PRODUCTION+x}" ]] && [[ -z "${TF_VAR_ga_measurement_id_production+x}" ]]; then
+    export TF_VAR_ga_measurement_id_production="${GA_MEASUREMENT_ID_PRODUCTION}"
+  fi
+  if [[ -n "${GA_MEASUREMENT_ID_PREVIEW+x}" ]] && [[ -z "${TF_VAR_ga_measurement_id_preview+x}" ]]; then
+    export TF_VAR_ga_measurement_id_preview="${GA_MEASUREMENT_ID_PREVIEW}"
+  fi
+  if [[ -n "${RECAPTCHA_SITE_KEY+x}" ]] && [[ -z "${TF_VAR_recaptcha_site_key+x}" ]]; then
+    export TF_VAR_recaptcha_site_key="${RECAPTCHA_SITE_KEY}"
+  fi
+  if [[ -n "${RECAPTCHA_PROJECT_ID+x}" ]] && [[ -z "${TF_VAR_recaptcha_project_id+x}" ]]; then
+    export TF_VAR_recaptcha_project_id="${RECAPTCHA_PROJECT_ID}"
+  fi
+  if [[ -n "${RECAPTCHA_SERVICE_ACCOUNT_EMAIL+x}" ]] && [[ -z "${TF_VAR_recaptcha_service_account_email+x}" ]]; then
+    export TF_VAR_recaptcha_service_account_email="${RECAPTCHA_SERVICE_ACCOUNT_EMAIL}"
+  fi
+  if [[ -n "${RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME+x}" ]] && [[ -z "${TF_VAR_recaptcha_wif_provider_resource_name+x}" ]]; then
+    export TF_VAR_recaptcha_wif_provider_resource_name="${RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME}"
+  fi
+  if [[ -n "${RECAPTCHA_WIF_AUDIENCE+x}" ]] && [[ -z "${TF_VAR_recaptcha_wif_audience+x}" ]]; then
+    export TF_VAR_recaptcha_wif_audience="${RECAPTCHA_WIF_AUDIENCE}"
+  fi
+  if [[ -n "${RECAPTCHA_MIN_SCORE+x}" ]] && [[ -z "${TF_VAR_recaptcha_min_score+x}" ]]; then
+    export TF_VAR_recaptcha_min_score="${RECAPTCHA_MIN_SCORE}"
+  fi
+}
+
+preflight_recaptcha_requirements() {
+  local source_hint=".env-recaptcha loaded by this script"
+  local -a missing=()
+  if [[ -z "${TF_VAR_recaptcha_project_id+x}" || -z "${TF_VAR_recaptcha_project_id}" ]]; then
+    missing+=("TF_VAR_recaptcha_project_id (or RECAPTCHA_PROJECT_ID via ${source_hint})")
+  fi
+  if [[ -z "${TF_VAR_recaptcha_site_key+x}" || -z "${TF_VAR_recaptcha_site_key}" ]]; then
+    missing+=("TF_VAR_recaptcha_site_key (or RECAPTCHA_SITE_KEY via ${source_hint})")
+  fi
+  if [[ -z "${TF_VAR_recaptcha_service_account_email+x}" || -z "${TF_VAR_recaptcha_service_account_email}" ]]; then
+    missing+=("TF_VAR_recaptcha_service_account_email (or RECAPTCHA_SERVICE_ACCOUNT_EMAIL via ${source_hint})")
+  fi
+  if [[ -z "${TF_VAR_recaptcha_wif_provider_resource_name+x}" || -z "${TF_VAR_recaptcha_wif_provider_resource_name}" ]]; then
+    missing+=("TF_VAR_recaptcha_wif_provider_resource_name (or RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME via ${source_hint})")
+  fi
+  if [[ -z "${TF_VAR_recaptcha_wif_audience+x}" || -z "${TF_VAR_recaptcha_wif_audience}" ]]; then
+    missing+=("TF_VAR_recaptcha_wif_audience (or RECAPTCHA_WIF_AUDIENCE via ${source_hint})")
+  fi
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "Error: missing required reCAPTCHA terraform input(s):" >&2
+    printf ' - %s\n' "${missing[@]}" >&2
+    echo "Run infrastructure/bootstrap-recaptcha/scripts/apply.sh first." >&2
+    exit 1
   fi
 }
 
@@ -65,9 +121,6 @@ set_github_tf_vars_from_origin() {
   local origin_url repo_path github_org github_repo
 
   if [[ -n "${TF_VAR_github_org+x}" ]] && [[ -n "${TF_VAR_github_repo+x}" ]]; then
-    return 0
-  fi
-  if [[ -n "${TF_VAR_GITHUB_ORG+x}" ]] && [[ -n "${TF_VAR_GITHUB_REPO+x}" ]]; then
     return 0
   fi
 
@@ -84,70 +137,20 @@ set_github_tf_vars_from_origin() {
   github_org="${repo_path%%/*}"
   github_repo="${repo_path##*/}"
 
-  if [[ -z "${TF_VAR_github_org+x}" ]] && [[ -z "${TF_VAR_GITHUB_ORG+x}" ]]; then
+  if [[ -z "${TF_VAR_github_org+x}" ]]; then
     export TF_VAR_github_org="${github_org}"
   fi
-  if [[ -z "${TF_VAR_github_repo+x}" ]] && [[ -z "${TF_VAR_GITHUB_REPO+x}" ]]; then
+  if [[ -z "${TF_VAR_github_repo+x}" ]]; then
     export TF_VAR_github_repo="${github_repo}"
-  fi
-}
-
-normalize_tf_var_names() {
-  local vars_file="${ROOT_DIR}/variables.tf"
-  if [[ ! -f "${vars_file}" ]]; then
-    return 0
-  fi
-
-  local -a expected_names
-  mapfile -t expected_names < <(sed -En 's/^variable "([^"]+)".*/\1/p' "${vars_file}")
-
-  local -A expected_set=()
-  local name
-  for name in "${expected_names[@]}"; do
-    expected_set["${name}"]=1
-  done
-
-  local -a env_tf_var_keys=()
-  mapfile -t env_tf_var_keys < <(env | sed -En 's/^(TF_VAR_[^=]+)=.*/\1/p')
-
-  local -a conflicts=()
-  local key raw_name lower_name expected_key
-  for key in "${env_tf_var_keys[@]}"; do
-    raw_name="${key#TF_VAR_}"
-    if [[ -n "${expected_set[${raw_name}]+x}" ]]; then
-      continue
-    fi
-
-    lower_name="$(printf "%s" "${raw_name}" | tr '[:upper:]' '[:lower:]')"
-    if [[ "${raw_name}" == "${lower_name}" ]] || [[ -z "${expected_set[${lower_name}]+x}" ]]; then
-      continue
-    fi
-
-    expected_key="TF_VAR_${lower_name}"
-    if [[ -n "${!expected_key+x}" ]]; then
-      if [[ "${!expected_key}" != "${!key}" ]]; then
-        conflicts+=("  - ${key} conflicts with ${expected_key} (different values)")
-      fi
-      continue
-    fi
-
-    export "${expected_key}=${!key}"
-  done
-
-  if [[ ${#conflicts[@]} -gt 0 ]]; then
-    echo "Error: Conflicting TF_VAR names found." >&2
-    printf "%s\n" "${conflicts[@]}" >&2
-    exit 1
   fi
 }
 
 preflight_explicit_tf_var_secrets() {
   # Prevent silently ignoring a common secret name that Terraform will not read.
   if [[ -n "${SENTRY_AUTH_TOKEN+x}" ]] \
-    && [[ -z "${TF_VAR_sentry_auth_token+x}" ]] \
-    && [[ -z "${TF_VAR_SENTRY_AUTH_TOKEN+x}" ]]; then
+    && [[ -z "${TF_VAR_sentry_auth_token+x}" ]]; then
     echo "Error: SENTRY_AUTH_TOKEN is set, but Terraform reads TF_VAR_sentry_auth_token." >&2
-    echo "Set TF_VAR_sentry_auth_token (or TF_VAR_SENTRY_AUTH_TOKEN) before apply." >&2
+    echo "Set TF_VAR_sentry_auth_token before apply." >&2
     exit 1
   fi
 }
@@ -157,13 +160,13 @@ preflight_sentry_upload_requirements() {
   local has_token=0
   local has_org=0
   local has_project=0
-  if [[ -n "${TF_VAR_sentry_auth_token+x}" ]] || [[ -n "${TF_VAR_SENTRY_AUTH_TOKEN+x}" ]]; then
+  if [[ -n "${TF_VAR_sentry_auth_token+x}" ]]; then
     has_token=1
   fi
-  if [[ -n "${TF_VAR_sentry_org+x}" ]] || [[ -n "${TF_VAR_SENTRY_ORG+x}" ]]; then
+  if [[ -n "${TF_VAR_sentry_org+x}" ]]; then
     has_org=1
   fi
-  if [[ -n "${TF_VAR_sentry_project+x}" ]] || [[ -n "${TF_VAR_SENTRY_PROJECT+x}" ]]; then
+  if [[ -n "${TF_VAR_sentry_project+x}" ]]; then
     has_project=1
   fi
 
@@ -175,7 +178,7 @@ preflight_sentry_upload_requirements() {
 }
 
 warn_if_sentry_tf_var_missing() {
-  if [[ -z "${TF_VAR_sentry_auth_token+x}" ]] && [[ -z "${TF_VAR_SENTRY_AUTH_TOKEN+x}" ]]; then
+  if [[ -z "${TF_VAR_sentry_auth_token+x}" ]]; then
     echo "Warning: TF_VAR_sentry_auth_token is not set." >&2
     echo "Warning: Bootstrap will not write GitHub environment secret SENTRY_AUTH_TOKEN." >&2
     echo "Warning: Deploy/preview workflows will fail at Sentry sourcemap upload." >&2
@@ -316,8 +319,8 @@ run_foundation_apply() {
 
 load_dotenv_if_present
 map_common_env_to_tf_vars
+preflight_recaptcha_requirements
 set_github_tf_vars_from_origin
-normalize_tf_var_names
 preflight_explicit_tf_var_secrets
 preflight_sentry_upload_requirements
 warn_if_sentry_tf_var_missing
