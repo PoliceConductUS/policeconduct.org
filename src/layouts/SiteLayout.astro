@@ -78,7 +78,6 @@ const isActivePath = (href: string) =>
 <!doctype html>
 <html class="h-100" lang="en">
   <head>
-    <GoogleAnalytics />
     <Sentry />
     <meta charset="utf-8" />
     <meta
@@ -140,6 +139,7 @@ const isActivePath = (href: string) =>
         : null
     }
     <title>{title}</title>
+    <GoogleAnalytics />
   </head>
   <body data-bs-spy="scroll" data-bs-target="#navScroll">
     <nav
