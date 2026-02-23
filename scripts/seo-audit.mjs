@@ -45,16 +45,24 @@ const extract = (html, regex) => {
 
 const walkHtmlFiles = async (dir) => {
   const results = [];
-  const entries = await fs.readdir(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      const nested = await walkHtmlFiles(fullPath);
-      results.push(...nested);
-    } else if (entry.isFile() && entry.name.endsWith(".html")) {
-      results.push(fullPath);
+  const dirs = [dir];
+
+  while (dirs.length > 0) {
+    const currentDir = dirs.pop();
+    if (!currentDir) {
+      continue;
+    }
+    const entries = await fs.readdir(currentDir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        dirs.push(fullPath);
+      } else if (entry.isFile() && entry.name.endsWith(".html")) {
+        results.push(fullPath);
+      }
     }
   }
+
   return results;
 };
 

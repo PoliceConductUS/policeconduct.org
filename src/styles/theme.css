@@ -8604,6 +8604,17 @@ fieldset:disabled .btn {
   color: #6c757d !important;
 }
 
+/* Ensure muted text stays readable on common section backgrounds. */
+.bg-gray-100 .text-muted {
+  color: #495057 !important;
+}
+
+.bg-gray-900 .text-secondary,
+.bg-gray-900 .text-muted,
+.bg-gray-900 a.text-muted {
+  color: #ced4da !important;
+}
+
 .text-black-50 {
   --bs-text-opacity: 1;
   color: rgba(21, 21, 21, 0.5) !important;
