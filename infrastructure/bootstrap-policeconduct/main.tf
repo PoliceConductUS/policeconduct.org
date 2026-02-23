@@ -115,7 +115,6 @@ locals {
   sentry_project                      = var.sentry_project == null || trimspace(var.sentry_project) == "" ? null : trimspace(var.sentry_project)
   sentry_auth_token                   = var.sentry_auth_token == null || trimspace(var.sentry_auth_token) == "" ? null : trimspace(var.sentry_auth_token)
   recaptcha_enterprise_project_id     = var.recaptcha_enterprise_project_id == null || trimspace(var.recaptcha_enterprise_project_id) == "" ? null : trimspace(var.recaptcha_enterprise_project_id)
-  recaptcha_enterprise_api_key        = var.recaptcha_enterprise_api_key == null || trimspace(var.recaptcha_enterprise_api_key) == "" ? null : trimspace(var.recaptcha_enterprise_api_key)
   public_recaptcha_site_key           = var.public_recaptcha_site_key == null || trimspace(var.public_recaptcha_site_key) == "" ? null : trimspace(var.public_recaptcha_site_key)
   has_sentry_auth_token               = nonsensitive(local.sentry_auth_token != null)
   github_environment_names            = toset(["production", "preview"])
@@ -855,6 +854,15 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
   }
 
   statement {
+    sid    = "ReadRecaptchaServiceAccountSecret"
+    effect = "Allow"
+    actions = [
+      "secretsmanager:GetSecretValue",
+    ]
+    resources = [var.recaptcha_service_account_secret_arn]
+  }
+
+  statement {
     sid    = "DraftBucketKmsEncrypt"
     effect = "Allow"
     actions = [
@@ -990,18 +998,18 @@ resource "aws_lambda_function" "forms_api_prod" {
 
   environment {
     variables = {
-      DRAFTS_BUCKET          = aws_s3_bucket.forms_drafts.id
-      DRAFTS_KMS_KEY_ID      = aws_kms_key.forms_drafts.arn
-      DRAFTS_PREFIX          = "drafts/"
-      SUBMISSIONS_BUCKET     = aws_s3_bucket.forms_submissions.id
-      SUBMISSIONS_KMS_KEY_ID = aws_kms_key.forms_submissions.arn
-      SUBMISSIONS_PREFIX     = "submissions/"
-      RECAPTCHA_ENTERPRISE_PROJECT_ID = local.recaptcha_enterprise_project_id == null ? "" : local.recaptcha_enterprise_project_id
-      RECAPTCHA_ENTERPRISE_API_KEY    = local.recaptcha_enterprise_api_key == null ? "" : local.recaptcha_enterprise_api_key
-      RECAPTCHA_ENTERPRISE_SITE_KEY   = local.public_recaptcha_site_key == null ? "" : local.public_recaptcha_site_key
-      RECAPTCHA_ENTERPRISE_MIN_SCORE  = tostring(var.recaptcha_enterprise_min_score)
-      DRAFT_ACTIVE_WINDOW_MS = tostring(var.forms_draft_active_window_seconds * 1000)
-      MAX_DRAFT_BYTES        = tostring(var.forms_draft_max_bytes)
+      DRAFTS_BUCKET                        = aws_s3_bucket.forms_drafts.id
+      DRAFTS_KMS_KEY_ID                    = aws_kms_key.forms_drafts.arn
+      DRAFTS_PREFIX                        = "drafts/"
+      SUBMISSIONS_BUCKET                   = aws_s3_bucket.forms_submissions.id
+      SUBMISSIONS_KMS_KEY_ID               = aws_kms_key.forms_submissions.arn
+      SUBMISSIONS_PREFIX                   = "submissions/"
+      RECAPTCHA_SERVICE_ACCOUNT_SECRET_ARN = var.recaptcha_service_account_secret_arn
+      RECAPTCHA_ENTERPRISE_PROJECT_ID      = local.recaptcha_enterprise_project_id == null ? "" : local.recaptcha_enterprise_project_id
+      RECAPTCHA_ENTERPRISE_SITE_KEY        = local.public_recaptcha_site_key == null ? "" : local.public_recaptcha_site_key
+      RECAPTCHA_ENTERPRISE_MIN_SCORE       = tostring(var.recaptcha_enterprise_min_score)
+      DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
+      MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
     }
   }
 }
@@ -1018,18 +1026,18 @@ resource "aws_lambda_function" "forms_api_preview" {
 
   environment {
     variables = {
-      DRAFTS_BUCKET          = aws_s3_bucket.forms_drafts_preview.id
-      DRAFTS_KMS_KEY_ID      = aws_kms_key.forms_drafts_preview.arn
-      DRAFTS_PREFIX          = "drafts/"
-      SUBMISSIONS_BUCKET     = aws_s3_bucket.forms_submissions_preview.id
-      SUBMISSIONS_KMS_KEY_ID = aws_kms_key.forms_submissions_preview.arn
-      SUBMISSIONS_PREFIX     = "submissions/"
-      RECAPTCHA_ENTERPRISE_PROJECT_ID = local.recaptcha_enterprise_project_id == null ? "" : local.recaptcha_enterprise_project_id
-      RECAPTCHA_ENTERPRISE_API_KEY    = local.recaptcha_enterprise_api_key == null ? "" : local.recaptcha_enterprise_api_key
-      RECAPTCHA_ENTERPRISE_SITE_KEY   = local.public_recaptcha_site_key == null ? "" : local.public_recaptcha_site_key
-      RECAPTCHA_ENTERPRISE_MIN_SCORE  = tostring(var.recaptcha_enterprise_min_score)
-      DRAFT_ACTIVE_WINDOW_MS = tostring(var.forms_draft_active_window_seconds * 1000)
-      MAX_DRAFT_BYTES        = tostring(var.forms_draft_max_bytes)
+      DRAFTS_BUCKET                        = aws_s3_bucket.forms_drafts_preview.id
+      DRAFTS_KMS_KEY_ID                    = aws_kms_key.forms_drafts_preview.arn
+      DRAFTS_PREFIX                        = "drafts/"
+      SUBMISSIONS_BUCKET                   = aws_s3_bucket.forms_submissions_preview.id
+      SUBMISSIONS_KMS_KEY_ID               = aws_kms_key.forms_submissions_preview.arn
+      SUBMISSIONS_PREFIX                   = "submissions/"
+      RECAPTCHA_SERVICE_ACCOUNT_SECRET_ARN = var.recaptcha_service_account_secret_arn
+      RECAPTCHA_ENTERPRISE_PROJECT_ID      = local.recaptcha_enterprise_project_id == null ? "" : local.recaptcha_enterprise_project_id
+      RECAPTCHA_ENTERPRISE_SITE_KEY        = local.public_recaptcha_site_key == null ? "" : local.public_recaptcha_site_key
+      RECAPTCHA_ENTERPRISE_MIN_SCORE       = tostring(var.recaptcha_enterprise_min_score)
+      DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
+      MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
     }
   }
 }
@@ -1621,7 +1629,30 @@ function handler(event) {
   var host = request.headers.host && request.headers.host.value ? request.headers.host.value.toLowerCase() : '';
   var redirectDomains = ${jsonencode(local.redirect_domain_set)};
   var redirectTarget = ${jsonencode(local.redirect_target_url)};
+  var apexHost = ${jsonencode(var.domain_name)};
+  var wwwHost = ${jsonencode(local.www_domain)};
+  var enforceWwwRedirect = ${local.include_www ? "true" : "false"};
   var uri = request.uri;
+  var qs = '';
+
+  if (request.querystring) {
+    var keys = Object.keys(request.querystring);
+    if (keys.length > 0) {
+      var parts = [];
+      for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        var item = request.querystring[key];
+        if (item.multiValue && item.multiValue.length > 0) {
+          for (var j = 0; j < item.multiValue.length; j++) {
+            parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(item.multiValue[j].value || ''));
+          }
+        } else {
+          parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(item.value || ''));
+        }
+      }
+      qs = '?' + parts.join('&');
+    }
+  }
 
   if (redirectTarget && redirectDomains[host]) {
     return {
@@ -1629,6 +1660,17 @@ function handler(event) {
       statusDescription: 'Moved Permanently',
       headers: {
         location: { value: redirectTarget },
+        'cache-control': { value: 'public, max-age=3600' }
+      }
+    };
+  }
+
+  if (enforceWwwRedirect && host === apexHost) {
+    return {
+      statusCode: 301,
+      statusDescription: 'Moved Permanently',
+      headers: {
+        location: { value: 'https://' + wwwHost + uri + qs },
         'cache-control': { value: 'public, max-age=3600' }
       }
     };

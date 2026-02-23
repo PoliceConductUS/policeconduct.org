@@ -75,6 +75,7 @@ export type ReportDetailModel = {
   tags: string[];
   officers: ReportOfficerEntry[];
   evidenceLinks: {
+    id: string;
     title: string;
     url: string;
     embed: string | null;
@@ -145,15 +146,24 @@ const buildOfficerEntries = (
   });
 };
 
-type EvidenceLink = { title: string; url: string; embed: string | null };
-type EvidenceLinkSource = { title: string; url: string };
+type EvidenceLink = {
+  id: string;
+  title: string;
+  url: string;
+  embed: string | null;
+};
+type EvidenceLinkSource = { id: string; title: string; url: string };
 
 const buildEvidenceLinks = (links: EvidenceLinkSource[]): EvidenceLink[] =>
-  links.map((link) => ({
-    title: link.title,
-    url: link.url,
-    embed: getEmbedUrl(link.url),
-  }));
+  links.map((link) => {
+    const id = assertValue(link.id, "Missing id for review_links row");
+    return {
+      id,
+      title: link.title,
+      url: link.url,
+      embed: getEmbedUrl(link.url),
+    };
+  });
 
 export const loadReportDetail = async (
   slug: string,

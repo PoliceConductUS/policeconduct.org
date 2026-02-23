@@ -9,6 +9,25 @@ npm ci
 npm run dev
 ```
 
+### Local Forms API (Lambda Handler)
+
+Run the forms Lambda locally and proxy `/api` to it from Astro dev:
+
+```bash
+npm run forms:lambda:local
+FORMS_API_PROXY_TARGET=http://127.0.0.1:8787 npm run dev
+```
+
+Defaults:
+
+- Runner host: `127.0.0.1`
+- Runner port: `8787`
+
+Override with:
+
+- `FORMS_LAMBDA_LOCAL_HOST`
+- `FORMS_LAMBDA_LOCAL_PORT`
+
 ## Build
 
 ```bash
@@ -24,6 +43,26 @@ These are emitted into page meta tags:
 
 - `build-commit`
 - `build-commit-dirty`
+
+## Pre-Publish Audits (Manual Deploy Flow)
+
+Run audits against existing `dist/` (no build step):
+
+```bash
+npm run preflight:publish
+```
+
+Run full flow including build:
+
+```bash
+npm run preflight:publish:full
+```
+
+Optional tuning for large sites:
+
+- `SEO_AUDIT_MAX_PAGES` (default `5000`) limits HTML files checked by `seo:audit`.
+- `A11Y_MAX_URLS` (default `200`) limits URLs sampled from sitemap for headless a11y.
+- `A11Y_PORT` (default `4173`) changes local audit server port.
 
 ## Infrastructure
 

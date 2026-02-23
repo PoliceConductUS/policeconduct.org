@@ -72,6 +72,9 @@ Example `.env` keys:
 - `TF_VAR_sentry_org`
 - `TF_VAR_sentry_project`
 - `TF_VAR_sentry_auth_token`
+- `TF_VAR_recaptcha_enterprise_project_id`
+- `TF_VAR_public_recaptcha_site_key`
+- `TF_VAR_recaptcha_service_account_secret_arn`
 - `TF_STATE_BUCKET`
 - `AWS_ROLE_ARN`
 - `S3_BUCKET`

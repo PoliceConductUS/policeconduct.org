@@ -1,0 +1,296 @@
+---
+import SiteLayout from "../../../../../layouts/SiteLayout.astro";
+import { formatLongDate } from "../../../../../lib/format.js";
+import { loadReportDetail } from "../../../../../lib/report-detail.js";
+import { loadReportSummaries } from "../../../../../lib/data/summaries.js";
+import { getReportStateSlug } from "../../../../../lib/report-state-stats.js";
+import { US_STATE_TILES } from "../../../../../lib/geo/states.js";
+import type { ReportSummary } from "../../../../../lib/data/types.js";
+import { getSiteUrl } from "../../../../../lib/structured-data.js";
+
+export async function getStaticPaths() {
+  const reports = await loadReportSummaries();
+  const paths = [];
+
+  for (const report of reports) {
+    const stateSlug = getReportStateSlug(report);
+    if (!stateSlug) {
+      continue;
+    }
+
+    const detail = await loadReportDetail(report.slug);
+    if (!detail) {
+      continue;
+    }
+
+    const embeddableLinks = detail.evidenceLinks.filter((link) =>
+      Boolean(link.embed),
+    );
+    for (const link of embeddableLinks) {
+      paths.push({
+        params: {
+          state: stateSlug,
+          slug: report.slug,
+          videoId: link.id,
+        },
+      });
+    }
+  }
+
+  return paths;
+}
+
+const { state, slug, videoId } = Astro.params;
+const stateSlug = (state as string).toLowerCase();
+const stateCode = stateSlug.toUpperCase();
+const stateMeta = US_STATE_TILES.find((entry) => entry.code === stateCode);
+const stateName = stateMeta?.name || stateCode;
+
+const data = await loadReportDetail(slug);
+if (!data) {
+  throw new Error(`Report ${slug} not found.`);
+}
+
+const primaryAgency = data.officers[0]?.agency;
+if (!primaryAgency) {
+  throw new Error(`Report ${slug} is missing a primary agency.`);
+}
+
+const primaryAgencyCategory = primaryAgency.category as string | null;
+const primaryAgencySlug = primaryAgency.slug as string | null;
+if (!primaryAgencyCategory || !primaryAgencySlug) {
+  throw new Error(`Report ${slug} primary agency is missing category or slug.`);
+}
+
+const reportStateSlug = getReportStateSlug({
+  category: (data.report as ReportSummary).category ?? null,
+  agencySlug: `${primaryAgencyCategory}/${primaryAgencySlug}`,
+});
+if (!reportStateSlug) {
+  throw new Error(`Report ${slug} is not associated with a state.`);
+}
+if (reportStateSlug !== stateSlug) {
+  return Astro.redirect(
+    `/report/${reportStateSlug}/${slug}/watch/${videoId}/`,
+    301,
+  );
+}
+
+const reportTitle =
+  typeof data.report.title === "string" ? data.report.title : "Report";
+const reportPath = `/report/${stateSlug}/${slug}/`;
+const watchPath = `/report/${stateSlug}/${slug}/watch/${videoId}/`;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(watchPath, siteUrl).toString();
+const reportUrl = new URL(reportPath, siteUrl).toString();
+
+const videos = data.evidenceLinks.filter((link) => Boolean(link.embed));
+const videoIndex = videos.findIndex((link) => link.id === videoId);
+if (videoIndex === -1) {
+  throw new Error(`Video ${videoId} not found on report ${slug}.`);
+}
+
+const video = videos[videoIndex]!;
+const prevVideo = videoIndex > 0 ? videos[videoIndex - 1] : null;
+const nextVideo =
+  videoIndex < videos.length - 1 ? videos[videoIndex + 1] : null;
+
+const normalizeIsoDate = (value?: string | Date | null) => {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+};
+
+const stripHtml = (value?: string | null) =>
+  value
+    ? value
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+    : "";
+
+const reportDescription = stripHtml(
+  typeof data.report.description === "string" ? data.report.description : "",
+);
+const createdAtIso = normalizeIsoDate(
+  data.report.created_at as string | Date | null,
+);
+const updatedAtIso = normalizeIsoDate(
+  data.report.updated_at as string | Date | null,
+);
+const incidentDate = data.report.incident_date;
+
+const videoTitle = video.title?.trim() || `Video Evidence ${videoIndex + 1}`;
+const videoDescription =
+  reportDescription || `Evidence video from report: ${reportTitle}.`;
+
+const websiteId = new URL("/", siteUrl).toString();
+const videoObjectId = `${pageUrl}#video`;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": websiteId,
+      url: websiteId,
+      name: "PoliceConduct.org",
+    },
+    {
+      "@type": "WebPage",
+      "@id": pageUrl,
+      url: pageUrl,
+      name: `${videoTitle} | Watch | PoliceConduct.org`,
+      description: videoDescription,
+      isPartOf: { "@id": websiteId },
+      mainEntity: { "@id": videoObjectId },
+    },
+    {
+      "@type": "VideoObject",
+      "@id": videoObjectId,
+      name: videoTitle,
+      description: videoDescription,
+      embedUrl: video.embed,
+      url: pageUrl,
+      isPartOf: {
+        "@type": "Report",
+        name: reportTitle,
+        url: reportUrl,
+      },
+      ...(createdAtIso ? { uploadDate: createdAtIso } : {}),
+      ...(updatedAtIso ? { dateModified: updatedAtIso } : {}),
+    },
+  ],
+};
+---
+
+<SiteLayout
+  title={`${videoTitle} | Watch | PoliceConduct.org`}
+  description={videoDescription}
+  pagePath={watchPath}
+  canonicalUrl={watchPath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-10 col-xl-8">
+            <nav aria-label="Breadcrumb">
+              <ol class="breadcrumb mb-3">
+                <li class="breadcrumb-item">
+                  <a class="link-dark" href="/report/">Reports</a>
+                </li>
+                <li class="breadcrumb-item">
+                  <a class="link-dark" href={`/report/${stateSlug}/`}
+                    >{stateName}</a
+                  >
+                </li>
+                <li class="breadcrumb-item">
+                  <a class="link-dark" href={reportPath}>{reportTitle}</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">
+                  Watch
+                </li>
+              </ol>
+            </nav>
+
+            <p class="text-uppercase small text-muted mb-2">Watch page</p>
+            <h1 class="display-6 fw-bold">{videoTitle}</h1>
+            <p class="lead mb-2">
+              From report: <a class="link-dark" href={reportPath}
+                >{reportTitle}</a>
+            </p>
+            {
+              incidentDate ? (
+                <p class="text-muted mb-0">
+                  Incident date: {formatLongDate(incidentDate)}
+                </p>
+              ) : null
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row justify-content-center">
+          <article class="col-12 col-lg-10 col-xl-8">
+            <div class="ratio ratio-16x9 border mb-3">
+              <iframe
+                src={video.embed!}
+                title={videoTitle}
+                allow="
+                  accelerometer;
+                  autoplay;
+                  clipboard-write;
+                  encrypted-media;
+                  gyroscope;
+                  picture-in-picture;
+                  web-share;
+                "
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen></iframe>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mb-4">
+              <a class="btn btn-dark rounded-0" href={reportPath}
+                >Back to report</a
+              >
+              <a
+                class="btn btn-outline-dark rounded-0"
+                href={video.url}
+                target="_blank"
+                rel="noopener">Open original source</a
+              >
+            </div>
+
+            <div
+              class="d-flex flex-wrap justify-content-between gap-2 border-top border-bottom py-3 mb-4"
+            >
+              {
+                prevVideo ? (
+                  <a
+                    class="link-dark fw-semibold"
+                    href={`/report/${stateSlug}/${slug}/watch/${prevVideo.id}/`}
+                  >
+                    Previous video
+                  </a>
+                ) : (
+                  <span class="text-muted">Previous video</span>
+                )
+              }
+              {
+                nextVideo ? (
+                  <a
+                    class="link-dark fw-semibold"
+                    href={`/report/${stateSlug}/${slug}/watch/${nextVideo.id}/`}
+                  >
+                    Next video
+                  </a>
+                ) : (
+                  <span class="text-muted">Next video</span>
+                )
+              }
+            </div>
+
+            <div class="small text-muted">
+              <p class="mb-1">
+                Evidence links are user-submitted and published for
+                transparency. Publication does not imply endorsement.
+              </p>
+              <p class="mb-0">
+                See our <a
+                  class="link-secondary"
+                  href="/legal-notice/terms-of-service">Terms of Service</a
+                > for full disclaimers.
+              </p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>

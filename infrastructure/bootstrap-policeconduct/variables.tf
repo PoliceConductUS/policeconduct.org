@@ -239,11 +239,14 @@ variable "public_recaptcha_site_key" {
   default     = null
 }
 
-variable "recaptcha_enterprise_api_key" {
-  description = "Google API key used by Lambda to call reCAPTCHA Enterprise assessments."
+variable "recaptcha_service_account_secret_arn" {
+  description = "AWS Secrets Manager ARN containing Google service account JSON used for reCAPTCHA Enterprise assessment calls."
   type        = string
-  default     = null
-  sensitive   = true
+
+  validation {
+    condition     = trimspace(var.recaptcha_service_account_secret_arn) != ""
+    error_message = "recaptcha_service_account_secret_arn must be set to a non-empty Secrets Manager ARN."
+  }
 }
 
 variable "recaptcha_enterprise_min_score" {

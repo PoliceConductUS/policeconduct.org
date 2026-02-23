@@ -6,8 +6,13 @@
     "astro": "astro",
     "build": "node scripts/validate-build-env.mjs && GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-$(git rev-parse --short=12 HEAD)} GIT_COMMIT_DIRTY=${GIT_COMMIT_DIRTY:-$(if git diff --quiet HEAD -- && [ -z \"$(git ls-files --others --exclude-standard)\" ]; then echo 0; else echo 1; fi)} astro build",
     "dev": "astro dev",
+    "forms:lambda:local": "node scripts/run-forms-lambda-local.mjs",
     "deploy:prod": "bash scripts/deploy-prod.sh",
     "deploy:preview": "bash scripts/deploy-preview.sh",
+    "seo:audit": "node scripts/seo-audit.mjs",
+    "audit:a11y": "node scripts/audit-dist.mjs",
+    "preflight:publish": "npm run seo:audit && npm run audit:a11y",
+    "preflight:publish:full": "npm run build && npm run preflight:publish",
     "format": "prettier --write .",
     "preview": "astro preview"
   },
@@ -20,7 +25,9 @@
     "pg": "^8.18.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@astrojs/check": "^0.9.6",
+    "@playwright/test": "^1.51.1",
     "@types/pg": "^8.16.0",
     "prettier": "^3.8.1",
     "prettier-plugin-astro": "^0.14.1"

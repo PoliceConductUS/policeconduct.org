@@ -4,6 +4,7 @@ This repo uses two Terraform entrypoints:
 
 1. `infrastructure/bootstrap` (policeconduct.org foundation + static-site infra)
 2. `infrastructure/bootstrap-iceconduct` (independent iceconduct.org redirect infra)
+3. `infrastructure/bootstrap-recaptcha` (independent Google reCAPTCHA Enterprise infra)
 
 ## Zero-to-Deploy
 
@@ -117,3 +118,4 @@ Credentials used by deploy workflows:
 
 1. `infrastructure/bootstrap/README.md`
 2. `infrastructure/bootstrap-iceconduct/`
+3. `infrastructure/bootstrap-recaptcha/`

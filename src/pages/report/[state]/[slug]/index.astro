@@ -429,6 +429,16 @@ const ratedOfficers = officers
                           />
                         </div>
                       ) : null}
+                      {link.embed ? (
+                        <p class="mt-2 mb-0">
+                          <a
+                            class="link-dark fw-semibold"
+                            href={`/report/${stateSlug}/${slug}/watch/${link.id}/`}
+                          >
+                            Watch page
+                          </a>
+                        </p>
+                      ) : null}
                     </div>
                   ))}
                 </>
