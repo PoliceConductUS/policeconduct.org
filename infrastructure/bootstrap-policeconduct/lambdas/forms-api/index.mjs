@@ -358,7 +358,8 @@ async function markDraftSubmitted(draftId, submissionId, requestId, formName) {
   const now = new Date().toISOString();
   const next = {
     ...existing,
-    data: {},
+    data:
+      existing?.data && typeof existing.data === "object" ? existing.data : {},
     updatedAt: now,
     submissionId,
     submittedAt: now,

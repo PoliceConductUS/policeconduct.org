@@ -29,7 +29,7 @@ const faqEntries = [
   {
     question: "Do I need to create an account to file a report?",
     answer:
-      "No. You do not need an account. After you submit, you receive a unique Report ID. Keep it safe because it helps us locate your report later.",
+      "No. You do not need an account. After you submit, you receive a unique Submission ID. Keep it safe because it is required for follow-up and cannot be recovered or displayed again.",
   },
   {
     question: "Do you accept anonymous reports?",
@@ -39,7 +39,7 @@ const faqEntries = [
   {
     question: "How can I check the status of my report or request changes?",
     answer:
-      "Contact our support team and include your Report ID plus the email or phone number used during submission. That information lets us verify your request and locate your report.",
+      "Email hello@policeconduct.org and include your Submission ID, your requested update or question, and the email or phone number you used in the original submission.",
   },
   {
     question: "How long does it take for my report to appear on the site?",
@@ -57,9 +57,9 @@ const faqEntries = [
       "Select Legal/Professional Advocate or Representative, then use the description field to clarify your professional relationship to the participant while honoring their privacy preferences.",
   },
   {
-    question: "What happens if I forget my Report ID?",
+    question: "What happens if I forget my Submission ID?",
     answer:
-      "Contact support using the email or phone number tied to the report. After verifying your identity, we can help recover the Report ID.",
+      "Submission IDs are not recoverable and cannot be displayed again. Submit the form again and include a note that it is a duplicate or follow-up.",
   },
   {
     question: "What do you mean by evidence-forward?",
@@ -181,7 +181,7 @@ const faqEntries = [
   {
     question: "How do I know my report was received?",
     answer:
-      "After submission, the page shows your Report ID. Save it so you can reference the report later.",
+      "After submission, the page shows your Submission ID. Save it in a safe place. You need it for follow-up, and it cannot be recovered or displayed again.",
   },
   {
     question: "What's your corrections policy?",
@@ -397,8 +397,8 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
           >
             <div class="accordion-body">
               No. You do not need an account. After you submit, you receive a
-              unique Report ID. Keep it safe because it helps us locate your
-              report later.
+              unique Submission ID. Keep it safe because it is required for
+              follow-up and cannot be recovered or displayed again.
             </div>
           </div>
         </div>
@@ -452,9 +452,9 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
             data-bs-parent="#faqAccordionTracking"
           >
             <div class="accordion-body">
-              Contact our support team and include your Report ID plus the email
-              or phone number used during submission. That information lets us
-              verify your request and locate your report.
+              Email hello@policeconduct.org and include your Submission ID, your
+              requested update or question, and the email or phone number you
+              used in the original submission.
             </div>
           </div>
         </div>
@@ -553,7 +553,7 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
               aria-expanded="false"
               aria-controls="faqLostIdPanel"
             >
-              What happens if I forget my Report ID?
+              What happens if I forget my Submission ID?
             </button>
           </h2>
           <div
@@ -563,9 +563,9 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
             data-bs-parent="#faqAccordionTracking"
           >
             <div class="accordion-body">
-              Contact support using the email or phone number tied to the
-              report. After verifying your identity, we can help recover the
-              Report ID.
+              Submission IDs are not recoverable and cannot be displayed again.
+              Submit the form again and include a note that it is a duplicate or
+              follow-up.
             </div>
           </div>
         </div>
@@ -1245,8 +1245,9 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
             data-bs-parent="#faqAccordionIntegrity"
           >
             <div class="accordion-body">
-              After submission, the page shows your Report ID. Save it so you
-              can reference the report later.
+              After submission, the page shows your Submission ID. Save it in a
+              safe place. You need it for follow-up, and it cannot be recovered
+              or displayed again.
             </div>
           </div>
         </div>
