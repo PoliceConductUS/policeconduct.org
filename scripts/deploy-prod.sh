@@ -7,7 +7,7 @@ cd "${ROOT_DIR}"
 if [[ -f .env ]]; then
   set -a
   # shellcheck disable=SC1091
-  source .env
+  source .env-policeconduct
   set +a
 fi
 
@@ -16,6 +16,16 @@ fi
 
 npm run build
 aws s3 sync dist/ "s3://${S3_BUCKET}" --delete
-aws cloudfront create-invalidation --distribution-id "${CLOUDFRONT_DIST_ID}" --paths "/*"
+
+if [[ -n "${CLOUDFRONT_INVALIDATION_PATHS:-}" ]]; then
+  # shellcheck disable=SC2206
+  INVALIDATION_PATHS=(${CLOUDFRONT_INVALIDATION_PATHS})
+else
+  INVALIDATION_PATHS=("/*")
+fi
+
+aws cloudfront create-invalidation \
+  --distribution-id "${CLOUDFRONT_DIST_ID}" \
+  --paths "${INVALIDATION_PATHS[@]}"
 
 echo "Production deploy complete."

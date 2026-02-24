@@ -169,6 +169,21 @@ export CLOUDFRONT_DIST_ID=<prod-distribution-id>
 npm run deploy:prod
 ```
 
+Production (explicit alias, includes CloudFront invalidation):
+
+```bash
+export S3_BUCKET=<prod-bucket>
+export CLOUDFRONT_DIST_ID=<prod-distribution-id>
+npm run deploy:prod:invalidate
+```
+
+Optional: invalidate only specific paths instead of `/*`:
+
+```bash
+export CLOUDFRONT_INVALIDATION_PATHS="/about/contact/ /personnel/* /_astro/*"
+npm run deploy:prod
+```
+
 Preview:
 
 ```bash
