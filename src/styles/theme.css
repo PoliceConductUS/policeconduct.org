@@ -8604,6 +8604,10 @@ fieldset:disabled .btn {
   color: #6c757d !important;
 }
 
+.breadcrumb-item.active {
+  color: #495057;
+}
+
 /* Ensure muted text stays readable on common section backgrounds. */
 .bg-gray-100 .text-muted {
   color: #495057 !important;

@@ -254,6 +254,33 @@ const main = async () => {
             console.error(
               `  - [${violation.impact || "unknown"}] ${violation.id}: ${violation.help}`,
             );
+            for (const node of violation.nodes || []) {
+              const targetText = Array.isArray(node.target)
+                ? node.target.join(", ")
+                : String(node.target || "");
+              const htmlSnippet =
+                typeof node.html === "string"
+                  ? node.html.replace(/\s+/g, " ").trim().slice(0, 240)
+                  : "";
+              const failureSummary =
+                typeof node.failureSummary === "string"
+                  ? node.failureSummary
+                      .split("\n")
+                      .map((line) => line.trim())
+                      .filter(Boolean)
+                      .join(" | ")
+                      .slice(0, 400)
+                  : "";
+              console.error(
+                `    - target: ${targetText || "(unknown selector)"}`,
+              );
+              if (htmlSnippet) {
+                console.error(`      html: ${htmlSnippet}`);
+              }
+              if (failureSummary) {
+                console.error(`      details: ${failureSummary}`);
+              }
+            }
           }
         } else {
           console.error(`- ${getPathname(failure.url)}: ${failure.message}`);
