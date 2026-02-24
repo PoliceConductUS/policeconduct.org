@@ -204,6 +204,22 @@ const reportItems = data.reports.map(
 const officerPath = `/personnel/${data.officer.slug}/`;
 const officerName =
   `${data.officer.first_name} ${data.officer.last_name}`.trim();
+const deceasedOnValue = data.officer.deceased_on;
+const isDeceased = Boolean(deceasedOnValue);
+const deceasedOnDisplay = deceasedOnValue
+  ? formatShortDate(String(deceasedOnValue))
+  : null;
+const deceasedPublicMessage =
+  (typeof data.officer.deceased_message === "string"
+    ? data.officer.deceased_message.trim()
+    : "") ||
+  (deceasedOnDisplay
+    ? `Reported deceased on ${deceasedOnDisplay}.`
+    : "This individual is reported deceased.");
+const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${data.officer.first_name} ${data.officer.last_name} | ${currentAgency!.name}`;
+const pageDescription = isDeceased
+  ? `${officerName} is marked deceased${deceasedOnDisplay ? ` (reported death date: ${deceasedOnDisplay})` : ""}. Public profile compiled from public records and community submitted reports.`
+  : `Public profile for ${data.officer.first_name} ${data.officer.last_name}, compiled from public records and community submitted reports.`;
 const addCivilCaseHref = `/civil-litigation/new/?${new URLSearchParams({
   path: officerPath,
   state: currentAgency?.category?.toLowerCase() || "",
@@ -259,6 +275,7 @@ const person = {
   name: officerName,
   url: pageUrl,
   image: new URL(personnelImageSrc, siteUrl).toString(),
+  ...(isDeceased ? { deathDate: String(deceasedOnValue) } : {}),
   ...(organization ? { worksFor: { "@id": organization["@id"] } } : {}),
 };
 const structuredData = {
@@ -274,8 +291,8 @@ const structuredData = {
       "@type": "ProfilePage",
       "@id": pageUrl,
       url: pageUrl,
-      name: `Personnel ${data.officer.first_name} ${data.officer.last_name} | ${currentAgency!.name}`,
-      description: `Public profile for ${data.officer.first_name} ${data.officer.last_name}, compiled from public records and community submitted reports.`,
+      name: pageTitle,
+      description: pageDescription,
       isPartOf: { "@id": new URL("/", siteUrl).toString() },
       mainEntity: { "@id": person["@id"] },
     },
@@ -286,10 +303,8 @@ const structuredData = {
 ---
 
 <SiteLayout
-  title={`Personnel ${data.officer.first_name} ${data.officer.last_name} | ${
-    currentAgency!.name
-  }`}
-  description={`Public profile for ${data.officer.first_name} ${data.officer.last_name}, compiled from public records and community submitted reports.`}
+  title={pageTitle}
+  description={pageDescription}
   pagePath={`/personnel/${data.officer.slug}/`}
   structuredData={structuredData}
 >
@@ -319,6 +334,14 @@ const structuredData = {
               {data.officer.first_name}
               {data.officer.last_name}
             </h1>
+            {
+              isDeceased ? (
+                <div class="alert alert-secondary border-dark rounded-0 mb-3" role="status">
+                  <p class="mb-1 fw-semibold">Status: Deceased.</p>
+                  <p class="mb-0">{deceasedPublicMessage}</p>
+                </div>
+              ) : null
+            }
             <p class="text-muted small mb-0">
               Last updated {formatShortDate(data.officer.updated_at)}. Compiled
               from public records and community submitted reports.
