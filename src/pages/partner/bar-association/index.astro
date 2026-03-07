@@ -214,7 +214,14 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
                 </p>
                 <a
                   class="btn btn-dark rounded-0"
-                  href="/about/contact?whoami=Partner&message=I%27m%20interested%20in%20the%20Legal%20Ethics%20Advisory%20Board%20for%20bar%20associations."
+                  href="/about/contact/"
+                  target="_self"
+                  data-prefill-key="prefill:contact"
+                  data-prefill-payload={JSON.stringify({
+                    whoami: "Partner",
+                    message:
+                      "I am interested in the Legal Ethics Advisory Board for bar associations.",
+                  })}
                 >
                   Join the advisory board
                 </a>

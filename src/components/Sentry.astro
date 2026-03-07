@@ -1,57 +1,61 @@
 ---
 const sentryDsn =
-  typeof process.env.SENTRY_DSN === "string"
-    ? process.env.SENTRY_DSN.trim()
-    : "";
+    typeof process.env.SENTRY_DSN === "string"
+        ? process.env.SENTRY_DSN.trim()
+        : "";
 const sentryEnvironment =
-  typeof process.env.SENTRY_ENVIRONMENT === "string" &&
-  process.env.SENTRY_ENVIRONMENT.trim().length > 0
-    ? process.env.SENTRY_ENVIRONMENT.trim()
-    : "production";
+    typeof process.env.SENTRY_ENVIRONMENT === "string" &&
+    process.env.SENTRY_ENVIRONMENT.trim().length > 0
+        ? process.env.SENTRY_ENVIRONMENT.trim()
+        : "production";
 const sentryRelease = (
-  process.env.GIT_COMMIT_SHA ||
-  process.env.GITHUB_SHA ||
-  "unknown"
+    process.env.GIT_COMMIT_SHA ||
+    process.env.GITHUB_SHA ||
+    "unknown"
 ).trim();
 const sentryCdnKey = (() => {
-  const start = sentryDsn.indexOf("//");
-  if (start === -1) return "";
+    const start = sentryDsn.indexOf("//");
+    if (start === -1) return "";
 
-  const end = sentryDsn.indexOf("@", start + 2);
-  if (end === -1) return "";
+    const end = sentryDsn.indexOf("@", start + 2);
+    if (end === -1) return "";
 
-  return sentryDsn.slice(start + 2, end);
+    return sentryDsn.slice(start + 2, end);
 })();
 const sentryEnabled = sentryDsn.length > 0 && sentryCdnKey.length > 0;
 ---
 
 {
-  sentryEnabled && (
+    sentryEnabled && (
     <>
-      <script
-        type="text/javascript"
-        is:inline
-        src={`https://js.sentry-cdn.com/${sentryCdnKey}.min.js`}
-        crossorigin="anonymous"
-      />
-      <script
-        type="text/javascript"
-        is:inline
-        define:vars={{
-          sentryDsn,
-          sentryEnvironment,
-          sentryRelease,
-        }}
-      >
-        if (typeof window.Sentry !== "undefined") {
-          window.Sentry.init({
-            dsn: sentryDsn,
-            environment: sentryEnvironment,
-            release: sentryRelease,
-            tracesSampleRate: 0,
-          });
-        }
-      </script>
+        <script
+                type="text/javascript"
+                is:inline
+                src={`https://js.sentry-cdn.com/${sentryCdnKey}.min.js`}
+                crossorigin="anonymous"
+        />
+        <script
+                type="text/javascript"
+                is:inline
+                define:vars={{
+                    sentryDsn,
+                    sentryEnvironment,
+                    sentryRelease,
+                }}
+        >
+            if (typeof window.Sentry !== "undefined") {
+                window.Sentry.init({
+                    dsn: sentryDsn,
+                    enableLogs: true,
+                    environment: sentryEnvironment,
+                    integrations: [
+                        window.Sentry.consoleLoggingIntegration({levels: ["log", "warn", "error"]}),
+                    ],
+                    release: sentryRelease,
+                    tracesSampleRate: 0,
+                });
+            }
+        </script>
     </>
-  )
-}
+        )
+    }

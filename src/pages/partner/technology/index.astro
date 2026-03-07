@@ -232,7 +232,14 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
           </div>
           <a
             class="btn btn-dark rounded-0"
-            href="/about/contact?whoami=Partner&message=I%27m%20interested%20in%20the%20PoliceConduct%20Open%20Data%20Schema%20and%20a%20technical%20specifications%20abstract."
+            href="/about/contact/"
+            target="_self"
+            data-prefill-key="prefill:contact"
+            data-prefill-payload={JSON.stringify({
+              whoami: "Partner",
+              message:
+                "I am interested in the PoliceConduct Open Data Schema and a technical specifications abstract.",
+            })}
           >
             Request the technical brief
           </a>

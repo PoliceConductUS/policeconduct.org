@@ -220,22 +220,26 @@ const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${data.officer.fir
 const pageDescription = isDeceased
   ? `${officerName} is marked deceased${deceasedOnDisplay ? ` (reported death date: ${deceasedOnDisplay})` : ""}. Public profile compiled from public records and community submitted reports.`
   : `Public profile for ${data.officer.first_name} ${data.officer.last_name}, compiled from public records and community submitted reports.`;
-const addCivilCaseHref = `/civil-litigation/new/?${new URLSearchParams({
-  path: officerPath,
-  state: currentAgency?.category?.toLowerCase() || "",
-  message: `Add civil case referencing ${officerName}`,
-}).toString()}`;
-const reportHref = `/report/new/?${new URLSearchParams({
-  department: currentAgency?.name || "",
-  officerName,
-  path: officerPath,
-  message: `Submit report for ${officerName}`,
-}).toString()}`;
-const pastEmployerHref = `/personnel/new/?${new URLSearchParams({
-  agency: currentAgency?.name || "",
-  path: officerPath,
-  message: `Submit past employer information for ${officerName}`,
-}).toString()}`;
+const addCivilCaseHref = "/civil-litigation/new/";
+const addCivilCasePrefillPayload = JSON.stringify({
+  jurisdiction: currentAgency?.category?.toLowerCase() || "",
+});
+const reportHref = "/report/new/";
+const reportPrefillPayload = JSON.stringify({
+  "officers[0][department]": currentAgency?.name || "",
+  "officers[0][name]": officerName,
+});
+const pastEmployerHref = "/personnel/new/";
+const pastEmployerPrefillPayload = JSON.stringify({
+  currentAgency: currentAgency?.name || "",
+});
+const suggestEditHref = "/personnel/suggest-edit/";
+const suggestEditPrefillPayload = JSON.stringify({ officerPath });
+const claimProfileHref = "/about/contact/";
+const claimProfilePrefillPayload = JSON.stringify({
+  whoami: "Profile Owner",
+  message: `I would like to claim ownership of this profile.\nProfile path: ${officerPath}`,
+});
 
 const pastEmployers = history
   .slice(0, -1)
@@ -336,7 +340,10 @@ const structuredData = {
             </h1>
             {
               isDeceased ? (
-                <div class="alert alert-secondary border-dark rounded-0 mb-3" role="status">
+                <div
+                  class="alert alert-secondary border-dark rounded-0 mb-3"
+                  role="status"
+                >
                   <p class="mb-1 fw-semibold">Status: Deceased.</p>
                   <p class="mb-0">{deceasedPublicMessage}</p>
                 </div>
@@ -392,17 +399,26 @@ const structuredData = {
                 <div class="d-flex flex-wrap gap-2 mt-3">
                   <a
                     class="btn btn-dark rounded-0"
-                    href={`/report/new/?department=${encodeURIComponent(
-                      currentAgency!.name,
-                    )}&officerName=${encodeURIComponent(
-                      `${data.officer.first_name} ${data.officer.last_name}`,
-                    )}`}
+                    href="/report/new/"
+                    target="_self"
+                    data-prefill-key="prefill:reportNew"
+                    data-prefill-payload={JSON.stringify({
+                      "officers[0][department]": currentAgency!.name,
+                      "officers[0][name]": `${data.officer.first_name} ${data.officer.last_name}`,
+                    })}
                   >
                     Submit Report
                   </a>
                   <a
                     class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
-                    href={`/about/contact?whoami=Subscriber&message=Please%20notify%20of%20any%20changes%20to%20the%20following%20page(s):%20/personnel/${data.officer.slug}/`}
+                    href="/about/contact/"
+                    target="_self"
+                    data-testid="personnel-subscribe-link"
+                    data-prefill-key="prefill:contact"
+                    data-prefill-payload={JSON.stringify({
+                      whoami: "Subscriber",
+                      message: `Please notify of any changes to the following page(s): /personnel/${data.officer.slug}/`,
+                    })}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -469,15 +485,24 @@ const structuredData = {
               litigation={{
                 cases: civilCasesWithPaths,
                 ctaHref: addCivilCaseHref,
+                ctaTarget: "_self",
+                ctaPrefillKey: "prefill:civilLitigationNew",
+                ctaPrefillPayload: addCivilCasePrefillPayload,
               }}
               reports={{
                 items: reportItems,
                 ctaHref: reportHref,
+                ctaTarget: "_self",
+                ctaPrefillKey: "prefill:reportNew",
+                ctaPrefillPayload: reportPrefillPayload,
                 layout: "table",
               }}
               pastEmployers={{
                 entries: pastEmployers,
                 ctaHref: pastEmployerHref,
+                ctaTarget: "_self",
+                ctaPrefillKey: "prefill:personnelNew",
+                ctaPrefillPayload: pastEmployerPrefillPayload,
               }}
             />
 
@@ -499,7 +524,10 @@ const structuredData = {
               <div class="d-flex flex-wrap gap-2">
                 <a
                   class="btn btn-outline-dark rounded-0"
-                  href={`/personnel/suggest-edit/?path=/personnel/${data.officer.slug}/`}
+                  href={suggestEditHref}
+                  target="_self"
+                  data-prefill-key="prefill:personnelSuggestEdit"
+                  data-prefill-payload={suggestEditPrefillPayload}
                 >
                   Suggest Edit
                 </a>
@@ -507,7 +535,11 @@ const structuredData = {
               <div class="mt-2">
                 <a
                   class="link-dark small"
-                  href={`/about/contact?whoami=Profile%20Owner&message=I%20would%20like%20to%20claim%20ownership%20of%20this%20profile.%0AProfile%20path:%20/personnel/${data.officer.slug}/`}
+                  href={claimProfileHref}
+                  target="_self"
+                  data-testid="personnel-claim-profile-link"
+                  data-prefill-key="prefill:contact"
+                  data-prefill-payload={claimProfilePrefillPayload}
                 >
                   Claim this profile
                 </a>

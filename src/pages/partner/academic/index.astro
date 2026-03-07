@@ -223,7 +223,14 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
           </div>
           <a
             class="btn btn-dark rounded-0"
-            href="/about/contact?whoami=Partner&message=I%27m%20interested%20in%20a%20letter%20of%20support%20for%20a%20research%20grant%20proposal."
+            href="/about/contact/"
+            target="_self"
+            data-prefill-key="prefill:contact"
+            data-prefill-payload={JSON.stringify({
+              whoami: "Partner",
+              message:
+                "I am interested in a letter of support for a research grant proposal.",
+            })}
           >
             Request a letter of support
           </a>

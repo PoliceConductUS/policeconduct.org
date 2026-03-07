@@ -275,7 +275,14 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
                 </p>
                 <a
                   class="btn btn-dark rounded-0"
-                  href="/about/contact?whoami=Partner&message=I%27m%20interested%20in%20a%20Resilient%20Agency%20Framework%20briefing%20memo%20for%20my%20city."
+                  href="/about/contact/"
+                  target="_self"
+                  data-prefill-key="prefill:contact"
+                  data-prefill-payload={JSON.stringify({
+                    whoami: "Partner",
+                    message:
+                      "I am interested in a Resilient Agency Framework briefing memo for my city.",
+                  })}
                 >
                   Request the briefing memo
                 </a>

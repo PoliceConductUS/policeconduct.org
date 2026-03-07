@@ -36,3 +36,4 @@ crash.log
 *.tfvars
 !infrastructure/bootstrap/terraform.tfvars.example
 infrastructure/bootstrap/lambdas/*.zip
+forms-api.zip

@@ -53,7 +53,7 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
                 aria-label="I am a/an"
                 required
               >
-                <option selected disabled>Choose one</option>
+                <option value="" selected disabled>Choose one</option>
                 <option value="individual">
                   Individual with a complaint or commendation
                 </option>
@@ -163,34 +163,20 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
       if (!select) {
         return;
       }
-      const params = new URLSearchParams(window.location.search);
-      const value = (
-        params.get("whoami") ||
-        params.get("role") ||
-        ""
-      ).toLowerCase();
-      if (!value) {
-        if (messageInput) {
-          const message = params.get("message");
-          if (message && !messageInput.value.trim()) {
-            messageInput.value = message;
-          }
-        }
-        return;
-      }
-      const options = Array.from(select.options);
-      const match = options.find(
-        (opt) =>
-          opt.value.toLowerCase() === value ||
-          opt.textContent.toLowerCase().includes(value),
-      );
-      if (match) {
-        match.selected = true;
-      }
-      if (messageInput) {
-        const message = params.get("message");
-        if (message && !messageInput.value.trim()) {
-          messageInput.value = message;
+      const prefill = window.__IPC_PREFILL__;
+      const result = prefill?.applyToFieldsByName
+        ? prefill.applyToFieldsByName({ key: "prefill:contact" })
+        : { payload: null };
+      const value = String(result?.payload?.whoami || "").toLowerCase();
+      if (value) {
+        const options = Array.from(select.options);
+        const match = options.find(
+          (opt) =>
+            opt.value.toLowerCase() === value ||
+            opt.textContent.toLowerCase().includes(value),
+        );
+        if (match) {
+          match.selected = true;
         }
       }
       if (

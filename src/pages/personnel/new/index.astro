@@ -357,22 +357,24 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
   </script>
   <script is:inline>
     (function () {
-      const params = new URLSearchParams(window.location.search);
-      const mappings = [
-        { param: "agency", elementId: "currentAgency" },
-        { param: "city", elementId: "currentAgencyCity" },
-        { param: "state", elementId: "currentAgencyState" },
-      ];
-      mappings.forEach(({ param, elementId }) => {
-        const element = document.getElementById(elementId);
-        if (!element) {
-          return;
-        }
-        const value = params.get(param);
-        if (value && !element.value.trim()) {
-          element.value = value.trim();
-        }
+      const prefill = window.__IPC_PREFILL__;
+      if (!prefill?.applyToFieldsByName) {
+        return;
+      }
+      const result = prefill.applyToFieldsByName({
+        key: "prefill:personnelNew",
       });
+      if (!result?.payload) return;
+      const stateInput = document.querySelector('[name="currentAgencyState"]');
+      if (
+        stateInput &&
+        typeof result.payload.currentAgencyState === "string" &&
+        result.payload.currentAgencyState.trim()
+      ) {
+        stateInput.value = result.payload.currentAgencyState
+          .trim()
+          .toUpperCase();
+      }
     })();
   </script>
 </SiteLayout>

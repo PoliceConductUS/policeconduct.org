@@ -307,7 +307,14 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
           </div>
           <a
             class="btn btn-dark rounded-0"
-            href="/about/contact?whoami=Partner&message=I%27m%20interested%20in%20a%20creator%20partner%20resource%20kit%20and%20case%20file%20link%20templates."
+            href="/about/contact/"
+            target="_self"
+            data-prefill-key="prefill:contact"
+            data-prefill-payload={JSON.stringify({
+              whoami: "Partner",
+              message:
+                "I am interested in a creator partner resource kit and case file link templates.",
+            })}
           >
             Request the resource kit
           </a>

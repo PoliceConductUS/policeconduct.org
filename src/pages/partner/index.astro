@@ -115,7 +115,13 @@ const partnerTracks = [
                 <div class="d-grid gap-2">
                   <a
                     class="btn btn-dark rounded-0"
-                    href="/about/contact?whoami=partner&message=I%20want%20to%20partner%20with%20PoliceConduct.org"
+                    href="/about/contact/"
+                    target="_self"
+                    data-prefill-key="prefill:contact"
+                    data-prefill-payload={JSON.stringify({
+                      whoami: "Partner",
+                      message: "I want to partner with PoliceConduct.org",
+                    })}
                   >
                     Contact partnerships
                   </a>

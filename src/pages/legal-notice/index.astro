@@ -90,7 +90,13 @@ const documents = [
                 <div class="d-grid gap-2">
                   <a
                     class="btn btn-dark rounded-0"
-                    href="/about/contact?whoami=partner&message=I%20have%20a%20question%20about%20your%20legal%20policies."
+                    href="/about/contact/"
+                    target="_self"
+                    data-prefill-key="prefill:contact"
+                    data-prefill-payload={JSON.stringify({
+                      whoami: "Partner",
+                      message: "I have a question about your legal policies.",
+                    })}
                   >
                     Contact the team
                   </a>

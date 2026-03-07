@@ -197,7 +197,7 @@ const donatePageCopy: DonationPageCopy = {
   clubsTitle: "Giving clubs",
   clubsSubtitle:
     "Giving clubs are recurring (monthly by default), with an annual option if you prefer. Cancel anytime.",
-  clubsContactPath: "/about/contact?whoami=Donor",
+  clubsContactPath: "/about/contact/",
   clubsContactLabel: "Ask about club benefits",
   clubMonthlyButtonLabel: "Give monthly",
   clubAnnualButtonLabel: "Give annually",
@@ -431,6 +431,9 @@ validateStripeHostnames(collectStripeLinks(donatePageConfiguration));
             <a
               class="btn btn-outline-dark rounded-0"
               href={donatePageCopy.clubsContactPath}
+              target="_self"
+              data-prefill-key="prefill:contact"
+              data-prefill-payload={JSON.stringify({ whoami: "Donor" })}
             >
               {donatePageCopy.clubsContactLabel}
             </a>

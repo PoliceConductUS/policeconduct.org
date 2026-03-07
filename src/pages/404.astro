@@ -43,8 +43,10 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         return;
       }
       const message = `Page not found: ${window.location.href}`;
-      const params = new URLSearchParams({ message });
-      link.href = `/issue/new/?${params.toString()}`;
+      link.href = "/issue/new/";
+      link.setAttribute("target", "_self");
+      link.setAttribute("data-prefill-key", "prefill:issueNew");
+      link.setAttribute("data-prefill-payload", JSON.stringify({ message }));
     })();
   </script>
 </SiteLayout>

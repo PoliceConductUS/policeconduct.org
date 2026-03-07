@@ -6,7 +6,7 @@ import Sentry from "../components/Sentry.astro";
 const { title, description, pagePath, canonicalUrl, robots, structuredData } =
   Astro.props;
 const resolvedPath = pagePath || Astro.url?.pathname || "/";
-const encodedPath = encodeURIComponent(resolvedPath);
+const issueMessage = `Issue reported from: ${resolvedPath}`;
 const siteOrigin = (() => {
   const envSite = (process.env.SITE_URL || "").trim();
   if (envSite) {
@@ -110,6 +110,133 @@ const isActivePath = (href: string) =>
     <meta name="build-commit" content={fullCommitSha} />
     <meta name="build-commit-dirty" content={isDirtyBuild ? "true" : "false"} />
     <meta name="HandheldFriendly" content="true" />
+    <script is:inline>
+      (function () {
+        if (window.__IPC_PREFILL__) {
+          return;
+        }
+        const getPrefillErrorArea = (key) => {
+          let area = document.querySelector("[data-prefill-error-area]");
+          if (!area) {
+            area = document.createElement("div");
+            area.setAttribute("data-prefill-error-area", "true");
+            area.className = "d-none";
+            document.body.appendChild(area);
+          }
+          area.setAttribute("data-prefill-last-key", key || "");
+          return area;
+        };
+        const setFieldValue = (field, value) => {
+          if (field instanceof HTMLInputElement) {
+            const type = (field.type || "text").toLowerCase();
+            if (type === "checkbox") {
+              if (typeof value === "boolean") {
+                field.checked = value;
+                return true;
+              }
+              const normalized = String(value).trim().toLowerCase();
+              field.checked =
+                normalized === "true" ||
+                normalized === "1" ||
+                normalized === "yes" ||
+                normalized === "on";
+              return true;
+            }
+            if (type === "radio") {
+              const expected = String(value ?? "").trim();
+              if (field.value === expected) {
+                field.checked = true;
+              }
+              return true;
+            }
+            if (!field.value.trim()) {
+              field.value = String(value ?? "");
+            }
+            return true;
+          }
+          if (field instanceof HTMLTextAreaElement) {
+            if (!field.value.trim()) {
+              field.value = String(value ?? "");
+            }
+            return true;
+          }
+          if (field instanceof HTMLSelectElement) {
+            field.value = String(value ?? "");
+            return true;
+          }
+          return false;
+        };
+        const readAndConsume = function (key) {
+          try {
+            const raw = sessionStorage.getItem(key);
+            if (!raw) return null;
+            sessionStorage.removeItem(key);
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+              return null;
+            return parsed;
+          } catch (_error) {
+            return null;
+          }
+        };
+        const applyToFieldsByName = function ({ key, root, consume = true }) {
+          const targetRoot = root || document;
+          if (!key) {
+            return { applied: false, missing: [], payload: null };
+          }
+          const payload = consume ? readAndConsume(key) : null;
+          if (
+            !payload ||
+            typeof payload !== "object" ||
+            Array.isArray(payload)
+          ) {
+            return { applied: false, missing: [], payload: null };
+          }
+          const missing = [];
+          for (const [name, value] of Object.entries(payload)) {
+            const fields = Array.from(
+              targetRoot.querySelectorAll(`[name="${name}"]`),
+            );
+            if (fields.length === 0) {
+              missing.push(name);
+              continue;
+            }
+            for (const field of fields) {
+              setFieldValue(field, value);
+            }
+          }
+          const area = getPrefillErrorArea(key);
+          if (missing.length > 0) {
+            const details = {
+              key,
+              missing,
+              payloadKeys: Object.keys(payload),
+            };
+            area.setAttribute("data-prefill-error", "true");
+            area.textContent = JSON.stringify(details);
+            console.error("Prefill field mismatch", details);
+          } else {
+            area.removeAttribute("data-prefill-error");
+            area.textContent = "";
+          }
+          return { applied: true, missing, payload };
+        };
+        window.__IPC_PREFILL__ = {
+          set: function (key, payload) {
+            try {
+              sessionStorage.setItem(key, JSON.stringify(payload));
+              return true;
+            } catch (_error) {
+              return false;
+            }
+          },
+          readAndConsume: function (key) {
+            return readAndConsume(key);
+          },
+          applyToFieldsByName,
+        };
+      })();
+    </script>
     <link rel="preconnect" href="https://www.google.com" crossorigin />
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     {
@@ -624,8 +751,12 @@ const isActivePath = (href: string) =>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href={`/issue/new/?message=Issue%20reported%20from%3A%20${encodedPath}`}
-                  >Report Issue 🐞</a
+                  href="/issue/new/"
+                  target="_self"
+                  data-prefill-key="prefill:issueNew"
+                  data-prefill-payload={JSON.stringify({
+                    message: issueMessage,
+                  })}>Report Issue 🐞</a
                 >
               </li>
               <li class="mb-2">
@@ -651,6 +782,28 @@ const isActivePath = (href: string) =>
                   aria-label="Section1983.org (external link, opens in a new tab)"
                 >
                   Section1983.org (external)
+                </a>
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="https://free.law/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Free Law Project (external link, opens in a new tab)"
+                >
+                  Free Law Project (external)
+                </a>
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="https://www.courtlistener.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="CourtListener (external link, opens in a new tab)"
+                >
+                  CourtListener (external)
                 </a>
               </li>
             </ul>

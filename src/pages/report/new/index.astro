@@ -2029,10 +2029,7 @@ const traitsWithRubrics = sortedTraits
     const reportErrorSummary = document.getElementById("reportErrorSummary");
     const descriptionInput = document.getElementById("description");
     const descriptionCount = document.getElementById("descriptionCount");
-    const searchParams = new URLSearchParams(window.location.search);
-    const departmentParam = searchParams.get("department");
-    const officerNameParam = searchParams.get("officerName");
-    const badgeParam = searchParams.get("badge");
+    const prefill = window.__IPC_PREFILL__;
     function addOfficer() {
       const next = officerList.querySelector(".officer-entry.d-none");
       if (!next) {
@@ -2274,26 +2271,11 @@ const traitsWithRubrics = sortedTraits
     updateAddButtons();
     syncRoleFields();
     syncEntryDisabledState();
-    if (departmentParam) {
-      const firstOfficerDepartment = officerList.querySelector(
-        ".officer-entry .officer-department",
-      );
-      if (firstOfficerDepartment && !firstOfficerDepartment.value.trim()) {
-        firstOfficerDepartment.value = departmentParam;
-      }
-    }
-    if (officerNameParam || badgeParam) {
-      const firstOfficer = officerList.querySelector(".officer-entry");
-      if (firstOfficer) {
-        const nameInput = firstOfficer.querySelector(".officer-name");
-        const badgeInput = firstOfficer.querySelector(".officer-badge");
-        if (nameInput && officerNameParam && !nameInput.value.trim()) {
-          nameInput.value = officerNameParam;
-        }
-        if (badgeInput && badgeParam && !badgeInput.value.trim()) {
-          badgeInput.value = badgeParam;
-        }
-      }
+    if (prefill?.applyToFieldsByName) {
+      prefill.applyToFieldsByName({
+        key: "prefill:reportNew",
+        root: form,
+      });
     }
     if (descriptionInput && descriptionCount) {
       const updateDescriptionCount = () => {

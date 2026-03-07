@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.840.0",
-    "@google-cloud/recaptcha-enterprise": "^5.9.0",
-    "google-auth-library": "^9.15.1",
-    "@paralleldrive/cuid2": "^2.2.2"
+    "@aws-sdk/client-s3": "^3.1002.0",
+    "@google-cloud/recaptcha-enterprise": "^6.4.0",
+    "google-auth-library": "^10.6.1",
+    "@paralleldrive/cuid2": "^3.3.0"
   }
 }

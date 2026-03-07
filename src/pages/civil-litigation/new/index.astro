@@ -224,12 +224,19 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
       if (!form) {
         return;
       }
-      const params = new URLSearchParams(window.location.search);
-      const jurisdictionInput = document.getElementById("jurisdiction");
-      if (jurisdictionInput) {
-        const jurisdictionParam = params.get("jurisdiction");
-        if (jurisdictionParam) {
-          const trimmed = jurisdictionParam.trim();
+      const prefill = window.__IPC_PREFILL__;
+      if (prefill?.applyToFieldsByName) {
+        const result = prefill.applyToFieldsByName({
+          key: "prefill:civilLitigationNew",
+          root: form,
+        });
+        const jurisdictionInput = form.querySelector('[name="jurisdiction"]');
+        if (
+          jurisdictionInput &&
+          typeof result?.payload?.jurisdiction === "string" &&
+          result.payload.jurisdiction.trim()
+        ) {
+          const trimmed = result.payload.jurisdiction.trim();
           jurisdictionInput.value =
             trimmed.length === 2 ? trimmed.toUpperCase() : trimmed;
         }

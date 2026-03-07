@@ -280,7 +280,14 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
                 </p>
                 <a
                   class="btn btn-dark rounded-0"
-                  href="/about/contact?whoami=Partner&message=I%27m%20interested%20in%20a%20POST%20Modernization%20Initiative%20use%20case%20for%20my%20state."
+                  href="/about/contact/"
+                  target="_self"
+                  data-prefill-key="prefill:contact"
+                  data-prefill-payload={JSON.stringify({
+                    whoami: "Partner",
+                    message:
+                      "I am interested in a POST Modernization Initiative use case for my state.",
+                  })}
                 >
                   Request a tailored use case
                 </a>

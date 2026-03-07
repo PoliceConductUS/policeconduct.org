@@ -25,10 +25,7 @@ const federalAgencies = agencies.filter(
 );
 const totalAgencies = agencies.length;
 const pagePath = "/law-enforcement-agency/";
-const suggestAgencyHref = `/law-enforcement-agency/new/?${new URLSearchParams({
-  path: "/law-enforcement-agency/",
-  message: "Suggest a new agency",
-}).toString()}`;
+const suggestAgencyHref = "/law-enforcement-agency/new/";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const federalAgencyItems = federalAgencies.map((agency, index) => ({
@@ -79,6 +76,7 @@ if (federalItemList) {
               <a
                 class="btn btn-outline-dark rounded-0"
                 href={suggestAgencyHref}
+                target="_self"
               >
                 Suggest a new agency
               </a>

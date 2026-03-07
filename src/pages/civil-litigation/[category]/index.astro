@@ -306,7 +306,12 @@ const stateName = categoryLabel;
                   </span>
                   <a
                     class="btn btn-dark rounded-0 w-auto"
-                    href={`/civil-litigation/new/?jurisdiction=${categoryParam}`}
+                    href="/civil-litigation/new/"
+                    target="_self"
+                    data-prefill-key="prefill:civilLitigationNew"
+                    data-prefill-payload={JSON.stringify({
+                      jurisdiction: categoryParam,
+                    })}
                   >
                     Add one now
                   </a>

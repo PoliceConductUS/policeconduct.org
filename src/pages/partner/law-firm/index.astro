@@ -265,7 +265,14 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
           </div>
           <a
             class="btn btn-dark rounded-0"
-            href="/about/contact?whoami=Partner&message=I%27m%20interested%20in%20a%20law%20firm%20Notice%20of%20Claim%20template%20using%20PoliceConduct.org%20data."
+            href="/about/contact/"
+            target="_self"
+            data-prefill-key="prefill:contact"
+            data-prefill-payload={JSON.stringify({
+              whoami: "Partner",
+              message:
+                "I am interested in a law firm Notice of Claim template using PoliceConduct.org data.",
+            })}
           >
             Request the Notice of Claim template
           </a>

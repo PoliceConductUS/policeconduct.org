@@ -262,7 +262,14 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
                 </p>
                 <a
                   class="btn btn-dark rounded-0"
-                  href="/about/contact?whoami=Partner&message=I%27m%20interested%20in%20an%20Officer%20Integrity%20Vault%20union%20support%20letter."
+                  href="/about/contact/"
+                  target="_self"
+                  data-prefill-key="prefill:contact"
+                  data-prefill-payload={JSON.stringify({
+                    whoami: "Partner",
+                    message:
+                      "I am interested in an Officer Integrity Vault union support letter.",
+                  })}
                 >
                   Request the union support letter
                 </a>

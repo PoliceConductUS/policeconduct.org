@@ -309,30 +309,31 @@ const categoryPath = categorySlug
   ? `/law-enforcement-agency/${categorySlug}/`
   : "/law-enforcement-agency/";
 const agencyPath = `/law-enforcement-agency/${categorySlug}/${data.agency.slug}/`;
-const addCivilCaseHref = `/civil-litigation/new/?${new URLSearchParams({
-  path: agencyPath,
-  state: data.agency.category?.toLowerCase() || "",
-  message: `Add civil case for ${data.agency.name}`,
-}).toString()}`;
-const suggestEditHref = `/law-enforcement-agency/suggest-edit/?${new URLSearchParams(
-  {
-    path: agencyPath,
-    state: data.agency.category?.toLowerCase() || "",
-    message: `Suggest edit for ${data.agency.name}`,
-  },
-).toString()}`;
-const suggestPersonnelHref = `/personnel/new/?${new URLSearchParams({
+const addCivilCaseHref = "/civil-litigation/new/";
+const addCivilCasePrefillPayload = JSON.stringify({
+  jurisdiction: data.agency.category?.toLowerCase() || "",
+});
+const suggestEditHref = "/law-enforcement-agency/suggest-edit/";
+const suggestEditPrefillPayload = JSON.stringify({
+  agencyPath,
   agency: data.agency.name,
-  city: data.agency.city || "",
-  state: data.agency.state || "",
-  path: agencyPath,
-  message: `Suggest new personnel for ${data.agency.name}`,
-}).toString()}`;
-const reportHeroHref = `/report/new/?${new URLSearchParams({
-  department: data.agency.name,
-  path: agencyPath,
-  message: `Submit report for ${data.agency.name}`,
-}).toString()}`;
+  jurisdiction: data.agency.category?.toLowerCase() || "",
+});
+const suggestPersonnelHref = "/personnel/new/";
+const suggestPersonnelPrefillPayload = JSON.stringify({
+  currentAgency: data.agency.name,
+  currentAgencyCity: data.agency.city || "",
+  currentAgencyState: data.agency.state || "",
+});
+const reportHeroHref = "/report/new/";
+const reportHeroPrefillPayload = JSON.stringify({
+  "officers[0][department]": data.agency.name,
+});
+const claimProfileHref = "/about/contact/";
+const claimProfilePrefillPayload = JSON.stringify({
+  whoami: "Profile Owner",
+  message: `I would like to claim ownership of this profile.\nProfile path: ${agencyPath}`,
+});
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(agencyPath, siteUrl).toString();
 const disqusIdentifier = `agency:${data.agency.slug}`;
@@ -570,13 +571,25 @@ const structuredData = {
                 <div class="d-flex flex-wrap gap-2">
                   <a
                     class="btn btn-outline-dark rounded-0"
-                    href={reportHeroHref}
+                    href="/report/new/"
+                    target="_self"
+                    data-prefill-key="prefill:reportNew"
+                    data-prefill-payload={JSON.stringify({
+                      "officers[0][department]": data.agency.name,
+                    })}
                   >
                     Submit a report
                   </a>
                   <a
                     class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
-                    href={`/about/contact?whoami=Subscriber&message=Please%20notify%20of%20any%20changes%20to%20the%20following%20page(s):%20/law-enforcement-agency/${data.agency.category}/${data.agency.slug}/`}
+                    href="/about/contact/"
+                    target="_self"
+                    data-testid="agency-subscribe-link"
+                    data-prefill-key="prefill:contact"
+                    data-prefill-payload={JSON.stringify({
+                      whoami: "Subscriber",
+                      message: `Please notify of any changes to the following page(s): /law-enforcement-agency/${data.agency.category}/${data.agency.slug}/`,
+                    })}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -631,15 +644,24 @@ const structuredData = {
           litigation={{
             cases: civilCases,
             ctaHref: addCivilCaseHref,
+            ctaTarget: "_self",
+            ctaPrefillKey: "prefill:civilLitigationNew",
+            ctaPrefillPayload: addCivilCasePrefillPayload,
           }}
           reports={{
             items: reportedReports,
             ctaHref: reportHeroHref,
+            ctaTarget: "_self",
+            ctaPrefillKey: "prefill:reportNew",
+            ctaPrefillPayload: reportHeroPrefillPayload,
             layout: "list",
           }}
           personnel={{
             entries: employees,
             ctaHref: suggestPersonnelHref,
+            ctaTarget: "_self",
+            ctaPrefillKey: "prefill:personnelNew",
+            ctaPrefillPayload: suggestPersonnelPrefillPayload,
           }}
         />
       </div>
@@ -649,14 +671,24 @@ const structuredData = {
           Have corrections or want to submit a report about this person?
         </p>
         <div class="d-flex flex-wrap gap-2">
-          <a class="btn btn-outline-dark rounded-0" href={suggestEditHref}>
+          <a
+            class="btn btn-outline-dark rounded-0"
+            href={suggestEditHref}
+            target="_self"
+            data-prefill-key="prefill:agencySuggestEdit"
+            data-prefill-payload={suggestEditPrefillPayload}
+          >
             Suggest Edit
           </a>
         </div>
         <div class="mt-2">
           <a
             class="link-dark small"
-            href={`/about/contact?whoami=Profile%20Owner&message=I%20would%20like%20to%20claim%20ownership%20of%20this%20profile.%0AProfile%20path:%20/law-enforcement-agency/${data.agency.category}/${data.agency.slug}/`}
+            href={claimProfileHref}
+            target="_self"
+            data-testid="agency-claim-profile-link"
+            data-prefill-key="prefill:contact"
+            data-prefill-payload={claimProfilePrefillPayload}
           >
             Claim this profile
           </a>

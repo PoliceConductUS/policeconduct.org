@@ -20,7 +20,14 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
             <div class="d-flex flex-wrap gap-2 mt-3">
               <a
                 class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
-                href="/about/contact?whoami=Subscriber&message=Please%20notify%20of%20any%20changes%20to%20the%20following%20page(s):%20/news/"
+                href="/about/contact/"
+                target="_self"
+                data-prefill-key="prefill:contact"
+                data-prefill-payload={JSON.stringify({
+                  whoami: "Subscriber",
+                  message:
+                    "Please notify of any changes to the following page(s): /news/",
+                })}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

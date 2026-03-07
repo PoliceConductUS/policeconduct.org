@@ -51,9 +51,7 @@ const stateStats = US_STATE_TILES.map((state) => {
 });
 const totalPersonnel = personnelRows.length;
 const pagePath = "/personnel/";
-const suggestPersonnelHref = `/personnel/new/?${new URLSearchParams({
-  message: "Suggest new personnel from list",
-}).toString()}`;
+const suggestPersonnelHref = "/personnel/new/";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const federalAgencyItems = federalAgencies.map((agency, index) => ({
@@ -101,6 +99,7 @@ if (federalItemList) {
               <a
                 class="btn btn-outline-dark rounded-0"
                 href={suggestPersonnelHref}
+                target="_self"
               >
                 Suggest new person
               </a>

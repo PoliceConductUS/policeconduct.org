@@ -239,7 +239,13 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
 
       <div class="mt-5 border-top pt-4">
         <p class="text-muted mb-2">Not sure where to start?</p>
-        <a href="/about/contact?whoami=Volunteer" class="link-dark"
+        <a
+          href="/about/contact/"
+          class="link-dark"
+          target="_self"
+          data-prefill-key="prefill:contact"
+          data-prefill-payload={JSON.stringify({ whoami: "Volunteer" })}
+        >
           >Reach out and we will match you to a role.</a
         >
       </div>

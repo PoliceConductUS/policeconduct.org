@@ -259,7 +259,14 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
                 </p>
                 <a
                   class="btn btn-dark rounded-0"
-                  href="/about/contact?whoami=Partner&message=I%27m%20interested%20in%20a%20media%20kit%20or%20data%20guide%20for%20investigative%20reporting."
+                  href="/about/contact/"
+                  target="_self"
+                  data-prefill-key="prefill:contact"
+                  data-prefill-payload={JSON.stringify({
+                    whoami: "Partner",
+                    message:
+                      "I am interested in a media kit or data guide for investigative reporting.",
+                  })}
                 >
                   Request the media kit
                 </a>

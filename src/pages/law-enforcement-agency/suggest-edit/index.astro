@@ -21,9 +21,6 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
               profile. We review every submission before updating a public
               profile.
             </p>
-            <p class="small text-muted mt-3 mb-0">
-              Editing: <span id="agencyPathDisplay">No path provided</span>
-            </p>
           </div>
         </div>
       </div>
@@ -340,32 +337,24 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
 
   <script is:inline>
     (function () {
-      const pathInput = document.getElementById("agencyPath");
-      const pathDisplay = document.getElementById("agencyPathDisplay");
-      if (!pathInput || !pathDisplay) {
+      const prefill = window.__IPC_PREFILL__;
+      if (!prefill?.applyToFieldsByName) {
         return;
       }
-      const params = new URLSearchParams(window.location.search);
-      const rawValue =
-        params.get("path") || params.get("agency") || params.get("profile");
-      if (rawValue) {
-        const value = rawValue.trim();
-        if (value) {
-          pathInput.value = value;
-          pathDisplay.textContent = value;
-        }
-      }
-      const jurisdictionInput = document.getElementById("jurisdiction");
-      if (jurisdictionInput) {
-        const jurisdictionParam = params.get("jurisdiction");
-        if (jurisdictionParam) {
-          jurisdictionInput.value = jurisdictionParam.toUpperCase();
-        }
-      }
-      pathInput.addEventListener("input", function () {
-        const current = pathInput.value.trim();
-        pathDisplay.textContent = current || "No path provided";
+      const result = prefill.applyToFieldsByName({
+        key: "prefill:agencySuggestEdit",
       });
+      if (!result?.payload) return;
+      const jurisdictionInput = document.querySelector('[name="jurisdiction"]');
+      if (
+        jurisdictionInput &&
+        typeof result.payload.jurisdiction === "string" &&
+        result.payload.jurisdiction.trim()
+      ) {
+        jurisdictionInput.value = result.payload.jurisdiction
+          .trim()
+          .toUpperCase();
+      }
     })();
   </script>
 </SiteLayout>

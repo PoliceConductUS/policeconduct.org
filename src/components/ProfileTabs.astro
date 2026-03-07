@@ -69,12 +69,18 @@ type ProfileTabsProps = {
     cases?: LitigationCase[];
     ctaHref?: string;
     ctaLabel?: string;
+    ctaTarget?: string;
+    ctaPrefillKey?: string;
+    ctaPrefillPayload?: string;
     emptyMessage?: string;
   };
   reports?: {
     items?: ReportItem[];
     ctaHref?: string;
     ctaLabel?: string;
+    ctaTarget?: string;
+    ctaPrefillKey?: string;
+    ctaPrefillPayload?: string;
     emptyMessage?: string;
     layout?: "table" | "list";
   };
@@ -82,11 +88,17 @@ type ProfileTabsProps = {
     entries?: PersonnelEntry[];
     ctaHref?: string;
     ctaLabel?: string;
+    ctaTarget?: string;
+    ctaPrefillKey?: string;
+    ctaPrefillPayload?: string;
   };
   pastEmployers?: {
     entries?: PastEmployerEntry[];
     ctaHref?: string;
     ctaLabel?: string;
+    ctaTarget?: string;
+    ctaPrefillKey?: string;
+    ctaPrefillPayload?: string;
   };
 };
 
@@ -162,6 +174,9 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
                 <a
                   class="btn btn-outline-dark rounded-0 btn-sm"
                   href={litigation.ctaHref}
+                  target={litigation.ctaTarget}
+                  data-prefill-key={litigation.ctaPrefillKey}
+                  data-prefill-payload={litigation.ctaPrefillPayload}
                 >
                   {litigation.ctaLabel || "Add a civil case"}
                 </a>
@@ -235,6 +250,9 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
                 <a
                   class="btn btn-outline-dark rounded-0 btn-sm"
                   href={reports.ctaHref}
+                  target={reports.ctaTarget}
+                  data-prefill-key={reports.ctaPrefillKey}
+                  data-prefill-payload={reports.ctaPrefillPayload}
                 >
                   {reports.ctaLabel || "Submit report"}
                 </a>
@@ -272,6 +290,9 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
                 <a
                   class="btn btn-outline-dark rounded-0 btn-sm"
                   href={personnel.ctaHref}
+                  target={personnel.ctaTarget}
+                  data-prefill-key={personnel.ctaPrefillKey}
+                  data-prefill-payload={personnel.ctaPrefillPayload}
                 >
                   {personnel.ctaLabel || "Suggest new personnel"}
                 </a>
@@ -346,6 +367,9 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
                 <a
                   class="btn btn-outline-dark rounded-0 btn-sm"
                   href={pastEmployers.ctaHref}
+                  target={pastEmployers.ctaTarget}
+                  data-prefill-key={pastEmployers.ctaPrefillKey}
+                  data-prefill-payload={pastEmployers.ctaPrefillPayload}
                 >
                   {pastEmployers.ctaLabel || "Submit past employer"}
                 </a>

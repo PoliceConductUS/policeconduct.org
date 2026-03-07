@@ -92,16 +92,8 @@ const stateStats = US_STATE_TILES.map((state) => ({
 }));
 
 const civilLandingPath = "/civil-litigation/";
-const newCivilLandingHref = `/civil-litigation/new/?${new URLSearchParams({
-  path: civilLandingPath,
-  message: "Suggest a new civil case from the map",
-}).toString()}`;
-const editCivilLandingHref = `/civil-litigation/suggest-edit/?${new URLSearchParams(
-  {
-    path: civilLandingPath,
-    message: "Suggest a correction for a listed civil case",
-  },
-).toString()}`;
+const newCivilLandingHref = "/civil-litigation/new/";
+const editCivilLandingHref = "/civil-litigation/suggest-edit/";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(civilLandingPath, siteUrl).toString();
 const federalAgencyItems = (federalAgencies as FederalAgency[]).map(
@@ -216,12 +208,16 @@ if (federalItemList) {
                   <a
                     class="btn btn-outline-dark rounded-0 w-100"
                     href={newCivilLandingHref}
+                    target="_self"
+                    data-prefill-key="prefill:civilLitigationNew"
+                    data-prefill-payload={JSON.stringify({ jurisdiction: "" })}
                   >
                     Suggest a new civil case
                   </a>
                   <a
                     class="btn btn-outline-dark rounded-0 w-100 mt-2"
                     href={editCivilLandingHref}
+                    target="_self"
                   >
                     Suggest a correction
                   </a>

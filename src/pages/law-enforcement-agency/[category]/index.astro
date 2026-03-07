@@ -204,7 +204,12 @@ const structuredData = {
               <span>No agencies listed yet for {categoryLabel}.</span>
               <a
                 class="btn btn-dark rounded-0 w-auto"
-                href={`/law-enforcement-agency/suggest-edit/?jurisdiction=${categoryParam.toLowerCase()}`}
+                href="/law-enforcement-agency/suggest-edit/"
+                target="_self"
+                data-prefill-key="prefill:agencySuggestEdit"
+                data-prefill-payload={JSON.stringify({
+                  jurisdiction: categoryParam.toLowerCase(),
+                })}
               >
                 Add one now
               </a>

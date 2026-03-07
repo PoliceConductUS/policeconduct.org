@@ -11,6 +11,12 @@
     "deploy:preview": "bash scripts/deploy-preview.sh",
     "seo:audit": "node scripts/seo-audit.mjs",
     "audit:a11y": "node scripts/audit-dist.mjs",
+    "litigation:ingest:courtlistener": "node --env-file=.env scripts/litigation/ingest-courtlistener.mjs",
+    "litigation:new": "node --env-file=.env scripts/litigation/new.mjs",
+    "litigation:normalize:yaml": "node --env-file=.env scripts/litigation/normalize-to-yaml.mjs",
+    "litigation:decisions:sync": "node --env-file=.env scripts/litigation/decisions-sync.mjs",
+    "litigation:seed": "node --env-file=.env scripts/litigation/seed-from-yaml.mjs",
+    "litigation:schema:introspect": "node --env-file=.env scripts/litigation/schema-introspect.mjs",
     "test:e2e": "playwright test",
     "preflight:publish": "npm run seo:audit && npm run audit:a11y",
     "preflight:publish:full": "npm run build && npm run preflight:publish",
@@ -23,13 +29,13 @@
     "astro": "^6.0.0-beta.1",
     "bootstrap": "^5.3.8",
     "dotenv": "^17.3.1",
-    "pg": "^8.18.0"
+    "pg": "^8.20.0"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.10.2",
+    "@axe-core/playwright": "^4.11.1",
     "@astrojs/check": "^0.9.6",
-    "@playwright/test": "^1.51.1",
-    "@types/pg": "^8.16.0",
+    "@playwright/test": "^1.58.2",
+    "@types/pg": "^8.18.0",
     "prettier": "^3.8.1",
     "prettier-plugin-astro": "^0.14.1"
   }
