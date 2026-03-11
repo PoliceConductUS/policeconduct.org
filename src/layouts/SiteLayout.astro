@@ -1,7 +1,6 @@
 ---
 import "../styles/theme.css";
 import GoogleAnalytics from "../components/GoogleAnalytics.astro";
-import Sentry from "../components/Sentry.astro";
 
 const { title, description, pagePath, canonicalUrl, robots, structuredData } =
   Astro.props;
@@ -78,7 +77,6 @@ const isActivePath = (href: string) =>
 <!doctype html>
 <html class="h-100" lang="en">
   <head>
-    <Sentry />
     <meta charset="utf-8" />
     <meta
       name="viewport"
@@ -751,12 +749,8 @@ const isActivePath = (href: string) =>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/issue/new/"
-                  target="_self"
-                  data-prefill-key="prefill:issueNew"
-                  data-prefill-payload={JSON.stringify({
-                    message: issueMessage,
-                  })}>Report Issue 🐞</a
+                  href="#report-issue"
+                  data-issue-message={issueMessage}>Report Issue 🐞</a
                 >
               </li>
               <li class="mb-2">
@@ -771,6 +765,11 @@ const isActivePath = (href: string) =>
                   href="/frequently-asked-questions/"
                 >
                   FAQ
+                </a>
+              </li>
+              <li class="mb-2">
+                <a class="text-muted text-decoration-none" href="/status/">
+                  Submission Status
                 </a>
               </li>
               <li class="mb-2">
@@ -894,6 +893,36 @@ const isActivePath = (href: string) =>
 
     <script>
       import "../scripts/site.js";
+    </script>
+    <script is:inline define:vars={{ issueMessage }}>
+      (function () {
+        const openFeedback = function (message) {
+          const feedback = window.__IPC_SENTRY_FEEDBACK__;
+          if (!feedback || typeof feedback.open !== "function") {
+            return false;
+          }
+          void feedback.open({ message });
+          return true;
+        };
+
+        document.addEventListener("click", function (event) {
+          const target = event.target instanceof Element ? event.target : null;
+          const trigger = target?.closest("[data-issue-message]");
+
+          if (!(trigger instanceof HTMLAnchorElement)) {
+            return;
+          }
+
+          const message =
+            trigger.getAttribute("data-issue-message") || issueMessage;
+
+          if (!openFeedback(message)) {
+            return;
+          }
+
+          event.preventDefault();
+        });
+      })();
     </script>
   </body>
 </html>

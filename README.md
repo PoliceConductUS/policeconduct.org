@@ -70,7 +70,7 @@ It provisions:
 - Static hosting (S3 + CloudFront + Route53 + ACM)
 - Preview hosting (S3 + CloudFront wildcard preview domain)
 - GitHub Actions OIDC role and env vars
-- Forms API (`POST /forms/draft`, `POST /forms/submit`)
+- Forms API (`POST /forms/draft`, `POST /forms/submit`, `GET /status/{submissionId}`)
 - Form draft + submission storage buckets
 
 Bootstrap usage:
@@ -112,6 +112,14 @@ values (fallback from `.env-recaptcha`) and fails if required keys are missing.
 - `RECAPTCHA_SERVICE_ACCOUNT_EMAIL`
 - `RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME`
 - `RECAPTCHA_WIF_AUDIENCE`
+
+### Submission Status
+
+- User-facing status lookup page: `/status/`
+- API endpoint: `/api/status/{submissionId}`
+- Endpoint behavior: always returns HTTP `200` with JSON.
+  If no status file exists, response falls back to:
+  `{ "submissionId": "<id>", "status": "pending" }`.
 
 ### Required For Frontend Build/Client
 
@@ -199,8 +207,8 @@ Both scripts also load `.env` automatically if present.
 
 Frontend Sentry is enabled when these are set:
 
-- `SENTRY_DSN`
-- `SENTRY_ENVIRONMENT`
+- `PUBLIC_SENTRY_DSN`
+- `PUBLIC_SENTRY_ENVIRONMENT`
 
 Terraform bootstrap can manage GitHub environment vars/secrets for the same org and project:
 

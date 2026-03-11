@@ -25,7 +25,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
               <a class="btn btn-dark rounded-0" href="/">Home</a>
               <a
                 class="btn btn-outline-dark rounded-0"
-                href="/issue/new/"
+                href="#report-issue"
                 id="report-issue-link"
               >
                 Report this issue
@@ -43,10 +43,7 @@ import SiteLayout from "../layouts/SiteLayout.astro";
         return;
       }
       const message = `Page not found: ${window.location.href}`;
-      link.href = "/issue/new/";
-      link.setAttribute("target", "_self");
-      link.setAttribute("data-prefill-key", "prefill:issueNew");
-      link.setAttribute("data-prefill-payload", JSON.stringify({ message }));
+      link.setAttribute("data-issue-message", message);
     })();
   </script>
 </SiteLayout>

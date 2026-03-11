@@ -179,7 +179,7 @@ Optional Sentry inputs in `terraform.tfvars`:
 - `sentry_org`
 - `sentry_project`
 
-If set, Terraform creates `SENTRY_DSN` and `SENTRY_ENVIRONMENT` in the matching GitHub environment.
+If set, Terraform creates `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT` in the matching GitHub environment.
 If unset/null, Sentry is not initialized in that environment.
 If `sentry_org` and `sentry_project` are set, workflows can upload source maps to Sentry.
 If `sentry_auth_token` is set, Terraform also writes `SENTRY_AUTH_TOKEN` as a GitHub environment secret in both `production` and `preview`.

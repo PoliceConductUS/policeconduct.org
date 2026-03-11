@@ -32,8 +32,8 @@ jobs:
           GIT_COMMIT_DIRTY: "0"
           GA_MEASUREMENT_ID: ${{ vars.GA_MEASUREMENT_ID }}
           FORMS_API_URL: ${{ vars.FORMS_API_URL }}
-          SENTRY_DSN: ${{ vars.SENTRY_DSN }}
-          SENTRY_ENVIRONMENT: ${{ vars.SENTRY_ENVIRONMENT }}
+          PUBLIC_SENTRY_DSN: ${{ vars.PUBLIC_SENTRY_DSN }}
+          PUBLIC_SENTRY_ENVIRONMENT: ${{ vars.PUBLIC_SENTRY_ENVIRONMENT }}
           RECAPTCHA_SITE_KEY: ${{ vars.RECAPTCHA_SITE_KEY }}
 
       - name: Upload source maps to Sentry

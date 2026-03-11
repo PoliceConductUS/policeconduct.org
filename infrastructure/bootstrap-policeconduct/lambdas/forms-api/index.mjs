@@ -69,6 +69,20 @@ function parseJsonBody(event) {
   }
 }
 
+function normalizeSubmissionId(raw) {
+  if (typeof raw !== "string") {
+    return "";
+  }
+  return raw.trim();
+}
+
+function pendingStatusPayload(submissionId) {
+  return {
+    submissionId,
+    status: "pending",
+  };
+}
+
 function normalizedPath(event) {
   const raw = event?.rawPath || event?.requestContext?.http?.path || "";
   return raw.startsWith("/api/") ? raw.slice(4) : raw;
@@ -388,6 +402,97 @@ async function markDraftSubmitted(draftId, submissionId, requestId, formName) {
   );
 }
 
+async function saveSubmissionStatus(submissionId, status) {
+  const bucket = process.env.SUBMISSIONS_BUCKET;
+  const kmsKeyId = process.env.SUBMISSIONS_KMS_KEY_ID;
+  const prefix = process.env.SUBMISSIONS_PREFIX ?? "submissions/";
+
+  if (!bucket || !kmsKeyId) {
+    return;
+  }
+
+  const key = `${prefix}status/${submissionId}.json`;
+  const body = {
+    submissionId,
+    status,
+  };
+
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: JSON.stringify(body),
+      ContentType: "application/json",
+      ServerSideEncryption: "aws:kms",
+      SSEKMSKeyId: kmsKeyId,
+    }),
+  );
+}
+
+async function getSubmissionStatus(event, requestId) {
+  const path = normalizedPath(event);
+  let decodedId = "";
+  try {
+    decodedId = decodeURIComponent(path.slice("/status/".length));
+  } catch (_error) {
+    decodedId = path.slice("/status/".length);
+  }
+  const submissionId = normalizeSubmissionId(decodedId);
+
+  if (!submissionId) {
+    return json(200, pendingStatusPayload(""));
+  }
+
+  const bucket = process.env.SUBMISSIONS_BUCKET;
+  const prefix = process.env.SUBMISSIONS_PREFIX ?? "submissions/";
+  const key = `${prefix}status/${submissionId}.json`;
+
+  if (!bucket) {
+    return json(200, pendingStatusPayload(submissionId));
+  }
+
+  try {
+    const object = await s3.send(
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      }),
+    );
+    const raw = object?.Body ? await object.Body.transformToString("utf8") : "";
+    if (!raw) {
+      return json(200, pendingStatusPayload(submissionId));
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return json(200, pendingStatusPayload(submissionId));
+    }
+    if (
+      typeof parsed.submissionId !== "string" ||
+      parsed.submissionId.trim().length === 0
+    ) {
+      parsed.submissionId = submissionId;
+    }
+    if (
+      typeof parsed.status !== "string" ||
+      parsed.status.trim().length === 0
+    ) {
+      parsed.status = "pending";
+    }
+    return json(200, parsed);
+  } catch (error) {
+    console.info(
+      JSON.stringify({
+        msg: "forms.status.pending_fallback",
+        requestId,
+        submissionId,
+        key,
+        error: errorInfo(error),
+      }),
+    );
+    return json(200, pendingStatusPayload(submissionId));
+  }
+}
+
 async function submitForm(event, requestId) {
   const bucket = process.env.SUBMISSIONS_BUCKET;
   const kmsKeyId = process.env.SUBMISSIONS_KMS_KEY_ID;
@@ -518,6 +623,20 @@ async function submitForm(event, requestId) {
     }),
   );
 
+  try {
+    await saveSubmissionStatus(submissionId, "received");
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        msg: "forms.submit.status_save_failed",
+        requestId,
+        formName,
+        submissionId,
+        error: errorInfo(error),
+      }),
+    );
+  }
+
   if (draftId) {
     try {
       await markDraftSubmitted(draftId, submissionId, requestId, formName);
@@ -570,6 +689,10 @@ export const handler = async (event) => {
 
     if (method === "POST" && path === "/forms/submit") {
       return await submitForm(event, requestId);
+    }
+
+    if (method === "GET" && path.startsWith("/status/")) {
+      return await getSubmissionStatus(event, requestId);
     }
 
     if (method === "OPTIONS") {

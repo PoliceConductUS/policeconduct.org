@@ -1,0 +1,177 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout title="Submission Status | PoliceConduct.org" pagePath="/status/">
+  <main class="flex-grow-1 py-vh-3">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+          <h1 class="display-6 fw-bold mb-3">Check Submission Status</h1>
+          <p class="text-muted mb-4">
+            Enter your submission ID to check the latest status.
+          </p>
+
+          <form id="statusLookupForm" class="border p-4 bg-white shadow-sm">
+            <div class="form-floating mb-3">
+              <input
+                id="submissionId"
+                name="submissionId"
+                type="text"
+                class="form-control"
+                placeholder="Submission ID"
+                required
+              />
+              <label for="submissionId">Submission ID</label>
+            </div>
+            <button
+              id="statusLookupSubmit"
+              type="submit"
+              class="btn btn-dark rounded-0"
+            >
+              Check status
+            </button>
+          </form>
+
+          <div
+            id="statusLookupResult"
+            class="mt-4 border p-4 bg-light d-none"
+            aria-live="polite"
+          >
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script is:inline>
+    (function () {
+      const form = document.getElementById("statusLookupForm");
+      const input = document.getElementById("submissionId");
+      const submitButton = document.getElementById("statusLookupSubmit");
+      const result = document.getElementById("statusLookupResult");
+      if (!form || !input || !submitButton || !result) {
+        return;
+      }
+
+      let lockedId = "";
+
+      const setSubmitEnabled = (enabled) => {
+        submitButton.disabled = !enabled;
+      };
+
+      const renderScalar = (value) => {
+        if (value === null) return "null";
+        if (value === undefined) return "";
+        if (typeof value === "boolean") return value ? "true" : "false";
+        return String(value);
+      };
+
+      const appendEntries = (container, data) => {
+        if (!data || typeof data !== "object") {
+          return;
+        }
+        const list = document.createElement("dl");
+        list.className = "row mb-0";
+
+        for (const [key, value] of Object.entries(data)) {
+          const dt = document.createElement("dt");
+          dt.className = "col-sm-4 text-muted";
+          dt.textContent = key;
+
+          const dd = document.createElement("dd");
+          dd.className = "col-sm-8";
+
+          if (Array.isArray(value)) {
+            if (value.length === 0) {
+              dd.textContent = "[]";
+            } else {
+              const ul = document.createElement("ul");
+              ul.className = "mb-0";
+              for (const item of value) {
+                const li = document.createElement("li");
+                if (item && typeof item === "object") {
+                  appendEntries(li, item);
+                } else {
+                  li.textContent = renderScalar(item);
+                }
+                ul.appendChild(li);
+              }
+              dd.appendChild(ul);
+            }
+          } else if (value && typeof value === "object") {
+            const nested = document.createElement("div");
+            appendEntries(nested, value);
+            dd.appendChild(nested);
+          } else {
+            dd.textContent = renderScalar(value);
+          }
+
+          list.appendChild(dt);
+          list.appendChild(dd);
+        }
+
+        container.appendChild(list);
+      };
+
+      const renderResult = (payload) => {
+        result.classList.remove("d-none");
+        result.innerHTML = "";
+        const heading = document.createElement("h2");
+        heading.className = "h5 mb-3";
+        heading.textContent = "Status";
+        result.appendChild(heading);
+        appendEntries(result, payload);
+      };
+
+      setSubmitEnabled(false);
+
+      input.addEventListener("input", function () {
+        const nextId = input.value.trim();
+        if (!nextId) {
+          setSubmitEnabled(false);
+          return;
+        }
+        if (!lockedId || nextId !== lockedId) {
+          setSubmitEnabled(true);
+        }
+      });
+
+      form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        const submissionId = input.value.trim();
+        if (!submissionId) {
+          return;
+        }
+
+        lockedId = submissionId;
+        setSubmitEnabled(false);
+
+        try {
+          const response = await fetch(
+            `/api/status/${encodeURIComponent(submissionId)}`,
+            {
+              headers: { accept: "application/json" },
+            },
+          );
+          let payload;
+          try {
+            payload = await response.json();
+          } catch (_error) {
+            payload = { submissionId, status: "pending" };
+          }
+          if (
+            !payload ||
+            typeof payload !== "object" ||
+            Array.isArray(payload)
+          ) {
+            payload = { submissionId, status: "pending" };
+          }
+          renderResult(payload);
+        } catch (_error) {
+          renderResult({ submissionId, status: "pending" });
+        }
+      });
+    })();
+  </script>
+</SiteLayout>

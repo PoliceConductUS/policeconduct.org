@@ -77,8 +77,8 @@ locals {
         GA_MEASUREMENT_ID = local.ga_measurement_id_production
       },
       local.sentry_dsn_production == null ? {} : {
-        SENTRY_DSN         = local.sentry_dsn_production
-        SENTRY_ENVIRONMENT = "production"
+        PUBLIC_SENTRY_DSN         = local.sentry_dsn_production
+        PUBLIC_SENTRY_ENVIRONMENT = "production"
       },
       local.sentry_org == null ? {} : {
         SENTRY_ORG = local.sentry_org
@@ -101,8 +101,8 @@ locals {
         GA_MEASUREMENT_ID = local.ga_measurement_id_preview
       },
       local.sentry_dsn_preview == null ? {} : {
-        SENTRY_DSN         = local.sentry_dsn_preview
-        SENTRY_ENVIRONMENT = "preview"
+        PUBLIC_SENTRY_DSN         = local.sentry_dsn_preview
+        PUBLIC_SENTRY_ENVIRONMENT = "preview"
       },
       local.sentry_org == null ? {} : {
         SENTRY_ORG = local.sentry_org
