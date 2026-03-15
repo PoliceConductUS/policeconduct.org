@@ -179,11 +179,11 @@ const civilCasesWithPaths = data.civilCases.map(
 );
 
 const reportItems = data.reports.map(
-  (report: { incident_date: string; slug: string; state: string }) => {
+  (report: { incident_date: string; slug: string; category: string }) => {
     return {
       ...report,
       incidentDate: formatShortDate(report.incident_date),
-      url: `/report/${report.state}/${report.slug}/`,
+      url: `/report/${report.category}/${report.slug}/`,
     };
   },
 );

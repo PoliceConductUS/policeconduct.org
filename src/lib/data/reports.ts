@@ -110,14 +110,14 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
       `Missing category for agency ${agency.id}`,
     );
     const reportState = assertValue(
-      report.state,
-      `Missing state for report ${report.id}`,
+      report.category,
+      `Missing category for report ${report.id}`,
     )
       .toString()
       .trim()
       .toLowerCase();
     if (!reportState) {
-      throw new Error(`Blank state for report ${report.id}`);
+      throw new Error(`Blank category for report ${report.id}`);
     }
     const agencySlug = assertValue(
       agency.slug,

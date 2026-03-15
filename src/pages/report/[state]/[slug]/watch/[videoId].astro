@@ -56,11 +56,11 @@ if (!primaryAgencyCategory || !primaryAgencySlug) {
   throw new Error(`Report ${slug} primary agency is missing category or slug.`);
 }
 
-const reportStateSlug = String(data.report.state || "")
+const reportStateSlug = String(data.report.category || "")
   .trim()
   .toLowerCase();
 if (!reportStateSlug) {
-  throw new Error(`Report ${slug} is missing state.`);
+  throw new Error(`Report ${slug} is missing category.`);
 }
 if (reportStateSlug !== stateSlug) {
   return Astro.redirect(
@@ -76,6 +76,10 @@ const watchPath = `/report/${stateSlug}/${slug}/watch/${videoId}/`;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(watchPath, siteUrl).toString();
 const reportUrl = new URL(reportPath, siteUrl).toString();
+const thumbnailUrl = new URL(
+  "/img/personnel/cm7a0bh1z2f39ewvglexrgaig.webp",
+  siteUrl,
+).toString();
 
 const videos = data.evidenceLinks.filter((link) => Boolean(link.embed));
 const videoIndex = videos.findIndex((link) => link.id === videoId);
@@ -145,6 +149,7 @@ const structuredData = {
       name: videoTitle,
       description: videoDescription,
       embedUrl: video.embed,
+      thumbnailUrl,
       url: pageUrl,
       isPartOf: {
         "@type": "Report",

@@ -37,11 +37,11 @@ const primaryAgencySlug = primaryAgency.slug as string | null;
 if (!primaryAgencyCategory || !primaryAgencySlug) {
   throw new Error(`Report ${slug} primary agency is missing category or slug.`);
 }
-const reportStateSlug = String(data.report.state || "")
+const reportStateSlug = String(data.report.category || "")
   .trim()
   .toLowerCase();
 if (!reportStateSlug) {
-  throw new Error(`Report ${slug} is missing state.`);
+  throw new Error(`Report ${slug} is missing category.`);
 }
 if (reportStateSlug !== stateSlug) {
   return Astro.redirect(`/report/${reportStateSlug}/${slug}/`, 301);

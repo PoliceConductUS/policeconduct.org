@@ -36,6 +36,11 @@ const sentryDsn = requireNonEmptyString(
   env.PUBLIC_SENTRY_DSN,
   "PUBLIC_SENTRY_DSN",
 );
+const sentryOrg = (env.SENTRY_ORG || "").trim();
+const sentryProject = (env.SENTRY_PROJECT || "").trim();
+const sentryAuthToken = (env.SENTRY_AUTH_TOKEN || "").trim();
+const sentryRelease =
+  (process.env.GIT_COMMIT_SHA || env.GIT_COMMIT_SHA || "").trim() || undefined;
 const SITEMAP_EXCLUDED_PATHS = new Set([
   "/404/",
   "/about/contact/",
@@ -84,6 +89,15 @@ export default defineConfig({
         return !SITEMAP_EXCLUDED_PATHS.has(pathname);
       },
     }),
-    sentry(),
+    sentry({
+      telemetry: false,
+      ...(sentryOrg ? { org: sentryOrg } : {}),
+      ...(sentryProject ? { project: sentryProject } : {}),
+      ...(sentryAuthToken ? { authToken: sentryAuthToken } : {}),
+      ...(sentryRelease ? { release: sentryRelease } : {}),
+      sourcemaps: {
+        assets: ["dist/_astro/**/*", "dist/.prerender/**/*"],
+      },
+    }),
   ],
 });
