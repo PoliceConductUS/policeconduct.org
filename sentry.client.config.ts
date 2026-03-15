@@ -6,6 +6,8 @@ const isProduction = environment === "production";
 const feedback = Sentry.feedbackIntegration({
   autoInject: false,
 });
+let feedbackDialog: Awaited<ReturnType<typeof feedback.createForm>> | null =
+  null;
 
 declare global {
   interface Window {
@@ -53,29 +55,27 @@ Sentry.init({
 
 window.__IPC_SENTRY_FEEDBACK__ = {
   async open(options) {
-    const actor = await feedback.createForm({
-      isEmailRequired: false,
-      isNameRequired: false,
-      messagePlaceholder:
-        "Describe what happened, what you expected, and what page you were on.",
-      showBranding: false,
-      tags: {
-        feedback_source: "site_link",
-      },
-      useSentryUser: {
-        email: "never",
-        name: "never",
-      },
-    });
-
-    actor.appendToDom();
-
-    const root = actor.el;
-    const dialog = root?.querySelector("dialog");
-
-    if (dialog instanceof HTMLDialogElement && !dialog.open) {
-      dialog.showModal();
+    if (!feedbackDialog) {
+      feedbackDialog = await feedback.createForm({
+        isEmailRequired: false,
+        isNameRequired: false,
+        messagePlaceholder:
+          "Describe what happened, what you expected, and what page you were on.",
+        showBranding: false,
+        tags: {
+          feedback_source: "site_link",
+        },
+        useSentryUser: {
+          email: "never",
+          name: "never",
+        },
+      });
     }
+
+    feedbackDialog.appendToDom();
+    feedbackDialog.open();
+
+    const root = feedbackDialog.el;
 
     if (options?.message) {
       const messageField = root?.querySelector(

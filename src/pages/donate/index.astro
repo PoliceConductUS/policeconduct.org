@@ -1,5 +1,7 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import { buildWebPage, getSiteUrl } from "../../lib/structured-data.js";
 
 type DonationFrequency = "monthly" | "oneTime";
 type PresetAmountKey =
@@ -305,11 +307,34 @@ const validateStripeHostnames = (links: StripeLinkEntry[]) => {
 };
 
 validateStripeHostnames(collectStripeLinks(donatePageConfiguration));
+const pagePath = "/donate/";
+const pageDescription =
+  "Support the Institute for Police Conduct, Inc. with a donation to fund public accountability records, reporting infrastructure, and transparency work.";
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: "Donate | PoliceConduct.org",
+  description: pageDescription,
+});
 ---
 
-<SiteLayout title="Donate | PoliceConduct.org" pagePath="/donate/">
+<SiteLayout
+  title="Donate | PoliceConduct.org"
+  description={pageDescription}
+  pagePath={pagePath}
+  structuredData={structuredData}
+>
   <main class="flex-grow-1 py-vh-3" data-donation-root>
     <div class="container">
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Donate", href: pagePath, current: true },
+        ]}
+        className="mb-2"
+      />
       <div class="row align-items-start mb-5">
         <div class="col-lg-6">
           <p class="text-uppercase small text-muted mb-2">

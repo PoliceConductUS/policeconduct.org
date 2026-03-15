@@ -1,11 +1,11 @@
 ---
+import Breadcrumbs from "../../../components/Breadcrumbs.astro";
 import SiteLayout from "../../../layouts/SiteLayout.astro";
 import DisqusComments from "../../../components/DisqusComments.astro";
 import { withDb } from "../../../lib/db.js";
 import { groupBy, mapBy, normalizeAgencyHistory } from "../../../lib/data.js";
 import { formatShortDate } from "../../../lib/format.js";
 import { getPersonnelImageById } from "../../../lib/personnel-images.js";
-import { getReportStateSlug } from "../../../lib/report-state-stats.js";
 import { caseSlug } from "../../../lib/slug.js";
 import ProfileTabs from "../../../components/ProfileTabs.astro";
 import { getSiteUrl } from "../../../lib/structured-data.js";
@@ -179,24 +179,11 @@ const civilCasesWithPaths = data.civilCases.map(
 );
 
 const reportItems = data.reports.map(
-  (report: {
-    incident_date: string;
-    slug: string;
-    category?: string | null;
-    agency_slug?: string | null;
-    agencySlug?: string | null;
-  }) => {
-    const stateSlug = getReportStateSlug({
-      category: report.category ?? null,
-      agencySlug: report.agencySlug ?? report.agency_slug ?? null,
-    });
-    const reportUrl = stateSlug
-      ? `/report/${stateSlug}/${report.slug}/`
-      : `/report/${report.slug}/`;
+  (report: { incident_date: string; slug: string; state: string }) => {
     return {
       ...report,
       incidentDate: formatShortDate(report.incident_date),
-      url: reportUrl,
+      url: `/report/${report.state}/${report.slug}/`,
     };
   },
 );
@@ -218,8 +205,8 @@ const deceasedPublicMessage =
     : "This individual is reported deceased.");
 const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${data.officer.first_name} ${data.officer.last_name} | ${currentAgency!.name}`;
 const pageDescription = isDeceased
-  ? `${officerName} is marked deceased${deceasedOnDisplay ? ` (reported death date: ${deceasedOnDisplay})` : ""}. Public profile compiled from public records and community submitted reports.`
-  : `Public profile for ${data.officer.first_name} ${data.officer.last_name}, compiled from public records and community submitted reports.`;
+  ? `${officerName} personnel profile with agency history, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
+  : `${officerName} personnel profile with agency history, public reports, and civil litigation records.`;
 const addCivilCaseHref = "/civil-litigation/new/";
 const addCivilCasePrefillPayload = JSON.stringify({
   jurisdiction: currentAgency?.category?.toLowerCase() || "",
@@ -315,19 +302,12 @@ const structuredData = {
   <main class="">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
-        <nav aria-label="Breadcrumb">
-          <ol class="breadcrumb mb-3">
-            <li class="breadcrumb-item">
-              <a class="link-dark" href="/personnel/">Personnel</a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">
-              {data.officer.first_name}
-              {data.officer.last_name}{
-                data.officer.suffix ? ` ${data.officer.suffix}` : ""
-              }
-            </li>
-          </ol>
-        </nav>
+        <Breadcrumbs
+          items={[
+            { label: "Personnel", href: "/personnel/" },
+            { label: officerName, href: officerPath, current: true },
+          ]}
+        />
         <div class="row align-items-center">
           <div class="col-lg-12">
             <p class="text-uppercase small text-muted mb-2">

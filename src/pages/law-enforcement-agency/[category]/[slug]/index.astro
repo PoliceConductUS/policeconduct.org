@@ -1,11 +1,11 @@
 ---
+import Breadcrumbs from "../../../../components/Breadcrumbs.astro";
 import SiteLayout from "../../../../layouts/SiteLayout.astro";
 import DisqusComments from "../../../../components/DisqusComments.astro";
 import { withDb } from "../../../../lib/db.js";
 import { groupBy, mapBy } from "../../../../lib/data.js";
 import { formatShortDate } from "../../../../lib/format.js";
 import { US_STATE_TILES } from "../../../../lib/geo/states.js";
-import { getReportStateSlug } from "../../../../lib/report-state-stats.js";
 import { caseSlug } from "../../../../lib/slug.js";
 import ProfileTabs from "../../../../components/ProfileTabs.astro";
 import { getSiteUrl } from "../../../../lib/structured-data.js";
@@ -267,28 +267,13 @@ const civilCases = data.civilCases.map(
 );
 
 const reportedReports = data.reports
-  .map(
-    (report: {
-      incident_date: string;
-      slug: string;
-      category?: string | null;
-      agency_slug?: string | null;
-      agencySlug?: string | null;
-    }) => {
-      const reportStateSlug = getReportStateSlug({
-        category: report.category ?? null,
-        agencySlug: report.agencySlug ?? report.agency_slug ?? null,
-      });
-      const reportUrl = reportStateSlug
-        ? `/report/${reportStateSlug}/${report.slug}/`
-        : `/report/${report.slug}/`;
-      return {
-        ...report,
-        incidentDate: formatShortDate(report.incident_date),
-        url: reportUrl,
-      };
-    },
-  )
+  .map((report: { incident_date: string; slug: string; state: string }) => {
+    return {
+      ...report,
+      incidentDate: formatShortDate(report.incident_date),
+      url: `/report/${report.state}/${report.slug}/`,
+    };
+  })
   .sort((a, b) => {
     const left = new Date(b.incident_date).getTime();
     const right = new Date(a.incident_date).getTime();
@@ -337,6 +322,7 @@ const claimProfilePrefillPayload = JSON.stringify({
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(agencyPath, siteUrl).toString();
 const disqusIdentifier = `agency:${data.agency.slug}`;
+const pageDescription = `${data.agency.name} agency profile with contact information, personnel, public reports, and recent civil litigation references.`;
 const addressAvailable =
   data.agency.address ||
   data.agency.city ||
@@ -375,30 +361,6 @@ const organization = {
     : {}),
 };
 const websiteId = new URL("/", siteUrl).toString();
-const breadcrumb = {
-  "@type": "BreadcrumbList",
-  "@id": `${pageUrl}#breadcrumb`,
-  itemListElement: [
-    {
-      "@type": "ListItem",
-      position: 1,
-      name: "Agencies",
-      item: new URL("/law-enforcement-agency/", siteUrl).toString(),
-    },
-    {
-      "@type": "ListItem",
-      position: 2,
-      name: categoryLabel,
-      item: new URL(categoryPath, siteUrl).toString(),
-    },
-    {
-      "@type": "ListItem",
-      position: 3,
-      name: data.agency.name,
-      item: pageUrl,
-    },
-  ],
-};
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
@@ -413,12 +375,10 @@ const structuredData = {
       "@id": pageUrl,
       url: pageUrl,
       name: `${data.agency.name} | PoliceConduct.org`,
-      description: `Profile for ${data.agency.name} with contact information and recent civil litigation references.`,
+      description: pageDescription,
       isPartOf: { "@id": websiteId },
       mainEntity: { "@id": organization["@id"] },
-      breadcrumb: { "@id": breadcrumb["@id"] },
     },
-    breadcrumb,
     organization,
   ],
 };
@@ -426,25 +386,19 @@ const structuredData = {
 
 <SiteLayout
   title={`${data.agency.name} | PoliceConduct.org`}
-  description={`Profile for ${data.agency.name} with contact information and recent civil litigation references.`}
+  description={pageDescription}
   pagePath={agencyPath}
   structuredData={structuredData}
 >
   <main class="flex-grow-1 py-vh-3">
     <div class="container">
-      <nav aria-label="Breadcrumb">
-        <ol class="breadcrumb mb-3">
-          <li class="breadcrumb-item">
-            <a class="link-dark" href="/law-enforcement-agency/">Agencies</a>
-          </li>
-          <li class="breadcrumb-item">
-            <a class="link-dark" href={categoryPath}>{categoryLabel}</a>
-          </li>
-          <li class="breadcrumb-item active" aria-current="page">
-            {data.agency.name}
-          </li>
-        </ol>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Agencies", href: "/law-enforcement-agency/" },
+          { label: categoryLabel, href: categoryPath },
+          { label: data.agency.name, href: agencyPath, current: true },
+        ]}
+      />
       <div class="row justify-content-between align-items-start">
         <div class="col-lg-7">
           <p class="text-uppercase small text-muted mb-2">Agency profile</p>

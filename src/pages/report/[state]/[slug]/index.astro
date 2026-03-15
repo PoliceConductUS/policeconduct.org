@@ -1,31 +1,22 @@
 ---
+import Breadcrumbs from "../../../../components/Breadcrumbs.astro";
 import SiteLayout from "../../../../layouts/SiteLayout.astro";
 import DisqusComments from "../../../../components/DisqusComments.astro";
 import { formatLongDate } from "../../../../lib/format.js";
 import { loadReportDetail } from "../../../../lib/report-detail.js";
 import { loadReportSummaries } from "../../../../lib/data/summaries.js";
-import { getReportStateSlug } from "../../../../lib/report-state-stats.js";
 import { US_STATE_TILES } from "../../../../lib/geo/states.js";
-import type { ReportSummary } from "../../../../lib/data/types.js";
 import RatingBadge from "../../../../components/RatingBadge.astro";
 import { getSiteUrl } from "../../../../lib/structured-data.js";
 
 export async function getStaticPaths() {
   const reports = await loadReportSummaries();
-  return reports
-    .map((report) => {
-      const stateSlug = getReportStateSlug(report);
-      if (!stateSlug) {
-        return null;
-      }
-      return {
-        params: {
-          state: stateSlug,
-          slug: report.slug,
-        },
-      };
-    })
-    .filter(Boolean);
+  return reports.map((report) => ({
+    params: {
+      state: report.state,
+      slug: report.slug,
+    },
+  }));
 }
 
 const { state, slug } = Astro.params;
@@ -46,12 +37,11 @@ const primaryAgencySlug = primaryAgency.slug as string | null;
 if (!primaryAgencyCategory || !primaryAgencySlug) {
   throw new Error(`Report ${slug} primary agency is missing category or slug.`);
 }
-const reportStateSlug = getReportStateSlug({
-  category: (data.report as ReportSummary).category ?? null,
-  agencySlug: `${primaryAgencyCategory}/${primaryAgencySlug}`,
-});
+const reportStateSlug = String(data.report.state || "")
+  .trim()
+  .toLowerCase();
 if (!reportStateSlug) {
-  throw new Error(`Report ${slug} is not associated with a state.`);
+  throw new Error(`Report ${slug} is missing state.`);
 }
 if (reportStateSlug !== stateSlug) {
   return Astro.redirect(`/report/${reportStateSlug}/${slug}/`, 301);
@@ -195,7 +185,7 @@ const ratedOfficers = officers
 
 <SiteLayout
   title={`Report: ${reportTitle} | PoliceConduct.org`}
-  description={reportDescriptionSource}
+  description={reportDescription}
   pagePath={pagePath}
   canonicalUrl={pagePath}
   structuredData={structuredData}
@@ -205,21 +195,13 @@ const ratedOfficers = officers
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-12 col-lg-10 col-xl-8">
-            <nav aria-label="Breadcrumb">
-              <ol class="breadcrumb mb-3">
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href="/report/">Reports</a>
-                </li>
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href={`/report/${stateSlug}/`}
-                    >{stateName}</a
-                  >
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">
-                  {reportTitle}
-                </li>
-              </ol>
-            </nav>
+            <Breadcrumbs
+              items={[
+                { label: "Reports", href: "/report/" },
+                { label: stateName, href: `/report/${stateSlug}/` },
+                { label: reportTitle, href: pagePath, current: true },
+              ]}
+            />
             <p class="text-uppercase small text-muted mb-2">Published report</p>
             <h1 class="display-4 fw-bold">{data.report.title}</h1>
             <p class="lead">

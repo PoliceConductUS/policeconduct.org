@@ -1,5 +1,7 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import { buildWebPage, getSiteUrl } from "../../lib/structured-data.js";
 
 const documents = [
   {
@@ -63,18 +65,37 @@ const documents = [
     category: "Core terms",
   },
 ];
+const pagePath = "/legal-notice/";
+const pageDescription =
+  "All legal notices, policies, and agreements that govern use of PoliceConduct.org.";
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: "Legal Notices | PoliceConduct.org",
+  description: pageDescription,
+});
 ---
 
 <SiteLayout
   title="Legal Notices | PoliceConduct.org"
-  description="All legal notices, policies, and agreements that govern use of PoliceConduct.org."
-  pagePath="/legal-notice/"
+  description={pageDescription}
+  pagePath={pagePath}
+  structuredData={structuredData}
 >
   <main>
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: "Legal Notice", href: pagePath, current: true },
+              ]}
+              className="mb-2"
+            />
             <p class="text-uppercase small text-muted mb-2">Legal Center</p>
             <h1 class="display-4 fw-bold">Legal Notices</h1>
             <p class="lead text-muted mb-0">

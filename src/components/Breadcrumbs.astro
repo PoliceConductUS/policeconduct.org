@@ -1,0 +1,63 @@
+---
+import { getSiteUrl } from "../lib/structured-data.js";
+
+type BreadcrumbItem = {
+  label: string;
+  href?: string;
+  current?: boolean;
+};
+
+const {
+  items,
+  className = "mb-3",
+}: {
+  items: BreadcrumbItem[];
+  className?: string;
+} = Astro.props;
+
+const siteUrl = getSiteUrl(Astro.site);
+const currentPath = Astro.url?.pathname || "/";
+const normalizedItems = items.map((item, index) => ({
+  ...item,
+  href:
+    item.href ||
+    (item.current || index === items.length - 1 ? currentPath : ""),
+  current: item.current ?? index === items.length - 1,
+}));
+const breadcrumbData = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: normalizedItems.map((item, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: item.label,
+    item: new URL(item.href, siteUrl).toString(),
+  })),
+};
+const serializedBreadcrumbData = JSON.stringify(breadcrumbData).replace(
+  /</g,
+  "\\u003c",
+);
+---
+
+<nav aria-label="Breadcrumb">
+  <ol class:list={["breadcrumb", className]}>
+    {
+      normalizedItems.map((item) => (
+        <li
+          class:list={["breadcrumb-item", item.current && "active"]}
+          aria-current={item.current ? "page" : undefined}
+        >
+          {item.current ? (
+            item.label
+          ) : (
+            <a class="link-dark" href={item.href}>
+              {item.label}
+            </a>
+          )}
+        </li>
+      ))
+    }
+  </ol>
+</nav>
+<script type="application/ld+json" set:html={serializedBreadcrumbData} />

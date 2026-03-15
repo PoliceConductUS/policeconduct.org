@@ -4,7 +4,7 @@ import { buildWebPage, getSiteUrl } from "../lib/structured-data.js";
 
 const pagePath = "/";
 const pageDescription =
-  "PoliceConduct.org is a transformative platform empowering communities to provide real-time feedback on police interactions. Supporting transparency, accountability, and positive reinforcement, the site facilitates reporting, analysis, and communication with law enforcement. By aligning with DOJ standards and enhancing oversight, PoliceConduct.org aims to build trust and improve policing practices.";
+  "PoliceConduct.org is an independent nonprofit platform for police misconduct reports, positive police interaction records, and public accountability research across law enforcement agencies and personnel.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const organization = {
@@ -45,7 +45,7 @@ structuredData.mainEntity = organization;
 ---
 
 <SiteLayout
-  title="Institute for Police Conduct, Inc."
+  title="Police Misconduct Reports and Accountability Records | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
   structuredData={structuredData}

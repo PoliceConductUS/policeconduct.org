@@ -1,19 +1,36 @@
 ---
 import SiteLayout from "../../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../../components/Breadcrumbs.astro";
+import { buildWebPage, getSiteUrl } from "../../../lib/structured-data.js";
+
+const pagePath = "/partner/academic/";
+const pageDescription =
+  "Partnership information for academic researchers seeking structured policing data, longitudinal analysis, and public accountability research support.";
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: "Academic | PoliceConduct.org",
+  description: pageDescription,
+});
 ---
 
-<SiteLayout title="Academic | PoliceConduct.org" pagePath="/partner/academic/">
+<SiteLayout
+  title="Academic | PoliceConduct.org"
+  description={pageDescription}
+  pagePath={pagePath}
+  structuredData={structuredData}
+>
   <main class="flex-grow-1">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
-        <nav aria-label="Breadcrumb">
-          <ol class="breadcrumb mb-3">
-            <li class="breadcrumb-item">
-              <a class="link-dark" href="/partner/">Partners</a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">Academic</li>
-          </ol>
-        </nav>
+        <Breadcrumbs
+          items={[
+            { label: "Partner", href: "/partner/" },
+            { label: "Academic", href: pagePath, current: true },
+          ]}
+        />
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
             <p class="text-uppercase small text-muted mb-2">

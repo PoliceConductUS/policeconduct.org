@@ -109,6 +109,16 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
       agency.category,
       `Missing category for agency ${agency.id}`,
     );
+    const reportState = assertValue(
+      report.state,
+      `Missing state for report ${report.id}`,
+    )
+      .toString()
+      .trim()
+      .toLowerCase();
+    if (!reportState) {
+      throw new Error(`Blank state for report ${report.id}`);
+    }
     const agencySlug = assertValue(
       agency.slug,
       `Missing slug for agency ${agency.id}`,
@@ -122,6 +132,7 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
     return {
       id: report.id,
       slug: reportSlug,
+      state: reportState,
       title: report.title,
       incidentDate: incidentDate || report.incident_date || "",
       address: report.address || null,

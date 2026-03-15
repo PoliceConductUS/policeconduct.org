@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import UsaChoroplethMap from "../../components/UsaChoroplethMap.astro";
 import { withDb } from "../../lib/db.js";
 import { US_STATE_TILES } from "../../lib/geo/states.js";
@@ -135,6 +136,17 @@ if (federalItemList) {
       <div class="container">
         <div class="row g-5 align-items-end">
           <div class="col-12 col-lg-8">
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                {
+                  label: "Civil Litigation",
+                  href: civilLandingPath,
+                  current: true,
+                },
+              ]}
+              className="mb-2"
+            />
             <p class="text-uppercase small text-muted mb-2">Civil Litigation</p>
             <h1 class="display-4 fw-bold">Civil Litigation Cases</h1>
             <p class="lead text-muted mb-0">

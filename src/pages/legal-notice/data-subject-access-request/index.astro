@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "../../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../../components/Breadcrumbs.astro";
 ---
 
 <SiteLayout
@@ -11,16 +12,16 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-lg-8">
-          <nav aria-label="Breadcrumb">
-            <ol class="breadcrumb mb-3">
-              <li class="breadcrumb-item">
-                <a class="link-dark" href="/legal-notice/">Legal Notice</a>
-              </li>
-              <li class="breadcrumb-item active" aria-current="page">
-                Data Subject Access Request
-              </li>
-            </ol>
-          </nav>
+          <Breadcrumbs
+            items={[
+              { label: "Legal Notice", href: "/legal-notice/" },
+              {
+                label: "Data Subject Access Request",
+                href: "/legal-notice/data-subject-access-request/",
+                current: true,
+              },
+            ]}
+          />
           <h1>Data Subject Access Request</h1>
           <p>
             <strong>Last updated:</strong>

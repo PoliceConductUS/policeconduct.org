@@ -1,23 +1,35 @@
 ---
 import SiteLayout from "../../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../../components/Breadcrumbs.astro";
+import { buildWebPage, getSiteUrl } from "../../../lib/structured-data.js";
+
+const pagePath = "/legal-notice/acceptable-use/";
+const pageDescription =
+  "Acceptable use policy for PoliceConduct.org, including prohibited conduct and rules for using the site and services.";
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: "Acceptable Use | PoliceConduct.org",
+  description: pageDescription,
+});
 ---
 
 <SiteLayout
   title="Acceptable Use | PoliceConduct.org"
-  pagePath="/legal-notice/acceptable-use/"
+  description={pageDescription}
+  pagePath={pagePath}
+  structuredData={structuredData}
 >
   <main class="flex-grow-1 py-vh-3">
     <div class="container">
-      <nav aria-label="Breadcrumb">
-        <ol class="breadcrumb mb-3">
-          <li class="breadcrumb-item">
-            <a class="link-dark" href="/legal-notice/">Legal Notice</a>
-          </li>
-          <li class="breadcrumb-item active" aria-current="page">
-            Acceptable Use Policy
-          </li>
-        </ol>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Legal Notice", href: "/legal-notice/" },
+          { label: "Acceptable Use Policy", href: pagePath, current: true },
+        ]}
+      />
       <h1>ACCEPTABLE USE POLICY</h1>
       <p>Last updated <span>January 14, 2026</span></p>
       <p>

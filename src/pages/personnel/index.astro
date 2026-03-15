@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import { loadPersonnelSummaries } from "../../lib/data/summaries.js";
 import UsaChoroplethMap from "../../components/UsaChoroplethMap.astro";
 import { US_STATE_TILES } from "../../lib/geo/states.js";
@@ -54,16 +55,21 @@ const pagePath = "/personnel/";
 const suggestPersonnelHref = "/personnel/new/";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const federalAgencyItems = federalAgencies.map((agency, index) => ({
+const personnelItems = personnelRows.slice(0, 25).map((person, index) => ({
   "@type": "ListItem",
   position: index + 1,
   item: {
-    "@type": "GovernmentOrganization",
-    name: agency.name,
-    url: new URL(
-      `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
-      siteUrl,
-    ).toString(),
+    "@type": "Person",
+    name: person.name,
+    url: new URL(`/personnel/${person.slug}/`, siteUrl).toString(),
+    ...(person.agencyName
+      ? {
+          worksFor: {
+            "@type": "GovernmentOrganization",
+            name: person.agencyName,
+          },
+        }
+      : {}),
   },
 }));
 const structuredData = buildWebPage({
@@ -73,9 +79,9 @@ const structuredData = buildWebPage({
   description: "Personnel profiles currently listed on PoliceConduct.org.",
   type: "CollectionPage",
 });
-const federalItemList = buildItemList(federalAgencyItems);
-if (federalItemList) {
-  structuredData.mainEntity = federalItemList;
+const personnelItemList = buildItemList(personnelItems);
+if (personnelItemList) {
+  structuredData.mainEntity = personnelItemList;
 }
 ---
 
@@ -90,6 +96,13 @@ if (federalItemList) {
       <div class="container">
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: "Personnel", href: pagePath, current: true },
+              ]}
+              className="mb-2"
+            />
             <p class="text-uppercase small text-muted mb-2">Personnel</p>
             <h1 class="display-4 fw-bold">Personnel</h1>
             <p class="lead text-muted mb-0">

@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "../../../../../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../../../../../components/Breadcrumbs.astro";
 ---
 
 <SiteLayout
@@ -10,16 +11,16 @@ import SiteLayout from "../../../../../../layouts/SiteLayout.astro";
   <main class="">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
-        <nav aria-label="Breadcrumb">
-          <ol class="breadcrumb mb-3">
-            <li class="breadcrumb-item">
-              <a class="link-dark" href="/news/">News</a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">
-              Soft Launch Announcement
-            </li>
-          </ol>
-        </nav>
+        <Breadcrumbs
+          items={[
+            { label: "News", href: "/news/" },
+            {
+              label: "Soft Launch Announcement",
+              href: "/news/2025/01/19/institute-for-police-conduct-begins-soft-launch/",
+              current: true,
+            },
+          ]}
+        />
         <div class="row">
           <div class="col-12 col-lg-10">
             <p class="text-uppercase small text-muted mb-2">News</p>

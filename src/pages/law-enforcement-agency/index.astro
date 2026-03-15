@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import { loadAgencySummaries } from "../../lib/data/summaries.js";
 import UsaChoroplethMap from "../../components/UsaChoroplethMap.astro";
 import { US_STATE_TILES } from "../../lib/geo/states.js";
@@ -28,7 +29,7 @@ const pagePath = "/law-enforcement-agency/";
 const suggestAgencyHref = "/law-enforcement-agency/new/";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const federalAgencyItems = federalAgencies.map((agency, index) => ({
+const agencyItems = agencies.slice(0, 25).map((agency, index) => ({
   "@type": "ListItem",
   position: index + 1,
   item: {
@@ -48,9 +49,9 @@ const structuredData = buildWebPage({
     "Law enforcement agencies currently listed on PoliceConduct.org.",
   type: "CollectionPage",
 });
-const federalItemList = buildItemList(federalAgencyItems);
-if (federalItemList) {
-  structuredData.mainEntity = federalItemList;
+const agencyItemList = buildItemList(agencyItems);
+if (agencyItemList) {
+  structuredData.mainEntity = agencyItemList;
 }
 ---
 
@@ -65,6 +66,17 @@ if (federalItemList) {
       <div class="container">
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                {
+                  label: "Agencies",
+                  href: pagePath,
+                  current: true,
+                },
+              ]}
+              className="mb-2"
+            />
             <p class="text-uppercase small text-muted mb-2">
               Law Enforcement Agencies
             </p>

@@ -1,8 +1,8 @@
 ---
+import Breadcrumbs from "../../../components/Breadcrumbs.astro";
 import SiteLayout from "../../../layouts/SiteLayout.astro";
 import { US_STATE_TILES } from "../../../lib/geo/states.js";
 import { loadReportSummaries } from "../../../lib/data/summaries.js";
-import { getReportStateSlug } from "../../../lib/report-state-stats.js";
 import { buildItemList, getSiteUrl } from "../../../lib/structured-data.js";
 
 const PAGE_SIZE = 50;
@@ -18,7 +18,7 @@ const stateSlug = (state as string).toLowerCase();
 const stateCode = stateSlug.toUpperCase();
 const stateMeta = US_STATE_TILES.find((entry) => entry.code === stateCode);
 const allReports = (await loadReportSummaries()).filter(
-  (report) => getReportStateSlug(report) === stateSlug,
+  (report) => report.state === stateSlug,
 );
 const totalCount = allReports.length;
 const pageReports = allReports.slice(0, PAGE_SIZE);
@@ -48,30 +48,6 @@ const reportItems = pageReports.map((report, index) => ({
 }));
 const reportItemList = buildItemList(reportItems);
 const websiteId = new URL("/", siteUrl).toString();
-const breadcrumb = {
-  "@type": "BreadcrumbList",
-  "@id": `${pageUrl}#breadcrumb`,
-  itemListElement: [
-    {
-      "@type": "ListItem",
-      position: 1,
-      name: "Home",
-      item: websiteId,
-    },
-    {
-      "@type": "ListItem",
-      position: 2,
-      name: "Reports",
-      item: new URL("/report/", siteUrl).toString(),
-    },
-    {
-      "@type": "ListItem",
-      position: 3,
-      name: stateName,
-      item: pageUrl,
-    },
-  ],
-};
 const reportItemListId = reportItemList ? `${pageUrl}#itemlist` : null;
 const structuredData = {
   "@context": "https://schema.org",
@@ -90,9 +66,7 @@ const structuredData = {
       description: `Reports recorded within ${stateMeta?.name || stateCode}.`,
       isPartOf: { "@id": websiteId },
       ...(reportItemListId ? { mainEntity: { "@id": reportItemListId } } : {}),
-      breadcrumb: { "@id": breadcrumb["@id"] },
     },
-    breadcrumb,
     ...(reportItemList ? [{ ...reportItemList, "@id": reportItemListId }] : []),
   ],
 };
@@ -111,6 +85,7 @@ const formatDisplayDate = (value?: string | null) => {
 
 <SiteLayout
   title={title}
+  description={`Reports recorded within ${stateName}.`}
   pagePath={pagePath}
   canonicalUrl={pagePath}
   structuredData={structuredData}
@@ -120,19 +95,14 @@ const formatDisplayDate = (value?: string | null) => {
       <div class="container">
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
-            <nav aria-label="Breadcrumb">
-              <ol class="breadcrumb mb-2">
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href="/">Home</a>
-                </li>
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href="/report/">Reports</a>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">
-                  {stateName}
-                </li>
-              </ol>
-            </nav>
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: "Reports", href: "/report/" },
+                { label: stateName, href: pagePath, current: true },
+              ]}
+              className="mb-2"
+            />
             <p class="text-uppercase small text-muted mb-2">State reports</p>
             <h1 class="display-4 fw-bold">{title}</h1>
             <p class="lead text-muted mb-0">

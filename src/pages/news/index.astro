@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
 ---
 
 <SiteLayout
@@ -12,6 +13,13 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
       <div class="container">
         <div class="row">
           <div class="col-12 col-lg-10">
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: "News", href: "/news/", current: true },
+              ]}
+              className="mb-2"
+            />
             <p class="text-uppercase small text-muted mb-2">News</p>
             <h1 class="display-4 fw-bold">News</h1>
             <p class="lead mb-0">
@@ -57,6 +65,76 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
     <section class="py-vh-2">
       <div class="container">
         <div class="list-group shadow-sm">
+          <a
+            class="list-group-item list-group-item-action"
+            href="/news/2026/03/29/why-policeconduct-org-documents-positive-police-conduct-too/"
+          >
+            <div class="row g-2 align-items-start">
+              <div class="col">
+                <div class="text-uppercase small text-muted">
+                  March 29, 2026
+                </div>
+                <div class="fw-semibold">
+                  Why PoliceConduct.org Documents Positive Police Conduct Too
+                </div>
+                <p class="mb-1 text-muted">
+                  A forthcoming explanation of why commendations and respectful
+                  police interactions belong in the public record alongside
+                  misconduct reports.
+                </p>
+              </div>
+              <div class="col-auto">
+                <span class="badge bg-secondary rounded-pill">Coming Soon</span>
+              </div>
+            </div>
+          </a>
+          <a
+            class="list-group-item list-group-item-action"
+            href="/news/2026/03/22/what-happens-after-you-submit-a-report-to-policeconduct-org/"
+          >
+            <div class="row g-2 align-items-start">
+              <div class="col">
+                <div class="text-uppercase small text-muted">
+                  March 22, 2026
+                </div>
+                <div class="fw-semibold">
+                  What Happens After You Submit a Report to PoliceConduct.org
+                </div>
+                <p class="mb-1 text-muted">
+                  A forthcoming guide to intake, review, follow-up, publication,
+                  and corrections so contributors know what to expect after
+                  submitting a report.
+                </p>
+              </div>
+              <div class="col-auto">
+                <span class="badge bg-secondary rounded-pill">Coming Soon</span>
+              </div>
+            </div>
+          </a>
+          <a
+            class="list-group-item list-group-item-action"
+            href="/news/2026/03/15/how-policeconduct-org-verifies-reports-handles-corrections-and-builds-a-durable-public-record/"
+          >
+            <div class="row g-2 align-items-start">
+              <div class="col">
+                <div class="text-uppercase small text-muted">
+                  March 15, 2026
+                </div>
+                <div class="fw-semibold">
+                  How PoliceConduct.org Verifies Reports, Handles Corrections,
+                  and Builds a Durable Public Record
+                </div>
+                <p class="mb-1 text-muted">
+                  PoliceConduct.org explains how it reviews submissions,
+                  requests supporting detail, handles disputes and corrections,
+                  and maintains a durable public record over time.
+                </p>
+              </div>
+              <div class="col-auto">
+                <span class="badge bg-dark rounded-pill">New</span>
+              </div>
+            </div>
+          </a>
           <a
             class="list-group-item list-group-item-action"
             href="/news/2026/02/17/section1983-org-launches-free-guide-for-pro-se-plaintiffs/"

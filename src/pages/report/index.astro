@@ -1,11 +1,12 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
 import UsaChoroplethMap from "../../components/UsaChoroplethMap.astro";
+import { US_STATE_TILES } from "../../lib/geo/states.js";
 import {
   loadAgencySummaries,
   loadReportSummaries,
 } from "../../lib/data/summaries.js";
-import { buildReportStateStats } from "../../lib/report-state-stats.js";
 import {
   buildItemList,
   buildWebPage,
@@ -14,7 +15,18 @@ import {
 
 const reports = await loadReportSummaries();
 const agencies = await loadAgencySummaries();
-const stateStats = buildReportStateStats(reports);
+const reportCountsByState = new Map<string, number>();
+for (const report of reports) {
+  reportCountsByState.set(
+    report.state.toUpperCase(),
+    (reportCountsByState.get(report.state.toUpperCase()) || 0) + 1,
+  );
+}
+const stateStats = US_STATE_TILES.map((state) => ({
+  code: state.code,
+  count: reportCountsByState.get(state.code) || 0,
+  href: `/report/${state.code.toLowerCase()}/`,
+}));
 const federalAgencies = agencies.filter(
   (agency) => agency.category === "federal",
 );
@@ -22,14 +34,19 @@ const totalReports = reports.length;
 const pagePath = "/report/";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const federalAgencyItems = federalAgencies.map((agency, index) => {
+const reportItems = reports.slice(0, 25).map((report, index) => {
   const item = {
-    "@type": "GovernmentOrganization",
-    name: agency.name,
-    url: new URL(
-      `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
-      siteUrl,
-    ).toString(),
+    "@type": "Report",
+    name: report.title,
+    url: new URL(`/report/${report.state}/${report.slug}/`, siteUrl).toString(),
+    ...(report.agencyName
+      ? {
+          about: {
+            "@type": "GovernmentOrganization",
+            name: report.agencyName,
+          },
+        }
+      : {}),
   };
   return {
     "@type": "ListItem",
@@ -44,9 +61,9 @@ const structuredData = buildWebPage({
   description: "Reports submitted by users documenting police interactions.",
   type: "CollectionPage",
 });
-const federalItemList = buildItemList(federalAgencyItems);
-if (federalItemList) {
-  structuredData.mainEntity = federalItemList;
+const reportItemList = buildItemList(reportItems);
+if (reportItemList) {
+  structuredData.mainEntity = reportItemList;
 }
 ---
 
@@ -61,6 +78,13 @@ if (federalItemList) {
       <div class="container">
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: "Reports", href: pagePath, current: true },
+              ]}
+              className="mb-2"
+            />
             <p class="text-uppercase small text-muted mb-2">Reports</p>
             <h1 class="display-4 fw-bold">Reports</h1>
             <p class="lead text-muted mb-0">
@@ -78,7 +102,7 @@ if (federalItemList) {
                 </div>
                 <div class="text-muted small">
                   Hover over a state to see the report count; click to view
-                  reports by sate. Federal agencies are listed separately.
+                  reports by state. Federal agencies are listed separately.
                 </div>
               </div>
             </div>

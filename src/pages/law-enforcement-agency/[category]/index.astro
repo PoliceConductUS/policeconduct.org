@@ -1,4 +1,5 @@
 ---
+import Breadcrumbs from "../../../components/Breadcrumbs.astro";
 import SiteLayout from "../../../layouts/SiteLayout.astro";
 import { loadAgencySummaries } from "../../../lib/data/summaries.js";
 import { US_STATE_TILES } from "../../../lib/geo/states.js";
@@ -91,30 +92,6 @@ const agencyItems = pageAgencies.map((agency, index) => {
 });
 const agencyItemList = buildItemList(agencyItems);
 const websiteId = new URL("/", siteUrl).toString();
-const breadcrumb = {
-  "@type": "BreadcrumbList",
-  "@id": `${pageUrl}#breadcrumb`,
-  itemListElement: [
-    {
-      "@type": "ListItem",
-      position: 1,
-      name: "Home",
-      item: websiteId,
-    },
-    {
-      "@type": "ListItem",
-      position: 2,
-      name: "Agencies",
-      item: new URL("/law-enforcement-agency/", siteUrl).toString(),
-    },
-    {
-      "@type": "ListItem",
-      position: 3,
-      name: categoryLabel,
-      item: pageUrl,
-    },
-  ],
-};
 const agencyItemListId = agencyItemList ? `${pageUrl}#itemlist` : null;
 const structuredData = {
   "@context": "https://schema.org",
@@ -133,9 +110,7 @@ const structuredData = {
       description: pageDescription,
       isPartOf: { "@id": websiteId },
       ...(agencyItemListId ? { mainEntity: { "@id": agencyItemListId } } : {}),
-      breadcrumb: { "@id": breadcrumb["@id"] },
     },
-    breadcrumb,
     ...(agencyItemList ? [{ ...agencyItemList, "@id": agencyItemListId }] : []),
   ],
 };
@@ -143,6 +118,7 @@ const structuredData = {
 
 <SiteLayout
   title={title}
+  description={`Law enforcement agencies currently listed for ${categoryLabel}.`}
   pagePath={pagePath}
   canonicalUrl={pagePath}
   structuredData={structuredData}
@@ -152,21 +128,14 @@ const structuredData = {
       <div class="container">
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
-            <nav aria-label="Breadcrumb">
-              <ol class="breadcrumb mb-2">
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href="/">Home</a>
-                </li>
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href="/law-enforcement-agency/"
-                    >Agencies</a
-                  >
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">
-                  {categoryLabel}
-                </li>
-              </ol>
-            </nav>
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: "Agencies", href: "/law-enforcement-agency/" },
+                { label: categoryLabel, href: pagePath, current: true },
+              ]}
+              className="mb-2"
+            />
             <p class="text-uppercase small text-muted mb-2">
               {
                 categoryParam.toLowerCase() === "federal"

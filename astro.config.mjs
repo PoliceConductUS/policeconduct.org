@@ -32,6 +32,20 @@ const sentryDsn = requireNonEmptyString(
   env.PUBLIC_SENTRY_DSN,
   "PUBLIC_SENTRY_DSN",
 );
+const SITEMAP_EXCLUDED_PATHS = new Set([
+  "/404/",
+  "/about/contact/",
+  "/civil-litigation/new/",
+  "/civil-litigation/suggest-edit/",
+  "/law-enforcement-agency/new/",
+  "/law-enforcement-agency/suggest-edit/",
+  "/legal-notice/data-subject-access-request/",
+  "/personnel/new/",
+  "/personnel/suggest-edit/",
+  "/report/new/",
+  "/status/",
+  "/volunteer/",
+]);
 
 // https://astro.build/config
 export default defineConfig({
@@ -61,6 +75,10 @@ export default defineConfig({
   integrations: [
     sitemap({
       entryLimit: 45000,
+      filter: (page) => {
+        const pathname = new URL(page).pathname;
+        return !SITEMAP_EXCLUDED_PATHS.has(pathname);
+      },
     }),
     sentry(),
   ],

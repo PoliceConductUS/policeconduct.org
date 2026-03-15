@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "../../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../../components/Breadcrumbs.astro";
 ---
 
 <SiteLayout
@@ -11,16 +12,12 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-lg-8">
-          <nav aria-label="Breadcrumb">
-            <ol class="breadcrumb mb-3">
-              <li class="breadcrumb-item">
-                <a class="link-dark" href="/about/">About</a>
-              </li>
-              <li class="breadcrumb-item active" aria-current="page">
-                Contact
-              </li>
-            </ol>
-          </nav>
+          <Breadcrumbs
+            items={[
+              { label: "About", href: "/about/" },
+              { label: "Contact", href: "/about/contact/", current: true },
+            ]}
+          />
           <h1 class="display-5 fw-bold">Contact us</h1>
           <p class="lead text-muted">
             Tell us who you are and how we can help.

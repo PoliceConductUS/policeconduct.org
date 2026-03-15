@@ -1,13 +1,39 @@
 ---
 import SiteLayout from "../../layouts/SiteLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import { buildWebPage, getSiteUrl } from "../../lib/structured-data.js";
+
+const pagePath = "/help-center/";
+const pageDescription =
+  "Guidance for writing credible police interaction reports, using AI responsibly, protecting privacy, and strengthening public accountability records.";
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: "Help Center | PoliceConduct.org",
+  description: pageDescription,
+});
 ---
 
-<SiteLayout title="Help Center | PoliceConduct.org" pagePath="/help-center/">
+<SiteLayout
+  title="Help Center | PoliceConduct.org"
+  description={pageDescription}
+  pagePath={pagePath}
+  structuredData={structuredData}
+>
   <main class="flex-grow-1">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: "Help Center", href: pagePath, current: true },
+              ]}
+              className="mb-2"
+            />
             <p class="text-uppercase small text-muted mb-2">Help Center</p>
             <h1 class="display-4 fw-bold">
               Write Reports That Stand Up to Scrutiny

@@ -1,11 +1,10 @@
 ---
+import Breadcrumbs from "../../../../../components/Breadcrumbs.astro";
 import SiteLayout from "../../../../../layouts/SiteLayout.astro";
 import { formatLongDate } from "../../../../../lib/format.js";
 import { loadReportDetail } from "../../../../../lib/report-detail.js";
 import { loadReportSummaries } from "../../../../../lib/data/summaries.js";
-import { getReportStateSlug } from "../../../../../lib/report-state-stats.js";
 import { US_STATE_TILES } from "../../../../../lib/geo/states.js";
-import type { ReportSummary } from "../../../../../lib/data/types.js";
 import { getSiteUrl } from "../../../../../lib/structured-data.js";
 
 export async function getStaticPaths() {
@@ -13,11 +12,6 @@ export async function getStaticPaths() {
   const paths = [];
 
   for (const report of reports) {
-    const stateSlug = getReportStateSlug(report);
-    if (!stateSlug) {
-      continue;
-    }
-
     const detail = await loadReportDetail(report.slug);
     if (!detail) {
       continue;
@@ -29,7 +23,7 @@ export async function getStaticPaths() {
     for (const link of embeddableLinks) {
       paths.push({
         params: {
-          state: stateSlug,
+          state: report.state,
           slug: report.slug,
           videoId: link.id,
         },
@@ -62,12 +56,11 @@ if (!primaryAgencyCategory || !primaryAgencySlug) {
   throw new Error(`Report ${slug} primary agency is missing category or slug.`);
 }
 
-const reportStateSlug = getReportStateSlug({
-  category: (data.report as ReportSummary).category ?? null,
-  agencySlug: `${primaryAgencyCategory}/${primaryAgencySlug}`,
-});
+const reportStateSlug = String(data.report.state || "")
+  .trim()
+  .toLowerCase();
 if (!reportStateSlug) {
-  throw new Error(`Report ${slug} is not associated with a state.`);
+  throw new Error(`Report ${slug} is missing state.`);
 }
 if (reportStateSlug !== stateSlug) {
   return Astro.redirect(
@@ -177,24 +170,14 @@ const structuredData = {
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-12 col-lg-10 col-xl-8">
-            <nav aria-label="Breadcrumb">
-              <ol class="breadcrumb mb-3">
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href="/report/">Reports</a>
-                </li>
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href={`/report/${stateSlug}/`}
-                    >{stateName}</a
-                  >
-                </li>
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href={reportPath}>{reportTitle}</a>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">
-                  Watch
-                </li>
-              </ol>
-            </nav>
+            <Breadcrumbs
+              items={[
+                { label: "Reports", href: "/report/" },
+                { label: stateName, href: `/report/${stateSlug}/` },
+                { label: reportTitle, href: reportPath },
+                { label: "Watch", href: watchPath, current: true },
+              ]}
+            />
 
             <p class="text-uppercase small text-muted mb-2">Watch page</p>
             <h1 class="display-6 fw-bold">{videoTitle}</h1>
