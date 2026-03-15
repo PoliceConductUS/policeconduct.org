@@ -5,6 +5,10 @@ import { loadEnv } from "vite";
 
 import sentry from "@sentry/astro";
 
+/**
+ * @param {string} value
+ * @param {string} name
+ */
 function requireNonEmptyString(value, name) {
   if (typeof value !== "string") {
     throw new Error(`${name} must be set.`);

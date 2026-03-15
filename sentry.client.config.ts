@@ -75,7 +75,7 @@ window.__IPC_SENTRY_FEEDBACK__ = {
     feedbackDialog.appendToDom();
     feedbackDialog.open();
 
-    const root = feedbackDialog.el;
+    const root = feedbackDialog.el as Element;
 
     if (options?.message) {
       const messageField = root?.querySelector(
