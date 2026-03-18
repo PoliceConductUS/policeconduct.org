@@ -1,7 +1,7 @@
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import AOS from "aos";
 import "aos/dist/aos.css";
-import { readAndConsumeFlashPrefill, setFlashPrefill } from "../lib/prefill";
+import { readAndConsumeFlashPrefill, setFlashPrefill } from "#src/lib/prefill";
 
 const initBetaBanner = () => {
   const storageKey = "ipc_beta_banner_dismissed_v1";

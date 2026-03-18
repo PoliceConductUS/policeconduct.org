@@ -1,10 +1,10 @@
 ---
-import Breadcrumbs from "../../../../components/Breadcrumbs.astro";
-import SiteLayout from "../../../../layouts/SiteLayout.astro";
-import { loadAgencySummaries } from "../../../../lib/data/summaries.js";
-import { US_STATE_TILES } from "../../../../lib/geo/states.js";
-import AgencyCard from "../../../../components/AgencyCard.astro";
-import { buildItemList, getSiteUrl } from "../../../../lib/structured-data.js";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { loadAgencySummaries } from "#src/lib/data/summaries.js";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import AgencyCard from "#src/components/AgencyCard.astro";
+import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths({ paginate }: { paginate: any }) {
   const pageSize = 50;

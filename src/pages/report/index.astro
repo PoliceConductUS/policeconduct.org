@@ -1,17 +1,17 @@
 ---
-import SiteLayout from "../../layouts/SiteLayout.astro";
-import Breadcrumbs from "../../components/Breadcrumbs.astro";
-import UsaChoroplethMap from "../../components/UsaChoroplethMap.astro";
-import { US_STATE_TILES } from "../../lib/geo/states.js";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import {
   loadAgencySummaries,
   loadReportSummaries,
-} from "../../lib/data/summaries.js";
+} from "#src/lib/data/summaries.js";
 import {
   buildItemList,
   buildWebPage,
   getSiteUrl,
-} from "../../lib/structured-data.js";
+} from "#src/lib/structured-data.js";
 
 const reports = await loadReportSummaries();
 const agencies = await loadAgencySummaries();

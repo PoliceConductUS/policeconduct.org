@@ -1,5 +1,5 @@
-import { withDb } from "../db.js";
-import { groupBy, mapBy } from "../data.js";
+import { withDb } from "#src/lib/db.js";
+import { groupBy, mapBy } from "#src/lib/data.js";
 import type { ReportSummary } from "./types.js";
 
 const assertValue = <T>(value: T | null | undefined, message: string): T => {

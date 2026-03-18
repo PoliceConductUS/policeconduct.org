@@ -1,15 +1,15 @@
 ---
-import SiteLayout from "../../layouts/SiteLayout.astro";
-import Breadcrumbs from "../../components/Breadcrumbs.astro";
-import { loadPersonnelSummaries } from "../../lib/data/summaries.js";
-import UsaChoroplethMap from "../../components/UsaChoroplethMap.astro";
-import { US_STATE_TILES } from "../../lib/geo/states.js";
-import { withDb } from "../../lib/db.js";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import { loadPersonnelSummaries } from "#src/lib/data/summaries.js";
+import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { withDb } from "#src/lib/db.js";
 import {
   buildItemList,
   buildWebPage,
   getSiteUrl,
-} from "../../lib/structured-data.js";
+} from "#src/lib/structured-data.js";
 
 const personnelRows = await loadPersonnelSummaries();
 const federalAgencies = await withDb(async (client) => {

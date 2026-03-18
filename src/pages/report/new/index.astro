@@ -1,7 +1,7 @@
 ---
-import SiteLayout from "../../../layouts/SiteLayout.astro";
-import { groupBy } from "../../../lib/data.js";
-import { withDb } from "../../../lib/db.js";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { groupBy } from "#src/lib/data.js";
+import { withDb } from "#src/lib/db.js";
 
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
 

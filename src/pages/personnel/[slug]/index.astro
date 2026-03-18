@@ -1,14 +1,14 @@
 ---
-import Breadcrumbs from "../../../components/Breadcrumbs.astro";
-import SiteLayout from "../../../layouts/SiteLayout.astro";
-import DisqusComments from "../../../components/DisqusComments.astro";
-import { withDb } from "../../../lib/db.js";
-import { groupBy, mapBy, normalizeAgencyHistory } from "../../../lib/data.js";
-import { formatShortDate } from "../../../lib/format.js";
-import { getPersonnelImageById } from "../../../lib/personnel-images.js";
-import { caseSlug } from "../../../lib/slug.js";
-import ProfileTabs from "../../../components/ProfileTabs.astro";
-import { getSiteUrl } from "../../../lib/structured-data.js";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import DisqusComments from "#src/components/DisqusComments.astro";
+import { withDb } from "#src/lib/db.js";
+import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
+import { formatShortDate } from "#src/lib/format.js";
+import { getPersonnelImageById } from "#src/lib/personnel-images.js";
+import { caseSlug } from "#src/lib/slug.js";
+import ProfileTabs from "#src/components/ProfileTabs.astro";
+import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
   const officers = await withDb(async (client) => {
