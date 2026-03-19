@@ -108,7 +108,9 @@ async function installRecaptchaMock(page) {
 
 test.describe("form submissions", () => {
   for (const form of forms) {
-    test(`submits ${form.formName}`, async ({ page }) => {
+    test(`success › ${form.formName} stays on-page and shows submission ID`, async ({
+      page,
+    }) => {
       await installRecaptchaMock(page);
 
       await page.route("**/api/forms/submit", async (route) => {
@@ -180,7 +182,7 @@ test.describe("form submissions", () => {
     });
   }
 
-  test("submission errors stay on-page and show the inline error", async ({
+  test("error › contact stays on-page and shows the inline error", async ({
     page,
   }) => {
     await installRecaptchaMock(page);
@@ -226,7 +228,9 @@ test.describe("form submissions", () => {
     await expect(error).toContainText("Mocked submission failure for e2e.");
   });
 
-  test("footer report issue opens Sentry feedback", async ({ page }) => {
+  test("feedback › footer report issue opens Sentry feedback", async ({
+    page,
+  }) => {
     await page.goto("/about/contact/");
     await page.evaluate(() => {
       window.__IPC_SENTRY_FEEDBACK__ = {

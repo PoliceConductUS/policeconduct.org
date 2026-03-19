@@ -458,7 +458,10 @@ const structuredData = buildWebPage({
               href={donatePageCopy.clubsContactPath}
               target="_self"
               data-prefill-key="prefill:contact"
-              data-prefill-payload={JSON.stringify({ whoami: "Donor" })}
+              data-prefill-payload={JSON.stringify({
+                whoami: "Donor",
+                message: "Question about club benefits.",
+              })}
             >
               {donatePageCopy.clubsContactLabel}
             </a>

@@ -251,7 +251,10 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
           class="link-dark"
           target="_self"
           data-prefill-key="prefill:contact"
-          data-prefill-payload={JSON.stringify({ whoami: "Volunteer" })}
+          data-prefill-payload={JSON.stringify({
+            whoami: "Volunteer",
+            message: "Help me find the right volunteer role.",
+          })}
         >
           >Reach out and we will match you to a role.</a
         >
