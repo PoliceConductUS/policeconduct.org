@@ -25,9 +25,6 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 
-# Local Netlify folder
-.netlify
-
 # terraform
 .terraform/
 *.tfstate
@@ -37,3 +34,5 @@ crash.log
 !infrastructure/bootstrap/terraform.tfvars.example
 infrastructure/bootstrap/lambdas/*.zip
 forms-api.zip
+upgrade.log
+test-results/
