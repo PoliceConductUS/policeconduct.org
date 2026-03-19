@@ -17,6 +17,7 @@
     "litigation:decisions:sync": "node --env-file=.env scripts/litigation/decisions-sync.mjs",
     "litigation:seed": "node --env-file=.env scripts/litigation/seed-from-yaml.mjs",
     "litigation:schema:introspect": "node --env-file=.env scripts/litigation/schema-introspect.mjs",
+    "test": "npm run test:e2e",
     "test:e2e": "playwright test",
     "preflight:publish": "npm run seo:audit && npm run audit:a11y",
     "preflight:publish:full": "npm run build && npm run preflight:publish",
@@ -24,7 +25,7 @@
     "preview": "astro preview"
   },
   "dependencies": {
-    "@astrojs/sitemap": "^3.7.0",
+    "@astrojs/sitemap": "^3.7.1",
     "@sentry/astro": "^10.43.0",
     "aos": "^2.3.4",
     "astro": "^6.0.0-beta.1",
