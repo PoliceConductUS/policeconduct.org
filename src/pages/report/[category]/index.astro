@@ -8,9 +8,25 @@ import { PAGE_SIZE } from "#src/lib/pagination.js";
 import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
-  return US_STATE_TILES.map((state) => ({
-    params: { category: state.code.toLowerCase() },
-  }));
+  const reports = await loadReportSummaries();
+  const reportsByState = new Map<string, typeof reports>();
+
+  reports.forEach((report) => {
+    const list = reportsByState.get(report.state) || [];
+    list.push(report);
+    reportsByState.set(report.state, list);
+  });
+
+  return US_STATE_TILES.map((state) => {
+    const category = state.code.toLowerCase();
+    const categoryReports = reportsByState.get(category) || [];
+    return {
+      params: { category },
+      props: {
+        allReports: categoryReports,
+      },
+    };
+  });
 }
 
 const { category } = Astro.params;
@@ -19,9 +35,7 @@ const categoryCode = categorySlug.toUpperCase();
 const categoryMeta = US_STATE_TILES.find(
   (entry) => entry.code === categoryCode,
 );
-const allReports = (await loadReportSummaries()).filter(
-  (report) => report.state === categorySlug,
-);
+const { allReports = [] } = Astro.props;
 const totalCount = allReports.length;
 const pageReports = allReports.slice(0, PAGE_SIZE);
 const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));

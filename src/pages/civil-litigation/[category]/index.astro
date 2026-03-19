@@ -15,12 +15,24 @@ import {
 } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
-  return [
-    ...US_STATE_TILES.map((state) => ({
-      params: { category: state.code.toLowerCase() },
-    })),
-    { params: { category: "federal" } },
+  const categoryEntries = [
+    ...US_STATE_TILES.map((state) => state.code.toLowerCase()),
+    "federal",
   ];
+
+  const categoryCases = await Promise.all(
+    categoryEntries.map(async (category) => ({
+      category,
+      cases: await loadCivilCasesByCategory(category.toUpperCase()),
+    })),
+  );
+
+  return categoryCases.map(({ category, cases }) => ({
+    params: { category },
+    props: {
+      allCases: cases,
+    },
+  }));
 }
 
 const { category } = Astro.params;
@@ -32,7 +44,7 @@ const categoryMeta = US_STATE_TILES.find(
 const categoryLabel =
   categoryParam === "federal" ? "Federal" : categoryMeta?.name || categoryCode;
 
-const casesWithDetails = await loadCivilCasesByCategory(categoryCode);
+const { allCases: casesWithDetails = [] } = Astro.props;
 const caseCount = casesWithDetails.length;
 const pageCases = casesWithDetails.slice(0, PAGE_SIZE);
 const totalPages = Math.max(1, Math.ceil(caseCount / PAGE_SIZE));

@@ -12,11 +12,36 @@ import { PAGE_SIZE } from "#src/lib/pagination.js";
 import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
+  const personnel = await loadPersonnelSummaries();
+  const personnelByCategory = new Map<string, PersonnelSummary[]>();
+
+  personnel.forEach((person) => {
+    const category = person.agencyCategory?.toLowerCase();
+    if (!category) {
+      return;
+    }
+    const list = personnelByCategory.get(category) || [];
+    list.push(person);
+    personnelByCategory.set(category, list);
+  });
+
   return [
-    ...US_STATE_TILES.map((state) => ({
-      params: { category: state.code.toLowerCase() },
-    })),
-    { params: { category: "federal" } },
+    ...US_STATE_TILES.map((state) => {
+      const category = state.code.toLowerCase();
+      const categoryPersonnel = personnelByCategory.get(category) || [];
+      return {
+        params: { category },
+        props: {
+          allPersonnel: categoryPersonnel,
+        },
+      };
+    }),
+    {
+      params: { category: "federal" },
+      props: {
+        allPersonnel: personnelByCategory.get("federal") || [],
+      },
+    },
   ];
 }
 
@@ -28,9 +53,7 @@ const categoryMeta = US_STATE_TILES.find(
 );
 const categoryLabel =
   categoryParam === "federal" ? "Federal" : categoryMeta?.name || categoryCode;
-const allPersonnel = (await loadPersonnelSummaries()).filter(
-  (person) => person.agencyCategory?.toLowerCase() === categoryParam,
-);
+const { allPersonnel = [] } = Astro.props;
 const totalCount = allPersonnel.length;
 const pagePersonnel = allPersonnel.slice(0, PAGE_SIZE);
 const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));

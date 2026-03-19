@@ -29,6 +29,9 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
     const categoryPages = paginate(categoryAgencies, {
       pageSize: PAGE_SIZE,
       params: { category },
+      props: {
+        allAgencies: categoryAgencies,
+      },
     });
     categoryPages
       .filter((page: any) => page.params.page !== "1")
@@ -57,9 +60,7 @@ const titleBase =
       : `${categoryCode} Law Enforcement Agencies`;
 const title =
   page.currentPage > 1 ? `${titleBase} – Page ${page.currentPage}` : titleBase;
-const allAgencies = (await loadAgencySummaries()).filter(
-  (agency) => agency.category?.toLowerCase() === categoryParam.toLowerCase(),
-);
+const { allAgencies = [] } = Astro.props;
 const alphaItems = buildAlphaPageMap(
   allAgencies,
   (agency) => agency.name,

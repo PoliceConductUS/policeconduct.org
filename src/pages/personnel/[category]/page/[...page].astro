@@ -30,6 +30,9 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
     const categoryPages = paginate(categoryPersonnel, {
       pageSize: PAGE_SIZE,
       params: { category },
+      props: {
+        allPersonnel: categoryPersonnel,
+      },
     });
     categoryPages
       .filter((page: any) => page.params.page !== "1")
@@ -54,9 +57,7 @@ const titleBase =
     : `${categoryLabel} Personnel`;
 const title =
   page.currentPage > 1 ? `${titleBase} – Page ${page.currentPage}` : titleBase;
-const allPersonnel = (await loadPersonnelSummaries()).filter(
-  (person) => person.agencyCategory?.toLowerCase() === categoryParam,
-);
+const { allPersonnel = [] } = Astro.props;
 const alphaItems = buildAlphaPageMap(
   allPersonnel,
   (person) => person.lastName,
