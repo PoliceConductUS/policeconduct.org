@@ -952,6 +952,8 @@ resource "aws_lambda_function" "forms_api_prod" {
       RECAPTCHA_MIN_SCORE                  = tostring(var.recaptcha_min_score)
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
+      SENTRY_DSN                           = local.sentry_dsn_production == null ? "" : local.sentry_dsn_production
+      SENTRY_ENVIRONMENT                   = "production"
     }
   }
 }
@@ -982,6 +984,8 @@ resource "aws_lambda_function" "forms_api_preview" {
       RECAPTCHA_MIN_SCORE                  = tostring(var.recaptcha_min_score)
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
+      SENTRY_DSN                           = local.sentry_dsn_preview == null ? "" : local.sentry_dsn_preview
+      SENTRY_ENVIRONMENT                   = "preview"
     }
   }
 }

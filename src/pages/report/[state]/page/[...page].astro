@@ -1,5 +1,6 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Pagination from "#src/components/Pagination.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import type { ReportSummary } from "#src/lib/data/types.js";
@@ -42,8 +43,6 @@ const titleBase = stateMeta
 const title =
   page.currentPage > 1 ? `${titleBase} – Page ${page.currentPage}` : titleBase;
 const pagePath = `/report/${stateSlug}/page/${page.currentPage}/`;
-const prevUrl =
-  page.currentPage === 2 ? `/report/${stateSlug}/` : page.url.prev?.toString();
 const totalCount = page.total ?? page.data.length;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
@@ -240,25 +239,11 @@ const formatDisplayDate = (value?: string | null) => {
             </div>
           )
         }
-        <nav aria-label="Pagination" class="mt-4">
-          {
-            prevUrl ? (
-              <a class="btn btn-outline-dark rounded-0 me-2" href={prevUrl}>
-                Previous
-              </a>
-            ) : null
-          }
-          {
-            page.url.next ? (
-              <a
-                class="btn btn-outline-dark rounded-0"
-                href={page.url.next.toString()}
-              >
-                Next
-              </a>
-            ) : null
-          }
-        </nav>
+        <Pagination
+          basePath={`/report/${stateSlug}/`}
+          currentPage={page.currentPage}
+          lastPage={page.lastPage}
+        />
       </div>
     </section>
   </main>

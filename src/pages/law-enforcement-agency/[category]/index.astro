@@ -1,5 +1,8 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import AlphaNavigation from "#src/components/AlphaNavigation.astro";
+import Pagination from "#src/components/Pagination.astro";
+import { buildAlphaPageMap } from "#src/lib/alpha-navigation.js";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { loadAgencySummaries } from "#src/lib/data/summaries.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
@@ -44,6 +47,11 @@ const { agencies = [], totalCount = 0 } = Astro.props;
 const pageSize = 50;
 const pageAgencies = agencies.slice(0, pageSize);
 const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+const alphaItems = buildAlphaPageMap(
+  agencies,
+  (agency) => agency.name,
+  pageSize,
+);
 const categoryMeta = US_STATE_TILES.find(
   (entry) => entry.code === categoryCode,
 );
@@ -164,6 +172,12 @@ const structuredData = {
 
     <section class="py-vh-2">
       <div class="container">
+        <AlphaNavigation
+          items={alphaItems}
+          basePath={pagePath}
+          currentPage={1}
+          label={`${categoryLabel} agencies alphabetical navigation`}
+        />
         {
           agencies.length === 0 ? (
             <div
@@ -193,18 +207,7 @@ const structuredData = {
             </div>
           )
         }
-        {
-          totalPages > 1 ? (
-            <nav aria-label="Pagination" class="mt-4">
-              <a
-                class="btn btn-outline-dark rounded-0"
-                href={`/law-enforcement-agency/${categoryParam.toLowerCase()}/page/2/`}
-              >
-                Next
-              </a>
-            </nav>
-          ) : null
-        }
+        <Pagination basePath={pagePath} currentPage={1} lastPage={totalPages} />
       </div>
     </section>
   </main>

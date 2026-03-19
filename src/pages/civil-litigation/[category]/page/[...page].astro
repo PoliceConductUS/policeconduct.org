@@ -15,33 +15,42 @@ import {
 
 const PAGE_SIZE = 50;
 
-export async function getStaticPaths() {
-  return [
-    ...US_STATE_TILES.map((state) => ({
-      params: { category: state.code.toLowerCase() },
-    })),
-    { params: { category: "federal" } },
-  ];
+export async function getStaticPaths({ paginate }: { paginate: any }) {
+  const pages: any[] = [];
+
+  for (const category of [
+    ...US_STATE_TILES.map((state) => state.code.toLowerCase()),
+    "federal",
+  ]) {
+    const cases = await loadCivilCasesByCategory(category.toUpperCase());
+    paginate(cases, {
+      pageSize: PAGE_SIZE,
+      params: { category },
+    })
+      .filter((page: any) => page.params.page !== "1")
+      .forEach((page: any) => pages.push(page));
+  }
+
+  return pages;
 }
 
+const { page } = Astro.props;
 const { category } = Astro.params;
-const categoryParam = (category || "").toLowerCase();
+const categoryParam = String(category || "").toLowerCase();
 const categoryCode = categoryParam.toUpperCase();
 const categoryMeta = US_STATE_TILES.find(
   (entry) => entry.code.toLowerCase() === categoryParam,
 );
 const categoryLabel =
   categoryParam === "federal" ? "Federal" : categoryMeta?.name || categoryCode;
-
-const casesWithDetails = await loadCivilCasesByCategory(categoryCode);
-const caseCount = casesWithDetails.length;
-const pageCases = casesWithDetails.slice(0, PAGE_SIZE);
-const totalPages = Math.max(1, Math.ceil(caseCount / PAGE_SIZE));
-const pagePath = categoryParam
-  ? `/civil-litigation/${categoryParam}/`
-  : "/civil-litigation/";
+const pagePath = `/civil-litigation/${categoryParam}/page/${page.currentPage}/`;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
+const title =
+  page.currentPage > 1
+    ? `Civil litigation in ${categoryLabel} – Page ${page.currentPage} | PoliceConduct.org`
+    : `Civil litigation in ${categoryLabel} | PoliceConduct.org`;
+
 const formatIsoDate = (value?: string | null) => {
   if (!value) {
     return null;
@@ -49,7 +58,8 @@ const formatIsoDate = (value?: string | null) => {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 };
-const caseItems = pageCases.map((caseItem, index) => {
+
+const caseItems = page.data.map((caseItem: any, index: number) => {
   const caseLinks = (caseItem.links || [])
     .map((link: { url?: string | null }) => link.url)
     .filter(Boolean);
@@ -70,10 +80,11 @@ const caseItems = pageCases.map((caseItem, index) => {
     item: legalCase,
   };
 });
+
 const structuredData = buildWebPage({
   siteUrl,
   pageUrl,
-  name: `Civil litigation in ${categoryLabel} | PoliceConduct.org`,
+  name: title,
   description: `Civil litigation cases tied to ${categoryLabel} agencies and personnel.`,
   type: "CollectionPage",
 });
@@ -81,16 +92,16 @@ const caseItemList = buildItemList(caseItems);
 if (caseItemList) {
   structuredData.mainEntity = caseItemList;
 }
-const stateName = categoryLabel;
 ---
 
 <SiteLayout
-  title={`Civil litigation in ${categoryLabel} | PoliceConduct.org`}
+  title={title}
   description={`Civil litigation cases tied to ${categoryLabel} agencies and personnel.`}
   pagePath={pagePath}
+  canonicalUrl={pagePath}
   structuredData={structuredData}
 >
-  <main class="">
+  <main>
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
         <div class="row align-items-end">
@@ -99,7 +110,15 @@ const stateName = categoryLabel;
               items={[
                 { label: "Home", href: "/" },
                 { label: "Civil litigation", href: "/civil-litigation/" },
-                { label: stateName, href: pagePath, current: true },
+                {
+                  label: categoryLabel,
+                  href: `/civil-litigation/${categoryParam}/`,
+                },
+                {
+                  label: `Page ${page.currentPage}`,
+                  href: pagePath,
+                  current: true,
+                },
               ]}
               className="mb-2"
             />
@@ -110,11 +129,8 @@ const stateName = categoryLabel;
               {categoryLabel} civil litigation
             </h1>
             <p class="text-muted">
-              {
-                caseCount
-                  ? `We track ${caseCount} public civil cases referencing agencies categorized for ${categoryLabel}.`
-                  : `No civil litigation has been published for ${categoryLabel} agencies yet.`
-              }
+              We track {page.total} public civil cases referencing agencies categorized
+              for {categoryLabel}.
             </p>
           </div>
           <div class="col-lg-4 text-lg-end">
@@ -131,7 +147,7 @@ const stateName = categoryLabel;
         <div class="row">
           <div class="col-12">
             {
-              caseCount ? (
+              page.data.length ? (
                 <div class="table-responsive">
                   <table class="table table-striped align-middle">
                     <thead>
@@ -144,7 +160,7 @@ const stateName = categoryLabel;
                       </tr>
                     </thead>
                     <tbody>
-                      {pageCases.map((caseItem) => {
+                      {page.data.map((caseItem: any) => {
                         const sourceLink = caseItem.links?.[0];
                         return (
                           <tr>
@@ -206,29 +222,20 @@ const stateName = categoryLabel;
                 </div>
               ) : (
                 <div
-                  class="alert alert-secondary rounded-0 border-dark d-flex flex-column gap-2"
+                  class="alert alert-secondary rounded-0 border-dark"
                   role="status"
                 >
-                  <span>
-                    No civil litigation listed yet for {categoryLabel}.
-                  </span>
-                  <a
-                    class="btn btn-dark rounded-0 w-auto"
-                    href="/civil-litigation/new/"
-                    target="_self"
-                    data-prefill-key="prefill:civilLitigationNew"
-                    data-prefill-payload={JSON.stringify({
-                      jurisdiction: categoryParam,
-                    })}
-                  >
-                    Add one now
-                  </a>
+                  No civil litigation listed yet for {categoryLabel}.
                 </div>
               )
             }
           </div>
         </div>
-        <Pagination basePath={pagePath} currentPage={1} lastPage={totalPages} />
+        <Pagination
+          basePath={`/civil-litigation/${categoryParam}/`}
+          currentPage={page.currentPage}
+          lastPage={page.lastPage}
+        />
       </div>
     </section>
   </main>

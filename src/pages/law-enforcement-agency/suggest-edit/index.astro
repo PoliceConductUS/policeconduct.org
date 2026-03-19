@@ -44,7 +44,6 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
               <form
                 name="agencyEdit"
                 method="POST"
-                data-netlify="true"
                 data-netlify-honeypot="organization"
                 class="needs-validation"
                 novalidate
@@ -198,139 +197,33 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
         return;
       }
       form.addEventListener("submit", async function (event) {
-        const submitButton = form.querySelector('button[type="submit"]');
-        let inlineError = form.querySelector("[data-form-submit-error]");
-        if (!inlineError) {
-          inlineError = document.createElement("div");
-          inlineError.setAttribute("data-form-submit-error", "true");
-          inlineError.className = "alert alert-danger rounded-0 mt-3 d-none";
-          inlineError.setAttribute("role", "alert");
-          form.appendChild(inlineError);
-        }
         const formsUi = window.__IPC_FORMS__;
-        if (!formsUi || typeof formsUi.ensureSubmissionUi !== "function") {
+        if (!formsUi || typeof formsUi.submitJsonForm !== "function") {
+          let inlineError = form.querySelector("[data-form-submit-error]");
+          if (!inlineError) {
+            inlineError = document.createElement("div");
+            inlineError.setAttribute("data-form-submit-error", "true");
+            inlineError.className = "alert alert-danger rounded-0 mt-3 d-none";
+            inlineError.setAttribute("role", "alert");
+            form.appendChild(inlineError);
+          }
           inlineError.textContent =
             "Unable to submit the form right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
           inlineError.classList.remove("d-none");
+          console.error("Shared form submit helper is unavailable", {
+            formName: "agencyEdit",
+          });
           return;
         }
-        formsUi.prewarmRecaptcha?.();
-        const { inlineSuccess } = formsUi.ensureSubmissionUi({
+        await formsUi.submitJsonForm({
+          event,
           form,
-          submitButton,
+          formName: "agencyEdit",
           onReset: function () {
             form.classList.remove("was-validated");
           },
+          recaptchaAction: "agencyEditSubmit",
         });
-
-        let submissionCompleted = false;
-
-        if (form.dataset.submitLocked === "true") {
-          event.preventDefault();
-          return;
-        }
-
-        event.preventDefault();
-        form.dataset.submitLocked = "true";
-        formsUi.setSubmitBusy(submitButton, true);
-        inlineError.classList.add("d-none");
-        inlineError.textContent = "";
-
-        inlineSuccess.classList.add("d-none");
-
-        try {
-          if (!form.checkValidity()) {
-            event.stopPropagation();
-            form.classList.add("was-validated");
-            return;
-          }
-          form.classList.add("was-validated");
-
-          const formData = new FormData(form);
-          const recaptchaToken =
-            await formsUi.getRecaptchaToken("agencyEditSubmit");
-
-          const data = {};
-          formData.forEach((value, key) => {
-            if (key === "form-name" || key === "g-recaptcha-response") {
-              return;
-            }
-            if (key in data) {
-              if (!Array.isArray(data[key])) {
-                data[key] = [data[key]];
-              }
-              data[key].push(value);
-            } else {
-              data[key] = value;
-            }
-          });
-
-          const response = await fetch("/api/forms/submit", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              formName: "agencyEdit",
-              recaptchaToken,
-              data,
-            }),
-          });
-
-          if (!response.ok) {
-            let message =
-              "We could not submit your form right now. Please print this page and email it to hello@policeconduct.org so we have your submission while we fix the issue.";
-            try {
-              const errorPayload = await response.json();
-              if (
-                errorPayload &&
-                typeof errorPayload.error === "string" &&
-                errorPayload.error.trim()
-              ) {
-                message = errorPayload.error.trim();
-              }
-            } catch (_error) {
-              // Ignore malformed error payloads.
-            }
-            throw new Error(message);
-          }
-
-          const result = await response.json();
-          const submissionId =
-            typeof result?.submissionId === "string" ? result.submissionId : "";
-          if (!submissionId) {
-            throw new Error(
-              "Submission succeeded but no submission ID was returned.",
-            );
-          }
-          form.classList.remove("was-validated");
-          const submissionIdNode = inlineSuccess.querySelector(
-            "[data-submission-id]",
-          );
-          if (submissionIdNode) {
-            submissionIdNode.textContent = submissionId;
-          }
-          formsUi.setSubmitBusy(submitButton, false);
-          if (submitButton) submitButton.disabled = true;
-          inlineSuccess.classList.remove("d-none");
-          inlineSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
-          submissionCompleted = true;
-        } catch (error) {
-          const message =
-            error instanceof Error && error.message
-              ? error.message
-              : "Unable to submit the form. Please try again.";
-          const fallback =
-            formsUi.blockedSubmitFallback ||
-            "If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
-          inlineError.textContent = message.includes("hello@policeconduct.org")
-            ? message
-            : message + " " + fallback;
-          inlineError.classList.remove("d-none");
-        } finally {
-          if (!submissionCompleted) formsUi.setSubmitBusy(submitButton, false);
-          if (!submissionCompleted) form.dataset.submitLocked = "false";
-        }
       });
     })();
   </script>

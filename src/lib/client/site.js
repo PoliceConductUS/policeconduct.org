@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/astro";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import AOS from "aos";
 import "aos/dist/aos.css";
@@ -199,6 +200,68 @@ const BLOCKED_SUBMIT_FALLBACK =
 
 let recaptchaReadyPromise = null;
 
+const ensureInlineError = (form) => {
+  let inlineError = form.querySelector("[data-form-submit-error]");
+  if (!inlineError) {
+    inlineError = document.createElement("div");
+    inlineError.setAttribute("data-form-submit-error", "true");
+    inlineError.className = "alert alert-danger rounded-0 mt-3 d-none";
+    inlineError.setAttribute("role", "alert");
+    form.appendChild(inlineError);
+  }
+  return inlineError;
+};
+
+const serializeFormData = (formData) => {
+  const data = {};
+  formData.forEach((value, key) => {
+    if (key === "form-name" || key === "g-recaptcha-response") {
+      return;
+    }
+    if (key in data) {
+      if (!Array.isArray(data[key])) {
+        data[key] = [data[key]];
+      }
+      data[key].push(value);
+    } else {
+      data[key] = value;
+    }
+  });
+  return data;
+};
+
+const normalizeSubmitErrorMessage = (error) => {
+  const message =
+    error instanceof Error && error.message
+      ? error.message
+      : "Unable to submit the form. Please try again.";
+  return message.includes("hello@policeconduct.org")
+    ? message
+    : `${message} ${BLOCKED_SUBMIT_FALLBACK}`;
+};
+
+const reportFormError = (error, context = {}) => {
+  const message =
+    error instanceof Error && error.message
+      ? error.message
+      : "Unknown form submission error.";
+  console.error("Form submission failed", {
+    ...context,
+    error,
+    message,
+  });
+  Sentry.captureException(
+    error instanceof Error ? error : new Error(String(message)),
+    {
+      extra: context,
+      tags: {
+        area: "form_submit",
+        ...(context.formName ? { form_name: context.formName } : {}),
+      },
+    },
+  );
+};
+
 const setSubmitBusy = (button, isBusy, busyLabel = "Submitting...") => {
   if (!button) {
     return;
@@ -294,13 +357,179 @@ const ensureSubmissionUi = ({ form, submitButton, onReset }) => {
   return { inlineSuccess };
 };
 
+const submitJsonForm = async ({
+  event,
+  form,
+  formName,
+  recaptchaAction,
+  submitButton = form?.querySelector('button[type="submit"]'),
+  onReset,
+  onBeforeValidate,
+  validate,
+  onInvalid,
+  onBeforeSubmit,
+  buildPayload,
+  onSuccess,
+}) => {
+  const inlineError = ensureInlineError(form);
+  const formsUi = window.__IPC_FORMS__;
+  if (!formsUi || typeof formsUi.ensureSubmissionUi !== "function") {
+    inlineError.textContent =
+      "Unable to submit the form right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
+    inlineError.classList.remove("d-none");
+    console.error("Form submission helper unavailable", { formName });
+    Sentry.captureMessage("Form submission helper unavailable", {
+      level: "error",
+      tags: {
+        area: "form_submit",
+        ...(formName ? { form_name: formName } : {}),
+      },
+    });
+    return false;
+  }
+
+  formsUi.prewarmRecaptcha?.();
+  const { inlineSuccess } = formsUi.ensureSubmissionUi({
+    form,
+    submitButton,
+    onReset,
+  });
+
+  let submissionCompleted = false;
+
+  if (form.dataset.submitLocked === "true") {
+    event?.preventDefault();
+    return false;
+  }
+
+  event?.preventDefault();
+  form.dataset.submitLocked = "true";
+  formsUi.setSubmitBusy(submitButton, true);
+  inlineError.classList.add("d-none");
+  inlineError.textContent = "";
+  inlineSuccess.classList.add("d-none");
+
+  try {
+    await onBeforeValidate?.();
+    const customValid =
+      typeof validate === "function" ? await validate() : true;
+
+    if (!form.checkValidity() || !customValid) {
+      event?.stopPropagation();
+      form.classList.add("was-validated");
+      await onInvalid?.();
+      return false;
+    }
+
+    form.classList.add("was-validated");
+
+    const beforeSubmitResult = await onBeforeSubmit?.();
+    const formData = new FormData(form);
+    const recaptchaToken = await formsUi.getRecaptchaToken(recaptchaAction);
+    const data = serializeFormData(formData);
+    const payload = (await buildPayload?.({
+      beforeSubmitResult,
+      data,
+      form,
+      formData,
+      formName,
+      recaptchaToken,
+    })) || {
+      data,
+      formName,
+      recaptchaToken,
+    };
+
+    const response = await fetch("/api/forms/submit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      let message =
+        "We could not submit your form right now. Please print this page and email it to hello@policeconduct.org so we have your submission while we fix the issue.";
+      try {
+        const errorPayload = await response.json();
+        if (
+          errorPayload &&
+          typeof errorPayload.error === "string" &&
+          errorPayload.error.trim()
+        ) {
+          message = errorPayload.error.trim();
+        }
+      } catch (_error) {
+        // Ignore malformed error payloads.
+      }
+      throw new Error(message);
+    }
+
+    const result = await response.json();
+    const submissionId =
+      typeof result?.submissionId === "string" ? result.submissionId : "";
+    if (!submissionId) {
+      throw new Error(
+        "Submission succeeded but no submission ID was returned.",
+      );
+    }
+
+    form.classList.remove("was-validated");
+    const submissionIdNode = inlineSuccess.querySelector(
+      "[data-submission-id]",
+    );
+    if (submissionIdNode) {
+      submissionIdNode.textContent = submissionId;
+    }
+    formsUi.setSubmitBusy(submitButton, false);
+    if (submitButton) {
+      submitButton.disabled = true;
+    }
+    inlineSuccess.classList.remove("d-none");
+    inlineSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
+    await onSuccess?.({
+      form,
+      formsUi,
+      inlineSuccess,
+      recaptchaToken,
+      response,
+      result,
+      submissionId,
+      submitButton,
+    });
+    submissionCompleted = true;
+    return true;
+  } catch (error) {
+    reportFormError(error, {
+      formAction: form.getAttribute("action") || "",
+      formName,
+      pagePath: window.location.pathname,
+      recaptchaAction,
+    });
+    inlineError.textContent = normalizeSubmitErrorMessage(error);
+    inlineError.classList.remove("d-none");
+    return false;
+  } finally {
+    if (!submissionCompleted) {
+      formsUi.setSubmitBusy(submitButton, false);
+      form.dataset.submitLocked = "false";
+    }
+  }
+};
+
 window.__IPC_FORMS__ = {
   ...(window.__IPC_FORMS__ || {}),
   blockedSubmitFallback: BLOCKED_SUBMIT_FALLBACK,
+  ensureInlineError,
+  normalizeSubmitErrorMessage,
+  reportFormError,
   setSubmitBusy,
   prewarmRecaptcha,
   getRecaptchaToken,
   ensureSubmissionUi,
+  serializeFormData,
+  submitJsonForm,
 };
 
 window.__IPC_PREFILL__ = {

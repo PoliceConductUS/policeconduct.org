@@ -2,6 +2,8 @@ import * as Sentry from "@sentry/astro";
 
 const dsn = import.meta.env.PUBLIC_SENTRY_DSN.trim();
 const environment = import.meta.env.PUBLIC_SENTRY_ENVIRONMENT.trim();
+const release =
+  (import.meta.env.PUBLIC_SENTRY_RELEASE || "").trim() || undefined;
 const isProduction = environment === "production";
 const feedback = Sentry.feedbackIntegration({
   autoInject: false,
@@ -38,6 +40,7 @@ Sentry.init({
   dsn,
   enableLogs: true,
   environment,
+  ...(release ? { release } : {}),
   integrations: [
     Sentry.consoleLoggingIntegration({
       levels: ["log", "warn", "error"],

@@ -2,31 +2,32 @@
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import AlphaNavigation from "#src/components/AlphaNavigation.astro";
 import Pagination from "#src/components/Pagination.astro";
+import PersonnelListCard from "#src/components/PersonnelListCard.astro";
 import { buildAlphaPageMap } from "#src/lib/alpha-navigation.js";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import { loadAgencySummaries } from "#src/lib/data/summaries.js";
+import { loadPersonnelSummaries } from "#src/lib/data/summaries.js";
+import type { PersonnelSummary } from "#src/lib/data/types.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
-import AgencyCard from "#src/components/AgencyCard.astro";
 import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths({ paginate }: { paginate: any }) {
   const pageSize = 50;
-  const agencies = await loadAgencySummaries();
-  const agenciesByCategory = new Map();
+  const personnel = await loadPersonnelSummaries();
+  const personnelByCategory = new Map<string, PersonnelSummary[]>();
 
-  agencies.forEach((agency) => {
-    const category = agency.category?.toLowerCase();
+  personnel.forEach((person) => {
+    const category = person.agencyCategory?.toLowerCase();
     if (!category) {
       return;
     }
-    const list = agenciesByCategory.get(category) || [];
-    list.push(agency);
-    agenciesByCategory.set(category, list);
+    const list = personnelByCategory.get(category) || [];
+    list.push(person);
+    personnelByCategory.set(category, list);
   });
 
   const pages: any[] = [];
-  agenciesByCategory.forEach((categoryAgencies, category) => {
-    const categoryPages = paginate(categoryAgencies, {
+  personnelByCategory.forEach((categoryPersonnel, category) => {
+    const categoryPages = paginate(categoryPersonnel, {
       pageSize,
       params: { category },
     });
@@ -40,67 +41,56 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
 
 const { page } = Astro.props;
 const { category } = Astro.params;
-const categoryParam = (category as string) ?? "";
+const categoryParam = String(category || "").toLowerCase();
 const categoryCode = categoryParam.toUpperCase();
 const categoryMeta = US_STATE_TILES.find(
   (entry) => entry.code === categoryCode,
 );
 const categoryLabel =
-  categoryParam.toLowerCase() === "federal"
-    ? "Federal"
-    : categoryMeta?.name || categoryCode;
+  categoryParam === "federal" ? "Federal" : categoryMeta?.name || categoryCode;
 const titleBase =
-  categoryParam.toLowerCase() === "federal"
-    ? "Federal Law Enforcement Agencies"
-    : categoryMeta
-      ? `${categoryMeta.name} Law Enforcement Agencies`
-      : `${categoryCode} Law Enforcement Agencies`;
+  categoryParam === "federal"
+    ? "Federal Personnel"
+    : `${categoryLabel} Personnel`;
 const title =
   page.currentPage > 1 ? `${titleBase} – Page ${page.currentPage}` : titleBase;
-const allAgencies = (await loadAgencySummaries()).filter(
-  (agency) => agency.category?.toLowerCase() === categoryParam.toLowerCase(),
+const allPersonnel = (await loadPersonnelSummaries()).filter(
+  (person) => person.agencyCategory?.toLowerCase() === categoryParam,
 );
-const alphaItems = buildAlphaPageMap(allAgencies, (agency) => agency.name, 50);
+const alphaItems = buildAlphaPageMap(
+  allPersonnel,
+  (person) => person.lastName,
+  50,
+);
 const pagePath =
   page.currentPage > 1
-    ? `/law-enforcement-agency/${categoryParam.toLowerCase()}/page/${page.currentPage}/`
-    : `/law-enforcement-agency/${categoryParam.toLowerCase()}/`;
+    ? `/personnel/${categoryParam}/page/${page.currentPage}/`
+    : `/personnel/${categoryParam}/`;
 const totalCount = page.total ?? page.data.length;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const pageDescription = `Showing agencies with at least two active personnel assignments in ${categoryLabel}.`;
-const agencyItems = page.data.map((agency: any, index: number) => {
-  const addressAvailable =
-    agency.address || agency.city || agency.state || agency.zipCode;
-  const address = addressAvailable
-    ? {
-        "@type": "PostalAddress",
-        ...(agency.address ? { streetAddress: agency.address } : {}),
-        ...(agency.city ? { addressLocality: agency.city } : {}),
-        ...(agency.state ? { addressRegion: agency.state } : {}),
-        ...(agency.zipCode ? { postalCode: agency.zipCode } : {}),
-      }
-    : null;
-  const categorySlugValue = agency.category || categoryParam.toLowerCase();
-  const item = {
-    "@type": "GovernmentOrganization",
-    name: agency.name,
-    url: new URL(
-      `/law-enforcement-agency/${categorySlugValue}/${agency.slug}/`,
-      siteUrl,
-    ).toString(),
-    ...(address ? { address } : {}),
-    ...(agency.phoneNumber ? { telephone: agency.phoneNumber } : {}),
-  };
-  return {
+const personnelItems = page.data.map(
+  (person: PersonnelSummary, index: number) => ({
     "@type": "ListItem",
     position: index + 1,
-    item,
-  };
-});
-const agencyItemList = buildItemList(agencyItems);
+    item: {
+      "@type": "Person",
+      name: `${person.firstName} ${person.lastName}${person.nameSuffix ? ` ${person.nameSuffix}` : ""}`.trim(),
+      url: new URL(`/personnel/${person.slug}/`, siteUrl).toString(),
+      worksFor: {
+        "@type": "GovernmentOrganization",
+        name: person.agencyName,
+        url: new URL(
+          `/law-enforcement-agency/${person.agencySlug}/`,
+          siteUrl,
+        ).toString(),
+      },
+    },
+  }),
+);
+const personnelItemList = buildItemList(personnelItems);
 const websiteId = new URL("/", siteUrl).toString();
-const agencyItemListId = agencyItemList ? `${pageUrl}#itemlist` : null;
+const personnelItemListId = personnelItemList ? `${pageUrl}#itemlist` : null;
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
@@ -115,18 +105,22 @@ const structuredData = {
       "@id": pageUrl,
       url: pageUrl,
       name: title,
-      description: pageDescription,
+      description: `Personnel profiles currently listed for ${categoryLabel}.`,
       isPartOf: { "@id": websiteId },
-      ...(agencyItemListId ? { mainEntity: { "@id": agencyItemListId } } : {}),
+      ...(personnelItemListId
+        ? { mainEntity: { "@id": personnelItemListId } }
+        : {}),
     },
-    ...(agencyItemList ? [{ ...agencyItemList, "@id": agencyItemListId }] : []),
+    ...(personnelItemList
+      ? [{ ...personnelItemList, "@id": personnelItemListId }]
+      : []),
   ],
 };
 ---
 
 <SiteLayout
   title={title}
-  description={pageDescription}
+  description={`Personnel profiles currently listed for ${categoryLabel}.`}
   pagePath={pagePath}
   canonicalUrl={pagePath}
   structuredData={structuredData}
@@ -139,10 +133,10 @@ const structuredData = {
             <Breadcrumbs
               items={[
                 { label: "Home", href: "/" },
-                { label: "Agencies", href: "/law-enforcement-agency/" },
+                { label: "Personnel", href: "/personnel/" },
                 {
                   label: categoryLabel,
-                  href: `/law-enforcement-agency/${categoryParam.toLowerCase()}/`,
+                  href: `/personnel/${categoryParam}/`,
                 },
                 {
                   label: `Page ${page.currentPage}`,
@@ -153,23 +147,18 @@ const structuredData = {
               className="mb-2"
             />
             <p class="text-uppercase small text-muted mb-2">
-              {
-                categoryParam.toLowerCase() === "federal"
-                  ? "Federal view"
-                  : "State view"
-              }
+              {categoryParam === "federal" ? "Federal view" : "State view"}
             </p>
             <h1 class="display-4 fw-bold">{title}</h1>
             <p class="lead text-muted mb-0">
-              Showing agencies with at least two active personnel assignments in {
-                categoryLabel
-              }.
+              Profiles of law enforcement personnel currently listed for
+              {` ${categoryLabel}`}.
             </p>
           </div>
           <div class="col-12 col-lg-4">
             <div class="card shadow-sm rounded-0 border-dark">
               <div class="card-body d-flex flex-column gap-2">
-                <div class="text-uppercase small text-muted">Agencies</div>
+                <div class="text-uppercase small text-muted">Personnel</div>
                 <div class="d-flex align-items-end justify-content-between">
                   <span class="display-6 fw-bold">{totalCount}</span>
                 </div>
@@ -187,9 +176,9 @@ const structuredData = {
       <div class="container">
         <AlphaNavigation
           items={alphaItems}
-          basePath={`/law-enforcement-agency/${categoryParam.toLowerCase()}/`}
+          basePath={`/personnel/${categoryParam}/`}
           currentPage={page.currentPage}
-          label={`${categoryLabel} agencies alphabetical navigation`}
+          label={`${categoryLabel} personnel alphabetical navigation`}
         />
         {
           page.data.length === 0 ? (
@@ -197,29 +186,24 @@ const structuredData = {
               class="alert alert-secondary rounded-0 border-dark"
               role="status"
             >
-              No agencies listed yet for {categoryLabel}.
+              No personnel listed yet for {categoryLabel}.
             </div>
           ) : (
-            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
-              {page.data.map((agency: any) => (
+            <div class="row row-cols-1 g-3">
+              {page.data.map((person: PersonnelSummary) => (
                 <div class="col">
-                  <AgencyCard agency={agency} />
+                  <PersonnelListCard person={person} />
                 </div>
               ))}
             </div>
           )
         }
         <Pagination
-          basePath={`/law-enforcement-agency/${categoryParam.toLowerCase()}/`}
+          basePath={`/personnel/${categoryParam}/`}
           currentPage={page.currentPage}
           lastPage={page.lastPage}
         />
       </div>
     </section>
   </main>
-  <script
-    is:inline
-    id="dsq-count-scr"
-    src="https://policeconduct.disqus.com/count.js"
-    async></script>
 </SiteLayout>

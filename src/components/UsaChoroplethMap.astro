@@ -5,6 +5,31 @@ type StateStat = {
   code: string;
   count: number;
   href?: string;
+  hoverLabel?: string;
+};
+
+type FederalPanelItem = {
+  badgeText?: string;
+  href?: string;
+  label: string;
+};
+
+type FederalPanel = {
+  actionHref?: string;
+  actionLabel?: string;
+  description?: string;
+  eyebrow?: string;
+  items?: FederalPanelItem[];
+  title: string;
+  value?: number | string;
+};
+
+type HeaderAction = {
+  href: string;
+  label: string;
+  prefillKey?: string;
+  prefillPayload?: string;
+  target?: string;
 };
 
 const {
@@ -13,12 +38,16 @@ const {
   subtitle = "",
   emptyLabel = "No data yet",
   interactionLabel = "Click a state to drill down.",
+  federalPanel,
+  headerAction,
 } = Astro.props as {
   stats: StateStat[];
   title?: string;
   subtitle?: string;
   emptyLabel?: string;
   interactionLabel?: string;
+  federalPanel?: FederalPanel;
+  headerAction?: HeaderAction;
 };
 
 const byCode = new Map(stats.map((entry) => [entry.code.toLowerCase(), entry]));
@@ -42,70 +71,156 @@ const getFill = (count: number) => {
 };
 ---
 
-<div class="card shadow-sm border-0 rounded-0 h-100">
-  <div class="card-body d-flex flex-column gap-3">
-    <div>
-      <p class="text-uppercase small text-muted mb-1">{title}</p>
-      <h2 class="h5 mb-1">Coverage map</h2>
-      {subtitle ? <p class="text-muted small mb-0">{subtitle}</p> : null}
-    </div>
-    <div class="map-wrap">
-      <svg
-        viewBox="192 9 1028 746"
-        role="img"
-        aria-label={`${title} coverage map`}
-        class="usa-map"
-      >
-        {
-          USA_STATE_PATHS.map((state) => {
-            const stat = byCode.get(state.id.toLowerCase()) || {
-              code: state.id,
-              count: 0,
-            };
-            const href = stat.href;
-            const count = Number(stat.count || 0);
-            const fill = getFill(count);
-            const isInteractive = Boolean(href);
-            const stateLabel = state.label;
-            const label = count ? `${stateLabel}: ${count}` : stateLabel;
-            const pathEl = (
-              <path
-                id={`state-${state.id}`}
-                d={state.d}
-                fill={fill}
-                stroke="#111"
-                stroke-width="1"
-                aria-label={label}
-                class:list={{
-                  "has-data": Boolean(count),
-                  "no-data": !count,
-                  "is-interactive": isInteractive,
-                }}
-              >
-                <title>{label}</title>
-              </path>
-            );
-            return href ? (
-              <a href={href} aria-label={`View ${label}`}>
-                {pathEl}
-              </a>
-            ) : (
-              pathEl
-            );
-          })
-        }
-      </svg>
-    </div>
-    <div class="d-flex align-items-center text-muted small gap-2">
-      <span class="legend-swatch"></span>
-      <span>{emptyLabel}</span>
-      {
-        interactionLabel ? (
-          <span class="ms-auto">{interactionLabel}</span>
-        ) : null
-      }
+<div class="row g-4 align-items-stretch">
+  <div class:list={["col-12", federalPanel ? "col-lg-8" : null]}>
+    <div class="card shadow-sm border-0 rounded-0 h-100">
+      <div class="card-body d-flex flex-column gap-3">
+        <div
+          class="d-flex flex-column flex-lg-row gap-3 justify-content-between"
+        >
+          <div>
+            <p class="text-uppercase small text-muted mb-1">{title}</p>
+            <h2 class="h5 mb-1">Coverage map</h2>
+            {subtitle ? <p class="text-muted small mb-0">{subtitle}</p> : null}
+          </div>
+          {
+            headerAction ? (
+              <div class="d-flex justify-content-lg-end align-items-start">
+                <a
+                  class="btn btn-outline-dark rounded-0"
+                  href={headerAction.href}
+                  target={headerAction.target || "_self"}
+                  data-prefill-key={headerAction.prefillKey}
+                  data-prefill-payload={headerAction.prefillPayload}
+                >
+                  {headerAction.label}
+                </a>
+              </div>
+            ) : null
+          }
+        </div>
+        <div class="map-wrap">
+          <svg
+            viewBox="192 9 1028 746"
+            role="img"
+            aria-label={`${title} coverage map`}
+            class="usa-map"
+          >
+            {
+              USA_STATE_PATHS.map((state) => {
+                const stat = byCode.get(state.id.toLowerCase()) || {
+                  code: state.id,
+                  count: 0,
+                };
+                const href = stat.href;
+                const count = Number(stat.count || 0);
+                const fill = getFill(count);
+                const isInteractive = Boolean(href);
+                const stateLabel = state.label;
+                const label =
+                  stat.hoverLabel ||
+                  (count ? `${stateLabel}: ${count}` : stateLabel);
+                const pathEl = (
+                  <path
+                    id={`state-${state.id}`}
+                    d={state.d}
+                    fill={fill}
+                    stroke="#111"
+                    stroke-width="1"
+                    aria-label={label}
+                    class:list={{
+                      "has-data": Boolean(count),
+                      "no-data": !count,
+                      "is-interactive": isInteractive,
+                    }}
+                  >
+                    <title>{label}</title>
+                  </path>
+                );
+                return href ? (
+                  <a href={href} aria-label={`View ${label}`}>
+                    {pathEl}
+                  </a>
+                ) : (
+                  pathEl
+                );
+              })
+            }
+          </svg>
+        </div>
+        <div class="d-flex align-items-center text-muted small gap-2">
+          <span class="legend-swatch"></span>
+          <span>{emptyLabel}</span>
+          {
+            interactionLabel ? (
+              <span class="ms-auto">{interactionLabel}</span>
+            ) : null
+          }
+        </div>
+      </div>
     </div>
   </div>
+  {
+    federalPanel ? (
+      <div class="col-12 col-lg-4">
+        <div class="card shadow-sm rounded-0 border-dark h-100">
+          <div class="card-body d-flex flex-column gap-3">
+            <div class="d-flex align-items-center justify-content-between gap-3">
+              <div>
+                {federalPanel.eyebrow ? (
+                  <p class="text-uppercase small text-muted mb-1">
+                    {federalPanel.eyebrow}
+                  </p>
+                ) : null}
+                <h2 class="h5 mb-0">{federalPanel.title}</h2>
+              </div>
+              {federalPanel.value !== undefined ? (
+                <span class="badge bg-dark rounded-pill">
+                  {federalPanel.value}
+                </span>
+              ) : null}
+            </div>
+            {federalPanel.description ? (
+              <p class="text-muted small mb-0">{federalPanel.description}</p>
+            ) : null}
+            {federalPanel.items && federalPanel.items.length > 0 ? (
+              <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
+                {federalPanel.items.map((item) => (
+                  <li class="d-flex align-items-start justify-content-between gap-2">
+                    {item.href ? (
+                      <a
+                        class="text-decoration-none fw-semibold"
+                        href={item.href}
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      <span class="fw-semibold">{item.label}</span>
+                    )}
+                    {item.badgeText ? (
+                      <span class="badge bg-light text-dark border rounded-pill">
+                        {item.badgeText}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {federalPanel.actionHref && federalPanel.actionLabel ? (
+              <div class="mt-auto">
+                <a
+                  class="btn btn-outline-dark rounded-0 w-100"
+                  href={federalPanel.actionHref}
+                >
+                  {federalPanel.actionLabel}
+                </a>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    ) : null
+  }
 </div>
 
 <style>

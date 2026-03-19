@@ -1,6 +1,7 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import {
@@ -30,8 +31,30 @@ const stateStats = US_STATE_TILES.map((state) => ({
 const federalAgencies = agencies.filter(
   (agency) => agency.category === "federal",
 );
+const federalReportCount = reports.filter((report) =>
+  report.agencySlug?.toLowerCase().startsWith("federal/"),
+).length;
 const totalReports = reports.length;
+const statesWithReports = stateStats.filter((state) => state.count > 0).length;
+const reportStats = [
+  {
+    label: "Reports",
+    value: totalReports,
+    description: "Published reports currently listed.",
+  },
+  {
+    label: "States Covered",
+    value: statesWithReports,
+    description: "States with at least one listed report.",
+  },
+  {
+    label: "Federal Reports",
+    value: federalReportCount,
+    description: "Listed reports involving federal agencies.",
+  },
+];
 const pagePath = "/report/";
+const suggestReportHref = "/report/new/";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const reportItems = reports.slice(0, 25).map((report, index) => {
@@ -91,74 +114,38 @@ if (reportItemList) {
               Reports submitted by users documenting police interactions.
             </p>
           </div>
-          <div class="col-12 col-lg-4">
-            <div class="card shadow-sm rounded-0 border-dark">
-              <div class="card-body d-flex flex-column gap-2">
-                <div class="text-uppercase small text-muted">
-                  Reports listed
-                </div>
-                <div class="d-flex align-items-end justify-content-between">
-                  <span class="display-6 fw-bold">{totalReports}</span>
-                </div>
-                <div class="text-muted small">
-                  Hover over a state to see the report count; click to view
-                  reports by state. Federal agencies are listed separately.
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
-
     <section class="py-vh-2">
       <div class="container">
-        <div class="row g-4">
-          <div class="col-12 col-lg-8">
-            <UsaChoroplethMap
-              stats={stateStats}
-              title="States"
-              subtitle="Counts of reports by agency state."
-              emptyLabel="No reports yet"
-              interactionLabel="Hover over a state to see the count."
-            />
-          </div>
-          <div class="col-12 col-lg-4">
-            <div class="card shadow-sm rounded-0 border-dark h-100">
-              <div class="card-body d-flex flex-column gap-3">
-                <div class="d-flex align-items-center justify-content-between">
-                  <p class="text-uppercase small text-muted mb-0">
-                    Federal agencies
-                  </p>
-                  <span class="badge bg-dark rounded-pill"
-                    >{federalAgencies.length}</span
-                  >
-                </div>
-                <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-                  {
-                    federalAgencies.map((agency) => (
-                      <li class="d-flex align-items-start justify-content-between gap-2">
-                        <a
-                          class="text-decoration-none fw-semibold"
-                          href={`/law-enforcement-agency/${agency.category}/${agency.slug}/`}
-                        >
-                          {agency.name}
-                        </a>
-                        <div class="d-flex align-items-center gap-2">
-                          <span class="badge bg-light text-dark border rounded-pill">
-                            Reports: {agency.reportCount}
-                          </span>
-                        </div>
-                      </li>
-                    ))
-                  }
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
+        <UsaChoroplethMap
+          stats={stateStats}
+          title="States"
+          subtitle="Counts of reports by agency state."
+          emptyLabel="No reports yet"
+          interactionLabel="Hover over a state to see the count."
+          headerAction={{
+            href: suggestReportHref,
+            label: "Submit a report",
+          }}
+          federalPanel={{
+            eyebrow: "Federal",
+            title: "Federal agencies",
+            value: federalAgencies.length,
+            description: "Federal agencies referenced in listed reports.",
+            items: federalAgencies.map((agency) => ({
+              label: agency.name,
+              href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+              badgeText: `Reports: ${agency.reportCount}`,
+            })),
+          }}
+        />
       </div>
     </section>
+    <div class="bg-white border-bottom border-dark">
+      <CollectionStatsBand items={reportStats} />
+    </div>
   </main>
   <script
     is:inline

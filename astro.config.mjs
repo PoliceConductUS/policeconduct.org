@@ -67,6 +67,9 @@ export default defineConfig({
       "import.meta.env.PUBLIC_SENTRY_DSN": JSON.stringify(sentryDsn),
       "import.meta.env.PUBLIC_SENTRY_ENVIRONMENT":
         JSON.stringify(sentryEnvironment),
+      "import.meta.env.PUBLIC_SENTRY_RELEASE": JSON.stringify(
+        sentryRelease || "",
+      ),
     },
     build: {
       sourcemap: "hidden",
@@ -94,7 +97,6 @@ export default defineConfig({
       ...(sentryOrg ? { org: sentryOrg } : {}),
       ...(sentryProject ? { project: sentryProject } : {}),
       ...(sentryAuthToken ? { authToken: sentryAuthToken } : {}),
-      ...(sentryRelease ? { release: sentryRelease } : {}),
       sourcemaps: {
         assets: ["dist/_astro/**/*", "dist/.prerender/**/*"],
       },

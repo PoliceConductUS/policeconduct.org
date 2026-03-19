@@ -1,5 +1,14 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
+import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
+import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
+import {
+  loadAgencySummaries,
+  loadPersonnelSummaries,
+  loadReportSummaries,
+} from "#src/lib/data/summaries.js";
+import { withDb } from "#src/lib/db.js";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/";
@@ -7,6 +16,132 @@ const pageDescription =
   "PoliceConduct.org is an independent nonprofit platform for police misconduct reports, positive police interaction records, and public accountability research across law enforcement agencies and personnel.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
+const [agencies, personnel, reports, civilCasesData] = await Promise.all([
+  loadAgencySummaries(),
+  loadPersonnelSummaries(),
+  loadReportSummaries(),
+  withDb(async (client) => {
+    const categoryResult = await client.query(
+      `
+        select upper(a.category) as category, count(distinct cco.civil_case_id) as case_count
+        from public.civil_case_officers cco
+        join public.agency_officers ao on ao.id = cco.agency_officer_id
+        join public.agency a on ao.agency_id = a.id
+        where a.category is not null
+        group by upper(a.category)
+      `,
+    );
+    const result = await client.query(
+      "select count(*) as count from public.civil_cases",
+    );
+    return {
+      categoryCounts: categoryResult.rows.map(
+        (row: { category: string; case_count: string | number }) => ({
+          category: String(row.category || "").toLowerCase(),
+          count: Number(row.case_count || 0),
+        }),
+      ),
+      totalCount: Number(result.rows[0]?.count ?? 0),
+    };
+  }),
+]);
+const civilCasesByCategory = new Map(
+  civilCasesData.categoryCounts.map((entry) => [entry.category, entry.count]),
+);
+const totalCivilCases = civilCasesData.totalCount;
+const reportCountsByCategory = reports.reduce(
+  (acc: Map<string, number>, report) => {
+    const key = String(report.category || "").toLowerCase();
+    if (!key) {
+      return acc;
+    }
+    acc.set(key, (acc.get(key) ?? 0) + 1);
+    return acc;
+  },
+  new Map<string, number>(),
+);
+const personnelCountsByCategory = personnel.reduce(
+  (acc: Map<string, number>, entry) => {
+    const key = String(entry.agencyCategory || "").toLowerCase();
+    if (!key) {
+      return acc;
+    }
+    acc.set(key, (acc.get(key) ?? 0) + 1);
+    return acc;
+  },
+  new Map<string, number>(),
+);
+const agencyCountsByCategory = agencies.reduce(
+  (acc: Map<string, number>, agency) => {
+    const key = String(agency.category || "").toLowerCase();
+    if (!key) {
+      return acc;
+    }
+    acc.set(key, (acc.get(key) ?? 0) + 1);
+    return acc;
+  },
+  new Map<string, number>(),
+);
+const federalAgencies = agencies.filter(
+  (agency) => String(agency.category || "").toLowerCase() === "federal",
+);
+const categoryCoverageStats = US_STATE_TILES.map((state) => {
+  const category = state.code.toLowerCase();
+  const reportCount = reportCountsByCategory.get(category) ?? 0;
+  const personnelCount = personnelCountsByCategory.get(category) ?? 0;
+  const agencyCount = agencyCountsByCategory.get(category) ?? 0;
+  const civilCaseCount = civilCasesByCategory.get(category) ?? 0;
+  const totalCount =
+    reportCount + personnelCount + agencyCount + civilCaseCount;
+  return {
+    code: state.code,
+    count: totalCount,
+    href: `/${category}/`,
+    hoverLabel:
+      totalCount > 0
+        ? `${state.name}: ${reportCount} reports, ${personnelCount} personnel, ${agencyCount} agencies, ${civilCaseCount} civil cases`
+        : `${state.name}: no entries yet`,
+  };
+});
+const federalCoverageCount =
+  (reportCountsByCategory.get("federal") ?? 0) +
+  (personnelCountsByCategory.get("federal") ?? 0) +
+  (agencyCountsByCategory.get("federal") ?? 0) +
+  (civilCasesByCategory.get("federal") ?? 0);
+const homepageOverviewItems = [
+  {
+    label: "Reports",
+    value: reports.length,
+    title: "Open reports",
+    description: "User-submitted reports documenting police interactions.",
+    href: "/report/",
+    actionLabel: "Open reports",
+  },
+  {
+    label: "Personnel",
+    value: personnel.length,
+    title: "Open personnel",
+    description: "Listed personnel profiles tied to agencies and records.",
+    href: "/personnel/",
+    actionLabel: "Open personnel",
+  },
+  {
+    label: "Agencies",
+    value: agencies.length,
+    title: "Open agencies",
+    description: "Law enforcement agencies currently tracked on the site.",
+    href: "/law-enforcement-agency/",
+    actionLabel: "Open agencies",
+  },
+  {
+    label: "Civil Cases",
+    value: totalCivilCases,
+    title: "Open civil litigation",
+    description: "Civil litigation cases linked to agencies or personnel.",
+    href: "/civil-litigation/",
+    actionLabel: "Open civil cases",
+  },
+];
 const organization = {
   "@type": "NonprofitOrganization",
   "@id": `${pageUrl}#organization`,
@@ -120,7 +255,6 @@ structuredData.mainEntity = organization;
         </div>
       </div>
     </div>
-
     <div class="py-vh-5 w-100 overflow-hidden" id="broken">
       <div class="container">
         <div class="row d-flex justify-content-between align-items-center">
@@ -415,6 +549,48 @@ structuredData.mainEntity = organization;
         </div>
       </div>
     </div>
+
+    <section class="py-vh-3 bg-gray-100 border-top border-dark">
+      <div class="container">
+        <div class="row justify-content-end mb-4">
+          <div class="col-lg-8">
+            <h2 class="display-6">National overview.</h2>
+            <h3>Explore the records by state or federal agency.</h3>
+          </div>
+        </div>
+        <div class="row g-4 align-items-stretch">
+          <div class="col-12">
+            <UsaChoroplethMap
+              stats={categoryCoverageStats}
+              title="United States"
+              subtitle="Combined coverage across reports, personnel, agencies, and civil litigation."
+              emptyLabel="No entries yet"
+              interactionLabel="Click a state to view its overview."
+              federalPanel={{
+                eyebrow: "Federal",
+                title: "Federal overview",
+                value: federalCoverageCount,
+                description:
+                  "Combined federal entries across reports, personnel, agencies, and civil litigation.",
+                items: [
+                  {
+                    label: "Federal overview",
+                    href: "/federal/",
+                  },
+                  ...federalAgencies.map((agency) => ({
+                    label: agency.name,
+                    href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+                  })),
+                ],
+                actionHref: "/federal/",
+                actionLabel: "Open federal overview",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+      <CollectionStatsBand items={homepageOverviewItems} />
+    </section>
 
     <div class="py-vh-5 bg-gray-900 text-light w-100 overflow-hidden">
       <div class="container text-center">

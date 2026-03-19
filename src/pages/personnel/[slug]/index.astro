@@ -11,6 +11,10 @@ import ProfileTabs from "#src/components/ProfileTabs.astro";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
+  if ((process.env.NO_PERSONNEL || "").trim() !== "") {
+    return [];
+  }
+
   const officers = await withDb(async (client) => {
     return (
       await client.query(

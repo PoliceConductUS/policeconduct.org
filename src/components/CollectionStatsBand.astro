@@ -1,0 +1,61 @@
+---
+type StatItem = {
+  actionLabel?: string;
+  description?: string;
+  href?: string;
+  label: string;
+  title?: string;
+  value: number | string;
+};
+
+const { items = [] } = Astro.props as {
+  items: StatItem[];
+};
+---
+
+{
+  items.length > 0 ? (
+    <section class="py-4">
+      <div class="container">
+        <div class="row g-3">
+          {items.map((item) => {
+            const content = (
+              <div class="card shadow-sm rounded-0 border-dark h-100">
+                <div class="card-body d-flex flex-column gap-2 h-100">
+                  <div class="text-uppercase small text-muted">
+                    {item.label}
+                  </div>
+                  <div class="display-6 fw-bold">{item.value}</div>
+                  {item.title ? <div class="h5 mb-0">{item.title}</div> : null}
+                  {item.description ? (
+                    <div class="text-muted small">{item.description}</div>
+                  ) : null}
+                  {item.href && item.actionLabel ? (
+                    <div class="mt-auto pt-2 fw-semibold text-dark">
+                      {item.actionLabel}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            );
+
+            return (
+              <div class="col-12 col-sm-6 col-xl-3">
+                {item.href ? (
+                  <a
+                    class="text-decoration-none text-reset d-block h-100"
+                    href={item.href}
+                  >
+                    {content}
+                  </a>
+                ) : (
+                  content
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  ) : null
+}
