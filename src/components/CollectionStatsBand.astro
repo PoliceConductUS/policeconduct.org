@@ -30,7 +30,7 @@ const { items = [] } = Astro.props as {
                   {item.description ? (
                     <div class="text-muted small">{item.description}</div>
                   ) : null}
-                  {item.href && item.actionLabel ? (
+                  {item.actionLabel && item.href ? (
                     <div class="mt-auto pt-2 fw-semibold text-dark">
                       {item.actionLabel}
                     </div>
@@ -38,13 +38,14 @@ const { items = [] } = Astro.props as {
                 </div>
               </div>
             );
+            const isLinked = Boolean(item.href);
 
             return (
               <div class="col-12 col-sm-6 col-xl-3">
-                {item.href ? (
+                {isLinked ? (
                   <a
                     class="text-decoration-none text-reset d-block h-100"
-                    href={item.href}
+                    href={item.href!}
                   >
                     {content}
                   </a>

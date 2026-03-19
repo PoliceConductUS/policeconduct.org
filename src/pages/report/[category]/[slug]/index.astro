@@ -395,11 +395,6 @@ const ratedOfficers = officers
                 <>
                   {evidenceLinks.map((link) => (
                     <div class="mb-4">
-                      <p class="fs-5 mb-2">
-                        <a href={link.url} target="_blank" rel="noopener">
-                          {link.title}
-                        </a>
-                      </p>
                       {link.embed ? (
                         <a
                           class="d-block text-decoration-none text-reset mt-3"
@@ -433,7 +428,13 @@ const ratedOfficers = officers
                             </div>
                           </div>
                         </a>
-                      ) : null}
+                      ) : (
+                        <p class="fs-5 mb-2">
+                          <a href={link.url} target="_blank" rel="noopener">
+                            {link.title}
+                          </a>
+                        </p>
+                      )}
                     </div>
                   ))}
                 </>
