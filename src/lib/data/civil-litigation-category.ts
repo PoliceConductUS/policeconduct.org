@@ -45,22 +45,21 @@ export const loadCivilCasesByCategory = async (
       };
     }
 
-    const [casesResult, linksResult, caseOfficersResult] = await Promise.all([
-      client.query("select * from public.civil_cases where id = any($1)", [
-        caseIds,
-      ]),
-      client.query(
-        "select * from public.civil_case_links where civil_case_id = any($1)",
-        [caseIds],
-      ),
-      client.query(
-        `select cco.civil_case_id, ao.officer_id
-         from public.civil_case_officers cco
-         join public.agency_officers ao on ao.id = cco.agency_officer_id
-         where cco.civil_case_id = any($1)`,
-        [caseIds],
-      ),
-    ]);
+    const casesResult = await client.query(
+      "select * from public.civil_cases where id = any($1)",
+      [caseIds],
+    );
+    const linksResult = await client.query(
+      "select * from public.civil_case_links where civil_case_id = any($1)",
+      [caseIds],
+    );
+    const caseOfficersResult = await client.query(
+      `select cco.civil_case_id, ao.officer_id
+       from public.civil_case_officers cco
+       join public.agency_officers ao on ao.id = cco.agency_officer_id
+       where cco.civil_case_id = any($1)`,
+      [caseIds],
+    );
 
     const officerIds = [
       ...new Set(
