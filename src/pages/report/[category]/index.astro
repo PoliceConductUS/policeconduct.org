@@ -10,32 +10,36 @@ const PAGE_SIZE = 50;
 
 export async function getStaticPaths() {
   return US_STATE_TILES.map((state) => ({
-    params: { state: state.code.toLowerCase() },
+    params: { category: state.code.toLowerCase() },
   }));
 }
 
-const { state } = Astro.params;
-const stateSlug = (state as string).toLowerCase();
-const stateCode = stateSlug.toUpperCase();
-const stateMeta = US_STATE_TILES.find((entry) => entry.code === stateCode);
+const { category } = Astro.params;
+const categorySlug = (category as string).toLowerCase();
+const categoryCode = categorySlug.toUpperCase();
+const categoryMeta = US_STATE_TILES.find(
+  (entry) => entry.code === categoryCode,
+);
 const allReports = (await loadReportSummaries()).filter(
-  (report) => report.state === stateSlug,
+  (report) => report.state === categorySlug,
 );
 const totalCount = allReports.length;
 const pageReports = allReports.slice(0, PAGE_SIZE);
 const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-const title = stateMeta ? `${stateMeta.name} Reports` : `${stateCode} Reports`;
-const pagePath = `/report/${stateSlug}/`;
+const title = categoryMeta
+  ? `${categoryMeta.name} Reports`
+  : `${categoryCode} Reports`;
+const pagePath = `/report/${categorySlug}/`;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const stateName = stateMeta?.name || stateCode;
+const categoryName = categoryMeta?.name || categoryCode;
 const reportItems = pageReports.map((report, index) => ({
   "@type": "ListItem",
   position: index + 1,
   item: {
     "@type": "Report",
     name: report.title,
-    url: new URL(`/report/${stateSlug}/${report.slug}/`, siteUrl).toString(),
+    url: new URL(`/report/${categorySlug}/${report.slug}/`, siteUrl).toString(),
     ...(report.agencyName
       ? {
           about: {
@@ -63,7 +67,7 @@ const structuredData = {
       "@id": pageUrl,
       url: pageUrl,
       name: title,
-      description: `Reports recorded within ${stateMeta?.name || stateCode}.`,
+      description: `Reports recorded within ${categoryMeta?.name || categoryCode}.`,
       isPartOf: { "@id": websiteId },
       ...(reportItemListId ? { mainEntity: { "@id": reportItemListId } } : {}),
     },
@@ -85,7 +89,7 @@ const formatDisplayDate = (value?: string | null) => {
 
 <SiteLayout
   title={title}
-  description={`Reports recorded within ${stateName}.`}
+  description={`Reports recorded within ${categoryName}.`}
   pagePath={pagePath}
   canonicalUrl={pagePath}
   structuredData={structuredData}
@@ -99,14 +103,14 @@ const formatDisplayDate = (value?: string | null) => {
               items={[
                 { label: "Home", href: "/" },
                 { label: "Reports", href: "/report/" },
-                { label: stateName, href: pagePath, current: true },
+                { label: categoryName, href: pagePath, current: true },
               ]}
               className="mb-2"
             />
             <p class="text-uppercase small text-muted mb-2">State reports</p>
             <h1 class="display-4 fw-bold">{title}</h1>
             <p class="lead text-muted mb-0">
-              Showing reports recorded within {stateName}.
+              Showing reports recorded within {categoryName}.
             </p>
           </div>
           <div class="col-12 col-lg-4">
@@ -135,7 +139,8 @@ const formatDisplayDate = (value?: string | null) => {
               role="status"
             >
               <span>
-                No reports published for {stateMeta?.name || stateCode} yet.
+                No reports published for {categoryMeta?.name || categoryCode}{" "}
+                yet.
               </span>
               <a
                 class="btn btn-dark rounded-0 w-auto"
@@ -167,7 +172,7 @@ const formatDisplayDate = (value?: string | null) => {
                           <div class="d-flex align-items-center flex-wrap gap-2">
                             <a
                               class="link-dark fw-semibold"
-                              href={`/report/${stateSlug}/${report.slug}/`}
+                              href={`/report/${categorySlug}/${report.slug}/`}
                             >
                               {report.title}
                             </a>
