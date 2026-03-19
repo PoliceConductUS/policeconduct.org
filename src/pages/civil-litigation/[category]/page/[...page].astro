@@ -26,7 +26,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
       pageSize: PAGE_SIZE,
       params: { category },
     })
-      .filter((page: any) => page.params.page !== "1")
+      .filter((page: any) => page.currentPage > 1)
       .forEach((page: any) => pages.push(page));
   }
 

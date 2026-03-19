@@ -35,7 +35,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
       },
     });
     categoryPages
-      .filter((page: any) => page.params.page !== "1")
+      .filter((page: any) => page.currentPage > 1)
       .forEach((page: any) => pages.push(page));
   });
 
