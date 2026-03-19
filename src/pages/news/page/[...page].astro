@@ -13,7 +13,15 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
   const articles = loadNewsArticles();
   return paginate(articles, {
     pageSize: PAGE_SIZE,
-  }).filter((page: any) => page.currentPage > 1);
+  }).filter((page: any) => {
+    const pageParam = page.params?.page;
+    if (Array.isArray(pageParam)) {
+      return pageParam.length > 0 && pageParam[0] !== "1";
+    }
+    return (
+      typeof pageParam === "string" && pageParam.length > 0 && pageParam !== "1"
+    );
+  });
 }
 
 const { page } = Astro.props;
