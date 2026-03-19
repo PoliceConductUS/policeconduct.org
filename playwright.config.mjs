@@ -14,6 +14,7 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       ...process.env,
+      DISABLE_ASTRO_DEV_TOOLBAR: "1",
       FORMS_API_PROXY_TARGET:
         process.env.FORMS_API_PROXY_TARGET || "https://example.com",
       RECAPTCHA_SITE_KEY: process.env.RECAPTCHA_SITE_KEY || "test-site-key",

@@ -401,33 +401,38 @@ const ratedOfficers = officers
                         </a>
                       </p>
                       {link.embed ? (
-                        <div class="ratio ratio-16x9 border">
-                          <iframe
-                            src={link.embed}
-                            title={link.title}
-                            allow="
-                            accelerometer;
-                            autoplay;
-                            clipboard-write;
-                            encrypted-media;
-                            gyroscope;
-                            picture-in-picture;
-                            web-share;
-                          "
-                            referrerpolicy="strict-origin-when-cross-origin"
-                            allowfullscreen
-                          />
-                        </div>
-                      ) : null}
-                      {link.embed ? (
-                        <p class="mt-2 mb-0">
-                          <a
-                            class="link-dark fw-semibold"
-                            href={`/report/${categorySlug}/${slug}/watch/${link.id}/`}
-                          >
-                            Watch page
-                          </a>
-                        </p>
+                        <a
+                          class="d-block text-decoration-none text-reset mt-3"
+                          href={`/report/${categorySlug}/${slug}/watch/${link.id}/`}
+                        >
+                          <div class="border bg-white">
+                            <div class="ratio ratio-16x9 bg-dark">
+                              {link.thumbnail ? (
+                                <img
+                                  src={link.thumbnail}
+                                  alt={`Video thumbnail for ${link.title}`}
+                                  class="w-100 h-100 object-fit-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div class="d-flex align-items-center justify-content-center text-white text-uppercase small fw-semibold">
+                                  Watch video
+                                </div>
+                              )}
+                            </div>
+                            <div class="p-3 d-flex justify-content-between align-items-center gap-3">
+                              <div>
+                                <div class="text-uppercase small text-muted">
+                                  Watch page
+                                </div>
+                                <div class="fw-semibold">{link.title}</div>
+                              </div>
+                              <span class="btn btn-outline-dark rounded-0">
+                                Open video
+                              </span>
+                            </div>
+                          </div>
+                        </a>
                       ) : null}
                     </div>
                   ))}

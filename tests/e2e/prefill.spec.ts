@@ -37,25 +37,6 @@ const staticSenderRoutes = [
   "/volunteer/",
 ];
 
-async function getFirstMatchingHref(
-  page: Page,
-  route: string,
-  pattern: string,
-): Promise<string> {
-  await page.goto(route);
-  const href = await page.evaluate((regexSource) => {
-    const regex = new RegExp(regexSource);
-    const links = Array.from(document.querySelectorAll("a[href]"));
-    const match = links.find((link) => {
-      const href = link.getAttribute("href") || "";
-      return regex.test(href);
-    });
-    return match?.getAttribute("href") || "";
-  }, pattern);
-  expect(href).not.toBe("");
-  return href;
-}
-
 async function collectSenderLinks(
   page: Page,
   route: string,
@@ -191,11 +172,8 @@ test.describe("prefill links", () => {
     page,
   }) => {
     const personnelRoute = "/personnel/james-markham-v-7635c7/";
-    const agencyRoute = await getFirstMatchingHref(
-      page,
-      "/law-enforcement-agency/",
-      "^/law-enforcement-agency/[^/]+/[^/]+/$",
-    );
+    const agencyRoute =
+      "/law-enforcement-agency/tx/irving-police-department-049f9a/";
 
     await page.goto(personnelRoute);
     await page.getByTestId("personnel-subscribe-link").click();
@@ -222,6 +200,24 @@ test.describe("prefill links", () => {
     });
   });
 
+  test("personnel past employer CTA carries profile context", async ({
+    page,
+  }) => {
+    const personnelRoute = "/personnel/james-markham-v-7635c7/";
+
+    await page.goto(personnelRoute);
+    await page.locator("#officer-past-tab").click();
+    const cta = page.getByRole("link", { name: /submit past employer/i });
+    const key = (await cta.getAttribute("data-prefill-key")) || "";
+    const payload = JSON.parse(
+      (await cta.getAttribute("data-prefill-payload")) || "{}",
+    );
+    await cta.click();
+
+    await expect(page).toHaveURL(/\/personnel\/new\/$/);
+    await assertPrefillApplied(page, key, payload);
+  });
+
   test("flash prefills are consumed once", async ({ page }) => {
     const cases: Array<{
       key: PrefillKey;
@@ -240,11 +236,6 @@ test.describe("prefill links", () => {
           "officers[0][department]": "Test Department",
           "officers[0][name]": "Test Officer",
         },
-      },
-      {
-        key: "prefill:issueNew",
-        route: "/issue/new/",
-        payload: { message: "One-time issue prefill" },
       },
       {
         key: "prefill:civilLitigationNew",

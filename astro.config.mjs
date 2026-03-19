@@ -59,6 +59,9 @@ const SITEMAP_EXCLUDED_PATHS = new Set([
 // https://astro.build/config
 export default defineConfig({
   site: "https://www.policeconduct.org",
+  devToolbar: {
+    enabled: process.env.DISABLE_ASTRO_DEV_TOOLBAR !== "1",
+  },
   build: {
     inlineStylesheets: "always",
   },

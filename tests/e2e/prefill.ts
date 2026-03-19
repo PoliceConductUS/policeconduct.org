@@ -70,9 +70,36 @@ export async function assertPrefillApplied(
             : payload.jurisdiction;
         await expect(page.locator("#jurisdiction")).toHaveValue(expected);
       }
+      if (typeof payload.defendants === "string") {
+        await expect(page.locator("#defendants")).toHaveValue(
+          payload.defendants,
+        );
+      }
+      if (typeof payload.summary === "string") {
+        await expect(page.locator("#summary")).toHaveValue(payload.summary);
+      }
+      if (typeof payload.links === "string") {
+        await expect(page.locator('textarea[name="links"]')).toHaveValue(
+          payload.links,
+        );
+      }
       break;
     }
     case "prefill:personnelNew": {
+      if (typeof payload.firstName === "string") {
+        await expect(page.locator("#firstName")).toHaveValue(payload.firstName);
+      }
+      if (typeof payload.lastName === "string") {
+        await expect(page.locator("#lastName")).toHaveValue(payload.lastName);
+      }
+      if (typeof payload.suffix === "string") {
+        await expect(page.locator("#suffix")).toHaveValue(payload.suffix);
+      }
+      if (typeof payload.badgeNumber === "string") {
+        await expect(page.locator("#badgeNumber")).toHaveValue(
+          payload.badgeNumber,
+        );
+      }
       if (typeof payload.currentAgency === "string") {
         await expect(page.locator("#currentAgency")).toHaveValue(
           payload.currentAgency,
@@ -88,12 +115,52 @@ export async function assertPrefillApplied(
           payload.currentAgencyState,
         );
       }
+      if (typeof payload.pastEmployers === "string") {
+        await expect(page.locator("#pastEmployers")).toHaveValue(
+          payload.pastEmployers,
+        );
+      }
+      if (typeof payload.civilLitigation === "string") {
+        await expect(page.locator("#civilLitigation")).toHaveValue(
+          payload.civilLitigation,
+        );
+      }
+      if (typeof payload.reportLinks === "string") {
+        await expect(page.locator("#reportLinks")).toHaveValue(
+          payload.reportLinks,
+        );
+      }
       break;
     }
     case "prefill:personnelSuggestEdit": {
       if (typeof payload.officerPath === "string") {
         await expect(page.locator("#officerPath")).toHaveValue(
           payload.officerPath,
+        );
+      }
+      if (typeof payload.officerName === "string") {
+        await expect(page.locator("#officerName")).toHaveValue(
+          payload.officerName,
+        );
+      }
+      if (typeof payload.badgeNumber === "string") {
+        await expect(page.locator("#badgeNumber")).toHaveValue(
+          payload.badgeNumber,
+        );
+      }
+      if (typeof payload.currentEmployer === "string") {
+        await expect(page.locator("#currentEmployer")).toHaveValue(
+          payload.currentEmployer,
+        );
+      }
+      if (typeof payload.pastEmployers === "string") {
+        await expect(page.locator("#pastEmployers")).toHaveValue(
+          payload.pastEmployers,
+        );
+      }
+      if (typeof payload.civilLitigation === "string") {
+        await expect(page.locator("#civilLitigation")).toHaveValue(
+          payload.civilLitigation,
         );
       }
       break;
@@ -104,9 +171,34 @@ export async function assertPrefillApplied(
           payload.agencyPath,
         );
       }
+      if (typeof payload.agencyName === "string") {
+        await expect(page.locator("#agencyName")).toHaveValue(
+          payload.agencyName,
+        );
+      }
       if (typeof payload.jurisdiction === "string") {
         await expect(page.locator("#jurisdiction")).toHaveValue(
           payload.jurisdiction.toUpperCase(),
+        );
+      }
+      if (typeof payload.departmentWebsite === "string") {
+        await expect(page.locator("#departmentWebsite")).toHaveValue(
+          payload.departmentWebsite,
+        );
+      }
+      if (typeof payload.departmentHead === "string") {
+        await expect(page.locator("#departmentHead")).toHaveValue(
+          payload.departmentHead,
+        );
+      }
+      if (typeof payload.socialLinks === "string") {
+        await expect(page.locator("#socialLinks")).toHaveValue(
+          payload.socialLinks,
+        );
+      }
+      if (typeof payload.civilLitigation === "string") {
+        await expect(page.locator("#civilLitigation")).toHaveValue(
+          payload.civilLitigation,
         );
       }
       break;
