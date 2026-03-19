@@ -6,7 +6,7 @@ export type NewsMeta = {
   title: string;
 };
 
-export const NEWS_PAGE_SIZE = 20;
+export { PAGE_SIZE } from "#src/lib/pagination.js";
 
 const modules = import.meta.glob("../pages/news/**/index.astro", {
   eager: true,

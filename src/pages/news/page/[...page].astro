@@ -4,7 +4,7 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
   formatNewsDate,
   loadNewsArticles,
-  NEWS_PAGE_SIZE,
+  PAGE_SIZE,
   newsBadgeClassName,
   type NewsMeta,
 } from "#src/lib/news.js";
@@ -12,7 +12,7 @@ import {
 export async function getStaticPaths({ paginate }: { paginate: any }) {
   const articles = loadNewsArticles();
   return paginate(articles, {
-    pageSize: NEWS_PAGE_SIZE,
+    pageSize: PAGE_SIZE,
   }).filter((page: any) => page.params.page !== "1");
 }
 

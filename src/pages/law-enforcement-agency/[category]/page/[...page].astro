@@ -6,11 +6,11 @@ import { buildAlphaPageMap } from "#src/lib/alpha-navigation.js";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { loadAgencySummaries } from "#src/lib/data/summaries.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
 import AgencyCard from "#src/components/AgencyCard.astro";
 import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths({ paginate }: { paginate: any }) {
-  const pageSize = 50;
   const agencies = await loadAgencySummaries();
   const agenciesByCategory = new Map();
 
@@ -27,7 +27,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
   const pages: any[] = [];
   agenciesByCategory.forEach((categoryAgencies, category) => {
     const categoryPages = paginate(categoryAgencies, {
-      pageSize,
+      pageSize: PAGE_SIZE,
       params: { category },
     });
     categoryPages
@@ -60,7 +60,11 @@ const title =
 const allAgencies = (await loadAgencySummaries()).filter(
   (agency) => agency.category?.toLowerCase() === categoryParam.toLowerCase(),
 );
-const alphaItems = buildAlphaPageMap(allAgencies, (agency) => agency.name, 50);
+const alphaItems = buildAlphaPageMap(
+  allAgencies,
+  (agency) => agency.name,
+  PAGE_SIZE,
+);
 const pagePath =
   page.currentPage > 1
     ? `/law-enforcement-agency/${categoryParam.toLowerCase()}/page/${page.currentPage}/`

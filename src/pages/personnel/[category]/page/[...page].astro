@@ -8,10 +8,10 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { loadPersonnelSummaries } from "#src/lib/data/summaries.js";
 import type { PersonnelSummary } from "#src/lib/data/types.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
 import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths({ paginate }: { paginate: any }) {
-  const pageSize = 50;
   const personnel = await loadPersonnelSummaries();
   const personnelByCategory = new Map<string, PersonnelSummary[]>();
 
@@ -28,7 +28,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
   const pages: any[] = [];
   personnelByCategory.forEach((categoryPersonnel, category) => {
     const categoryPages = paginate(categoryPersonnel, {
-      pageSize,
+      pageSize: PAGE_SIZE,
       params: { category },
     });
     categoryPages
@@ -60,7 +60,7 @@ const allPersonnel = (await loadPersonnelSummaries()).filter(
 const alphaItems = buildAlphaPageMap(
   allPersonnel,
   (person) => person.lastName,
-  50,
+  PAGE_SIZE,
 );
 const pagePath =
   page.currentPage > 1

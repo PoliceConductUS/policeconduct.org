@@ -13,7 +13,7 @@ import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/";
 const pageDescription =
-  "PoliceConduct.org is an independent nonprofit platform for police misconduct reports, positive police interaction records, and public accountability research across law enforcement agencies and personnel.";
+  "Independent public record for police misconduct reports, commendations, law enforcement agencies, personnel profiles, and civil litigation records across the United States.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const [agencies, personnel, reports, civilCasesData] = await Promise.all([
@@ -180,9 +180,10 @@ structuredData.mainEntity = organization;
 ---
 
 <SiteLayout
-  title="Police Misconduct Reports and Accountability Records | PoliceConduct.org"
+  title="Police Misconduct Reports, Agency Records, and Personnel Profiles | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
+  socialImage="/img/webp/usa-1778524_1280.webp"
   structuredData={structuredData}
 >
   <main>
@@ -196,16 +197,16 @@ structuredData.mainEntity = organization;
             >What's Broken?</a
           >
           <span class="text-muted">•</span>
+          <a class="text-dark text-decoration-none" href="/#participate"
+            >How to Participate</a
+          >
+          <span class="text-muted">•</span>
           <a class="text-dark text-decoration-none" href="/#services"
             >What We Do</a
           >
           <span class="text-muted">•</span>
           <a class="text-dark text-decoration-none" href="/#mission"
             >Our Mission</a
-          >
-          <span class="text-muted">•</span>
-          <a class="text-dark text-decoration-none" href="/about/contact"
-            >Contact Us</a
           >
         </div>
         <div
@@ -229,9 +230,9 @@ structuredData.mainEntity = organization;
               Independent Institute for Police Conduct
             </h1>
             <p class="lead">
-              We are not the police - we are completely independent of police
-              and government. We are a national watchdog for complaints,
-              commendations, and conduct matters involving the police.
+              PoliceConduct.org is an independent public record for complaints,
+              commendations, and conduct matters involving law enforcement
+              agencies and personnel.
             </p>
             <a
               href="/report/new/"
@@ -239,16 +240,16 @@ structuredData.mainEntity = organization;
               >Submit a report</a
             >
             <a
-              href="/donate/"
+              href="/report/"
               class="btn btn-outline-dark btn-xl shadow rounded-0 my-5"
-              >Support the mission</a
+              >Explore records</a
             >
             <p class="text-muted small mb-0">
               501(c)(3) • Tax-deductible • Secure checkout via Stripe
             </p>
             <div class="alert alert-light border-dark rounded-0 mb-0">
               PoliceConduct.org exists so people's experiences with law
-              enforcement aren't lost - and so accountability and recognition
+              enforcement are not lost, and so accountability and recognition
               are grounded in a durable public record.
             </div>
           </div>
@@ -260,8 +261,8 @@ structuredData.mainEntity = organization;
         <div class="row d-flex justify-content-between align-items-center">
           <div class="col-lg-4">
             <h2 class="py-5 border-top border-dark" data-aos="fade-right">
-              Open information helps communities and law enforcement move
-              forward together.
+              Public records help communities and law enforcement respond to the
+              same facts.
             </h2>
             <small>— Institute for Police Conduct</small>
           </div>
@@ -272,42 +273,47 @@ structuredData.mainEntity = organization;
                   What's broken?
                 </h2>
                 <h3>
-                  Police control all of the information about complaints and
-                  make it difficult or impossible for the community to know
-                  what's going well/not well.
+                  Most communities cannot easily see how complaints,
+                  commendations, and conduct concerns are handled.
                 </h3>
               </div>
               <div class="col-lg-4" data-aos="fade-up">
                 <div class="display-1 fw-bold py-4 text-center">26K+</div>
-                <p class="text-black-50 text-justify">
+                <h4 class="h5 mb-3 text-center">
+                  Force complaints in one year
+                </h4>
+                <p class="text-black-50">
                   Large state and local law enforcement agencies received more
                   than 26,000 citizen complaints about officer use of force in a
-                  single year (<a
+                  single year.
+                </p>
+                <p class="small text-black-50 mb-0">
+                  Source: <a
                     href="https://bjs.ojp.gov/library/publications/contacts-between-police-and-public-2020"
                     >Bureau of Justice Statistics</a
-                  >). Despite decades of effort to reform the police, the
-                  process for filing complaints is often cumbersome and
-                  discouraging for many citizens.
+                  >
                 </p>
               </div>
               <div class="col-lg-4" data-aos="fade-up">
                 <div class="display-1 fw-bold py-4 text-center">100%</div>
-                <p class="text-black-50 text-justify">
-                  Despite the high volume of complaints, 100% of the complaints
-                  filed against police officers are private by default. This
-                  lack of transparency makes it difficult for the public,
-                  reporters, and civilian oversight boards to have a complete
-                  picture of how police officers treat the citizens they serve.
+                <h4 class="h5 mb-3 text-center">
+                  Complaints start out private
+                </h4>
+                <p class="text-black-50 mb-0">
+                  Complaint records are typically closed to the public by
+                  default, making it harder for communities, reporters, and
+                  civilian oversight bodies to see the full picture.
                 </p>
               </div>
               <div class="col-lg-4" data-aos="fade-up">
-                <div class="display-1 fw-bold py-4 text-center">0%</div>
-                <p class="text-black-50 text-justify">
-                  State and local law enforcement agencies rarely have a process
-                  to report positive interactions. Without a system to capture
-                  positive feedback, commendable police behavior goes unnoticed
-                  and unrewarded, missing opportunities to promote good
-                  practices and improve community-police relations.
+                <div class="display-1 fw-bold py-4 text-center">Rarely</div>
+                <h4 class="h5 mb-3 text-center">
+                  Positive interactions are recorded
+                </h4>
+                <p class="text-black-50 mb-0">
+                  Most agencies do not make it easy to document commendations or
+                  routine positive encounters, so strong conduct often goes
+                  unrecognized.
                 </p>
               </div>
             </div>
@@ -316,8 +322,20 @@ structuredData.mainEntity = organization;
       </div>
     </div>
 
-    <div class="small py-vh-3 bg-gray-900 text-light w-100 overflow-hidden">
+    <div
+      class="small py-vh-3 bg-gray-900 text-light w-100 overflow-hidden"
+      id="participate"
+    >
       <div class="container">
+        <div class="row mb-4">
+          <div class="col-lg-8">
+            <h2 class="h3 mb-2">How to participate</h2>
+            <p class="mb-0 text-light">
+              PoliceConduct.org works best when community members, agencies, and
+              partner organizations all contribute to the public record.
+            </p>
+          </div>
+        </div>
         <div class="row">
           <div class="col-md-6 col-lg-4 border-end" data-aos="fade-up">
             <div class="d-flex">
@@ -336,11 +354,11 @@ structuredData.mainEntity = organization;
                 </svg>
               </div>
               <div class="col-md-9 flex-fill">
-                <h3 class="h5 my-2">Strategic Partnerships</h3>
+                <h3 class="h5 my-2">Partner with the project</h3>
                 <p>
-                  We are seeking strategic partnerships with civilian oversight
-                  committees, law firms, and other relevant organizations to
-                  enhance transparency and accountability.
+                  Work with us if you run a civilian oversight body, law firm,
+                  newsroom, nonprofit, or research organization that can help
+                  strengthen the public record.
                 </p>
               </div>
             </div>
@@ -369,11 +387,11 @@ structuredData.mainEntity = organization;
                 </svg>
               </div>
               <div class="col-md-9 flex-fill">
-                <h3 class="h5 my-2">Law Enforcement Collaboration</h3>
+                <h3 class="h5 my-2">Work with agencies and officers</h3>
                 <p>
-                  We invite Law Enforcement Agencies and Officers to collaborate
-                  with us in promoting positive interactions and improving
-                  community relations.
+                  Agencies and officers can help document positive interactions,
+                  clarify records, and support a more complete picture of police
+                  conduct.
                 </p>
               </div>
             </div>
@@ -403,12 +421,11 @@ structuredData.mainEntity = organization;
                 </svg>
               </div>
               <div class="col-md-9 flex-fill">
-                <h3 class="h5 my-2">Volunteers and Liaisons</h3>
+                <h3 class="h5 my-2">Volunteer and contribute</h3>
                 <p>
-                  Our system is under construction, and we need volunteers to
-                  gather data and act as liaisons with police departments to
-                  ensure we are meeting the needs of the police and the
-                  community they serve.
+                  Volunteers help gather records, review public data, and act as
+                  liaisons so the platform reflects what communities and
+                  departments both need to see.
                 </p>
               </div>
             </div>
@@ -422,7 +439,7 @@ structuredData.mainEntity = organization;
         <div class="row justify-content-end">
           <div class="col-lg-8" data-aos="fade-down">
             <h2 class="display-6">What we do.</h2>
-            <h3>How PoliceConduct.org Benefits Everyone.</h3>
+            <h3>How PoliceConduct.org is used.</h3>
           </div>
         </div>
         <div class="row align-items-top py-vh-2">
@@ -433,12 +450,10 @@ structuredData.mainEntity = organization;
           >
             <span class="h5 fw-lighter">01.</span>
             <h3 class="py-5 border-top border-dark">Empowering Individuals</h3>
-            <p class="text-justify">
-              PoliceConduct.org gives individuals a public platform to report
-              their interactions with the police, whether positive or negative.
-              This platform ensures that every citizen's experience is visible
-              to the public and the police department, promoting a sense of
-              empowerment and trust in the community.
+            <p>
+              People can document police interactions in one public place,
+              whether the experience was positive, negative, or somewhere in
+              between.
             </p>
           </div>
 
@@ -451,13 +466,9 @@ structuredData.mainEntity = organization;
             <h3 class="py-5 border-top border-dark">
               Strengthening Community Trust
             </h3>
-            <p class="text-justify">
-              By providing a transparent and accessible way to share reported
-              feedback, PoliceConduct.org helps build stronger relationships
-              between the community and law enforcement. Positive interactions
-              are highlighted, fostering mutual respect and understanding, while
-              concerns are publicly accessible so law enforcement and oversight
-              can review the same record, ensuring accountability.
+            <p>
+              Shared records give community members, reporters, and oversight
+              groups a clearer view of how policing is experienced in real life.
             </p>
           </div>
 
@@ -470,13 +481,10 @@ structuredData.mainEntity = organization;
             <h3 class="py-5 border-top border-dark">
               Enhancing Police Accountability
             </h3>
-            <p class="text-justify">
-              For police departments, interactions reported to PoliceConduct.org
-              offer invaluable insights into the effectiveness of their policies
-              and training programs. By analyzing real-time data and feedback,
-              the department can identify areas for improvement, recognize
-              exemplary behavior, and make data-driven decisions to enhance
-              overall performance and public safety.
+            <p>
+              Agencies can use the same record to identify recurring problems,
+              recognize strong conduct, and respond to patterns with evidence
+              instead of guesswork.
             </p>
           </div>
         </div>
@@ -530,20 +538,15 @@ structuredData.mainEntity = organization;
           </div>
           <div class="col-lg-4">
             <h3 class="py-5 border-top border-dark" data-aos="fade-left">
-              Institute for Police conduct is a nonprofit, public interest
+              Institute for Police Conduct is a nonprofit, public interest
               watchdog focused on recording and reporting on police interactions
               with the community they serve.
             </h3>
             <p data-aos="fade-left" data-aos-delay="200">
-              Our mission is to empower communities by providing a transparent
-              and accessible platform to report feedback on police interactions.
-              We are committed to fostering trust, accountability, and positive
-              reinforcement within law enforcement by enabling citizens to
-              report their experiences, both positive and negative. By aligning
-              with DOJ standards and promoting data-driven insights, we aim to
-              support transformative changes in policing practices, ensuring
-              public safety, and building stronger, more trustworthy
-              relationships between the police and the communities they serve.
+              Our mission is to make police conduct easier to document,
+              understand, and review. We aim to give communities, agencies, and
+              oversight bodies a durable record they can use to improve trust,
+              accountability, and public safety.
             </p>
           </div>
         </div>
@@ -555,7 +558,7 @@ structuredData.mainEntity = organization;
         <div class="row justify-content-end mb-4">
           <div class="col-lg-8">
             <h2 class="display-6">National overview.</h2>
-            <h3>Explore the records by state or federal agency.</h3>
+            <h3>Explore the public record by state or federal agency.</h3>
           </div>
         </div>
         <div class="row g-4 align-items-stretch">
@@ -600,9 +603,14 @@ structuredData.mainEntity = organization;
           Use our contact form to reach the team for partnerships, questions, or
           support.
         </p>
-        <a class="btn btn-light btn-xl rounded-0" href="/about/contact"
-          >Contact us</a
-        >
+        <div class="d-flex flex-wrap justify-content-center gap-3">
+          <a class="btn btn-light btn-xl rounded-0" href="/about/contact/"
+            >Contact us</a
+          >
+          <a class="btn btn-outline-light btn-xl rounded-0" href="/donate/"
+            >Donate</a
+          >
+        </div>
       </div>
     </div>
   </main>

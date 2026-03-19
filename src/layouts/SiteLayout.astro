@@ -2,8 +2,15 @@
 import "#src/styles/theme.css";
 import GoogleAnalytics from "#src/components/GoogleAnalytics.astro";
 
-const { title, description, pagePath, canonicalUrl, robots, structuredData } =
-  Astro.props;
+const {
+  title,
+  description,
+  pagePath,
+  canonicalUrl,
+  robots,
+  structuredData,
+  socialImage,
+} = Astro.props;
 const resolvedPath = pagePath || Astro.url?.pathname || "/";
 const issueMessage = `Issue reported from: ${resolvedPath}`;
 const siteOrigin = (() => {
@@ -26,6 +33,14 @@ const canonicalHref = (() => {
     return new URL(canonicalSource, siteOrigin).toString();
   } catch (_error) {
     return new URL(resolvedPath, siteOrigin).toString();
+  }
+})();
+const socialImagePath = socialImage || "/img/webp/usa-1778524_1280.webp";
+const socialImageUrl = (() => {
+  try {
+    return new URL(socialImagePath, siteOrigin).toString();
+  } catch (_error) {
+    return new URL("/img/webp/usa-1778524_1280.webp", siteOrigin).toString();
   }
 })();
 const recaptchaSiteKey = (process.env.RECAPTCHA_SITE_KEY || "").trim();
@@ -105,6 +120,25 @@ const isActivePath = (href: string) =>
     {description ? <meta name="description" content={description} /> : null}
     <meta name="robots" content={robotsContent} />
     <meta name="author" content="Institute for Police Conduct, Inc." />
+    {title ? <meta property="og:title" content={title} /> : null}
+    {
+      description ? (
+        <meta property="og:description" content={description} />
+      ) : null
+    }
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalHref} />
+    <meta property="og:site_name" content="PoliceConduct.org" />
+    <meta property="og:image" content={socialImageUrl} />
+    <meta property="og:image:alt" content="PoliceConduct.org overview" />
+    <meta name="twitter:card" content="summary_large_image" />
+    {title ? <meta name="twitter:title" content={title} /> : null}
+    {
+      description ? (
+        <meta name="twitter:description" content={description} />
+      ) : null
+    }
+    <meta name="twitter:image" content={socialImageUrl} />
     <meta name="build-commit" content={fullCommitSha} />
     <meta name="build-commit-dirty" content={isDirtyBuild ? "true" : "false"} />
     <meta name="HandheldFriendly" content="true" />

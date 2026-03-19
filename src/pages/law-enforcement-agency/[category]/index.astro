@@ -6,6 +6,7 @@ import { buildAlphaPageMap } from "#src/lib/alpha-navigation.js";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { loadAgencySummaries } from "#src/lib/data/summaries.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
 import AgencyCard from "#src/components/AgencyCard.astro";
 import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
 
@@ -44,13 +45,12 @@ const { category } = Astro.params;
 const categoryParam = (category as string) ?? "";
 const categoryCode = categoryParam.toUpperCase();
 const { agencies = [], totalCount = 0 } = Astro.props;
-const pageSize = 50;
-const pageAgencies = agencies.slice(0, pageSize);
-const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+const pageAgencies = agencies.slice(0, PAGE_SIZE);
+const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 const alphaItems = buildAlphaPageMap(
   agencies,
   (agency) => agency.name,
-  pageSize,
+  PAGE_SIZE,
 );
 const categoryMeta = US_STATE_TILES.find(
   (entry) => entry.code === categoryCode,

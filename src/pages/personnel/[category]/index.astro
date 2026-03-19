@@ -8,9 +8,8 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { loadPersonnelSummaries } from "#src/lib/data/summaries.js";
 import type { PersonnelSummary } from "#src/lib/data/types.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
 import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
-
-const PAGE_SIZE = 50;
 
 export async function getStaticPaths() {
   return [

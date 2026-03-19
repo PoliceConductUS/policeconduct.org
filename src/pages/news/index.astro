@@ -4,13 +4,13 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import {
   formatNewsDate,
   loadNewsArticles,
-  NEWS_PAGE_SIZE,
+  PAGE_SIZE,
   newsBadgeClassName,
 } from "#src/lib/news.js";
 
 const articles = loadNewsArticles();
-const pageArticles = articles.slice(0, NEWS_PAGE_SIZE);
-const totalPages = Math.max(1, Math.ceil(articles.length / NEWS_PAGE_SIZE));
+const pageArticles = articles.slice(0, PAGE_SIZE);
+const totalPages = Math.max(1, Math.ceil(articles.length / PAGE_SIZE));
 const nextUrl = totalPages > 1 ? "/news/page/2/" : null;
 ---
 

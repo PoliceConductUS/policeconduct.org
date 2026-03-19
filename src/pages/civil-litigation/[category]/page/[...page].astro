@@ -7,13 +7,12 @@ import {
   type OfficerRef,
 } from "#src/lib/data/civil-litigation-category.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
 import {
   buildItemList,
   buildWebPage,
   getSiteUrl,
 } from "#src/lib/structured-data.js";
-
-const PAGE_SIZE = 50;
 
 export async function getStaticPaths({ paginate }: { paginate: any }) {
   const pages: any[] = [];

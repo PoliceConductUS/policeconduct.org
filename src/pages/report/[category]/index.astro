@@ -4,9 +4,8 @@ import Pagination from "#src/components/Pagination.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { loadReportSummaries } from "#src/lib/data/summaries.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
 import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
-
-const PAGE_SIZE = 50;
 
 export async function getStaticPaths() {
   return US_STATE_TILES.map((state) => ({
