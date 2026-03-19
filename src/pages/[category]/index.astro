@@ -1,0 +1,176 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import {
+  loadAgencySummaries,
+  loadPersonnelSummaries,
+  loadReportSummaries,
+} from "#src/lib/data/summaries.js";
+import { withDb } from "#src/lib/db.js";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+
+export async function getStaticPaths() {
+  return [
+    ...US_STATE_TILES.map((state) => ({
+      params: { category: state.code.toLowerCase() },
+    })),
+    { params: { category: "federal" } },
+  ];
+}
+
+const { category } = Astro.params;
+const categoryParam = String(category || "").toLowerCase();
+const categoryCode = categoryParam.toUpperCase();
+const categoryMeta = US_STATE_TILES.find(
+  (entry) => entry.code.toLowerCase() === categoryParam,
+);
+const categoryLabel =
+  categoryParam === "federal" ? "Federal" : categoryMeta?.name || categoryCode;
+const pagePath = `/${categoryParam}/`;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+
+const [agencies, personnel, reports, civilCaseCounts] = await Promise.all([
+  loadAgencySummaries(),
+  loadPersonnelSummaries(),
+  loadReportSummaries(),
+  withDb(async (client) => {
+    const result = await client.query(
+      `
+        select upper(a.category) as category, count(distinct cco.civil_case_id) as case_count
+        from public.civil_case_officers cco
+        join public.agency_officers ao on ao.id = cco.agency_officer_id
+        join public.agency a on ao.agency_id = a.id
+        where a.category is not null
+        group by upper(a.category)
+      `,
+    );
+    return result.rows.map(
+      (row: { category: string; case_count: string | number }) => ({
+        category: String(row.category || "").toLowerCase(),
+        count: Number(row.case_count || 0),
+      }),
+    );
+  }),
+]);
+
+const agencyCount = agencies.filter(
+  (agency) => agency.category === categoryParam,
+).length;
+const personnelCount = personnel.filter(
+  (entry) => entry.agencyCategory?.toLowerCase() === categoryParam,
+).length;
+const reportCount = reports.filter((report) =>
+  report.agencySlug?.toLowerCase().startsWith(`${categoryParam}/`),
+).length;
+const civilCaseCount =
+  civilCaseCounts.find((entry) => entry.category === categoryParam)?.count ?? 0;
+const reportPath =
+  categoryParam === "federal" ? "/report/" : `/report/${categoryParam}/`;
+const personnelPath = `/personnel/${categoryParam}/`;
+const agencyPath = `/law-enforcement-agency/${categoryParam}/`;
+const civilPath = `/civil-litigation/${categoryParam}/`;
+
+const stats = [
+  {
+    label: "Reports",
+    value: reportCount,
+    title:
+      categoryParam === "federal"
+        ? "Browse all reports"
+        : `View reports in ${categoryLabel}`,
+    description:
+      categoryParam === "federal"
+        ? "Reports tied to federal agencies are tracked in the main reports directory."
+        : `Reports currently listed for ${categoryLabel}.`,
+    href: reportPath,
+    actionLabel: "Open reports",
+  },
+  {
+    label: "Personnel",
+    value: personnelCount,
+    title: `View personnel in ${categoryLabel}`,
+    description:
+      categoryParam === "federal"
+        ? "Listed personnel attached to federal agencies."
+        : `Listed personnel attached to ${categoryLabel} agencies.`,
+    href: personnelPath,
+    actionLabel: "Open personnel",
+  },
+  {
+    label: "Agencies",
+    value: agencyCount,
+    title: `View agencies in ${categoryLabel}`,
+    description: `Law enforcement agencies listed for ${categoryLabel}.`,
+    href: agencyPath,
+    actionLabel: "Open agencies",
+  },
+  {
+    label: "Civil Cases",
+    value: civilCaseCount,
+    title: `View civil cases in ${categoryLabel}`,
+    description: `Civil litigation tied to ${categoryLabel} agencies or personnel.`,
+    href: civilPath,
+    actionLabel: "Open civil cases",
+  },
+];
+
+const title =
+  categoryParam === "federal"
+    ? "Federal Overview | PoliceConduct.org"
+    : `${categoryLabel} Overview | PoliceConduct.org`;
+const description =
+  categoryParam === "federal"
+    ? "Federal overview across reports, personnel, law enforcement agencies, and civil litigation."
+    : `${categoryLabel} overview across reports, personnel, law enforcement agencies, and civil litigation.`;
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: title,
+  description,
+  type: "CollectionPage",
+});
+---
+
+<SiteLayout
+  title={title}
+  description={description}
+  pagePath={pagePath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row g-4 align-items-end">
+          <div class="col-12 col-lg-8">
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: categoryLabel, href: pagePath, current: true },
+              ]}
+              className="mb-2"
+            />
+            <p class="text-uppercase small text-muted mb-2">
+              Category Overview
+            </p>
+            <h1 class="display-4 fw-bold mb-3">{categoryLabel}</h1>
+            <p class="lead text-muted mb-0">
+              Cross-site overview for reports, personnel, agencies, and civil
+              litigation linked to {categoryLabel}.
+            </p>
+          </div>
+          <div class="col-12 col-lg-4 d-flex justify-content-lg-end">
+            <a class="btn btn-outline-dark rounded-0" href="/">
+              Back to US Overview
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="bg-white border-bottom border-dark">
+      <CollectionStatsBand items={stats} />
+    </div>
+  </main>
+</SiteLayout>

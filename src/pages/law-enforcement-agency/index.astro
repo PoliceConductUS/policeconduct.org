@@ -1,13 +1,15 @@
 ---
-import SiteLayout from "../../layouts/SiteLayout.astro";
-import { loadAgencySummaries } from "../../lib/data/summaries.js";
-import UsaChoroplethMap from "../../components/UsaChoroplethMap.astro";
-import { US_STATE_TILES } from "../../lib/geo/states.js";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
+import { loadAgencySummaries } from "#src/lib/data/summaries.js";
+import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import {
   buildItemList,
   buildWebPage,
   getSiteUrl,
-} from "../../lib/structured-data.js";
+} from "#src/lib/structured-data.js";
 
 const agencies = await loadAgencySummaries();
 const stateStats = US_STATE_TILES.map((state) => {
@@ -24,11 +26,29 @@ const federalAgencies = agencies.filter(
   (agency) => agency.category === "federal",
 );
 const totalAgencies = agencies.length;
+const statesWithAgencies = stateStats.filter((state) => state.count > 0).length;
+const agencyStats = [
+  {
+    label: "Agencies",
+    value: totalAgencies,
+    description: "Law enforcement agencies currently listed.",
+  },
+  {
+    label: "States Covered",
+    value: statesWithAgencies,
+    description: "States with listed agencies.",
+  },
+  {
+    label: "Federal Agencies",
+    value: federalAgencies.length,
+    description: "Federal agencies listed separately from states.",
+  },
+];
 const pagePath = "/law-enforcement-agency/";
 const suggestAgencyHref = "/law-enforcement-agency/new/";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const federalAgencyItems = federalAgencies.map((agency, index) => ({
+const agencyItems = agencies.slice(0, 25).map((agency, index) => ({
   "@type": "ListItem",
   position: index + 1,
   item: {
@@ -48,9 +68,9 @@ const structuredData = buildWebPage({
     "Law enforcement agencies currently listed on PoliceConduct.org.",
   type: "CollectionPage",
 });
-const federalItemList = buildItemList(federalAgencyItems);
-if (federalItemList) {
-  structuredData.mainEntity = federalItemList;
+const agencyItemList = buildItemList(agencyItems);
+if (agencyItemList) {
+  structuredData.mainEntity = agencyItemList;
 }
 ---
 
@@ -65,91 +85,55 @@ if (federalItemList) {
       <div class="container">
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
-            <p class="text-uppercase small text-muted mb-2">
-              Law Enforcement Agencies
-            </p>
-            <h1 class="display-4 fw-bold">Law Enforcement Agencies</h1>
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                {
+                  label: "Agencies",
+                  href: pagePath,
+                  current: true,
+                },
+              ]}
+              className="mb-2"
+            />
+            <h1 class="display-4 fw-bold">Agencies</h1>
             <p class="lead text-muted mb-0">
               Law enforcement agencies tracked on PoliceConduct.org.
             </p>
-            <div class="mt-3">
-              <a
-                class="btn btn-outline-dark rounded-0"
-                href={suggestAgencyHref}
-                target="_self"
-              >
-                Suggest a new agency
-              </a>
-            </div>
-          </div>
-          <div class="col-12 col-lg-4">
-            <div class="card shadow-sm rounded-0 border-dark">
-              <div class="card-body d-flex flex-column gap-2">
-                <div class="text-uppercase small text-muted">
-                  Agencies listed
-                </div>
-                <div class="d-flex align-items-end justify-content-between">
-                  <span class="display-6 fw-bold">{totalAgencies}</span>
-                </div>
-                <div class="text-muted small">
-                  Hover over a state to see the count; click to view agencies.
-                  Federal agencies are listed separately.
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
     </section>
-
     <section class="py-vh-2">
       <div class="container">
-        <div class="row g-4">
-          <div class="col-12 col-lg-8">
-            <UsaChoroplethMap
-              stats={stateStats}
-              title="States"
-              subtitle="Click a state to jump to its agencies."
-              emptyLabel="No agencies yet"
-              interactionLabel="Hover over a state to see the count; click to view agencies."
-            />
-          </div>
-          <div class="col-12 col-lg-4">
-            <div class="card shadow-sm rounded-0 border-dark h-100">
-              <div class="card-body d-flex flex-column gap-3">
-                <div class="d-flex align-items-center justify-content-between">
-                  <p class="text-uppercase small text-muted mb-0">
-                    Federal agencies
-                  </p>
-                  <span class="badge bg-dark rounded-pill"
-                    >{federalAgencies.length}</span
-                  >
-                </div>
-                <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-                  {
-                    federalAgencies.map((agency) => (
-                      <li class="d-flex align-items-start justify-content-between gap-2">
-                        <a
-                          class="text-decoration-none fw-semibold"
-                          href={`/law-enforcement-agency/${agency.category}/${agency.slug}/`}
-                        >
-                          {agency.name}
-                        </a>
-                        <div class="d-flex align-items-center gap-2">
-                          <span class="badge bg-light text-dark border rounded-pill">
-                            Reports: {agency.reportCount}
-                          </span>
-                        </div>
-                      </li>
-                    ))
-                  }
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
+        <UsaChoroplethMap
+          stats={stateStats}
+          title="States"
+          subtitle="Click a state to jump to its agencies."
+          emptyLabel="No agencies yet"
+          interactionLabel="Hover over a state to see the count; click to view agencies."
+          headerAction={{
+            href: suggestAgencyHref,
+            label: "Suggest a new agency",
+            target: "_self",
+          }}
+          federalPanel={{
+            eyebrow: "Federal",
+            title: "Federal agencies",
+            value: federalAgencies.length,
+            description: "Federal agencies listed separately from states.",
+            items: federalAgencies.map((agency) => ({
+              label: agency.name,
+              href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+              badgeText: `Reports: ${agency.reportCount}`,
+            })),
+          }}
+        />
       </div>
     </section>
+    <div class="bg-white border-bottom border-dark">
+      <CollectionStatsBand items={agencyStats} />
+    </div>
   </main>
   <script
     is:inline

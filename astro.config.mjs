@@ -5,6 +5,10 @@ import { loadEnv } from "vite";
 
 import sentry from "@sentry/astro";
 
+/**
+ * @param {string} value
+ * @param {string} name
+ */
 function requireNonEmptyString(value, name) {
   if (typeof value !== "string") {
     throw new Error(`${name} must be set.`);
@@ -32,10 +36,32 @@ const sentryDsn = requireNonEmptyString(
   env.PUBLIC_SENTRY_DSN,
   "PUBLIC_SENTRY_DSN",
 );
+const sentryOrg = (env.SENTRY_ORG || "").trim();
+const sentryProject = (env.SENTRY_PROJECT || "").trim();
+const sentryAuthToken = (env.SENTRY_AUTH_TOKEN || "").trim();
+const sentryRelease =
+  (process.env.GIT_COMMIT_SHA || env.GIT_COMMIT_SHA || "").trim() || undefined;
+const SITEMAP_EXCLUDED_PATHS = new Set([
+  "/404/",
+  "/about/contact/",
+  "/civil-litigation/new/",
+  "/civil-litigation/suggest-edit/",
+  "/law-enforcement-agency/new/",
+  "/law-enforcement-agency/suggest-edit/",
+  "/legal-notice/data-subject-access-request/",
+  "/personnel/new/",
+  "/personnel/suggest-edit/",
+  "/report/new/",
+  "/status/",
+  "/volunteer/",
+]);
 
 // https://astro.build/config
 export default defineConfig({
   site: "https://www.policeconduct.org",
+  devToolbar: {
+    enabled: process.env.DISABLE_ASTRO_DEV_TOOLBAR !== "1",
+  },
   build: {
     inlineStylesheets: "always",
   },
@@ -44,6 +70,9 @@ export default defineConfig({
       "import.meta.env.PUBLIC_SENTRY_DSN": JSON.stringify(sentryDsn),
       "import.meta.env.PUBLIC_SENTRY_ENVIRONMENT":
         JSON.stringify(sentryEnvironment),
+      "import.meta.env.PUBLIC_SENTRY_RELEASE": JSON.stringify(
+        sentryRelease || "",
+      ),
     },
     build: {
       sourcemap: "hidden",
@@ -61,7 +90,19 @@ export default defineConfig({
   integrations: [
     sitemap({
       entryLimit: 45000,
+      filter: (page) => {
+        const pathname = new URL(page).pathname;
+        return !SITEMAP_EXCLUDED_PATHS.has(pathname);
+      },
     }),
-    sentry(),
+    sentry({
+      telemetry: false,
+      ...(sentryOrg ? { org: sentryOrg } : {}),
+      ...(sentryProject ? { project: sentryProject } : {}),
+      ...(sentryAuthToken ? { authToken: sentryAuthToken } : {}),
+      sourcemaps: {
+        assets: ["dist/_astro/**/*", "dist/.prerender/**/*"],
+      },
+    }),
   ],
 });

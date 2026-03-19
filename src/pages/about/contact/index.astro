@@ -1,5 +1,6 @@
 ---
-import SiteLayout from "../../../layouts/SiteLayout.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 ---
 
 <SiteLayout
@@ -11,16 +12,12 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-lg-8">
-          <nav aria-label="Breadcrumb">
-            <ol class="breadcrumb mb-3">
-              <li class="breadcrumb-item">
-                <a class="link-dark" href="/about/">About</a>
-              </li>
-              <li class="breadcrumb-item active" aria-current="page">
-                Contact
-              </li>
-            </ol>
-          </nav>
+          <Breadcrumbs
+            items={[
+              { label: "About", href: "/about/" },
+              { label: "Contact", href: "/about/contact/", current: true },
+            ]}
+          />
           <h1 class="display-5 fw-bold">Contact us</h1>
           <p class="lead text-muted">
             Tell us who you are and how we can help.
@@ -33,7 +30,6 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
           <form
             name="contact"
             method="POST"
-            data-netlify="true"
             data-netlify-honeypot="organization"
             class="needs-validation"
             novalidate
@@ -220,159 +216,56 @@ import SiteLayout from "../../../layouts/SiteLayout.astro";
         return;
       }
       form.addEventListener("submit", async function (event) {
-        const submitButton = form.querySelector('button[type="submit"]');
-        let inlineError = form.querySelector("[data-form-submit-error]");
-        if (!inlineError) {
-          inlineError = document.createElement("div");
-          inlineError.setAttribute("data-form-submit-error", "true");
-          inlineError.className = "alert alert-danger rounded-0 mt-3 d-none";
-          inlineError.setAttribute("role", "alert");
-          form.appendChild(inlineError);
-        }
         const formsUi = window.__IPC_FORMS__;
-        if (!formsUi || typeof formsUi.ensureSubmissionUi !== "function") {
-          inlineError.textContent =
-            "Unable to submit the form right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
-          inlineError.classList.remove("d-none");
+        if (!formsUi || typeof formsUi.submitJsonForm !== "function") {
+          let inlineError = form.querySelector("[data-form-submit-error]");
+          if (!inlineError) {
+            inlineError = document.createElement("div");
+            inlineError.setAttribute("data-form-submit-error", "true");
+            inlineError.className = "alert alert-danger rounded-0 mt-3 d-none";
+            inlineError.setAttribute("role", "alert");
+            form.appendChild(inlineError);
+          }
+          if (inlineError) {
+            inlineError.textContent =
+              "Unable to submit the form right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
+            inlineError.classList.remove("d-none");
+          }
+          console.error("Shared form submit helper is unavailable", {
+            formName: "contact",
+          });
           return;
         }
-        formsUi.prewarmRecaptcha?.();
-        const { inlineSuccess } = formsUi.ensureSubmissionUi({
+        await formsUi.submitJsonForm({
+          event,
           form,
-          submitButton,
+          formName: "contact",
+          onBeforeSubmit: function () {
+            if (rememberInput && rememberInput.checked) {
+              try {
+                const payload = {
+                  firstName: document.getElementById("firstName")?.value.trim(),
+                  lastName: document.getElementById("lastName")?.value.trim(),
+                  email: document.getElementById("email")?.value.trim(),
+                  phone: document.getElementById("phone")?.value.trim(),
+                };
+                sessionStorage.setItem(storageKey, JSON.stringify(payload));
+              } catch (err) {
+                // Ignore storage errors.
+              }
+            } else if (rememberInput) {
+              try {
+                sessionStorage.removeItem(storageKey);
+              } catch (err) {
+                // Ignore storage errors.
+              }
+            }
+          },
           onReset: function () {
             form.classList.remove("was-validated");
           },
+          recaptchaAction: "contactSubmit",
         });
-
-        let submissionCompleted = false;
-
-        if (form.dataset.submitLocked === "true") {
-          event.preventDefault();
-          return;
-        }
-
-        event.preventDefault();
-        form.dataset.submitLocked = "true";
-        formsUi.setSubmitBusy(submitButton, true);
-        inlineError.classList.add("d-none");
-        inlineError.textContent = "";
-
-        inlineSuccess.classList.add("d-none");
-
-        try {
-          if (!form.checkValidity()) {
-            event.stopPropagation();
-            form.classList.add("was-validated");
-            return;
-          }
-          form.classList.add("was-validated");
-
-          if (rememberInput && rememberInput.checked) {
-            try {
-              const payload = {
-                firstName: document.getElementById("firstName")?.value.trim(),
-                lastName: document.getElementById("lastName")?.value.trim(),
-                email: document.getElementById("email")?.value.trim(),
-                phone: document.getElementById("phone")?.value.trim(),
-              };
-              sessionStorage.setItem(storageKey, JSON.stringify(payload));
-            } catch (err) {
-              // Ignore storage errors.
-            }
-          } else if (rememberInput) {
-            try {
-              sessionStorage.removeItem(storageKey);
-            } catch (err) {
-              // Ignore storage errors.
-            }
-          }
-
-          const formData = new FormData(form);
-          const recaptchaToken =
-            await formsUi.getRecaptchaToken("contactSubmit");
-
-          const data = {};
-          formData.forEach((value, key) => {
-            if (key === "form-name" || key === "g-recaptcha-response") {
-              return;
-            }
-            if (key in data) {
-              if (!Array.isArray(data[key])) {
-                data[key] = [data[key]];
-              }
-              data[key].push(value);
-            } else {
-              data[key] = value;
-            }
-          });
-
-          const response = await fetch("/api/forms/submit", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              formName: "contact",
-              recaptchaToken,
-              data,
-            }),
-          });
-
-          if (!response.ok) {
-            let message =
-              "We could not submit your form right now. Please print this page and email it to hello@policeconduct.org so we have your submission while we fix the issue.";
-            try {
-              const errorPayload = await response.json();
-              if (
-                errorPayload &&
-                typeof errorPayload.error === "string" &&
-                errorPayload.error.trim()
-              ) {
-                message = errorPayload.error.trim();
-              }
-            } catch (_error) {
-              // Ignore malformed error payloads.
-            }
-            throw new Error(message);
-          }
-
-          const result = await response.json();
-          const submissionId =
-            typeof result?.submissionId === "string" ? result.submissionId : "";
-          if (!submissionId) {
-            throw new Error(
-              "Submission succeeded but no submission ID was returned.",
-            );
-          }
-          form.classList.remove("was-validated");
-          const submissionIdNode = inlineSuccess.querySelector(
-            "[data-submission-id]",
-          );
-          if (submissionIdNode) {
-            submissionIdNode.textContent = submissionId;
-          }
-          formsUi.setSubmitBusy(submitButton, false);
-          if (submitButton) submitButton.disabled = true;
-          inlineSuccess.classList.remove("d-none");
-          inlineSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
-          submissionCompleted = true;
-        } catch (error) {
-          const message =
-            error instanceof Error && error.message
-              ? error.message
-              : "Unable to submit the form. Please try again.";
-          const fallback =
-            formsUi.blockedSubmitFallback ||
-            "If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
-          inlineError.textContent = message.includes("hello@policeconduct.org")
-            ? message
-            : message + " " + fallback;
-          inlineError.classList.remove("d-none");
-        } finally {
-          if (!submissionCompleted) formsUi.setSubmitBusy(submitButton, false);
-          if (!submissionCompleted) form.dataset.submitLocked = "false";
-        }
       });
     })();
   </script>

@@ -1,14 +1,14 @@
 ---
-import SiteLayout from "../../../../layouts/SiteLayout.astro";
-import DisqusComments from "../../../../components/DisqusComments.astro";
-import { withDb } from "../../../../lib/db.js";
-import { groupBy, mapBy } from "../../../../lib/data.js";
-import { formatShortDate } from "../../../../lib/format.js";
-import { US_STATE_TILES } from "../../../../lib/geo/states.js";
-import { getReportStateSlug } from "../../../../lib/report-state-stats.js";
-import { caseSlug } from "../../../../lib/slug.js";
-import ProfileTabs from "../../../../components/ProfileTabs.astro";
-import { getSiteUrl } from "../../../../lib/structured-data.js";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import DisqusComments from "#src/components/DisqusComments.astro";
+import { withDb } from "#src/lib/db.js";
+import { groupBy, mapBy } from "#src/lib/data.js";
+import { formatShortDate } from "#src/lib/format.js";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { caseSlug } from "#src/lib/slug.js";
+import ProfileTabs from "#src/components/ProfileTabs.astro";
+import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
   const agencies = await withDb(async (client) => {
@@ -267,28 +267,13 @@ const civilCases = data.civilCases.map(
 );
 
 const reportedReports = data.reports
-  .map(
-    (report: {
-      incident_date: string;
-      slug: string;
-      category?: string | null;
-      agency_slug?: string | null;
-      agencySlug?: string | null;
-    }) => {
-      const reportStateSlug = getReportStateSlug({
-        category: report.category ?? null,
-        agencySlug: report.agencySlug ?? report.agency_slug ?? null,
-      });
-      const reportUrl = reportStateSlug
-        ? `/report/${reportStateSlug}/${report.slug}/`
-        : `/report/${report.slug}/`;
-      return {
-        ...report,
-        incidentDate: formatShortDate(report.incident_date),
-        url: reportUrl,
-      };
-    },
-  )
+  .map((report: { incident_date: string; slug: string; category: string }) => {
+    return {
+      ...report,
+      incidentDate: formatShortDate(report.incident_date),
+      url: `/report/${report.category}/${report.slug}/`,
+    };
+  })
   .sort((a, b) => {
     const left = new Date(b.incident_date).getTime();
     const right = new Date(a.incident_date).getTime();
@@ -309,25 +294,59 @@ const categoryPath = categorySlug
   ? `/law-enforcement-agency/${categorySlug}/`
   : "/law-enforcement-agency/";
 const agencyPath = `/law-enforcement-agency/${categorySlug}/${data.agency.slug}/`;
+const agencyLinksSummary = data.agencyLinks
+  .map((link: { url?: string | null; label?: string | null }) =>
+    [link.label || null, link.url || null].filter(Boolean).join(" — "),
+  )
+  .filter(Boolean)
+  .join("\n");
+const primaryWebsite =
+  data.agencyLinks.find((link: { url?: string | null }) =>
+    /^https?:\/\//i.test(link.url || ""),
+  )?.url || "";
+const civilLitigationSummary = civilCases
+  .map((record) => {
+    const segments = [
+      record.title || "Civil case",
+      record.cause_number || null,
+      record.court || null,
+      record.caseUrl,
+    ];
+    return segments.filter(Boolean).join(" — ");
+  })
+  .join("\n");
+const reportLinksSummary = reportedReports
+  .map((report) => report.url)
+  .join("\n");
 const addCivilCaseHref = "/civil-litigation/new/";
 const addCivilCasePrefillPayload = JSON.stringify({
   jurisdiction: data.agency.category?.toLowerCase() || "",
+  defendants: data.agency.name || "",
+  summary: `${data.agency.name} agency profile: ${agencyPath}`,
+  links: [
+    agencyPath,
+    ...reportedReports.slice(0, 3).map((report) => report.url),
+  ]
+    .filter(Boolean)
+    .join("\n"),
 });
 const suggestEditHref = "/law-enforcement-agency/suggest-edit/";
 const suggestEditPrefillPayload = JSON.stringify({
   agencyPath,
-  agency: data.agency.name,
+  agencyName: data.agency.name,
   jurisdiction: data.agency.category?.toLowerCase() || "",
+  departmentWebsite: primaryWebsite,
+  departmentHead: data.agency.contact_name || "",
+  socialLinks: agencyLinksSummary,
+  civilLitigation: civilLitigationSummary,
 });
 const suggestPersonnelHref = "/personnel/new/";
 const suggestPersonnelPrefillPayload = JSON.stringify({
   currentAgency: data.agency.name,
   currentAgencyCity: data.agency.city || "",
   currentAgencyState: data.agency.state || "",
-});
-const reportHeroHref = "/report/new/";
-const reportHeroPrefillPayload = JSON.stringify({
-  "officers[0][department]": data.agency.name,
+  civilLitigation: civilLitigationSummary,
+  reportLinks: reportLinksSummary,
 });
 const claimProfileHref = "/about/contact/";
 const claimProfilePrefillPayload = JSON.stringify({
@@ -337,6 +356,7 @@ const claimProfilePrefillPayload = JSON.stringify({
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(agencyPath, siteUrl).toString();
 const disqusIdentifier = `agency:${data.agency.slug}`;
+const pageDescription = `${data.agency.name} agency profile with contact information, personnel, public reports, and recent civil litigation references.`;
 const addressAvailable =
   data.agency.address ||
   data.agency.city ||
@@ -375,30 +395,6 @@ const organization = {
     : {}),
 };
 const websiteId = new URL("/", siteUrl).toString();
-const breadcrumb = {
-  "@type": "BreadcrumbList",
-  "@id": `${pageUrl}#breadcrumb`,
-  itemListElement: [
-    {
-      "@type": "ListItem",
-      position: 1,
-      name: "Agencies",
-      item: new URL("/law-enforcement-agency/", siteUrl).toString(),
-    },
-    {
-      "@type": "ListItem",
-      position: 2,
-      name: categoryLabel,
-      item: new URL(categoryPath, siteUrl).toString(),
-    },
-    {
-      "@type": "ListItem",
-      position: 3,
-      name: data.agency.name,
-      item: pageUrl,
-    },
-  ],
-};
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
@@ -413,12 +409,10 @@ const structuredData = {
       "@id": pageUrl,
       url: pageUrl,
       name: `${data.agency.name} | PoliceConduct.org`,
-      description: `Profile for ${data.agency.name} with contact information and recent civil litigation references.`,
+      description: pageDescription,
       isPartOf: { "@id": websiteId },
       mainEntity: { "@id": organization["@id"] },
-      breadcrumb: { "@id": breadcrumb["@id"] },
     },
-    breadcrumb,
     organization,
   ],
 };
@@ -426,25 +420,19 @@ const structuredData = {
 
 <SiteLayout
   title={`${data.agency.name} | PoliceConduct.org`}
-  description={`Profile for ${data.agency.name} with contact information and recent civil litigation references.`}
+  description={pageDescription}
   pagePath={agencyPath}
   structuredData={structuredData}
 >
   <main class="flex-grow-1 py-vh-3">
     <div class="container">
-      <nav aria-label="Breadcrumb">
-        <ol class="breadcrumb mb-3">
-          <li class="breadcrumb-item">
-            <a class="link-dark" href="/law-enforcement-agency/">Agencies</a>
-          </li>
-          <li class="breadcrumb-item">
-            <a class="link-dark" href={categoryPath}>{categoryLabel}</a>
-          </li>
-          <li class="breadcrumb-item active" aria-current="page">
-            {data.agency.name}
-          </li>
-        </ol>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Agencies", href: "/law-enforcement-agency/" },
+          { label: categoryLabel, href: categoryPath },
+          { label: data.agency.name, href: agencyPath, current: true },
+        ]}
+      />
       <div class="row justify-content-between align-items-start">
         <div class="col-lg-7">
           <p class="text-uppercase small text-muted mb-2">Agency profile</p>
@@ -581,6 +569,33 @@ const structuredData = {
                     Submit a report
                   </a>
                   <a
+                    class="btn btn-outline-dark rounded-0"
+                    href={addCivilCaseHref}
+                    target="_self"
+                    data-prefill-key="prefill:civilLitigationNew"
+                    data-prefill-payload={addCivilCasePrefillPayload}
+                  >
+                    Add a civil case
+                  </a>
+                  <a
+                    class="btn btn-outline-dark rounded-0"
+                    href={suggestPersonnelHref}
+                    target="_self"
+                    data-prefill-key="prefill:personnelNew"
+                    data-prefill-payload={suggestPersonnelPrefillPayload}
+                  >
+                    Suggest new personnel
+                  </a>
+                  <a
+                    class="btn btn-outline-dark rounded-0"
+                    href={suggestEditHref}
+                    target="_self"
+                    data-prefill-key="prefill:agencySuggestEdit"
+                    data-prefill-payload={suggestEditPrefillPayload}
+                  >
+                    Suggest edit
+                  </a>
+                  <a
                     class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
                     href="/about/contact/"
                     target="_self"
@@ -643,45 +658,16 @@ const structuredData = {
           extraNavClasses="mb-3"
           litigation={{
             cases: civilCases,
-            ctaHref: addCivilCaseHref,
-            ctaTarget: "_self",
-            ctaPrefillKey: "prefill:civilLitigationNew",
-            ctaPrefillPayload: addCivilCasePrefillPayload,
           }}
           reports={{
             items: reportedReports,
-            ctaHref: reportHeroHref,
-            ctaTarget: "_self",
-            ctaPrefillKey: "prefill:reportNew",
-            ctaPrefillPayload: reportHeroPrefillPayload,
             layout: "list",
           }}
           personnel={{
             entries: employees,
-            ctaHref: suggestPersonnelHref,
-            ctaTarget: "_self",
-            ctaPrefillKey: "prefill:personnelNew",
-            ctaPrefillPayload: suggestPersonnelPrefillPayload,
           }}
         />
-      </div>
-
-      <div class="alert alert-light border-dark rounded-0 mt-5" role="alert">
-        <p class="mb-3">
-          Have corrections or want to submit a report about this person?
-        </p>
-        <div class="d-flex flex-wrap gap-2">
-          <a
-            class="btn btn-outline-dark rounded-0"
-            href={suggestEditHref}
-            target="_self"
-            data-prefill-key="prefill:agencySuggestEdit"
-            data-prefill-payload={suggestEditPrefillPayload}
-          >
-            Suggest Edit
-          </a>
-        </div>
-        <div class="mt-2">
+        <div class="mt-3">
           <a
             class="link-dark small"
             href={claimProfileHref}

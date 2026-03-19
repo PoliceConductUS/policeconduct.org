@@ -1,5 +1,5 @@
-import { withDb } from "../db.js";
-import { groupBy, mapBy } from "../data.js";
+import { withDb } from "#src/lib/db.js";
+import { groupBy, mapBy } from "#src/lib/data.js";
 import type { ReportSummary } from "./types.js";
 
 const assertValue = <T>(value: T | null | undefined, message: string): T => {
@@ -109,6 +109,16 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
       agency.category,
       `Missing category for agency ${agency.id}`,
     );
+    const reportState = assertValue(
+      report.category,
+      `Missing category for report ${report.id}`,
+    )
+      .toString()
+      .trim()
+      .toLowerCase();
+    if (!reportState) {
+      throw new Error(`Blank category for report ${report.id}`);
+    }
     const agencySlug = assertValue(
       agency.slug,
       `Missing slug for agency ${agency.id}`,
@@ -122,6 +132,7 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
     return {
       id: report.id,
       slug: reportSlug,
+      state: reportState,
       title: report.title,
       incidentDate: incidentDate || report.incident_date || "",
       address: report.address || null,

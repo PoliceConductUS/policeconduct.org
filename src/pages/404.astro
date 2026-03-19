@@ -1,11 +1,12 @@
 ---
-import SiteLayout from "../layouts/SiteLayout.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
 ---
 
 <SiteLayout
   title="Page Not Found | PoliceConduct.org"
   description="PoliceConduct.org page not found."
   pagePath="/404/"
+  robots="noindex,follow"
 >
   <main class="flex-grow-1">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">

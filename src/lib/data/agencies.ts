@@ -1,4 +1,4 @@
-import { withDb } from "../db.js";
+import { withDb } from "#src/lib/db.js";
 import type { AgencySummary } from "./types.js";
 import { MIN_AGENCY_OFFICERS } from "./constants.js";
 

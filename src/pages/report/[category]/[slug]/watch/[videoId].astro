@@ -1,23 +1,17 @@
 ---
-import SiteLayout from "../../../../../layouts/SiteLayout.astro";
-import { formatLongDate } from "../../../../../lib/format.js";
-import { loadReportDetail } from "../../../../../lib/report-detail.js";
-import { loadReportSummaries } from "../../../../../lib/data/summaries.js";
-import { getReportStateSlug } from "../../../../../lib/report-state-stats.js";
-import { US_STATE_TILES } from "../../../../../lib/geo/states.js";
-import type { ReportSummary } from "../../../../../lib/data/types.js";
-import { getSiteUrl } from "../../../../../lib/structured-data.js";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { formatLongDate } from "#src/lib/format.js";
+import { loadReportDetail } from "#src/lib/report-detail.js";
+import { loadReportSummaries } from "#src/lib/data/summaries.js";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
   const reports = await loadReportSummaries();
   const paths = [];
 
   for (const report of reports) {
-    const stateSlug = getReportStateSlug(report);
-    if (!stateSlug) {
-      continue;
-    }
-
     const detail = await loadReportDetail(report.slug);
     if (!detail) {
       continue;
@@ -29,7 +23,7 @@ export async function getStaticPaths() {
     for (const link of embeddableLinks) {
       paths.push({
         params: {
-          state: stateSlug,
+          category: report.state,
           slug: report.slug,
           videoId: link.id,
         },
@@ -40,11 +34,13 @@ export async function getStaticPaths() {
   return paths;
 }
 
-const { state, slug, videoId } = Astro.params;
-const stateSlug = (state as string).toLowerCase();
-const stateCode = stateSlug.toUpperCase();
-const stateMeta = US_STATE_TILES.find((entry) => entry.code === stateCode);
-const stateName = stateMeta?.name || stateCode;
+const { category, slug, videoId } = Astro.params;
+const categorySlug = (category as string).toLowerCase();
+const categoryCode = categorySlug.toUpperCase();
+const categoryMeta = US_STATE_TILES.find(
+  (entry) => entry.code === categoryCode,
+);
+const categoryName = categoryMeta?.name || categoryCode;
 
 const data = await loadReportDetail(slug);
 if (!data) {
@@ -62,14 +58,13 @@ if (!primaryAgencyCategory || !primaryAgencySlug) {
   throw new Error(`Report ${slug} primary agency is missing category or slug.`);
 }
 
-const reportStateSlug = getReportStateSlug({
-  category: (data.report as ReportSummary).category ?? null,
-  agencySlug: `${primaryAgencyCategory}/${primaryAgencySlug}`,
-});
+const reportStateSlug = String(data.report.category || "")
+  .trim()
+  .toLowerCase();
 if (!reportStateSlug) {
-  throw new Error(`Report ${slug} is not associated with a state.`);
+  throw new Error(`Report ${slug} is missing category.`);
 }
-if (reportStateSlug !== stateSlug) {
+if (reportStateSlug !== categorySlug) {
   return Astro.redirect(
     `/report/${reportStateSlug}/${slug}/watch/${videoId}/`,
     301,
@@ -78,11 +73,15 @@ if (reportStateSlug !== stateSlug) {
 
 const reportTitle =
   typeof data.report.title === "string" ? data.report.title : "Report";
-const reportPath = `/report/${stateSlug}/${slug}/`;
-const watchPath = `/report/${stateSlug}/${slug}/watch/${videoId}/`;
+const reportPath = `/report/${categorySlug}/${slug}/`;
+const watchPath = `/report/${categorySlug}/${slug}/watch/${videoId}/`;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(watchPath, siteUrl).toString();
 const reportUrl = new URL(reportPath, siteUrl).toString();
+const thumbnailUrl = new URL(
+  "/img/personnel/cm7a0bh1z2f39ewvglexrgaig.webp",
+  siteUrl,
+).toString();
 
 const videos = data.evidenceLinks.filter((link) => Boolean(link.embed));
 const videoIndex = videos.findIndex((link) => link.id === videoId);
@@ -152,6 +151,7 @@ const structuredData = {
       name: videoTitle,
       description: videoDescription,
       embedUrl: video.embed,
+      thumbnailUrl,
       url: pageUrl,
       isPartOf: {
         "@type": "Report",
@@ -177,24 +177,14 @@ const structuredData = {
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-12 col-lg-10 col-xl-8">
-            <nav aria-label="Breadcrumb">
-              <ol class="breadcrumb mb-3">
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href="/report/">Reports</a>
-                </li>
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href={`/report/${stateSlug}/`}
-                    >{stateName}</a
-                  >
-                </li>
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href={reportPath}>{reportTitle}</a>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">
-                  Watch
-                </li>
-              </ol>
-            </nav>
+            <Breadcrumbs
+              items={[
+                { label: "Reports", href: "/report/" },
+                { label: categoryName, href: `/report/${categorySlug}/` },
+                { label: reportTitle, href: reportPath },
+                { label: "Watch", href: watchPath, current: true },
+              ]}
+            />
 
             <p class="text-uppercase small text-muted mb-2">Watch page</p>
             <h1 class="display-6 fw-bold">{videoTitle}</h1>
@@ -223,6 +213,7 @@ const structuredData = {
               <iframe
                 src={video.embed!}
                 title={videoTitle}
+                loading="lazy"
                 allow="
                   accelerometer;
                   autoplay;
@@ -255,7 +246,7 @@ const structuredData = {
                 prevVideo ? (
                   <a
                     class="link-dark fw-semibold"
-                    href={`/report/${stateSlug}/${slug}/watch/${prevVideo.id}/`}
+                    href={`/report/${categorySlug}/${slug}/watch/${prevVideo.id}/`}
                   >
                     Previous video
                   </a>
@@ -267,7 +258,7 @@ const structuredData = {
                 nextVideo ? (
                   <a
                     class="link-dark fw-semibold"
-                    href={`/report/${stateSlug}/${slug}/watch/${nextVideo.id}/`}
+                    href={`/report/${categorySlug}/${slug}/watch/${nextVideo.id}/`}
                   >
                     Next video
                   </a>

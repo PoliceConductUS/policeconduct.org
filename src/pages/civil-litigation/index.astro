@@ -1,13 +1,15 @@
 ---
-import SiteLayout from "../../layouts/SiteLayout.astro";
-import UsaChoroplethMap from "../../components/UsaChoroplethMap.astro";
-import { withDb } from "../../lib/db.js";
-import { US_STATE_TILES } from "../../lib/geo/states.js";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
+import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
+import { withDb } from "#src/lib/db.js";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import {
   buildItemList,
   buildWebPage,
   getSiteUrl,
-} from "../../lib/structured-data.js";
+} from "#src/lib/structured-data.js";
 
 type CategoryCount = {
   category: string;
@@ -83,17 +85,34 @@ const countsByCategory = new Map(
     entry.count,
   ]),
 );
-const totalCaseCount = totalCases;
-
 const stateStats = US_STATE_TILES.map((state) => ({
   code: state.code,
   count: countsByCategory.get(state.code) ?? 0,
   href: `/civil-litigation/${state.code.toLowerCase()}/`,
 }));
+const totalCaseCount = totalCases;
+const statesWithCases = stateStats.filter((state) => state.count > 0).length;
+const federalCaseCount = countsByCategory.get("FEDERAL") ?? 0;
+const civilLitigationStats = [
+  {
+    label: "Cases",
+    value: totalCaseCount,
+    description: "Civil litigation cases currently listed.",
+  },
+  {
+    label: "States Covered",
+    value: statesWithCases,
+    description: "States with at least one linked case.",
+  },
+  {
+    label: "Federal Cases",
+    value: federalCaseCount,
+    description: "Listed civil cases tied to federal agencies.",
+  },
+];
 
 const civilLandingPath = "/civil-litigation/";
 const newCivilLandingHref = "/civil-litigation/new/";
-const editCivilLandingHref = "/civil-litigation/suggest-edit/";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(civilLandingPath, siteUrl).toString();
 const federalAgencyItems = (federalAgencies as FederalAgency[]).map(
@@ -135,98 +154,57 @@ if (federalItemList) {
       <div class="container">
         <div class="row g-5 align-items-end">
           <div class="col-12 col-lg-8">
-            <p class="text-uppercase small text-muted mb-2">Civil Litigation</p>
-            <h1 class="display-4 fw-bold">Civil Litigation Cases</h1>
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                {
+                  label: "Civil Litigation",
+                  href: civilLandingPath,
+                  current: true,
+                },
+              ]}
+              className="mb-2"
+            />
+            <h1 class="display-4 fw-bold">Civil Litigation</h1>
             <p class="lead text-muted mb-0">
               Civil cases that reference a law enforcement agency or personnel
               by state.
             </p>
           </div>
-          <div class="col-12 col-lg-4">
-            <div class="card shadow-sm rounded-0 border-dark">
-              <div class="card-body d-flex flex-column gap-2">
-                <div class="text-uppercase small text-muted">Cases listed</div>
-                <div class="d-flex align-items-end justify-content-between">
-                  <span class="display-6 fw-bold">{totalCaseCount}</span>
-                </div>
-                <div class="text-muted small">
-                  Hover over a state to see the count; click to view cases.
-                  Federal agencies are listed separately.
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
-
     <section class="py-vh-2">
       <div class="container">
-        <div class="row g-4">
-          <div class="col-12 col-lg-8">
-            <UsaChoroplethMap
-              stats={stateStats}
-              title="States"
-              subtitle="Civil litigation by agency category"
-              emptyLabel="No cases yet"
-              interactionLabel="Click a state to view its cases."
-            />
-          </div>
-          <div class="col-12 col-lg-4">
-            <div class="card shadow-sm rounded-0 border-dark h-100">
-              <div class="card-body d-flex flex-column gap-3">
-                <div class="card-body d-flex flex-column gap-3">
-                  <div
-                    class="d-flex align-items-center justify-content-between"
-                  >
-                    <p class="text-uppercase small text-muted mb-0">
-                      Federal agencies
-                    </p>
-                    <span class="badge bg-dark rounded-pill"
-                      >{federalAgencies.length}</span
-                    >
-                  </div>
-                  <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-                    {
-                      (federalAgencies as FederalAgency[]).map((agency) => (
-                        <li class="d-flex align-items-start justify-content-between gap-2">
-                          <a
-                            class="text-decoration-none fw-semibold"
-                            href={`/law-enforcement-agency/${agency.category}/${agency.slug}/`}
-                          >
-                            {agency.name}
-                          </a>
-                          <span class="badge bg-light text-dark border rounded-pill">
-                            Cases: {agency.count}
-                          </span>
-                        </li>
-                      ))
-                    }
-                  </ul>
-                </div>
-                <div class="mt-auto">
-                  <a
-                    class="btn btn-outline-dark rounded-0 w-100"
-                    href={newCivilLandingHref}
-                    target="_self"
-                    data-prefill-key="prefill:civilLitigationNew"
-                    data-prefill-payload={JSON.stringify({ jurisdiction: "" })}
-                  >
-                    Suggest a new civil case
-                  </a>
-                  <a
-                    class="btn btn-outline-dark rounded-0 w-100 mt-2"
-                    href={editCivilLandingHref}
-                    target="_self"
-                  >
-                    Suggest a correction
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <UsaChoroplethMap
+          stats={stateStats}
+          title="States"
+          subtitle="Civil litigation by agency category"
+          emptyLabel="No cases yet"
+          interactionLabel="Click a state to view its cases."
+          headerAction={{
+            href: newCivilLandingHref,
+            label: "Suggest a new civil case",
+            target: "_self",
+            prefillKey: "prefill:civilLitigationNew",
+            prefillPayload: JSON.stringify({ jurisdiction: "" }),
+          }}
+          federalPanel={{
+            eyebrow: "Federal",
+            title: "Federal agencies",
+            value: federalAgencies.length,
+            description: "Federal agencies linked to listed cases.",
+            items: (federalAgencies as FederalAgency[]).map((agency) => ({
+              label: agency.name,
+              href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+              badgeText: `Cases: ${agency.count}`,
+            })),
+          }}
+        />
       </div>
     </section>
+    <div class="bg-white border-bottom border-dark">
+      <CollectionStatsBand items={civilLitigationStats} />
+    </div>
   </main>
 </SiteLayout>

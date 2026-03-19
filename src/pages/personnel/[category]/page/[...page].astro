@@ -1,0 +1,209 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import AlphaNavigation from "#src/components/AlphaNavigation.astro";
+import Pagination from "#src/components/Pagination.astro";
+import PersonnelListCard from "#src/components/PersonnelListCard.astro";
+import { buildAlphaPageMap } from "#src/lib/alpha-navigation.js";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { loadPersonnelSummaries } from "#src/lib/data/summaries.js";
+import type { PersonnelSummary } from "#src/lib/data/types.js";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
+
+export async function getStaticPaths({ paginate }: { paginate: any }) {
+  const pageSize = 50;
+  const personnel = await loadPersonnelSummaries();
+  const personnelByCategory = new Map<string, PersonnelSummary[]>();
+
+  personnel.forEach((person) => {
+    const category = person.agencyCategory?.toLowerCase();
+    if (!category) {
+      return;
+    }
+    const list = personnelByCategory.get(category) || [];
+    list.push(person);
+    personnelByCategory.set(category, list);
+  });
+
+  const pages: any[] = [];
+  personnelByCategory.forEach((categoryPersonnel, category) => {
+    const categoryPages = paginate(categoryPersonnel, {
+      pageSize,
+      params: { category },
+    });
+    categoryPages
+      .filter((page: any) => page.params.page !== "1")
+      .forEach((page: any) => pages.push(page));
+  });
+
+  return pages;
+}
+
+const { page } = Astro.props;
+const { category } = Astro.params;
+const categoryParam = String(category || "").toLowerCase();
+const categoryCode = categoryParam.toUpperCase();
+const categoryMeta = US_STATE_TILES.find(
+  (entry) => entry.code === categoryCode,
+);
+const categoryLabel =
+  categoryParam === "federal" ? "Federal" : categoryMeta?.name || categoryCode;
+const titleBase =
+  categoryParam === "federal"
+    ? "Federal Personnel"
+    : `${categoryLabel} Personnel`;
+const title =
+  page.currentPage > 1 ? `${titleBase} – Page ${page.currentPage}` : titleBase;
+const allPersonnel = (await loadPersonnelSummaries()).filter(
+  (person) => person.agencyCategory?.toLowerCase() === categoryParam,
+);
+const alphaItems = buildAlphaPageMap(
+  allPersonnel,
+  (person) => person.lastName,
+  50,
+);
+const pagePath =
+  page.currentPage > 1
+    ? `/personnel/${categoryParam}/page/${page.currentPage}/`
+    : `/personnel/${categoryParam}/`;
+const totalCount = page.total ?? page.data.length;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const personnelItems = page.data.map(
+  (person: PersonnelSummary, index: number) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    item: {
+      "@type": "Person",
+      name: `${person.firstName} ${person.lastName}${person.nameSuffix ? ` ${person.nameSuffix}` : ""}`.trim(),
+      url: new URL(`/personnel/${person.slug}/`, siteUrl).toString(),
+      worksFor: {
+        "@type": "GovernmentOrganization",
+        name: person.agencyName,
+        url: new URL(
+          `/law-enforcement-agency/${person.agencySlug}/`,
+          siteUrl,
+        ).toString(),
+      },
+    },
+  }),
+);
+const personnelItemList = buildItemList(personnelItems);
+const websiteId = new URL("/", siteUrl).toString();
+const personnelItemListId = personnelItemList ? `${pageUrl}#itemlist` : null;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": websiteId,
+      url: websiteId,
+      name: "PoliceConduct.org",
+    },
+    {
+      "@type": "CollectionPage",
+      "@id": pageUrl,
+      url: pageUrl,
+      name: title,
+      description: `Personnel profiles currently listed for ${categoryLabel}.`,
+      isPartOf: { "@id": websiteId },
+      ...(personnelItemListId
+        ? { mainEntity: { "@id": personnelItemListId } }
+        : {}),
+    },
+    ...(personnelItemList
+      ? [{ ...personnelItemList, "@id": personnelItemListId }]
+      : []),
+  ],
+};
+---
+
+<SiteLayout
+  title={title}
+  description={`Personnel profiles currently listed for ${categoryLabel}.`}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row g-4 align-items-end">
+          <div class="col-12 col-lg-8">
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: "Personnel", href: "/personnel/" },
+                {
+                  label: categoryLabel,
+                  href: `/personnel/${categoryParam}/`,
+                },
+                {
+                  label: `Page ${page.currentPage}`,
+                  href: pagePath,
+                  current: true,
+                },
+              ]}
+              className="mb-2"
+            />
+            <p class="text-uppercase small text-muted mb-2">
+              {categoryParam === "federal" ? "Federal view" : "State view"}
+            </p>
+            <h1 class="display-4 fw-bold">{title}</h1>
+            <p class="lead text-muted mb-0">
+              Profiles of law enforcement personnel currently listed for
+              {` ${categoryLabel}`}.
+            </p>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card shadow-sm rounded-0 border-dark">
+              <div class="card-body d-flex flex-column gap-2">
+                <div class="text-uppercase small text-muted">Personnel</div>
+                <div class="d-flex align-items-end justify-content-between">
+                  <span class="display-6 fw-bold">{totalCount}</span>
+                </div>
+                <div class="text-muted small">
+                  Page {page.currentPage} of {page.lastPage}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <AlphaNavigation
+          items={alphaItems}
+          basePath={`/personnel/${categoryParam}/`}
+          currentPage={page.currentPage}
+          label={`${categoryLabel} personnel alphabetical navigation`}
+        />
+        {
+          page.data.length === 0 ? (
+            <div
+              class="alert alert-secondary rounded-0 border-dark"
+              role="status"
+            >
+              No personnel listed yet for {categoryLabel}.
+            </div>
+          ) : (
+            <div class="row row-cols-1 g-3">
+              {page.data.map((person: PersonnelSummary) => (
+                <div class="col">
+                  <PersonnelListCard person={person} />
+                </div>
+              ))}
+            </div>
+          )
+        }
+        <Pagination
+          basePath={`/personnel/${categoryParam}/`}
+          currentPage={page.currentPage}
+          lastPage={page.lastPage}
+        />
+      </div>
+    </section>
+  </main>
+</SiteLayout>

@@ -1,7 +1,7 @@
 ---
-import SiteLayout from "../../../layouts/SiteLayout.astro";
-import { groupBy } from "../../../lib/data.js";
-import { withDb } from "../../../lib/db.js";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { groupBy } from "#src/lib/data.js";
+import { withDb } from "#src/lib/db.js";
 
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
 
@@ -140,7 +140,7 @@ const traitsWithRubrics = sortedTraits
           novalidate
           name="reportNew"
           method="POST"
-          data-netlify="true"
+          onsubmit="return window.__IPC_REPORT_FORM_SUBMIT__ ? window.__IPC_REPORT_FORM_SUBMIT__(event) : false;"
           data-netlify-honeypot="organization"
         >
           <input type="hidden" name="form-name" value="reportNew" />
@@ -2549,7 +2549,7 @@ const traitsWithRubrics = sortedTraits
       document.cookie = `${reportDraftCookieName}=; Max-Age=0; Path=/report/new/; SameSite=Lax`;
     }
 
-    form.addEventListener("submit", async (event) => {
+    const handleReportSubmit = async (event) => {
       const submitButton = form.querySelector('button[type="submit"]');
       let inlineError = form.querySelector("[data-form-submit-error]");
       if (!inlineError) {
@@ -2560,45 +2560,50 @@ const traitsWithRubrics = sortedTraits
         form.appendChild(inlineError);
       }
       const formsUi = window.__IPC_FORMS__;
-      if (!formsUi || typeof formsUi.ensureSubmissionUi !== "function") {
+      if (!formsUi || typeof formsUi.submitJsonForm !== "function") {
         inlineError.textContent =
           "Unable to submit the form right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
         inlineError.classList.remove("d-none");
-        return;
+        console.error("Shared form submit helper is unavailable", {
+          formName: "reportNew",
+        });
+        return false;
       }
-      formsUi.prewarmRecaptcha?.();
-      const { inlineSuccess } = formsUi.ensureSubmissionUi({
+      await formsUi.submitJsonForm({
+        event,
         form,
-        submitButton,
-        onReset: function () {
-          form.classList.remove("was-validated");
-          if (reportErrorSummary) {
-            reportErrorSummary.classList.add("d-none");
-          }
+        formName: "reportNew",
+        onBeforeValidate: function () {
+          form.classList.add("was-validated");
+          syncEntryDisabledState();
         },
-      });
-
-      let submissionCompleted = false;
-
-      if (form.dataset.submitLocked === "true") {
-        event.preventDefault();
-        return;
-      }
-
-      event.preventDefault();
-      form.dataset.submitLocked = "true";
-      formsUi.setSubmitBusy(submitButton, true);
-      inlineError.classList.add("d-none");
-      inlineError.textContent = "";
-      inlineSuccess.classList.add("d-none");
-
-      try {
-        form.classList.add("was-validated");
-        syncEntryDisabledState();
-        const officersValid = validateOfficerEntries();
-        const witnessesValid = validateWitnessEntries();
-        if (!form.checkValidity() || !officersValid || !witnessesValid) {
-          event.stopPropagation();
+        onBeforeSubmit: async function () {
+          const draftSync = window.__IPC_REPORT_DRAFT__;
+          if (
+            !draftSync ||
+            typeof draftSync.ensureServerDraftSyncedForSubmit !== "function"
+          ) {
+            throw new Error(
+              "Unable to submit safely right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.",
+            );
+          }
+          await draftSync.ensureServerDraftSyncedForSubmit();
+          return { draftSync };
+        },
+        buildPayload: function ({ data, formName, recaptchaToken }) {
+          return {
+            data,
+            draftId: getReportDraftId() || null,
+            formName,
+            recaptchaToken,
+          };
+        },
+        validate: function () {
+          const officersValid = validateOfficerEntries();
+          const witnessesValid = validateWitnessEntries();
+          return officersValid && witnessesValid;
+        },
+        onInvalid: function () {
           if (reportErrorSummary) {
             renderValidationSummary();
             reportErrorSummary.classList.remove("d-none");
@@ -2607,114 +2612,27 @@ const traitsWithRubrics = sortedTraits
               block: "center",
             });
           }
-          return;
-        }
-        if (reportErrorSummary) {
-          reportErrorSummary.classList.add("d-none");
-        }
-
-        const draftSync = window.__IPC_REPORT_DRAFT__;
-        if (
-          !draftSync ||
-          typeof draftSync.ensureServerDraftSyncedForSubmit !== "function"
-        ) {
-          throw new Error(
-            "Unable to submit safely right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.",
-          );
-        }
-        const [recaptchaToken] = await Promise.all([
-          formsUi.getRecaptchaToken("reportNewSubmit"),
-          draftSync.ensureServerDraftSyncedForSubmit(),
-        ]);
-
-        const formData = new FormData(form);
-
-        const data = {};
-        formData.forEach((value, key) => {
-          if (key === "form-name" || key === "g-recaptcha-response") {
-            return;
+        },
+        onReset: function () {
+          form.classList.remove("was-validated");
+          if (reportErrorSummary) {
+            reportErrorSummary.classList.add("d-none");
           }
-          if (key in data) {
-            if (!Array.isArray(data[key])) {
-              data[key] = [data[key]];
-            }
-            data[key].push(value);
-          } else {
-            data[key] = value;
+        },
+        onSuccess: function () {
+          if (reportErrorSummary) {
+            reportErrorSummary.classList.add("d-none");
           }
-        });
+          clearReportDraftCookie();
+          window.__IPC_REPORT_DRAFT__?.onSubmitSuccess?.();
+        },
+        recaptchaAction: "reportNewSubmit",
+      });
+      return false;
+    };
 
-        const response = await fetch("/api/forms/submit", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            formName: "reportNew",
-            recaptchaToken,
-            draftId: getReportDraftId() || null,
-            data,
-          }),
-        });
-
-        if (!response.ok) {
-          let message =
-            "We could not submit your report right now. Please print this page and email it to hello@policeconduct.org so we have your report while we fix the issue.";
-          try {
-            const errorPayload = await response.json();
-            if (
-              errorPayload &&
-              typeof errorPayload.error === "string" &&
-              errorPayload.error.trim()
-            ) {
-              message = errorPayload.error.trim();
-            }
-          } catch (_error) {
-            // Ignore malformed error payloads.
-          }
-          throw new Error(message);
-        }
-
-        const result = await response.json();
-        const submissionId =
-          typeof result?.submissionId === "string" ? result.submissionId : "";
-        if (!submissionId) {
-          throw new Error(
-            "Submission succeeded but no submission ID was returned.",
-          );
-        }
-
-        form.classList.remove("was-validated");
-        const submissionIdNode = inlineSuccess.querySelector(
-          "[data-submission-id]",
-        );
-        if (submissionIdNode) {
-          submissionIdNode.textContent = submissionId;
-        }
-        formsUi.setSubmitBusy(submitButton, false);
-        if (submitButton) submitButton.disabled = true;
-        inlineSuccess.classList.remove("d-none");
-        inlineSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
-        clearReportDraftCookie();
-        draftSync.onSubmitSuccess?.();
-        submissionCompleted = true;
-      } catch (error) {
-        const message =
-          error instanceof Error && error.message
-            ? error.message
-            : "Unable to submit the form. Please try again.";
-        const fallback =
-          formsUi.blockedSubmitFallback ||
-          "If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
-        inlineError.textContent = message.includes("hello@policeconduct.org")
-          ? message
-          : message + " " + fallback;
-        inlineError.classList.remove("d-none");
-      } finally {
-        if (!submissionCompleted) formsUi.setSubmitBusy(submitButton, false);
-        if (!submissionCompleted) form.dataset.submitLocked = "false";
-      }
-    });
+    window.__IPC_REPORT_FORM_SUBMIT__ = handleReportSubmit;
+    form.addEventListener("submit", handleReportSubmit);
   </script>
 
   <script is:inline>

@@ -3,7 +3,6 @@ import { test, expect } from "@playwright/test";
 const forms = [
   { path: "/about/contact/", formName: "contact" },
   { path: "/volunteer/", formName: "volunteer" },
-  { path: "/issue/new/", formName: "issue" },
   { path: "/law-enforcement-agency/new/", formName: "agencyNew" },
   { path: "/law-enforcement-agency/suggest-edit/", formName: "agencyEdit" },
   { path: "/personnel/new/", formName: "personnelNew" },
@@ -109,7 +108,9 @@ async function installRecaptchaMock(page) {
 
 test.describe("form submissions", () => {
   for (const form of forms) {
-    test(`submits ${form.formName}`, async ({ page }) => {
+    test(`success › ${form.formName} stays on-page and shows submission ID`, async ({
+      page,
+    }) => {
       await installRecaptchaMock(page);
 
       await page.route("**/api/forms/submit", async (route) => {
@@ -154,16 +155,101 @@ test.describe("form submissions", () => {
       await page.goto(form.path);
       const formLocator = page.locator(`form[name="${form.formName}"]`);
       await expect(formLocator).toBeVisible();
+      const originalPathname = new URL(page.url()).pathname;
 
       await fillRequiredFields(page, formLocator);
 
-      await formLocator.locator('button[type="submit"]').click();
+      const submitResponsePromise = page.waitForResponse((response) => {
+        return (
+          response.url().includes("/api/forms/submit") &&
+          response.request().method() === "POST"
+        );
+      });
+      await Promise.all([
+        submitResponsePromise,
+        formLocator.locator('button[type="submit"]').click(),
+      ]);
 
+      await expect(page).toHaveURL(new RegExp(`${originalPathname}$`));
       const success = formLocator.locator("[data-form-submit-success]");
       await expect(success).toBeVisible();
       await expect(success.locator("[data-submission-id]")).toHaveText(
         `e2e_${form.formName}_id`,
       );
+      await expect(
+        formLocator.locator("[data-form-submit-error]"),
+      ).toBeHidden();
     });
   }
+
+  test("error › contact stays on-page and shows the inline error", async ({
+    page,
+  }) => {
+    await installRecaptchaMock(page);
+
+    await page.route("**/api/forms/submit", async (route) => {
+      const req = route.request();
+      if (req.method() !== "POST") {
+        await route.fallback();
+        return;
+      }
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: "Mocked submission failure for e2e.",
+        }),
+      });
+    });
+
+    await page.goto("/about/contact/");
+    const formLocator = page.locator('form[name="contact"]');
+    await expect(formLocator).toBeVisible();
+    const originalPathname = new URL(page.url()).pathname;
+
+    await fillRequiredFields(page, formLocator);
+    const submitResponsePromise = page.waitForResponse((response) => {
+      return (
+        response.url().includes("/api/forms/submit") &&
+        response.request().method() === "POST"
+      );
+    });
+    await Promise.all([
+      submitResponsePromise,
+      formLocator.locator('button[type="submit"]').click(),
+    ]);
+
+    await expect(page).toHaveURL(new RegExp(`${originalPathname}$`));
+    await expect(
+      formLocator.locator("[data-form-submit-success]"),
+    ).toBeHidden();
+    const error = formLocator.locator("[data-form-submit-error]");
+    await expect(error).toBeVisible();
+    await expect(error).toContainText("Mocked submission failure for e2e.");
+  });
+
+  test("feedback › footer report issue opens Sentry feedback", async ({
+    page,
+  }) => {
+    await page.goto("/about/contact/");
+    await page.evaluate(() => {
+      window.__IPC_SENTRY_FEEDBACK__ = {
+        __calls: [],
+        open(payload) {
+          this.__calls.push(payload);
+          return Promise.resolve();
+        },
+      };
+    });
+    await page.getByRole("link", { name: /report issue/i }).click();
+
+    const calls = await page.evaluate(() => {
+      return window.__IPC_SENTRY_FEEDBACK__?.__calls || [];
+    });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({
+      message: "Issue reported from: /about/contact/",
+    });
+  });
 });

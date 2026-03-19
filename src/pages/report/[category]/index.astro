@@ -1,63 +1,45 @@
 ---
-import SiteLayout from "../../../../layouts/SiteLayout.astro";
-import { US_STATE_TILES } from "../../../../lib/geo/states.js";
-import type { ReportSummary } from "../../../../lib/data/types.js";
-import { loadReportSummaries } from "../../../../lib/data/summaries.js";
-import { getReportStateSlug } from "../../../../lib/report-state-stats.js";
-import { buildItemList, getSiteUrl } from "../../../../lib/structured-data.js";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Pagination from "#src/components/Pagination.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { loadReportSummaries } from "#src/lib/data/summaries.js";
+import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
 
-export async function getStaticPaths({ paginate }: { paginate: any }) {
-  const pageSize = 50;
-  const reports = await loadReportSummaries();
-  const reportsByState = new Map<string, ReportSummary[]>();
+const PAGE_SIZE = 50;
 
-  reports.forEach((report) => {
-    const stateSlug = getReportStateSlug(report);
-    if (!stateSlug) {
-      return;
-    }
-    const list = reportsByState.get(stateSlug) || [];
-    list.push(report);
-    reportsByState.set(stateSlug, list);
-  });
-
-  const pages: any[] = [];
-  reportsByState.forEach((stateReports, state) => {
-    const statePages = paginate(stateReports, {
-      pageSize,
-      params: { state },
-    });
-    statePages
-      .filter((page: any) => page.params.page !== "1")
-      .forEach((page: any) => pages.push(page));
-  });
-
-  return pages;
+export async function getStaticPaths() {
+  return US_STATE_TILES.map((state) => ({
+    params: { category: state.code.toLowerCase() },
+  }));
 }
 
-const { page } = Astro.props;
-const { state } = Astro.params;
-const stateSlug = (state as string).toLowerCase();
-const stateCode = stateSlug.toUpperCase();
-const stateMeta = US_STATE_TILES.find((entry) => entry.code === stateCode);
-const titleBase = stateMeta
-  ? `${stateMeta.name} Reports`
-  : `${stateCode} Reports`;
-const title =
-  page.currentPage > 1 ? `${titleBase} – Page ${page.currentPage}` : titleBase;
-const pagePath = `/report/${stateSlug}/page/${page.currentPage}/`;
-const prevUrl =
-  page.currentPage === 2 ? `/report/${stateSlug}/` : page.url.prev?.toString();
-const totalCount = page.total ?? page.data.length;
+const { category } = Astro.params;
+const categorySlug = (category as string).toLowerCase();
+const categoryCode = categorySlug.toUpperCase();
+const categoryMeta = US_STATE_TILES.find(
+  (entry) => entry.code === categoryCode,
+);
+const allReports = (await loadReportSummaries()).filter(
+  (report) => report.state === categorySlug,
+);
+const totalCount = allReports.length;
+const pageReports = allReports.slice(0, PAGE_SIZE);
+const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+const title = categoryMeta
+  ? `${categoryMeta.name} Reports`
+  : `${categoryCode} Reports`;
+const pagePath = `/report/${categorySlug}/`;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const reportItems = page.data.map((report: ReportSummary, index: number) => ({
+const categoryName = categoryMeta?.name || categoryCode;
+const reportItems = pageReports.map((report, index) => ({
   "@type": "ListItem",
   position: index + 1,
   item: {
     "@type": "Report",
     name: report.title,
-    url: new URL(`/report/${stateSlug}/${report.slug}/`, siteUrl).toString(),
+    url: new URL(`/report/${categorySlug}/${report.slug}/`, siteUrl).toString(),
     ...(report.agencyName
       ? {
           about: {
@@ -70,36 +52,6 @@ const reportItems = page.data.map((report: ReportSummary, index: number) => ({
 }));
 const reportItemList = buildItemList(reportItems);
 const websiteId = new URL("/", siteUrl).toString();
-const breadcrumb = {
-  "@type": "BreadcrumbList",
-  "@id": `${pageUrl}#breadcrumb`,
-  itemListElement: [
-    {
-      "@type": "ListItem",
-      position: 1,
-      name: "Home",
-      item: websiteId,
-    },
-    {
-      "@type": "ListItem",
-      position: 2,
-      name: "Reports",
-      item: new URL("/report/", siteUrl).toString(),
-    },
-    {
-      "@type": "ListItem",
-      position: 3,
-      name: stateMeta?.name || stateCode,
-      item: new URL(`/report/${stateSlug}/`, siteUrl).toString(),
-    },
-    {
-      "@type": "ListItem",
-      position: 4,
-      name: `Page ${page.currentPage}`,
-      item: pageUrl,
-    },
-  ],
-};
 const reportItemListId = reportItemList ? `${pageUrl}#itemlist` : null;
 const structuredData = {
   "@context": "https://schema.org",
@@ -115,12 +67,10 @@ const structuredData = {
       "@id": pageUrl,
       url: pageUrl,
       name: title,
-      description: `Reports recorded within ${stateMeta?.name || stateCode}.`,
+      description: `Reports recorded within ${categoryMeta?.name || categoryCode}.`,
       isPartOf: { "@id": websiteId },
       ...(reportItemListId ? { mainEntity: { "@id": reportItemListId } } : {}),
-      breadcrumb: { "@id": breadcrumb["@id"] },
     },
-    breadcrumb,
     ...(reportItemList ? [{ ...reportItemList, "@id": reportItemListId }] : []),
   ],
 };
@@ -139,6 +89,7 @@ const formatDisplayDate = (value?: string | null) => {
 
 <SiteLayout
   title={title}
+  description={`Reports recorded within ${categoryName}.`}
   pagePath={pagePath}
   canonicalUrl={pagePath}
   structuredData={structuredData}
@@ -148,30 +99,18 @@ const formatDisplayDate = (value?: string | null) => {
       <div class="container">
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
-            <nav aria-label="Breadcrumb">
-              <ol class="breadcrumb mb-2">
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href="/">Home</a>
-                </li>
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href="/report/">Reports</a>
-                </li>
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href={`/report/${stateSlug}/`}>
-                    {stateMeta?.name || stateCode}
-                  </a>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">
-                  Page {page.currentPage}
-                </li>
-              </ol>
-            </nav>
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: "Reports", href: "/report/" },
+                { label: categoryName, href: pagePath, current: true },
+              ]}
+              className="mb-2"
+            />
             <p class="text-uppercase small text-muted mb-2">State reports</p>
             <h1 class="display-4 fw-bold">{title}</h1>
             <p class="lead text-muted mb-0">
-              Showing published reports recorded within {
-                stateMeta?.name || stateCode
-              }.
+              Showing reports recorded within {categoryName}.
             </p>
           </div>
           <div class="col-12 col-lg-4">
@@ -180,10 +119,9 @@ const formatDisplayDate = (value?: string | null) => {
                 <div class="text-uppercase small text-muted">Reports</div>
                 <div class="d-flex align-items-end justify-content-between">
                   <span class="display-6 fw-bold">{totalCount}</span>
-                  <span class="text-muted small">Published entries</span>
                 </div>
                 <div class="text-muted small">
-                  Page {page.currentPage} of {page.lastPage}
+                  Page 1 of {totalPages}
                 </div>
               </div>
             </div>
@@ -195,16 +133,26 @@ const formatDisplayDate = (value?: string | null) => {
     <section class="py-vh-2">
       <div class="container">
         {
-          page.data.length === 0 ? (
+          pageReports.length === 0 ? (
             <div
-              class="alert alert-secondary rounded-0 border-dark"
+              class="alert alert-secondary rounded-0 border-dark d-flex flex-column gap-2"
               role="status"
             >
-              No reports listed yet for {stateMeta?.name || stateCode}.
+              <span>
+                No reports published for {categoryMeta?.name || categoryCode}{" "}
+                yet.
+              </span>
+              <a
+                class="btn btn-dark rounded-0 w-auto"
+                href="/report/new/"
+                target="_self"
+              >
+                Submit a report
+              </a>
             </div>
           ) : (
             <div class="row row-cols-1 g-3">
-              {page.data.map((report: ReportSummary) => (
+              {pageReports.map((report) => (
                 <div class="col">
                   <article class="card shadow-sm border-0 rounded-0 h-100">
                     <div class="card-body d-flex flex-column gap-3">
@@ -224,7 +172,7 @@ const formatDisplayDate = (value?: string | null) => {
                           <div class="d-flex align-items-center flex-wrap gap-2">
                             <a
                               class="link-dark fw-semibold"
-                              href={`/report/${stateSlug}/${report.slug}/`}
+                              href={`/report/${categorySlug}/${report.slug}/`}
                             >
                               {report.title}
                             </a>
@@ -277,25 +225,7 @@ const formatDisplayDate = (value?: string | null) => {
             </div>
           )
         }
-        <nav aria-label="Pagination" class="mt-4">
-          {
-            prevUrl ? (
-              <a class="btn btn-outline-dark rounded-0 me-2" href={prevUrl}>
-                Previous
-              </a>
-            ) : null
-          }
-          {
-            page.url.next ? (
-              <a
-                class="btn btn-outline-dark rounded-0"
-                href={page.url.next.toString()}
-              >
-                Next
-              </a>
-            ) : null
-          }
-        </nav>
+        <Pagination basePath={pagePath} currentPage={1} lastPage={totalPages} />
       </div>
     </section>
   </main>

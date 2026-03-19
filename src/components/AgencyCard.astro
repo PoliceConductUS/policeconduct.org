@@ -1,25 +1,9 @@
 ---
-import type { AgencySummary } from "../lib/data/types.js";
+import type { AgencySummary } from "#src/lib/data/types.js";
 
 const { agency } = Astro.props as { agency: AgencySummary };
 
-const formatDate = (value: string | null) => {
-  if (!value) {
-    return null;
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
-
 const detailUrl = `/law-enforcement-agency/${agency.category}/${agency.slug}/`;
-const lastUpdatedLabel = formatDate(agency.lastUpdatedAt);
 const categoryLabel = agency.category === "federal" ? "Federal" : null;
 const showCategory = Boolean(categoryLabel);
 const personnelLabel = `${agency.activePersonnelCount} personnel`;
@@ -80,13 +64,6 @@ const phoneHref = agency.phoneNumber
       <span class="badge bg-light text-dark border rounded-0"
         >{reportLabel}</span
       >
-      {
-        lastUpdatedLabel ? (
-          <span class="ms-auto fw-semibold text-dark">
-            Updated {lastUpdatedLabel}
-          </span>
-        ) : null
-      }
     </div>
   </div>
 </article>

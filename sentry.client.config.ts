@@ -2,10 +2,14 @@ import * as Sentry from "@sentry/astro";
 
 const dsn = import.meta.env.PUBLIC_SENTRY_DSN.trim();
 const environment = import.meta.env.PUBLIC_SENTRY_ENVIRONMENT.trim();
+const release =
+  (import.meta.env.PUBLIC_SENTRY_RELEASE || "").trim() || undefined;
 const isProduction = environment === "production";
 const feedback = Sentry.feedbackIntegration({
   autoInject: false,
 });
+let feedbackDialog: Awaited<ReturnType<typeof feedback.createForm>> | null =
+  null;
 
 declare global {
   interface Window {
@@ -36,6 +40,7 @@ Sentry.init({
   dsn,
   enableLogs: true,
   environment,
+  ...(release ? { release } : {}),
   integrations: [
     Sentry.consoleLoggingIntegration({
       levels: ["log", "warn", "error"],
@@ -53,29 +58,27 @@ Sentry.init({
 
 window.__IPC_SENTRY_FEEDBACK__ = {
   async open(options) {
-    const actor = await feedback.createForm({
-      isEmailRequired: false,
-      isNameRequired: false,
-      messagePlaceholder:
-        "Describe what happened, what you expected, and what page you were on.",
-      showBranding: false,
-      tags: {
-        feedback_source: "site_link",
-      },
-      useSentryUser: {
-        email: "never",
-        name: "never",
-      },
-    });
-
-    actor.appendToDom();
-
-    const root = actor.el;
-    const dialog = root?.querySelector("dialog");
-
-    if (dialog instanceof HTMLDialogElement && !dialog.open) {
-      dialog.showModal();
+    if (!feedbackDialog) {
+      feedbackDialog = await feedback.createForm({
+        isEmailRequired: false,
+        isNameRequired: false,
+        messagePlaceholder:
+          "Describe what happened, what you expected, and what page you were on.",
+        showBranding: false,
+        tags: {
+          feedback_source: "site_link",
+        },
+        useSentryUser: {
+          email: "never",
+          name: "never",
+        },
+      });
     }
+
+    feedbackDialog.appendToDom();
+    feedbackDialog.open();
+
+    const root = feedbackDialog.el as Element;
 
     if (options?.message) {
       const messageField = root?.querySelector(

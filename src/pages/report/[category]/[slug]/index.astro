@@ -1,38 +1,31 @@
 ---
-import SiteLayout from "../../../../layouts/SiteLayout.astro";
-import DisqusComments from "../../../../components/DisqusComments.astro";
-import { formatLongDate } from "../../../../lib/format.js";
-import { loadReportDetail } from "../../../../lib/report-detail.js";
-import { loadReportSummaries } from "../../../../lib/data/summaries.js";
-import { getReportStateSlug } from "../../../../lib/report-state-stats.js";
-import { US_STATE_TILES } from "../../../../lib/geo/states.js";
-import type { ReportSummary } from "../../../../lib/data/types.js";
-import RatingBadge from "../../../../components/RatingBadge.astro";
-import { getSiteUrl } from "../../../../lib/structured-data.js";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import DisqusComments from "#src/components/DisqusComments.astro";
+import { formatLongDate } from "#src/lib/format.js";
+import { loadReportDetail } from "#src/lib/report-detail.js";
+import { loadReportSummaries } from "#src/lib/data/summaries.js";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import RatingBadge from "#src/components/RatingBadge.astro";
+import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
   const reports = await loadReportSummaries();
-  return reports
-    .map((report) => {
-      const stateSlug = getReportStateSlug(report);
-      if (!stateSlug) {
-        return null;
-      }
-      return {
-        params: {
-          state: stateSlug,
-          slug: report.slug,
-        },
-      };
-    })
-    .filter(Boolean);
+  return reports.map((report) => ({
+    params: {
+      category: report.state,
+      slug: report.slug,
+    },
+  }));
 }
 
-const { state, slug } = Astro.params;
-const stateSlug = (state as string).toLowerCase();
-const stateCode = stateSlug.toUpperCase();
-const stateMeta = US_STATE_TILES.find((entry) => entry.code === stateCode);
-const stateName = stateMeta?.name || stateCode;
+const { category, slug } = Astro.params;
+const categorySlug = (category as string).toLowerCase();
+const categoryCode = categorySlug.toUpperCase();
+const categoryMeta = US_STATE_TILES.find(
+  (entry) => entry.code === categoryCode,
+);
+const categoryName = categoryMeta?.name || categoryCode;
 const data = await loadReportDetail(slug);
 if (!data) {
   throw new Error(`Report ${slug} not found.`);
@@ -46,17 +39,16 @@ const primaryAgencySlug = primaryAgency.slug as string | null;
 if (!primaryAgencyCategory || !primaryAgencySlug) {
   throw new Error(`Report ${slug} primary agency is missing category or slug.`);
 }
-const reportStateSlug = getReportStateSlug({
-  category: (data.report as ReportSummary).category ?? null,
-  agencySlug: `${primaryAgencyCategory}/${primaryAgencySlug}`,
-});
+const reportStateSlug = String(data.report.category || "")
+  .trim()
+  .toLowerCase();
 if (!reportStateSlug) {
-  throw new Error(`Report ${slug} is not associated with a state.`);
+  throw new Error(`Report ${slug} is missing category.`);
 }
-if (reportStateSlug !== stateSlug) {
+if (reportStateSlug !== categorySlug) {
   return Astro.redirect(`/report/${reportStateSlug}/${slug}/`, 301);
 }
-const pagePath = `/report/${stateSlug}/${slug}/`;
+const pagePath = `/report/${categorySlug}/${slug}/`;
 const tags = data.tags;
 const officers = data.officers;
 const evidenceLinks = data.evidenceLinks;
@@ -195,7 +187,7 @@ const ratedOfficers = officers
 
 <SiteLayout
   title={`Report: ${reportTitle} | PoliceConduct.org`}
-  description={reportDescriptionSource}
+  description={reportDescription}
   pagePath={pagePath}
   canonicalUrl={pagePath}
   structuredData={structuredData}
@@ -205,21 +197,13 @@ const ratedOfficers = officers
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-12 col-lg-10 col-xl-8">
-            <nav aria-label="Breadcrumb">
-              <ol class="breadcrumb mb-3">
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href="/report/">Reports</a>
-                </li>
-                <li class="breadcrumb-item">
-                  <a class="link-dark" href={`/report/${stateSlug}/`}
-                    >{stateName}</a
-                  >
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">
-                  {reportTitle}
-                </li>
-              </ol>
-            </nav>
+            <Breadcrumbs
+              items={[
+                { label: "Reports", href: "/report/" },
+                { label: categoryName, href: `/report/${categorySlug}/` },
+                { label: reportTitle, href: pagePath, current: true },
+              ]}
+            />
             <p class="text-uppercase small text-muted mb-2">Published report</p>
             <h1 class="display-4 fw-bold">{data.report.title}</h1>
             <p class="lead">
@@ -234,7 +218,7 @@ const ratedOfficers = officers
                 data-prefill-key="prefill:contact"
                 data-prefill-payload={JSON.stringify({
                   whoami: "Subscriber",
-                  message: `Please notify of any changes to the following page(s): /report/${stateSlug}/${data.report.slug}/`,
+                  message: `Please notify of any changes to the following page(s): /report/${categorySlug}/${data.report.slug}/`,
                 })}
               >
                 <svg
@@ -411,40 +395,46 @@ const ratedOfficers = officers
                 <>
                   {evidenceLinks.map((link) => (
                     <div class="mb-4">
-                      <p class="fs-5 mb-2">
-                        <a href={link.url} target="_blank" rel="noopener">
-                          {link.title}
+                      {link.embed ? (
+                        <a
+                          class="d-block text-decoration-none text-reset mt-3"
+                          href={`/report/${categorySlug}/${slug}/watch/${link.id}/`}
+                        >
+                          <div class="border bg-white">
+                            <div class="ratio ratio-16x9 bg-dark">
+                              {link.thumbnail ? (
+                                <img
+                                  src={link.thumbnail}
+                                  alt={`Video thumbnail for ${link.title}`}
+                                  class="w-100 h-100 object-fit-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div class="d-flex align-items-center justify-content-center text-white text-uppercase small fw-semibold">
+                                  Watch video
+                                </div>
+                              )}
+                            </div>
+                            <div class="p-3 d-flex justify-content-between align-items-center gap-3">
+                              <div>
+                                <div class="text-uppercase small text-muted">
+                                  Watch page
+                                </div>
+                                <div class="fw-semibold">{link.title}</div>
+                              </div>
+                              <span class="btn btn-outline-dark rounded-0">
+                                Open video
+                              </span>
+                            </div>
+                          </div>
                         </a>
-                      </p>
-                      {link.embed ? (
-                        <div class="ratio ratio-16x9 border">
-                          <iframe
-                            src={link.embed}
-                            title={link.title}
-                            allow="
-                            accelerometer;
-                            autoplay;
-                            clipboard-write;
-                            encrypted-media;
-                            gyroscope;
-                            picture-in-picture;
-                            web-share;
-                          "
-                            referrerpolicy="strict-origin-when-cross-origin"
-                            allowfullscreen
-                          />
-                        </div>
-                      ) : null}
-                      {link.embed ? (
-                        <p class="mt-2 mb-0">
-                          <a
-                            class="link-dark fw-semibold"
-                            href={`/report/${stateSlug}/${slug}/watch/${link.id}/`}
-                          >
-                            Watch page
+                      ) : (
+                        <p class="fs-5 mb-2">
+                          <a href={link.url} target="_blank" rel="noopener">
+                            {link.title}
                           </a>
                         </p>
-                      ) : null}
+                      )}
                     </div>
                   ))}
                 </>

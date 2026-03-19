@@ -1,6 +1,6 @@
 ---
-import "../styles/theme.css";
-import GoogleAnalytics from "../components/GoogleAnalytics.astro";
+import "#src/styles/theme.css";
+import GoogleAnalytics from "#src/components/GoogleAnalytics.astro";
 
 const { title, description, pagePath, canonicalUrl, robots, structuredData } =
   Astro.props;
@@ -267,11 +267,7 @@ const isActivePath = (href: string) =>
     <GoogleAnalytics />
   </head>
   <body data-bs-spy="scroll" data-bs-target="#navScroll">
-    <nav
-      id="navScroll"
-      class="navbar navbar-expand-lg navbar-light sticky-top"
-      tabindex="0"
-    >
+    <nav id="navScroll" class="navbar navbar-expand-lg navbar-light sticky-top">
       <div class="container">
         <a class="navbar-brand pe-4 fs-4" href="/">
           <span class="ms-1 fw-bolder">PoliceConduct.org</span>
@@ -892,7 +888,7 @@ const isActivePath = (href: string) =>
     </footer>
 
     <script>
-      import "../scripts/site.js";
+      import "#src/lib/client/site.js";
     </script>
     <script is:inline define:vars={{ issueMessage }}>
       (function () {

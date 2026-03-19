@@ -36,6 +36,26 @@ const getEmbedUrl = (url: string) => {
   }
 };
 
+const getYouTubeVideoId = (url: string) => {
+  if (!isYouTube(url)) {
+    return null;
+  }
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.includes("youtu.be")) {
+      return parsed.pathname.replace("/", "") || null;
+    }
+    return parsed.searchParams.get("v");
+  } catch (error) {
+    return null;
+  }
+};
+
+const getThumbnailUrl = (url: string) => {
+  const videoId = getYouTubeVideoId(url);
+  return videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null;
+};
+
 type ReportOfficerRating = {
   traitLabel: string;
   rubricDescription: string;
@@ -79,6 +99,7 @@ export type ReportDetailModel = {
     title: string;
     url: string;
     embed: string | null;
+    thumbnail: string | null;
   }[];
 };
 
@@ -151,6 +172,7 @@ type EvidenceLink = {
   title: string;
   url: string;
   embed: string | null;
+  thumbnail: string | null;
 };
 type EvidenceLinkSource = { id: string; title: string; url: string };
 
@@ -162,6 +184,7 @@ const buildEvidenceLinks = (links: EvidenceLinkSource[]): EvidenceLink[] =>
       title: link.title,
       url: link.url,
       embed: getEmbedUrl(link.url),
+      thumbnail: getThumbnailUrl(link.url),
     };
   });
 

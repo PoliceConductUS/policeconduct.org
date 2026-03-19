@@ -1,16 +1,20 @@
 ---
-import SiteLayout from "../../../layouts/SiteLayout.astro";
-import DisqusComments from "../../../components/DisqusComments.astro";
-import { withDb } from "../../../lib/db.js";
-import { groupBy, mapBy, normalizeAgencyHistory } from "../../../lib/data.js";
-import { formatShortDate } from "../../../lib/format.js";
-import { getPersonnelImageById } from "../../../lib/personnel-images.js";
-import { getReportStateSlug } from "../../../lib/report-state-stats.js";
-import { caseSlug } from "../../../lib/slug.js";
-import ProfileTabs from "../../../components/ProfileTabs.astro";
-import { getSiteUrl } from "../../../lib/structured-data.js";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import DisqusComments from "#src/components/DisqusComments.astro";
+import { withDb } from "#src/lib/db.js";
+import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
+import { formatShortDate } from "#src/lib/format.js";
+import { getPersonnelImageById } from "#src/lib/personnel-images.js";
+import { caseSlug } from "#src/lib/slug.js";
+import ProfileTabs from "#src/components/ProfileTabs.astro";
+import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
+  if ((process.env.NO_PERSONNEL || "").trim() !== "") {
+    return [];
+  }
+
   const officers = await withDb(async (client) => {
     return (
       await client.query(
@@ -179,24 +183,11 @@ const civilCasesWithPaths = data.civilCases.map(
 );
 
 const reportItems = data.reports.map(
-  (report: {
-    incident_date: string;
-    slug: string;
-    category?: string | null;
-    agency_slug?: string | null;
-    agencySlug?: string | null;
-  }) => {
-    const stateSlug = getReportStateSlug({
-      category: report.category ?? null,
-      agencySlug: report.agencySlug ?? report.agency_slug ?? null,
-    });
-    const reportUrl = stateSlug
-      ? `/report/${stateSlug}/${report.slug}/`
-      : `/report/${report.slug}/`;
+  (report: { incident_date: string; slug: string; category: string }) => {
     return {
       ...report,
       incidentDate: formatShortDate(report.incident_date),
-      url: reportUrl,
+      url: `/report/${report.category}/${report.slug}/`,
     };
   },
 );
@@ -218,23 +209,77 @@ const deceasedPublicMessage =
     : "This individual is reported deceased.");
 const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${data.officer.first_name} ${data.officer.last_name} | ${currentAgency!.name}`;
 const pageDescription = isDeceased
-  ? `${officerName} is marked deceased${deceasedOnDisplay ? ` (reported death date: ${deceasedOnDisplay})` : ""}. Public profile compiled from public records and community submitted reports.`
-  : `Public profile for ${data.officer.first_name} ${data.officer.last_name}, compiled from public records and community submitted reports.`;
+  ? `${officerName} personnel profile with agency history, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
+  : `${officerName} personnel profile with agency history, public reports, and civil litigation records.`;
+const pastEmployerSummary = history
+  .slice(0, -1)
+  .map((entry) => ({
+    ...entry,
+    agency: agenciesById[entry.agency_id],
+  }))
+  .filter((entry) => entry.agency)
+  .map((entry) => {
+    const segments = [entry.agency?.name];
+    const dateRange = [
+      entry.start_date ? formatShortDate(entry.start_date) : null,
+      entry.end_date ? formatShortDate(entry.end_date) : "Current",
+    ]
+      .filter(Boolean)
+      .join(" to ");
+    if (dateRange) {
+      segments.push(dateRange);
+    }
+    if (entry.badge_number) {
+      segments.push(`Badge ${entry.badge_number}`);
+    }
+    return segments.filter(Boolean).join(" — ");
+  })
+  .join("\n");
+const civilLitigationSummary = civilCasesWithPaths
+  .map((caseItem) => {
+    const segments = [
+      caseItem.title || "Civil case",
+      caseItem.cause_number || null,
+      caseItem.court || null,
+      caseItem.caseUrl,
+    ];
+    return segments.filter(Boolean).join(" — ");
+  })
+  .join("\n");
+const reportLinksSummary = reportItems.map((report) => report.url).join("\n");
 const addCivilCaseHref = "/civil-litigation/new/";
 const addCivilCasePrefillPayload = JSON.stringify({
   jurisdiction: currentAgency?.category?.toLowerCase() || "",
-});
-const reportHref = "/report/new/";
-const reportPrefillPayload = JSON.stringify({
-  "officers[0][department]": currentAgency?.name || "",
-  "officers[0][name]": officerName,
+  defendants: [officerName, currentAgency?.name || ""]
+    .filter(Boolean)
+    .join("\n"),
+  summary: `${officerName} profile: ${officerPath}${currentAgency?.name ? `\nCurrent agency: ${currentAgency.name}` : ""}`,
+  links: [officerPath, ...reportItems.slice(0, 3).map((report) => report.url)]
+    .filter(Boolean)
+    .join("\n"),
 });
 const pastEmployerHref = "/personnel/new/";
 const pastEmployerPrefillPayload = JSON.stringify({
+  firstName: data.officer.first_name || "",
+  lastName: data.officer.last_name || "",
+  suffix: data.officer.suffix || "",
+  badgeNumber: currentBadge || "",
   currentAgency: currentAgency?.name || "",
+  currentAgencyCity: currentAgency?.city || "",
+  currentAgencyState: currentAgency?.state || "",
+  pastEmployers: pastEmployerSummary,
+  civilLitigation: civilLitigationSummary,
+  reportLinks: reportLinksSummary,
 });
 const suggestEditHref = "/personnel/suggest-edit/";
-const suggestEditPrefillPayload = JSON.stringify({ officerPath });
+const suggestEditPrefillPayload = JSON.stringify({
+  officerPath,
+  officerName,
+  badgeNumber: currentBadge || "",
+  currentEmployer: currentAgency?.name || "",
+  pastEmployers: pastEmployerSummary,
+  civilLitigation: civilLitigationSummary,
+});
 const claimProfileHref = "/about/contact/";
 const claimProfilePrefillPayload = JSON.stringify({
   whoami: "Profile Owner",
@@ -315,19 +360,12 @@ const structuredData = {
   <main class="">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
-        <nav aria-label="Breadcrumb">
-          <ol class="breadcrumb mb-3">
-            <li class="breadcrumb-item">
-              <a class="link-dark" href="/personnel/">Personnel</a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">
-              {data.officer.first_name}
-              {data.officer.last_name}{
-                data.officer.suffix ? ` ${data.officer.suffix}` : ""
-              }
-            </li>
-          </ol>
-        </nav>
+        <Breadcrumbs
+          items={[
+            { label: "Personnel", href: "/personnel/" },
+            { label: officerName, href: officerPath, current: true },
+          ]}
+        />
         <div class="row align-items-center">
           <div class="col-lg-12">
             <p class="text-uppercase small text-muted mb-2">
@@ -410,6 +448,33 @@ const structuredData = {
                     Submit Report
                   </a>
                   <a
+                    class="btn btn-outline-dark rounded-0"
+                    href={addCivilCaseHref}
+                    target="_self"
+                    data-prefill-key="prefill:civilLitigationNew"
+                    data-prefill-payload={addCivilCasePrefillPayload}
+                  >
+                    Add a civil case
+                  </a>
+                  <a
+                    class="btn btn-outline-dark rounded-0"
+                    href={pastEmployerHref}
+                    target="_self"
+                    data-prefill-key="prefill:personnelNew"
+                    data-prefill-payload={pastEmployerPrefillPayload}
+                  >
+                    Submit past employer
+                  </a>
+                  <a
+                    class="btn btn-outline-dark rounded-0"
+                    href={suggestEditHref}
+                    target="_self"
+                    data-prefill-key="prefill:personnelSuggestEdit"
+                    data-prefill-payload={suggestEditPrefillPayload}
+                  >
+                    Suggest edit
+                  </a>
+                  <a
                     class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
                     href="/about/contact/"
                     target="_self"
@@ -484,27 +549,28 @@ const structuredData = {
               ]}
               litigation={{
                 cases: civilCasesWithPaths,
-                ctaHref: addCivilCaseHref,
-                ctaTarget: "_self",
-                ctaPrefillKey: "prefill:civilLitigationNew",
-                ctaPrefillPayload: addCivilCasePrefillPayload,
               }}
               reports={{
                 items: reportItems,
-                ctaHref: reportHref,
-                ctaTarget: "_self",
-                ctaPrefillKey: "prefill:reportNew",
-                ctaPrefillPayload: reportPrefillPayload,
                 layout: "table",
               }}
               pastEmployers={{
                 entries: pastEmployers,
-                ctaHref: pastEmployerHref,
-                ctaTarget: "_self",
-                ctaPrefillKey: "prefill:personnelNew",
-                ctaPrefillPayload: pastEmployerPrefillPayload,
               }}
             />
+
+            <div class="mt-3">
+              <a
+                class="link-dark small"
+                href={claimProfileHref}
+                target="_self"
+                data-testid="personnel-claim-profile-link"
+                data-prefill-key="prefill:contact"
+                data-prefill-payload={claimProfilePrefillPayload}
+              >
+                Claim this profile
+              </a>
+            </div>
 
             <div class="my-5">
               <h2 class="h5 text-uppercase text-muted">Comments</h2>
@@ -512,38 +578,6 @@ const structuredData = {
                 pageUrl={pageUrl}
                 disqusIdentifier={disqusIdentifier}
               />
-            </div>
-
-            <div
-              class="alert alert-light border-dark rounded-0 mt-5"
-              role="alert"
-            >
-              <p class="mb-3">
-                Have corrections or want to submit a report about this person?
-              </p>
-              <div class="d-flex flex-wrap gap-2">
-                <a
-                  class="btn btn-outline-dark rounded-0"
-                  href={suggestEditHref}
-                  target="_self"
-                  data-prefill-key="prefill:personnelSuggestEdit"
-                  data-prefill-payload={suggestEditPrefillPayload}
-                >
-                  Suggest Edit
-                </a>
-              </div>
-              <div class="mt-2">
-                <a
-                  class="link-dark small"
-                  href={claimProfileHref}
-                  target="_self"
-                  data-testid="personnel-claim-profile-link"
-                  data-prefill-key="prefill:contact"
-                  data-prefill-payload={claimProfilePrefillPayload}
-                >
-                  Claim this profile
-                </a>
-              </div>
             </div>
           </div>
         </div>

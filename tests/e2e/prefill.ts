@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 export type PrefillKey =
   | "prefill:contact"
@@ -8,6 +8,219 @@ export type PrefillKey =
   | "prefill:personnelNew"
   | "prefill:personnelSuggestEdit"
   | "prefill:agencySuggestEdit";
+
+type PrefillFieldConfig = {
+  kind: "input" | "textarea" | "select";
+  selector: string;
+  toExpectedValue?: (value: unknown) => string;
+};
+
+const identity = (value: unknown) => String(value ?? "");
+
+const FIELD_CONFIG: Record<PrefillKey, Record<string, PrefillFieldConfig>> = {
+  "prefill:contact": {
+    whoami: {
+      kind: "select",
+      selector: "#whoami",
+      toExpectedValue: (value) => String(value ?? "").trim(),
+    },
+    message: {
+      kind: "textarea",
+      selector: "#message",
+      toExpectedValue: identity,
+    },
+  },
+  "prefill:reportNew": {
+    "officers[0][department]": {
+      kind: "input",
+      selector: ".officer-entry .officer-department",
+      toExpectedValue: identity,
+    },
+    "officers[0][name]": {
+      kind: "input",
+      selector: ".officer-entry .officer-name",
+      toExpectedValue: identity,
+    },
+  },
+  "prefill:issueNew": {
+    message: {
+      kind: "textarea",
+      selector: "#message",
+      toExpectedValue: identity,
+    },
+  },
+  "prefill:civilLitigationNew": {
+    jurisdiction: {
+      kind: "select",
+      selector: "#jurisdiction",
+      toExpectedValue: (value) => {
+        const raw = String(value ?? "").trim();
+        return raw.length === 2 ? raw.toUpperCase() : raw;
+      },
+    },
+    defendants: {
+      kind: "textarea",
+      selector: "#defendants",
+      toExpectedValue: identity,
+    },
+    summary: {
+      kind: "textarea",
+      selector: "#summary",
+      toExpectedValue: identity,
+    },
+    links: {
+      kind: "textarea",
+      selector: 'textarea[name="links"]',
+      toExpectedValue: identity,
+    },
+  },
+  "prefill:personnelNew": {
+    firstName: {
+      kind: "input",
+      selector: "#firstName",
+      toExpectedValue: identity,
+    },
+    lastName: {
+      kind: "input",
+      selector: "#lastName",
+      toExpectedValue: identity,
+    },
+    suffix: {
+      kind: "input",
+      selector: "#suffix",
+      toExpectedValue: identity,
+    },
+    badgeNumber: {
+      kind: "input",
+      selector: "#badgeNumber",
+      toExpectedValue: identity,
+    },
+    currentAgency: {
+      kind: "input",
+      selector: "#currentAgency",
+      toExpectedValue: identity,
+    },
+    currentAgencyCity: {
+      kind: "input",
+      selector: "#currentAgencyCity",
+      toExpectedValue: identity,
+    },
+    currentAgencyState: {
+      kind: "input",
+      selector: "#currentAgencyState",
+      toExpectedValue: identity,
+    },
+    pastEmployers: {
+      kind: "textarea",
+      selector: "#pastEmployers",
+      toExpectedValue: identity,
+    },
+    civilLitigation: {
+      kind: "textarea",
+      selector: "#civilLitigation",
+      toExpectedValue: identity,
+    },
+    reportLinks: {
+      kind: "textarea",
+      selector: "#reportLinks",
+      toExpectedValue: identity,
+    },
+  },
+  "prefill:personnelSuggestEdit": {
+    officerPath: {
+      kind: "input",
+      selector: "#officerPath",
+      toExpectedValue: identity,
+    },
+    officerName: {
+      kind: "input",
+      selector: "#officerName",
+      toExpectedValue: identity,
+    },
+    badgeNumber: {
+      kind: "input",
+      selector: "#badgeNumber",
+      toExpectedValue: identity,
+    },
+    currentEmployer: {
+      kind: "input",
+      selector: "#currentEmployer",
+      toExpectedValue: identity,
+    },
+    pastEmployers: {
+      kind: "textarea",
+      selector: "#pastEmployers",
+      toExpectedValue: identity,
+    },
+    civilLitigation: {
+      kind: "textarea",
+      selector: "#civilLitigation",
+      toExpectedValue: identity,
+    },
+  },
+  "prefill:agencySuggestEdit": {
+    agencyPath: {
+      kind: "input",
+      selector: "#agencyPath",
+      toExpectedValue: identity,
+    },
+    agencyName: {
+      kind: "input",
+      selector: "#agencyName",
+      toExpectedValue: identity,
+    },
+    jurisdiction: {
+      kind: "select",
+      selector: "#jurisdiction",
+      toExpectedValue: (value) =>
+        String(value ?? "")
+          .trim()
+          .toUpperCase(),
+    },
+    departmentWebsite: {
+      kind: "input",
+      selector: "#departmentWebsite",
+      toExpectedValue: identity,
+    },
+    departmentHead: {
+      kind: "input",
+      selector: "#departmentHead",
+      toExpectedValue: identity,
+    },
+    socialLinks: {
+      kind: "textarea",
+      selector: "#socialLinks",
+      toExpectedValue: identity,
+    },
+    civilLitigation: {
+      kind: "textarea",
+      selector: "#civilLitigation",
+      toExpectedValue: identity,
+    },
+  },
+};
+
+const getControlLocator = (page: Page, config: PrefillFieldConfig): Locator => {
+  const locator = page.locator(config.selector);
+  if (config.selector === ".officer-entry .officer-department") {
+    return locator.first();
+  }
+  if (config.selector === ".officer-entry .officer-name") {
+    return locator.first();
+  }
+  return locator;
+};
+
+const expectEmptyField = async (
+  locator: Locator,
+  kind: PrefillFieldConfig["kind"],
+) => {
+  if (kind === "select") {
+    await expect(locator).toHaveValue("");
+    return;
+  }
+  await expect(locator).toHaveValue("");
+};
 
 export async function seedFlashPrefill(
   page: Page,
@@ -23,96 +236,56 @@ export async function seedFlashPrefill(
   );
 }
 
+export async function readPrefillFromLink(locator: Locator): Promise<{
+  key: PrefillKey;
+  payload: Record<string, unknown>;
+  href: string;
+}> {
+  const key = (await locator.getAttribute("data-prefill-key")) as PrefillKey;
+  const payload = JSON.parse(
+    (await locator.getAttribute("data-prefill-payload")) || "{}",
+  ) as Record<string, unknown>;
+  const href = (await locator.getAttribute("href")) || "";
+  return { key, payload, href };
+}
+
 export async function assertPrefillApplied(
   page: Page,
-  key: string,
+  key: PrefillKey,
   payload: Record<string, unknown>,
+  expectedFields?: string[],
 ): Promise<void> {
-  switch (key) {
-    case "prefill:contact": {
-      if (typeof payload.whoami === "string" && payload.whoami.trim()) {
+  const fieldConfig = FIELD_CONFIG[key];
+  if (!fieldConfig) {
+    throw new Error(`Unsupported prefill key: ${key}`);
+  }
+
+  const expected = new Set(
+    (expectedFields || Object.keys(payload)).map((field) => field.trim()),
+  );
+  const payloadFields = Object.keys(payload).sort();
+  const expectedFieldList = Array.from(expected).sort();
+  expect(payloadFields).toEqual(expectedFieldList);
+
+  for (const [field, config] of Object.entries(fieldConfig)) {
+    const locator = getControlLocator(page, config);
+    if (expected.has(field)) {
+      const expectedValue = (config.toExpectedValue || identity)(
+        payload[field],
+      );
+      if (config.kind === "select" && field === "whoami") {
         const selectedText = await page
           .locator("#whoami option:checked")
           .textContent();
         expect((selectedText || "").toLowerCase()).toContain(
-          payload.whoami.toLowerCase(),
+          expectedValue.toLowerCase(),
         );
+      } else {
+        await expect(locator).toHaveValue(expectedValue);
       }
-      if (typeof payload.message === "string") {
-        await expect(page.locator("#message")).toHaveValue(payload.message);
-      }
-      break;
+      continue;
     }
-    case "prefill:reportNew": {
-      if (typeof payload["officers[0][department]"] === "string") {
-        await expect(
-          page.locator(".officer-entry .officer-department").first(),
-        ).toHaveValue(payload["officers[0][department]"]);
-      }
-      if (typeof payload["officers[0][name]"] === "string") {
-        await expect(
-          page.locator(".officer-entry .officer-name").first(),
-        ).toHaveValue(payload["officers[0][name]"]);
-      }
-      break;
-    }
-    case "prefill:issueNew": {
-      if (typeof payload.message === "string") {
-        await expect(page.locator("#message")).toHaveValue(payload.message);
-      }
-      break;
-    }
-    case "prefill:civilLitigationNew": {
-      if (typeof payload.jurisdiction === "string") {
-        const expected =
-          payload.jurisdiction.trim().length === 2
-            ? payload.jurisdiction.toUpperCase()
-            : payload.jurisdiction;
-        await expect(page.locator("#jurisdiction")).toHaveValue(expected);
-      }
-      break;
-    }
-    case "prefill:personnelNew": {
-      if (typeof payload.currentAgency === "string") {
-        await expect(page.locator("#currentAgency")).toHaveValue(
-          payload.currentAgency,
-        );
-      }
-      if (typeof payload.currentAgencyCity === "string") {
-        await expect(page.locator("#currentAgencyCity")).toHaveValue(
-          payload.currentAgencyCity,
-        );
-      }
-      if (typeof payload.currentAgencyState === "string") {
-        await expect(page.locator("#currentAgencyState")).toHaveValue(
-          payload.currentAgencyState,
-        );
-      }
-      break;
-    }
-    case "prefill:personnelSuggestEdit": {
-      if (typeof payload.officerPath === "string") {
-        await expect(page.locator("#officerPath")).toHaveValue(
-          payload.officerPath,
-        );
-      }
-      break;
-    }
-    case "prefill:agencySuggestEdit": {
-      if (typeof payload.agencyPath === "string") {
-        await expect(page.locator("#agencyPath")).toHaveValue(
-          payload.agencyPath,
-        );
-      }
-      if (typeof payload.jurisdiction === "string") {
-        await expect(page.locator("#jurisdiction")).toHaveValue(
-          payload.jurisdiction.toUpperCase(),
-        );
-      }
-      break;
-    }
-    default:
-      throw new Error(`Unsupported prefill key: ${key}`);
+    await expectEmptyField(locator, config.kind);
   }
 }
 
@@ -124,4 +297,8 @@ export async function assertPrefillConsumed(
     return window.sessionStorage.getItem(prefillKey);
   }, key);
   expect(value).toBeNull();
+}
+
+export function formatFieldList(fields: string[]): string {
+  return `[${[...fields].sort().join(", ")}]`;
 }

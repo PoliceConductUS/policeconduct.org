@@ -7,7 +7,7 @@ cd "${ROOT_DIR}"
 if [[ -f .env ]]; then
   set -a
   # shellcheck disable=SC1091
-  source .env
+  source .env-policeconduct
   set +a
 fi
 

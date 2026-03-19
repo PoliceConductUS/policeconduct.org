@@ -1,0 +1,110 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import {
+  formatNewsDate,
+  loadNewsArticles,
+  NEWS_PAGE_SIZE,
+  newsBadgeClassName,
+  type NewsMeta,
+} from "#src/lib/news.js";
+
+export async function getStaticPaths({ paginate }: { paginate: any }) {
+  const articles = loadNewsArticles();
+  return paginate(articles, {
+    pageSize: NEWS_PAGE_SIZE,
+  }).filter((page: any) => page.params.page !== "1");
+}
+
+const { page } = Astro.props;
+const title = page.currentPage > 1 ? `News – Page ${page.currentPage}` : "News";
+const pagePath = `/news/page/${page.currentPage}/`;
+const prevUrl = page.currentPage === 2 ? "/news/" : page.url.prev?.toString();
+const nextUrl = page.url.next?.toString() || null;
+---
+
+<SiteLayout
+  title={`${title} | PoliceConduct.org`}
+  description="News and updates from PoliceConduct.org."
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main class="">
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row">
+          <div class="col-12 col-lg-10">
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: "News", href: "/news/" },
+                {
+                  label: `Page ${page.currentPage}`,
+                  href: pagePath,
+                  current: true,
+                },
+              ]}
+              className="mb-2"
+            />
+            <p class="text-uppercase small text-muted mb-2">News</p>
+            <h1 class="display-4 fw-bold">{title}</h1>
+            <p class="lead mb-0">
+              Product updates, policy notes, and community announcements.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="list-group shadow-sm">
+          {
+            page.data.map((article: NewsMeta) => (
+              <a
+                class="list-group-item list-group-item-action"
+                href={article.href}
+              >
+                <div class="row g-2 align-items-start">
+                  <div class="col">
+                    <div class="text-uppercase small text-muted">
+                      {formatNewsDate(article.date)}
+                    </div>
+                    <div class="fw-semibold">{article.title}</div>
+                    <p class="mb-1 text-muted">{article.description}</p>
+                  </div>
+                  {article.badge ? (
+                    <div class="col-auto">
+                      <span class={newsBadgeClassName(article.badge)}>
+                        {article.badge}
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+              </a>
+            ))
+          }
+        </div>
+
+        <div class="d-flex justify-content-between gap-2 mt-3">
+          {
+            prevUrl ? (
+              <a class="btn btn-outline-dark rounded-0" href={prevUrl}>
+                Newer News
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            nextUrl ? (
+              <a class="btn btn-outline-dark rounded-0" href={nextUrl}>
+                Older News
+              </a>
+            ) : null
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>

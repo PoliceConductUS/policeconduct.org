@@ -1,5 +1,17 @@
 ---
-import SiteLayout from "../../layouts/SiteLayout.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import {
+  formatNewsDate,
+  loadNewsArticles,
+  NEWS_PAGE_SIZE,
+  newsBadgeClassName,
+} from "#src/lib/news.js";
+
+const articles = loadNewsArticles();
+const pageArticles = articles.slice(0, NEWS_PAGE_SIZE);
+const totalPages = Math.max(1, Math.ceil(articles.length / NEWS_PAGE_SIZE));
+const nextUrl = totalPages > 1 ? "/news/page/2/" : null;
 ---
 
 <SiteLayout
@@ -12,7 +24,13 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
       <div class="container">
         <div class="row">
           <div class="col-12 col-lg-10">
-            <p class="text-uppercase small text-muted mb-2">News</p>
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: "News", href: "/news/", current: true },
+              ]}
+              className="mb-2"
+            />
             <h1 class="display-4 fw-bold">News</h1>
             <p class="lead mb-0">
               Product updates, policy notes, and community announcements.
@@ -57,53 +75,41 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
     <section class="py-vh-2">
       <div class="container">
         <div class="list-group shadow-sm">
-          <a
-            class="list-group-item list-group-item-action"
-            href="/news/2026/02/17/section1983-org-launches-free-guide-for-pro-se-plaintiffs/"
-          >
-            <div class="row g-2 align-items-start">
-              <div class="col">
-                <div class="text-uppercase small text-muted">
-                  February 17, 2026
+          {
+            pageArticles.map((article) => (
+              <a
+                class="list-group-item list-group-item-action"
+                href={article.href}
+              >
+                <div class="row g-2 align-items-start">
+                  <div class="col">
+                    <div class="text-uppercase small text-muted">
+                      {formatNewsDate(article.date)}
+                    </div>
+                    <div class="fw-semibold">{article.title}</div>
+                    <p class="mb-1 text-muted">{article.description}</p>
+                  </div>
+                  {article.badge ? (
+                    <div class="col-auto">
+                      <span class={newsBadgeClassName(article.badge)}>
+                        {article.badge}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
-                <div class="fw-semibold">
-                  Section1983.org Launches Free Legal Guide for Pro Se Civil
-                  Rights Plaintiffs
-                </div>
-                <p class="mb-1 text-muted">
-                  The Institute for Police Conduct releases Section1983.org — a
-                  free, 370-page legal resource for people representing
-                  themselves in federal civil rights lawsuits against law
-                  enforcement.
-                </p>
-              </div>
-              <div class="col-auto">
-                <span class="badge bg-dark rounded-pill">New</span>
-              </div>
-            </div>
-          </a>
-          <a
-            class="list-group-item list-group-item-action"
-            href="/news/2025/01/19/institute-for-police-conduct-begins-soft-launch/"
-          >
-            <div class="row g-2 align-items-start">
-              <div class="col">
-                <div class="text-uppercase small text-muted">
-                  January 19, 2025
-                </div>
-                <div class="fw-semibold">
-                  A New Chapter for Accountability: Institute for Police Conduct
-                  Begins Soft Launch
-                </div>
-                <p class="mb-1 text-muted">
-                  Institute for Police Conduct launches its soft beta to refine
-                  its tools, verify early data, and invite community support
-                  before a broader rollout.
-                </p>
-              </div>
-            </div>
-          </a>
+              </a>
+            ))
+          }
         </div>
+        {
+          totalPages > 1 ? (
+            <div class="d-flex justify-content-end mt-3">
+              <a class="btn btn-outline-dark rounded-0" href={nextUrl}>
+                Older News
+              </a>
+            </div>
+          ) : null
+        }
       </div>
     </section>
   </main>

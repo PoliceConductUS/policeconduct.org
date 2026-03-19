@@ -1,5 +1,6 @@
 ---
-import SiteLayout from "../../layouts/SiteLayout.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 
 const partnerTracks = [
   {
@@ -99,6 +100,13 @@ const partnerTracks = [
       <div class="container">
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: "Partner", href: "/partner/", current: true },
+              ]}
+              className="mb-2"
+            />
             <p class="text-uppercase small text-muted mb-2">Partnerships</p>
             <h1 class="display-4 fw-bold">Partner with PoliceConduct.org</h1>
             <p class="lead text-muted mb-0">

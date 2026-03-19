@@ -1,6 +1,7 @@
 ---
-import SiteLayout from "../../layouts/SiteLayout.astro";
-import { buildWebPage, getSiteUrl } from "../../lib/structured-data.js";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/frequently-asked-questions/";
 const siteUrl = getSiteUrl(Astro.site);
@@ -260,6 +261,17 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
 >
   <main class="flex-grow-1 py-vh-3">
     <div class="container">
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          {
+            label: "Frequently Asked Questions",
+            href: pagePath,
+            current: true,
+          },
+        ]}
+        className="mb-2"
+      />
       <h1 class="display-5 fw-bold mb-4">Frequently Asked Questions</h1>
       <h2 class="h5 fw-semibold text-uppercase text-muted mb-3">
         About PoliceConduct.org

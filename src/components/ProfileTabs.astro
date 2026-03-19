@@ -1,5 +1,5 @@
 ---
-import { formatShortDate } from "../lib/format.js";
+import { formatShortDate } from "#src/lib/format.js";
 
 type OfficerRef = {
   slug: string;
@@ -67,38 +67,18 @@ type ProfileTabsProps = {
   extraNavClasses?: string;
   litigation?: {
     cases?: LitigationCase[];
-    ctaHref?: string;
-    ctaLabel?: string;
-    ctaTarget?: string;
-    ctaPrefillKey?: string;
-    ctaPrefillPayload?: string;
     emptyMessage?: string;
   };
   reports?: {
     items?: ReportItem[];
-    ctaHref?: string;
-    ctaLabel?: string;
-    ctaTarget?: string;
-    ctaPrefillKey?: string;
-    ctaPrefillPayload?: string;
     emptyMessage?: string;
     layout?: "table" | "list";
   };
   personnel?: {
     entries?: PersonnelEntry[];
-    ctaHref?: string;
-    ctaLabel?: string;
-    ctaTarget?: string;
-    ctaPrefillKey?: string;
-    ctaPrefillPayload?: string;
   };
   pastEmployers?: {
     entries?: PastEmployerEntry[];
-    ctaHref?: string;
-    ctaLabel?: string;
-    ctaTarget?: string;
-    ctaPrefillKey?: string;
-    ctaPrefillPayload?: string;
   };
 };
 
@@ -168,19 +148,8 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
       >
         {tab.tabType === "litigation" ? (
           <>
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div class="mb-3">
               <span class="text-uppercase small text-muted mb-0">Cases</span>
-              {litigation?.ctaHref ? (
-                <a
-                  class="btn btn-outline-dark rounded-0 btn-sm"
-                  href={litigation.ctaHref}
-                  target={litigation.ctaTarget}
-                  data-prefill-key={litigation.ctaPrefillKey}
-                  data-prefill-payload={litigation.ctaPrefillPayload}
-                >
-                  {litigation.ctaLabel || "Add a civil case"}
-                </a>
-              ) : null}
             </div>
             {hasLitigation ? (
               <div class="d-grid gap-3">
@@ -245,19 +214,6 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
           </>
         ) : tab.tabType === "reports" ? (
           <>
-            <div class="d-flex justify-content-end mb-3">
-              {reports?.ctaHref ? (
-                <a
-                  class="btn btn-outline-dark rounded-0 btn-sm"
-                  href={reports.ctaHref}
-                  target={reports.ctaTarget}
-                  data-prefill-key={reports.ctaPrefillKey}
-                  data-prefill-payload={reports.ctaPrefillPayload}
-                >
-                  {reports.ctaLabel || "Submit report"}
-                </a>
-              ) : null}
-            </div>
             {hasReports ? (
               <div class="d-grid gap-3">
                 {reportsItems.map((report) => (
@@ -285,19 +241,6 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
           </>
         ) : tab.tabType === "personnel" ? (
           <>
-            <div class="d-flex justify-content-end mb-3">
-              {personnel?.ctaHref ? (
-                <a
-                  class="btn btn-outline-dark rounded-0 btn-sm"
-                  href={personnel.ctaHref}
-                  target={personnel.ctaTarget}
-                  data-prefill-key={personnel.ctaPrefillKey}
-                  data-prefill-payload={personnel.ctaPrefillPayload}
-                >
-                  {personnel.ctaLabel || "Suggest new personnel"}
-                </a>
-              ) : null}
-            </div>
             {hasPersonnel ? (
               <div class="list-group">
                 {personnelEntries.map((employee) => (
@@ -362,19 +305,6 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
           </>
         ) : tab.tabType === "pastEmployers" ? (
           <>
-            <div class="d-flex justify-content-end mb-3">
-              {pastEmployers?.ctaHref ? (
-                <a
-                  class="btn btn-outline-dark rounded-0 btn-sm"
-                  href={pastEmployers.ctaHref}
-                  target={pastEmployers.ctaTarget}
-                  data-prefill-key={pastEmployers.ctaPrefillKey}
-                  data-prefill-payload={pastEmployers.ctaPrefillPayload}
-                >
-                  {pastEmployers.ctaLabel || "Submit past employer"}
-                </a>
-              ) : null}
-            </div>
             {hasPastEmployers ? (
               <div class="list-group">
                 {pastEmployerEntries.map((entry) => (

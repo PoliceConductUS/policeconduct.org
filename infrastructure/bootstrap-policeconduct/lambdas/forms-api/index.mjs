@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import {
   GetObjectCommand,
   PutObjectCommand,
@@ -9,6 +10,19 @@ import { createId } from "@paralleldrive/cuid2";
 import crypto from "crypto";
 
 const s3 = new S3Client({});
+const sentryDsn = (process.env.SENTRY_DSN || "").trim();
+const sentryEnvironment = (process.env.SENTRY_ENVIRONMENT || "").trim();
+const sentryRelease = (process.env.SENTRY_RELEASE || "").trim();
+const sentryEnabled = sentryDsn.length > 0;
+
+if (sentryEnabled) {
+  Sentry.init({
+    dsn: sentryDsn,
+    environment: sentryEnvironment || undefined,
+    release: sentryRelease || undefined,
+  });
+}
+
 const ALLOWED_FORM_NAMES = new Set([
   "contact",
   "volunteer",
@@ -56,6 +70,37 @@ function errorInfo(error) {
   return {
     message: String(error),
   };
+}
+
+function sentryRequestContext(context, extra = {}) {
+  return {
+    extra: {
+      ...extra,
+      host: context?.host || null,
+      method: context?.method || null,
+      path: context?.path || null,
+      requestId: context?.requestId || null,
+      sourceIp: context?.sourceIp || null,
+      stage: context?.stage || null,
+      userAgent: context?.userAgent || null,
+    },
+    tags: {
+      area: "forms_api",
+      ...(context?.method ? { method: context.method } : {}),
+      ...(context?.path ? { path: context.path } : {}),
+      ...(context?.stage ? { stage: context.stage } : {}),
+    },
+  };
+}
+
+function captureLambdaException(error, context, extra = {}) {
+  if (!sentryEnabled) {
+    return;
+  }
+  Sentry.captureException(
+    error instanceof Error ? error : new Error(String(error)),
+    sentryRequestContext(context, extra),
+  );
 }
 
 function parseJsonBody(event) {
@@ -430,6 +475,10 @@ async function saveSubmissionStatus(submissionId, status) {
 }
 
 async function getSubmissionStatus(event, requestId) {
+  const context = {
+    ...baseLogContext(event, requestId),
+    requestId,
+  };
   const path = normalizedPath(event);
   let decodedId = "";
   try {
@@ -480,6 +529,11 @@ async function getSubmissionStatus(event, requestId) {
     }
     return json(200, parsed);
   } catch (error) {
+    captureLambdaException(error, context, {
+      key,
+      submissionId,
+      operation: "get_submission_status",
+    });
     console.info(
       JSON.stringify({
         msg: "forms.status.pending_fallback",
@@ -626,6 +680,18 @@ async function submitForm(event, requestId) {
   try {
     await saveSubmissionStatus(submissionId, "received");
   } catch (error) {
+    captureLambdaException(
+      error,
+      {
+        formName,
+        requestId,
+        stage: event?.requestContext?.stage || null,
+      },
+      {
+        operation: "save_submission_status",
+        submissionId,
+      },
+    );
     console.error(
       JSON.stringify({
         msg: "forms.submit.status_save_failed",
@@ -641,6 +707,19 @@ async function submitForm(event, requestId) {
     try {
       await markDraftSubmitted(draftId, submissionId, requestId, formName);
     } catch (error) {
+      captureLambdaException(
+        error,
+        {
+          formName,
+          requestId,
+          stage: event?.requestContext?.stage || null,
+        },
+        {
+          draftId,
+          operation: "mark_draft_submitted",
+          submissionId,
+        },
+      );
       console.error(
         JSON.stringify({
           msg: "forms.submit.draft_mark_submitted_failed",
@@ -711,6 +790,7 @@ export const handler = async (event) => {
     );
   } catch (error) {
     const info = errorInfo(error);
+    captureLambdaException(error, context);
     console.error(
       JSON.stringify({
         msg: "forms.request.error",
@@ -722,5 +802,9 @@ export const handler = async (event) => {
       error: info.message || "Internal server error",
       requestId,
     });
+  } finally {
+    if (sentryEnabled) {
+      await Sentry.flush(2000);
+    }
   }
 };

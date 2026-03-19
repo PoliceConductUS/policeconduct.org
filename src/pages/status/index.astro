@@ -1,8 +1,12 @@
 ---
-import SiteLayout from "../../layouts/SiteLayout.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
 ---
 
-<SiteLayout title="Submission Status | PoliceConduct.org" pagePath="/status/">
+<SiteLayout
+  title="Submission Status | PoliceConduct.org"
+  pagePath="/status/"
+  robots="noindex,follow"
+>
   <main class="flex-grow-1 py-vh-3">
     <div class="container">
       <div class="row justify-content-center">

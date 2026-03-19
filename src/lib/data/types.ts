@@ -28,6 +28,7 @@ export type AgencySummary = {
 export type ReportSummary = {
   id: string;
   slug: string;
+  state: string;
   title: string;
   incidentDate: string;
   address?: string | null;
