@@ -7,6 +7,7 @@ Purpose
 Change Approval Workflow
 
 - Before making any edits, summarize the exact files and changes you intend to make and wait for explicit user approval. Do not proceed without that approval.
+- Do not ask for approval to inspect code, search the repo, or read files. Inspect first, then ask for approval only before making edits.
 - Do not preserve backward compatibility unless the user explicitly requests it.
 
 Data + Routing Conventions

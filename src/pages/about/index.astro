@@ -5,19 +5,19 @@ import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/about/";
 const pageDescription =
-  "Learn why PoliceConduct.org was created, how the Institute for Police Conduct approaches accountability, and why the project supports both transparency and good policing.";
+  "Learn why PoliceConduct.org was created, how the Institute for Police Conduct approaches accountability, and why the project documents both misconduct and good policing.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const structuredData = buildWebPage({
   siteUrl,
   pageUrl,
-  name: "About | PoliceConduct.org",
+  name: "Why PoliceConduct.org Exists | PoliceConduct.org",
   description: pageDescription,
 });
 ---
 
 <SiteLayout
-  title="About | PoliceConduct.org"
+  title="Why PoliceConduct.org Exists | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
   structuredData={structuredData}
@@ -34,19 +34,16 @@ const structuredData = buildWebPage({
               ]}
               className="mb-2"
             />
-            <p class="text-uppercase small text-muted mb-2">
-              About PoliceConduct.org
-            </p>
-            <h1 class="display-4 fw-bold">
-              A public record for accountability
-            </h1>
+            <p class="text-uppercase small text-muted mb-2">About</p>
+            <h1 class="display-4 fw-bold">Why PoliceConduct.org exists</h1>
             <p class="lead text-muted mb-2">
-              PoliceConduct.org exists because of something that happened to me
-              in Irving, Texas.
+              PoliceConduct.org began with one encounter in Irving, Texas, and
+              grew into a public record for police conduct, accountability, and
+              recognition.
             </p>
             <p class="text-muted mb-0">
               PoliceConduct.org exists so people's experiences with law
-              enforcement aren't lost - and so accountability and recognition
+              enforcement are not lost - and so accountability and recognition
               are grounded in a durable public record.
             </p>
           </div>
@@ -60,10 +57,20 @@ const structuredData = buildWebPage({
           <div class="col-12 col-lg-8">
             <p>
               I have insomnia. One night I went for a walk to tire my body out
-              so I could sleep. I was not committing a crime. But an officer
-              followed and watched me anyway. I tried hard to disengage. At one
-              point I sat down on the sidewalk, opened the news on my phone, and
-              stayed there for 10 to 15 minutes and the surveillance continued.
+              so I could sleep. I was not committing a crime. But
+              <a
+                class="link-dark"
+                href="/law-enforcement-agency/tx/irving-police-department-049f9a/"
+              >
+                Irving Police
+              </a>
+              Officer
+              <a class="link-dark" href="/personnel/james-markham-v-7635c7/">
+                James Markham V
+              </a>
+              followed and watched me anyway. I tried hard to disengage. At one point
+              I sat down on the sidewalk, opened the news on my phone, and stayed
+              there for 10 to 15 minutes and the surveillance continued.
             </p>
             <p>
               I was exhausted and irritated. I confronted him. I was rude. I

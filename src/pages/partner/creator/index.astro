@@ -5,19 +5,19 @@ import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/partner/creator/";
 const pageDescription =
-  "Partnership information for YouTubers and social media creators using structured police accountability data for investigations and reporting.";
+  "Partnership information for creators and investigative channels using structured police accountability data for reporting and analysis.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const structuredData = buildWebPage({
   siteUrl,
   pageUrl,
-  name: "YouTube & Social Media Creators | PoliceConduct.org",
+  name: "Partnerships for Creators and Investigative Channels | PoliceConduct.org",
   description: pageDescription,
 });
 ---
 
 <SiteLayout
-  title="YouTube & Social Media Creators | PoliceConduct.org"
+  title="Partnerships for Creators and Investigative Channels | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
   structuredData={structuredData}
@@ -33,18 +33,19 @@ const structuredData = buildWebPage({
         />
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
-            <p class="text-uppercase small text-muted mb-2">
-              Value proposition
-            </p>
-            <h1 class="display-4 fw-bold">The Creator Intelligence Hub</h1>
+            <p class="text-uppercase small text-muted mb-2">Partnership</p>
+            <h1 class="display-4 fw-bold">
+              For Creators and Investigative Channels
+            </h1>
             <p class="lead text-muted mb-0">
-              PoliceConduct.org is the back-end for professional investigations.
+              Structured accountability data can help creators find credible
+              stories, verify patterns, and build stronger investigations.
             </p>
           </div>
           <div class="col-12 col-lg-4">
             <div class="card shadow-sm rounded-0 border-dark">
               <div class="card-body d-flex flex-column gap-2">
-                <div class="text-uppercase small text-muted">Built for</div>
+                <div class="text-uppercase small text-muted">Best fit</div>
                 <div class="fw-semibold">
                   YouTubers and social media influencers
                 </div>

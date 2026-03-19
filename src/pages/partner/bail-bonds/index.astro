@@ -5,19 +5,19 @@ import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/partner/bail-bonds/";
 const pageDescription =
-  "Partnership information for bail bond agencies seeking better documentation, lower intake risk, and stronger case visibility.";
+  "Partnership information for bail bond agencies and pretrial teams seeking better documentation, lower intake risk, and stronger case visibility.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const structuredData = buildWebPage({
   siteUrl,
   pageUrl,
-  name: "Bail Bonds | PoliceConduct.org",
+  name: "Partnerships for Bail Bonds and Pretrial Teams | PoliceConduct.org",
   description: pageDescription,
 });
 ---
 
 <SiteLayout
-  title="Bail Bonds | PoliceConduct.org"
+  title="Partnerships for Bail Bonds and Pretrial Teams | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
   structuredData={structuredData}
@@ -33,19 +33,17 @@ const structuredData = buildWebPage({
         />
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
-            <p class="text-uppercase small text-muted mb-2">
-              Value proposition
-            </p>
-            <h1 class="display-4 fw-bold">Bail Bonds Strategic Benefits</h1>
+            <p class="text-uppercase small text-muted mb-2">Partnership</p>
+            <h1 class="display-4 fw-bold">For Bail Bonds and Pretrial Teams</h1>
             <p class="lead text-muted mb-0">
-              Reduce risk, modernize intake, and keep clients engaged with the
-              process.
+              Better documentation can lower intake risk, support defense
+              strategy, and keep clients engaged with the process.
             </p>
           </div>
           <div class="col-12 col-lg-4">
             <div class="card shadow-sm rounded-0 border-dark">
               <div class="card-body d-flex flex-column gap-2">
-                <div class="text-uppercase small text-muted">Built for</div>
+                <div class="text-uppercase small text-muted">Best fit</div>
                 <div class="fw-semibold">Bail bond agencies</div>
                 <div class="text-muted small">
                   Strong documentation lowers flight risk and improves case

@@ -5,19 +5,19 @@ import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/partner/academic/";
 const pageDescription =
-  "Partnership information for academic researchers seeking structured policing data, longitudinal analysis, and public accountability research support.";
+  "Work with PoliceConduct.org on structured policing data, longitudinal analysis, and public accountability research.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const structuredData = buildWebPage({
   siteUrl,
   pageUrl,
-  name: "Academic | PoliceConduct.org",
+  name: "Partnerships for Academic Researchers | PoliceConduct.org",
   description: pageDescription,
 });
 ---
 
 <SiteLayout
-  title="Academic | PoliceConduct.org"
+  title="Partnerships for Academic Researchers | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
   structuredData={structuredData}
@@ -33,19 +33,17 @@ const structuredData = buildWebPage({
         />
         <div class="row g-4 align-items-end">
           <div class="col-12 col-lg-8">
-            <p class="text-uppercase small text-muted mb-2">
-              Value proposition
-            </p>
-            <h1 class="display-4 fw-bold">Solving the Data Gap in Policing</h1>
+            <p class="text-uppercase small text-muted mb-2">Partnership</p>
+            <h1 class="display-4 fw-bold">For Academic Researchers</h1>
             <p class="lead text-muted mb-0">
-              Structured ground-truth data for academic and research
-              institutions.
+              Structured policing data for researchers who need a clearer record
+              of everyday police-public interactions.
             </p>
           </div>
           <div class="col-12 col-lg-4">
             <div class="card shadow-sm rounded-0 border-dark">
               <div class="card-body d-flex flex-column gap-2">
-                <div class="text-uppercase small text-muted">Built for</div>
+                <div class="text-uppercase small text-muted">Best fit</div>
                 <div class="fw-semibold">
                   Researchers and academic institutions
                 </div>
