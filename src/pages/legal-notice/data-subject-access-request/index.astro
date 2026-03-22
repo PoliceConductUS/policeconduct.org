@@ -8,7 +8,7 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
   pagePath="/legal-notice/data-subject-access-request/"
   robots="noindex,follow"
 >
-  <main class="flex-grow-1 py-vh-3">
+  <main class="flex-grow-1 py-vh-3" data-form-shell="dataSubjectAccessRequest">
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-lg-8">
@@ -352,34 +352,26 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
       </div>
     </div>
   </main>
-  <script is:inline>
-    (function () {
-      const form = document.querySelector(
-        'form[name="dataSubjectAccessRequest"]',
-      );
-      if (!form) {
-        return;
-      }
+  <script>
+    import {
+      initRecaptcha,
+      showFormLoadError,
+      submitJsonForm,
+    } from "#src/lib/client/forms.ts";
+
+    const form = document.querySelector(
+      'form[name="dataSubjectAccessRequest"]',
+    ) as HTMLFormElement | null;
+    const shell = document.querySelector(
+      '[data-form-shell="dataSubjectAccessRequest"]',
+    ) as HTMLElement | null;
+
+    if (!form) {
+      showFormLoadError({ formName: "dataSubjectAccessRequest", shell });
+    } else {
+      initRecaptcha();
       form.addEventListener("submit", async function (event) {
-        const formsUi = window.__IPC_FORMS__;
-        if (!formsUi || typeof formsUi.submitJsonForm !== "function") {
-          let inlineError = form.querySelector("[data-form-submit-error]");
-          if (!inlineError) {
-            inlineError = document.createElement("div");
-            inlineError.setAttribute("data-form-submit-error", "true");
-            inlineError.className = "alert alert-danger rounded-0 mt-3 d-none";
-            inlineError.setAttribute("role", "alert");
-            form.appendChild(inlineError);
-          }
-          inlineError.textContent =
-            "Unable to submit the form right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
-          inlineError.classList.remove("d-none");
-          console.error("Shared form submit helper is unavailable", {
-            formName: "dataSubjectAccessRequest",
-          });
-          return;
-        }
-        await formsUi.submitJsonForm({
+        await submitJsonForm({
           event,
           form,
           formName: "dataSubjectAccessRequest",
@@ -389,6 +381,6 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
           recaptchaAction: "dataSubjectAccessRequestSubmit",
         });
       });
-    })();
+    }
   </script>
 </SiteLayout>

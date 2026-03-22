@@ -48,6 +48,9 @@ General Code Standards
 - TypeScript types should be minimal, stable, and shared.
 - Keep functions small and testable; avoid duplication by sharing utilities.
 - Avoid new dependencies unless already present.
+- Never add speculative complexity. Implement only the simplest solution that satisfies the current known requirements, and nothing more.
+- Do not add optional abstractions, future-proofing, configurability, or extensibility unless they are required by the current task or explicitly requested by the user.
+- Prefer the simplest implementation that could possibly work.
 
 Legal Notices
 

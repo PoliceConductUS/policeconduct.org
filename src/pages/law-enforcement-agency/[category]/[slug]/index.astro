@@ -5,6 +5,7 @@ import DisqusComments from "#src/components/DisqusComments.astro";
 import { withDb } from "#src/lib/db.js";
 import { groupBy, mapBy } from "#src/lib/data.js";
 import { formatShortDate } from "#src/lib/format.js";
+import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { caseSlug } from "#src/lib/slug.js";
 import ProfileTabs from "#src/components/ProfileTabs.astro";
@@ -318,6 +319,11 @@ const civilLitigationSummary = civilCases
 const reportLinksSummary = reportedReports
   .map((report) => report.url)
   .join("\n");
+const reportNewPrefillPayload = JSON.stringify({
+  officer: {
+    department: data.agency.name,
+  },
+} satisfies ReportNewPrefill);
 const addCivilCaseHref = "/civil-litigation/new/";
 const addCivilCasePrefillPayload = JSON.stringify({
   jurisdiction: data.agency.category?.toLowerCase() || "",
@@ -562,9 +568,7 @@ const structuredData = {
                     href="/report/new/"
                     target="_self"
                     data-prefill-key="prefill:reportNew"
-                    data-prefill-payload={JSON.stringify({
-                      "officers[0][department]": data.agency.name,
-                    })}
+                    data-prefill-payload={reportNewPrefillPayload}
                   >
                     Submit a report
                   </a>

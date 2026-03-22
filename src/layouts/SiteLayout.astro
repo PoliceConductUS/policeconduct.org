@@ -211,7 +211,7 @@ const isActivePath = (href: string) =>
             return null;
           }
         };
-        const applyToFieldsByName = function ({ key, root, consume = true }) {
+        const prefillFields = function ({ key, root, consume = true }) {
           const targetRoot = root || document;
           if (!key) {
             return { applied: false, missing: [], payload: null };
@@ -227,8 +227,8 @@ const isActivePath = (href: string) =>
           const missing = [];
           for (const [name, value] of Object.entries(payload)) {
             const fields = Array.from(
-              targetRoot.querySelectorAll(`[name="${name}"]`),
-            );
+              targetRoot.querySelectorAll("[name]"),
+            ).filter((field) => field.getAttribute("name") === name);
             if (fields.length === 0) {
               missing.push(name);
               continue;
@@ -265,25 +265,16 @@ const isActivePath = (href: string) =>
           readAndConsume: function (key) {
             return readAndConsume(key);
           },
-          applyToFieldsByName,
+          prefillFields,
         };
       })();
     </script>
-    <link rel="preconnect" href="https://www.google.com" crossorigin />
-    <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
     {
       recaptchaSiteKey ? (
-        <>
-          <script
-            src={`https://www.google.com/recaptcha/enterprise.js?render=${encodeURIComponent(recaptchaSiteKey)}`}
-            async
-            defer
-          />
-          <script
-            is:inline
-            set:html={`window.__RECAPTCHA_SITE_KEY__ = ${JSON.stringify(recaptchaSiteKey)};`}
-          />
-        </>
+        <script
+          is:inline
+          set:html={`window.__RECAPTCHA_SITE_KEY__ = ${JSON.stringify(recaptchaSiteKey)};`}
+        />
       ) : null
     }
     {

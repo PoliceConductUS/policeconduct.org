@@ -112,6 +112,7 @@ test.describe("form submissions", () => {
       page,
     }) => {
       await installRecaptchaMock(page);
+      let submitRequestBody = null;
 
       await page.route("**/api/forms/submit", async (route) => {
         const req = route.request();
@@ -119,6 +120,7 @@ test.describe("form submissions", () => {
           await route.fallback();
           return;
         }
+        submitRequestBody = req.postDataJSON();
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -157,6 +159,22 @@ test.describe("form submissions", () => {
       await expect(formLocator).toBeVisible();
       const originalPathname = new URL(page.url()).pathname;
 
+      if (form.formName === "reportNew") {
+        await page.getByRole("button", { name: "Add another officer" }).click();
+        await formLocator
+          .locator('[name="officers[0][name]"]')
+          .fill("Officer Zero");
+        await formLocator
+          .locator('[name="officers[0][department]"]')
+          .fill("Department Zero");
+        await formLocator
+          .locator('[name="officers[1][name]"]')
+          .fill("Officer One");
+        await formLocator
+          .locator('[name="officers[1][department]"]')
+          .fill("Department One");
+      }
+
       await fillRequiredFields(page, formLocator);
 
       const submitResponsePromise = page.waitForResponse((response) => {
@@ -179,6 +197,21 @@ test.describe("form submissions", () => {
       await expect(
         formLocator.locator("[data-form-submit-error]"),
       ).toBeHidden();
+
+      if (form.formName === "reportNew") {
+        expect(submitRequestBody?.data).toMatchObject({
+          officers: [
+            {
+              department: "Department Zero",
+              name: "Officer Zero",
+            },
+            {
+              department: "Department One",
+              name: "Officer One",
+            },
+          ],
+        });
+      }
     });
   }
 

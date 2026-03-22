@@ -26,7 +26,7 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
       </div>
     </section>
 
-    <section class="py-vh-2">
+    <section class="py-vh-2" data-form-shell="officerEdit">
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-12 col-lg-8">
@@ -185,32 +185,26 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
       </div>
     </section>
   </main>
-  <script is:inline>
-    (function () {
-      const form = document.querySelector('form[name="officerEdit"]');
-      if (!form) {
-        return;
-      }
+  <script>
+    import {
+      initRecaptcha,
+      showFormLoadError,
+      submitJsonForm,
+    } from "#src/lib/client/forms.ts";
+
+    const form = document.querySelector(
+      'form[name="officerEdit"]',
+    ) as HTMLFormElement | null;
+    const shell = document.querySelector(
+      '[data-form-shell="officerEdit"]',
+    ) as HTMLElement | null;
+
+    if (!form) {
+      showFormLoadError({ formName: "officerEdit", shell });
+    } else {
+      initRecaptcha();
       form.addEventListener("submit", async function (event) {
-        const formsUi = window.__IPC_FORMS__;
-        if (!formsUi || typeof formsUi.submitJsonForm !== "function") {
-          let inlineError = form.querySelector("[data-form-submit-error]");
-          if (!inlineError) {
-            inlineError = document.createElement("div");
-            inlineError.setAttribute("data-form-submit-error", "true");
-            inlineError.className = "alert alert-danger rounded-0 mt-3 d-none";
-            inlineError.setAttribute("role", "alert");
-            form.appendChild(inlineError);
-          }
-          inlineError.textContent =
-            "Unable to submit the form right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
-          inlineError.classList.remove("d-none");
-          console.error("Shared form submit helper is unavailable", {
-            formName: "officerEdit",
-          });
-          return;
-        }
-        await formsUi.submitJsonForm({
+        await submitJsonForm({
           event,
           form,
           formName: "officerEdit",
@@ -220,18 +214,12 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           recaptchaAction: "officerEditSubmit",
         });
       });
-    })();
+    }
   </script>
 
   <script is:inline>
-    (function () {
-      const prefill = window.__IPC_PREFILL__;
-      if (!prefill?.applyToFieldsByName) {
-        return;
-      }
-      prefill.applyToFieldsByName({
-        key: "prefill:personnelSuggestEdit",
-      });
-    })();
+    window.__IPC_PREFILL__?.prefillFields?.({
+      key: "prefill:personnelSuggestEdit",
+    });
   </script>
 </SiteLayout>

@@ -24,7 +24,7 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
       </div>
     </section>
 
-    <section class="py-vh-2">
+    <section class="py-vh-2" data-form-shell="civilLitigationEdit">
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-12 col-lg-8">
@@ -141,32 +141,26 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
       </div>
     </section>
   </main>
-  <script is:inline>
-    (function () {
-      const form = document.querySelector('form[name="civilLitigationEdit"]');
-      if (!form) {
-        return;
-      }
+  <script>
+    import {
+      initRecaptcha,
+      showFormLoadError,
+      submitJsonForm,
+    } from "#src/lib/client/forms.ts";
+
+    const form = document.querySelector(
+      'form[name="civilLitigationEdit"]',
+    ) as HTMLFormElement | null;
+    const shell = document.querySelector(
+      '[data-form-shell="civilLitigationEdit"]',
+    ) as HTMLElement | null;
+
+    if (!form) {
+      showFormLoadError({ formName: "civilLitigationEdit", shell });
+    } else {
+      initRecaptcha();
       form.addEventListener("submit", async function (event) {
-        const formsUi = window.__IPC_FORMS__;
-        if (!formsUi || typeof formsUi.submitJsonForm !== "function") {
-          let inlineError = form.querySelector("[data-form-submit-error]");
-          if (!inlineError) {
-            inlineError = document.createElement("div");
-            inlineError.setAttribute("data-form-submit-error", "true");
-            inlineError.className = "alert alert-danger rounded-0 mt-3 d-none";
-            inlineError.setAttribute("role", "alert");
-            form.appendChild(inlineError);
-          }
-          inlineError.textContent =
-            "Unable to submit the form right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
-          inlineError.classList.remove("d-none");
-          console.error("Shared form submit helper is unavailable", {
-            formName: "civilLitigationEdit",
-          });
-          return;
-        }
-        await formsUi.submitJsonForm({
+        await submitJsonForm({
           event,
           form,
           formName: "civilLitigationEdit",
@@ -176,6 +170,6 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           recaptchaAction: "civilLitigationEditSubmit",
         });
       });
-    })();
+    }
   </script>
 </SiteLayout>

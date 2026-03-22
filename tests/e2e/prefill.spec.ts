@@ -191,7 +191,7 @@ const profileSenderCases: SenderCase[] = [
     name: "submit report",
     route: "/personnel/james-markham-v-7635c7/",
     key: "prefill:reportNew",
-    expectedFields: ["officers[0][department]", "officers[0][name]"],
+    expectedFields: ["officer.department", "officer.name"],
     locator: { kind: "role", value: "Submit Report" },
     targetPath: "/report/new/",
   },
@@ -257,7 +257,7 @@ const profileSenderCases: SenderCase[] = [
     name: "submit report",
     route: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
     key: "prefill:reportNew",
-    expectedFields: ["officers[0][department]"],
+    expectedFields: ["officer.department"],
     locator: {
       kind: "css",
       value: 'a[data-prefill-key="prefill:reportNew"][href="/report/new/"]',
@@ -330,10 +330,12 @@ const flashCases: FlashCase[] = [
   {
     key: "prefill:reportNew",
     route: "/report/new/",
-    expectedFields: ["officers[0][department]", "officers[0][name]"],
+    expectedFields: ["officer.department", "officer.name"],
     payload: {
-      "officers[0][department]": "Test Department",
-      "officers[0][name]": "Test Officer",
+      officer: {
+        department: "Test Department",
+        name: "Test Officer",
+      },
     },
   },
   {

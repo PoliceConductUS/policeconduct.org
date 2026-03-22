@@ -8,7 +8,7 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
   pagePath="/about/contact/"
   robots="noindex,follow"
 >
-  <main class="flex-grow-1 py-vh-3">
+  <main class="flex-grow-1 py-vh-3" data-form-shell="contact">
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-lg-8">
@@ -147,116 +147,124 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
     </div>
   </main>
   <script is:inline>
-    (function () {
-      const select = document.getElementById("whoami");
-      const messageInput = document.getElementById("message");
-      const firstNameInput = document.getElementById("firstName");
-      const lastNameInput = document.getElementById("lastName");
-      const emailInput = document.getElementById("email");
-      const phoneInput = document.getElementById("phone");
-      const rememberInput = document.getElementById("rememberContact");
-      const storageKey = "ipc_contact_session_v1";
-      if (!select) {
-        return;
-      }
+    const select = document.getElementById("whoami");
+    const firstNameInput = document.getElementById("firstName");
+    const lastNameInput = document.getElementById("lastName");
+    const emailInput = document.getElementById("email");
+    const phoneInput = document.getElementById("phone");
+    const rememberInput = document.getElementById("rememberContact");
+    const storageKey = "ipc_contact_session_v1";
+
+    if (select instanceof HTMLSelectElement) {
       const prefill = window.__IPC_PREFILL__;
-      const result = prefill?.applyToFieldsByName
-        ? prefill.applyToFieldsByName({ key: "prefill:contact" })
+      const result = prefill?.prefillFields
+        ? prefill.prefillFields({ key: "prefill:contact" })
         : { payload: null };
       const value = String(result?.payload?.whoami || "").toLowerCase();
       if (value) {
-        const options = Array.from(select.options);
-        const match = options.find(
-          (opt) =>
-            opt.value.toLowerCase() === value ||
-            opt.textContent.toLowerCase().includes(value),
+        const match = Array.from(select.options).find(
+          (option) =>
+            option.value.toLowerCase() === value ||
+            option.textContent.toLowerCase().includes(value),
         );
         if (match) {
           match.selected = true;
         }
       }
-      if (
-        firstNameInput &&
-        lastNameInput &&
-        emailInput &&
-        phoneInput &&
-        rememberInput
-      ) {
-        try {
-          const saved = sessionStorage.getItem(storageKey);
-          if (saved) {
-            const data = JSON.parse(saved);
-            if (data.firstName && !firstNameInput.value.trim()) {
-              firstNameInput.value = data.firstName;
-            }
-            if (data.lastName && !lastNameInput.value.trim()) {
-              lastNameInput.value = data.lastName;
-            }
-            if (data.email && !emailInput.value.trim()) {
-              emailInput.value = data.email;
-            }
-            if (data.phone && !phoneInput.value.trim()) {
-              phoneInput.value = data.phone;
-            }
-            rememberInput.checked = true;
+    }
+
+    if (
+      firstNameInput instanceof HTMLInputElement &&
+      lastNameInput instanceof HTMLInputElement &&
+      emailInput instanceof HTMLInputElement &&
+      phoneInput instanceof HTMLInputElement &&
+      rememberInput instanceof HTMLInputElement
+    ) {
+      try {
+        const saved = sessionStorage.getItem(storageKey);
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data.firstName && !firstNameInput.value.trim()) {
+            firstNameInput.value = data.firstName;
           }
-        } catch (err) {
-          // Ignore storage errors.
+          if (data.lastName && !lastNameInput.value.trim()) {
+            lastNameInput.value = data.lastName;
+          }
+          if (data.email && !emailInput.value.trim()) {
+            emailInput.value = data.email;
+          }
+          if (data.phone && !phoneInput.value.trim()) {
+            phoneInput.value = data.phone;
+          }
+          rememberInput.checked = true;
         }
+      } catch (_error) {
+        // Ignore storage errors.
       }
-    })();
+    }
   </script>
 
-  <script is:inline>
-    (function () {
-      const form = document.querySelector('form[name="contact"]');
-      const rememberInput = document.getElementById("rememberContact");
-      const storageKey = "ipc_contact_session_v1";
-      if (!form) {
-        return;
-      }
+  <script>
+    import {
+      initRecaptcha,
+      showFormLoadError,
+      submitJsonForm,
+    } from "#src/lib/client/forms.ts";
+
+    const form = document.querySelector(
+      'form[name="contact"]',
+    ) as HTMLFormElement | null;
+    const shell = document.querySelector(
+      '[data-form-shell="contact"]',
+    ) as HTMLElement | null;
+    const rememberInput = document.getElementById("rememberContact");
+    const storageKey = "ipc_contact_session_v1";
+
+    if (!form) {
+      showFormLoadError({ formName: "contact", shell });
+    } else {
+      initRecaptcha();
       form.addEventListener("submit", async function (event) {
-        const formsUi = window.__IPC_FORMS__;
-        if (!formsUi || typeof formsUi.submitJsonForm !== "function") {
-          let inlineError = form.querySelector("[data-form-submit-error]");
-          if (!inlineError) {
-            inlineError = document.createElement("div");
-            inlineError.setAttribute("data-form-submit-error", "true");
-            inlineError.className = "alert alert-danger rounded-0 mt-3 d-none";
-            inlineError.setAttribute("role", "alert");
-            form.appendChild(inlineError);
-          }
-          if (inlineError) {
-            inlineError.textContent =
-              "Unable to submit the form right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
-            inlineError.classList.remove("d-none");
-          }
-          console.error("Shared form submit helper is unavailable", {
-            formName: "contact",
-          });
-          return;
-        }
-        await formsUi.submitJsonForm({
+        await submitJsonForm({
           event,
           form,
           formName: "contact",
           onBeforeSubmit: function () {
-            if (rememberInput && rememberInput.checked) {
+            if (
+              rememberInput instanceof HTMLInputElement &&
+              rememberInput.checked
+            ) {
+              const firstNameInput = document.getElementById("firstName");
+              const lastNameInput = document.getElementById("lastName");
+              const emailInput = document.getElementById("email");
+              const phoneInput = document.getElementById("phone");
               try {
                 const payload = {
-                  firstName: document.getElementById("firstName")?.value.trim(),
-                  lastName: document.getElementById("lastName")?.value.trim(),
-                  email: document.getElementById("email")?.value.trim(),
-                  phone: document.getElementById("phone")?.value.trim(),
+                  firstName:
+                    firstNameInput instanceof HTMLInputElement
+                      ? firstNameInput.value.trim()
+                      : "",
+                  lastName:
+                    lastNameInput instanceof HTMLInputElement
+                      ? lastNameInput.value.trim()
+                      : "",
+                  email:
+                    emailInput instanceof HTMLInputElement
+                      ? emailInput.value.trim()
+                      : "",
+                  phone:
+                    phoneInput instanceof HTMLInputElement
+                      ? phoneInput.value.trim()
+                      : "",
                 };
                 sessionStorage.setItem(storageKey, JSON.stringify(payload));
-              } catch (err) {
+              } catch (_error) {
                 // Ignore storage errors.
               }
-            } else if (rememberInput) {
+            } else if (rememberInput instanceof HTMLInputElement) {
               try {
                 sessionStorage.removeItem(storageKey);
-              } catch (err) {
+              } catch (_error) {
                 // Ignore storage errors.
               }
             }
@@ -267,6 +275,6 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
           recaptchaAction: "contactSubmit",
         });
       });
-    })();
+    }
   </script>
 </SiteLayout>

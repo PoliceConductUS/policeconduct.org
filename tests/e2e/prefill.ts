@@ -17,6 +17,27 @@ type PrefillFieldConfig = {
 
 const identity = (value: unknown) => String(value ?? "");
 
+const flattenPayload = (
+  payload: Record<string, unknown>,
+  prefix = "",
+): Record<string, unknown> => {
+  const flat: Record<string, unknown> = {};
+
+  Object.entries(payload).forEach(([key, value]) => {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      Object.assign(
+        flat,
+        flattenPayload(value as Record<string, unknown>, path),
+      );
+      return;
+    }
+    flat[path] = value;
+  });
+
+  return flat;
+};
+
 const FIELD_CONFIG: Record<PrefillKey, Record<string, PrefillFieldConfig>> = {
   "prefill:contact": {
     whoami: {
@@ -31,14 +52,14 @@ const FIELD_CONFIG: Record<PrefillKey, Record<string, PrefillFieldConfig>> = {
     },
   },
   "prefill:reportNew": {
-    "officers[0][department]": {
+    "officer.department": {
       kind: "input",
-      selector: ".officer-entry .officer-department",
+      selector: '[name="officers[0][department]"]',
       toExpectedValue: identity,
     },
-    "officers[0][name]": {
+    "officer.name": {
       kind: "input",
-      selector: ".officer-entry .officer-name",
+      selector: '[name="officers[0][name]"]',
       toExpectedValue: identity,
     },
   },
@@ -201,14 +222,7 @@ const FIELD_CONFIG: Record<PrefillKey, Record<string, PrefillFieldConfig>> = {
 };
 
 const getControlLocator = (page: Page, config: PrefillFieldConfig): Locator => {
-  const locator = page.locator(config.selector);
-  if (config.selector === ".officer-entry .officer-department") {
-    return locator.first();
-  }
-  if (config.selector === ".officer-entry .officer-name") {
-    return locator.first();
-  }
-  return locator;
+  return page.locator(config.selector);
 };
 
 const expectEmptyField = async (
@@ -260,10 +274,12 @@ export async function assertPrefillApplied(
     throw new Error(`Unsupported prefill key: ${key}`);
   }
 
+  const flatPayload = flattenPayload(payload);
+
   const expected = new Set(
-    (expectedFields || Object.keys(payload)).map((field) => field.trim()),
+    (expectedFields || Object.keys(flatPayload)).map((field) => field.trim()),
   );
-  const payloadFields = Object.keys(payload).sort();
+  const payloadFields = Object.keys(flatPayload).sort();
   const expectedFieldList = Array.from(expected).sort();
   expect(payloadFields).toEqual(expectedFieldList);
 
@@ -271,7 +287,7 @@ export async function assertPrefillApplied(
     const locator = getControlLocator(page, config);
     if (expected.has(field)) {
       const expectedValue = (config.toExpectedValue || identity)(
-        payload[field],
+        flatPayload[field],
       );
       if (config.kind === "select" && field === "whoami") {
         const selectedText = await page

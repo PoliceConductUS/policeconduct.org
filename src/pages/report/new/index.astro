@@ -51,7 +51,6 @@ const getRubricDescription = (rubric: any) => {
 const getRubricHelp = (rubric: any) => rubric.help || null;
 
 const rubricsByTrait = groupBy(rubrics, "trait_id");
-const officerSlots = Array.from({ length: 10 }, (_, index) => index);
 
 const sortedTraits = [...traits].sort((a, b) => {
   const aOrder = getTraitSortValue(a);
@@ -136,7 +135,7 @@ const traitsWithRubrics = sortedTraits
       </div>
     </section>
 
-    <section class="py-vh-2">
+    <section class="py-vh-2" data-form-shell="reportNew">
       <div class="container">
         <form
           id="reportForm"
@@ -144,7 +143,6 @@ const traitsWithRubrics = sortedTraits
           novalidate
           name="reportNew"
           method="POST"
-          onsubmit="return window.__IPC_REPORT_FORM_SUBMIT__ ? window.__IPC_REPORT_FORM_SUBMIT__(event) : false;"
           data-netlify-honeypot="organization"
         >
           <input type="hidden" name="form-name" value="reportNew" />
@@ -250,7 +248,7 @@ const traitsWithRubrics = sortedTraits
                 <div class="invalid-feedback">Please select a role.</div>
               </div>
             </div>
-            <div class="col-md-6 d-none" id="relationshipGroup">
+            <div class="col-md-6">
               <div class="form-floating">
                 <input
                   type="text"
@@ -260,25 +258,8 @@ const traitsWithRubrics = sortedTraits
                   placeholder="Relationship"
                 />
                 <label for="relationship"
-                  >Relationship to primary participant*</label
+                  >Relationship to primary participant</label
                 >
-                <div class="invalid-feedback">
-                  Please describe your relationship.
-                </div>
-              </div>
-            </div>
-            <div class="col-12 d-none" id="witnessRecordedGroup">
-              <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="witnessRecorded"
-                  name="witnessRecorded"
-                  value="Yes"
-                />
-                <label class="form-check-label" for="witnessRecorded">
-                  I recorded video or audio of the incident.
-                </label>
               </div>
             </div>
 
@@ -341,116 +322,133 @@ const traitsWithRubrics = sortedTraits
                 Rate officer conduct inside each officer card below.
               </p>
             </div>
-            <div id="officerList" class="col-12">
-              {
-                officerSlots.map((index) => (
-                  <div
-                    class={`card rounded-0 border-0 shadow-sm mb-3 officer-entry${index === 0 ? "" : " d-none"}`}
-                    data-index={index}
-                  >
-                    <div class="card-body">
-                      <div class="row g-3">
-                        <div class="col-12 d-flex justify-content-between align-items-center">
-                          <h3 class="h6 text-uppercase text-muted mb-0 officer-label">
-                            Officer {index + 1}
-                          </h3>
-                          <button
-                            type="button"
-                            class="btn btn-outline-dark btn-sm rounded-0 remove-officer"
+            <div class="col-12">
+              <div data-officers></div>
+              <template id="officerTemplate">
+                <div
+                  class="card rounded-0 border-0 shadow-sm mb-3"
+                  data-officer
+                >
+                  <div class="card-body">
+                    <div class="row g-3">
+                      <div
+                        class="col-12 d-flex justify-content-between align-items-center"
+                      >
+                        <h3
+                          class="h6 text-uppercase text-muted mb-0"
+                          data-officer-title
+                        >
+                          Officer 1
+                        </h3>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-dark rounded-0"
+                          data-remove-officer
+                        >
+                          Remove officer
+                        </button>
+                      </div>
+                      <div class="col-md-5">
+                        <div class="form-floating">
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="officers-0-name"
+                            name="officers[0][name]"
+                            data-officer-field="name"
+                            placeholder="Officer name"
+                          />
+                          <label for="officers-0-name" data-officer-label="name"
+                            >Officer name</label
                           >
-                            Remove
-                          </button>
                         </div>
-                        <div class="col-md-5 officer-known-fields">
-                          <div class="form-floating">
-                            <input
-                              type="text"
-                              class="form-control officer-name"
-                              name={`officers[${index}][name]`}
-                              placeholder="Officer name"
-                              required
-                            />
-                            <label>Officer name*</label>
-                            <div class="invalid-feedback">
-                              Please provide the officer name.
-                            </div>
-                          </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-floating">
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="officers-0-badge"
+                            name="officers[0][badge]"
+                            data-officer-field="badge"
+                            placeholder="Badge #"
+                          />
+                          <label
+                            for="officers-0-badge"
+                            data-officer-label="badge">Badge #</label
+                          >
                         </div>
-                        <div class="col-md-3 officer-known-fields">
-                          <div class="form-floating">
-                            <input
-                              type="text"
-                              class="form-control officer-badge"
-                              name={`officers[${index}][badge]`}
-                              placeholder="Badge #"
-                            />
-                            <label>Badge #</label>
-                          </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-floating">
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="officers-0-department"
+                            name="officers[0][department]"
+                            data-officer-field="department"
+                            placeholder="Department"
+                          />
+                          <label
+                            for="officers-0-department"
+                            data-officer-label="department">Department</label
+                          >
                         </div>
-                        <div class="col-md-4 officer-known-fields">
-                          <div class="form-floating">
-                            <input
-                              type="text"
-                              class="form-control officer-department"
-                              name={`officers[${index}][department]`}
-                              placeholder="Department"
-                              required
-                            />
-                            <label>Department*</label>
-                            <div class="invalid-feedback">
-                              Please provide a department.
-                            </div>
-                          </div>
+                      </div>
+                      <div class="col-12">
+                        <div class="form-floating">
+                          <textarea
+                            class="form-control"
+                            id="officers-0-unknown-description"
+                            name="officers[0][unknownDescription]"
+                            data-officer-field="unknownDescription"
+                            rows="2"
+                            placeholder="Description"></textarea>
+                          <label
+                            for="officers-0-unknown-description"
+                            data-officer-label="unknownDescription"
+                          >
+                            Description
+                          </label>
                         </div>
-                        <div class="col-12 officer-unknown-description d-none">
-                          <div class="form-floating">
-                            <textarea
-                              class="form-control officer-description"
-                              name={`officers[${index}][unknownDescription]`}
-                              rows="2"
-                              placeholder="Description"
-                            />
-                            <label>Description*</label>
-                          </div>
-                          <div class="form-text">
-                            Uniform/patches, approximate height/build, gender
-                            presentation, hair/facial hair, vehicle number,
-                            body-worn camera label, partner’s name, any
-                            memorable identifiers.
-                          </div>
-                          <div class="invalid-feedback">
-                            Please provide a description for the unknown
-                            officer.
-                          </div>
+                        <div class="form-text">
+                          Uniform/patches, approximate height/build, gender
+                          presentation, hair/facial hair, vehicle number,
+                          body-worn camera label, partner’s name, any memorable
+                          identifiers.
                         </div>
-                        <div class="col-12">
-                          <div class="form-check">
-                            <input
-                              class="form-check-input officer-unknown"
-                              type="checkbox"
-                              id={`officerUnknown-${index}`}
-                              name={`officers[${index}][unknown]`}
-                            />
-                            <label
-                              class="form-check-label"
-                              for={`officerUnknown-${index}`}
-                            >
-                              Name unknown
-                            </label>
-                          </div>
+                      </div>
+                      <div class="col-12">
+                        <div class="form-check">
+                          <input
+                            class="form-check-input"
+                            type="checkbox"
+                            id="officerUnknown-0"
+                            name="officers[0][unknown]"
+                            data-officer-field="unknown"
+                          />
+                          <label
+                            class="form-check-label"
+                            for="officerUnknown-0"
+                            data-officer-label="unknown"
+                          >
+                            Name unknown
+                          </label>
                         </div>
-                        <div class="col-12 pt-3">
-                          <p class="text-uppercase small text-muted mb-1">
-                            Officer conduct assessment
-                          </p>
-                          <p class="text-muted mb-0">
-                            Choose the statement that best matches what you
-                            observed.
-                          </p>
-                        </div>
-                        <div class="col-12">
-                          <div class="row g-3">
-                            {traitsWithRubrics.map((trait) => (
+                      </div>
+                      <div class="col-12 pt-3">
+                        <p class="text-uppercase small text-muted mb-1">
+                          Officer conduct assessment
+                        </p>
+                        <p class="text-muted mb-0">
+                          Choose the statement that best matches what you
+                          observed.
+                        </p>
+                      </div>
+                      <div class="col-12">
+                        <div class="row g-3">
+                          {
+                            traitsWithRubrics.map((trait) => (
                               <div class="col-12 col-lg-6">
                                 <div class="card rounded-0 border-0 shadow-sm h-100">
                                   <div class="card-body">
@@ -474,9 +472,11 @@ const traitsWithRubrics = sortedTraits
                                             <input
                                               class="form-check-input"
                                               type="radio"
-                                              name={`officers[${index}][traits][${trait.id}]`}
-                                              id={`officer-${index}-trait-${trait.id}-${rubric.id}`}
+                                              name={`officers[0][traits][${trait.id}]`}
+                                              id={`officer-0-trait-${trait.id}-${rubric.id}`}
                                               value={rubric.id}
+                                              data-officer-trait={trait.id}
+                                              data-officer-rubric={rubric.id}
                                             />
                                             <span class="form-check-label d-block fw-semibold">
                                               {rubric.description}
@@ -494,10 +494,12 @@ const traitsWithRubrics = sortedTraits
                                           <input
                                             class="form-check-input"
                                             type="radio"
-                                            name={`officers[${index}][traits][${trait.id}]`}
-                                            id={`officer-${index}-trait-${trait.id}-not-observed`}
+                                            name={`officers[0][traits][${trait.id}]`}
+                                            id={`officer-0-trait-${trait.id}-not-observed`}
                                             value="__not_observed__"
                                             data-null-option="true"
+                                            data-officer-trait={trait.id}
+                                            data-officer-rubric="__not_observed__"
                                           />
                                           <span class="form-check-label d-block fw-semibold">
                                             Not Observed / Does not apply
@@ -512,20 +514,18 @@ const traitsWithRubrics = sortedTraits
                                   </div>
                                 </div>
                               </div>
-                            ))}
-                          </div>
+                            ))
+                          }
                         </div>
                       </div>
                     </div>
                   </div>
-                ))
-              }
-            </div>
-            <div class="col-12">
+                </div>
+              </template>
               <button
                 type="button"
                 class="btn btn-outline-dark rounded-0"
-                id="addOfficerBtn"
+                data-add-officer
               >
                 Add another officer
               </button>
@@ -584,9 +584,6 @@ const traitsWithRubrics = sortedTraits
                 emotional language, opinions, or conclusions about anyone’s
                 intent or motives, other than your own.
               </div>
-              <div class="form-text" id="descriptionCount">
-                0 / 2500 characters
-              </div>
             </div>
             <div class="col-12">
               <div class="form-floating">
@@ -608,643 +605,87 @@ const traitsWithRubrics = sortedTraits
                 contact them to verify this report.
               </p>
             </div>
-            <div id="witnessList" class="col-12">
-              <div
-                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
-                data-index="0"
-              >
-                <div class="card-body">
-                  <div class="row g-3">
-                    <div
-                      class="col-12 d-flex justify-content-between align-items-center"
-                    >
-                      <h3
-                        class="h6 text-uppercase text-muted mb-0 witness-label"
-                      >
-                        Witness 1
-                      </h3>
-                      <button
-                        type="button"
-                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="text"
-                          class="form-control witness-name"
-                          name="witnesses[0][name]"
-                          placeholder="Name"
-                        />
-                        <label>Name</label>
-                        <div class="invalid-feedback">
-                          Please provide a witness name.
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="tel"
-                          class="form-control witness-phone"
-                          name="witnesses[0][phone]"
-                          placeholder="Phone"
-                        />
-                        <label>Phone</label>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="email"
-                          class="form-control witness-email"
-                          name="witnesses[0][email]"
-                          placeholder="Email"
-                        />
-                        <label>Email</label>
-                        <div class="invalid-feedback">
-                          Provide at least a phone or email.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
-                data-index="1"
-              >
-                <div class="card-body">
-                  <div class="row g-3">
-                    <div
-                      class="col-12 d-flex justify-content-between align-items-center"
-                    >
-                      <h3
-                        class="h6 text-uppercase text-muted mb-0 witness-label"
-                      >
-                        Witness 2
-                      </h3>
-                      <button
-                        type="button"
-                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="text"
-                          class="form-control witness-name"
-                          name="witnesses[1][name]"
-                          placeholder="Name"
-                        />
-                        <label>Name</label>
-                        <div class="invalid-feedback">
-                          Please provide a witness name.
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="tel"
-                          class="form-control witness-phone"
-                          name="witnesses[1][phone]"
-                          placeholder="Phone"
-                        />
-                        <label>Phone</label>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="email"
-                          class="form-control witness-email"
-                          name="witnesses[1][email]"
-                          placeholder="Email"
-                        />
-                        <label>Email</label>
-                        <div class="invalid-feedback">
-                          Provide at least a phone or email.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
-                data-index="2"
-              >
-                <div class="card-body">
-                  <div class="row g-3">
-                    <div
-                      class="col-12 d-flex justify-content-between align-items-center"
-                    >
-                      <h3
-                        class="h6 text-uppercase text-muted mb-0 witness-label"
-                      >
-                        Witness 3
-                      </h3>
-                      <button
-                        type="button"
-                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="text"
-                          class="form-control witness-name"
-                          name="witnesses[2][name]"
-                          placeholder="Name"
-                        />
-                        <label>Name</label>
-                        <div class="invalid-feedback">
-                          Please provide a witness name.
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="tel"
-                          class="form-control witness-phone"
-                          name="witnesses[2][phone]"
-                          placeholder="Phone"
-                        />
-                        <label>Phone</label>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="email"
-                          class="form-control witness-email"
-                          name="witnesses[2][email]"
-                          placeholder="Email"
-                        />
-                        <label>Email</label>
-                        <div class="invalid-feedback">
-                          Provide at least a phone or email.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
-                data-index="3"
-              >
-                <div class="card-body">
-                  <div class="row g-3">
-                    <div
-                      class="col-12 d-flex justify-content-between align-items-center"
-                    >
-                      <h3
-                        class="h6 text-uppercase text-muted mb-0 witness-label"
-                      >
-                        Witness 4
-                      </h3>
-                      <button
-                        type="button"
-                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="text"
-                          class="form-control witness-name"
-                          name="witnesses[3][name]"
-                          placeholder="Name"
-                        />
-                        <label>Name</label>
-                        <div class="invalid-feedback">
-                          Please provide a witness name.
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="tel"
-                          class="form-control witness-phone"
-                          name="witnesses[3][phone]"
-                          placeholder="Phone"
-                        />
-                        <label>Phone</label>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="email"
-                          class="form-control witness-email"
-                          name="witnesses[3][email]"
-                          placeholder="Email"
-                        />
-                        <label>Email</label>
-                        <div class="invalid-feedback">
-                          Provide at least a phone or email.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
-                data-index="4"
-              >
-                <div class="card-body">
-                  <div class="row g-3">
-                    <div
-                      class="col-12 d-flex justify-content-between align-items-center"
-                    >
-                      <h3
-                        class="h6 text-uppercase text-muted mb-0 witness-label"
-                      >
-                        Witness 5
-                      </h3>
-                      <button
-                        type="button"
-                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="text"
-                          class="form-control witness-name"
-                          name="witnesses[4][name]"
-                          placeholder="Name"
-                        />
-                        <label>Name</label>
-                        <div class="invalid-feedback">
-                          Please provide a witness name.
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="tel"
-                          class="form-control witness-phone"
-                          name="witnesses[4][phone]"
-                          placeholder="Phone"
-                        />
-                        <label>Phone</label>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="email"
-                          class="form-control witness-email"
-                          name="witnesses[4][email]"
-                          placeholder="Email"
-                        />
-                        <label>Email</label>
-                        <div class="invalid-feedback">
-                          Provide at least a phone or email.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
-                data-index="5"
-              >
-                <div class="card-body">
-                  <div class="row g-3">
-                    <div
-                      class="col-12 d-flex justify-content-between align-items-center"
-                    >
-                      <h3
-                        class="h6 text-uppercase text-muted mb-0 witness-label"
-                      >
-                        Witness 6
-                      </h3>
-                      <button
-                        type="button"
-                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="text"
-                          class="form-control witness-name"
-                          name="witnesses[5][name]"
-                          placeholder="Name"
-                        />
-                        <label>Name</label>
-                        <div class="invalid-feedback">
-                          Please provide a witness name.
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="tel"
-                          class="form-control witness-phone"
-                          name="witnesses[5][phone]"
-                          placeholder="Phone"
-                        />
-                        <label>Phone</label>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="email"
-                          class="form-control witness-email"
-                          name="witnesses[5][email]"
-                          placeholder="Email"
-                        />
-                        <label>Email</label>
-                        <div class="invalid-feedback">
-                          Provide at least a phone or email.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
-                data-index="6"
-              >
-                <div class="card-body">
-                  <div class="row g-3">
-                    <div
-                      class="col-12 d-flex justify-content-between align-items-center"
-                    >
-                      <h3
-                        class="h6 text-uppercase text-muted mb-0 witness-label"
-                      >
-                        Witness 7
-                      </h3>
-                      <button
-                        type="button"
-                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="text"
-                          class="form-control witness-name"
-                          name="witnesses[6][name]"
-                          placeholder="Name"
-                        />
-                        <label>Name</label>
-                        <div class="invalid-feedback">
-                          Please provide a witness name.
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="tel"
-                          class="form-control witness-phone"
-                          name="witnesses[6][phone]"
-                          placeholder="Phone"
-                        />
-                        <label>Phone</label>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="email"
-                          class="form-control witness-email"
-                          name="witnesses[6][email]"
-                          placeholder="Email"
-                        />
-                        <label>Email</label>
-                        <div class="invalid-feedback">
-                          Provide at least a phone or email.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
-                data-index="7"
-              >
-                <div class="card-body">
-                  <div class="row g-3">
-                    <div
-                      class="col-12 d-flex justify-content-between align-items-center"
-                    >
-                      <h3
-                        class="h6 text-uppercase text-muted mb-0 witness-label"
-                      >
-                        Witness 8
-                      </h3>
-                      <button
-                        type="button"
-                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="text"
-                          class="form-control witness-name"
-                          name="witnesses[7][name]"
-                          placeholder="Name"
-                        />
-                        <label>Name</label>
-                        <div class="invalid-feedback">
-                          Please provide a witness name.
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="tel"
-                          class="form-control witness-phone"
-                          name="witnesses[7][phone]"
-                          placeholder="Phone"
-                        />
-                        <label>Phone</label>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="email"
-                          class="form-control witness-email"
-                          name="witnesses[7][email]"
-                          placeholder="Email"
-                        />
-                        <label>Email</label>
-                        <div class="invalid-feedback">
-                          Provide at least a phone or email.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
-                data-index="8"
-              >
-                <div class="card-body">
-                  <div class="row g-3">
-                    <div
-                      class="col-12 d-flex justify-content-between align-items-center"
-                    >
-                      <h3
-                        class="h6 text-uppercase text-muted mb-0 witness-label"
-                      >
-                        Witness 9
-                      </h3>
-                      <button
-                        type="button"
-                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="text"
-                          class="form-control witness-name"
-                          name="witnesses[8][name]"
-                          placeholder="Name"
-                        />
-                        <label>Name</label>
-                        <div class="invalid-feedback">
-                          Please provide a witness name.
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="tel"
-                          class="form-control witness-phone"
-                          name="witnesses[8][phone]"
-                          placeholder="Phone"
-                        />
-                        <label>Phone</label>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="email"
-                          class="form-control witness-email"
-                          name="witnesses[8][email]"
-                          placeholder="Email"
-                        />
-                        <label>Email</label>
-                        <div class="invalid-feedback">
-                          Provide at least a phone or email.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="card rounded-0 border-0 shadow-sm mb-3 witness-entry d-none"
-                data-index="9"
-              >
-                <div class="card-body">
-                  <div class="row g-3">
-                    <div
-                      class="col-12 d-flex justify-content-between align-items-center"
-                    >
-                      <h3
-                        class="h6 text-uppercase text-muted mb-0 witness-label"
-                      >
-                        Witness 10
-                      </h3>
-                      <button
-                        type="button"
-                        class="btn btn-outline-dark btn-sm rounded-0 remove-witness"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="text"
-                          class="form-control witness-name"
-                          name="witnesses[9][name]"
-                          placeholder="Name"
-                        />
-                        <label>Name</label>
-                        <div class="invalid-feedback">
-                          Please provide a witness name.
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="tel"
-                          class="form-control witness-phone"
-                          name="witnesses[9][phone]"
-                          placeholder="Phone"
-                        />
-                        <label>Phone</label>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="email"
-                          class="form-control witness-email"
-                          name="witnesses[9][email]"
-                          placeholder="Email"
-                        />
-                        <label>Email</label>
-                        <div class="invalid-feedback">
-                          Provide at least a phone or email.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
             <div class="col-12">
+              <div data-witnesses></div>
+              <template id="witnessTemplate">
+                <div
+                  class="card rounded-0 border-0 shadow-sm mb-3"
+                  data-witness
+                >
+                  <div class="card-body">
+                    <div class="row g-3">
+                      <div
+                        class="col-12 d-flex justify-content-between align-items-center"
+                      >
+                        <h3
+                          class="h6 text-uppercase text-muted mb-0"
+                          data-witness-title
+                        >
+                          Witness 1
+                        </h3>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-dark rounded-0"
+                          data-remove-witness
+                        >
+                          Remove witness
+                        </button>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-floating">
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="witness-0-name"
+                            name="witnesses[0][name]"
+                            data-witness-field="name"
+                            placeholder="Name"
+                          />
+                          <label for="witness-0-name" data-witness-label="name"
+                            >Name</label
+                          >
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-floating">
+                          <input
+                            type="tel"
+                            class="form-control"
+                            id="witness-0-phone"
+                            name="witnesses[0][phone]"
+                            data-witness-field="phone"
+                            placeholder="Phone"
+                          />
+                          <label
+                            for="witness-0-phone"
+                            data-witness-label="phone">Phone</label
+                          >
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-floating">
+                          <input
+                            type="email"
+                            class="form-control"
+                            id="witness-0-email"
+                            name="witnesses[0][email]"
+                            data-witness-field="email"
+                            placeholder="Email"
+                          />
+                          <label
+                            for="witness-0-email"
+                            data-witness-label="email">Email</label
+                          >
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
               <button
                 type="button"
                 class="btn btn-outline-dark rounded-0"
-                id="addWitnessBtn"
+                data-add-witness
               >
                 Add witness
               </button>
@@ -1256,445 +697,77 @@ const traitsWithRubrics = sortedTraits
                 Link to videos, photos, docket entries, or news coverage.
               </p>
             </div>
-            <div id="evidenceLinks" class="col-12">
-              <div
-                class="row g-3 align-items-end evidence-entry mb-3 d-none"
-                data-index="0"
-              >
-                <div
-                  class="col-12 d-flex justify-content-between align-items-center"
-                >
-                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
-                    Evidence 1
-                  </h3>
-                  <button
-                    type="button"
-                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div class="col-md-8">
-                  <div class="form-floating">
-                    <input
-                      type="url"
-                      class="form-control"
-                      name="evidenceLinks[0]"
-                      placeholder="https://"
-                    />
-                    <label>Evidence link</label>
-                  </div>
-                  <div class="form-text">
-                    Example: https://drive.google.com/...
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      name="evidenceDescriptions[0]"
-                      placeholder="e.g., Bodycam video"
-                    />
-                    <label>Description</label>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="row g-3 align-items-end evidence-entry mb-3 d-none"
-                data-index="1"
-              >
-                <div
-                  class="col-12 d-flex justify-content-between align-items-center"
-                >
-                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
-                    Evidence 2
-                  </h3>
-                  <button
-                    type="button"
-                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div class="col-md-8">
-                  <div class="form-floating">
-                    <input
-                      type="url"
-                      class="form-control"
-                      name="evidenceLinks[1]"
-                      placeholder="https://"
-                    />
-                    <label>Evidence link</label>
-                  </div>
-                  <div class="form-text">
-                    Example: https://drive.google.com/...
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      name="evidenceDescriptions[1]"
-                      placeholder="e.g., Bodycam video"
-                    />
-                    <label>Description</label>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="row g-3 align-items-end evidence-entry mb-3 d-none"
-                data-index="2"
-              >
-                <div
-                  class="col-12 d-flex justify-content-between align-items-center"
-                >
-                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
-                    Evidence 3
-                  </h3>
-                  <button
-                    type="button"
-                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div class="col-md-8">
-                  <div class="form-floating">
-                    <input
-                      type="url"
-                      class="form-control"
-                      name="evidenceLinks[2]"
-                      placeholder="https://"
-                    />
-                    <label>Evidence link</label>
-                  </div>
-                  <div class="form-text">
-                    Example: https://drive.google.com/...
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      name="evidenceDescriptions[2]"
-                      placeholder="e.g., Bodycam video"
-                    />
-                    <label>Description</label>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="row g-3 align-items-end evidence-entry mb-3 d-none"
-                data-index="3"
-              >
-                <div
-                  class="col-12 d-flex justify-content-between align-items-center"
-                >
-                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
-                    Evidence 4
-                  </h3>
-                  <button
-                    type="button"
-                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div class="col-md-8">
-                  <div class="form-floating">
-                    <input
-                      type="url"
-                      class="form-control"
-                      name="evidenceLinks[3]"
-                      placeholder="https://"
-                    />
-                    <label>Evidence link</label>
-                  </div>
-                  <div class="form-text">
-                    Example: https://drive.google.com/...
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      name="evidenceDescriptions[3]"
-                      placeholder="e.g., Bodycam video"
-                    />
-                    <label>Description</label>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="row g-3 align-items-end evidence-entry mb-3 d-none"
-                data-index="4"
-              >
-                <div
-                  class="col-12 d-flex justify-content-between align-items-center"
-                >
-                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
-                    Evidence 5
-                  </h3>
-                  <button
-                    type="button"
-                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div class="col-md-8">
-                  <div class="form-floating">
-                    <input
-                      type="url"
-                      class="form-control"
-                      name="evidenceLinks[4]"
-                      placeholder="https://"
-                    />
-                    <label>Evidence link</label>
-                  </div>
-                  <div class="form-text">
-                    Example: https://drive.google.com/...
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      name="evidenceDescriptions[4]"
-                      placeholder="e.g., Bodycam video"
-                    />
-                    <label>Description</label>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="row g-3 align-items-end evidence-entry mb-3 d-none"
-                data-index="5"
-              >
-                <div
-                  class="col-12 d-flex justify-content-between align-items-center"
-                >
-                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
-                    Evidence 6
-                  </h3>
-                  <button
-                    type="button"
-                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div class="col-md-8">
-                  <div class="form-floating">
-                    <input
-                      type="url"
-                      class="form-control"
-                      name="evidenceLinks[5]"
-                      placeholder="https://"
-                    />
-                    <label>Evidence link</label>
-                  </div>
-                  <div class="form-text">
-                    Example: https://drive.google.com/...
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      name="evidenceDescriptions[5]"
-                      placeholder="e.g., Bodycam video"
-                    />
-                    <label>Description</label>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="row g-3 align-items-end evidence-entry mb-3 d-none"
-                data-index="6"
-              >
-                <div
-                  class="col-12 d-flex justify-content-between align-items-center"
-                >
-                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
-                    Evidence 7
-                  </h3>
-                  <button
-                    type="button"
-                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div class="col-md-8">
-                  <div class="form-floating">
-                    <input
-                      type="url"
-                      class="form-control"
-                      name="evidenceLinks[6]"
-                      placeholder="https://"
-                    />
-                    <label>Evidence link</label>
-                  </div>
-                  <div class="form-text">
-                    Example: https://drive.google.com/...
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      name="evidenceDescriptions[6]"
-                      placeholder="e.g., Bodycam video"
-                    />
-                    <label>Description</label>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="row g-3 align-items-end evidence-entry mb-3 d-none"
-                data-index="7"
-              >
-                <div
-                  class="col-12 d-flex justify-content-between align-items-center"
-                >
-                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
-                    Evidence 8
-                  </h3>
-                  <button
-                    type="button"
-                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div class="col-md-8">
-                  <div class="form-floating">
-                    <input
-                      type="url"
-                      class="form-control"
-                      name="evidenceLinks[7]"
-                      placeholder="https://"
-                    />
-                    <label>Evidence link</label>
-                  </div>
-                  <div class="form-text">
-                    Example: https://drive.google.com/...
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      name="evidenceDescriptions[7]"
-                      placeholder="e.g., Bodycam video"
-                    />
-                    <label>Description</label>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="row g-3 align-items-end evidence-entry mb-3 d-none"
-                data-index="8"
-              >
-                <div
-                  class="col-12 d-flex justify-content-between align-items-center"
-                >
-                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
-                    Evidence 9
-                  </h3>
-                  <button
-                    type="button"
-                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div class="col-md-8">
-                  <div class="form-floating">
-                    <input
-                      type="url"
-                      class="form-control"
-                      name="evidenceLinks[8]"
-                      placeholder="https://"
-                    />
-                    <label>Evidence link</label>
-                  </div>
-                  <div class="form-text">
-                    Example: https://drive.google.com/...
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      name="evidenceDescriptions[8]"
-                      placeholder="e.g., Bodycam video"
-                    />
-                    <label>Description</label>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="row g-3 align-items-end evidence-entry mb-3 d-none"
-                data-index="9"
-              >
-                <div
-                  class="col-12 d-flex justify-content-between align-items-center"
-                >
-                  <h3 class="h6 text-uppercase text-muted mb-0 evidence-label">
-                    Evidence 10
-                  </h3>
-                  <button
-                    type="button"
-                    class="btn btn-outline-dark btn-sm rounded-0 remove-evidence"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div class="col-md-8">
-                  <div class="form-floating">
-                    <input
-                      type="url"
-                      class="form-control"
-                      name="evidenceLinks[9]"
-                      placeholder="https://"
-                    />
-                    <label>Evidence link</label>
-                  </div>
-                  <div class="form-text">
-                    Example: https://drive.google.com/...
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      name="evidenceDescriptions[9]"
-                      placeholder="e.g., Bodycam video"
-                    />
-                    <label>Description</label>
-                  </div>
-                </div>
-              </div>
-            </div>
             <div class="col-12">
+              <div data-evidence-list></div>
+              <template id="evidenceTemplate">
+                <div
+                  class="card rounded-0 border-0 shadow-sm mb-3"
+                  data-evidence
+                >
+                  <div class="card-body">
+                    <div class="row g-3 align-items-start">
+                      <div
+                        class="col-12 d-flex justify-content-between align-items-center"
+                      >
+                        <h3
+                          class="h6 text-uppercase text-muted mb-0"
+                          data-evidence-title
+                        >
+                          Evidence 1
+                        </h3>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-dark rounded-0"
+                          data-remove-evidence
+                        >
+                          Remove evidence
+                        </button>
+                      </div>
+                      <div class="col-md-8">
+                        <div class="form-floating">
+                          <input
+                            type="url"
+                            class="form-control"
+                            id="evidence-link-0"
+                            name="evidence[0][link]"
+                            data-evidence-field="link"
+                            placeholder="https://"
+                          />
+                          <label
+                            for="evidence-link-0"
+                            data-evidence-label="link">Evidence link</label
+                          >
+                        </div>
+                        <div class="form-text">
+                          Example: https://drive.google.com/...
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-floating">
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="evidence-description-0"
+                            name="evidence[0][description]"
+                            data-evidence-field="description"
+                            placeholder="e.g., Bodycam video"
+                          />
+                          <label
+                            for="evidence-description-0"
+                            data-evidence-label="description">Description</label
+                          >
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
               <button
                 type="button"
                 class="btn btn-outline-dark rounded-0"
-                id="addEvidenceBtn"
+                data-add-evidence
               >
-                Add evidence link
+                Add evidence
               </button>
             </div>
 
@@ -1991,17 +1064,6 @@ const traitsWithRubrics = sortedTraits
             </div>
 
             <div class="col-12">
-              <div
-                id="reportErrorSummary"
-                class="alert alert-danger rounded-0 d-none"
-                role="alert"
-              >
-                Please complete the required fields highlighted above before
-                submitting.
-              </div>
-            </div>
-
-            <div class="col-12">
               <div class="small text-muted mb-3">
                 Protected by reCAPTCHA Enterprise.
               </div>
@@ -2016,1061 +1078,645 @@ const traitsWithRubrics = sortedTraits
       </div>
     </section>
   </main>
-  <script is:inline>
-    const officerList = document.getElementById("officerList");
-    const addOfficerBtn = document.getElementById("addOfficerBtn");
-    const reporterRole = document.getElementById("reporterRole");
-    const relationshipGroup = document.getElementById("relationshipGroup");
-    const relationshipInput = document.getElementById("relationship");
-    const witnessRecordedGroup = document.getElementById(
-      "witnessRecordedGroup",
-    );
-    const witnessList = document.getElementById("witnessList");
-    const addWitnessBtn = document.getElementById("addWitnessBtn");
-    const evidenceLinks = document.getElementById("evidenceLinks");
-    const addEvidenceBtn = document.getElementById("addEvidenceBtn");
-    const form = document.getElementById("reportForm");
-    const reportErrorSummary = document.getElementById("reportErrorSummary");
-    const descriptionInput = document.getElementById("description");
-    const descriptionCount = document.getElementById("descriptionCount");
-    const prefill = window.__IPC_PREFILL__;
-    function addOfficer() {
-      const next = officerList.querySelector(".officer-entry.d-none");
-      if (!next) {
-        return;
-      }
-      setEntryActive(next, true);
-      updateOfficerRemoveButtons();
-      const previousEntry = Array.from(
-        officerList.querySelectorAll(".officer-entry:not(.d-none)"),
-      ).slice(-2, -1)[0];
-      const previousDept = previousEntry?.querySelector(".officer-department");
-      const newDept = next.querySelector(".officer-department");
-      if (newDept && previousDept && previousDept.value.trim()) {
-        newDept.value = "Same";
-      }
-      syncOfficerUnknown(next);
-      updateAddButtons();
-    }
-    function addEvidenceLink() {
-      const next = evidenceLinks.querySelector(".evidence-entry.d-none");
-      if (!next) {
-        return;
-      }
-      setEntryActive(next, true);
-      updateAddButtons();
-    }
+  <script>
+    import {
+      flattenFormData,
+      initRecaptcha,
+      showFormLoadError,
+      submitJsonForm,
+    } from "#src/lib/client/forms.ts";
+    import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 
-    function syncRoleFields() {
-      const roleValue = reporterRole.value;
-      const isRepresentative = roleValue === "Representative (On behalf of)";
-      const isWitness = roleValue === "Witness (On-site)";
-      relationshipGroup.classList.toggle("d-none", !isRepresentative);
-      witnessRecordedGroup.classList.toggle("d-none", !isWitness);
-      relationshipInput.required = isRepresentative;
-    }
-    function addWitness() {
-      const next = witnessList.querySelector(".witness-entry.d-none");
-      if (!next) {
-        return;
-      }
-      setEntryActive(next, true);
-      updateAddButtons();
-    }
+    const form = document.getElementById(
+      "reportForm",
+    ) as HTMLFormElement | null;
+    const formShell = document.querySelector(
+      '[data-form-shell="reportNew"]',
+    ) as HTMLElement | null;
 
-    function updateOfficerLabels() {
-      officerList.querySelectorAll(".officer-entry").forEach((entry, index) => {
-        const label = entry.querySelector(".officer-label");
-        if (label) {
-          const entryIndex = Number(entry.dataset.index || index);
-          label.textContent = `Officer ${entryIndex + 1}`;
-        }
-      });
-    }
+    if (form) {
+      const draftEndpoint = "/api/forms/draft";
+      const reportDraftCookieName = "pc_report_draft";
+      const officerList = form.querySelector("[data-officers]") as HTMLElement;
+      const addOfficerButton = form.querySelector(
+        "[data-add-officer]",
+      ) as HTMLButtonElement;
+      const officerTemplateElement = document.getElementById(
+        "officerTemplate",
+      ) as HTMLTemplateElement | null;
+      const witnessList = form.querySelector("[data-witnesses]") as HTMLElement;
+      const addWitnessButton = form.querySelector(
+        "[data-add-witness]",
+      ) as HTMLButtonElement;
+      const witnessTemplateElement = document.getElementById(
+        "witnessTemplate",
+      ) as HTMLTemplateElement | null;
+      const evidenceList = form.querySelector(
+        "[data-evidence-list]",
+      ) as HTMLElement;
+      const addEvidenceButton = form.querySelector(
+        "[data-add-evidence]",
+      ) as HTMLButtonElement;
+      const evidenceTemplateElement = document.getElementById(
+        "evidenceTemplate",
+      ) as HTMLTemplateElement | null;
 
-    function setEntryActive(entry, isActive) {
-      entry.classList.toggle("d-none", !isActive);
-      entry.querySelectorAll("input, textarea, select").forEach((field) => {
-        field.disabled = !isActive;
-      });
-    }
-
-    function syncOfficerUnknown(entry) {
-      const unknown = entry.querySelector(".officer-unknown");
-      const descriptionGroup = entry.querySelector(
-        ".officer-unknown-description",
-      );
-      const knownFields = entry.querySelectorAll(".officer-known-fields");
-      const description = entry.querySelector(".officer-description");
-      const name = entry.querySelector(".officer-name");
-      const badge = entry.querySelector(".officer-badge");
-      const department = entry.querySelector(".officer-department");
-
-      if (!unknown) {
-        return;
-      }
-
-      const isUnknown = unknown.checked;
-      descriptionGroup?.classList.toggle("d-none", !isUnknown);
-      knownFields.forEach((field) => {
-        field.classList.toggle("d-none", isUnknown);
-      });
-      if (description) {
-        description.required = isUnknown;
-      }
-      if (name) {
-        name.disabled = isUnknown;
-        name.required = !isUnknown;
-      }
-      if (badge) {
-        badge.disabled = isUnknown;
-      }
-      if (department) {
-        department.disabled = isUnknown;
-        department.required = !isUnknown;
-      }
-      if (isUnknown) {
-        name?.setCustomValidity("");
-      }
-    }
-
-    function validateOfficerEntries() {
-      let isValid = true;
-      officerList.querySelectorAll(".officer-entry").forEach((entry) => {
-        if (entry.classList.contains("d-none")) {
-          return;
-        }
-        const unknown = entry.querySelector(".officer-unknown");
-        const name = entry.querySelector(".officer-name");
-        const description = entry.querySelector(".officer-description");
-
-        const isUnknown = unknown?.checked;
-        if (isUnknown) {
-          if (!description || !description.value.trim()) {
-            description?.setCustomValidity(
-              "Please provide a description for the unknown officer.",
-            );
-            isValid = false;
-          } else {
-            description?.setCustomValidity("");
-          }
-          name?.setCustomValidity("");
-        } else {
-          if (!name?.value.trim()) {
-            name?.setCustomValidity("Please provide the officer name.");
-            isValid = false;
-          } else {
-            name?.setCustomValidity("");
-          }
-          description?.setCustomValidity("");
-        }
-      });
-
-      return isValid;
-    }
-
-    function updateEvidenceLabels() {
-      evidenceLinks
-        .querySelectorAll(".evidence-entry")
-        .forEach((entry, index) => {
-          const label = entry.querySelector(".evidence-label");
-          if (label) {
-            const entryIndex = Number(entry.dataset.index || index);
-            label.textContent = `Evidence ${entryIndex + 1}`;
-          }
-        });
-    }
-
-    function updateWitnessLabels() {
-      witnessList.querySelectorAll(".witness-entry").forEach((entry, index) => {
-        const label = entry.querySelector(".witness-label");
-        if (label) {
-          const entryIndex = Number(entry.dataset.index || index);
-          label.textContent = `Witness ${entryIndex + 1}`;
-        }
-      });
-    }
-
-    function initHiddenEntries(list) {
-      list.querySelectorAll(".d-none").forEach((entry) => {
-        setEntryActive(entry, false);
-      });
-    }
-    function updateOfficerRemoveButtons() {
-      const entries = Array.from(
-        officerList.querySelectorAll(".officer-entry"),
-      ).filter((entry) => !entry.classList.contains("d-none"));
-      const shouldHide = entries.length <= 1;
-      entries.forEach((entry) => {
-        const button = entry.querySelector(".remove-officer");
-        if (!button) {
-          return;
-        }
-        button.classList.toggle("d-none", shouldHide);
-        button.disabled = shouldHide;
-      });
-    }
-
-    function updateAddButtons() {
-      const officersRemaining = officerList.querySelector(
-        ".officer-entry.d-none",
-      );
-      const witnessesRemaining = witnessList.querySelector(
-        ".witness-entry.d-none",
-      );
-      const evidenceRemaining = evidenceLinks.querySelector(
-        ".evidence-entry.d-none",
-      );
-      addOfficerBtn.disabled = !officersRemaining;
-      addWitnessBtn.disabled = !witnessesRemaining;
-      addEvidenceBtn.disabled = !evidenceRemaining;
-    }
-
-    function syncEntryDisabledState() {
-      form
-        .querySelectorAll(".officer-entry, .witness-entry, .evidence-entry")
-        .forEach((entry) => {
-          const isHidden = entry.classList.contains("d-none");
-          entry.querySelectorAll("input, textarea, select").forEach((field) => {
-            if (isHidden) {
-              field.disabled = true;
-              return;
-            }
-            if (
-              entry.classList.contains("officer-entry") &&
-              field.classList.contains("officer-name")
-            ) {
-              const unknown = entry.querySelector(".officer-unknown");
-              field.disabled = Boolean(unknown?.checked);
-              return;
-            }
-            if (
-              entry.classList.contains("officer-entry") &&
-              field.classList.contains("officer-department")
-            ) {
-              const unknown = entry.querySelector(".officer-unknown");
-              field.disabled = Boolean(unknown?.checked);
-              return;
-            }
-            field.disabled = false;
-          });
-        });
-    }
-
-    addOfficerBtn.addEventListener("click", addOfficer);
-    addWitnessBtn.addEventListener("click", addWitness);
-    addEvidenceBtn.addEventListener("click", addEvidenceLink);
-    reporterRole.addEventListener("change", syncRoleFields);
-    const firstOfficerEntry = officerList.querySelector(".officer-entry");
-    if (firstOfficerEntry) {
-      setEntryActive(firstOfficerEntry, true);
-    }
-    initHiddenEntries(officerList);
-    initHiddenEntries(witnessList);
-    initHiddenEntries(evidenceLinks);
-    updateOfficerRemoveButtons();
-    updateOfficerLabels();
-    updateWitnessLabels();
-    updateEvidenceLabels();
-    updateAddButtons();
-    syncRoleFields();
-    syncEntryDisabledState();
-    if (prefill?.applyToFieldsByName) {
-      prefill.applyToFieldsByName({
-        key: "prefill:reportNew",
-        root: form,
-      });
-    }
-    if (descriptionInput && descriptionCount) {
-      const updateDescriptionCount = () => {
-        descriptionCount.textContent = `${descriptionInput.value.length} / 2500 characters`;
+      type OfficerDraft = {
+        name: string;
+        badge: string;
+        department: string;
+        unknownDescription: string;
+        unknown: boolean;
+        traits: Record<string, string>;
       };
-      descriptionInput.addEventListener("input", updateDescriptionCount);
-      updateDescriptionCount();
-    }
+      type WitnessDraft = {
+        name: string;
+        phone: string;
+        email: string;
+      };
+      type EvidenceDraft = {
+        link: string;
+        description: string;
+      };
 
-    officerList.addEventListener("click", (event) => {
-      const button = event.target.closest(".remove-officer");
-      if (!button) {
-        return;
-      }
-      const entry = button.closest(".officer-entry");
-      entry.querySelectorAll("input, textarea").forEach((field) => {
-        field.value = "";
-        field.checked = false;
+      type ReportDraft = {
+        officers: OfficerDraft[];
+        witnesses: WitnessDraft[];
+        evidence: EvidenceDraft[];
+        [key: string]: unknown;
+      };
+      const structuredRoots = ["officers", "witnesses", "evidence"];
+
+      const getReportDraftId = () => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${reportDraftCookieName}=`);
+        if (parts.length !== 2) {
+          return "";
+        }
+        const cookieValue = parts.pop();
+        return cookieValue ? cookieValue.split(";")[0] : "";
+      };
+
+      const setReportDraftId = (draftId: string) => {
+        document.cookie = `${reportDraftCookieName}=${draftId}; Max-Age=${60 * 60}; Path=/report/new/; SameSite=Lax`;
+      };
+
+      const clearReportDraftCookie = () => {
+        document.cookie = `${reportDraftCookieName}=; Max-Age=0; Path=/report/new/; SameSite=Lax`;
+      };
+
+      const emptyOfficer = (): OfficerDraft => ({
+        name: "",
+        badge: "",
+        department: "",
+        unknownDescription: "",
+        unknown: false,
+        traits: {},
       });
-      setEntryActive(entry, false);
-      updateOfficerLabels();
-      updateOfficerRemoveButtons();
-      updateAddButtons();
-    });
-
-    officerList.addEventListener("change", (event) => {
-      const checkbox = event.target.closest(".officer-unknown");
-      if (!checkbox) {
-        return;
-      }
-      syncOfficerUnknown(checkbox.closest(".officer-entry"));
-      syncEntryDisabledState();
-    });
-
-    evidenceLinks.addEventListener("click", (event) => {
-      const button = event.target.closest(".remove-evidence");
-      if (!button) {
-        return;
-      }
-      const entry = button.closest(".evidence-entry");
-      entry.querySelectorAll("input, textarea").forEach((field) => {
-        field.value = "";
+      const emptyWitness = (): WitnessDraft => ({
+        name: "",
+        phone: "",
+        email: "",
       });
-      setEntryActive(entry, false);
-      updateEvidenceLabels();
-      updateAddButtons();
-    });
-
-    witnessList.addEventListener("click", (event) => {
-      const button = event.target.closest(".remove-witness");
-      if (!button) {
-        return;
-      }
-      const entry = button.closest(".witness-entry");
-      entry.querySelectorAll("input, textarea").forEach((field) => {
-        field.value = "";
-      });
-      setEntryActive(entry, false);
-      updateWitnessLabels();
-      updateAddButtons();
-    });
-
-    function validateWitnessEntries() {
-      let isValid = true;
-      witnessList.querySelectorAll(".witness-entry").forEach((entry) => {
-        if (entry.classList.contains("d-none")) {
-          return;
-        }
-        const name = entry.querySelector(".witness-name");
-        const phone = entry.querySelector(".witness-phone");
-        const email = entry.querySelector(".witness-email");
-        const hasAny = [name, phone, email].some(
-          (field) => field && field.value.trim(),
-        );
-
-        if (!hasAny) {
-          name?.setCustomValidity("");
-          email?.setCustomValidity("");
-          return;
-        }
-
-        if (!name.value.trim()) {
-          name.setCustomValidity("Please provide a witness name.");
-          isValid = false;
-        } else {
-          name.setCustomValidity("");
-        }
-
-        if (!phone.value.trim() && !email.value.trim()) {
-          email.setCustomValidity("Provide at least a phone or email.");
-          isValid = false;
-        } else {
-          email.setCustomValidity("");
-        }
+      const emptyEvidence = (): EvidenceDraft => ({
+        link: "",
+        description: "",
       });
 
-      return isValid;
-    }
-
-    function humanizeName(name) {
-      if (!name) {
-        return "";
-      }
-      return name
-        .replace(/\[\]$/, "")
-        .replace(/([a-z])([A-Z])/g, "$1 $2")
-        .replace(/[_-]+/g, " ")
-        .replace(/\s+/g, " ")
-        .trim()
-        .replace(/^\w/, (c) => c.toUpperCase());
-    }
-
-    function getSectionHeading(field) {
-      if (!(field instanceof Element)) {
-        return "";
-      }
-      const section = field.closest(".col-12, .col-md-6, .col-md-4");
-      if (!section) {
-        return "";
-      }
-      const heading = section.querySelector("h2, h3, h4, legend");
-      return heading?.textContent?.trim() || "";
-    }
-
-    function getIndexedPrefix(name) {
-      if (!name) {
-        return "";
-      }
-      const officerMatch = name.match(/^officers\[(\d+)\]/);
-      if (officerMatch) {
-        return `Officer ${Number(officerMatch[1]) + 1}`;
-      }
-      const witnessMatch = name.match(/^witnesses\[(\d+)\]/);
-      if (witnessMatch) {
-        return `Witness ${Number(witnessMatch[1]) + 1}`;
-      }
-      const evidenceMatch = name.match(/^evidence\[(\d+)\]/);
-      if (evidenceMatch) {
-        return `Evidence ${Number(evidenceMatch[1]) + 1}`;
-      }
-      return "";
-    }
-
-    function getFieldLabel(field) {
-      if (!(field instanceof Element)) {
-        return "";
-      }
-
-      if (field.id) {
-        const explicitLabel = document.querySelector(
-          `label[for="${CSS.escape(field.id)}"]`,
-        );
-        if (explicitLabel?.textContent?.trim()) {
-          return explicitLabel.textContent.replace("*", "").trim();
-        }
-      }
-
-      const floating = field.closest(".form-floating");
-      if (floating) {
-        const floatingLabel = floating.querySelector("label");
-        if (floatingLabel?.textContent?.trim()) {
-          return floatingLabel.textContent.replace("*", "").trim();
-        }
-      }
+      let draft: ReportDraft = {
+        officers: [emptyOfficer()],
+        witnesses: [],
+        evidence: [],
+      };
 
       if (
-        field instanceof HTMLInputElement &&
-        field.type === "radio" &&
-        field.name
+        !officerTemplateElement ||
+        !witnessTemplateElement ||
+        !evidenceTemplateElement
       ) {
-        const firstRadio = form.querySelector(
-          `input[type="radio"][name="${CSS.escape(field.name)}"]`,
-        );
-        if (firstRadio?.id) {
-          const radioLabel = document.querySelector(
-            `label[for="${CSS.escape(firstRadio.id)}"]`,
-          );
-          if (radioLabel?.textContent?.trim()) {
-            const heading = getSectionHeading(firstRadio);
-            const label = radioLabel.textContent.trim();
-            return heading ? `${heading} (${label})` : label;
-          }
-        }
-      }
+        showFormLoadError({ formName: "reportNew", shell: formShell });
+      } else {
+        const officerTemplate = officerTemplateElement.content
+          .firstElementChild as HTMLElement | null;
+        const witnessTemplate = witnessTemplateElement.content
+          .firstElementChild as HTMLElement | null;
+        const evidenceTemplate = evidenceTemplateElement.content
+          .firstElementChild as HTMLElement | null;
 
-      const groupHeading = getSectionHeading(field);
-      if (groupHeading) {
-        return groupHeading;
-      }
-
-      return humanizeName(field.name || "");
-    }
-
-    function collectValidationErrors() {
-      const invalidFields = Array.from(
-        form.querySelectorAll(":invalid"),
-      ).filter((field) => field instanceof HTMLElement && !field.disabled);
-      const seen = new Set();
-      const errors = [];
-
-      for (const field of invalidFields) {
-        const containerEntry = field.closest(
-          ".officer-entry, .witness-entry, .evidence-entry",
-        );
-        if (containerEntry?.classList.contains("d-none")) {
-          continue;
-        }
-        const isRadio =
-          field instanceof HTMLInputElement && field.type === "radio";
-        const key = isRadio
-          ? `radio:${field.name}`
-          : field.id || field.name || "";
-        if (key && seen.has(key)) {
-          continue;
-        }
-        if (key) {
-          seen.add(key);
-        }
-        let message = field.validationMessage?.trim() || "";
-        if (isRadio && message === "Please fill out this field.") {
-          message = "Select one option.";
-        }
-        if (!isRadio && message === "Please fill out this field.") {
-          message = "This field is required.";
-        }
-        if (!message) {
-          continue;
-        }
-        const label = getFieldLabel(field);
-        const prefix = getIndexedPrefix(field.name || "");
-        const effectiveLabel =
-          prefix && label ? `${prefix} - ${label}` : prefix || label;
-        errors.push({
-          label: effectiveLabel,
-          message,
-        });
-      }
-
-      return errors;
-    }
-
-    function renderValidationSummary() {
-      if (!reportErrorSummary) {
-        return;
-      }
-      const errors = collectValidationErrors();
-      const listItems = errors
-        .map((error) => {
-          const prefix = error.label ? `${error.label}: ` : "";
-          return `<li>${prefix}${error.message}</li>`;
-        })
-        .join("");
-      reportErrorSummary.innerHTML = `
-        <p class="mb-2">Please complete the required fields highlighted above before submitting.</p>
-        ${listItems ? `<ul class="mb-0">${listItems}</ul>` : ""}
-      `;
-    }
-
-    const reportDraftCookieName = "pc_report_draft";
-
-    function getReportDraftId() {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${reportDraftCookieName}=`);
-      if (parts.length === 2) {
-        return parts.pop().split(";").shift();
-      }
-      return "";
-    }
-
-    function clearReportDraftCookie() {
-      document.cookie = `${reportDraftCookieName}=; Max-Age=0; Path=/report/new/; SameSite=Lax`;
-    }
-
-    const handleReportSubmit = async (event) => {
-      const submitButton = form.querySelector('button[type="submit"]');
-      let inlineError = form.querySelector("[data-form-submit-error]");
-      if (!inlineError) {
-        inlineError = document.createElement("div");
-        inlineError.setAttribute("data-form-submit-error", "true");
-        inlineError.className = "alert alert-danger rounded-0 mt-3 d-none";
-        inlineError.setAttribute("role", "alert");
-        form.appendChild(inlineError);
-      }
-      const formsUi = window.__IPC_FORMS__;
-      if (!formsUi || typeof formsUi.submitJsonForm !== "function") {
-        inlineError.textContent =
-          "Unable to submit the form right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.";
-        inlineError.classList.remove("d-none");
-        console.error("Shared form submit helper is unavailable", {
-          formName: "reportNew",
-        });
-        return false;
-      }
-      await formsUi.submitJsonForm({
-        event,
-        form,
-        formName: "reportNew",
-        onBeforeValidate: function () {
-          form.classList.add("was-validated");
-          syncEntryDisabledState();
-        },
-        onBeforeSubmit: async function () {
-          const draftSync = window.__IPC_REPORT_DRAFT__;
-          if (
-            !draftSync ||
-            typeof draftSync.ensureServerDraftSyncedForSubmit !== "function"
-          ) {
-            throw new Error(
-              "Unable to submit safely right now. Please refresh and try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.",
-            );
-          }
-          await draftSync.ensureServerDraftSyncedForSubmit();
-          return { draftSync };
-        },
-        buildPayload: function ({ data, formName, recaptchaToken }) {
-          return {
-            data,
-            draftId: getReportDraftId() || null,
-            formName,
-            recaptchaToken,
+        if (!officerTemplate || !witnessTemplate || !evidenceTemplate) {
+          showFormLoadError({ formName: "reportNew", shell: formShell });
+        } else {
+          const officerFieldName = (index: number, field: string) =>
+            `officers[${index}][${field}]`;
+          const officerFieldId = (index: number, field: string) =>
+            field === "unknown"
+              ? `officerUnknown-${index}`
+              : `officers-${index}-${field}`;
+          const officerTraitName = (index: number, traitId: string) =>
+            `officers[${index}][traits][${traitId}]`;
+          const officerTraitId = (
+            index: number,
+            traitId: string,
+            rubricId: string,
+          ) => `officer-${index}-trait-${traitId}-${rubricId}`;
+          const witnessFieldName = (index: number, field: string) =>
+            `witnesses[${index}][${field}]`;
+          const witnessFieldId = (index: number, field: string) =>
+            `witness-${index}-${field}`;
+          const evidenceFieldName = (index: number, field: string) =>
+            `evidence[${index}][${field}]`;
+          const evidenceFieldId = (index: number, field: string) =>
+            `evidence-${field}-${index}`;
+          const readReportData = (formData: FormData) => {
+            const data = flattenFormData(
+              formData,
+              ...structuredRoots,
+            ) as ReportDraft;
+            data.witnesses ??= [];
+            data.evidence ??= [];
+            return data;
           };
-        },
-        validate: function () {
-          const officersValid = validateOfficerEntries();
-          const witnessesValid = validateWitnessEntries();
-          return officersValid && witnessesValid;
-        },
-        onInvalid: function () {
-          if (reportErrorSummary) {
-            renderValidationSummary();
-            reportErrorSummary.classList.remove("d-none");
-            reportErrorSummary.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-            });
-          }
-        },
-        onReset: function () {
-          form.classList.remove("was-validated");
-          if (reportErrorSummary) {
-            reportErrorSummary.classList.add("d-none");
-          }
-        },
-        onSuccess: function () {
-          if (reportErrorSummary) {
-            reportErrorSummary.classList.add("d-none");
-          }
-          clearReportDraftCookie();
-          window.__IPC_REPORT_DRAFT__?.onSubmitSuccess?.();
-        },
-        recaptchaAction: "reportNewSubmit",
-      });
-      return false;
-    };
 
-    window.__IPC_REPORT_FORM_SUBMIT__ = handleReportSubmit;
-    form.addEventListener("submit", handleReportSubmit);
-  </script>
+          const updateOfficers = (
+            getNextOfficers: (officers: OfficerDraft[]) => OfficerDraft[],
+          ) => {
+            const data = readReportData(new FormData(form));
+            data.officers = getNextOfficers(data.officers);
+            draft = data;
+            renderOfficers();
+          };
 
-  <script is:inline>
-    (function () {
-      const form = document.getElementById("reportForm");
-      if (!form) {
-        return;
-      }
+          const appendOfficer = () => {
+            updateOfficers((officers) => [...officers, emptyOfficer()]);
+          };
 
-      const endpoint = "/api/forms/draft";
-      const cookieName = "pc_report_draft";
-      const sessionBackupKey = "pc_report_draft_session_v1";
-      const autosaveDelayMs = 1200;
-      let saveTimer = null;
-      let isRestoring = false;
+          const deleteOfficer = (index: number) => {
+            updateOfficers((officers) => [
+              ...officers.slice(0, index),
+              ...officers.slice(index + 1),
+            ]);
+          };
 
-      function ensureDraftStatusNode() {
-        let node = form.querySelector("[data-draft-status]");
-        if (!node) {
-          node = document.createElement("div");
-          node.setAttribute("data-draft-status", "true");
-          node.className = "alert rounded-0 mt-3 d-none";
-          node.setAttribute("role", "status");
-          form.appendChild(node);
-        }
-        return node;
-      }
+          const addOfficer = () => {
+            appendOfficer();
+          };
 
-      function setDraftStatus(kind, message) {
-        const node = ensureDraftStatusNode();
-        if (kind !== "warning" && kind !== "error") {
-          node.classList.add("d-none");
-          node.textContent = "";
-          return;
-        }
-        node.classList.remove(
-          "d-none",
-          "alert-success",
-          "alert-warning",
-          "alert-danger",
-          "alert-secondary",
-        );
-        const classByKind = {
-          saving: "alert-secondary",
-          saved: "alert-success",
-          warning: "alert-warning",
-          error: "alert-danger",
-        };
-        node.classList.add(classByKind[kind] || "alert-secondary");
-        node.textContent = message;
-      }
+          const removeOfficer = (index: number) => {
+            deleteOfficer(index);
+          };
 
-      function writeSessionBackup(data) {
-        try {
-          sessionStorage.setItem(
-            sessionBackupKey,
-            JSON.stringify({
-              savedAt: new Date().toISOString(),
-              data,
-            }),
-          );
-        } catch (error) {
-          console.error("report.draft.backup_write_failed", error);
-        }
-      }
+          const updateWitnesses = (
+            getNextWitnesses: (witnesses: WitnessDraft[]) => WitnessDraft[],
+          ) => {
+            const data = readReportData(new FormData(form));
+            data.witnesses = getNextWitnesses(data.witnesses);
+            draft = data;
+            renderWitnesses();
+          };
 
-      function readSessionBackup() {
-        try {
-          const raw = sessionStorage.getItem(sessionBackupKey);
-          if (!raw) {
-            return null;
-          }
-          const parsed = JSON.parse(raw);
-          if (!parsed || typeof parsed !== "object" || !parsed.data) {
-            return null;
-          }
-          return parsed.data;
-        } catch (error) {
-          console.error("report.draft.backup_read_failed", error);
-          return null;
-        }
-      }
+          const appendWitness = () => {
+            updateWitnesses((witnesses) => [...witnesses, emptyWitness()]);
+          };
 
-      function clearSessionBackup() {
-        try {
-          sessionStorage.removeItem(sessionBackupKey);
-        } catch (error) {
-          console.error("report.draft.backup_clear_failed", error);
-        }
-      }
+          const deleteWitness = (index: number) => {
+            updateWitnesses((witnesses) => [
+              ...witnesses.slice(0, index),
+              ...witnesses.slice(index + 1),
+            ]);
+          };
 
-      function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) {
-          return parts.pop().split(";").shift();
-        }
-        return "";
-      }
+          const addWitness = () => {
+            appendWitness();
+          };
 
-      function setCookie(name, value) {
-        const maxAge = 60 * 60;
-        document.cookie = `${name}=${value}; Max-Age=${maxAge}; Path=/report/new/; SameSite=Lax`;
-      }
+          const removeWitness = (index: number) => {
+            deleteWitness(index);
+          };
 
-      function clearCookie(name) {
-        document.cookie = `${name}=; Max-Age=0; Path=/report/new/; SameSite=Lax`;
-      }
+          const updateEvidence = (
+            getNextEvidence: (evidence: EvidenceDraft[]) => EvidenceDraft[],
+          ) => {
+            const data = readReportData(new FormData(form));
+            data.evidence = getNextEvidence(data.evidence);
+            draft = data;
+            renderEvidence();
+          };
 
-      function serializeForm() {
-        const data = {};
-        const formData = new FormData(form);
-        formData.forEach((value, key) => {
-          if (key === "g-recaptcha-response") {
-            return;
-          }
-          if (key in data) {
-            if (!Array.isArray(data[key])) {
-              data[key] = [data[key]];
-            }
-            data[key].push(value);
-          } else {
-            data[key] = value;
-          }
-        });
+          const appendEvidence = () => {
+            updateEvidence((evidence) => [...evidence, emptyEvidence()]);
+          };
 
-        const checkboxGroups = new Map();
-        form.querySelectorAll('input[type="checkbox"]').forEach((input) => {
-          if (!input.name) {
-            return;
-          }
-          if (!checkboxGroups.has(input.name)) {
-            checkboxGroups.set(input.name, []);
-          }
-          if (input.checked) {
-            checkboxGroups.get(input.name).push(input.value);
-          }
-        });
+          const deleteEvidence = (index: number) => {
+            updateEvidence((evidence) => [
+              ...evidence.slice(0, index),
+              ...evidence.slice(index + 1),
+            ]);
+          };
 
-        checkboxGroups.forEach((values, name) => {
-          const inputs = form.querySelectorAll(
-            `input[type="checkbox"][name="${CSS.escape(name)}"]`,
-          );
-          if (inputs.length <= 1) {
-            data[name] = values.length > 0;
-          } else {
-            data[name] = values;
-          }
-        });
+          const addEvidence = () => {
+            appendEvidence();
+          };
 
-        const skipRadioNames = new Set();
-        form
-          .querySelectorAll('input[type="radio"][data-null-option="true"]')
-          .forEach((input) => {
-            if (input.name && input.checked) {
-              skipRadioNames.add(input.name);
-            }
-          });
+          const removeEvidence = (index: number) => {
+            deleteEvidence(index);
+          };
 
-        const radioNames = new Set();
-        form.querySelectorAll('input[type="radio"]').forEach((input) => {
-          if (!input.name || skipRadioNames.has(input.name)) {
-            return;
-          }
-          radioNames.add(input.name);
-          if (input.checked) {
-            data[input.name] = input.value;
-          }
-        });
-        radioNames.forEach((name) => {
-          if (!(name in data)) {
-            data[name] = "";
-          }
-        });
-
-        return data;
-      }
-
-      function getElementList(elements) {
-        if (!elements) {
-          return [];
-        }
-        if (elements instanceof Element) {
-          return [elements];
-        }
-        if (
-          typeof RadioNodeList !== "undefined" &&
-          elements instanceof RadioNodeList
-        ) {
-          return Array.from(elements);
-        }
-        if (elements.length && elements.item) {
-          return Array.from(elements);
-        }
-        return [elements];
-      }
-
-      function applyDraft(data) {
-        isRestoring = true;
-        Object.entries(data || {}).forEach(([name, value]) => {
-          const elements = form.elements.namedItem(name);
-          const elementList = getElementList(elements);
-          elementList.forEach((element) => {
-            if (!element) {
+          const applyPrefill = () => {
+            const payload = window.__IPC_PREFILL__?.readAndConsume?.(
+              "prefill:reportNew",
+            ) as ReportNewPrefill | null;
+            if (!payload?.officer) {
               return;
             }
-            if (element.type === "checkbox") {
-              if (Array.isArray(value)) {
-                element.checked = value.includes(element.value);
+
+            draft.officers = [
+              {
+                ...draft.officers[0],
+                ...payload.officer,
+              },
+            ];
+          };
+
+          const renderOfficers = () => {
+            const officers = draft.officers;
+            const officerElements = officers.map((officer, index) => {
+              const currentOfficer = {
+                ...emptyOfficer(),
+                ...officer,
+                traits: officer.traits || {},
+              };
+              const officerElement = officerTemplate.cloneNode(
+                true,
+              ) as HTMLElement;
+              const title = officerElement.querySelector(
+                "[data-officer-title]",
+              );
+              const removeButton = officerElement.querySelector(
+                "[data-remove-officer]",
+              ) as HTMLButtonElement;
+
+              if (title) {
+                title.textContent = `Officer ${index + 1}`;
+              }
+
+              officerElement.dataset.index = String(index);
+
+              if (officers.length === 1) {
+                removeButton.remove();
               } else {
-                element.checked = Boolean(value);
+                removeButton.addEventListener("click", () =>
+                  removeOfficer(index),
+                );
               }
-              return;
-            }
-            if (element.type === "radio") {
-              element.checked = element.value === value;
-              return;
-            }
-            element.value = value;
-          });
-        });
 
-        const entryHasValue = (entry) =>
-          Array.from(entry.querySelectorAll("input, textarea, select")).some(
-            (field) => {
-              if (field.type === "checkbox" || field.type === "radio") {
-                return field.checked;
+              officerElement
+                .querySelectorAll<HTMLElement>("[data-officer-field]")
+                .forEach((field) => {
+                  const key = field.dataset.officerField as keyof OfficerDraft;
+                  if (!key) {
+                    throw new Error("Expected officer field key.");
+                  }
+                  field.setAttribute("name", officerFieldName(index, key));
+                  if (field instanceof HTMLInputElement) {
+                    field.id = officerFieldId(index, key);
+                  }
+                  if (field instanceof HTMLTextAreaElement) {
+                    field.id = officerFieldId(index, key);
+                  }
+                });
+
+              officerElement
+                .querySelectorAll<HTMLLabelElement>("[data-officer-label]")
+                .forEach((label) => {
+                  const key = label.dataset.officerLabel as keyof OfficerDraft;
+                  if (!key) {
+                    throw new Error("Expected officer label key.");
+                  }
+                  label.htmlFor = officerFieldId(index, key);
+                });
+
+              officerElement
+                .querySelectorAll<HTMLInputElement>("[data-officer-trait]")
+                .forEach((field) => {
+                  const traitId = field.dataset.officerTrait;
+                  const rubricId = field.dataset.officerRubric;
+                  if (!traitId || !rubricId) {
+                    throw new Error("Expected officer trait metadata.");
+                  }
+                  field.name = officerTraitName(index, traitId);
+                  field.id = officerTraitId(index, traitId, rubricId);
+                });
+
+              const nameInput = officerElement.querySelector<HTMLInputElement>(
+                `[data-officer-field="name"]`,
+              );
+              const badgeInput = officerElement.querySelector<HTMLInputElement>(
+                `[data-officer-field="badge"]`,
+              );
+              const departmentInput =
+                officerElement.querySelector<HTMLInputElement>(
+                  `[data-officer-field="department"]`,
+                );
+              const descriptionInput =
+                officerElement.querySelector<HTMLTextAreaElement>(
+                  `[data-officer-field="unknownDescription"]`,
+                );
+              const unknownInput =
+                officerElement.querySelector<HTMLInputElement>(
+                  `[data-officer-field="unknown"]`,
+                );
+
+              if (nameInput) {
+                nameInput.value = currentOfficer.name;
               }
-              return field.value && field.value.trim();
-            },
-          );
+              if (badgeInput) {
+                badgeInput.value = currentOfficer.badge;
+              }
+              if (departmentInput) {
+                departmentInput.value = currentOfficer.department;
+              }
+              if (descriptionInput) {
+                descriptionInput.value = currentOfficer.unknownDescription;
+              }
+              if (unknownInput) {
+                unknownInput.checked = currentOfficer.unknown;
+              }
 
-        const activateEntry = (entry) => {
-          if (typeof window.setEntryActive === "function") {
-            window.setEntryActive(entry, true);
-            return;
-          }
-          entry.classList.remove("d-none");
-          entry.querySelectorAll("input, textarea, select").forEach((field) => {
-            field.disabled = false;
-          });
-        };
+              Object.entries(currentOfficer.traits).forEach(
+                ([traitId, value]) => {
+                  const traitInput =
+                    officerElement.querySelector<HTMLInputElement>(
+                      `[data-officer-trait="${CSS.escape(traitId)}"][value="${CSS.escape(value)}"]`,
+                    );
+                  if (traitInput) {
+                    traitInput.checked = true;
+                  }
+                },
+              );
 
-        ["officer", "witness", "evidence"].forEach((group) => {
-          form.querySelectorAll(`.${group}-entry`).forEach((entry) => {
-            if (!entry.classList.contains("d-none")) {
+              return officerElement;
+            });
+
+            officerList.replaceChildren(...officerElements);
+          };
+
+          const renderWitnesses = () => {
+            const witnessElements = draft.witnesses.map((witness, index) => {
+              const currentWitness = {
+                ...emptyWitness(),
+                ...witness,
+              };
+              const witnessElement = witnessTemplate.cloneNode(
+                true,
+              ) as HTMLElement;
+
+              const title = witnessElement.querySelector(
+                "[data-witness-title]",
+              );
+              const removeButton = witnessElement.querySelector(
+                "[data-remove-witness]",
+              ) as HTMLButtonElement;
+
+              if (title) {
+                title.textContent = `Witness ${index + 1}`;
+              }
+
+              removeButton.addEventListener("click", () =>
+                removeWitness(index),
+              );
+
+              witnessElement
+                .querySelectorAll<HTMLInputElement>("[data-witness-field]")
+                .forEach((field) => {
+                  const key = field.dataset.witnessField as keyof WitnessDraft;
+                  if (!key) {
+                    throw new Error("Expected witness field key.");
+                  }
+                  field.name = witnessFieldName(index, key);
+                  field.id = witnessFieldId(index, key);
+                  field.value = currentWitness[key];
+                });
+
+              witnessElement
+                .querySelectorAll<HTMLLabelElement>("[data-witness-label]")
+                .forEach((label) => {
+                  const key = label.dataset.witnessLabel as keyof WitnessDraft;
+                  if (!key) {
+                    throw new Error("Expected witness label key.");
+                  }
+                  label.htmlFor = witnessFieldId(index, key);
+                });
+
+              return witnessElement;
+            });
+
+            witnessList.replaceChildren(...witnessElements);
+          };
+
+          const renderEvidence = () => {
+            const evidenceElements = draft.evidence.map((item, index) => {
+              const currentEvidence = {
+                ...emptyEvidence(),
+                ...item,
+              };
+              const evidenceElement = evidenceTemplate.cloneNode(
+                true,
+              ) as HTMLElement;
+              const title = evidenceElement.querySelector(
+                "[data-evidence-title]",
+              );
+              const removeButton = evidenceElement.querySelector(
+                "[data-remove-evidence]",
+              ) as HTMLButtonElement;
+
+              if (title) {
+                title.textContent = `Evidence ${index + 1}`;
+              }
+
+              removeButton.addEventListener("click", () =>
+                removeEvidence(index),
+              );
+
+              evidenceElement
+                .querySelectorAll<HTMLInputElement>("[data-evidence-field]")
+                .forEach((field) => {
+                  const key = field.dataset
+                    .evidenceField as keyof EvidenceDraft;
+                  if (!key) {
+                    throw new Error("Expected evidence field key.");
+                  }
+                  field.name = evidenceFieldName(index, key);
+                  field.id = evidenceFieldId(index, key);
+                  field.value = currentEvidence[key];
+                });
+
+              evidenceElement
+                .querySelectorAll<HTMLLabelElement>("[data-evidence-label]")
+                .forEach((label) => {
+                  const key = label.dataset
+                    .evidenceLabel as keyof EvidenceDraft;
+                  if (!key) {
+                    throw new Error("Expected evidence label key.");
+                  }
+                  label.htmlFor = evidenceFieldId(index, key);
+                });
+
+              return evidenceElement;
+            });
+
+            evidenceList.replaceChildren(...evidenceElements);
+          };
+
+          const saveDraft = async () => {
+            const data = readReportData(new FormData(form));
+
+            try {
+              const response = await fetch(draftEndpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  draftId: getReportDraftId() || null,
+                  data,
+                }),
+              });
+
+              if (!response.ok) {
+                return false;
+              }
+
+              const result = await response.json();
+              if (result?.draftId) {
+                setReportDraftId(result.draftId);
+              }
+              return true;
+            } catch (_error) {
+              return false;
+            }
+          };
+
+          const restoreDraft = (data: ReportDraft) => {
+            draft = data;
+
+            renderOfficers();
+            renderWitnesses();
+            renderEvidence();
+
+            Object.entries(data).forEach(([name, rawValue]) => {
+              if (structuredRoots.includes(name)) {
+                return;
+              }
+
+              const values = Array.isArray(rawValue)
+                ? rawValue.map((value) => String(value ?? ""))
+                : [String(rawValue ?? "")];
+
+              form
+                .querySelectorAll(`[name="${CSS.escape(name)}"]`)
+                .forEach((field) => {
+                  if (
+                    field instanceof HTMLInputElement &&
+                    field.type === "checkbox"
+                  ) {
+                    field.checked = values.includes(field.value);
+                    return;
+                  }
+
+                  if (
+                    field instanceof HTMLInputElement &&
+                    field.type === "radio"
+                  ) {
+                    field.checked = values.includes(field.value);
+                    return;
+                  }
+
+                  if (
+                    field instanceof HTMLInputElement ||
+                    field instanceof HTMLTextAreaElement ||
+                    field instanceof HTMLSelectElement
+                  ) {
+                    field.value = values[0] || "";
+                  }
+                });
+            });
+          };
+
+          const loadDraft = async () => {
+            const draftId = getReportDraftId();
+
+            if (!draftId) {
               return;
             }
-            if (entryHasValue(entry)) {
-              activateEntry(entry);
-            }
+
+            try {
+              const response = await fetch(
+                `${draftEndpoint}?draftId=${encodeURIComponent(draftId)}`,
+                {
+                  headers: { Accept: "application/json" },
+                },
+              );
+
+              if (response.status === 204) {
+                clearReportDraftCookie();
+                return;
+              }
+
+              if (!response.ok) {
+                return;
+              }
+
+              const payload = await response.json();
+              if (payload?.data) {
+                restoreDraft(payload.data as ReportDraft);
+                return;
+              }
+
+              clearReportDraftCookie();
+            } catch (_error) {}
+          };
+
+          applyPrefill();
+          renderOfficers();
+          renderWitnesses();
+          renderEvidence();
+
+          form.addEventListener("change", async () => {
+            await saveDraft();
           });
-        });
+          addOfficerButton.addEventListener("click", addOfficer);
+          addWitnessButton.addEventListener("click", addWitness);
+          addEvidenceButton.addEventListener("click", addEvidence);
 
-        if (typeof window.updateOfficerLabels === "function") {
-          window.updateOfficerLabels();
-        }
-        if (typeof window.updateWitnessLabels === "function") {
-          window.updateWitnessLabels();
-        }
-        if (typeof window.updateEvidenceLabels === "function") {
-          window.updateEvidenceLabels();
-        }
-        if (typeof window.updateOfficerRemoveButtons === "function") {
-          window.updateOfficerRemoveButtons();
-        }
-        if (typeof window.updateAddButtons === "function") {
-          window.updateAddButtons();
-        }
-        if (typeof window.syncRoleFields === "function") {
-          window.syncRoleFields();
-        }
-        if (typeof window.syncOfficerUnknown === "function") {
-          form.querySelectorAll(".officer-entry").forEach((entry) => {
-            window.syncOfficerUnknown(entry);
+          form.addEventListener("submit", async (event) => {
+            await submitJsonForm({
+              event,
+              form,
+              formName: "reportNew",
+              async onBeforeSubmit() {
+                if (await saveDraft()) {
+                  return;
+                }
+                throw new Error(
+                  "We could not safely save your progress to the server. Please try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.",
+                );
+              },
+              buildPayload({ formData, formName, recaptchaToken }) {
+                return {
+                  data: readReportData(formData),
+                  draftId: getReportDraftId() || null,
+                  formName,
+                  recaptchaToken,
+                };
+              },
+              onSuccess: clearReportDraftCookie,
+              recaptchaAction: "reportNewSubmit",
+            });
           });
-        }
-        const descriptionInput = document.getElementById("description");
-        if (descriptionInput) {
-          descriptionInput.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-        isRestoring = false;
-      }
-
-      async function loadDraft() {
-        const draftId = getCookie(cookieName);
-        const sessionBackup = readSessionBackup();
-        if (!draftId) {
-          if (sessionBackup) {
-            applyDraft(sessionBackup);
-            setDraftStatus(
-              "warning",
-              "Restored a temporary in-browser backup for this session.",
-            );
-          }
-          return;
-        }
-        try {
-          const response = await fetch(
-            `${endpoint}?draftId=${encodeURIComponent(draftId)}`,
-            {
-              headers: { Accept: "application/json" },
-            },
-          );
-          if (response.status === 204) {
-            clearCookie(cookieName);
-            if (sessionBackup) {
-              applyDraft(sessionBackup);
-              setDraftStatus(
-                "warning",
-                "Server draft no longer exists. Restored a temporary in-browser backup for this session.",
-              );
-            }
-            return;
-          }
-          if (!response.ok) {
-            if (sessionBackup) {
-              applyDraft(sessionBackup);
-              setDraftStatus(
-                "warning",
-                "Could not load server draft. Restored a temporary in-browser backup for this session.",
-              );
-            } else {
-              setDraftStatus(
-                "error",
-                "Could not load draft from server. Changes will not be protected until autosave succeeds.",
-              );
-            }
-            return;
-          }
-          const payload = await response.json();
-          if (payload && payload.data) {
-            applyDraft(payload.data);
-            setDraftStatus("saved", "Draft loaded and autosave is ready.");
-          } else {
-            clearCookie(cookieName);
-            if (sessionBackup) {
-              applyDraft(sessionBackup);
-              setDraftStatus(
-                "warning",
-                "Server draft was empty. Restored a temporary in-browser backup for this session.",
-              );
-            }
-          }
-        } catch (error) {
-          if (sessionBackup) {
-            applyDraft(sessionBackup);
-            setDraftStatus(
-              "warning",
-              "Could not load server draft. Restored a temporary in-browser backup for this session.",
-            );
-          } else {
-            setDraftStatus(
-              "error",
-              "Could not load draft from server. Changes will not be protected until autosave succeeds.",
-            );
-          }
-          return;
+          initRecaptcha();
+          void loadDraft();
         }
       }
-
-      async function saveDraft() {
-        const payload = {
-          draftId: getCookie(cookieName) || null,
-          data: serializeForm(),
-        };
-        writeSessionBackup(payload.data);
-        setDraftStatus("saving", "Saving draft...");
-        try {
-          const response = await fetch(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          if (!response.ok) {
-            setDraftStatus(
-              "warning",
-              "Autosave to server failed. A temporary in-browser backup is available for this session.",
-            );
-            return false;
-          }
-          const result = await response.json();
-          if (result && result.draftId) {
-            setCookie(cookieName, result.draftId);
-          }
-          setDraftStatus("saved", "Draft saved.");
-          return true;
-        } catch (error) {
-          setDraftStatus(
-            "warning",
-            "Autosave to server failed. A temporary in-browser backup is available for this session.",
-          );
-          return false;
-        }
-      }
-
-      function scheduleSave() {
-        if (isRestoring) {
-          return;
-        }
-        if (saveTimer) {
-          window.clearTimeout(saveTimer);
-        }
-        saveTimer = window.setTimeout(saveDraft, autosaveDelayMs);
-      }
-
-      form.addEventListener("input", scheduleSave);
-      form.addEventListener("change", scheduleSave);
-      window.addEventListener("beforeunload", () => {
-        if (saveTimer) {
-          saveDraft();
-        }
-      });
-
-      window.__IPC_REPORT_DRAFT__ = {
-        async ensureServerDraftSyncedForSubmit() {
-          if (saveTimer) {
-            window.clearTimeout(saveTimer);
-            saveTimer = null;
-          }
-          const saved = await saveDraft();
-          if (!saved) {
-            throw new Error(
-              "We could not safely save your progress to the server. Please try again. Your temporary in-browser backup is still available for this session. If you cannot submit this form, print this page and email it to hello@policeconduct.org.",
-            );
-          }
-        },
-        onSubmitSuccess() {
-          clearSessionBackup();
-          setDraftStatus("saved", "Draft submitted successfully.");
-        },
-      };
-
-      loadDraft();
-    })();
+    } else {
+      showFormLoadError({ formName: "reportNew", shell: formShell });
+    }
   </script>
 </SiteLayout>

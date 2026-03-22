@@ -5,6 +5,7 @@ import DisqusComments from "#src/components/DisqusComments.astro";
 import { withDb } from "#src/lib/db.js";
 import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { formatShortDate } from "#src/lib/format.js";
+import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { getPersonnelImageById } from "#src/lib/personnel-images.js";
 import { caseSlug } from "#src/lib/slug.js";
 import ProfileTabs from "#src/components/ProfileTabs.astro";
@@ -247,6 +248,12 @@ const civilLitigationSummary = civilCasesWithPaths
   })
   .join("\n");
 const reportLinksSummary = reportItems.map((report) => report.url).join("\n");
+const reportNewPrefillPayload = JSON.stringify({
+  officer: {
+    department: currentAgency!.name,
+    name: `${data.officer.first_name} ${data.officer.last_name}`,
+  },
+} satisfies ReportNewPrefill);
 const addCivilCaseHref = "/civil-litigation/new/";
 const addCivilCasePrefillPayload = JSON.stringify({
   jurisdiction: currentAgency?.category?.toLowerCase() || "",
@@ -440,10 +447,7 @@ const structuredData = {
                     href="/report/new/"
                     target="_self"
                     data-prefill-key="prefill:reportNew"
-                    data-prefill-payload={JSON.stringify({
-                      "officers[0][department]": currentAgency!.name,
-                      "officers[0][name]": `${data.officer.first_name} ${data.officer.last_name}`,
-                    })}
+                    data-prefill-payload={reportNewPrefillPayload}
                   >
                     Submit Report
                   </a>
