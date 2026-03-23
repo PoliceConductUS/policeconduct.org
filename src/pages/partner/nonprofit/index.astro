@@ -5,7 +5,7 @@ import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/partner/nonprofit/";
 const pageDescription =
-  "Partnership information for nonprofits and advocacy coalitions using conduct data for campaigns, education, and accountability work.";
+  "Partnership information for nonprofits and advocacy coalitions using PoliceConduct.org in public education, community reporting, and accountability work.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const structuredData = buildWebPage({
@@ -38,20 +38,23 @@ const structuredData = buildWebPage({
               For Nonprofits and Advocacy Coalitions
             </h1>
             <p class="lead text-muted mb-0">
-              Use conduct data to support organizing, public education,
-              litigation strategy, and policy campaigns.
+              Use PoliceConduct.org in community education, issue-focused
+              advocacy, and public accountability work built around documented
+              records rather than slogans.
             </p>
           </div>
           <div class="col-12 col-lg-4">
             <div class="card shadow-sm rounded-0 border-dark">
               <div class="card-body d-flex flex-column gap-2">
-                <div class="text-uppercase small text-muted">Best fit</div>
+                <div class="text-uppercase small text-muted">
+                  What we can do now
+                </div>
                 <div class="fw-semibold">
-                  Nonprofits and advocacy coalitions
+                  Support public-facing accountability work
                 </div>
                 <div class="text-muted small">
-                  Transform 2025-2026 transparency records into actionable
-                  policy.
+                  We can help nonprofits use the public record in community
+                  education, case intake, and issue-focused advocacy.
                 </div>
               </div>
             </div>
@@ -64,27 +67,30 @@ const structuredData = buildWebPage({
       <div class="container">
         <div class="row g-4">
           <div class="col-12 col-lg-7">
-            <h2 class="h4 fw-semibold">1. The wandering officer tracker</h2>
-            <p class="text-muted">
-              Track officer careers across departments to expose systemic
-              shuffling and support stronger decertification laws.
+            <h2 class="h4 fw-semibold">How We Can Help</h2>
+            <p class="text-muted mb-0">
+              We can help a nonprofit turn scattered public records and site
+              entries into a focused brief around one issue area, agency, or
+              campaign question.
             </p>
-            <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
-              <li>
-                Aggregate reports tied to officer movement between precincts.
-              </li>
-              <li>Document resignation-during-investigation patterns.</li>
-              <li>Support evidence-backed policy demands for state reforms.</li>
-            </ul>
           </div>
           <div class="col-12 col-lg-5">
             <div class="card shadow-sm rounded-0 border-dark h-100">
               <div class="card-body d-flex flex-column gap-3">
-                <div class="text-uppercase small text-muted">Advocacy win</div>
-                <p class="mb-0">
-                  Use verified movement data to show city leadership that the
-                  problem is systemic, not anecdotal.
-                </p>
+                <div class="text-uppercase small text-muted">Good fit</div>
+                <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
+                  <li>
+                    Community organizations working on a defined local issue.
+                  </li>
+                  <li>
+                    Groups that need a public brief, intake workflow, or record
+                    summary.
+                  </li>
+                  <li>
+                    Advocacy teams that want evidence without overstating what
+                    the record shows.
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
@@ -94,24 +100,21 @@ const structuredData = buildWebPage({
 
     <section class="py-vh-2 bg-light border-top border-bottom border-dark">
       <div class="container">
-        <h2 class="h4 fw-semibold mb-3">
-          2. Building social license and public trust
-        </h2>
+        <h2 class="h4 fw-semibold mb-3">What we can help with now</h2>
         <p class="text-muted">
-          Evidence-based reporting shifts the narrative from anecdotes to
-          procedural justice.
+          The most credible work is usually narrow: gather the public record,
+          organize it around a question, and show community members what is
+          documented and what still is not.
         </p>
         <div class="row g-4">
           <div class="col-12 col-lg-6">
             <div class="card shadow-sm rounded-0 border-dark h-100">
               <div class="card-body d-flex flex-column gap-2">
-                <p class="text-uppercase small text-muted mb-1">
-                  Aggregated data reports
-                </p>
-                <h3 class="h6 fw-semibold">Move beyond anecdotes</h3>
+                <p class="text-uppercase small text-muted mb-1">Public brief</p>
+                <h3 class="h6 fw-semibold">Issue-focused summary</h3>
                 <p class="mb-0">
-                  Provide data summaries like "90% of stops in this zip code
-                  resulted in no citation."
+                  Prepare a scoped summary around one agency, officer, civil
+                  case cluster, or local accountability issue.
                 </p>
               </div>
             </div>
@@ -120,12 +123,12 @@ const structuredData = buildWebPage({
             <div class="card shadow-sm rounded-0 border-dark h-100">
               <div class="card-body d-flex flex-column gap-2">
                 <p class="text-uppercase small text-muted mb-1">
-                  Policy leverage
+                  Intake support
                 </p>
-                <h3 class="h6 fw-semibold">Harder to ignore</h3>
+                <h3 class="h6 fw-semibold">Community reporting workflow</h3>
                 <p class="mb-0">
-                  Present statistical evidence of bias or inefficiency to
-                  municipal leaders.
+                  Use reporting forms and public pages to help community members
+                  document experiences in a more organized way.
                 </p>
               </div>
             </div>
@@ -136,99 +139,11 @@ const structuredData = buildWebPage({
 
     <section class="py-vh-2">
       <div class="container">
-        <h2 class="h4 fw-semibold mb-3">3. Advocacy toolset</h2>
-        <div class="table-responsive">
-          <table class="table table-bordered align-middle">
-            <thead class="table-light">
-              <tr>
-                <th scope="col">Feature</th>
-                <th scope="col">Growth benefit for advocacy groups</th>
-                <th scope="col">Impact for the community</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>Community intake portal</strong></td>
-                <td>Offer a trusted alternative to filing at the precinct.</td>
-                <td>Reduces fear of retaliation for community members.</td>
-              </tr>
-              <tr>
-                <td><strong>Pattern alerts</strong></td>
-                <td
-                  >Get notified about use-of-force or illegal search spikes.</td
-                >
-                <td>Enables rapid response and targeted legal support.</td>
-              </tr>
-              <tr>
-                <td><strong>Verification loops</strong></td>
-                <td>Collaborate with experts to validate reports.</td>
-                <td>Boosts credibility for public statements.</td>
-              </tr>
-              <tr>
-                <td><strong>Policy heat maps</strong></td>
-                <td>Visualize where aggressive policies are applied.</td>
-                <td>Guide education campaigns and outreach.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-vh-2 bg-gray-100 border-top border-dark">
-      <div class="container">
-        <div class="row g-4 align-items-start">
-          <div class="col-12 col-lg-4">
-            <div class="card shadow-sm rounded-0 border-dark h-100">
-              <div class="card-body d-flex flex-column gap-2">
-                <p class="text-uppercase small text-muted mb-1">
-                  Community impact kit
-                </p>
-                <h2 class="h5 fw-semibold mb-0">Resource kit</h2>
-                <p class="text-muted mb-0">
-                  Tools that turn data into community action.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div class="col-12 col-lg-8">
-            <div class="d-flex flex-column gap-3">
-              <div class="border-start border-dark ps-3">
-                <h3 class="h6 fw-semibold mb-1">
-                  Know your rights reporting guide
-                </h3>
-                <p class="mb-0">
-                  Co-branded PDFs that explain how to document interactions for
-                  advocacy use.
-                </p>
-              </div>
-              <div class="border-start border-dark ps-3">
-                <h3 class="h6 fw-semibold mb-1">Public safety scorecard</h3>
-                <p class="mb-0">
-                  Automated department summaries based on reports and linked
-                  public records.
-                </p>
-              </div>
-              <div class="border-start border-dark ps-3">
-                <h3 class="h6 fw-semibold mb-1">Actionable metadata exports</h3>
-                <p class="mb-0">
-                  De-identified data exports for deep-dive audits on
-                  disparities.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-vh-2">
-      <div class="container">
-        <h2 class="h4 fw-semibold mb-3">4. The 2026 data broker defense</h2>
-        <p class="text-muted">
-          As states roll out delete and opt-out platforms, public record
-          exemptions and First Amendment protections preserve a permanent,
-          searchable history of police conduct for your community.
+        <h2 class="h4 fw-semibold mb-3">What partnership looks like</h2>
+        <p class="text-muted mb-0">
+          We start with a defined topic, geography, and time frame. Then we
+          identify what public records and site data we can help organize. The
+          output is a practical working brief, not an inflated product promise.
         </p>
       </div>
     </section>
@@ -243,8 +158,8 @@ const structuredData = buildWebPage({
               Ready to build a community data partnership?
             </h2>
             <p class="text-muted mb-0">
-              We can draft a proposal focused on wandering officer tracking or
-              pretrial transparency.
+              Tell us the issue, geography, and audience. We will respond with a
+              scoped partnership proposal if there is a credible fit.
             </p>
           </div>
           <a
@@ -255,7 +170,7 @@ const structuredData = buildWebPage({
             data-prefill-payload={JSON.stringify({
               whoami: "Partner",
               message:
-                "I am interested in a community data partnership proposal focused on wandering officers or pretrial transparency.",
+                "I am interested in a scoped nonprofit partnership proposal.",
             })}
           >
             Request the partnership proposal

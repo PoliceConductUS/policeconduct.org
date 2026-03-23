@@ -1,6 +1,5 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import {
   loadAgencySummaries,
@@ -108,40 +107,6 @@ const federalCoverageCount =
   (personnelCountsByCategory.get("federal") ?? 0) +
   (agencyCountsByCategory.get("federal") ?? 0) +
   (civilCasesByCategory.get("federal") ?? 0);
-const homepageOverviewItems = [
-  {
-    label: "Reports",
-    value: reports.length,
-    title: "Open reports",
-    description: "User-submitted reports documenting police interactions.",
-    href: "/report/",
-    actionLabel: "Open reports",
-  },
-  {
-    label: "Personnel",
-    value: personnel.length,
-    title: "Open personnel",
-    description: "Listed personnel profiles tied to agencies and records.",
-    href: "/personnel/",
-    actionLabel: "Open personnel",
-  },
-  {
-    label: "Agencies",
-    value: agencies.length,
-    title: "Open agencies",
-    description: "Law enforcement agencies currently tracked on the site.",
-    href: "/law-enforcement-agency/",
-    actionLabel: "Open agencies",
-  },
-  {
-    label: "Civil Cases",
-    value: totalCivilCases,
-    title: "Open civil litigation",
-    description: "Civil litigation cases linked to agencies or personnel.",
-    href: "/civil-litigation/",
-    actionLabel: "Open civil cases",
-  },
-];
 const organization = {
   "@type": "NonprofitOrganization",
   "@id": `${pageUrl}#organization`,
@@ -197,12 +162,12 @@ structuredData.mainEntity = organization;
             >What's Broken?</a
           >
           <span class="text-muted">•</span>
-          <a class="text-dark text-decoration-none" href="/#participate"
-            >How to Participate</a
+          <a class="text-dark text-decoration-none" href="/#use-record"
+            >Use the Record</a
           >
           <span class="text-muted">•</span>
-          <a class="text-dark text-decoration-none" href="/#services"
-            >What We Do</a
+          <a class="text-dark text-decoration-none" href="/#overview"
+            >National Overview</a
           >
           <span class="text-muted">•</span>
           <a class="text-dark text-decoration-none" href="/#mission"
@@ -225,14 +190,14 @@ structuredData.mainEntity = organization;
           />
         </div>
         <div class="row">
-          <div class="col-lg-7 py-vh-6 position-relative" data-aos="fade-right">
+          <div class="col-lg-7 py-vh-2 position-relative" data-aos="fade-right">
             <h1 class="display-1 fw-bold mt-5">
-              Independent Institute for Police Conduct
+              Report a police interaction. Research the public record.
             </h1>
             <p class="lead">
-              PoliceConduct.org is an independent public record for complaints,
-              commendations, and conduct matters involving law enforcement
-              agencies and personnel.
+              PoliceConduct.org helps people document interactions with law
+              enforcement and review public records about agencies, personnel,
+              reports, and civil litigation.
             </p>
             <a
               href="/report/new/"
@@ -242,16 +207,20 @@ structuredData.mainEntity = organization;
             <a
               href="/report/"
               class="btn btn-outline-dark btn-xl shadow rounded-0 my-5"
-              >Explore records</a
+              >Research records</a
             >
             <p class="text-muted small mb-0">
-              501(c)(3) • Tax-deductible • Secure checkout via Stripe
+              Start with your own account, review local records, or compare
+              public information across agencies and jurisdictions.
             </p>
             <div class="alert alert-light border-dark rounded-0 mb-0">
-              PoliceConduct.org exists so people's experiences with law
-              enforcement are not lost, and so accountability and recognition
-              are grounded in a durable public record.
+              PoliceConduct.org exists to make relevant public information and
+              structured public reporting easier to find, organize, and review.
             </div>
+            <p class="small mb-0 mt-3">
+              Partner organization? <a href="/partner/">Explore partner paths</a
+              >.
+            </p>
           </div>
         </div>
       </div>
@@ -273,47 +242,46 @@ structuredData.mainEntity = organization;
                   What's broken?
                 </h2>
                 <h3>
-                  Most communities cannot easily see how complaints,
-                  commendations, and conduct concerns are handled.
+                  Public information about police conduct is fragmented,
+                  inconsistent, and often difficult for ordinary people to
+                  access or interpret.
                 </h3>
-              </div>
-              <div class="col-lg-4" data-aos="fade-up">
-                <div class="display-1 fw-bold py-4 text-center">26K+</div>
-                <h4 class="h5 mb-3 text-center">
-                  Force complaints in one year
-                </h4>
-                <p class="text-black-50">
-                  Large state and local law enforcement agencies received more
-                  than 26,000 citizen complaints about officer use of force in a
-                  single year.
-                </p>
-                <p class="small text-black-50 mb-0">
-                  Source: <a
-                    href="https://bjs.ojp.gov/library/publications/contacts-between-police-and-public-2020"
-                    >Bureau of Justice Statistics</a
-                  >
+                <p class="mb-0 text-black-50">
+                  Records may exist across court dockets, public-records
+                  responses, agency materials, news coverage, and community
+                  accounts, but they are rarely organized in a way that makes
+                  comparison or review easy.
                 </p>
               </div>
-              <div class="col-lg-4" data-aos="fade-up">
-                <div class="display-1 fw-bold py-4 text-center">100%</div>
-                <h4 class="h5 mb-3 text-center">
-                  Complaints start out private
-                </h4>
+              <div class="col-md-6" data-aos="fade-up">
+                <h4 class="h5 my-3">Patterns are hard to identify</h4>
                 <p class="text-black-50 mb-0">
-                  Complaint records are typically closed to the public by
-                  default, making it harder for communities, reporters, and
-                  civilian oversight bodies to see the full picture.
+                  Incidents that appear isolated in one source may look
+                  different when viewed alongside prior complaints, litigation,
+                  disciplinary actions, or public reports.
                 </p>
               </div>
-              <div class="col-lg-4" data-aos="fade-up">
-                <div class="display-1 fw-bold py-4 text-center">Rarely</div>
-                <h4 class="h5 mb-3 text-center">
-                  Positive interactions are recorded
-                </h4>
+              <div class="col-md-6" data-aos="fade-up">
+                <h4 class="h5 my-3">Access is uneven</h4>
                 <p class="text-black-50 mb-0">
-                  Most agencies do not make it easy to document commendations or
-                  routine positive encounters, so strong conduct often goes
-                  unrecognized.
+                  Journalists, lawyers, and well-resourced organizations may be
+                  able to assemble a fuller picture. Most people cannot.
+                </p>
+              </div>
+              <div class="col-md-6" data-aos="fade-up">
+                <h4 class="h5 my-3">Records are hard to compare</h4>
+                <p class="text-black-50 mb-0">
+                  Even where records are technically public, they may be
+                  difficult to search, delayed, or released in formats that
+                  limit meaningful review.
+                </p>
+              </div>
+              <div class="col-md-6" data-aos="fade-up">
+                <h4 class="h5 my-3">Context is easy to lose</h4>
+                <p class="text-black-50 mb-0">
+                  Serious concerns may remain obscure because the information is
+                  buried or disconnected, while isolated allegations may
+                  circulate without enough context or corroboration.
                 </p>
               </div>
             </div>
@@ -324,172 +292,108 @@ structuredData.mainEntity = organization;
 
     <div
       class="small py-vh-3 bg-gray-900 text-light w-100 overflow-hidden"
-      id="participate"
+      id="use-record"
     >
       <div class="container">
         <div class="row mb-4">
           <div class="col-lg-8">
-            <h2 class="h3 mb-2">How to participate</h2>
+            <h2 class="h3 mb-2">Use the record</h2>
             <p class="mb-0 text-light">
-              PoliceConduct.org works best when community members, agencies, and
-              partner organizations all contribute to the public record.
+              The site should be useful whether you need to document one
+              interaction, research a local agency, or work with others on
+              accountability and public-interest reporting.
             </p>
           </div>
         </div>
         <div class="row">
-          <div class="col-md-6 col-lg-4 border-end" data-aos="fade-up">
-            <div class="d-flex">
-              <div class="col-md-3 flex-fill pt-3 pe-3 pe-md-0">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="42"
-                  height="42"
-                  fill="currentColor"
-                  class="bi bi-box-seam"
-                  viewBox="0 0 16 16"
-                >
-                  <path
-                    d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5l2.404.961L10.404 2l-2.218-.887zm3.564 1.426L5.596 5 8 5.961 14.154 3.5l-2.404-.961zm3.25 1.7-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"
-                  ></path>
-                </svg>
-              </div>
-              <div class="col-md-9 flex-fill">
-                <h3 class="h5 my-2">Partner with the project</h3>
-                <p>
-                  Work with us if you run a civilian oversight body, law firm,
-                  newsroom, nonprofit, or research organization that can help
-                  strengthen the public record.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div
-            class="col-md-6 col-lg-4 border-end"
-            data-aos="fade-up"
-            data-aos-delay="200"
-          >
-            <div class="d-flex">
-              <div class="col-md-3 flex-fill pt-3 pt-3 pe-3 pe-md-0">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="42"
-                  height="42"
-                  fill="currentColor"
-                  class="bi bi-card-checklist"
-                  viewBox="0 0 16 16"
-                >
-                  <path
-                    d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z"
-                  ></path>
-                  <path
-                    d="M7 5.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm-1.496-.854a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0zM7 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm-1.496-.854a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 0 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0z"
-                  ></path>
-                </svg>
-              </div>
-              <div class="col-md-9 flex-fill">
-                <h3 class="h5 my-2">Work with agencies and officers</h3>
-                <p>
-                  Agencies and officers can help document positive interactions,
-                  clarify records, and support a more complete picture of police
-                  conduct.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div
-            class="col-md-6 col-lg-4"
-            data-aos="fade-up"
-            data-aos-delay="400"
-          >
-            <div class="d-flex">
-              <div class="col-md-3 flex-fill pt-3 pt-3 pe-3 pe-md-0">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="42"
-                  height="42"
-                  fill="currentColor"
-                  class="bi bi-window-sidebar"
-                  viewBox="0 0 16 16"
-                >
-                  <path
-                    d="M2.5 4a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zm2-.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zm1 .5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"
-                  ></path>
-                  <path
-                    d="M2 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2H2zm12 1a1 1 0 0 1 1 1v2H1V3a1 1 0 0 1 1-1h12zM1 13V6h4v8H2a1 1 0 0 1-1-1zm5 1V6h9v7a1 1 0 0 1-1 1H6z"
-                  ></path>
-                </svg>
-              </div>
-              <div class="col-md-9 flex-fill">
-                <h3 class="h5 my-2">Volunteer and contribute</h3>
-                <p>
-                  Volunteers help gather records, review public data, and act as
-                  liaisons so the platform reflects what communities and
-                  departments both need to see.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="py-vh-5 w-100 overflow-hidden" id="services">
-      <div class="container">
-        <div class="row justify-content-end">
-          <div class="col-lg-8" data-aos="fade-down">
-            <h2 class="display-6">What we do.</h2>
-            <h3>How PoliceConduct.org is used.</h3>
-          </div>
-        </div>
-        <div class="row align-items-top py-vh-2">
-          <div
-            class="col-md-6 col-lg-4"
-            data-aos="fade-up"
-            data-aos-delay="200"
-          >
+          <div class="col-md-6 col-lg-4" data-aos="fade-up">
             <span class="h5 fw-lighter">01.</span>
-            <h3 class="py-5 border-top border-dark">Empowering Individuals</h3>
+            <h3 class="py-4 border-top border-light">Report an interaction</h3>
             <p>
-              People can document police interactions in one public place,
-              whether the experience was positive, negative, or somewhere in
-              between.
+              Document what happened and add it to a durable public record,
+              whether the interaction was negative, positive, or mixed.
             </p>
+            <a class="link-light fw-semibold" href="/report/new/"
+              >Submit a report</a
+            >
           </div>
-
           <div
             class="col-md-6 col-lg-4"
             data-aos="fade-up"
-            data-aos-delay="400"
+            data-aos-delay="200"
           >
             <span class="h5 fw-lighter">02.</span>
-            <h3 class="py-5 border-top border-dark">
-              Strengthening Community Trust
-            </h3>
+            <h3 class="py-4 border-top border-light">Research local records</h3>
             <p>
-              Shared records give community members, reporters, and oversight
-              groups a clearer view of how policing is experienced in real life.
+              Review reports, agencies, personnel, and civil litigation by
+              state, federal category, agency, or person.
             </p>
+            <a class="link-light fw-semibold" href="/report/"
+              >Research records</a
+            >
           </div>
 
           <div
             class="col-md-6 col-lg-4"
             data-aos="fade-up"
-            data-aos-delay="600"
+            data-aos-delay="400"
           >
             <span class="h5 fw-lighter">03.</span>
-            <h3 class="py-5 border-top border-dark">
-              Enhancing Police Accountability
+            <h3 class="py-4 border-top border-light">
+              Partner with the project
             </h3>
             <p>
-              Agencies can use the same record to identify recurring problems,
-              recognize strong conduct, and respond to patterns with evidence
-              instead of guesswork.
+              Oversight bodies, law firms, newsrooms, nonprofits, and
+              researchers can help strengthen the public record and extend its
+              usefulness.
             </p>
+            <a class="link-light fw-semibold" href="/partner/"
+              >Explore partner paths</a
+            >
           </div>
         </div>
       </div>
     </div>
+    <section class="py-vh-3 bg-light border-top border-dark" id="overview">
+      <div class="container">
+        <div class="row justify-content-end mb-4">
+          <div class="col-lg-8">
+            <h2 class="display-6">National overview.</h2>
+            <h3>Start with your state or federal agencies.</h3>
+          </div>
+        </div>
+        <div class="row g-4 align-items-stretch">
+          <div class="col-12">
+            <UsaChoroplethMap
+              stats={categoryCoverageStats}
+              title="United States"
+              subtitle="Combined coverage across reports, personnel, agencies, and civil litigation."
+              emptyLabel="No entries yet"
+              interactionLabel="Select a state to view its overview."
+              federalPanel={{
+                eyebrow: "Federal",
+                title: "Federal overview",
+                value: federalCoverageCount,
+                description:
+                  "Combined federal entries across reports, personnel, agencies, and civil litigation.",
+                items: [
+                  {
+                    label: "Federal overview",
+                    href: "/federal/",
+                  },
+                  ...federalAgencies.map((agency) => ({
+                    label: agency.name,
+                    href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+                  })),
+                ],
+                actionHref: "/federal/",
+                actionLabel: "Open federal overview",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </section>
 
     <div
       class="py-vh-5 bg-gray-900 text-light w-100 overflow-hidden"
@@ -500,7 +404,7 @@ structuredData.mainEntity = organization;
           <div class="row justify-content-end">
             <div class="col-lg-8" data-aos="fade-down">
               <h2 class="display-6">Our mission.</h2>
-              <h3>What we hope to accomplish.</h3>
+              <h3>Why this work exists.</h3>
             </div>
           </div>
         </div>
@@ -541,69 +445,27 @@ structuredData.mainEntity = organization;
           </div>
           <div class="col-lg-4">
             <h3 class="py-5 border-top border-light" data-aos="fade-left">
-              Institute for Police Conduct is a nonprofit, public interest
-              watchdog focused on recording and reporting on police interactions
-              with the community they serve.
+              Institute for Police Conduct is a nonprofit, public-interest
+              record focused on making police conduct easier to document,
+              understand, and review.
             </h3>
             <p class="text-light" data-aos="fade-left" data-aos-delay="200">
-              Our mission is to make police conduct easier to document,
-              understand, and review. We aim to give communities, agencies, and
-              oversight bodies a durable record they can use to improve trust,
-              accountability, and public safety.
+              The goal is not to replace courts, internal affairs, or formal
+              oversight bodies. The goal is to make already-existing public
+              information and structured public reporting more usable for the
+              public.
             </p>
           </div>
         </div>
       </div>
     </div>
 
-    <section class="py-vh-3 bg-light border-top border-dark">
-      <div class="container">
-        <div class="row justify-content-end mb-4">
-          <div class="col-lg-8">
-            <h2 class="display-6">National overview.</h2>
-            <h3>Explore the public record by state or federal agency.</h3>
-          </div>
-        </div>
-        <div class="row g-4 align-items-stretch">
-          <div class="col-12">
-            <UsaChoroplethMap
-              stats={categoryCoverageStats}
-              title="United States"
-              subtitle="Combined coverage across reports, personnel, agencies, and civil litigation."
-              emptyLabel="No entries yet"
-              interactionLabel="Click a state to view its overview."
-              federalPanel={{
-                eyebrow: "Federal",
-                title: "Federal overview",
-                value: federalCoverageCount,
-                description:
-                  "Combined federal entries across reports, personnel, agencies, and civil litigation.",
-                items: [
-                  {
-                    label: "Federal overview",
-                    href: "/federal/",
-                  },
-                  ...federalAgencies.map((agency) => ({
-                    label: agency.name,
-                    href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
-                  })),
-                ],
-                actionHref: "/federal/",
-                actionLabel: "Open federal overview",
-              }}
-            />
-          </div>
-        </div>
-      </div>
-      <CollectionStatsBand items={homepageOverviewItems} />
-    </section>
-
     <div class="py-vh-5 bg-gray-900 text-light w-100 overflow-hidden">
       <div class="container text-center">
-        <p class="text-light lead">Let’s work together</p>
+        <p class="text-light lead">Need help reaching the team?</p>
         <h2 class="h3 mb-3">Contact the Institute for Police Conduct</h2>
         <p class="text-light mb-4">
-          Use our contact form to reach the team for partnerships, questions, or
+          Use the contact form for partnerships, questions, corrections, or
           support.
         </p>
         <div class="d-flex flex-wrap justify-content-center gap-3">

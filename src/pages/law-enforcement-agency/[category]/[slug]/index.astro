@@ -7,7 +7,6 @@ import { groupBy, mapBy } from "#src/lib/data.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
-import { caseSlug } from "#src/lib/slug.js";
 import ProfileTabs from "#src/components/ProfileTabs.astro";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
@@ -121,31 +120,6 @@ const data = await withDb(async (client) => {
         )
       ).rows
     : [];
-  const civilCaseLinks = civilCaseIds.length
-    ? (
-        await client.query(
-          "select * from public.civil_case_links where civil_case_id = any($1)",
-          [civilCaseIds],
-        )
-      ).rows
-    : [];
-  // Get agency categories for civil cases through civil_case_officers → agency_officers → agency
-  const civilCaseAgencies = civilCaseIds.length
-    ? (
-        await client.query(
-          `
-              select distinct
-                cco.civil_case_id,
-                upper(a.category) as category
-              from public.civil_case_officers cco
-              join public.agency_officers ao on ao.id = cco.agency_officer_id
-              join public.agency a on ao.agency_id = a.id
-              where cco.civil_case_id = any($1)
-            `,
-          [civilCaseIds],
-        )
-      ).rows
-    : [];
   const civilCaseOfficers = civilCaseIds.length
     ? (
         await client.query(
@@ -183,8 +157,6 @@ const data = await withDb(async (client) => {
     reports,
     reportOfficers,
     civilCases,
-    civilCaseLinks,
-    civilCaseAgencies,
     civilCaseOfficers,
     civilOfficers,
   };
@@ -192,30 +164,11 @@ const data = await withDb(async (client) => {
 
 const officersById = mapBy(data.officers, "id");
 const officerStatsById = mapBy(data.officerStats, "id");
-const civilCaseLinksByCase = groupBy(data.civilCaseLinks, "civil_case_id");
-const civilCaseAgenciesByCase = groupBy(
-  data.civilCaseAgencies,
-  "civil_case_id",
-);
 const civilCaseOfficersByCase = groupBy(
   data.civilCaseOfficers,
   "civil_case_id",
 );
 const civilOfficersById = mapBy(data.civilOfficers, "id");
-
-const getCaseCategoryPath = (caseId: string | number) => {
-  const agencies = civilCaseAgenciesByCase[caseId] || [];
-  const normalized = agencies
-    .map((entry: { category?: string | null }) => entry.category?.toLowerCase())
-    .filter(Boolean);
-  if (normalized.includes("federal")) {
-    return "federal";
-  }
-  if (normalized.length) {
-    return normalized[0];
-  }
-  return data.agency.category?.toLowerCase() || "federal";
-};
 
 const employees = data.agencyOfficers
   .filter((entry: { end_date?: string | null }) => !entry.end_date)
@@ -245,24 +198,21 @@ const agencyRatingPercent =
 const civilCases = data.civilCases.map(
   (record: {
     id: string;
+    slug: string;
+    category: string;
     title?: string | null;
     cause_number?: string | null;
     filed_date?: string | null;
     court?: string | null;
+    primary_source_url?: string | null;
   }) => {
-    const links = civilCaseLinksByCase[record.id] || [];
     const officerLinks = (civilCaseOfficersByCase[record.id] || []).map(
       (entry: { officer_id: string }) => civilOfficersById[entry.officer_id],
     );
-    const caseSlugValue = caseSlug(record);
-    const caseCategory = getCaseCategoryPath(record.id);
     return {
       ...record,
-      links,
       officers: officerLinks.filter(Boolean),
-      caseSlug: caseSlugValue,
-      caseCategoryPath: caseCategory,
-      caseUrl: `/civil-litigation/${caseCategory}/${caseSlugValue}/`,
+      caseUrl: `/civil-litigation/${record.category}/${record.slug}/`,
     };
   },
 );

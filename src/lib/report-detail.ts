@@ -1,59 +1,12 @@
 import { withDb } from "./db.js";
 import { groupBy, mapBy } from "./data.js";
+import { getVideoEmbedUrl, getYouTubeThumbnailUrl } from "./video.js";
 
 const assertValue = <T>(value: T | null | undefined, message: string): T => {
   if (value === null || value === undefined) {
     throw new Error(message);
   }
   return value;
-};
-
-const isYouTube = (url: string) => {
-  try {
-    const parsed = new URL(url);
-    return (
-      parsed.hostname.includes("youtube.com") ||
-      parsed.hostname.includes("youtu.be")
-    );
-  } catch (error) {
-    return false;
-  }
-};
-
-const getEmbedUrl = (url: string) => {
-  if (!isYouTube(url)) {
-    return null;
-  }
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname.includes("youtu.be")) {
-      return `https://www.youtube.com/embed/${parsed.pathname.replace("/", "")}`;
-    }
-    const videoId = parsed.searchParams.get("v");
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-  } catch (error) {
-    return null;
-  }
-};
-
-const getYouTubeVideoId = (url: string) => {
-  if (!isYouTube(url)) {
-    return null;
-  }
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname.includes("youtu.be")) {
-      return parsed.pathname.replace("/", "") || null;
-    }
-    return parsed.searchParams.get("v");
-  } catch (error) {
-    return null;
-  }
-};
-
-const getThumbnailUrl = (url: string) => {
-  const videoId = getYouTubeVideoId(url);
-  return videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null;
 };
 
 type ReportOfficerRating = {
@@ -183,8 +136,8 @@ const buildEvidenceLinks = (links: EvidenceLinkSource[]): EvidenceLink[] =>
       id,
       title: link.title,
       url: link.url,
-      embed: getEmbedUrl(link.url),
-      thumbnail: getThumbnailUrl(link.url),
+      embed: getVideoEmbedUrl(link.url),
+      thumbnail: getYouTubeThumbnailUrl(link.url),
     };
   });
 

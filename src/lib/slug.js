@@ -24,8 +24,3 @@ export const officerSlug = (officer) => {
     `${officer?.first_name || ""} ${officer?.last_name || ""}${suffix}`.trim();
   return `${slugify(name)}-${hashId(officer?.id)}`;
 };
-
-export const caseSlug = (caseRecord) => {
-  const label = caseRecord?.title || caseRecord?.cause_number || "civil-case";
-  return `${slugify(label)}-${hashId(caseRecord?.id)}`;
-};

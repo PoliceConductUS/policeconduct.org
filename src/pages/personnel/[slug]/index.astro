@@ -3,11 +3,10 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import DisqusComments from "#src/components/DisqusComments.astro";
 import { withDb } from "#src/lib/db.js";
-import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
+import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { getPersonnelImageById } from "#src/lib/personnel-images.js";
-import { caseSlug } from "#src/lib/slug.js";
 import ProfileTabs from "#src/components/ProfileTabs.astro";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
@@ -99,29 +98,6 @@ const data = await withDb(async (client) => {
         )
       ).rows
     : [];
-  const civilCaseLinks = civilCaseIds.length
-    ? (
-        await client.query(
-          "select * from public.civil_case_links where civil_case_id = any($1)",
-          [civilCaseIds],
-        )
-      ).rows
-    : [];
-  // Get agency categories for civil cases through civil_case_officers → agency_officers → agency
-  const civilCaseAgencies = civilCaseIds.length
-    ? (
-        await client.query(
-          `
-            select distinct cco.civil_case_id, upper(a.category) as category
-            from public.civil_case_officers cco
-            join public.agency_officers ao on ao.id = cco.agency_officer_id
-            join public.agency a on ao.agency_id = a.id
-            where cco.civil_case_id = any($1)
-          `,
-          [civilCaseIds],
-        )
-      ).rows
-    : [];
 
   return {
     officer,
@@ -130,8 +106,6 @@ const data = await withDb(async (client) => {
     agencies,
     reports,
     civilCases,
-    civilCaseLinks,
-    civilCaseAgencies,
   };
 });
 
@@ -142,43 +116,21 @@ const currentBadge = currentAssignment?.badge_number || null;
 const currentAgency = currentAssignment
   ? agenciesById[currentAssignment.agency_id]
   : null;
-const civilCaseLinksByCase = groupBy(data.civilCaseLinks, "civil_case_id");
-const civilCaseAgenciesByCase = groupBy(
-  data.civilCaseAgencies,
-  "civil_case_id",
-);
-
-const getCaseCategoryPath = (caseId: string | number) => {
-  const agencies = civilCaseAgenciesByCase[caseId] || [];
-  const normalized = agencies
-    .map((entry: { category?: string | null }) => entry.category?.toLowerCase())
-    .filter(Boolean);
-  if (!normalized.length) {
-    return "federal";
-  }
-  if (normalized.includes("federal")) {
-    return "federal";
-  }
-  return normalized[0];
-};
 
 const civilCasesWithPaths = data.civilCases.map(
   (caseItem: {
     id: string;
+    slug: string;
+    category: string;
     title?: string | null;
     cause_number?: string | null;
     filed_date?: string | null;
     court?: string | null;
+    primary_source_url?: string | null;
   }) => {
-    const caseSlugValue = caseSlug(caseItem);
-    const caseCategory = getCaseCategoryPath(caseItem.id);
-    const links = civilCaseLinksByCase[caseItem.id] || [];
     return {
       ...caseItem,
-      caseSlug: caseSlugValue,
-      caseCategoryPath: caseCategory,
-      caseUrl: `/civil-litigation/${caseCategory}/${caseSlugValue}/`,
-      links,
+      caseUrl: `/civil-litigation/${caseItem.category}/${caseItem.slug}/`,
     };
   },
 );

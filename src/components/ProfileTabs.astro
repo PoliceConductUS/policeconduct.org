@@ -7,18 +7,13 @@ type OfficerRef = {
   last_name: string;
 };
 
-type CaseLink = {
-  url: string;
-  label?: string | null;
-};
-
 type LitigationCase = {
   title?: string | null;
   caseUrl: string;
   cause_number?: string | null;
   filed_date?: string | null;
   court?: string | null;
-  links?: CaseLink[] | null;
+  primary_source_url?: string | null;
   officers?: OfficerRef[] | null;
 };
 
@@ -110,7 +105,6 @@ const hasPastEmployers = pastEmployerEntries.length > 0;
 
 const formatCaseYear = (date?: string | null) =>
   date ? new Date(date).getFullYear() : "—";
-const formatLinkLabel = (link?: CaseLink | null) => link?.label || "Source";
 const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
 ---
 
@@ -152,59 +146,71 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
               <span class="text-uppercase small text-muted mb-0">Cases</span>
             </div>
             {hasLitigation ? (
-              <div class="d-grid gap-3">
-                {litigationCases.map((caseItem) => (
-                  <div class="border rounded-2 p-3 mb-3">
-                    <div class="mb-2">
-                      <span class="text-uppercase small text-muted">Case</span>
-                      <div>
-                        <a
-                          class="text-decoration-none text-dark fw-semibold"
-                          href={caseItem.caseUrl}
-                        >
-                          {caseItem.title || "Civil case"}
-                        </a>
-                      </div>
-                      {caseItem.officers?.length ? (
-                        <div class="small text-muted">
-                          —{" "}
-                          {caseItem.officers.map((officer, index) => (
-                            <>
-                              {index > 0 ? ", " : null}
-                              <a href={`/personnel/${officer.slug}/`}>
-                                {officer.first_name} {officer.last_name}
+              <div class="table-responsive">
+                <table class="table table-striped align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th scope="col">Year</th>
+                      <th scope="col">Cause #</th>
+                      <th scope="col">Case</th>
+                      <th scope="col">Court / notes</th>
+                      <th scope="col">Source</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {litigationCases.map((caseItem) => (
+                      <tr>
+                        <td>{formatCaseYear(caseItem.filed_date)}</td>
+                        <td>
+                          <strong>
+                            {caseItem.cause_number ? (
+                              <a class="link-dark" href={caseItem.caseUrl}>
+                                {caseItem.cause_number}
                               </a>
+                            ) : (
+                              "—"
+                            )}
+                          </strong>
+                        </td>
+                        <td>
+                          <strong>
+                            <a class="link-dark" href={caseItem.caseUrl}>
+                              {caseItem.title || "Civil case"}
+                            </a>
+                          </strong>
+                          {caseItem.officers?.length ? (
+                            <>
+                              {" "}
+                              —{" "}
+                              {caseItem.officers.map((officer, index) => (
+                                <>
+                                  {index > 0 ? ", " : null}
+                                  <a href={`/personnel/${officer.slug}/`}>
+                                    {officer.first_name} {officer.last_name}
+                                  </a>
+                                </>
+                              ))}
                             </>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-                    <div class="case-grid">
-                      <span class="case-grid-label">Year</span>
-                      <span>{formatCaseYear(caseItem.filed_date)}</span>
-                      <span class="case-grid-label">Cause</span>
-                      <span>
-                        <strong>{caseItem.cause_number || "—"}</strong>
-                      </span>
-                      <span class="case-grid-label">Court</span>
-                      <span>{caseItem.court || "—"}</span>
-                      <span class="case-grid-label">Source</span>
-                      <span>
-                        {caseItem.links?.length ? (
-                          <a
-                            href={caseItem.links[0].url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {formatLinkLabel(caseItem.links[0])}
-                          </a>
-                        ) : (
-                          "—"
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                          ) : null}
+                        </td>
+                        <td>{caseItem.court || "—"}</td>
+                        <td>
+                          {caseItem.primary_source_url ? (
+                            <a
+                              href={caseItem.primary_source_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Primary source
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ) : (
               <p class="text-muted">

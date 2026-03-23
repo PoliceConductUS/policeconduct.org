@@ -1,0 +1,221 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { loadCivilCaseDetail } from "#src/lib/data/civil-litigation-detail.js";
+import { withDb } from "#src/lib/db.js";
+import { formatLongDate } from "#src/lib/format.js";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { getSiteUrl } from "#src/lib/structured-data.js";
+import { getVideoEmbedUrl } from "#src/lib/video.js";
+
+export async function getStaticPaths() {
+  const rows = await withDb(async (client) => {
+    return (
+      await client.query(
+        `
+          select
+            civil_case.category,
+            civil_case.slug,
+            civil_case_link.id as video_id,
+            civil_case_link.url
+          from public.civil_case_links civil_case_link
+          join public.civil_cases civil_case
+            on civil_case.id = civil_case_link.civil_case_id
+          order by civil_case.category, civil_case.slug, civil_case_link.id
+        `,
+      )
+    ).rows;
+  });
+
+  return rows
+    .filter((row: { url: string }) => Boolean(getVideoEmbedUrl(row.url)))
+    .map((row: { category: string; slug: string; video_id: string }) => ({
+      params: {
+        category: row.category,
+        slug: row.slug,
+        videoId: row.video_id,
+      },
+    }));
+}
+
+const { category, slug, videoId } = Astro.params;
+const categoryParam = String(category || "").toLowerCase();
+const categoryMeta = US_STATE_TILES.find(
+  (entry) => entry.code.toLowerCase() === categoryParam,
+);
+const categoryLabel =
+  categoryParam === "federal"
+    ? "Federal"
+    : categoryMeta?.name || categoryParam.toUpperCase();
+
+const data = await loadCivilCaseDetail(categoryParam, String(slug || ""));
+if (!data) {
+  throw new Error(`Civil case ${slug} not found.`);
+}
+
+const videos = data.coverageLinks.filter((link) => Boolean(link.embed));
+const videoIndex = videos.findIndex((link) => link.id === videoId);
+if (videoIndex === -1) {
+  throw new Error(`Coverage video ${videoId} not found on civil case ${slug}.`);
+}
+
+const video = videos[videoIndex]!;
+const previousVideo = videoIndex > 0 ? videos[videoIndex - 1] : null;
+const nextVideo =
+  videoIndex < videos.length - 1 ? videos[videoIndex + 1] : null;
+const caseTitle =
+  data.civilCase.title || data.civilCase.cause_number || "Civil case";
+const detailPath = `/civil-litigation/${categoryParam}/${data.civilCase.slug}/`;
+const watchPath = `/civil-litigation/${categoryParam}/${data.civilCase.slug}/watch/${video.id}/`;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(watchPath, siteUrl).toString();
+const caseUrl = new URL(detailPath, siteUrl).toString();
+const videoTitle = video.title || `Coverage video ${videoIndex + 1}`;
+const videoDescription =
+  data.civilCase.claims_summary || `Coverage video for ${caseTitle}.`;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": new URL("/", siteUrl).toString(),
+      url: new URL("/", siteUrl).toString(),
+      name: "PoliceConduct.org",
+    },
+    {
+      "@type": "WebPage",
+      "@id": pageUrl,
+      url: pageUrl,
+      name: `${videoTitle} | Watch | PoliceConduct.org`,
+      description: videoDescription,
+      isPartOf: { "@id": new URL("/", siteUrl).toString() },
+      mainEntity: { "@id": `${pageUrl}#video` },
+    },
+    {
+      "@type": "VideoObject",
+      "@id": `${pageUrl}#video`,
+      name: videoTitle,
+      description: videoDescription,
+      embedUrl: video.embed,
+      thumbnailUrl: video.thumbnail || undefined,
+      url: pageUrl,
+      isPartOf: {
+        "@type": "LegalCase",
+        name: caseTitle,
+        url: caseUrl,
+      },
+    },
+  ],
+};
+---
+
+<SiteLayout
+  title={`${videoTitle} | Watch | PoliceConduct.org`}
+  description={videoDescription}
+  pagePath={watchPath}
+  canonicalUrl={watchPath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-10 col-xl-8">
+            <Breadcrumbs
+              items={[
+                { label: "Civil litigation", href: "/civil-litigation/" },
+                {
+                  label: categoryLabel,
+                  href: `/civil-litigation/${categoryParam}/`,
+                },
+                { label: caseTitle, href: detailPath },
+                { label: "Watch", href: watchPath, current: true },
+              ]}
+            />
+            <p class="text-uppercase small text-muted mb-2">Watch page</p>
+            <h1 class="display-6 fw-bold">{videoTitle}</h1>
+            <p class="lead mb-2">
+              From case: <a class="link-dark" href={detailPath}>{caseTitle}</a>
+            </p>
+            {
+              data.civilCase.filed_date ? (
+                <p class="text-muted mb-0">
+                  Filed: {formatLongDate(data.civilCase.filed_date)}
+                </p>
+              ) : null
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row justify-content-center">
+          <article class="col-12 col-lg-10 col-xl-8">
+            <div class="ratio ratio-16x9 border mb-3">
+              <iframe
+                src={video.embed!}
+                title={videoTitle}
+                loading="lazy"
+                allow="
+                  accelerometer;
+                  autoplay;
+                  clipboard-write;
+                  encrypted-media;
+                  gyroscope;
+                  picture-in-picture;
+                  web-share;
+                "
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen></iframe>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mb-4">
+              <a class="btn btn-dark rounded-0" href={detailPath}>
+                Back to case
+              </a>
+              <a
+                class="btn btn-outline-dark rounded-0"
+                href={video.url}
+                target="_blank"
+                rel="noopener"
+              >
+                Open original source
+              </a>
+            </div>
+
+            <div
+              class="d-flex flex-wrap justify-content-between gap-2 border-top border-bottom py-3 mb-4"
+            >
+              {
+                previousVideo ? (
+                  <a
+                    class="link-dark fw-semibold"
+                    href={`/civil-litigation/${categoryParam}/${data.civilCase.slug}/watch/${previousVideo.id}/`}
+                  >
+                    Previous video
+                  </a>
+                ) : (
+                  <span class="text-muted">Previous video</span>
+                )
+              }
+              {
+                nextVideo ? (
+                  <a
+                    class="link-dark fw-semibold"
+                    href={`/civil-litigation/${categoryParam}/${data.civilCase.slug}/watch/${nextVideo.id}/`}
+                  >
+                    Next video
+                  </a>
+                ) : (
+                  <span class="text-muted">Next video</span>
+                )
+              }
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>

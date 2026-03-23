@@ -69,9 +69,6 @@ const formatIsoDate = (value?: string | null) => {
 };
 
 const caseItems = page.data.map((caseItem: any, index: number) => {
-  const caseLinks = (caseItem.links || [])
-    .map((link: { url?: string | null }) => link.url)
-    .filter(Boolean);
   const filedDateIso = caseItem.filed_date
     ? formatIsoDate(caseItem.filed_date)
     : null;
@@ -81,7 +78,9 @@ const caseItems = page.data.map((caseItem: any, index: number) => {
     ...(caseItem.cause_number ? { identifier: caseItem.cause_number } : {}),
     ...(filedDateIso ? { dateFiled: filedDateIso } : {}),
     ...(caseItem.court ? { court: caseItem.court } : {}),
-    ...(caseLinks.length ? { sameAs: caseLinks } : {}),
+    ...(caseItem.primary_source_url
+      ? { sameAs: [caseItem.primary_source_url] }
+      : {}),
   };
   return {
     "@type": "ListItem",
@@ -170,7 +169,7 @@ if (caseItemList) {
                     </thead>
                     <tbody>
                       {page.data.map((caseItem: any) => {
-                        const sourceLink = caseItem.links?.[0];
+                        const casePath = `/civil-litigation/${categoryParam}/${caseItem.slug}/`;
                         return (
                           <tr>
                             <td>
@@ -179,11 +178,21 @@ if (caseItemList) {
                                 : "—"}
                             </td>
                             <td>
-                              <strong>{caseItem.cause_number || "—"}</strong>
+                              <strong>
+                                {caseItem.cause_number ? (
+                                  <a class="link-dark" href={casePath}>
+                                    {caseItem.cause_number}
+                                  </a>
+                                ) : (
+                                  "—"
+                                )}
+                              </strong>
                             </td>
                             <td>
                               <strong>
-                                {caseItem.title || "Unnamed case"}
+                                <a class="link-dark" href={casePath}>
+                                  {caseItem.title || "Unnamed case"}
+                                </a>
                               </strong>
                               {caseItem.officers.length ? (
                                 <>
@@ -211,13 +220,13 @@ if (caseItemList) {
                             </td>
                             <td>{caseItem.court || "—"}</td>
                             <td>
-                              {sourceLink ? (
+                              {caseItem.primary_source_url ? (
                                 <a
-                                  href={sourceLink.url}
+                                  href={caseItem.primary_source_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >
-                                  {sourceLink.label || "Source"}
+                                  Primary source
                                 </a>
                               ) : (
                                 "—"
