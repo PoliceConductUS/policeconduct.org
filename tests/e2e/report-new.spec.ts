@@ -319,4 +319,91 @@ test.describe("report new", () => {
     expect(data.evidence).toHaveLength(0);
     await expect(page.locator("[data-form-submit-success]")).toBeVisible();
   });
+
+  test("requires complete witness and evidence rows before submit", async ({
+    page,
+  }) => {
+    await installRecaptchaMock(page);
+
+    let submitCount = 0;
+
+    await page.route("**/api/forms/draft**", async (route) => {
+      const request = route.request();
+      if (request.method() === "GET") {
+        await route.fulfill({ status: 204, body: "" });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          draftId: "e2e-draft-id",
+          updatedAt: new Date().toISOString(),
+        }),
+      });
+    });
+
+    await page.route("**/api/forms/submit", async (route) => {
+      submitCount += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ submissionId: "e2e_report_submit_id" }),
+      });
+    });
+
+    await page.goto("/report/new/");
+    await fillRequiredReportFields(page);
+
+    await page.getByRole("button", { name: "Add witness" }).click();
+    await expect(page.locator('label[for="witness-0-name"]')).toHaveText(
+      "Name*",
+    );
+    await expect(page.locator('label[for="witness-0-phone"]')).toHaveText(
+      "Phone*",
+    );
+    await expect(page.locator('label[for="witness-0-email"]')).toHaveText(
+      "Email*",
+    );
+    await page.locator('[name="witnesses[0][name]"]').fill("Witness Zero");
+    await page
+      .locator('[name="witnesses[0][email]"]')
+      .fill("witness0@example.org");
+
+    await page.getByRole("button", { name: "Submit report" }).click();
+    await page.waitForTimeout(250);
+    expect(submitCount).toBe(0);
+
+    await page.locator('[name="witnesses[0][phone]"]').fill("555-0100");
+    await page.getByRole("button", { name: "Add evidence" }).click();
+    await expect(page.locator('label[for="evidence-link-0"]')).toHaveText(
+      "Evidence link*",
+    );
+    await expect(
+      page.locator('label[for="evidence-description-0"]'),
+    ).toHaveText("Description*");
+    await page
+      .locator('[name="evidence[0][link]"]')
+      .fill("https://example.org/evidence-0");
+
+    await page.getByRole("button", { name: "Submit report" }).click();
+    await page.waitForTimeout(250);
+    expect(submitCount).toBe(0);
+
+    const submitResponse = page.waitForResponse((response) => {
+      return (
+        response.url().includes("/api/forms/submit") &&
+        response.request().method() === "POST"
+      );
+    });
+
+    await page
+      .locator('[name="evidence[0][description]"]')
+      .fill("Evidence Zero");
+    await page.getByRole("button", { name: "Submit report" }).click();
+    await submitResponse;
+
+    expect(submitCount).toBe(1);
+    await expect(page.locator("[data-form-submit-success]")).toBeVisible();
+  });
 });
