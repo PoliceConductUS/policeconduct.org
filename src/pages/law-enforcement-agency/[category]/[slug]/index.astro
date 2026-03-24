@@ -311,6 +311,7 @@ const claimProfilePrefillPayload = JSON.stringify({
 });
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(agencyPath, siteUrl).toString();
+const profilePageId = `${pageUrl}#profilepage`;
 const disqusIdentifier = `agency:${data.agency.slug}`;
 const pageDescription = `${data.agency.name} agency profile with contact information, personnel, public reports, and recent civil litigation references.`;
 const addressAvailable =
@@ -321,6 +322,7 @@ const addressAvailable =
 const address = addressAvailable
   ? {
       "@type": "PostalAddress",
+      addressCountry: "US",
       ...(data.agency.address ? { streetAddress: data.agency.address } : {}),
       ...(data.agency.city ? { addressLocality: data.agency.city } : {}),
       ...(data.agency.state ? { addressRegion: data.agency.state } : {}),
@@ -342,6 +344,7 @@ const organization = {
   "@id": `${pageUrl}#organization`,
   name: data.agency.name,
   url: pageUrl,
+  mainEntityOfPage: { "@id": profilePageId },
   ...(address ? { address } : {}),
   ...(data.agency.contact_email ? { email: data.agency.contact_email } : {}),
   ...(contactPoints.length ? { contactPoint: contactPoints } : {}),
@@ -362,12 +365,15 @@ const structuredData = {
     },
     {
       "@type": "ProfilePage",
-      "@id": pageUrl,
+      "@id": profilePageId,
       url: pageUrl,
       name: `${data.agency.name} | PoliceConduct.org`,
       description: pageDescription,
       isPartOf: { "@id": websiteId },
       mainEntity: { "@id": organization["@id"] },
+      ...(data.agency.updated_at
+        ? { dateModified: String(data.agency.updated_at) }
+        : {}),
     },
     organization,
   ],

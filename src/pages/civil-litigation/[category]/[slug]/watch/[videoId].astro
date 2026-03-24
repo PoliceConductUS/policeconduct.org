@@ -6,7 +6,7 @@ import { withDb } from "#src/lib/db.js";
 import { formatLongDate } from "#src/lib/format.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
-import { getVideoEmbedUrl } from "#src/lib/video.js";
+import { getVideoEmbedUrl, isDirectVideoContentUrl } from "#src/lib/video.js";
 
 export async function getStaticPaths() {
   const rows = await withDb(async (client) => {
@@ -73,37 +73,101 @@ const caseUrl = new URL(detailPath, siteUrl).toString();
 const videoTitle = video.title || `Coverage video ${videoIndex + 1}`;
 const videoDescription =
   data.civilCase.claims_summary || `Coverage video for ${caseTitle}.`;
+const normalizeIsoDate = (value?: string | Date | null) => {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+};
+const collapseWhitespace = (value?: string | null) =>
+  value ? value.replace(/\s+/g, " ").trim() : "";
+const websiteId = new URL("/", siteUrl).toString();
+const webpageId = `${pageUrl}#webpage`;
+const legalCaseId = `${caseUrl}#legalcase`;
+const videoObjectId = `${pageUrl}#video`;
+const officerEntities = data.officers.map((officer) => {
+  const officerUrl = new URL(`/personnel/${officer.slug}/`, siteUrl).toString();
+  return {
+    "@type": "Person",
+    "@id": `${officerUrl}#person`,
+    name: `${officer.first_name} ${officer.last_name}`,
+    url: officerUrl,
+  };
+});
+const agencyEntities = data.agencies.map((agency) => {
+  const agencyUrl = new URL(
+    `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+    siteUrl,
+  ).toString();
+  return {
+    "@type": "GovernmentOrganization",
+    "@id": `${agencyUrl}#organization`,
+    name: agency.name,
+    url: agencyUrl,
+  };
+});
+const legalCaseEntity: Record<string, any> = {
+  "@type": "LegalCase",
+  "@id": legalCaseId,
+  name: caseTitle,
+  url: caseUrl,
+  ...(data.civilCase.cause_number
+    ? { identifier: data.civilCase.cause_number }
+    : {}),
+  ...(data.civilCase.filed_date
+    ? { dateFiled: new Date(data.civilCase.filed_date).toISOString() }
+    : {}),
+  ...(data.civilCase.court ? { court: data.civilCase.court } : {}),
+  ...(data.civilCase.primary_source_url
+    ? { sameAs: [data.civilCase.primary_source_url] }
+    : {}),
+};
+if (officerEntities.length || agencyEntities.length) {
+  legalCaseEntity.about = [...officerEntities, ...agencyEntities].map(
+    (entity) => ({
+      "@id": entity["@id"],
+    }),
+  );
+}
+const videoUploadDate =
+  normalizeIsoDate(video.updated_at) || normalizeIsoDate(video.created_at);
+const videoModifiedDate =
+  normalizeIsoDate(data.civilCase.updated_at) || videoUploadDate;
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
     {
       "@type": "WebSite",
-      "@id": new URL("/", siteUrl).toString(),
-      url: new URL("/", siteUrl).toString(),
+      "@id": websiteId,
+      url: websiteId,
       name: "PoliceConduct.org",
     },
     {
       "@type": "WebPage",
-      "@id": pageUrl,
+      "@id": webpageId,
       url: pageUrl,
       name: `${videoTitle} | Watch | PoliceConduct.org`,
-      description: videoDescription,
-      isPartOf: { "@id": new URL("/", siteUrl).toString() },
-      mainEntity: { "@id": `${pageUrl}#video` },
+      description: collapseWhitespace(videoDescription),
+      isPartOf: { "@id": websiteId },
+      mainEntity: { "@id": videoObjectId },
     },
+    ...agencyEntities,
+    ...officerEntities,
+    legalCaseEntity,
     {
       "@type": "VideoObject",
-      "@id": `${pageUrl}#video`,
+      "@id": videoObjectId,
       name: videoTitle,
-      description: videoDescription,
+      description: collapseWhitespace(videoDescription),
       embedUrl: video.embed,
-      thumbnailUrl: video.thumbnail || undefined,
+      mainEntityOfPage: { "@id": webpageId },
       url: pageUrl,
-      isPartOf: {
-        "@type": "LegalCase",
-        name: caseTitle,
-        url: caseUrl,
-      },
+      isPartOf: { "@id": legalCaseId },
+      ...(video.thumbnail ? { thumbnailUrl: video.thumbnail } : {}),
+      ...(isDirectVideoContentUrl(video.url) ? { contentUrl: video.url } : {}),
+      ...(videoUploadDate ? { uploadDate: videoUploadDate } : {}),
+      ...(videoModifiedDate ? { dateModified: videoModifiedDate } : {}),
     },
   ],
 };
@@ -184,6 +248,99 @@ const structuredData = {
                 Open original source
               </a>
             </div>
+
+            <section class="border p-3 bg-white mb-4">
+              <h2 class="h6 text-uppercase text-muted mb-3">Case details</h2>
+              <div class="row g-3">
+                <div class="col-sm-6">
+                  <div class="small text-uppercase text-muted">
+                    Cause number
+                  </div>
+                  <div>{data.civilCase.cause_number || "—"}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="small text-uppercase text-muted">Court</div>
+                  <div>{data.civilCase.court || "—"}</div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="small text-uppercase text-muted">Filed</div>
+                  <div>
+                    {
+                      data.civilCase.filed_date
+                        ? formatLongDate(data.civilCase.filed_date)
+                        : "—"
+                    }
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <div class="small text-uppercase text-muted">
+                    Primary source
+                  </div>
+                  {
+                    data.civilCase.primary_source_url ? (
+                      <a
+                        href={data.civilCase.primary_source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Open source
+                      </a>
+                    ) : (
+                      <span>—</span>
+                    )
+                  }
+                </div>
+                <div class="col-12">
+                  <div class="small text-uppercase text-muted">Claims</div>
+                  <p class="mb-0">
+                    {
+                      collapseWhitespace(data.civilCase.claims_summary) ||
+                        "No claims summary listed."
+                    }
+                  </p>
+                </div>
+                <div class="col-12">
+                  <div class="small text-uppercase text-muted">Officers</div>
+                  {
+                    data.officers.length ? (
+                      <p class="mb-0">
+                        {data.officers.map((officer, index) => (
+                          <>
+                            {index > 0 ? ", " : null}
+                            <a href={`/personnel/${officer.slug}/`}>
+                              {officer.first_name} {officer.last_name}
+                            </a>
+                          </>
+                        ))}
+                      </p>
+                    ) : (
+                      <p class="mb-0">No officers linked.</p>
+                    )
+                  }
+                </div>
+                <div class="col-12">
+                  <div class="small text-uppercase text-muted">Agencies</div>
+                  {
+                    data.agencies.length ? (
+                      <p class="mb-0">
+                        {data.agencies.map((agency, index) => (
+                          <>
+                            {index > 0 ? ", " : null}
+                            <a
+                              href={`/law-enforcement-agency/${agency.category}/${agency.slug}/`}
+                            >
+                              {agency.name}
+                            </a>
+                          </>
+                        ))}
+                      </p>
+                    ) : (
+                      <p class="mb-0">No agencies linked.</p>
+                    )
+                  }
+                </div>
+              </div>
+            </section>
 
             <div
               class="d-flex flex-wrap justify-content-between gap-2 border-top border-bottom py-3 mb-4"

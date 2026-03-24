@@ -24,20 +24,27 @@ const normalizedItems = items.map((item, index) => ({
     (item.current || index === items.length - 1 ? currentPath : ""),
   current: item.current ?? index === items.length - 1,
 }));
-const breadcrumbData = {
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  itemListElement: normalizedItems.map((item, index) => ({
-    "@type": "ListItem",
-    position: index + 1,
-    name: item.label,
-    item: new URL(item.href, siteUrl).toString(),
-  })),
-};
-const serializedBreadcrumbData = JSON.stringify(breadcrumbData).replace(
-  /</g,
-  "\\u003c",
+const currentItemCount = normalizedItems.filter((item) => item.current).length;
+const hasValidLinkedItems = normalizedItems.every(
+  (item) => item.current || Boolean(item.href),
 );
+const hasBreadcrumbTrail =
+  normalizedItems.length >= 2 && currentItemCount === 1 && hasValidLinkedItems;
+const breadcrumbData = hasBreadcrumbTrail
+  ? {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: normalizedItems.map((item, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: item.label,
+        item: new URL(item.href, siteUrl).toString(),
+      })),
+    }
+  : null;
+const serializedBreadcrumbData = breadcrumbData
+  ? JSON.stringify(breadcrumbData).replace(/</g, "\\u003c")
+  : "";
 ---
 
 <nav aria-label="Breadcrumb">
@@ -60,4 +67,12 @@ const serializedBreadcrumbData = JSON.stringify(breadcrumbData).replace(
     }
   </ol>
 </nav>
-<script type="application/ld+json" set:html={serializedBreadcrumbData} />
+{
+  breadcrumbData ? (
+    <script
+      type="application/ld+json"
+      set:html={serializedBreadcrumbData}
+      is:inline
+    />
+  ) : null
+}

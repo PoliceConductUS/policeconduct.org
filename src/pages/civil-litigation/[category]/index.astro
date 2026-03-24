@@ -64,9 +64,15 @@ const caseItems = pageCases.map((caseItem, index) => {
   const filedDateIso = caseItem.filed_date
     ? formatIsoDate(caseItem.filed_date)
     : null;
+  const caseUrl = new URL(
+    `/civil-litigation/${categoryParam}/${caseItem.slug}/`,
+    siteUrl,
+  ).toString();
   const legalCase = {
     "@type": "LegalCase",
+    "@id": `${caseUrl}#legalcase`,
     name: caseItem.title || caseItem.cause_number || "Civil case",
+    url: caseUrl,
     ...(caseItem.cause_number ? { identifier: caseItem.cause_number } : {}),
     ...(filedDateIso ? { dateFiled: filedDateIso } : {}),
     ...(caseItem.court ? { court: caseItem.court } : {}),

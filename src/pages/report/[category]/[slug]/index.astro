@@ -8,6 +8,7 @@ import { loadReportSummaries } from "#src/lib/data/summaries.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import RatingBadge from "#src/components/RatingBadge.astro";
 import { getSiteUrl } from "#src/lib/structured-data.js";
+import { isDirectVideoContentUrl } from "#src/lib/video.js";
 
 export async function getStaticPaths() {
   const reports = await loadReportSummaries();
@@ -84,49 +85,81 @@ const createdAtIso = normalizeIsoDate(
 const updatedAtIso = normalizeIsoDate(
   data.report.updated_at as string | Date | null,
 );
-const officerEntities = officers
-  .map((entry) => {
-    if (!entry.officer) {
-      return null;
-    }
-    const officerName =
-      `${entry.officer.first_name} ${entry.officer.last_name}${entry.officer.suffix ? ` ${entry.officer.suffix}` : ""}`.trim();
+const webpageId = `${pageUrl}#webpage`;
+const officerEntities = Array.from(
+  new Map(
+    officers
+      .map((entry) => {
+        if (!entry.officer || !entry.path) {
+          return null;
+        }
+        const officerName =
+          `${entry.officer.first_name} ${entry.officer.last_name}${entry.officer.suffix ? ` ${entry.officer.suffix}` : ""}`.trim();
+        const officerUrl = new URL(entry.path, siteUrl).toString();
+        return [
+          `${officerUrl}#person`,
+          {
+            "@type": "Person",
+            "@id": `${officerUrl}#person`,
+            name: officerName,
+            url: officerUrl,
+          },
+        ] as const;
+      })
+      .filter(Boolean),
+  ).values(),
+);
+const agencyEntities = Array.from(
+  new Map(
+    officers.flatMap((entry) => {
+      const agency = entry.agency as {
+        name?: string;
+        slug?: string;
+        category?: string;
+      } | null;
+      if (!agency || !agency.name || !agency.slug || !agency.category) {
+        return [];
+      }
+      const agencyUrl = new URL(
+        `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+        siteUrl,
+      ).toString();
+      return [
+        [
+          `${agencyUrl}#organization`,
+          {
+            "@type": "GovernmentOrganization",
+            "@id": `${agencyUrl}#organization`,
+            name: agency.name,
+            url: agencyUrl,
+          },
+        ] as const,
+      ];
+    }),
+  ).values(),
+);
+const videoEntities = evidenceLinks
+  .filter((link) => Boolean(link.embed))
+  .map((link, index) => {
+    const watchPath = `/report/${categorySlug}/${slug}/watch/${link.id}/`;
+    const watchUrl = new URL(watchPath, siteUrl).toString();
     return {
-      "@type": "Person",
-      name: officerName,
-      ...(entry.path ? { url: new URL(entry.path, siteUrl).toString() } : {}),
+      "@type": "VideoObject",
+      "@id": `${watchUrl}#video`,
+      name: link.title?.trim() || `Video Evidence ${index + 1}`,
+      url: watchUrl,
+      embedUrl: link.embed,
+      ...(link.thumbnail ? { thumbnailUrl: link.thumbnail } : {}),
+      ...(isDirectVideoContentUrl(link.url) ? { contentUrl: link.url } : {}),
+      isPartOf: { "@id": `${pageUrl}#report` },
     };
-  })
-  .filter(Boolean);
-const agencyEntities = officers.flatMap((entry) => {
-  const agency = entry.agency as {
-    name?: string;
-    slug?: string;
-    category?: string;
-  } | null;
-  if (!agency || !agency.name) {
-    return [];
-  }
-  return [
-    {
-      "@type": "GovernmentOrganization",
-      name: agency.name,
-      ...(agency.slug && agency.category
-        ? {
-            url: new URL(
-              `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
-              siteUrl,
-            ).toString(),
-          }
-        : {}),
-    },
-  ];
-});
+  });
 const reportEntity = {
   "@type": "Report",
   "@id": `${pageUrl}#report`,
   name: reportTitle,
   url: pageUrl,
+  mainEntityOfPage: { "@id": webpageId },
   ...(reportDescription ? { description: reportDescription } : {}),
   ...(createdAtIso ? { datePublished: createdAtIso } : {}),
   ...(updatedAtIso ? { dateModified: updatedAtIso } : {}),
@@ -143,8 +176,19 @@ const reportEntity = {
   ...(reportAddress
     ? { contentLocation: { "@type": "Place", name: reportAddress } }
     : {}),
-  ...(officerEntities.length || agencyEntities.length
-    ? { about: [...officerEntities, ...agencyEntities] }
+  ...(officerEntities.length || agencyEntities.length || videoEntities.length
+    ? {
+        about: [...officerEntities, ...agencyEntities].map((entity) => ({
+          "@id": entity["@id"],
+        })),
+      }
+    : {}),
+  ...(videoEntities.length
+    ? {
+        hasPart: videoEntities.map((entity) => ({
+          "@id": entity["@id"],
+        })),
+      }
     : {}),
 };
 const websiteId = new URL("/", siteUrl).toString();
@@ -159,13 +203,16 @@ const structuredData = {
     },
     {
       "@type": "WebPage",
-      "@id": pageUrl,
+      "@id": webpageId,
       url: pageUrl,
       name: `Report: ${reportTitle} | PoliceConduct.org`,
       description: reportDescription,
       isPartOf: { "@id": websiteId },
       mainEntity: { "@id": reportEntity["@id"] },
     },
+    ...agencyEntities,
+    ...officerEntities,
+    ...videoEntities,
     reportEntity,
   ],
 };

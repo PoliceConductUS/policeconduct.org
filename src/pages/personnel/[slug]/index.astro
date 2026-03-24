@@ -261,6 +261,7 @@ const reportCount = data.reports.length;
 const pastEmployerCount = pastEmployers.length;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(officerPath, siteUrl).toString();
+const profilePageId = `${pageUrl}#profilepage`;
 const disqusIdentifier = `personnel:${data.officer.slug}`;
 const agencyUrl = currentAgency
   ? new URL(
@@ -283,6 +284,7 @@ const person = {
   name: officerName,
   url: pageUrl,
   image: new URL(personnelImageSrc, siteUrl).toString(),
+  mainEntityOfPage: { "@id": profilePageId },
   ...(isDeceased ? { deathDate: String(deceasedOnValue) } : {}),
   ...(organization ? { worksFor: { "@id": organization["@id"] } } : {}),
 };
@@ -297,12 +299,13 @@ const structuredData = {
     },
     {
       "@type": "ProfilePage",
-      "@id": pageUrl,
+      "@id": profilePageId,
       url: pageUrl,
       name: pageTitle,
       description: pageDescription,
       isPartOf: { "@id": new URL("/", siteUrl).toString() },
       mainEntity: { "@id": person["@id"] },
+      dateModified: String(data.officer.updated_at),
     },
     ...(organization ? [organization] : []),
     person,

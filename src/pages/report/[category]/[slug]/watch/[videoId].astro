@@ -6,6 +6,7 @@ import { loadReportDetail } from "#src/lib/report-detail.js";
 import { loadReportSummaries } from "#src/lib/data/summaries.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
+import { isDirectVideoContentUrl } from "#src/lib/video.js";
 
 export async function getStaticPaths() {
   const reports = await loadReportSummaries();
@@ -78,10 +79,6 @@ const watchPath = `/report/${categorySlug}/${slug}/watch/${videoId}/`;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(watchPath, siteUrl).toString();
 const reportUrl = new URL(reportPath, siteUrl).toString();
-const thumbnailUrl = new URL(
-  "/img/personnel/cm7a0bh1z2f39ewvglexrgaig.webp",
-  siteUrl,
-).toString();
 
 const videos = data.evidenceLinks.filter((link) => Boolean(link.embed));
 const videoIndex = videos.findIndex((link) => link.id === videoId);
@@ -126,6 +123,8 @@ const videoDescription =
   reportDescription || `Evidence video from report: ${reportTitle}.`;
 
 const websiteId = new URL("/", siteUrl).toString();
+const webpageId = `${pageUrl}#webpage`;
+const reportEntityId = `${reportUrl}#report`;
 const videoObjectId = `${pageUrl}#video`;
 const structuredData = {
   "@context": "https://schema.org",
@@ -138,7 +137,7 @@ const structuredData = {
     },
     {
       "@type": "WebPage",
-      "@id": pageUrl,
+      "@id": webpageId,
       url: pageUrl,
       name: `${videoTitle} | Watch | PoliceConduct.org`,
       description: videoDescription,
@@ -146,18 +145,22 @@ const structuredData = {
       mainEntity: { "@id": videoObjectId },
     },
     {
+      "@type": "Report",
+      "@id": reportEntityId,
+      name: reportTitle,
+      url: reportUrl,
+    },
+    {
       "@type": "VideoObject",
       "@id": videoObjectId,
       name: videoTitle,
       description: videoDescription,
       embedUrl: video.embed,
-      thumbnailUrl,
+      mainEntityOfPage: { "@id": webpageId },
       url: pageUrl,
-      isPartOf: {
-        "@type": "Report",
-        name: reportTitle,
-        url: reportUrl,
-      },
+      isPartOf: { "@id": reportEntityId },
+      ...(video.thumbnail ? { thumbnailUrl: video.thumbnail } : {}),
+      ...(isDirectVideoContentUrl(video.url) ? { contentUrl: video.url } : {}),
       ...(createdAtIso ? { uploadDate: createdAtIso } : {}),
       ...(updatedAtIso ? { dateModified: updatedAtIso } : {}),
     },

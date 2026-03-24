@@ -10,6 +10,29 @@ const isYouTubeUrl = (url: string) => {
   }
 };
 
+const DIRECT_VIDEO_EXTENSIONS = [
+  ".mp4",
+  ".m4v",
+  ".mov",
+  ".webm",
+  ".ogv",
+  ".ogg",
+  ".m3u8",
+  ".mpd",
+];
+
+export const isDirectVideoContentUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    const pathname = parsed.pathname.toLowerCase();
+    return DIRECT_VIDEO_EXTENSIONS.some((extension) =>
+      pathname.endsWith(extension),
+    );
+  } catch {
+    return false;
+  }
+};
+
 export const getVideoEmbedUrl = (url: string) => {
   if (!isYouTubeUrl(url)) {
     return null;

@@ -7,6 +7,8 @@ export type CivilCaseCoverageLink = {
   url: string;
   embed: string | null;
   thumbnail: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type CivilCaseDetailOfficer = {
@@ -68,18 +70,26 @@ export const loadCivilCaseDetail = async (
     const coverageLinks = (
       await client.query(
         `
-          select id, title, url
+          select id, title, url, created_at, updated_at
           from public.civil_case_links
           where civil_case_id = $1
           order by created_at, id
         `,
         [civilCase.id],
       )
-    ).rows.map((link: { id: string; title: string; url: string }) => ({
-      ...link,
-      embed: getVideoEmbedUrl(link.url),
-      thumbnail: getYouTubeThumbnailUrl(link.url),
-    }));
+    ).rows.map(
+      (link: {
+        id: string;
+        title: string;
+        url: string;
+        created_at: string;
+        updated_at: string;
+      }) => ({
+        ...link,
+        embed: getVideoEmbedUrl(link.url),
+        thumbnail: getYouTubeThumbnailUrl(link.url),
+      }),
+    );
 
     const officers = (
       await client.query(

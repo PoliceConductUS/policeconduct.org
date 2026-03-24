@@ -4,6 +4,7 @@ import sitemap from "@astrojs/sitemap";
 import { loadEnv } from "vite";
 
 import sentry from "@sentry/astro";
+import { buildSitemapLastmodMap } from "./src/lib/sitemap-lastmod.js";
 
 /**
  * @param {string} value
@@ -55,6 +56,7 @@ const SITEMAP_EXCLUDED_PATHS = new Set([
   "/status/",
   "/volunteer/",
 ]);
+const sitemapLastmodMapPromise = buildSitemapLastmodMap();
 
 // https://astro.build/config
 export default defineConfig({
@@ -93,6 +95,18 @@ export default defineConfig({
       filter: (page) => {
         const pathname = new URL(page).pathname;
         return !SITEMAP_EXCLUDED_PATHS.has(pathname);
+      },
+      serialize: async (item) => {
+        const lastmodMap = await sitemapLastmodMapPromise;
+        const pathname = new URL(item.url).pathname;
+        const lastmod = lastmodMap.get(pathname);
+        if (!lastmod) {
+          return item;
+        }
+        return {
+          ...item,
+          lastmod,
+        };
       },
     }),
     sentry({
