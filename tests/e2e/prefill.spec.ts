@@ -57,7 +57,7 @@ const simpleSenderCases: SenderCase[] = [
     route: "/news/",
     key: "prefill:contact",
     expectedFields: ["message", "whoami"],
-    locator: { kind: "role", value: "Subscribe" },
+    locator: { kind: "role", value: "Notify me about news updates" },
     targetPath: "/about/contact/",
   },
   {
@@ -106,7 +106,7 @@ const simpleSenderCases: SenderCase[] = [
       "/report/tx/2023-12-04-75039-1st-amendment-retaliation-arrest-2c545f/",
     key: "prefill:contact",
     expectedFields: ["message", "whoami"],
-    locator: { kind: "role", value: "Subscribe" },
+    locator: { kind: "role", value: "Notify me when this report changes" },
     targetPath: "/about/contact/",
   },
   {

@@ -338,15 +338,24 @@ test.describe("report new", () => {
       .fill("Evidence Zero");
 
     await page.locator("[data-remove-officer]").nth(1).click();
+    await expect(page.locator("[data-officer]")).toHaveCount(2);
+    await expect(page.locator('[name="officers[0][name]"]')).toHaveValue(
+      "Officer Zero",
+    );
+    await expect(page.locator('[name="officers[1][name]"]')).toHaveValue(
+      "Officer Two",
+    );
     await page.getByRole("button", { name: "Remove witness" }).click();
     await page.getByRole("button", { name: "Remove evidence" }).click();
+    await answerOfficerAssessment(page, 0);
+    await answerOfficerAssessment(page, 1);
 
     await page.getByRole("button", { name: "Submit report" }).click();
     await page.waitForTimeout(250);
     expect(submitCount).toBe(0);
+    await expect(page.locator("[data-officer]")).toHaveCount(2);
 
     await fillRequiredReportFields(page);
-    await answerOfficerAssessment(page, 1);
 
     const submitResponse = page.waitForResponse((response) => {
       return (
