@@ -5,7 +5,7 @@ import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/about/";
 const pageDescription =
-  "Learn why PoliceConduct.org was created, how the Institute for Police Conduct approaches accountability, and why the project documents both misconduct and good policing.";
+  "Learn why PoliceConduct.org was created, how the Institute for Police Conduct approaches accountability, and why the project documents police conduct in a balanced public record.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const structuredData = buildWebPage({
@@ -140,7 +140,7 @@ const structuredData = buildWebPage({
             <p class="about-brief-body mb-0">
               Good policing should be visible too. Officers and agencies that
               act with restraint, dignity, and professionalism deserve
-              recognition in the public record just as misconduct deserves
+              recognition in the public record just as serious concerns deserve
               scrutiny.
             </p>
           </div>
@@ -218,4 +218,16 @@ const structuredData = buildWebPage({
       </div>
     </section>
   </main>
+  <script>
+    import AOS from "aos";
+    import "aos/dist/aos.css";
+
+    if (!document.documentElement.dataset.aosInit) {
+      AOS.init({
+        duration: 800,
+        once: true,
+      });
+      document.documentElement.dataset.aosInit = "1";
+    }
+  </script>
 </SiteLayout>

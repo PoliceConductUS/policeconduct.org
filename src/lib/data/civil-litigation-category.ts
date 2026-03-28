@@ -8,6 +8,13 @@ export type OfficerRef = {
   last_name: string;
 };
 
+export type AgencyRef = {
+  id: string;
+  slug: string;
+  name: string;
+  category: string;
+};
+
 export type CivilCaseSummary = {
   id: string;
   slug: string;
@@ -21,6 +28,7 @@ export type CivilCaseSummary = {
   primary_source_url: string | null;
   created_at: string;
   officers: OfficerRef[];
+  agencies: AgencyRef[];
 };
 
 export const loadCivilCasesByCategory = async (
@@ -30,6 +38,7 @@ export const loadCivilCasesByCategory = async (
     civilCases = [],
     civilCaseOfficers = [],
     officers = [],
+    civilCaseAgencies = [],
   } = await withDb(async (client) => {
     const casesResult = await client.query(
       `
@@ -45,6 +54,7 @@ export const loadCivilCasesByCategory = async (
         civilCases: [],
         civilCaseOfficers: [],
         officers: [],
+        civilCaseAgencies: [],
       };
     }
 
@@ -77,14 +87,35 @@ export const loadCivilCasesByCategory = async (
         ).rows
       : [];
 
+    const civilCaseAgencies = (
+      await client.query(
+        `
+          select distinct
+            cco.civil_case_id,
+            a.id,
+            a.slug,
+            a.name,
+            a.category
+          from public.civil_case_officers cco
+          join public.agency_officers ao on ao.id = cco.agency_officer_id
+          join public.agency a on a.id = ao.agency_id
+          where cco.civil_case_id = any($1)
+          order by a.name
+        `,
+        [caseIds],
+      )
+    ).rows;
+
     return {
       civilCases: casesResult.rows,
       civilCaseOfficers: caseOfficersResult.rows,
       officers: officerRows,
+      civilCaseAgencies,
     };
   });
 
   const officersByCase = groupBy(civilCaseOfficers, "civil_case_id");
+  const agenciesByCase = groupBy(civilCaseAgencies, "civil_case_id");
   const officersById = mapBy(officers, "id");
 
   return [...civilCases]
@@ -93,6 +124,14 @@ export const loadCivilCasesByCategory = async (
       officers: (officersByCase[civilCase.id] || [])
         .map((entry: { officer_id: string }) => officersById[entry.officer_id])
         .filter(Boolean),
+      agencies: (agenciesByCase[civilCase.id] || []).map(
+        (entry: AgencyRef & { civil_case_id: string }) => ({
+          id: entry.id,
+          slug: entry.slug,
+          name: entry.name,
+          category: entry.category,
+        }),
+      ),
     }))
     .sort((left, right) => {
       const leftDate = new Date(

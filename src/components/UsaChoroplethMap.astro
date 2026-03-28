@@ -53,10 +53,25 @@ const {
 const byCode = new Map(stats.map((entry) => [entry.code.toLowerCase(), entry]));
 
 const maxCount = Math.max(0, ...stats.map((entry) => Number(entry.count || 0)));
+const EMPTY_STATE_FILL = "#f8f9fa";
+const SMALL_STATE_CHIPS = [
+  { id: "ma", code: "MA", name: "Massachusetts" },
+  { id: "ct", code: "CT", name: "Connecticut" },
+  { id: "ri", code: "RI", name: "Rhode Island" },
+  { id: "nj", code: "NJ", name: "New Jersey" },
+  { id: "de", code: "DE", name: "Delaware" },
+  { id: "md", code: "MD", name: "Maryland" },
+  { id: "dc", code: "DC", name: "District of Columbia" },
+] as const;
+const SMALL_STATE_GUTTER_X = 1236;
+const SMALL_STATE_GUTTER_Y = 154;
+const SMALL_STATE_GUTTER_WIDTH = 74;
+const SMALL_STATE_GUTTER_HEIGHT = 30;
+const SMALL_STATE_GUTTER_GAP = 10;
 
 const getFill = (count: number) => {
   if (!count) {
-    return "var(--bs-gray-100)";
+    return EMPTY_STATE_FILL;
   }
   if (!maxCount) {
     return "rgba(21, 21, 21, 0.250)";
@@ -68,6 +83,27 @@ const getFill = (count: number) => {
   // Minimum alpha of 0.25 for any state with data
   const alpha = 0.25 + intensity * 0.35;
   return `rgba(21, 21, 21, ${alpha.toFixed(3)})`;
+};
+
+const getStateDisplay = (stateId: string, stateLabel: string) => {
+  const stat = byCode.get(stateId.toLowerCase()) || {
+    code: stateId,
+    count: 0,
+  };
+  const href = stat.href;
+  const count = Number(stat.count || 0);
+  const fill = getFill(count);
+  const isInteractive = Boolean(href);
+  const label =
+    stat.hoverLabel || (count ? `${stateLabel}: ${count}` : stateLabel);
+
+  return {
+    count,
+    fill,
+    href,
+    isInteractive,
+    label,
+  };
 };
 ---
 
@@ -99,35 +135,23 @@ const getFill = (count: number) => {
             ) : null
           }
         </div>
-        <div class="map-wrap">
-          <svg
-            viewBox="192 9 1028 746"
-            role="img"
-            aria-label={`${title} coverage map`}
-            class="usa-map"
-          >
+        <div class="map-wrap" data-usa-map>
+          <svg viewBox="192 9 1138 746" class="usa-map">
+            <title>{title} coverage map</title>
+            <desc>{interactionLabel || "Interactive state map."}</desc>
             {
               USA_STATE_PATHS.map((state) => {
-                const stat = byCode.get(state.id.toLowerCase()) || {
-                  code: state.id,
-                  count: 0,
-                };
-                const href = stat.href;
-                const count = Number(stat.count || 0);
-                const fill = getFill(count);
-                const isInteractive = Boolean(href);
-                const stateLabel = state.label;
-                const label =
-                  stat.hoverLabel ||
-                  (count ? `${stateLabel}: ${count}` : stateLabel);
+                const { count, fill, href, isInteractive, label } =
+                  getStateDisplay(state.id, state.label);
                 const pathEl = (
                   <path
                     id={`state-${state.id}`}
+                    data-role="map-state"
+                    data-state-id={state.id}
                     d={state.d}
                     fill={fill}
                     stroke="#111"
                     stroke-width="1"
-                    aria-label={label}
                     class:list={{
                       "has-data": Boolean(count),
                       "no-data": !count,
@@ -138,11 +162,73 @@ const getFill = (count: number) => {
                   </path>
                 );
                 return href ? (
-                  <a href={href} aria-label={`View ${label}`}>
+                  <a
+                    href={href}
+                    aria-label={`View ${label}`}
+                    data-state-id={state.id}
+                  >
                     {pathEl}
                   </a>
                 ) : (
                   pathEl
+                );
+              })
+            }
+            <g class="small-state-gutter" aria-hidden="true">
+              <text
+                x={SMALL_STATE_GUTTER_X}
+                y={SMALL_STATE_GUTTER_Y - 18}
+                class="small-state-gutter-label"
+              >
+                Small states
+              </text>
+            </g>
+            {
+              SMALL_STATE_CHIPS.map((chip, index) => {
+                const { fill, href, label } = getStateDisplay(
+                  chip.id,
+                  chip.name,
+                );
+                const y =
+                  SMALL_STATE_GUTTER_Y +
+                  index * (SMALL_STATE_GUTTER_HEIGHT + SMALL_STATE_GUTTER_GAP);
+                const pillEl = (
+                  <g
+                    class="small-state-pill"
+                    data-role="small-state-pill"
+                    data-state-id={chip.id}
+                  >
+                    <rect
+                      x={SMALL_STATE_GUTTER_X}
+                      y={y}
+                      width={SMALL_STATE_GUTTER_WIDTH}
+                      height={SMALL_STATE_GUTTER_HEIGHT}
+                      rx="15"
+                      fill={fill}
+                      class="small-state-pill-rect"
+                    />
+                    <text
+                      x={SMALL_STATE_GUTTER_X + SMALL_STATE_GUTTER_WIDTH / 2}
+                      y={y + 19}
+                      text-anchor="middle"
+                      class="small-state-pill-code"
+                    >
+                      {chip.code}
+                    </text>
+                    <title>{label}</title>
+                  </g>
+                );
+
+                return href ? (
+                  <a
+                    href={href}
+                    aria-label={`View ${label}`}
+                    data-state-id={chip.id}
+                  >
+                    {pillEl}
+                  </a>
+                ) : (
+                  pillEl
                 );
               })
             }
@@ -226,8 +312,8 @@ const getFill = (count: number) => {
 <style>
   .map-wrap {
     width: 100%;
-    background: var(--bs-gray-100);
-    border: 1px solid var(--bs-border-color);
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.04);
@@ -262,8 +348,70 @@ const getFill = (count: number) => {
     stroke-width: 2;
   }
 
+  .usa-map path.is-linked-active {
+    transform: translateY(-1px);
+    stroke: #000;
+    stroke-width: 6;
+    filter: drop-shadow(0 0 6px rgba(17, 17, 17, 0.35));
+  }
+
   a {
     color: inherit;
+  }
+
+  .usa-map .small-state-gutter-label {
+    fill: #6c757d;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .usa-map .small-state-pill {
+    cursor: default;
+    transition: transform 120ms ease;
+  }
+
+  .usa-map .small-state-pill-rect {
+    stroke: rgba(17, 17, 17, 0.72);
+    stroke-width: 1;
+  }
+
+  .usa-map .small-state-pill-code {
+    fill: #111;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    pointer-events: none;
+  }
+
+  .usa-map a .small-state-pill,
+  .usa-map a .small-state-pill rect {
+    cursor: pointer;
+  }
+
+  .usa-map a .small-state-pill:hover,
+  .usa-map a .small-state-pill:focus-visible {
+    transform: translateY(-1px);
+  }
+
+  .usa-map a .small-state-pill:hover .small-state-pill-rect,
+  .usa-map a .small-state-pill:focus-visible .small-state-pill-rect,
+  .usa-map .small-state-pill.is-linked-active .small-state-pill-rect {
+    stroke-width: 2;
+  }
+
+  .usa-map .small-state-pill.is-linked-active {
+    transform: translateY(-1px);
+    filter: drop-shadow(0 0 8px rgba(17, 17, 17, 0.28));
+  }
+
+  .usa-map .small-state-pill.is-linked-active .small-state-pill-rect {
+    stroke: #000;
+    stroke-width: 2;
+  }
+
+  .usa-map .small-state-pill.is-linked-active .small-state-pill-code {
+    fill: #000;
   }
 
   .state-tiles-wrap {
@@ -323,7 +471,103 @@ const getFill = (count: number) => {
     width: 18px;
     height: 18px;
     border-radius: 4px;
-    border: 1px solid var(--bs-border-color);
-    background: var(--bs-gray-100);
+    border: 1px solid #dee2e6;
+    background: #f8f9fa;
   }
 </style>
+
+<script is:inline>
+  (() => {
+    const mapRoots = document.querySelectorAll("[data-usa-map]");
+
+    for (const mapRoot of mapRoots) {
+      let activeStateId = "";
+
+      const applyActiveState = (stateId) => {
+        if (activeStateId === stateId) {
+          return;
+        }
+
+        if (activeStateId) {
+          mapRoot
+            .querySelectorAll(`[data-state-id="${activeStateId}"]`)
+            .forEach((node) => node.classList.remove("is-linked-active"));
+        }
+
+        activeStateId = stateId;
+
+        if (!activeStateId) {
+          return;
+        }
+
+        mapRoot
+          .querySelectorAll(`[data-state-id="${activeStateId}"]`)
+          .forEach((node) => node.classList.add("is-linked-active"));
+      };
+
+      const clearActiveState = () => {
+        if (!activeStateId) {
+          return;
+        }
+        mapRoot
+          .querySelectorAll(`[data-state-id="${activeStateId}"]`)
+          .forEach((node) => node.classList.remove("is-linked-active"));
+        activeStateId = "";
+      };
+
+      mapRoot.addEventListener("pointerover", (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) {
+          return;
+        }
+        const stateNode = target.closest("[data-state-id]");
+        if (!(stateNode instanceof Element) || !mapRoot.contains(stateNode)) {
+          return;
+        }
+        const stateId = stateNode.getAttribute("data-state-id");
+        if (stateId) {
+          applyActiveState(stateId);
+        }
+      });
+
+      mapRoot.addEventListener("pointerleave", () => {
+        clearActiveState();
+      });
+
+      mapRoot.addEventListener("focusin", (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) {
+          return;
+        }
+        const stateNode = target.closest("[data-state-id]");
+        if (!(stateNode instanceof Element) || !mapRoot.contains(stateNode)) {
+          return;
+        }
+        const stateId = stateNode.getAttribute("data-state-id");
+        if (stateId) {
+          applyActiveState(stateId);
+        }
+      });
+
+      mapRoot.addEventListener("focusout", () => {
+        requestAnimationFrame(() => {
+          const activeElement = document.activeElement;
+          if (
+            activeElement instanceof Element &&
+            mapRoot.contains(activeElement)
+          ) {
+            const stateNode = activeElement.closest("[data-state-id]");
+            if (stateNode instanceof Element) {
+              const stateId = stateNode.getAttribute("data-state-id");
+              if (stateId) {
+                applyActiveState(stateId);
+                return;
+              }
+            }
+          }
+          clearActiveState();
+        });
+      });
+    }
+  })();
+</script>

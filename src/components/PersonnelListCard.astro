@@ -4,23 +4,28 @@ import type { PersonnelSummary } from "#src/lib/data/types.js";
 const { person } = Astro.props as {
   person: PersonnelSummary;
 };
+const reportHref =
+  person.agencyCategory === "federal"
+    ? "/report/"
+    : `/report/${person.agencyCategory}/`;
+const civilCaseHref = `/civil-litigation/${person.agencyCategory}/`;
 ---
 
 <article class="card shadow-sm border-0 rounded-0 h-100">
   <div class="card-body d-flex flex-column gap-3">
     <div class="row g-3 align-items-start">
-      <div class="col-12 col-md">
+      <div class="col-12 col-xl-3">
         <div class="text-uppercase small text-muted">Name</div>
         <a class="link-dark fw-semibold" href={`/personnel/${person.slug}/`}>
           {person.firstName}
           {person.lastName}{person.nameSuffix ? ` ${person.nameSuffix}` : ""}
         </a>
       </div>
-      <div class="col-12 col-md">
+      <div class="col-12 col-md-6 col-xl-2">
         <div class="text-uppercase small text-muted">Role</div>
         <div>{person.roleTitle || "—"}</div>
       </div>
-      <div class="col-12 col-md">
+      <div class="col-12 col-md-6 col-xl-3">
         <div class="text-uppercase small text-muted">Agency</div>
         <a
           class="link-dark text-decoration-none"
@@ -29,9 +34,22 @@ const { person } = Astro.props as {
           {person.agencyName}
         </a>
       </div>
-      <div class="col-12 col-md">
-        <div class="text-uppercase small text-muted">Reports</div>
-        <div>{person.reportCount}</div>
+      <div class="col-12 col-xl-4">
+        <div class="text-uppercase small text-muted">Related records</div>
+        <div class="d-flex flex-wrap gap-2">
+          <a
+            class="badge bg-light text-dark border rounded-0 text-decoration-none"
+            href={reportHref}
+          >
+            {person.reportCount} reports
+          </a>
+          <a
+            class="badge bg-light text-dark border rounded-0 text-decoration-none"
+            href={civilCaseHref}
+          >
+            {person.civilCaseCount} civil cases
+          </a>
+        </div>
       </div>
     </div>
   </div>

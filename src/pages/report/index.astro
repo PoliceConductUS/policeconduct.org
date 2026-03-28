@@ -1,7 +1,6 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
-import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import {
@@ -36,23 +35,6 @@ const federalReportCount = reports.filter((report) =>
 ).length;
 const totalReports = reports.length;
 const statesWithReports = stateStats.filter((state) => state.count > 0).length;
-const reportStats = [
-  {
-    label: "Reports",
-    value: totalReports,
-    description: "Published reports currently listed.",
-  },
-  {
-    label: "States Covered",
-    value: statesWithReports,
-    description: "States with at least one listed report.",
-  },
-  {
-    label: "Federal Reports",
-    value: federalReportCount,
-    description: "Listed reports involving federal agencies.",
-  },
-];
 const pagePath = "/report/";
 const suggestReportHref = "/report/new/";
 const siteUrl = getSiteUrl(Astro.site);
@@ -112,6 +94,30 @@ if (reportItemList) {
             <p class="lead text-muted mb-0">
               Reports submitted by users documenting police interactions.
             </p>
+            <div class="ipc-hero-summary ipc-hero-summary-mobile mt-3">
+              <span class="badge bg-light text-dark border rounded-0">
+                {totalReports} reports
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {statesWithReports} states covered
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {federalReportCount} federal reports
+              </span>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4 d-none d-lg-flex justify-content-lg-end">
+            <div class="ipc-hero-summary" aria-label="Report summary">
+              <span class="badge bg-light text-dark border rounded-0">
+                {totalReports} reports
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {statesWithReports} states covered
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {federalReportCount} federal reports
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -142,9 +148,6 @@ if (reportItemList) {
         />
       </div>
     </section>
-    <div class="bg-white border-bottom border-dark">
-      <CollectionStatsBand items={reportStats} />
-    </div>
   </main>
   <script
     is:inline

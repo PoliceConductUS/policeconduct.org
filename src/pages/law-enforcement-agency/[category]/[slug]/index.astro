@@ -1,5 +1,6 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import DisqusComments from "#src/components/DisqusComments.astro";
 import { withDb } from "#src/lib/db.js";
@@ -386,6 +387,7 @@ const structuredData = {
   pagePath={agencyPath}
   structuredData={structuredData}
 >
+  <PrefillBootstrap />
   <main class="flex-grow-1 py-vh-3">
     <div class="container">
       <Breadcrumbs
@@ -563,7 +565,7 @@ const structuredData = {
                     data-prefill-key="prefill:contact"
                     data-prefill-payload={JSON.stringify({
                       whoami: "Subscriber",
-                      message: `Please notify of any changes to the following page(s): /law-enforcement-agency/${data.agency.category}/${data.agency.slug}/`,
+                      message: `Please notify me when this agency page changes: /law-enforcement-agency/${data.agency.category}/${data.agency.slug}/`,
                     })}
                   >
                     <svg
@@ -584,7 +586,7 @@ const structuredData = {
                       ></path>
                       <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
                     </svg>
-                    <span>Subscribe</span>
+                    <span>Notify me when this agency page changes</span>
                   </a>
                 </div>
               </div>
@@ -647,4 +649,16 @@ const structuredData = {
       </div>
     </div>
   </main>
+  <script>
+    import AOS from "aos";
+    import "aos/dist/aos.css";
+
+    if (!document.documentElement.dataset.aosInit) {
+      AOS.init({
+        duration: 800,
+        once: true,
+      });
+      document.documentElement.dataset.aosInit = "1";
+    }
+  </script>
 </SiteLayout>

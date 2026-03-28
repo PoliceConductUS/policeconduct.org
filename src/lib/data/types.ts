@@ -6,6 +6,7 @@ export type PersonnelSummary = {
   nameSuffix?: string | null;
   roleTitle: string | null;
   reportCount: number;
+  civilCaseCount: number;
   agencySlug: string;
   agencyName: string;
   agencyCategory: string;
@@ -23,6 +24,7 @@ export type AgencySummary = {
   phoneNumber?: string | null;
   activePersonnelCount: number;
   reportCount: number;
+  civilCaseCount: number;
 };
 
 export type ReportSummary = {

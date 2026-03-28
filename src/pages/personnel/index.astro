@@ -1,7 +1,6 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
-import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
 import { loadPersonnelSummaries } from "#src/lib/data/summaries.js";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
@@ -58,23 +57,6 @@ const statesWithPersonnel = stateStats.filter(
 const federalPersonnelCount = personnelRows.filter(
   (person) => person.agencyCategory?.toLowerCase() === "federal",
 ).length;
-const personnelStats = [
-  {
-    label: "Personnel",
-    value: totalPersonnel,
-    description: "Listed personnel profiles.",
-  },
-  {
-    label: "States Covered",
-    value: statesWithPersonnel,
-    description: "States with active listed personnel.",
-  },
-  {
-    label: "Federal Personnel",
-    value: federalPersonnelCount,
-    description: "Listed personnel tied to federal agencies.",
-  },
-];
 const pagePath = "/personnel/";
 const suggestPersonnelHref = "/personnel/new/";
 const siteUrl = getSiteUrl(Astro.site);
@@ -131,6 +113,30 @@ if (personnelItemList) {
             <p class="lead text-muted mb-0">
               Profiles of law enforcement personnel with listed agencies.
             </p>
+            <div class="ipc-hero-summary ipc-hero-summary-mobile mt-3">
+              <span class="badge bg-light text-dark border rounded-0">
+                {totalPersonnel} personnel
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {statesWithPersonnel} states covered
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {federalPersonnelCount} federal personnel
+              </span>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4 d-none d-lg-flex justify-content-lg-end">
+            <div class="ipc-hero-summary" aria-label="Personnel summary">
+              <span class="badge bg-light text-dark border rounded-0">
+                {totalPersonnel} personnel
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {statesWithPersonnel} states covered
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {federalPersonnelCount} federal personnel
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -162,8 +168,5 @@ if (personnelItemList) {
         />
       </div>
     </section>
-    <div class="bg-white border-bottom border-dark">
-      <CollectionStatsBand items={personnelStats} />
-    </div>
   </main>
 </SiteLayout>

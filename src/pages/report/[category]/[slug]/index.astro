@@ -1,5 +1,6 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import DisqusComments from "#src/components/DisqusComments.astro";
 import { formatLongDate } from "#src/lib/format.js";
@@ -239,6 +240,7 @@ const ratedOfficers = officers
   canonicalUrl={pagePath}
   structuredData={structuredData}
 >
+  <PrefillBootstrap />
   <main class="">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
@@ -265,7 +267,7 @@ const ratedOfficers = officers
                 data-prefill-key="prefill:contact"
                 data-prefill-payload={JSON.stringify({
                   whoami: "Subscriber",
-                  message: `Please notify of any changes to the following page(s): /report/${categorySlug}/${data.report.slug}/`,
+                  message: `Please notify me when this report changes: /report/${categorySlug}/${data.report.slug}/`,
                 })}
               >
                 <svg
@@ -285,7 +287,7 @@ const ratedOfficers = officers
                   ></path>
                   <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
                 </svg>
-                <span>Subscribe</span>
+                <span>Notify me when this report changes</span>
               </a>
             </div>
           </div>

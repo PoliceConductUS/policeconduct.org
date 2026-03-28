@@ -1,23 +1,17 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import {
+  FORM_ROUTES,
+  buildAuditRouteSelection,
+  collectHtmlRoutes,
+  normalizeRouteFromDistHtml,
+} from "./audit-route-samples.mjs";
 
 const DIST_DIR = path.resolve("dist");
 const CANONICAL_HOST = "https://www.policeconduct.org";
 const MAX_PAGES = Number(process.env.SEO_AUDIT_MAX_PAGES || "5000");
-
-const EXPECTED_NOINDEX_PATHS = [
-  "/about/contact/",
-  "/volunteer/",
-  "/issue/new/",
-  "/civil-litigation/new/",
-  "/civil-litigation/suggest-edit/",
-  "/law-enforcement-agency/new/",
-  "/law-enforcement-agency/suggest-edit/",
-  "/personnel/new/",
-  "/personnel/suggest-edit/",
-  "/legal-notice/data-subject-access-request/",
-  "/report/new/",
-];
+const FRESH_BUILD_REQUIRED_MESSAGE =
+  "Fresh full build required. Run `npm run build` before `npm run audit` or `npm run audit:seo`. Audits do not build automatically, and stale or partial dist/ output is not supported.";
 
 const errors = [];
 const warnings = [];
@@ -26,7 +20,13 @@ const addError = (msg) => errors.push(msg);
 const addWarning = (msg) => warnings.push(msg);
 
 const toDistHtmlPath = (routePath) => {
+  if (routePath === "/") {
+    return path.join(DIST_DIR, "index.html");
+  }
   const clean = routePath.replace(/^\//, "");
+  if (clean.endsWith(".html")) {
+    return path.join(DIST_DIR, clean);
+  }
   return path.join(DIST_DIR, clean, "index.html");
 };
 
@@ -41,40 +41,6 @@ const readText = async (filePath) => {
 const extract = (html, regex) => {
   const match = html.match(regex);
   return match ? match[1] : null;
-};
-
-const walkHtmlFiles = async (dir) => {
-  const results = [];
-  const dirs = [dir];
-
-  while (dirs.length > 0) {
-    const currentDir = dirs.pop();
-    if (!currentDir) {
-      continue;
-    }
-    const entries = await fs.readdir(currentDir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(currentDir, entry.name);
-      if (entry.isDirectory()) {
-        dirs.push(fullPath);
-      } else if (entry.isFile() && entry.name.endsWith(".html")) {
-        results.push(fullPath);
-      }
-    }
-  }
-
-  return results;
-};
-
-const normalizeRouteFromDistHtml = (htmlPath) => {
-  const rel = path.relative(DIST_DIR, htmlPath).replaceAll(path.sep, "/");
-  if (rel === "index.html") {
-    return "/";
-  }
-  if (rel.endsWith("/index.html")) {
-    return `/${rel.slice(0, -"/index.html".length)}/`;
-  }
-  return `/${rel}`;
 };
 
 const ensureRobotsAndSitemap = async () => {
@@ -112,29 +78,78 @@ const ensureRobotsAndSitemap = async () => {
   }
 };
 
+const ensureFreshBuild = async () => {
+  const routes = await collectHtmlRoutes(DIST_DIR);
+  if (routes.length === 0) {
+    addError(`${FRESH_BUILD_REQUIRED_MESSAGE} No HTML files found in dist/.`);
+    return false;
+  }
+
+  const { missingRequiredRoutes } = buildAuditRouteSelection({
+    routes,
+    maxRoutes: 1,
+  });
+  if (missingRequiredRoutes.length > 0) {
+    addError(
+      `${FRESH_BUILD_REQUIRED_MESSAGE} Missing required built routes: ${missingRequiredRoutes.join(", ")}.`,
+    );
+    return false;
+  }
+
+  const robotsExists = await readText(path.join(DIST_DIR, "robots.txt"));
+  const sitemapIndexExists = await readText(
+    path.join(DIST_DIR, "sitemap-index.xml"),
+  );
+  const sitemapExists = await readText(path.join(DIST_DIR, "sitemap.xml"));
+
+  if (!robotsExists || (!sitemapIndexExists && !sitemapExists)) {
+    addError(
+      `${FRESH_BUILD_REQUIRED_MESSAGE} Required generated files are missing from dist/ (robots.txt and sitemap output).`,
+    );
+    return false;
+  }
+
+  return true;
+};
+
 const auditHtml = async () => {
-  const htmlFiles = await walkHtmlFiles(DIST_DIR);
-  if (htmlFiles.length === 0) {
+  const routes = await collectHtmlRoutes(DIST_DIR);
+  if (routes.length === 0) {
     addError("No HTML files found in dist/. Run build first.");
     return;
   }
-  const htmlFilesToAudit = htmlFiles.slice(0, Math.max(1, MAX_PAGES));
-  if (htmlFiles.length > htmlFilesToAudit.length) {
+
+  const { allRoutes, effectiveMax, missingRequiredRoutes, selectedRoutes } =
+    buildAuditRouteSelection({
+      routes,
+      maxRoutes: Math.max(1, MAX_PAGES),
+    });
+
+  for (const message of missingRequiredRoutes) {
+    addError(`Audit route selection failed: ${message}.`);
+  }
+
+  if (effectiveMax > MAX_PAGES) {
     addWarning(
-      `Audited ${htmlFilesToAudit.length} of ${htmlFiles.length} HTML files. Set SEO_AUDIT_MAX_PAGES higher for full coverage.`,
+      `SEO_AUDIT_MAX_PAGES=${MAX_PAGES} is lower than the required audit sample set (${effectiveMax}); auditing ${effectiveMax} routes to preserve coverage.`,
+    );
+  } else if (allRoutes.length > selectedRoutes.length) {
+    addWarning(
+      `Audited ${selectedRoutes.length} of ${allRoutes.length} HTML files. Set SEO_AUDIT_MAX_PAGES higher for broader coverage.`,
     );
   }
 
-  const noindexSet = new Set(EXPECTED_NOINDEX_PATHS);
+  const noindexSet = new Set(FORM_ROUTES);
 
-  for (const htmlPath of htmlFilesToAudit) {
+  for (const route of selectedRoutes) {
+    const htmlPath = toDistHtmlPath(route);
     const html = await readText(htmlPath);
     if (!html) {
       addError(`Could not read HTML file: ${htmlPath}`);
       continue;
     }
 
-    const route = normalizeRouteFromDistHtml(htmlPath);
+    const normalizedRoute = normalizeRouteFromDistHtml(DIST_DIR, htmlPath);
     const title = extract(html, /<title>([^<]+)<\/title>/i);
     const canonical = extract(
       html,
@@ -150,31 +165,36 @@ const auditHtml = async () => {
     );
 
     if (!title || !title.trim()) {
-      addError(`Missing <title> for ${route}`);
+      addError(`Missing <title> for ${normalizedRoute}`);
     }
     if (!canonical) {
-      addError(`Missing canonical link for ${route}`);
+      addError(`Missing canonical link for ${normalizedRoute}`);
     } else if (!canonical.startsWith(CANONICAL_HOST + "/")) {
       addError(
-        `Canonical host is not ${CANONICAL_HOST} for ${route}: ${canonical}`,
+        `Canonical host is not ${CANONICAL_HOST} for ${normalizedRoute}: ${canonical}`,
       );
     }
     if (!robots) {
-      addError(`Missing robots meta for ${route}`);
+      addError(`Missing robots meta for ${normalizedRoute}`);
     }
 
-    if (noindexSet.has(route)) {
+    if (noindexSet.has(normalizedRoute)) {
       if (!robots || !/noindex\s*,\s*follow/i.test(robots)) {
-        addError(`Expected noindex,follow on form page ${route}`);
+        addError(`Expected noindex,follow on form page ${normalizedRoute}`);
       }
     }
 
-    if (route.startsWith("/report/") && route.includes("/watch/")) {
+    if (
+      normalizedRoute.startsWith("/report/") &&
+      normalizedRoute.includes("/watch/")
+    ) {
       if (!/"@type"\s*:\s*"VideoObject"/i.test(html)) {
-        addError(`Watch page missing VideoObject structured data: ${route}`);
+        addError(
+          `Watch page missing VideoObject structured data: ${normalizedRoute}`,
+        );
       }
       if (!description || !description.trim()) {
-        addWarning(`Watch page missing meta description: ${route}`);
+        addWarning(`Watch page missing meta description: ${normalizedRoute}`);
       }
     }
   }
@@ -189,6 +209,17 @@ const main = async () => {
   if (!distExists) {
     addError("dist/ does not exist. Run npm run build first.");
   } else {
+    const freshBuildOk = await ensureFreshBuild();
+    if (!freshBuildOk) {
+      if (errors.length) {
+        console.error("SEO audit failed:");
+        for (const e of errors) {
+          console.error(`- ${e}`);
+        }
+        process.exit(1);
+      }
+      return;
+    }
     await ensureRobotsAndSitemap();
     await auditHtml();
   }

@@ -52,11 +52,6 @@ test.describe("recaptcha", () => {
           'script[src*="google.com/recaptcha/enterprise.js"]',
         );
         await expect(recaptchaScript).toHaveCount(1);
-        const siteKey = await page.evaluate(
-          () => window.__RECAPTCHA_SITE_KEY__,
-        );
-        expect(typeof siteKey).toBe("string");
-        expect(siteKey.trim().length).toBeGreaterThan(0);
       });
     }
 

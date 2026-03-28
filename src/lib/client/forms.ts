@@ -27,7 +27,6 @@ type RecaptchaEnterprise = {
 
 declare global {
   interface Window {
-    __RECAPTCHA_SITE_KEY__?: string;
     __IPC_PREFILL__?: {
       readAndConsume?: (key: string) => Record<string, unknown> | null;
       prefillFields?: (options: {
@@ -43,13 +42,18 @@ declare global {
 
 let recaptchaReadyPromise: Promise<void> | null = null;
 let recaptchaScriptPromise: Promise<RecaptchaEnterprise> | null = null;
+const recaptchaSiteKey = String(
+  import.meta.env.RECAPTCHA_SITE_KEY || "",
+).trim();
 
 type SubmitData = Record<string, FormDataEntryValue | FormDataEntryValue[]>;
-type FlattenedValue =
-  | string
-  | string[]
-  | Record<string, FlattenedValue>
-  | FlattenedValue[];
+type FlattenedPrimitive = string | string[];
+interface FlattenedObject {
+  [key: string]: FlattenedValue;
+}
+interface FlattenedArray extends Array<FlattenedValue> {}
+type FlattenedValue = FlattenedPrimitive | FlattenedObject | FlattenedArray;
+type FlattenedContainer = FlattenedObject | FlattenedArray;
 
 type SubmitPayloadArgs = {
   beforeSubmitResult: unknown;
@@ -98,11 +102,11 @@ export const flattenFormData = (
   const data: Record<string, FlattenedValue> = {};
 
   const setValue = (
-    target: Record<string, FlattenedValue> | FlattenedValue[],
+    target: FlattenedContainer,
     path: Array<string | number>,
     value: string,
   ) => {
-    let current: Record<string, FlattenedValue> | FlattenedValue[] = target;
+    let current: FlattenedContainer = target;
 
     path.forEach((segment, index) => {
       const isLast = index === path.length - 1;
@@ -114,9 +118,11 @@ export const flattenFormData = (
           return;
         }
 
-        const existingValue = current[segment as keyof typeof current];
+        const objectCurrent = current as FlattenedObject;
+        const objectKey = String(segment);
+        const existingValue = objectCurrent[objectKey];
         if (existingValue === undefined) {
-          current[segment as keyof typeof current] = value;
+          objectCurrent[objectKey] = value;
           return;
         }
 
@@ -125,25 +131,40 @@ export const flattenFormData = (
           return;
         }
 
-        current[segment as keyof typeof current] = [
-          String(existingValue),
-          value,
-        ];
+        objectCurrent[objectKey] = [String(existingValue), value];
         return;
       }
 
       const nextValueIsArray = typeof nextSegment === "number";
-      const existingValue = current[segment as keyof typeof current];
+
+      if (Array.isArray(current) && typeof segment === "number") {
+        const existingValue = current[segment];
+
+        if (
+          existingValue == null ||
+          typeof existingValue === "string" ||
+          (Array.isArray(existingValue) && !nextValueIsArray)
+        ) {
+          current[segment] = nextValueIsArray ? [] : {};
+        }
+
+        current = current[segment] as FlattenedContainer;
+        return;
+      }
+
+      const objectCurrent = current as FlattenedObject;
+      const objectKey = String(segment);
+      const existingValue = objectCurrent[objectKey];
 
       if (
         existingValue == null ||
         typeof existingValue === "string" ||
         (Array.isArray(existingValue) && !nextValueIsArray)
       ) {
-        current[segment as keyof typeof current] = nextValueIsArray ? [] : {};
+        objectCurrent[objectKey] = nextValueIsArray ? [] : {};
       }
 
-      current = current[segment as keyof typeof current] as typeof current;
+      current = objectCurrent[objectKey] as FlattenedContainer;
     });
   };
 
@@ -174,8 +195,7 @@ export const flattenFormData = (
 };
 
 const loadRecaptcha = async () => {
-  const siteKey = String(window.__RECAPTCHA_SITE_KEY__ || "").trim();
-  if (!siteKey) {
+  if (!recaptchaSiteKey) {
     throw new Error(
       `reCAPTCHA is not configured. ${BLOCKED_SUBMIT_FALLBACK}`.trim(),
     );
@@ -206,7 +226,7 @@ const loadRecaptcha = async () => {
         }
 
         const script = document.createElement("script");
-        script.src = `https://www.google.com/recaptcha/enterprise.js?render=${encodeURIComponent(siteKey)}`;
+        script.src = `https://www.google.com/recaptcha/enterprise.js?render=${encodeURIComponent(recaptchaSiteKey)}`;
         script.async = true;
         script.defer = true;
         script.dataset.ipcRecaptcha = "true";
@@ -249,6 +269,97 @@ const getInlineError = (form: HTMLFormElement) => {
   return inlineError;
 };
 
+const getValidationSummary = (form: HTMLFormElement) => {
+  let summary = form.querySelector<HTMLElement>(
+    "[data-form-validation-summary]",
+  );
+  if (!summary) {
+    summary = document.createElement("div");
+    summary.setAttribute("data-form-validation-summary", "true");
+    summary.className = "alert alert-danger rounded-0 mb-4 d-none";
+    summary.setAttribute("role", "alert");
+    form.prepend(summary);
+  }
+  return summary;
+};
+
+const getFieldLabelText = (
+  field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
+) => {
+  const labels = field.labels ? Array.from(field.labels) : [];
+  const explicitLabel = labels
+    .map((label) => label.textContent?.trim() || "")
+    .find(Boolean);
+  if (explicitLabel) {
+    return explicitLabel.replace(/\s+/g, " ");
+  }
+
+  const closestLabel = field.closest("label")?.textContent?.trim();
+  if (closestLabel) {
+    return closestLabel.replace(/\s+/g, " ");
+  }
+
+  const ariaLabel = field.getAttribute("aria-label")?.trim();
+  if (ariaLabel) {
+    return ariaLabel;
+  }
+
+  return field.name || "the first highlighted field";
+};
+
+const hideValidationSummary = (form: HTMLFormElement) => {
+  const summary = form.querySelector<HTMLElement>(
+    "[data-form-validation-summary]",
+  );
+  if (!summary) {
+    return;
+  }
+  summary.classList.add("d-none");
+  summary.replaceChildren();
+};
+
+const openAncestorDetails = (field: HTMLElement) => {
+  let current: HTMLElement | null = field.parentElement;
+  while (current) {
+    if (current instanceof HTMLDetailsElement) {
+      current.open = true;
+    }
+    current = current.parentElement;
+  }
+};
+
+const showValidationSummary = (form: HTMLFormElement) => {
+  const summary = getValidationSummary(form);
+  const invalidFields = Array.from(
+    form.querySelectorAll<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >("input, select, textarea"),
+  ).filter((field) => {
+    if (field.disabled || field.type === "hidden") {
+      return false;
+    }
+    return !field.checkValidity();
+  });
+
+  if (invalidFields.length === 0) {
+    hideValidationSummary(form);
+    return null;
+  }
+
+  const lead = document.createElement("p");
+  lead.className = "mb-1 fw-semibold";
+  lead.textContent = `Please correct ${invalidFields.length} highlighted field${invalidFields.length === 1 ? "" : "s"} before submitting.`;
+
+  const detail = document.createElement("p");
+  detail.className = "mb-0";
+  detail.textContent = `Start with ${getFieldLabelText(invalidFields[0])}.`;
+
+  summary.replaceChildren(lead, detail);
+  summary.classList.remove("d-none");
+
+  return invalidFields[0];
+};
+
 const getSubmitData = (formData: FormData): SubmitData => {
   const data: SubmitData = {};
   formData.forEach((value, key) => {
@@ -281,6 +392,10 @@ const captureSubmitError = (
   error: unknown,
   context: Record<string, unknown> = {},
 ) => {
+  const formNameTag =
+    typeof context.formName === "string" && context.formName.trim()
+      ? context.formName
+      : undefined;
   const message =
     error instanceof Error && error.message
       ? error.message
@@ -296,7 +411,7 @@ const captureSubmitError = (
       extra: context,
       tags: {
         area: "form_submit",
-        ...(context.formName ? { form_name: context.formName } : {}),
+        ...(formNameTag ? { form_name: formNameTag } : {}),
       },
     },
   );
@@ -329,8 +444,7 @@ const setSubmitButtonBusy = (
 };
 
 const getRecaptchaToken = async (action: string) => {
-  const siteKey = String(window.__RECAPTCHA_SITE_KEY__ || "").trim();
-  if (!siteKey) {
+  if (!recaptchaSiteKey) {
     throw new Error(
       `reCAPTCHA is not configured. ${BLOCKED_SUBMIT_FALLBACK}`.trim(),
     );
@@ -353,7 +467,7 @@ const getRecaptchaToken = async (action: string) => {
 
   let token: string | null = null;
   try {
-    token = await enterprise.execute(siteKey, { action });
+    token = await enterprise.execute(recaptchaSiteKey, { action });
   } catch (error) {
     throw new Error(
       `Unable to validate reCAPTCHA. ${BLOCKED_SUBMIT_FALLBACK}`.trim(),
@@ -514,6 +628,7 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
   inlineError.classList.add("d-none");
   inlineError.textContent = "";
   inlineSuccess.classList.add("d-none");
+  hideValidationSummary(form);
 
   try {
     await onBeforeValidate?.();
@@ -523,7 +638,16 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
     if (!form.checkValidity() || !customValid) {
       event?.stopPropagation();
       form.classList.add("was-validated");
+      const firstInvalidField = showValidationSummary(form);
       await onInvalid?.();
+      if (firstInvalidField) {
+        openAncestorDetails(firstInvalidField);
+        firstInvalidField.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        firstInvalidField.focus({ preventScroll: true });
+      }
       return false;
     }
 

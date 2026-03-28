@@ -154,7 +154,6 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
                       <th scope="col">Cause #</th>
                       <th scope="col">Case</th>
                       <th scope="col">Court / notes</th>
-                      <th scope="col">Source</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -194,19 +193,6 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
                           ) : null}
                         </td>
                         <td>{caseItem.court || "—"}</td>
-                        <td>
-                          {caseItem.primary_source_url ? (
-                            <a
-                              href={caseItem.primary_source_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              Primary source
-                            </a>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
                       </tr>
                     ))}
                   </tbody>

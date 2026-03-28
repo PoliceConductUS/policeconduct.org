@@ -1,7 +1,6 @@
 import { withDb } from "#src/lib/db.js";
 import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import type { PersonnelSummary } from "./types.js";
-import { MIN_AGENCY_OFFICERS } from "./constants.js";
 
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
 
@@ -24,6 +23,7 @@ export const loadPersonnelSummaries = async (
       officers: any[];
       agencies: any[];
       reportCounts: any[];
+      civilCaseCounts: any[];
     }> => {
       const params: Array<string> = [];
       const filters = ["ao.end_date is null"];
@@ -79,7 +79,25 @@ export const loadPersonnelSummaries = async (
             )
           ).rows
         : [];
-      return { agencyOfficers, officers, agencies, reportCounts };
+      const civilCaseCounts = officerIds.length
+        ? (
+            await client.query(
+              `select ao.officer_id, count(distinct cco.civil_case_id) as civil_case_count
+             from public.civil_case_officers cco
+             join public.agency_officers ao on ao.id = cco.agency_officer_id
+             where ao.officer_id = any($1)
+             group by ao.officer_id`,
+              [officerIds],
+            )
+          ).rows
+        : [];
+      return {
+        agencyOfficers,
+        officers,
+        agencies,
+        reportCounts,
+        civilCaseCounts,
+      };
     },
   );
 
@@ -87,15 +105,10 @@ export const loadPersonnelSummaries = async (
   const agenciesById = mapBy(data.agencies, "id");
   const agencyOfficersByOfficer = groupBy(data.agencyOfficers, "officer_id");
   const reportCountsByOfficer = mapBy(data.reportCounts || [], "officer_id");
-  const activeCountsByAgency = data.agencyOfficers.reduce(
-    (acc: Record<string, number>, entry: { agency_id: string }) => {
-      const current = acc[entry.agency_id] || 0;
-      acc[entry.agency_id] = current + 1;
-      return acc;
-    },
-    {},
+  const civilCaseCountsByOfficer = mapBy(
+    data.civilCaseCounts || [],
+    "officer_id",
   );
-
   const summaries = Object.keys(agencyOfficersByOfficer)
     .map((officerId) => {
       const officer = officersById[officerId];
@@ -112,21 +125,9 @@ export const loadPersonnelSummaries = async (
       const officerReportCount = Number(
         reportCountsByOfficer[officerId]?.report_count || 0,
       );
-      // Officers with reports are always included (use most recent assignment)
-      // Officers without reports must be at an agency meeting the threshold
+      // Use most recent active assignment
       const eligibleAssignment =
-        officerReportCount > 0
-          ? activeAssignments[activeAssignments.length - 1]
-          : [...activeAssignments]
-              .reverse()
-              .find(
-                (entry) =>
-                  (activeCountsByAgency[entry.agency_id] || 0) >=
-                  MIN_AGENCY_OFFICERS,
-              );
-      if (!eligibleAssignment) {
-        return null;
-      }
+        activeAssignments[activeAssignments.length - 1];
       const agency = agenciesById[eligibleAssignment.agency_id];
       if (!agency) {
         return null;
@@ -143,6 +144,9 @@ export const loadPersonnelSummaries = async (
         agencyCategory: agency.category,
         reportCount: Number(
           reportCountsByOfficer[officer.id]?.report_count || 0,
+        ),
+        civilCaseCount: Number(
+          civilCaseCountsByOfficer[officer.id]?.civil_case_count || 0,
         ),
       };
     })

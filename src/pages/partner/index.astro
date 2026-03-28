@@ -1,6 +1,7 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 
 const partnerTracks = [
   {
@@ -39,6 +40,7 @@ const partnerTracks = [
   description="Explore current partnership paths for newsrooms, nonprofits, academic researchers, and law firms."
   pagePath="/partner/"
 >
+  <PrefillBootstrap />
   <main>
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">

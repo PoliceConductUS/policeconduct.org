@@ -65,6 +65,10 @@ async function fillRequiredFields(page, formLocator) {
     const name = (await field.getAttribute("name")) || "";
 
     if (tag === "select") {
+      const currentValue = await field.inputValue();
+      if (currentValue) {
+        continue;
+      }
       const optionValue = await field.evaluate((el) => {
         const select = /** @type {HTMLSelectElement} */ (el);
         const options = Array.from(select.options).filter(
@@ -80,14 +84,44 @@ async function fillRequiredFields(page, formLocator) {
 
     const type = ((await field.getAttribute("type")) || "text").toLowerCase();
     if (type === "radio") {
+      if (await field.isChecked()) {
+        continue;
+      }
       await field.check();
       continue;
     }
     if (type === "checkbox") {
+      if (await field.isChecked()) {
+        continue;
+      }
       await field.check();
       continue;
     }
+    if (await field.inputValue()) {
+      continue;
+    }
     await field.fill(buildInputValue(type, name));
+  }
+}
+
+async function answerReportOfficerAssessments(formLocator) {
+  const assessments = formLocator.locator("[data-officer-assessment]");
+  const count = await assessments.count();
+
+  for (let officerIndex = 0; officerIndex < count; officerIndex += 1) {
+    const assessment = assessments.nth(officerIndex);
+    if ((await assessment.getAttribute("open")) === null) {
+      await assessment.locator("summary").click();
+    }
+
+    const notObservedOptions = assessment.locator(
+      'input[data-null-option="true"]',
+    );
+    const optionCount = await notObservedOptions.count();
+
+    for (let index = 0; index < optionCount; index += 1) {
+      await notObservedOptions.nth(index).check();
+    }
   }
 }
 
@@ -176,6 +210,9 @@ test.describe("form submissions", () => {
       }
 
       await fillRequiredFields(page, formLocator);
+      if (form.formName === "reportNew") {
+        await answerReportOfficerAssessments(formLocator);
+      }
 
       const submitResponsePromise = page.waitForResponse((response) => {
         return (

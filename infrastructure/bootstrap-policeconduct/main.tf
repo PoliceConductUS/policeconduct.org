@@ -35,6 +35,7 @@ locals {
   site_oac_name                        = "${var.project_name}-oac"
   index_rewrite_function_name          = "${var.project_name}-index-rewrite"
   preview_router_function_name         = "${var.project_name}-preview-router"
+  site_security_headers_policy_name    = "${var.project_name}-site-security-headers"
   provided_hosted_zone_id              = var.hosted_zone_id == null || trimspace(var.hosted_zone_id) == "" ? null : trimspace(var.hosted_zone_id)
   manage_hosted_zone                   = local.provided_hosted_zone_id == null
   route53_zone_id                      = local.manage_hosted_zone ? aws_route53_zone.site[0].zone_id : local.provided_hosted_zone_id
@@ -58,13 +59,13 @@ locals {
   ga_measurement_id_preview    = var.ga_measurement_id_preview == null || trimspace(var.ga_measurement_id_preview) == "" ? null : trimspace(var.ga_measurement_id_preview)
   sentry_dsn_production        = var.sentry_dsn_production == null || trimspace(var.sentry_dsn_production) == "" ? null : trimspace(var.sentry_dsn_production)
   sentry_dsn_preview           = var.sentry_dsn_preview == null || trimspace(var.sentry_dsn_preview) == "" ? null : trimspace(var.sentry_dsn_preview)
-  sentry_org                          = var.sentry_org == null || trimspace(var.sentry_org) == "" ? null : trimspace(var.sentry_org)
-  sentry_project                      = var.sentry_project == null || trimspace(var.sentry_project) == "" ? null : trimspace(var.sentry_project)
-  sentry_auth_token                   = var.sentry_auth_token == null || trimspace(var.sentry_auth_token) == "" ? null : trimspace(var.sentry_auth_token)
-  recaptcha_project_id                = var.recaptcha_project_id == null || trimspace(var.recaptcha_project_id) == "" ? null : trimspace(var.recaptcha_project_id)
-  recaptcha_site_key                  = var.recaptcha_site_key == null || trimspace(var.recaptcha_site_key) == "" ? null : trimspace(var.recaptcha_site_key)
-  has_sentry_auth_token               = nonsensitive(local.sentry_auth_token != null)
-  github_environment_names            = toset(["production", "preview"])
+  sentry_org                   = var.sentry_org == null || trimspace(var.sentry_org) == "" ? null : trimspace(var.sentry_org)
+  sentry_project               = var.sentry_project == null || trimspace(var.sentry_project) == "" ? null : trimspace(var.sentry_project)
+  sentry_auth_token            = var.sentry_auth_token == null || trimspace(var.sentry_auth_token) == "" ? null : trimspace(var.sentry_auth_token)
+  recaptcha_project_id         = var.recaptcha_project_id == null || trimspace(var.recaptcha_project_id) == "" ? null : trimspace(var.recaptcha_project_id)
+  recaptcha_site_key           = var.recaptcha_site_key == null || trimspace(var.recaptcha_site_key) == "" ? null : trimspace(var.recaptcha_site_key)
+  has_sentry_auth_token        = nonsensitive(local.sentry_auth_token != null)
+  github_environment_names     = toset(["production", "preview"])
   github_environment_variables = {
     production = merge(
       {
@@ -125,6 +126,38 @@ locals {
       }
     }
   ]...)
+  content_security_policy = join(" ", [
+    "default-src 'self';",
+    "base-uri 'self';",
+    "object-src 'none';",
+    "frame-ancestors 'self';",
+    "form-action 'self';",
+    "img-src 'self' data: blob: https://i.ytimg.com https://www.google-analytics.com https://stats.g.doubleclick.net https://c.disquscdn.com https://*.disqus.com https://www.gstatic.com https://www.google.com;",
+    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com;",
+    "style-src 'self' 'unsafe-inline';",
+    "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com https://*.ingest.us.sentry.io https://*.sentry.io;",
+    "font-src 'self' data:;",
+    "frame-src 'self' https://www.youtube.com https://www.google.com https://recaptcha.google.com https://disqus.com https://*.disqus.com;",
+    "worker-src 'self' blob:;",
+    "upgrade-insecure-requests",
+  ])
+  permissions_policy = join(", ", [
+    "accelerometer=()",
+    "autoplay=(self \"https://www.youtube.com\")",
+    "camera=()",
+    "clipboard-read=()",
+    "clipboard-write=(self)",
+    "encrypted-media=(self \"https://www.youtube.com\")",
+    "fullscreen=(self \"https://www.youtube.com\")",
+    "geolocation=()",
+    "gyroscope=()",
+    "magnetometer=()",
+    "microphone=()",
+    "payment=()",
+    "picture-in-picture=(self \"https://www.youtube.com\")",
+    "publickey-credentials-get=(self)",
+    "usb=()",
+  ])
 }
 
 locals {
@@ -1413,10 +1446,6 @@ data "aws_cloudfront_cache_policy" "managed_caching_disabled" {
   name = "Managed-CachingDisabled"
 }
 
-data "aws_cloudfront_response_headers_policy" "managed_security_headers" {
-  name = "Managed-SecurityHeadersPolicy"
-}
-
 data "aws_cloudfront_origin_request_policy" "managed_all_viewer_except_host_header" {
   name = "Managed-AllViewerExceptHostHeader"
 }
@@ -1610,6 +1639,58 @@ function handler(event) {
 EOF
 }
 
+resource "aws_cloudfront_response_headers_policy" "site_security_headers" {
+  name    = local.site_security_headers_policy_name
+  comment = "Security headers for ${var.domain_name} site and preview distributions."
+
+  custom_headers_config {
+    items {
+      header   = "Cross-Origin-Opener-Policy"
+      override = true
+      value    = "same-origin"
+    }
+
+    items {
+      header   = "Permissions-Policy"
+      override = true
+      value    = local.permissions_policy
+    }
+
+    items {
+      header   = "X-Permitted-Cross-Domain-Policies"
+      override = true
+      value    = "none"
+    }
+  }
+
+  security_headers_config {
+    content_security_policy {
+      content_security_policy = local.content_security_policy
+      override                = true
+    }
+
+    content_type_options {
+      override = true
+    }
+
+    frame_options {
+      frame_option = "SAMEORIGIN"
+      override     = true
+    }
+
+    referrer_policy {
+      override        = true
+      referrer_policy = "strict-origin-when-cross-origin"
+    }
+
+    strict_transport_security {
+      access_control_max_age_sec = 31536000
+      include_subdomains         = true
+      override                   = true
+    }
+  }
+}
+
 resource "aws_cloudfront_distribution" "site" {
   enabled             = true
   is_ipv6_enabled     = true
@@ -1650,7 +1731,7 @@ resource "aws_cloudfront_distribution" "site" {
     compress               = true
     cache_policy_id        = data.aws_cloudfront_cache_policy.managed_caching_optimized.id
 
-    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.managed_security_headers.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.site_security_headers.id
 
     function_association {
       event_type   = "viewer-request"
@@ -1768,7 +1849,7 @@ resource "aws_cloudfront_distribution" "preview" {
     compress               = true
     cache_policy_id        = data.aws_cloudfront_cache_policy.managed_caching_optimized.id
 
-    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.managed_security_headers.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.site_security_headers.id
 
     function_association {
       event_type   = "viewer-request"

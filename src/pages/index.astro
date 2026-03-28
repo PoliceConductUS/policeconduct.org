@@ -12,7 +12,7 @@ import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/";
 const pageDescription =
-  "Independent public record for police misconduct reports, commendations, law enforcement agencies, personnel profiles, and civil litigation records across the United States.";
+  "Independent public record for police interaction reports, commendations, law enforcement agencies, personnel profiles, and civil litigation records across the United States.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const [agencies, personnel, reports, civilCasesData] = await Promise.all([
@@ -145,7 +145,7 @@ structuredData.mainEntity = organization;
 ---
 
 <SiteLayout
-  title="Police Misconduct Reports, Agency Records, and Personnel Profiles | PoliceConduct.org"
+  title="Police Interaction Reports, Agency Records, and Personnel Profiles | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
   socialImage="/img/webp/usa-1778524_1280.webp"
@@ -154,26 +154,6 @@ structuredData.mainEntity = organization;
   <main>
     <div class="w-100 overflow-hidden bg-gray-100" id="top">
       <div class="container position-relative">
-        <div
-          class="d-flex flex-wrap justify-content-center align-items-center gap-2 pt-4 text-uppercase small fw-semibold position-relative"
-          style="z-index: 2"
-        >
-          <a class="text-dark text-decoration-none" href="/#broken"
-            >What's Broken?</a
-          >
-          <span class="text-muted">•</span>
-          <a class="text-dark text-decoration-none" href="/#use-record"
-            >Use the Record</a
-          >
-          <span class="text-muted">•</span>
-          <a class="text-dark text-decoration-none" href="/#overview"
-            >National Overview</a
-          >
-          <span class="text-muted">•</span>
-          <a class="text-dark text-decoration-none" href="/#mission"
-            >Our Mission</a
-          >
-        </div>
         <div
           class="col-12 col-lg-8 mt-0 h-100 position-absolute top-0 end-0 bg-cover"
           data-aos="fade-left"
@@ -209,147 +189,6 @@ structuredData.mainEntity = organization;
               class="btn btn-outline-dark btn-xl shadow rounded-0 my-5"
               >Research records</a
             >
-            <p class="text-muted small mb-0">
-              Start with your own account, review local records, or compare
-              public information across agencies and jurisdictions.
-            </p>
-            <div class="alert alert-light border-dark rounded-0 mb-0">
-              PoliceConduct.org exists to make relevant public information and
-              structured public reporting easier to find, organize, and review.
-            </div>
-            <p class="small mb-0 mt-3">
-              Partner organization? <a href="/partner/">Explore partner paths</a
-              >.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="py-vh-5 w-100 overflow-hidden" id="broken">
-      <div class="container">
-        <div class="row d-flex justify-content-between align-items-center">
-          <div class="col-lg-4">
-            <h2 class="py-5 border-top border-dark" data-aos="fade-right">
-              Public records help communities and law enforcement respond to the
-              same facts.
-            </h2>
-            <small>— Institute for Police Conduct</small>
-          </div>
-          <div class="col-lg-8">
-            <div class="row">
-              <div class="col-12">
-                <h2 class="display-6 mb-5" data-aos="fade-down">
-                  What's broken?
-                </h2>
-                <h3>
-                  Public information about police conduct is fragmented,
-                  inconsistent, and often difficult for ordinary people to
-                  access or interpret.
-                </h3>
-                <p class="mb-0 text-black-50">
-                  Records may exist across court dockets, public-records
-                  responses, agency materials, news coverage, and community
-                  accounts, but they are rarely organized in a way that makes
-                  comparison or review easy.
-                </p>
-              </div>
-              <div class="col-md-6" data-aos="fade-up">
-                <h4 class="h5 my-3">Patterns are hard to identify</h4>
-                <p class="text-black-50 mb-0">
-                  Incidents that appear isolated in one source may look
-                  different when viewed alongside prior complaints, litigation,
-                  disciplinary actions, or public reports.
-                </p>
-              </div>
-              <div class="col-md-6" data-aos="fade-up">
-                <h4 class="h5 my-3">Access is uneven</h4>
-                <p class="text-black-50 mb-0">
-                  Journalists, lawyers, and well-resourced organizations may be
-                  able to assemble a fuller picture. Most people cannot.
-                </p>
-              </div>
-              <div class="col-md-6" data-aos="fade-up">
-                <h4 class="h5 my-3">Records are hard to compare</h4>
-                <p class="text-black-50 mb-0">
-                  Even where records are technically public, they may be
-                  difficult to search, delayed, or released in formats that
-                  limit meaningful review.
-                </p>
-              </div>
-              <div class="col-md-6" data-aos="fade-up">
-                <h4 class="h5 my-3">Context is easy to lose</h4>
-                <p class="text-black-50 mb-0">
-                  Serious concerns may remain obscure because the information is
-                  buried or disconnected, while isolated allegations may
-                  circulate without enough context or corroboration.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div
-      class="small py-vh-3 bg-gray-900 text-light w-100 overflow-hidden"
-      id="use-record"
-    >
-      <div class="container">
-        <div class="row mb-4">
-          <div class="col-lg-8">
-            <h2 class="h3 mb-2">Use the record</h2>
-            <p class="mb-0 text-light">
-              The site should be useful whether you need to document one
-              interaction, research a local agency, or work with others on
-              accountability and public-interest reporting.
-            </p>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-md-6 col-lg-4" data-aos="fade-up">
-            <span class="h5 fw-lighter">01.</span>
-            <h3 class="py-4 border-top border-light">Report an interaction</h3>
-            <p>
-              Document what happened and add it to a durable public record,
-              whether the interaction was negative, positive, or mixed.
-            </p>
-            <a class="link-light fw-semibold" href="/report/new/"
-              >Submit a report</a
-            >
-          </div>
-          <div
-            class="col-md-6 col-lg-4"
-            data-aos="fade-up"
-            data-aos-delay="200"
-          >
-            <span class="h5 fw-lighter">02.</span>
-            <h3 class="py-4 border-top border-light">Research local records</h3>
-            <p>
-              Review reports, agencies, personnel, and civil litigation by
-              state, federal category, agency, or person.
-            </p>
-            <a class="link-light fw-semibold" href="/report/"
-              >Research records</a
-            >
-          </div>
-
-          <div
-            class="col-md-6 col-lg-4"
-            data-aos="fade-up"
-            data-aos-delay="400"
-          >
-            <span class="h5 fw-lighter">03.</span>
-            <h3 class="py-4 border-top border-light">
-              Partner with the project
-            </h3>
-            <p>
-              Oversight bodies, law firms, newsrooms, nonprofits, and
-              researchers can help strengthen the public record and extend its
-              usefulness.
-            </p>
-            <a class="link-light fw-semibold" href="/partner/"
-              >Explore partner paths</a
-            >
           </div>
         </div>
       </div>
@@ -358,8 +197,11 @@ structuredData.mainEntity = organization;
       <div class="container">
         <div class="row justify-content-end mb-4">
           <div class="col-lg-8">
-            <h2 class="display-6">National overview.</h2>
-            <h3>Start with your state or federal agencies.</h3>
+            <h2 class="display-6 mb-2">National overview</h2>
+            <p class="lead mb-0">
+              Start with your state or federal agencies and follow the record
+              from there.
+            </p>
           </div>
         </div>
         <div class="row g-4 align-items-stretch">
@@ -396,55 +238,151 @@ structuredData.mainEntity = organization;
     </section>
 
     <div
-      class="py-vh-5 bg-gray-900 text-light w-100 overflow-hidden"
+      class="small py-vh-3 bg-gray-900 text-light w-100 overflow-hidden"
+      id="use-record"
+    >
+      <div class="container">
+        <div class="row mb-4">
+          <div class="col-lg-8">
+            <h2 class="h3 mb-2">Use the record</h2>
+            <p class="mb-0 text-light">
+              Use the site to document an interaction, research a local agency,
+              or work with others on public-interest reporting and oversight.
+            </p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 col-lg-4" data-aos="fade-up">
+            <span class="h5 fw-lighter">01.</span>
+            <h3 class="py-4 border-top border-light">Report an interaction</h3>
+            <p>
+              Add a documented public account, whether the interaction was
+              negative, positive, or mixed.
+            </p>
+            <a class="link-light fw-semibold" href="/report/new/"
+              >Submit a report</a
+            >
+          </div>
+          <div
+            class="col-md-6 col-lg-4"
+            data-aos="fade-up"
+            data-aos-delay="200"
+          >
+            <span class="h5 fw-lighter">02.</span>
+            <h3 class="py-4 border-top border-light">Research local records</h3>
+            <p>
+              Review reports, agencies, personnel, and civil litigation by
+              state, agency, or person.
+            </p>
+            <a class="link-light fw-semibold" href="/report/"
+              >Research records</a
+            >
+          </div>
+
+          <div
+            class="col-md-6 col-lg-4"
+            data-aos="fade-up"
+            data-aos-delay="400"
+          >
+            <span class="h5 fw-lighter">03.</span>
+            <h3 class="py-4 border-top border-light">
+              Partner with the project
+            </h3>
+            <p>
+              Oversight bodies, law firms, newsrooms, nonprofits, and
+              researchers can extend the usefulness of the record.
+            </p>
+            <a class="link-light fw-semibold" href="/partner/"
+              >Explore partner paths</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="py-vh-4 w-100 overflow-hidden" id="broken">
+      <div class="container">
+        <div class="row d-flex justify-content-between align-items-center">
+          <div class="col-lg-4">
+            <h2 class="py-4 border-top border-dark" data-aos="fade-right">
+              Public records help communities and law enforcement respond to the
+              same facts.
+            </h2>
+            <small>— Institute for Police Conduct</small>
+          </div>
+          <div class="col-lg-8">
+            <div class="row">
+              <div class="col-12">
+                <h2 class="display-6 mb-4" data-aos="fade-down">
+                  What's broken?
+                </h2>
+                <h3>
+                  Public information about police conduct is fragmented,
+                  inconsistent, and often difficult for ordinary people to
+                  access or interpret.
+                </h3>
+                <p class="mb-0 text-black-50">
+                  Relevant material may exist across court dockets,
+                  public-records responses, agency materials, news coverage, and
+                  community accounts, but it is rarely organized for fast,
+                  meaningful review.
+                </p>
+              </div>
+              <div class="col-md-4" data-aos="fade-up">
+                <h4 class="h5 my-3">Patterns are hard to identify</h4>
+                <p class="text-black-50 mb-0">
+                  Incidents that look isolated in one source may look different
+                  alongside prior complaints, litigation, or public reports.
+                </p>
+              </div>
+              <div class="col-md-4" data-aos="fade-up">
+                <h4 class="h5 my-3">Access is uneven</h4>
+                <p class="text-black-50 mb-0">
+                  Journalists, lawyers, and well-resourced organizations may be
+                  able to assemble a fuller picture. Most people cannot.
+                </p>
+              </div>
+              <div class="col-md-4" data-aos="fade-up">
+                <h4 class="h5 my-3">Context is easy to lose</h4>
+                <p class="text-black-50 mb-0">
+                  Serious concerns may remain obscure, while isolated
+                  allegations may circulate without enough context or
+                  corroboration.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="py-vh-4 bg-gray-900 text-light w-100 overflow-hidden"
       id="mission"
     >
       <div class="container">
-        <div class="row mb-4 justify-content-center">
-          <div class="row justify-content-end">
-            <div class="col-lg-8" data-aos="fade-down">
-              <h2 class="display-6">Our mission.</h2>
-              <h3>Why this work exists.</h3>
-            </div>
+        <div class="row justify-content-end mb-4">
+          <div class="col-lg-8" data-aos="fade-down">
+            <h2 class="display-6 mb-2">Our mission</h2>
+            <p class="lead mb-0">
+              Make police conduct easier to document, understand, and review.
+            </p>
           </div>
         </div>
         <div class="row d-flex justify-content-between align-items-center">
           <div class="col-lg-6">
-            <div class="row gx-5 d-flex">
-              <div class="col-md-11">
-                <div
-                  class="shadow ratio ratio-16x9 rounded bg-cover bp-center align-self-end"
-                  data-aos="fade-right"
-                  style="
-                      background-image: url(img/webp/people15.webp);
-                      --bs-aspect-ratio: 50%;
-                    "
-                >
-                </div>
-              </div>
-              <div class="col-md-5 offset-md-1">
-                <div
-                  class="shadow ratio ratio-1x1 rounded bg-cover mt-5 bp-center float-end"
-                  data-aos="fade-up"
-                  style="background-image: url(img/police.jpeg)"
-                >
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div
-                  class="col-12 shadow ratio rounded bg-cover mt-5 bp-center"
-                  data-aos="fade-left"
-                  style="
-                      background-image: url(img/webp/woman-5896534_1280.webp);
-                      --bs-aspect-ratio: 150%;
-                    "
-                >
-                </div>
-              </div>
+            <div
+              class="shadow ratio ratio-16x9 rounded bg-cover bp-center"
+              data-aos="fade-right"
+              style="
+                  background-image: url(img/webp/people15.webp);
+                  --bs-aspect-ratio: 58%;
+                "
+            >
             </div>
           </div>
           <div class="col-lg-4">
-            <h3 class="py-5 border-top border-light" data-aos="fade-left">
+            <h3 class="py-4 border-top border-light" data-aos="fade-left">
               Institute for Police Conduct is a nonprofit, public-interest
               record focused on making police conduct easier to document,
               understand, and review.
@@ -454,6 +392,11 @@ structuredData.mainEntity = organization;
               oversight bodies. The goal is to make already-existing public
               information and structured public reporting more usable for the
               public.
+            </p>
+            <p class="mb-0" data-aos="fade-left" data-aos-delay="250">
+              <a class="link-light fw-semibold" href="/about/"
+                >Learn more about the organization</a
+              >
             </p>
           </div>
         </div>
@@ -479,4 +422,16 @@ structuredData.mainEntity = organization;
       </div>
     </div>
   </main>
+  <script>
+    import AOS from "aos";
+    import "aos/dist/aos.css";
+
+    if (!document.documentElement.dataset.aosInit) {
+      AOS.init({
+        duration: 800,
+        once: true,
+      });
+      document.documentElement.dataset.aosInit = "1";
+    }
+  </script>
 </SiteLayout>

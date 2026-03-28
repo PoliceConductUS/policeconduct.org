@@ -1,6 +1,7 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import {
   formatNewsDate,
   loadNewsArticles,
@@ -19,6 +20,7 @@ const nextUrl = totalPages > 1 ? "/news/page/2/" : null;
   description="News and updates from PoliceConduct.org."
   pagePath="/news/"
 >
+  <PrefillBootstrap />
   <main class="">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
@@ -44,7 +46,7 @@ const nextUrl = totalPages > 1 ? "/news/page/2/" : null;
                 data-prefill-payload={JSON.stringify({
                   whoami: "Subscriber",
                   message:
-                    "Please notify of any changes to the following page(s): /news/",
+                    "Please notify me about news updates from PoliceConduct.org: /news/",
                 })}
               >
                 <svg
@@ -64,7 +66,7 @@ const nextUrl = totalPages > 1 ? "/news/page/2/" : null;
                   ></path>
                   <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
                 </svg>
-                <span>Subscribe</span>
+                <span>Notify me about news updates</span>
               </a>
             </div>
           </div>

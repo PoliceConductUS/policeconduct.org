@@ -1,7 +1,5 @@
 import { withDb } from "#src/lib/db.js";
 import type { AgencySummary } from "./types.js";
-import { MIN_AGENCY_OFFICERS } from "./constants.js";
-
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
 const normalizeCategory = (value?: string | null) =>
   (value || "").trim().toLowerCase();
@@ -32,7 +30,16 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
                where ao2.agency_id = a.id
              ),
              0
-           ) as report_count
+           ) as report_count,
+           coalesce(
+             (
+               select count(distinct cco.civil_case_id)
+               from public.agency_officers ao3
+               join public.civil_case_officers cco on cco.agency_officer_id = ao3.id
+               where ao3.agency_id = a.id
+             ),
+             0
+           ) as civil_case_count
          from public.agency a
          left join lateral (
            select phone_number
@@ -61,20 +68,10 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
     phoneNumber: agency.phone_number || null,
     activePersonnelCount: Number(agency.active_personnel_count || 0),
     reportCount: Number(agency.report_count || 0),
+    civilCaseCount: Number(agency.civil_case_count || 0),
   }));
 
-  const filtered = summaries.filter((agency) => {
-    if (agency.category === "federal") {
-      return true;
-    }
-    // Always include agencies with reports
-    if (agency.reportCount > 0) {
-      return true;
-    }
-    return agency.activePersonnelCount >= MIN_AGENCY_OFFICERS;
-  });
-
-  filtered.sort((a, b) => {
+  summaries.sort((a, b) => {
     const nameCompare = nameCollator.compare(a.name, b.name);
     if (nameCompare !== 0) {
       return nameCompare;
@@ -82,7 +79,7 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
     return compareNullable(a.id, b.id);
   });
 
-  return filtered;
+  return summaries;
 };
 
 export const resolveAgencyByStateSlug = async (state: string, slug: string) => {

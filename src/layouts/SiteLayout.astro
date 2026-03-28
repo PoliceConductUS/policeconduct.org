@@ -43,7 +43,6 @@ const socialImageUrl = (() => {
     return new URL("/img/webp/usa-1778524_1280.webp", siteOrigin).toString();
   }
 })();
-const recaptchaSiteKey = (process.env.RECAPTCHA_SITE_KEY || "").trim();
 const robotsContent = robots || "index,follow";
 const structuredDataEntries = structuredData
   ? Array.isArray(structuredData)
@@ -52,18 +51,6 @@ const structuredDataEntries = structuredData
   : [];
 const serializeStructuredData = (value: unknown) =>
   JSON.stringify(value).replace(/</g, "\\u003c");
-const fullCommitSha = (
-  process.env.GIT_COMMIT_SHA ||
-  process.env.GITHUB_SHA ||
-  "unknown"
-).trim();
-const commitDirtyRaw = (process.env.GIT_COMMIT_DIRTY || "")
-  .trim()
-  .toLowerCase();
-const isDirtyBuild =
-  commitDirtyRaw === "1" ||
-  commitDirtyRaw === "true" ||
-  commitDirtyRaw === "yes";
 
 const navItems = [
   { label: "Reports", href: "/report/", title: "User submitted reports" },
@@ -139,144 +126,8 @@ const isActivePath = (href: string) =>
       ) : null
     }
     <meta name="twitter:image" content={socialImageUrl} />
-    <meta name="build-commit" content={fullCommitSha} />
-    <meta name="build-commit-dirty" content={isDirtyBuild ? "true" : "false"} />
+
     <meta name="HandheldFriendly" content="true" />
-    <script is:inline>
-      (function () {
-        if (window.__IPC_PREFILL__) {
-          return;
-        }
-        const getPrefillErrorArea = (key) => {
-          let area = document.querySelector("[data-prefill-error-area]");
-          if (!area) {
-            area = document.createElement("div");
-            area.setAttribute("data-prefill-error-area", "true");
-            area.className = "d-none";
-            document.body.appendChild(area);
-          }
-          area.setAttribute("data-prefill-last-key", key || "");
-          return area;
-        };
-        const setFieldValue = (field, value) => {
-          if (field instanceof HTMLInputElement) {
-            const type = (field.type || "text").toLowerCase();
-            if (type === "checkbox") {
-              if (typeof value === "boolean") {
-                field.checked = value;
-                return true;
-              }
-              const normalized = String(value).trim().toLowerCase();
-              field.checked =
-                normalized === "true" ||
-                normalized === "1" ||
-                normalized === "yes" ||
-                normalized === "on";
-              return true;
-            }
-            if (type === "radio") {
-              const expected = String(value ?? "").trim();
-              if (field.value === expected) {
-                field.checked = true;
-              }
-              return true;
-            }
-            if (!field.value.trim()) {
-              field.value = String(value ?? "");
-            }
-            return true;
-          }
-          if (field instanceof HTMLTextAreaElement) {
-            if (!field.value.trim()) {
-              field.value = String(value ?? "");
-            }
-            return true;
-          }
-          if (field instanceof HTMLSelectElement) {
-            field.value = String(value ?? "");
-            return true;
-          }
-          return false;
-        };
-        const readAndConsume = function (key) {
-          try {
-            const raw = sessionStorage.getItem(key);
-            if (!raw) return null;
-            sessionStorage.removeItem(key);
-            const parsed = JSON.parse(raw);
-            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-              return null;
-            return parsed;
-          } catch (_error) {
-            return null;
-          }
-        };
-        const prefillFields = function ({ key, root, consume = true }) {
-          const targetRoot = root || document;
-          if (!key) {
-            return { applied: false, missing: [], payload: null };
-          }
-          const payload = consume ? readAndConsume(key) : null;
-          if (
-            !payload ||
-            typeof payload !== "object" ||
-            Array.isArray(payload)
-          ) {
-            return { applied: false, missing: [], payload: null };
-          }
-          const missing = [];
-          for (const [name, value] of Object.entries(payload)) {
-            const fields = Array.from(
-              targetRoot.querySelectorAll("[name]"),
-            ).filter((field) => field.getAttribute("name") === name);
-            if (fields.length === 0) {
-              missing.push(name);
-              continue;
-            }
-            for (const field of fields) {
-              setFieldValue(field, value);
-            }
-          }
-          const area = getPrefillErrorArea(key);
-          if (missing.length > 0) {
-            const details = {
-              key,
-              missing,
-              payloadKeys: Object.keys(payload),
-            };
-            area.setAttribute("data-prefill-error", "true");
-            area.textContent = JSON.stringify(details);
-            console.error("Prefill field mismatch", details);
-          } else {
-            area.removeAttribute("data-prefill-error");
-            area.textContent = "";
-          }
-          return { applied: true, missing, payload };
-        };
-        window.__IPC_PREFILL__ = {
-          set: function (key, payload) {
-            try {
-              sessionStorage.setItem(key, JSON.stringify(payload));
-              return true;
-            } catch (_error) {
-              return false;
-            }
-          },
-          readAndConsume: function (key) {
-            return readAndConsume(key);
-          },
-          prefillFields,
-        };
-      })();
-    </script>
-    {
-      recaptchaSiteKey ? (
-        <script
-          is:inline
-          set:html={`window.__RECAPTCHA_SITE_KEY__ = ${JSON.stringify(recaptchaSiteKey)};`}
-        />
-      ) : null
-    }
     {
       structuredDataEntries.length
         ? structuredDataEntries.map((entry) => (

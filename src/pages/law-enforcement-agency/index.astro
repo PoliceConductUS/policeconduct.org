@@ -1,7 +1,6 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
-import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
 import { loadAgencySummaries } from "#src/lib/data/summaries.js";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
@@ -27,23 +26,6 @@ const federalAgencies = agencies.filter(
 );
 const totalAgencies = agencies.length;
 const statesWithAgencies = stateStats.filter((state) => state.count > 0).length;
-const agencyStats = [
-  {
-    label: "Agencies",
-    value: totalAgencies,
-    description: "Law enforcement agencies currently listed.",
-  },
-  {
-    label: "States Covered",
-    value: statesWithAgencies,
-    description: "States with listed agencies.",
-  },
-  {
-    label: "Federal Agencies",
-    value: federalAgencies.length,
-    description: "Federal agencies listed separately from states.",
-  },
-];
 const pagePath = "/law-enforcement-agency/";
 const suggestAgencyHref = "/law-enforcement-agency/new/";
 const siteUrl = getSiteUrl(Astro.site);
@@ -100,6 +82,30 @@ if (agencyItemList) {
             <p class="lead text-muted mb-0">
               Law enforcement agencies tracked on PoliceConduct.org.
             </p>
+            <div class="ipc-hero-summary ipc-hero-summary-mobile mt-3">
+              <span class="badge bg-light text-dark border rounded-0">
+                {totalAgencies} agencies
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {statesWithAgencies} states covered
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {federalAgencies.length} federal agencies
+              </span>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4 d-none d-lg-flex justify-content-lg-end">
+            <div class="ipc-hero-summary" aria-label="Agency summary">
+              <span class="badge bg-light text-dark border rounded-0">
+                {totalAgencies} agencies
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {statesWithAgencies} states covered
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {federalAgencies.length} federal agencies
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -131,9 +137,6 @@ if (agencyItemList) {
         />
       </div>
     </section>
-    <div class="bg-white border-bottom border-dark">
-      <CollectionStatsBand items={agencyStats} />b
-    </div>
   </main>
   <script
     is:inline

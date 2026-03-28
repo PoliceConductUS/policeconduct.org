@@ -2,7 +2,7 @@ import { withDb } from "./db.js";
 import { US_STATE_TILES } from "./geo/states.js";
 
 const PAGE_SIZE = 50;
-const MIN_AGENCY_OFFICERS = 3;
+
 const CATEGORY_SLUGS = [
   ...US_STATE_TILES.map((state) => state.code.toLowerCase()),
   "federal",
@@ -204,13 +204,7 @@ export const buildSitemapLastmodMap = async () => {
         `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
         agency.lastmod,
       );
-      const includeInCollection =
-        agency.category === "federal" ||
-        Number(agency.report_count || 0) > 0 ||
-        Number(agency.active_personnel_count || 0) >= MIN_AGENCY_OFFICERS;
-      if (!includeInCollection) {
-        continue;
-      }
+
       incrementCount(agencyCountsByCategory, agency.category);
       setCategoryLastmod(
         agencyLastmodsByCategory,
@@ -296,27 +290,14 @@ export const buildSitemapLastmodMap = async () => {
               row_number() over (
                 partition by aa.officer_id
                 order by aa.start_date desc nulls last, aa.created_at desc, aa.id desc
-              ) as recency_rank,
-              row_number() over (
-                partition by aa.officer_id
-                order by
-                  case when aa.active_personnel_count >= $1 then 0 else 1 end,
-                  aa.start_date desc nulls last,
-                  aa.created_at desc,
-                  aa.id desc
-              ) as threshold_rank
+              ) as recency_rank
             from active_assignments aa
             left join officer_report_counts orc on orc.officer_id = aa.officer_id
           ),
           selected_assignments as (
             select *
             from ranked_active_assignments
-            where (report_count > 0 and recency_rank = 1)
-               or (
-                 report_count = 0
-                 and active_personnel_count >= $1
-                 and threshold_rank = 1
-               )
+            where recency_rank = 1
           )
           select
             o.slug,
@@ -341,7 +322,7 @@ export const buildSitemapLastmodMap = async () => {
             on officer_civil_case_updates.officer_id = selected_assignments.officer_id
           where o.slug is not null
         `,
-        [MIN_AGENCY_OFFICERS],
+        [],
       )
     ).rows;
 

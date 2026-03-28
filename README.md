@@ -1,6 +1,6 @@
 # policeconduct.org
 
-Astro site with AWS infrastructure managed by Terraform.
+Astro static site with AWS infrastructure managed by Terraform.
 
 ## Local Development
 
@@ -14,13 +14,66 @@ for local UI testing against deployed forms infrastructure.
 
 ## Build
 
+Build requires `RECAPTCHA_SITE_KEY`. The build script loads `.env`,
+`.env-recaptcha`, and `.env-policeconduct` before validating env.
+
 ```bash
 npm run build
 ```
 
-## End-to-End Form Tests
+The build pipeline:
 
-Run browser E2E tests for form submission flows:
+1. **Validates** required environment variables (`validate-build-env.mjs`)
+2. **Resolves** `GIT_COMMIT_SHA` and `GIT_COMMIT_DIRTY` from git state
+3. **Builds** the Astro static site with PurgeCSS (production only)
+
+CSS is externalized (`inlineStylesheets: "never"`) and tree-shaken via PurgeCSS
+so that Bootstrap and custom styles ship as a single shared file instead of being
+inlined into every page.
+
+### Build Metadata
+
+Build metadata is derived from git state automatically:
+
+- `GIT_COMMIT_SHA` defaults to the current git commit.
+- `GIT_COMMIT_DIRTY` defaults to `1` when tracked or untracked changes exist.
+
+The build emits these page meta tags:
+
+- `build-commit`
+- `build-commit-dirty`
+
+Production deploys also attach build metadata to each uploaded S3 object as
+`build-commit` and `build-dirty`. `build.json` is not part of the standard
+build, audit, preview deploy, or production deploy flow.
+
+## Audits
+
+Audits run against the existing `dist/` output. `dist/` is not checked in, and
+audits require a fresh full build first. Stale or partial build output is not a
+supported audit baseline.
+
+```bash
+npm run build
+npm run audit
+```
+
+Run either audit directly when needed:
+
+```bash
+npm run audit:seo
+npm run audit:a11y
+```
+
+Optional tuning for large sites:
+
+| Variable              | Default | Description                                 |
+| --------------------- | ------- | ------------------------------------------- |
+| `SEO_AUDIT_MAX_PAGES` | `5000`  | HTML files checked by `seo:audit`           |
+| `A11Y_MAX_URLS`       | `200`   | URLs sampled from sitemap for headless a11y |
+| `A11Y_PORT`           | `4173`  | Local audit server port                     |
+
+## End-to-End Form Tests
 
 ```bash
 npm run test:e2e
@@ -29,63 +82,107 @@ npm run test:e2e
 These tests mock reCAPTCHA and `/api/forms/*` responses to keep runs stable and
 independent from external services.
 
-Build metadata is embedded automatically:
+## Deploy
 
-- `GIT_COMMIT_SHA` (defaults to current git commit)
-- `GIT_COMMIT_DIRTY` (`1` when tracked/untracked changes exist)
+### Preview Deploy
 
-These are emitted into page meta tags:
-
-- `build-commit`
-- `build-commit-dirty`
-
-## Pre-Publish Audits (Manual Deploy Flow)
-
-Run audits against existing `dist/` (no build step):
+Preview deploy builds the site with a PR-specific `SITE_URL`, syncs `dist/` to
+the preview S3 prefix, and invalidates the preview CloudFront path for that PR.
 
 ```bash
-npm run preflight:publish
+export PR_NUMBER=<pr-number>
+export S3_BUCKET_PREVIEW=<preview-bucket>
+export CLOUDFRONT_DIST_PREVIEW=<preview-distribution-id>
+npm run deploy:preview
 ```
 
-Run full flow including build:
+### Production Deploy
+
+Production deploy uses the incremental deploy script. It runs a fresh build by
+default, uploads only changed files from `dist/`, deletes removed objects, and
+invalidates only the affected CloudFront paths.
 
 ```bash
-npm run preflight:publish:full
+export S3_BUCKET=<prod-bucket>
+export CLOUDFRONT_DIST_ID=<prod-distribution-id>
+npm run deploy:prod
 ```
 
-Optional tuning for large sites:
+To deploy an existing `dist/` without rebuilding:
 
-- `SEO_AUDIT_MAX_PAGES` (default `5000`) limits HTML files checked by `seo:audit`.
-- `A11Y_MAX_URLS` (default `200`) limits URLs sampled from sitemap for headless a11y.
-- `A11Y_PORT` (default `4173`) changes local audit server port.
+```bash
+export S3_BUCKET=<prod-bucket>
+export CLOUDFRONT_DIST_ID=<prod-distribution-id>
+npm run deploy:prod -- --skip-build
+```
+
+### Incremental Deploy Baseline
+
+If `.deploy-cache/d` is empty and you already synced the current production site
+locally, seed the incremental baseline manifest before the first run:
+
+```bash
+bash scripts/seed-deploy-manifest.sh /path/to/synced-site
+```
+
+Then compare your current `dist/` against that baseline:
+
+```bash
+export S3_BUCKET=<prod-bucket>
+export CLOUDFRONT_DIST_ID=<prod-distribution-id>
+bash scripts/deploy-incremental.sh --skip-build --dry-run
+```
+
+After the baseline exists, `npm run deploy:prod` and
+`bash scripts/deploy-incremental.sh` use the same production deploy flow.
+
+### Deploy Environment Variables
+
+Required for production:
+
+| Variable             | Description                        |
+| -------------------- | ---------------------------------- |
+| `S3_BUCKET`          | Production S3 bucket               |
+| `CLOUDFRONT_DIST_ID` | Production CloudFront distribution |
+
+Required for preview:
+
+| Variable                  | Description                                               |
+| ------------------------- | --------------------------------------------------------- |
+| `PR_NUMBER`               | Pull request number used in the preview URL and S3 prefix |
+| `S3_BUCKET_PREVIEW`       | Preview S3 bucket                                         |
+| `CLOUDFRONT_DIST_PREVIEW` | Preview CloudFront distribution                           |
+
+Optional:
+
+| Variable           | Description                                            |
+| ------------------ | ------------------------------------------------------ |
+| `GIT_COMMIT_SHA`   | Override commit hash (default: auto-detected from git) |
+| `GIT_COMMIT_DIRTY` | Override dirty flag (default: auto-detected from git)  |
 
 ## Infrastructure
 
-Terraform bootstrap stack:
+Terraform bootstrap stack in `infrastructure/bootstrap-policeconduct/`.
 
-- `infrastructure/bootstrap-policeconduct`
-
-It provisions:
+Provisions:
 
 - Static hosting (S3 + CloudFront + Route53 + ACM)
 - Preview hosting (S3 + CloudFront wildcard preview domain)
-- GitHub Actions OIDC role and env vars
+- Deployment OIDC role and env vars
 - Forms API (`POST /forms/draft`, `POST /forms/submit`, `GET /status/{submissionId}`)
 - Form draft + submission storage buckets
 
 Bootstrap usage:
 
 ```bash
-cp infrastructure/bootstrap-policeconduct/terraform.tfvars.example infrastructure/bootstrap-policeconduct/terraform.tfvars
+cp infrastructure/bootstrap-policeconduct/terraform.tfvars.example \
+   infrastructure/bootstrap-policeconduct/terraform.tfvars
 export GITHUB_TOKEN=<github-token-with-repo-admin-access>
 terraform -chdir=infrastructure/bootstrap-policeconduct init
 bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
 ```
 
-See:
-
-- `infrastructure/README.md`
-- `infrastructure/bootstrap-policeconduct/README.md`
+See `infrastructure/README.md` and `infrastructure/bootstrap-policeconduct/README.md`.
 
 ## Environment Variables (Canonical)
 
@@ -113,6 +210,10 @@ values (fallback from `.env-recaptcha`) and fails if required keys are missing.
 - `RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME`
 - `RECAPTCHA_WIF_AUDIENCE`
 
+### Required For Frontend Build/Client
+
+- `RECAPTCHA_SITE_KEY`
+
 ### Submission Status
 
 - User-facing status lookup page: `/status/`
@@ -120,10 +221,6 @@ values (fallback from `.env-recaptcha`) and fails if required keys are missing.
 - Endpoint behavior: always returns HTTP `200` with JSON.
   If no status file exists, response falls back to:
   `{ "submissionId": "<id>", "status": "pending" }`.
-
-### Required For Frontend Build/Client
-
-- `RECAPTCHA_SITE_KEY`
 
 ### Canonical Apply Inputs (non-`TF_VAR` env names)
 
@@ -159,50 +256,6 @@ Optional examples:
 - `TF_OUT_*` keys are generated automatically for every Terraform output.
 - Treat these as generated read-only values.
 
-## Deploy
-
-GitHub Actions workflows:
-
-- `.github/workflows/deploy.yml`
-- `.github/workflows/preview.yml`
-- `.github/workflows/preview-cleanup.yml`
-
-## Local Deploy (Recommended)
-
-Production:
-
-```bash
-export S3_BUCKET=<prod-bucket>
-export CLOUDFRONT_DIST_ID=<prod-distribution-id>
-npm run deploy:prod
-```
-
-Production (explicit alias, includes CloudFront invalidation):
-
-```bash
-export S3_BUCKET=<prod-bucket>
-export CLOUDFRONT_DIST_ID=<prod-distribution-id>
-npm run deploy:prod:invalidate
-```
-
-Optional: invalidate only specific paths instead of `/*`:
-
-```bash
-export CLOUDFRONT_INVALIDATION_PATHS="/about/contact/ /personnel/* /_astro/*"
-npm run deploy:prod
-```
-
-Preview:
-
-```bash
-export PR_NUMBER=<pr-number>
-export S3_BUCKET_PREVIEW=<preview-bucket>
-export CLOUDFRONT_DIST_PREVIEW=<preview-distribution-id>
-npm run deploy:preview
-```
-
-Both scripts also load `.env` automatically if present.
-
 ## Sentry
 
 Frontend Sentry is enabled when these are set:
@@ -210,8 +263,9 @@ Frontend Sentry is enabled when these are set:
 - `PUBLIC_SENTRY_DSN`
 - `PUBLIC_SENTRY_ENVIRONMENT`
 
-Terraform bootstrap can manage GitHub environment vars/secrets for the same org and project:
+Terraform bootstrap can manage GitHub environment vars/secrets for the same org
+and project:
 
 - `TF_VAR_sentry_org` (set to your Sentry org slug)
 - `TF_VAR_sentry_project` (set to `PoliceConduct`)
-- `TF_VAR_sentry_auth_token` (for source-map upload in workflows)
+- `TF_VAR_sentry_auth_token` (for source-map upload during deploys)

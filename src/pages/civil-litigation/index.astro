@@ -1,7 +1,7 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
-import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { withDb } from "#src/lib/db.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
@@ -93,23 +93,6 @@ const stateStats = US_STATE_TILES.map((state) => ({
 const totalCaseCount = totalCases;
 const statesWithCases = stateStats.filter((state) => state.count > 0).length;
 const federalCaseCount = countsByCategory.get("FEDERAL") ?? 0;
-const civilLitigationStats = [
-  {
-    label: "Cases",
-    value: totalCaseCount,
-    description: "Civil litigation cases currently listed.",
-  },
-  {
-    label: "States Covered",
-    value: statesWithCases,
-    description: "States with at least one linked case.",
-  },
-  {
-    label: "Federal Cases",
-    value: federalCaseCount,
-    description: "Listed civil cases tied to federal agencies.",
-  },
-];
 
 const civilLandingPath = "/civil-litigation/";
 const newCivilLandingHref = "/civil-litigation/new/";
@@ -149,6 +132,7 @@ if (federalItemList) {
   pagePath={civilLandingPath}
   structuredData={structuredData}
 >
+  <PrefillBootstrap />
   <main>
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
@@ -170,6 +154,30 @@ if (federalItemList) {
               Civil cases that reference a law enforcement agency or personnel
               by state.
             </p>
+            <div class="ipc-hero-summary ipc-hero-summary-mobile mt-3">
+              <span class="badge bg-light text-dark border rounded-0">
+                {totalCaseCount} cases
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {statesWithCases} states covered
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {federalCaseCount} federal cases
+              </span>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4 d-none d-lg-flex justify-content-lg-end">
+            <div class="ipc-hero-summary" aria-label="Civil litigation summary">
+              <span class="badge bg-light text-dark border rounded-0">
+                {totalCaseCount} cases
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {statesWithCases} states covered
+              </span>
+              <span class="badge bg-light text-dark border rounded-0">
+                {federalCaseCount} federal cases
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -203,8 +211,5 @@ if (federalItemList) {
         />
       </div>
     </section>
-    <div class="bg-white border-bottom border-dark">
-      <CollectionStatsBand items={civilLitigationStats} />
-    </div>
   </main>
 </SiteLayout>

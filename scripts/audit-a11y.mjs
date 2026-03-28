@@ -3,22 +3,18 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { chromium } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import {
+  buildAuditRouteSelection,
+  collectHtmlRoutes,
+} from "./audit-route-samples.mjs";
 
 const DIST_DIR = path.resolve("dist");
 const PORT = Number(process.env.A11Y_PORT || "4173");
 const HOST = "127.0.0.1";
 const MAX_URLS = Number(process.env.A11Y_MAX_URLS || "200");
 const BASE_URL = `http://${HOST}:${PORT}`;
-
-const REQUIRED_ROUTES = [
-  "/",
-  "/report/",
-  "/partner/creator/",
-  "/about/contact/",
-];
-
-const SITEMAP_INDEX = path.join(DIST_DIR, "sitemap-index.xml");
-const SITEMAP_SINGLE = path.join(DIST_DIR, "sitemap.xml");
+const FRESH_BUILD_REQUIRED_MESSAGE =
+  "Fresh full build required. Run `npm run build` before `npm run audit` or `npm run audit:a11y`. Audits do not build automatically, and stale or partial dist/ output is not supported.";
 
 const readText = async (filePath) => {
   try {
@@ -26,38 +22,6 @@ const readText = async (filePath) => {
   } catch {
     return null;
   }
-};
-
-const extractLocs = (xml) => {
-  if (!xml) {
-    return [];
-  }
-  const matches = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-  return [...new Set(matches)];
-};
-
-const mapToLocalUrl = (value) => {
-  try {
-    const url = new URL(value);
-    return `${BASE_URL}${url.pathname}${url.search}`;
-  } catch {
-    if (value.startsWith("/")) {
-      return `${BASE_URL}${value}`;
-    }
-    return `${BASE_URL}/${value}`;
-  }
-};
-
-const sampleEvenly = (items, limit) => {
-  if (items.length <= limit) {
-    return items;
-  }
-  const sampled = [];
-  const step = (items.length - 1) / (limit - 1);
-  for (let i = 0; i < limit; i += 1) {
-    sampled.push(items[Math.round(i * step)]);
-  }
-  return [...new Set(sampled)];
 };
 
 const startStaticServer = async () => {
@@ -132,34 +96,38 @@ const startStaticServer = async () => {
 };
 
 const collectUrls = async () => {
-  const sitemapIndexXml = await readText(SITEMAP_INDEX);
-  const sitemapXml = await readText(SITEMAP_SINGLE);
+  const routes = await collectHtmlRoutes(DIST_DIR);
+  const { allRoutes, effectiveMax, missingRequiredRoutes, selectedRoutes } =
+    buildAuditRouteSelection({
+      routes,
+      maxRoutes: Math.max(1, MAX_URLS),
+    });
 
-  let rawUrls = [];
-  if (sitemapIndexXml) {
-    const sitemapFiles = extractLocs(sitemapIndexXml)
-      .map((u) => {
-        try {
-          return new URL(u).pathname.replace(/^\//, "");
-        } catch {
-          return null;
-        }
-      })
-      .filter(Boolean)
-      .map((rel) => path.join(DIST_DIR, rel));
+  return {
+    allRoutes,
+    effectiveMax,
+    missingRequiredRoutes,
+    urls: selectedRoutes.map((route) => `${BASE_URL}${route}`),
+  };
+};
 
-    for (const file of sitemapFiles) {
-      const xml = await readText(file);
-      rawUrls.push(...extractLocs(xml));
-    }
-  } else if (sitemapXml) {
-    rawUrls = extractLocs(sitemapXml);
+const ensureFreshBuild = async () => {
+  const routes = await collectHtmlRoutes(DIST_DIR);
+  if (routes.length === 0) {
+    throw new Error(
+      `${FRESH_BUILD_REQUIRED_MESSAGE} No HTML files found in dist/.`,
+    );
   }
 
-  const requiredUrls = REQUIRED_ROUTES.map((route) => `${BASE_URL}${route}`);
-  const localUrls = rawUrls.map(mapToLocalUrl);
-  const deduped = [...new Set([...requiredUrls, ...localUrls])];
-  return sampleEvenly(deduped, Math.max(1, MAX_URLS));
+  const { missingRequiredRoutes } = buildAuditRouteSelection({
+    routes,
+    maxRoutes: 1,
+  });
+  if (missingRequiredRoutes.length > 0) {
+    throw new Error(
+      `${FRESH_BUILD_REQUIRED_MESSAGE} Missing required built routes: ${missingRequiredRoutes.join(", ")}.`,
+    );
+  }
 };
 
 const getPathname = (url) => {
@@ -187,7 +155,27 @@ const main = async () => {
     throw new Error("dist/ does not exist. Build first.");
   }
 
-  const urls = await collectUrls();
+  await ensureFreshBuild();
+
+  const { allRoutes, effectiveMax, missingRequiredRoutes, urls } =
+    await collectUrls();
+  if (missingRequiredRoutes.length > 0) {
+    throw new Error(
+      missingRequiredRoutes
+        .map((message) => `Audit route selection failed: ${message}.`)
+        .join("\n"),
+    );
+  }
+
+  if (effectiveMax > MAX_URLS) {
+    console.log(
+      `A11Y_MAX_URLS=${MAX_URLS} is lower than the required audit sample set (${effectiveMax}); auditing ${effectiveMax} routes to preserve coverage.`,
+    );
+  } else if (allRoutes.length > urls.length) {
+    console.log(
+      `Sampled ${urls.length} of ${allRoutes.length} built routes for accessibility checks.`,
+    );
+  }
   console.log(
     `Running headless accessibility crawl for ${urls.length} URL(s) (A11Y_MAX_URLS=${MAX_URLS}).`,
   );

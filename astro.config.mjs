@@ -40,6 +40,7 @@ const sentryDsn = requireNonEmptyString(
 const sentryOrg = (env.SENTRY_ORG || "").trim();
 const sentryProject = (env.SENTRY_PROJECT || "").trim();
 const sentryAuthToken = (env.SENTRY_AUTH_TOKEN || "").trim();
+const recaptchaSiteKey = (env.RECAPTCHA_SITE_KEY || "").trim();
 const sentryRelease =
   (process.env.GIT_COMMIT_SHA || env.GIT_COMMIT_SHA || "").trim() || undefined;
 const SITEMAP_EXCLUDED_PATHS = new Set([
@@ -65,10 +66,11 @@ export default defineConfig({
     enabled: process.env.DISABLE_ASTRO_DEV_TOOLBAR !== "1",
   },
   build: {
-    inlineStylesheets: "always",
+    inlineStylesheets: "never",
   },
   vite: {
     define: {
+      "import.meta.env.RECAPTCHA_SITE_KEY": JSON.stringify(recaptchaSiteKey),
       "import.meta.env.PUBLIC_SENTRY_DSN": JSON.stringify(sentryDsn),
       "import.meta.env.PUBLIC_SENTRY_ENVIRONMENT":
         JSON.stringify(sentryEnvironment),

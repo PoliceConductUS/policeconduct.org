@@ -1,9 +1,15 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import AlphaNavigation from "#src/components/AlphaNavigation.astro";
+import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
 import Pagination from "#src/components/Pagination.astro";
 import PersonnelListCard from "#src/components/PersonnelListCard.astro";
 import { buildAlphaPageMap } from "#src/lib/alpha-navigation.js";
+import {
+  buildCategoryCollectionStats,
+  loadCategoryCollectionCounts,
+  type CategoryCollectionCounts,
+} from "#src/lib/category-collection-stats.js";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { loadPersonnelSummaries } from "#src/lib/data/summaries.js";
 import type { PersonnelSummary } from "#src/lib/data/types.js";
@@ -13,6 +19,7 @@ import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths({ paginate }: { paginate: any }) {
   const personnel = await loadPersonnelSummaries();
+  const countsByCategory = await loadCategoryCollectionCounts();
   const personnelByCategory = new Map<string, PersonnelSummary[]>();
 
   personnel.forEach((person) => {
@@ -32,6 +39,12 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
       params: { category },
       props: {
         allPersonnel: categoryPersonnel,
+        categoryCounts: countsByCategory.get(category) || {
+          agencyCount: 0,
+          personnelCount: 0,
+          reportCount: 0,
+          civilCaseCount: 0,
+        },
       },
     });
     categoryPages
@@ -67,7 +80,23 @@ const titleBase =
     : `${categoryLabel} Personnel`;
 const title =
   page.currentPage > 1 ? `${titleBase} – Page ${page.currentPage}` : titleBase;
-const { allPersonnel = [] } = Astro.props;
+const {
+  allPersonnel = [],
+  categoryCounts = {
+    agencyCount: 0,
+    personnelCount: 0,
+    reportCount: 0,
+    civilCaseCount: 0,
+  },
+} = Astro.props as {
+  allPersonnel: PersonnelSummary[];
+  categoryCounts: CategoryCollectionCounts;
+};
+const stats = buildCategoryCollectionStats(
+  categoryParam,
+  categoryLabel,
+  categoryCounts,
+);
 const alphaItems = buildAlphaPageMap(
   allPersonnel,
   (person) => person.lastName,
@@ -140,7 +169,7 @@ const structuredData = {
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
         <div class="row g-4 align-items-end">
-          <div class="col-12 col-lg-8">
+          <div class="col-12">
             <Breadcrumbs
               items={[
                 { label: "Home", href: "/" },
@@ -165,23 +194,16 @@ const structuredData = {
               Profiles of law enforcement personnel currently listed for
               {` ${categoryLabel}`}.
             </p>
-          </div>
-          <div class="col-12 col-lg-4">
-            <div class="card shadow-sm rounded-0 border-dark">
-              <div class="card-body d-flex flex-column gap-2">
-                <div class="text-uppercase small text-muted">Personnel</div>
-                <div class="d-flex align-items-end justify-content-between">
-                  <span class="display-6 fw-bold">{totalCount}</span>
-                </div>
-                <div class="text-muted small">
-                  Page {page.currentPage} of {page.lastPage}
-                </div>
-              </div>
-            </div>
+            <p class="small text-muted mb-0 mt-3">
+              Page {page.currentPage} of {page.lastPage}
+            </p>
           </div>
         </div>
       </div>
     </section>
+    <div class="bg-white border-bottom border-dark">
+      <CollectionStatsBand items={stats} />
+    </div>
 
     <section class="py-vh-2">
       <div class="container">

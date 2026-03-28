@@ -1,6 +1,7 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/partner/nonprofit/";
@@ -22,6 +23,7 @@ const structuredData = buildWebPage({
   pagePath={pagePath}
   structuredData={structuredData}
 >
+  <PrefillBootstrap />
   <main class="flex-grow-1">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
