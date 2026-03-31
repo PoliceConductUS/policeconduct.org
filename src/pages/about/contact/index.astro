@@ -72,25 +72,13 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
               <input
                 type="text"
                 class="form-control"
-                id="firstName"
-                name="firstName"
-                placeholder="First Name"
+                id="fullName"
+                name="fullName"
+                placeholder="Full Name"
                 required
               />
-              <label for="firstName">First Name*</label>
-              <div class="invalid-feedback">Please enter your first name.</div>
-            </div>
-            <div class="form-floating mb-3">
-              <input
-                type="text"
-                class="form-control"
-                id="lastName"
-                name="lastName"
-                placeholder="Last Name"
-                required
-              />
-              <label for="lastName">Last Name*</label>
-              <div class="invalid-feedback">Please enter your last name.</div>
+              <label for="fullName">Full Name*</label>
+              <div class="invalid-feedback">Please enter your full name.</div>
             </div>
             <div class="form-floating mb-3">
               <input
@@ -150,8 +138,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
   </main>
   <script is:inline>
     const select = document.getElementById("whoami");
-    const firstNameInput = document.getElementById("firstName");
-    const lastNameInput = document.getElementById("lastName");
+    const fullNameInput = document.getElementById("fullName");
     const emailInput = document.getElementById("email");
     const phoneInput = document.getElementById("phone");
     const rememberInput = document.getElementById("rememberContact");
@@ -176,8 +163,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
     }
 
     if (
-      firstNameInput instanceof HTMLInputElement &&
-      lastNameInput instanceof HTMLInputElement &&
+      fullNameInput instanceof HTMLInputElement &&
       emailInput instanceof HTMLInputElement &&
       phoneInput instanceof HTMLInputElement &&
       rememberInput instanceof HTMLInputElement
@@ -186,11 +172,8 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
         const saved = sessionStorage.getItem(storageKey);
         if (saved) {
           const data = JSON.parse(saved);
-          if (data.firstName && !firstNameInput.value.trim()) {
-            firstNameInput.value = data.firstName;
-          }
-          if (data.lastName && !lastNameInput.value.trim()) {
-            lastNameInput.value = data.lastName;
+          if (data.fullName && !fullNameInput.value.trim()) {
+            fullNameInput.value = data.fullName;
           }
           if (data.email && !emailInput.value.trim()) {
             emailInput.value = data.email;
@@ -236,19 +219,14 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
               rememberInput instanceof HTMLInputElement &&
               rememberInput.checked
             ) {
-              const firstNameInput = document.getElementById("firstName");
-              const lastNameInput = document.getElementById("lastName");
+              const fullNameInput = document.getElementById("fullName");
               const emailInput = document.getElementById("email");
               const phoneInput = document.getElementById("phone");
               try {
                 const payload = {
-                  firstName:
-                    firstNameInput instanceof HTMLInputElement
-                      ? firstNameInput.value.trim()
-                      : "",
-                  lastName:
-                    lastNameInput instanceof HTMLInputElement
-                      ? lastNameInput.value.trim()
+                  fullName:
+                    fullNameInput instanceof HTMLInputElement
+                      ? fullNameInput.value.trim()
                       : "",
                   email:
                     emailInput instanceof HTMLInputElement

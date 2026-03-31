@@ -1145,6 +1145,15 @@ const traitsWithRubrics = sortedTraits
     const formShell = document.querySelector(
       '[data-form-shell="reportNew"]',
     ) as HTMLElement | null;
+    const trackReportEvent = (
+      eventName: string,
+      params: Record<string, unknown> = {},
+    ) => {
+      window.__IPC_ANALYTICS__?.track?.(eventName, {
+        form_name: "reportNew",
+        ...params,
+      });
+    };
 
     if (form) {
       const draftEndpoint = "/api/forms/draft";
@@ -1236,6 +1245,18 @@ const traitsWithRubrics = sortedTraits
         witnesses: [],
         evidence: [],
       };
+      let reportStarted = false;
+      const trackedDraftOutcomes = new Set<string>();
+
+      const markReportStarted = (startReason: string) => {
+        if (reportStarted) {
+          return;
+        }
+        reportStarted = true;
+        trackReportEvent("report_form_started", {
+          start_reason: startReason,
+        });
+      };
 
       if (
         !officerTemplateElement ||
@@ -1285,6 +1306,7 @@ const traitsWithRubrics = sortedTraits
 
           const validateOfficerAssessments = () => {
             let isValid = true;
+            let missingGroupCount = 0;
 
             form
               .querySelectorAll<HTMLElement>("[data-officer]")
@@ -1316,6 +1338,7 @@ const traitsWithRubrics = sortedTraits
 
                   isValid = false;
                   hasAssessmentError = true;
+                  missingGroupCount += 1;
                   fields.forEach((field) => {
                     field.setCustomValidity(
                       "Please choose an assessment or Not Observed / Does not apply.",
@@ -1330,6 +1353,12 @@ const traitsWithRubrics = sortedTraits
                   );
                 }
               });
+
+            if (!isValid) {
+              trackReportEvent("report_assessment_validation_failed", {
+                missing_group_count: missingGroupCount,
+              });
+            }
 
             return isValid;
           };
@@ -1356,10 +1385,18 @@ const traitsWithRubrics = sortedTraits
 
           const addOfficer = () => {
             appendOfficer();
+            markReportStarted("add_officer");
+            trackReportEvent("report_officer_added", {
+              officer_count: draft.officers.length,
+            });
           };
 
           const removeOfficer = (index: number) => {
             deleteOfficer(index);
+            trackReportEvent("report_officer_removed", {
+              officer_count: draft.officers.length,
+              removed_index: index,
+            });
           };
 
           const updateWitnesses = (
@@ -1384,10 +1421,18 @@ const traitsWithRubrics = sortedTraits
 
           const addWitness = () => {
             appendWitness();
+            markReportStarted("add_witness");
+            trackReportEvent("report_witness_added", {
+              witness_count: draft.witnesses.length,
+            });
           };
 
           const removeWitness = (index: number) => {
             deleteWitness(index);
+            trackReportEvent("report_witness_removed", {
+              removed_index: index,
+              witness_count: draft.witnesses.length,
+            });
           };
 
           const updateEvidence = (
@@ -1412,10 +1457,18 @@ const traitsWithRubrics = sortedTraits
 
           const addEvidence = () => {
             appendEvidence();
+            markReportStarted("add_evidence");
+            trackReportEvent("report_evidence_added", {
+              evidence_count: draft.evidence.length,
+            });
           };
 
           const removeEvidence = (index: number) => {
             deleteEvidence(index);
+            trackReportEvent("report_evidence_removed", {
+              evidence_count: draft.evidence.length,
+              removed_index: index,
+            });
           };
 
           const applyPrefill = () => {
@@ -1426,6 +1479,9 @@ const traitsWithRubrics = sortedTraits
               return;
             }
 
+            trackReportEvent("report_prefill_used", {
+              prefill_key: "prefill:reportNew",
+            });
             draft.officers = [
               {
                 ...draft.officers[0],
@@ -1649,7 +1705,7 @@ const traitsWithRubrics = sortedTraits
             evidenceList.replaceChildren(...evidenceElements);
           };
 
-          const saveDraft = async () => {
+          const saveDraft = async (saveMode: "autosave" | "submit") => {
             const data = readReportData(new FormData(form));
 
             try {
@@ -1663,6 +1719,14 @@ const traitsWithRubrics = sortedTraits
               });
 
               if (!response.ok) {
+                const failureKey = `failure:${saveMode}`;
+                if (!trackedDraftOutcomes.has(failureKey)) {
+                  trackedDraftOutcomes.add(failureKey);
+                  trackReportEvent("report_draft_save_failed", {
+                    response_status: response.status,
+                    save_mode: saveMode,
+                  });
+                }
                 return false;
               }
 
@@ -1670,8 +1734,22 @@ const traitsWithRubrics = sortedTraits
               if (result?.draftId) {
                 setReportDraftId(result.draftId);
               }
+              const successKey = `success:${saveMode}`;
+              if (!trackedDraftOutcomes.has(successKey)) {
+                trackedDraftOutcomes.add(successKey);
+                trackReportEvent("report_draft_saved", {
+                  save_mode: saveMode,
+                });
+              }
               return true;
             } catch (_error) {
+              const failureKey = `failure:${saveMode}`;
+              if (!trackedDraftOutcomes.has(failureKey)) {
+                trackedDraftOutcomes.add(failureKey);
+                trackReportEvent("report_draft_save_failed", {
+                  save_mode: saveMode,
+                });
+              }
               return false;
             }
           };
@@ -1685,7 +1763,9 @@ const traitsWithRubrics = sortedTraits
           const getDraftSnapshot = () =>
             JSON.stringify(readReportData(new FormData(form)));
 
-          const runDraftSave = async (): Promise<boolean> => {
+          const runDraftSave = async (
+            saveMode: "autosave" | "submit" = "autosave",
+          ): Promise<boolean> => {
             if (!draftDirty) {
               return true;
             }
@@ -1709,7 +1789,7 @@ const traitsWithRubrics = sortedTraits
                 return true;
               }
               rerunDraftSave = false;
-              saveDraftInFlight = saveDraft();
+              saveDraftInFlight = saveDraft(saveMode);
               result = await saveDraftInFlight;
               if (result) {
                 lastSavedDraftSnapshot = nextSnapshot;
@@ -1728,7 +1808,7 @@ const traitsWithRubrics = sortedTraits
 
             saveDraftTimer = window.setTimeout(() => {
               saveDraftTimer = null;
-              void runDraftSave();
+              void runDraftSave("autosave");
             }, delay);
           };
 
@@ -1738,7 +1818,7 @@ const traitsWithRubrics = sortedTraits
               saveDraftTimer = null;
             }
 
-            return runDraftSave();
+            return runDraftSave("submit");
           };
 
           const markDraftDirty = (delay = 350) => {
@@ -1818,6 +1898,9 @@ const traitsWithRubrics = sortedTraits
 
               const payload = await response.json();
               if (payload?.data) {
+                trackReportEvent("report_draft_loaded", {
+                  draft_source: "server",
+                });
                 restoreDraft(payload.data as ReportDraft);
                 lastSavedDraftSnapshot = getDraftSnapshot();
                 draftDirty = false;
@@ -1857,6 +1940,7 @@ const traitsWithRubrics = sortedTraits
                 ?.querySelector<HTMLElement>("[data-officer-assessment-error]")
                 ?.classList.add("d-none");
             }
+            markReportStarted("field_change");
             markDraftDirty();
           });
           addOfficerButton.addEventListener("click", addOfficer);
@@ -1923,6 +2007,9 @@ const traitsWithRubrics = sortedTraits
                 }
 
                 event.preventDefault();
+                trackReportEvent("report_section_jump", {
+                  destination_hash: hash,
+                });
                 history.replaceState(null, "", hash);
                 scrollToReportSection(hash);
               });

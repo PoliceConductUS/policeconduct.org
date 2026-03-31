@@ -108,262 +108,301 @@ const formatCaseYear = (date?: string | null) =>
 const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
 ---
 
-<ul class={`nav nav-tabs ${extraNavClasses}`} role="tablist">
-  {
-    normalizedTabs.map((tab) => (
-      <li class="nav-item" role="presentation">
-        <button
-          class={`nav-link${tab.isActive ? " active" : ""}`}
-          id={`${tab.id}-tab`}
-          data-bs-toggle="tab"
-          data-bs-target={`#${tab.id}`}
-          type="button"
-          role="tab"
-          aria-controls={tab.id}
-          aria-selected={tab.isActive ? "true" : "false"}
+<div data-profile-tabs>
+  <ul class={`nav nav-tabs ${extraNavClasses}`} role="tablist">
+    {
+      normalizedTabs.map((tab) => (
+        <li class="nav-item" role="presentation">
+          <button
+            class={`nav-link${tab.isActive ? " active" : ""}`}
+            id={`${tab.id}-tab`}
+            data-bs-toggle="tab"
+            data-bs-target={`#${tab.id}`}
+            data-profile-tab
+            data-tab-id={tab.id}
+            data-tab-label={tab.label}
+            type="button"
+            role="tab"
+            aria-controls={tab.id}
+            aria-selected={tab.isActive ? "true" : "false"}
+          >
+            {tab.label}
+            {typeof tab.badge === "number" ? (
+              <span class="badge bg-dark ms-2 rounded-pill">{tab.badge}</span>
+            ) : null}
+          </button>
+        </li>
+      ))
+    }
+  </ul>
+  <div class="tab-content border border-top-0 p-4" id="profileTabsContent">
+    {
+      normalizedTabs.map((tab) => (
+        <div
+          class={`tab-pane fade${tab.isActive ? " show active" : ""}`}
+          id={tab.id}
+          role="tabpanel"
+          aria-labelledby={`${tab.id}-tab`}
         >
-          {tab.label}
-          {typeof tab.badge === "number" ? (
-            <span class="badge bg-dark ms-2 rounded-pill">{tab.badge}</span>
-          ) : null}
-        </button>
-      </li>
-    ))
-  }
-</ul>
-<div class="tab-content border border-top-0 p-4" id="profileTabsContent">
-  {
-    normalizedTabs.map((tab) => (
-      <div
-        class={`tab-pane fade${tab.isActive ? " show active" : ""}`}
-        id={tab.id}
-        role="tabpanel"
-        aria-labelledby={`${tab.id}-tab`}
-      >
-        {tab.tabType === "litigation" ? (
-          <>
-            <div class="mb-3">
-              <span class="text-uppercase small text-muted mb-0">Cases</span>
-            </div>
-            {hasLitigation ? (
-              <div class="table-responsive">
-                <table class="table table-striped align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th scope="col">Year</th>
-                      <th scope="col">Cause #</th>
-                      <th scope="col">Case</th>
-                      <th scope="col">Court / notes</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {litigationCases.map((caseItem) => (
+          {tab.tabType === "litigation" ? (
+            <>
+              <div class="mb-3">
+                <span class="text-uppercase small text-muted mb-0">Cases</span>
+              </div>
+              {hasLitigation ? (
+                <div class="table-responsive">
+                  <table class="table table-striped align-middle mb-0">
+                    <thead>
                       <tr>
-                        <td>{formatCaseYear(caseItem.filed_date)}</td>
-                        <td>
-                          <strong>
-                            {caseItem.cause_number ? (
-                              <a class="link-dark" href={caseItem.caseUrl}>
-                                {caseItem.cause_number}
-                              </a>
-                            ) : (
-                              "—"
-                            )}
-                          </strong>
-                        </td>
-                        <td>
-                          <strong>
-                            <a class="link-dark" href={caseItem.caseUrl}>
-                              {caseItem.title || "Civil case"}
-                            </a>
-                          </strong>
-                          {caseItem.officers?.length ? (
-                            <>
-                              {" "}
-                              —{" "}
-                              {caseItem.officers.map((officer, index) => (
-                                <>
-                                  {index > 0 ? ", " : null}
-                                  <a href={`/personnel/${officer.slug}/`}>
-                                    {officer.first_name} {officer.last_name}
-                                  </a>
-                                </>
-                              ))}
-                            </>
-                          ) : null}
-                        </td>
-                        <td>{caseItem.court || "—"}</td>
+                        <th scope="col">Year</th>
+                        <th scope="col">Cause #</th>
+                        <th scope="col">Case</th>
+                        <th scope="col">Court / notes</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p class="text-muted">
-                {litigation?.emptyMessage ?? "No civil litigation listed yet."}
-              </p>
-            )}
-          </>
-        ) : tab.tabType === "reports" ? (
-          <>
-            {hasReports ? (
-              <div class="d-grid gap-3">
-                {reportsItems.map((report) => (
-                  <article class="border rounded-2 p-3 mb-3">
-                    <div class="d-flex justify-content-between align-items-baseline mb-2">
-                      <span class="text-uppercase small text-muted">Date</span>
-                      <strong>{formatReportDate(report)}</strong>
-                    </div>
-                    <div class="mb-3">
-                      <a class="fw-bold text-dark" href={report.url}>
-                        {report.title}
+                    </thead>
+                    <tbody>
+                      {litigationCases.map((caseItem) => (
+                        <tr>
+                          <td>{formatCaseYear(caseItem.filed_date)}</td>
+                          <td>
+                            <strong>
+                              {caseItem.cause_number ? (
+                                <a
+                                  class="link-dark"
+                                  href={caseItem.caseUrl}
+                                  data-profile-link-type="case_reference"
+                                >
+                                  {caseItem.cause_number}
+                                </a>
+                              ) : (
+                                "—"
+                              )}
+                            </strong>
+                          </td>
+                          <td>
+                            <strong>
+                              <a
+                                class="link-dark"
+                                href={caseItem.caseUrl}
+                                data-profile-link-type="case_reference"
+                              >
+                                {caseItem.title || "Civil case"}
+                              </a>
+                            </strong>
+                            {caseItem.officers?.length ? (
+                              <>
+                                {" "}
+                                —{" "}
+                                {caseItem.officers.map((officer, index) => (
+                                  <>
+                                    {index > 0 ? ", " : null}
+                                    <a
+                                      href={`/personnel/${officer.slug}/`}
+                                      data-profile-link-type="personnel_profile"
+                                    >
+                                      {officer.first_name} {officer.last_name}
+                                    </a>
+                                  </>
+                                ))}
+                              </>
+                            ) : null}
+                          </td>
+                          <td>{caseItem.court || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p class="text-muted">
+                  {litigation?.emptyMessage ??
+                    "No civil litigation listed yet."}
+                </p>
+              )}
+            </>
+          ) : tab.tabType === "reports" ? (
+            <>
+              {hasReports ? (
+                <div class="d-grid gap-3">
+                  {reportsItems.map((report) => (
+                    <article class="border rounded-2 p-3 mb-3">
+                      <div class="d-flex justify-content-between align-items-baseline mb-2">
+                        <span class="text-uppercase small text-muted">
+                          Date
+                        </span>
+                        <strong>{formatReportDate(report)}</strong>
+                      </div>
+                      <div class="mb-3">
+                        <a
+                          class="fw-bold text-dark"
+                          href={report.url}
+                          data-profile-link-type="report"
+                        >
+                          {report.title}
+                        </a>
+                      </div>
+                      <a
+                        class="btn btn-sm btn-outline-dark"
+                        href={report.url}
+                        data-profile-link-type="report"
+                      >
+                        View report
                       </a>
-                    </div>
-                    <a class="btn btn-sm btn-outline-dark" href={report.url}>
-                      View report
-                    </a>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p class="text-muted">
-                {reports?.emptyMessage ?? "No reports published yet."}
-              </p>
-            )}
-          </>
-        ) : tab.tabType === "personnel" ? (
-          <>
-            {hasPersonnel ? (
-              <div class="list-group">
-                {personnelEntries.map((employee) => (
-                  <div class="list-group-item">
-                    <div class="row g-3 align-items-start">
-                      <div class="col-auto">
-                        <div class="text-uppercase small text-muted">Start</div>
-                        <div class="fw-semibold">
-                          {employee.entry.start_date
-                            ? formatShortDate(employee.entry.start_date)
-                            : "Unknown"}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p class="text-muted">
+                  {reports?.emptyMessage ?? "No reports published yet."}
+                </p>
+              )}
+            </>
+          ) : tab.tabType === "personnel" ? (
+            <>
+              {hasPersonnel ? (
+                <div class="list-group">
+                  {personnelEntries.map((employee) => (
+                    <div class="list-group-item">
+                      <div class="row g-3 align-items-start">
+                        <div class="col-auto">
+                          <div class="text-uppercase small text-muted">
+                            Start
+                          </div>
+                          <div class="fw-semibold">
+                            {employee.entry.start_date
+                              ? formatShortDate(employee.entry.start_date)
+                              : "Unknown"}
+                          </div>
                         </div>
-                      </div>
-                      <div class="col-auto">
-                        <div class="text-uppercase small text-muted">End</div>
-                        <div>
-                          {employee.entry.end_date
-                            ? formatShortDate(employee.entry.end_date)
-                            : "Current"}
+                        <div class="col-auto">
+                          <div class="text-uppercase small text-muted">End</div>
+                          <div>
+                            {employee.entry.end_date
+                              ? formatShortDate(employee.entry.end_date)
+                              : "Current"}
+                          </div>
                         </div>
-                      </div>
-                      <div class="col-12 col-md">
-                        <div class="text-uppercase small text-muted">Name</div>
-                        {employee.officer ? (
-                          <a href={`/personnel/${employee.officer.slug}/`}>
-                            {employee.officer.first_name}{" "}
-                            {employee.officer.last_name}
-                          </a>
-                        ) : (
-                          "Unknown"
-                        )}
-                      </div>
-                      <div class="col-6 col-md-2">
-                        <div class="text-uppercase small text-muted">
-                          Badge #
+                        <div class="col-12 col-md">
+                          <div class="text-uppercase small text-muted">
+                            Name
+                          </div>
+                          {employee.officer ? (
+                            <a
+                              href={`/personnel/${employee.officer.slug}/`}
+                              data-profile-link-type="personnel_profile"
+                            >
+                              {employee.officer.first_name}{" "}
+                              {employee.officer.last_name}
+                            </a>
+                          ) : (
+                            "Unknown"
+                          )}
                         </div>
-                        <div>{employee.entry.badge_number || "Unknown"}</div>
-                      </div>
-                      <div class="col-6 col-md-2">
-                        <div class="text-uppercase small text-muted">
-                          Reports
+                        <div class="col-6 col-md-2">
+                          <div class="text-uppercase small text-muted">
+                            Badge #
+                          </div>
+                          <div>{employee.entry.badge_number || "Unknown"}</div>
                         </div>
-                        <div>{employee.reportCount}</div>
-                      </div>
-                      <div class="col-12 col-md-2">
-                        <div class="text-uppercase small text-muted">
-                          Rating
+                        <div class="col-6 col-md-2">
+                          <div class="text-uppercase small text-muted">
+                            Reports
+                          </div>
+                          <div>{employee.reportCount}</div>
                         </div>
-                        <div>
-                          {employee.rating && employee.rating > 0
-                            ? employee.rating.toFixed(1)
-                            : "Not rated"}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p class="text-muted">No personnel listed yet.</p>
-            )}
-          </>
-        ) : tab.tabType === "pastEmployers" ? (
-          <>
-            {hasPastEmployers ? (
-              <div class="list-group">
-                {pastEmployerEntries.map((entry) => (
-                  <div class="list-group-item">
-                    <div class="row g-3 align-items-start">
-                      <div class="col-auto">
-                        <div class="text-uppercase small text-muted">Start</div>
-                        <div class="fw-semibold">
-                          {entry.start_date
-                            ? formatShortDate(entry.start_date)
-                            : "Unknown"}
-                        </div>
-                      </div>
-                      <div class="col-auto">
-                        <div class="text-uppercase small text-muted">End</div>
-                        <div>
-                          {entry.end_date
-                            ? formatShortDate(entry.end_date)
-                            : "Current"}
-                        </div>
-                      </div>
-                      <div class="col-12 col-md">
-                        <div class="text-uppercase small text-muted">Name</div>
-                        {entry.agency ? (
-                          <a
-                            href={`/law-enforcement-agency/${entry.agency.category}/${entry.agency.slug}/`}
-                          >
-                            {entry.agency.name}
-                          </a>
-                        ) : (
-                          "Unknown"
-                        )}
-                      </div>
-                      <div class="col-6 col-md-2">
-                        <div class="text-uppercase small text-muted">
-                          Badge #
-                        </div>
-                        <div>{entry.badge_number || "Unknown"}</div>
-                      </div>
-                      <div class="col-6 col-md-2">
-                        <div class="text-uppercase small text-muted">
-                          Reports
-                        </div>
-                        <div>{entry.reportCount || 0}</div>
-                      </div>
-                      <div class="col-12 col-md-2">
-                        <div class="text-uppercase small text-muted">
-                          Rating
-                        </div>
-                        <div>
-                          {entry.rating && entry.rating > 0
-                            ? entry.rating.toFixed(1)
-                            : "Not rated"}
+                        <div class="col-12 col-md-2">
+                          <div class="text-uppercase small text-muted">
+                            Rating
+                          </div>
+                          <div>
+                            {employee.rating && employee.rating > 0
+                              ? employee.rating.toFixed(1)
+                              : "Not rated"}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p class="text-muted mb-0">No past employers listed yet.</p>
-            )}
-          </>
-        ) : null}
-      </div>
-    ))
-  }
+                  ))}
+                </div>
+              ) : (
+                <p class="text-muted">No personnel listed yet.</p>
+              )}
+            </>
+          ) : tab.tabType === "pastEmployers" ? (
+            <>
+              {hasPastEmployers ? (
+                <div class="list-group">
+                  {pastEmployerEntries.map((entry) => (
+                    <div class="list-group-item">
+                      <div class="row g-3 align-items-start">
+                        <div class="col-auto">
+                          <div class="text-uppercase small text-muted">
+                            Start
+                          </div>
+                          <div class="fw-semibold">
+                            {entry.start_date
+                              ? formatShortDate(entry.start_date)
+                              : "Unknown"}
+                          </div>
+                        </div>
+                        <div class="col-auto">
+                          <div class="text-uppercase small text-muted">End</div>
+                          <div>
+                            {entry.end_date
+                              ? formatShortDate(entry.end_date)
+                              : "Current"}
+                          </div>
+                        </div>
+                        <div class="col-12 col-md">
+                          <div class="text-uppercase small text-muted">
+                            Name
+                          </div>
+                          {entry.agency ? (
+                            <a
+                              href={`/law-enforcement-agency/${entry.agency.category}/${entry.agency.slug}/`}
+                              data-profile-link-type="agency_profile"
+                            >
+                              {entry.agency.name}
+                            </a>
+                          ) : (
+                            "Unknown"
+                          )}
+                        </div>
+                        <div class="col-6 col-md-2">
+                          <div class="text-uppercase small text-muted">
+                            Badge #
+                          </div>
+                          <div>{entry.badge_number || "Unknown"}</div>
+                        </div>
+                        <div class="col-6 col-md-2">
+                          <div class="text-uppercase small text-muted">
+                            Reports
+                          </div>
+                          <div>{entry.reportCount || 0}</div>
+                        </div>
+                        <div class="col-12 col-md-2">
+                          <div class="text-uppercase small text-muted">
+                            Rating
+                          </div>
+                          <div>
+                            {entry.rating && entry.rating > 0
+                              ? entry.rating.toFixed(1)
+                              : "Not rated"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p class="text-muted mb-0">No past employers listed yet.</p>
+              )}
+            </>
+          ) : null}
+        </div>
+      ))
+    }
+  </div>
 </div>
 <style is:global>
   .case-grid {

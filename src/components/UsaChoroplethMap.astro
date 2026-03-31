@@ -107,7 +107,7 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
 };
 ---
 
-<div class="row g-4 align-items-stretch">
+<div class="row g-4 align-items-stretch" data-usa-map-card>
   <div class:list={["col-12", federalPanel ? "col-lg-8" : null]}>
     <div class="card shadow-sm border-0 rounded-0 h-100">
       <div class="card-body d-flex flex-column gap-3">
@@ -126,6 +126,8 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
                   class="btn btn-outline-dark rounded-0"
                   href={headerAction.href}
                   target={headerAction.target || "_self"}
+                  data-map-link-type="header_action"
+                  data-map-label={headerAction.label}
                   data-prefill-key={headerAction.prefillKey}
                   data-prefill-payload={headerAction.prefillPayload}
                 >
@@ -165,6 +167,9 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
                   <a
                     href={href}
                     aria-label={`View ${label}`}
+                    data-map-label={state.label}
+                    data-map-link-type="state"
+                    data-state-count={String(count)}
                     data-state-id={state.id}
                   >
                     {pathEl}
@@ -223,6 +228,11 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
                   <a
                     href={href}
                     aria-label={`View ${label}`}
+                    data-map-label={chip.name}
+                    data-map-link-type="state"
+                    data-state-count={String(
+                      byCode.get(chip.id.toLowerCase())?.count || 0,
+                    )}
                     data-state-id={chip.id}
                   >
                     {pillEl}
@@ -277,6 +287,8 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
                       <a
                         class="text-decoration-none fw-semibold"
                         href={item.href}
+                        data-map-label={item.label}
+                        data-map-link-type="federal_item"
                       >
                         {item.label}
                       </a>
@@ -297,6 +309,8 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
                 <a
                   class="btn btn-outline-dark rounded-0 w-100"
                   href={federalPanel.actionHref}
+                  data-map-label={federalPanel.actionLabel}
+                  data-map-link-type="federal_action"
                 >
                   {federalPanel.actionLabel}
                 </a>
@@ -476,11 +490,16 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
   }
 </style>
 
-<script is:inline>
+<script>
   (() => {
-    const mapRoots = document.querySelectorAll("[data-usa-map]");
+    const cardRoots = document.querySelectorAll("[data-usa-map-card]");
 
-    for (const mapRoot of mapRoots) {
+    for (const cardRoot of cardRoots) {
+      const mapRoot = cardRoot.querySelector("[data-usa-map]");
+      if (!(mapRoot instanceof HTMLElement)) {
+        continue;
+      }
+
       let activeStateId = "";
 
       const applyActiveState = (stateId) => {

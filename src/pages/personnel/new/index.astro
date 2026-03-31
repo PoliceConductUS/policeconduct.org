@@ -35,6 +35,10 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                 Provide the same details shown on personnel profiles. Leave any
                 field blank if you are unsure.
               </p>
+              <p class="text-muted mb-3">
+                Submitter contact details are required so we can verify the
+                submission if questions come up.
+              </p>
               <div class="alert alert-warning rounded-0 small">
                 Please do not include personal addresses, phone numbers, family
                 details, or other private information. Submissions should focus
@@ -193,6 +197,54 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                     placeholder="Profile photo link"
                   />
                   <label for="profilePhotoLink">Profile photo link</label>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="submitterName"
+                        name="submitterName"
+                        placeholder="Full name"
+                        required
+                      />
+                      <label for="submitterName">Submitter full name*</label>
+                      <div class="invalid-feedback">
+                        Please provide your full name.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="email"
+                        class="form-control"
+                        id="submitterEmail"
+                        name="submitterEmail"
+                        placeholder="Email"
+                        required
+                      />
+                      <label for="submitterEmail">Submitter email*</label>
+                      <div class="invalid-feedback">
+                        Please provide a valid email address.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="tel"
+                        class="form-control"
+                        id="submitterPhone"
+                        name="submitterPhone"
+                        placeholder="Phone"
+                      />
+                      <label for="submitterPhone"
+                        >Submitter phone (optional)</label
+                      >
+                    </div>
+                  </div>
                 </div>
                 <div class="small text-muted mb-3">
                   Protected by reCAPTCHA Enterprise.

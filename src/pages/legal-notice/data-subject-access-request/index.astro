@@ -52,11 +52,11 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
                 class="form-control"
                 id="dsarName"
                 name="name"
-                placeholder="Your name"
+                placeholder="Full name"
                 required
               />
-              <label for="dsarName">Your name*</label>
-              <div class="invalid-feedback">Please provide your name.</div>
+              <label for="dsarName">Full name*</label>
+              <div class="invalid-feedback">Please provide your full name.</div>
             </div>
 
             <div class="form-floating mb-4">
@@ -72,6 +72,17 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
                 >What email address do you use to access this website?*</label
               >
               <div class="invalid-feedback">Please provide a valid email.</div>
+            </div>
+
+            <div class="form-floating mb-4">
+              <input
+                type="tel"
+                class="form-control"
+                id="dsarPhone"
+                name="phone"
+                placeholder="Phone"
+              />
+              <label for="dsarPhone">Phone (optional)</label>
             </div>
 
             <fieldset class="mb-4">

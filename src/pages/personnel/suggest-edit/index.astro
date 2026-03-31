@@ -38,6 +38,10 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                 Use this form to suggest updates to an officer profile. You can
                 fill in only the fields you are correcting.
               </p>
+              <p class="text-muted mb-3">
+                Submitter contact details are required so we can follow up about
+                your correction if needed.
+              </p>
               <div class="alert alert-warning rounded-0 small">
                 Please do not include personal addresses, phone numbers, family
                 details, or other private information. Submissions should focus
@@ -167,6 +171,54 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                   <label for="civilLitigation">Civil litigation</label>
                   <div class="form-text">
                     Include case numbers, court, and links if available.
+                  </div>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="submitterName"
+                        name="submitterName"
+                        placeholder="Full name"
+                        required
+                      />
+                      <label for="submitterName">Submitter full name*</label>
+                      <div class="invalid-feedback">
+                        Please provide your full name.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="email"
+                        class="form-control"
+                        id="submitterEmail"
+                        name="submitterEmail"
+                        placeholder="Email"
+                        required
+                      />
+                      <label for="submitterEmail">Submitter email*</label>
+                      <div class="invalid-feedback">
+                        Please provide a valid email address.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="tel"
+                        class="form-control"
+                        id="submitterPhone"
+                        name="submitterPhone"
+                        placeholder="Phone"
+                      />
+                      <label for="submitterPhone"
+                        >Submitter phone (optional)</label
+                      >
+                    </div>
                   </div>
                 </div>
                 <div class="small text-muted mb-3">

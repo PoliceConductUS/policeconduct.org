@@ -35,6 +35,10 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
                 Fill in the public-facing details shown on agency profiles.
                 Missing information can be added later by our team.
               </p>
+              <p class="text-muted mb-3">
+                Submitter contact details are required so we can verify the
+                submission if questions come up.
+              </p>
               <div class="alert alert-warning rounded-0 small">
                 Avoid submitting private or sensitive data. Provide public
                 records, press coverage, or confirmed contact information only.
@@ -192,6 +196,59 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
                   <div class="form-text">
                     Use this field for mission statements, oversight contacts,
                     or other context.
+                  </div>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-12">
+                    <h3 class="h6 text-uppercase text-muted mb-0">
+                      Submitter contact
+                    </h3>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="submitterName"
+                        name="submitterName"
+                        placeholder="Full name"
+                        required
+                      />
+                      <label for="submitterName">Submitter full name*</label>
+                      <div class="invalid-feedback">
+                        Please provide your full name.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="email"
+                        class="form-control"
+                        id="submitterEmail"
+                        name="submitterEmail"
+                        placeholder="Email"
+                        required
+                      />
+                      <label for="submitterEmail">Submitter email*</label>
+                      <div class="invalid-feedback">
+                        Please provide a valid email address.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="tel"
+                        class="form-control"
+                        id="submitterPhone"
+                        name="submitterPhone"
+                        placeholder="Phone"
+                      />
+                      <label for="submitterPhone"
+                        >Submitter phone (optional)</label
+                      >
+                    </div>
                   </div>
                 </div>
                 <div class="small text-muted mb-3">

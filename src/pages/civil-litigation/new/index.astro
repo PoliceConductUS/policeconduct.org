@@ -179,9 +179,13 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                         class="form-control"
                         id="reporterName"
                         name="reporterName"
-                        placeholder="Your name"
+                        placeholder="Full name"
+                        required
                       />
-                      <label for="reporterName">Your name</label>
+                      <label for="reporterName">Full name*</label>
+                      <div class="invalid-feedback">
+                        Please provide your full name.
+                      </div>
                     </div>
                   </div>
                   <div class="col-md-6">
@@ -199,6 +203,18 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                         We need an email to follow up if we have verification
                         questions.
                       </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="tel"
+                        class="form-control"
+                        id="reporterPhone"
+                        name="reporterPhone"
+                        placeholder="Phone"
+                      />
+                      <label for="reporterPhone">Phone (optional)</label>
                     </div>
                   </div>
                 </div>

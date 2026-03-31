@@ -27,6 +27,9 @@ type RecaptchaEnterprise = {
 
 declare global {
   interface Window {
+    __IPC_ANALYTICS__?: {
+      track?: (eventName: string, params?: Record<string, unknown>) => void;
+    };
     __IPC_PREFILL__?: {
       readAndConsume?: (key: string) => Record<string, unknown> | null;
       prefillFields?: (options: {
@@ -87,6 +90,24 @@ type SubmitJsonFormOptions = {
   onBeforeSubmit?: () => unknown | Promise<unknown>;
   buildPayload?: (args: SubmitPayloadArgs) => unknown | Promise<unknown>;
   onSuccess?: (args: SubmitSuccessArgs) => void | Promise<void>;
+};
+
+const trackAnalytics = (
+  eventName: string,
+  params: Record<string, unknown> = {},
+) => {
+  window.__IPC_ANALYTICS__?.track?.(eventName, params);
+};
+
+const trackFormAnalytics = (
+  eventName: string,
+  formName: string,
+  params: Record<string, unknown> = {},
+) => {
+  trackAnalytics(eventName, {
+    form_name: formName,
+    ...params,
+  });
 };
 
 const parseFieldName = (name: string) =>
@@ -283,6 +304,18 @@ const getValidationSummary = (form: HTMLFormElement) => {
   return summary;
 };
 
+const getInvalidFields = (form: HTMLFormElement) =>
+  Array.from(
+    form.querySelectorAll<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >("input, select, textarea"),
+  ).filter((field) => {
+    if (field.disabled || field.type === "hidden") {
+      return false;
+    }
+    return !field.checkValidity();
+  });
+
 const getFieldLabelText = (
   field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
 ) => {
@@ -330,16 +363,7 @@ const openAncestorDetails = (field: HTMLElement) => {
 
 const showValidationSummary = (form: HTMLFormElement) => {
   const summary = getValidationSummary(form);
-  const invalidFields = Array.from(
-    form.querySelectorAll<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >("input, select, textarea"),
-  ).filter((field) => {
-    if (field.disabled || field.type === "hidden") {
-      return false;
-    }
-    return !field.checkValidity();
-  });
+  const invalidFields = getInvalidFields(form);
 
   if (invalidFields.length === 0) {
     hideValidationSummary(form);
@@ -526,6 +550,10 @@ export const showFormLoadError = ({
     },
   });
 
+  trackFormAnalytics("form_load_error", formName, {
+    page_path: window.location.pathname,
+  });
+
   if (!shell) {
     return;
   }
@@ -543,10 +571,12 @@ export const showFormLoadError = ({
 
 const getSubmitSuccess = ({
   form,
+  formName,
   submitButton,
   onReset,
 }: {
   form: HTMLFormElement;
+  formName: string;
   submitButton: HTMLButtonElement | null | undefined;
   onReset?: () => void | Promise<void>;
 }) => {
@@ -571,6 +601,7 @@ const getSubmitSuccess = ({
     );
 
     dismissButton?.addEventListener("click", function () {
+      trackFormAnalytics("form_success_reset", formName);
       inlineSuccess.classList.add("d-none");
       form.reset();
       if (typeof onReset === "function") {
@@ -581,6 +612,7 @@ const getSubmitSuccess = ({
     });
 
     printButton?.addEventListener("click", function () {
+      trackFormAnalytics("form_success_print", formName);
       window.print();
     });
 
@@ -611,11 +643,14 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
   const inlineError = getInlineError(form);
   const { inlineSuccess } = getSubmitSuccess({
     form,
+    formName,
     submitButton,
     onReset,
   });
 
   let submissionCompleted = false;
+  let failureStage = "validation";
+  let responseStatus: number | null = null;
 
   if (form.dataset.submitLocked === "true") {
     event?.preventDefault();
@@ -624,6 +659,7 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
 
   event?.preventDefault();
   form.dataset.submitLocked = "true";
+  trackFormAnalytics("form_submit_attempt", formName);
   setSubmitButtonBusy(submitButton, true);
   inlineError.classList.add("d-none");
   inlineError.textContent = "";
@@ -636,6 +672,9 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
       typeof validate === "function" ? await validate() : true;
 
     if (!form.checkValidity() || !customValid) {
+      trackFormAnalytics("form_validation_error", formName, {
+        invalid_field_count: getInvalidFields(form).length,
+      });
       event?.stopPropagation();
       form.classList.add("was-validated");
       const firstInvalidField = showValidationSummary(form);
@@ -653,8 +692,10 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
 
     form.classList.add("was-validated");
 
+    failureStage = "before_submit";
     const beforeSubmitResult = await onBeforeSubmit?.();
     const formData = new FormData(form);
+    failureStage = "recaptcha";
     const recaptchaToken = await getRecaptchaToken(recaptchaAction);
     const data = getSubmitData(formData);
     const payload = (await buildPayload?.({
@@ -670,6 +711,7 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
       recaptchaToken,
     };
 
+    failureStage = "request";
     const response = await fetch("/api/forms/submit", {
       method: "POST",
       headers: {
@@ -677,6 +719,7 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
       },
       body: JSON.stringify(payload),
     });
+    responseStatus = response.status;
 
     if (!response.ok) {
       let message =
@@ -696,6 +739,7 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
       throw new Error(message);
     }
 
+    failureStage = "response";
     const result = await response.json();
     const submissionId =
       typeof (result as { submissionId?: unknown })?.submissionId === "string"
@@ -720,6 +764,9 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
     }
     inlineSuccess.classList.remove("d-none");
     inlineSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
+    trackFormAnalytics("form_submit_success", formName, {
+      response_status: responseStatus ?? response.status,
+    });
     await onSuccess?.({
       form,
       inlineSuccess,
@@ -737,6 +784,12 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
       formName,
       pagePath: window.location.pathname,
       recaptchaAction,
+    });
+    trackFormAnalytics("form_submit_error", formName, {
+      error_name:
+        error instanceof Error ? error.name || "Error" : "UnknownError",
+      failure_stage: failureStage,
+      response_status: responseStatus ?? undefined,
     });
     inlineError.textContent = getSubmitErrorMessage(error);
     inlineError.classList.remove("d-none");

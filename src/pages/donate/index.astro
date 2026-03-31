@@ -416,6 +416,8 @@ const structuredData = buildWebPage({
                         isPrimary ? "btn-dark" : "btn-outline-dark"
                       } ${isDisabled ? "disabled" : ""}`}
                       data-preset-button
+                      data-amount-key={amount.key}
+                      data-amount-label={amount.label}
                       data-link-monthly={monthlyLink}
                       data-link-onetime={oneTimeLink}
                       href={initialLink || undefined}
@@ -437,6 +439,7 @@ const structuredData = buildWebPage({
               <a
                 class="small text-decoration-none d-inline-block mt-2"
                 href={donatePageConfiguration.financialReportsPath}
+                data-donation-financial-link
               >
                 {donatePageCopy.trustStripLinkLabel}
               </a>
@@ -459,6 +462,7 @@ const structuredData = buildWebPage({
               class="btn btn-outline-dark rounded-0"
               href={donatePageCopy.clubsContactPath}
               target="_self"
+              data-donation-contact-link
               data-prefill-key="prefill:contact"
               data-prefill-payload={JSON.stringify({
                 whoami: "Donor",
@@ -503,6 +507,8 @@ const structuredData = buildWebPage({
                       <a
                         class="btn btn-sm btn-dark rounded-0"
                         data-club-button
+                        data-club-key={club.key}
+                        data-club-name={club.name}
                         data-club-frequency="monthly"
                         data-link={monthlyLink}
                         href={monthlyLink || undefined}
@@ -516,6 +522,8 @@ const structuredData = buildWebPage({
                       <a
                         class="btn btn-sm btn-outline-dark rounded-0"
                         data-club-button
+                        data-club-key={club.key}
+                        data-club-name={club.name}
                         data-club-frequency="annual"
                         data-link={annualLink}
                         href={annualLink || undefined}
@@ -570,6 +578,7 @@ const structuredData = buildWebPage({
         <a
           href={donatePageConfiguration.financialReportsPath}
           class="link-dark"
+          data-donation-financial-link
         >
           {donatePageCopy.financialFooterLabel}
         </a>
@@ -581,12 +590,20 @@ const structuredData = buildWebPage({
 <script is:inline>
   const rootElement = document.querySelector("[data-donation-root]");
   if (rootElement) {
+    const trackDonationEvent = (eventName, params = {}) => {
+      window.__IPC_ANALYTICS__?.track?.(eventName, params);
+    };
     const frequencyInputs = rootElement.querySelectorAll(
       'input[name="donation-frequency"]',
     );
     const presetButtons = rootElement.querySelectorAll("[data-preset-button]");
     const clubButtons = rootElement.querySelectorAll("[data-club-button]");
-    const clubHints = rootElement.querySelectorAll("[data-club-hint]");
+    const contactLinks = rootElement.querySelectorAll(
+      "[data-donation-contact-link]",
+    );
+    const financialLinks = rootElement.querySelectorAll(
+      "[data-donation-financial-link]",
+    );
 
     const setButtonState = (anchorElement, link) => {
       if (link && link.length > 0) {
@@ -629,7 +646,52 @@ const structuredData = buildWebPage({
         const target = event.target;
         if (target && target.value) {
           setFrequency(target.value);
+          trackDonationEvent("donation_frequency_selected", {
+            frequency: target.value,
+          });
         }
+      });
+    });
+
+    presetButtons.forEach((anchorElement) => {
+      anchorElement.addEventListener("click", () => {
+        if (!anchorElement.href) {
+          return;
+        }
+        trackDonationEvent("donation_amount_clicked", {
+          amount_key: anchorElement.dataset.amountKey || "",
+          amount_label: anchorElement.dataset.amountLabel || "",
+          frequency: rootElement.dataset.frequency || "monthly",
+        });
+      });
+    });
+
+    clubButtons.forEach((anchorElement) => {
+      anchorElement.addEventListener("click", () => {
+        if (!anchorElement.href) {
+          return;
+        }
+        trackDonationEvent("donation_club_clicked", {
+          club_frequency: anchorElement.dataset.clubFrequency || "",
+          club_key: anchorElement.dataset.clubKey || "",
+          club_name: anchorElement.dataset.clubName || "",
+        });
+      });
+    });
+
+    contactLinks.forEach((anchorElement) => {
+      anchorElement.addEventListener("click", () => {
+        trackDonationEvent("donation_contact_clicked", {
+          link_text: anchorElement.textContent?.trim() || "",
+        });
+      });
+    });
+
+    financialLinks.forEach((anchorElement) => {
+      anchorElement.addEventListener("click", () => {
+        trackDonationEvent("donation_financial_reports_clicked", {
+          link_text: anchorElement.textContent?.trim() || "",
+        });
       });
     });
 
