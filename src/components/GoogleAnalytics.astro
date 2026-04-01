@@ -12,33 +12,6 @@
     dataLayer.push(arguments);
   };
 
-  window.__IPC_ANALYTICS__ = {
-    track(eventName, params = {}) {
-      if (!eventName || typeof window.gtag !== "function") {
-        return;
-      }
-
-      const payload = {
-        page_path: window.location.pathname,
-        ...params,
-      };
-
-      Object.keys(payload).forEach((key) => {
-        const value = payload[key];
-        if (
-          value === undefined ||
-          value === null ||
-          value === "" ||
-          Number.isNaN(value)
-        ) {
-          delete payload[key];
-        }
-      });
-
-      window.gtag("event", eventName, payload);
-    },
-  };
-
   gtag("js", new Date());
   gtag("config", "G-40S6M70XP7", {
     page_title: document.title,

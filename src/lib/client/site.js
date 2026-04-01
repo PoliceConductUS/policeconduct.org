@@ -2,6 +2,33 @@ import "bootstrap/js/dist/collapse";
 import "bootstrap/js/dist/scrollspy";
 import "bootstrap/js/dist/tab";
 
+window.__IPC_ANALYTICS__ = window.__IPC_ANALYTICS__ || {
+  track(eventName, params = {}) {
+    if (!eventName || typeof window.gtag !== "function") {
+      return;
+    }
+
+    const payload = {
+      page_path: window.location.pathname,
+      ...params,
+    };
+
+    Object.keys(payload).forEach((key) => {
+      const value = payload[key];
+      if (
+        value === undefined ||
+        value === null ||
+        value === "" ||
+        Number.isNaN(value)
+      ) {
+        delete payload[key];
+      }
+    });
+
+    window.gtag("event", eventName, payload);
+  },
+};
+
 const trackAnalytics = (eventName, params = {}) => {
   window.__IPC_ANALYTICS__?.track?.(eventName, params);
 };
