@@ -191,6 +191,18 @@ variable "forms_draft_max_bytes" {
   default     = 1048576
 }
 
+variable "forms_email_verification_from_address" {
+  description = "Sender address for post-submit verification emails."
+  type        = string
+  default     = "noreply@policeconduct.org"
+}
+
+variable "forms_email_verification_ttl_seconds" {
+  description = "Lifetime of post-submit verification links in seconds."
+  type        = number
+  default     = 900
+}
+
 variable "forms_api_rate_limit_per_5m" {
   description = "Rate limit (requests per 5 minutes per source IP) for forms API."
   type        = number

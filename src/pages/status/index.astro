@@ -64,6 +64,22 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
         submitButton.disabled = !enabled;
       };
 
+      const renderMessage = (headingText, bodyText) => {
+        result.classList.remove("d-none");
+        result.innerHTML = "";
+
+        const heading = document.createElement("h2");
+        heading.className = "h5 mb-3";
+        heading.textContent = headingText;
+
+        const body = document.createElement("p");
+        body.className = "mb-0";
+        body.textContent = bodyText;
+
+        result.appendChild(heading);
+        result.appendChild(body);
+      };
+
       const renderScalar = (value) => {
         if (value === null) return "null";
         if (value === undefined) return "";
@@ -128,6 +144,73 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
         appendEntries(result, payload);
       };
 
+      const verifyFromLink = async (token) => {
+        renderMessage("Verification", "Verifying your submission...");
+        setSubmitEnabled(false);
+
+        try {
+          const response = await fetch("/api/forms/verify-link", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ token }),
+          });
+          let payload;
+          try {
+            payload = await response.json();
+          } catch (_error) {
+            payload = null;
+          }
+
+          if (!response.ok) {
+            const message =
+              payload &&
+              typeof payload.error === "string" &&
+              payload.error.trim()
+                ? payload.error.trim()
+                : "We could not verify that link.";
+            renderMessage("Verification failed", message);
+            return;
+          }
+
+          const submissionId =
+            payload &&
+            typeof payload.submissionId === "string" &&
+            payload.submissionId.trim()
+              ? payload.submissionId.trim()
+              : "";
+
+          if (!submissionId) {
+            renderMessage(
+              "Verification failed",
+              "The verification response did not include a submission ID.",
+            );
+            return;
+          }
+
+          renderResult({
+            status: payload?.status || "in_review",
+            statusChangedAt: payload?.statusChangedAt || "",
+            submissionId,
+          });
+        } catch (_error) {
+          renderMessage(
+            "Verification failed",
+            "We could not verify that link right now.",
+          );
+        } finally {
+          const nextUrl = new URL(window.location.href);
+          nextUrl.searchParams.delete("verify");
+          window.history.replaceState(
+            {},
+            "",
+            nextUrl.pathname + nextUrl.search,
+          );
+          setSubmitEnabled(Boolean(input.value.trim()));
+        }
+      };
+
       setSubmitEnabled(false);
 
       input.addEventListener("input", function () {
@@ -176,6 +259,13 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           renderResult({ submissionId, status: "pending" });
         }
       });
+
+      const verifyToken = new URLSearchParams(window.location.search).get(
+        "verify",
+      );
+      if (verifyToken) {
+        void verifyFromLink(verifyToken);
+      }
     })();
   </script>
 </SiteLayout>

@@ -773,6 +773,11 @@ resource "aws_iam_role" "forms_lambda" {
   assume_role_policy = data.aws_iam_policy_document.forms_lambda_assume_role.json
 }
 
+resource "random_password" "forms_email_verification_hmac_secret" {
+  length  = 64
+  special = false
+}
+
 data "aws_iam_policy_document" "forms_lambda_permissions" {
   statement {
     sid    = "CloudWatchLogsWrite"
@@ -889,6 +894,13 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
     ]
     resources = [aws_kms_key.forms_submissions_preview.arn]
   }
+
+  statement {
+    sid       = "SesSendVerificationEmail"
+    effect    = "Allow"
+    actions   = ["ses:SendEmail"]
+    resources = [aws_ses_domain_identity.site.arn]
+  }
 }
 
 resource "aws_iam_role_policy" "forms_lambda_permissions" {
@@ -985,6 +997,10 @@ resource "aws_lambda_function" "forms_api_prod" {
       RECAPTCHA_MIN_SCORE                  = tostring(var.recaptcha_min_score)
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
+      EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
+      EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
+      EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
+      SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
       SENTRY_DSN                           = local.sentry_dsn_production == null ? "" : local.sentry_dsn_production
       SENTRY_ENVIRONMENT                   = "production"
     }
@@ -1017,6 +1033,10 @@ resource "aws_lambda_function" "forms_api_preview" {
       RECAPTCHA_MIN_SCORE                  = tostring(var.recaptcha_min_score)
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
+      EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
+      EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
+      EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
+      SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
       SENTRY_DSN                           = local.sentry_dsn_preview == null ? "" : local.sentry_dsn_preview
       SENTRY_ENVIRONMENT                   = "preview"
     }
@@ -1496,6 +1516,38 @@ resource "aws_route53_zone" "site" {
   count = local.manage_hosted_zone ? 1 : 0
 
   name = var.domain_name
+}
+
+resource "aws_ses_domain_identity" "site" {
+  domain = var.domain_name
+}
+
+resource "aws_route53_record" "ses_domain_identity_verification" {
+  zone_id = local.route53_zone_id
+  name    = "_amazonses.${var.domain_name}"
+  type    = "TXT"
+  ttl     = 600
+  records = [aws_ses_domain_identity.site.verification_token]
+}
+
+resource "aws_ses_domain_identity_verification" "site" {
+  domain = aws_ses_domain_identity.site.id
+
+  depends_on = [aws_route53_record.ses_domain_identity_verification]
+}
+
+resource "aws_ses_domain_dkim" "site" {
+  domain = aws_ses_domain_identity.site.domain
+}
+
+resource "aws_route53_record" "ses_domain_dkim" {
+  count = 3
+
+  zone_id = local.route53_zone_id
+  name    = "${aws_ses_domain_dkim.site.dkim_tokens[count.index]}._domainkey.${var.domain_name}"
+  type    = "CNAME"
+  ttl     = 600
+  records = ["${aws_ses_domain_dkim.site.dkim_tokens[count.index]}.dkim.amazonses.com"]
 }
 
 resource "aws_s3_bucket" "site" {
