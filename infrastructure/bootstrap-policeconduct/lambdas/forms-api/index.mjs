@@ -39,7 +39,15 @@ const ALLOWED_FORM_NAMES = new Set([
   "reportNew",
 ]);
 const FORMS_WITH_EMAIL_VERIFICATION = new Map([
+  ["contact", "email"],
+  ["volunteer", "email"],
+  ["civilLitigationNew", "reporterEmail"],
+  ["civilLitigationEdit", "reporterEmail"],
+  ["agencyNew", "submitterEmail"],
+  ["agencyEdit", "submitterEmail"],
   ["personnelNew", "submitterEmail"],
+  ["officerEdit", "submitterEmail"],
+  ["dataSubjectAccessRequest", "email"],
   ["reportNew", "reporterEmail"],
 ]);
 
@@ -994,35 +1002,6 @@ async function submitForm(event, requestId) {
       key,
     }),
   );
-
-  if (!FORMS_WITH_EMAIL_VERIFICATION.has(formName)) {
-    try {
-      await saveSubmissionStatus(submissionId, "received", null);
-    } catch (error) {
-      captureLambdaException(
-        error,
-        {
-          formName,
-          requestId,
-          stage: event?.requestContext?.stage || null,
-        },
-        {
-          operation: "save_submission_status",
-          submissionId,
-        },
-      );
-      console.error(
-        JSON.stringify({
-          msg: "forms.submit.status_save_failed",
-          requestId,
-          formName,
-          submissionId,
-          error: errorInfo(error),
-        }),
-      );
-    }
-    return json(200, { submissionId });
-  }
 
   const origin = getSiteOrigin(event);
   const verificationEmail = getVerificationEmail(data, formName);

@@ -1,22 +1,9 @@
 import * as Sentry from "@sentry/astro";
 
-const createSubmissionSuccessMarkup = (
-  kind: "submission_id" | "verification_pending",
-) =>
-  kind === "verification_pending"
-    ? `<div>
+const createSubmissionSuccessMarkup = () => `<div>
     <p class="mb-1"><strong>Submission received.</strong></p>
     <p class="mb-0" data-form-submit-success-detail></p>
     <div class="mt-3 d-flex flex-wrap gap-2">
-      <button type="button" class="btn btn-sm btn-dark" data-dismiss-submit-success>Reset</button>
-    </div>
-  </div>`
-    : `<div>
-    <p class="mb-1"><strong>Submission received.</strong></p>
-    <p class="mb-1">Submission ID: <code data-submission-id></code></p>
-    <p class="mb-0">Save this ID in a safe place. It cannot be recovered or displayed again. You can print this page and use this ID for follow-up questions or change requests.</p>
-    <div class="mt-3 d-flex flex-wrap gap-2">
-      <button type="button" class="btn btn-sm btn-outline-dark" data-print-submission>Print</button>
       <button type="button" class="btn btn-sm btn-dark" data-dismiss-submit-success>Reset</button>
     </div>
   </div>`;
@@ -83,7 +70,6 @@ type SubmitSuccessArgs = {
   recaptchaToken: string;
   response: Response;
   result: unknown;
-  submissionId: string;
   submitButton: HTMLButtonElement | null;
 };
 
@@ -100,7 +86,7 @@ type SubmitJsonFormOptions = {
   onBeforeSubmit?: () => unknown | Promise<unknown>;
   buildPayload?: (args: SubmitPayloadArgs) => unknown | Promise<unknown>;
   onSuccess?: (args: SubmitSuccessArgs) => void | Promise<void>;
-  successKind?: "submission_id" | "verification_pending";
+  successKind?: "verification_pending";
   getSuccessDetail?: (args: { result: unknown }) => string;
 };
 
@@ -584,13 +570,11 @@ export const showFormLoadError = ({
 const getSubmitSuccess = ({
   form,
   formName,
-  successKind,
   submitButton,
   onReset,
 }: {
   form: HTMLFormElement;
   formName: string;
-  successKind: "submission_id" | "verification_pending";
   submitButton: HTMLButtonElement | null | undefined;
   onReset?: () => void | Promise<void>;
 }) => {
@@ -602,16 +586,13 @@ const getSubmitSuccess = ({
     inlineSuccess.setAttribute("data-form-submit-success", "true");
     inlineSuccess.className = "alert alert-success rounded-0 mt-3 d-none";
     inlineSuccess.setAttribute("role", "status");
-    inlineSuccess.innerHTML = createSubmissionSuccessMarkup(successKind);
+    inlineSuccess.innerHTML = createSubmissionSuccessMarkup();
     form.appendChild(inlineSuccess);
   }
 
   if (inlineSuccess.dataset.submitUiBound !== "1") {
     const dismissButton = inlineSuccess.querySelector<HTMLButtonElement>(
       "[data-dismiss-submit-success]",
-    );
-    const printButton = inlineSuccess.querySelector<HTMLButtonElement>(
-      "[data-print-submission]",
     );
 
     dismissButton?.addEventListener("click", function () {
@@ -623,11 +604,6 @@ const getSubmitSuccess = ({
       }
       form.dataset.submitLocked = "false";
       setSubmitButtonBusy(submitButton, false);
-    });
-
-    printButton?.addEventListener("click", function () {
-      trackFormAnalytics("form_success_print", formName);
-      window.print();
     });
 
     inlineSuccess.dataset.submitUiBound = "1";
@@ -652,7 +628,7 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
     onBeforeSubmit,
     buildPayload,
     onSuccess,
-    successKind = "submission_id",
+    successKind: _successKind,
     getSuccessDetail,
   } = options;
 
@@ -660,7 +636,6 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
   const { inlineSuccess } = getSubmitSuccess({
     form,
     formName,
-    successKind,
     submitButton,
     onReset,
   });
@@ -758,34 +733,20 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
 
     failureStage = "response";
     const result = await response.json();
-    const submissionIdRaw =
-      typeof (result as { submissionId?: unknown })?.submissionId === "string"
-        ? (result as { submissionId: string }).submissionId
-        : "";
-    const submissionId = submissionIdRaw.trim();
-    if (successKind === "submission_id" && !submissionId) {
-      throw new Error(
-        "Submission succeeded but no submission ID was returned.",
-      );
-    }
 
     form.classList.remove("was-validated");
-    if (successKind === "submission_id") {
-      const submissionIdNode = inlineSuccess.querySelector<HTMLElement>(
-        "[data-submission-id]",
-      );
-      if (submissionIdNode) {
-        submissionIdNode.textContent = submissionId;
-      }
-    } else {
-      const detailNode = inlineSuccess.querySelector<HTMLElement>(
-        "[data-form-submit-success-detail]",
-      );
-      if (detailNode) {
-        detailNode.textContent =
-          getSuccessDetail?.({ result }) ||
-          "Check your email and open the verification link within 15 minutes to continue.";
-      }
+    const detailNode = inlineSuccess.querySelector<HTMLElement>(
+      "[data-form-submit-success-detail]",
+    );
+    if (detailNode) {
+      const message =
+        typeof (result as { message?: unknown })?.message === "string"
+          ? (result as { message: string }).message.trim()
+          : "";
+      detailNode.textContent =
+        getSuccessDetail?.({ result }) ||
+        message ||
+        "Check your email and open the verification link within 15 minutes to continue.";
     }
     setSubmitButtonBusy(submitButton, false);
     if (submitButton) {
@@ -802,7 +763,6 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
       recaptchaToken,
       response,
       result,
-      submissionId,
       submitButton,
     });
     submissionCompleted = true;

@@ -13,7 +13,6 @@ const forms = [
     path: "/legal-notice/data-subject-access-request/",
     formName: "dataSubjectAccessRequest",
   },
-  { path: "/report/new/", formName: "reportNew", hasDraft: true },
 ];
 
 function buildInputValue(type, name) {
@@ -104,27 +103,6 @@ async function fillRequiredFields(page, formLocator) {
   }
 }
 
-async function answerReportOfficerAssessments(formLocator) {
-  const assessments = formLocator.locator("[data-officer-assessment]");
-  const count = await assessments.count();
-
-  for (let officerIndex = 0; officerIndex < count; officerIndex += 1) {
-    const assessment = assessments.nth(officerIndex);
-    if ((await assessment.getAttribute("open")) === null) {
-      await assessment.locator("summary").click();
-    }
-
-    const notObservedOptions = assessment.locator(
-      'input[data-null-option="true"]',
-    );
-    const optionCount = await notObservedOptions.count();
-
-    for (let index = 0; index < optionCount; index += 1) {
-      await notObservedOptions.nth(index).check();
-    }
-  }
-}
-
 async function installRecaptchaMock(page) {
   await page.addInitScript(() => {
     window.grecaptcha = {
@@ -142,11 +120,12 @@ async function installRecaptchaMock(page) {
 
 test.describe("form submissions", () => {
   for (const form of forms) {
-    test(`success › ${form.formName} stays on-page and shows submission ID`, async ({
+    test(`success › ${form.formName} stays on-page and shows verification instructions`, async ({
       page,
     }) => {
       await installRecaptchaMock(page);
       let submitRequestBody = null;
+      const successMessage = `Check your email for ${form.formName}.`;
 
       await page.route("**/api/forms/submit", async (route) => {
         const req = route.request();
@@ -158,7 +137,10 @@ test.describe("form submissions", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ submissionId: `e2e_${form.formName}_id` }),
+          body: JSON.stringify({
+            message: successMessage,
+            verificationPending: true,
+          }),
         });
       });
 
@@ -193,26 +175,7 @@ test.describe("form submissions", () => {
       await expect(formLocator).toBeVisible();
       const originalPathname = new URL(page.url()).pathname;
 
-      if (form.formName === "reportNew") {
-        await page.getByRole("button", { name: "Add another officer" }).click();
-        await formLocator
-          .locator('[name="officers[0][name]"]')
-          .fill("Officer Zero");
-        await formLocator
-          .locator('[name="officers[0][department]"]')
-          .fill("Department Zero");
-        await formLocator
-          .locator('[name="officers[1][name]"]')
-          .fill("Officer One");
-        await formLocator
-          .locator('[name="officers[1][department]"]')
-          .fill("Department One");
-      }
-
       await fillRequiredFields(page, formLocator);
-      if (form.formName === "reportNew") {
-        await answerReportOfficerAssessments(formLocator);
-      }
 
       const submitResponsePromise = page.waitForResponse((response) => {
         return (
@@ -228,27 +191,11 @@ test.describe("form submissions", () => {
       await expect(page).toHaveURL(new RegExp(`${originalPathname}$`));
       const success = formLocator.locator("[data-form-submit-success]");
       await expect(success).toBeVisible();
-      await expect(success.locator("[data-submission-id]")).toHaveText(
-        `e2e_${form.formName}_id`,
-      );
+      await expect(success).toContainText(successMessage);
+      await expect(success.locator("[data-submission-id]")).toHaveCount(0);
       await expect(
         formLocator.locator("[data-form-submit-error]"),
       ).toBeHidden();
-
-      if (form.formName === "reportNew") {
-        expect(submitRequestBody?.data).toMatchObject({
-          officers: [
-            {
-              department: "Department Zero",
-              name: "Officer Zero",
-            },
-            {
-              department: "Department One",
-              name: "Officer One",
-            },
-          ],
-        });
-      }
     });
   }
 

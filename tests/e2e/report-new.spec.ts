@@ -304,13 +304,18 @@ test.describe("report new", () => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ submissionId: "e2e_report_submit_id" }),
+        body: JSON.stringify({
+          message: "Check your email to verify this report.",
+          verificationPending: true,
+        }),
       });
     });
 
     await page.goto("/report/new/");
     await page.getByRole("button", { name: "Add another officer" }).click();
     await page.getByRole("button", { name: "Add another officer" }).click();
+    await expect(page.locator("[data-officer]")).toHaveCount(3);
+    await expect(page.locator("[data-officer-assessment]")).toHaveCount(3);
 
     await page.locator('[name="officers[0][name]"]').fill("Officer Zero");
     await page
@@ -339,6 +344,7 @@ test.describe("report new", () => {
 
     await page.locator("[data-remove-officer]").nth(1).click();
     await expect(page.locator("[data-officer]")).toHaveCount(2);
+    await expect(page.locator("[data-officer-assessment]")).toHaveCount(2);
     await expect(page.locator('[name="officers[0][name]"]')).toHaveValue(
       "Officer Zero",
     );
@@ -418,7 +424,10 @@ test.describe("report new", () => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ submissionId: "e2e_report_submit_id" }),
+        body: JSON.stringify({
+          message: "Check your email to verify this report.",
+          verificationPending: true,
+        }),
       });
     });
 
@@ -484,7 +493,10 @@ test.describe("report new", () => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ submissionId: "e2e_report_submit_id" }),
+        body: JSON.stringify({
+          message: "Check your email to verify this report.",
+          verificationPending: true,
+        }),
       });
     });
 
