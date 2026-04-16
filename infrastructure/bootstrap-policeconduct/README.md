@@ -154,6 +154,7 @@ Add your domain-specific TXT verification/DKIM records in local `terraform.tfvar
 
 Verification email is sent from `noreply@mail.policeconduct.org` by default.
 Terraform creates the SES identity verification and DKIM records under `mail.policeconduct.org`.
+Terraform also enables SES Virtual Deliverability Manager, creates a dedicated verification email configuration set, and publishes verification email events to the default EventBridge bus.
 
 ## GitHub Environments + Vars
 
@@ -213,26 +214,28 @@ If `sentry_auth_token` is set, Terraform also writes `SENTRY_AUTH_TOKEN` as a Gi
 - Configure `alert_email_endpoints` to have Terraform create and wire an SNS topic for alarm notifications automatically.
 - You can still add extra alarm destinations directly with `alarm_actions`.
 - AWS still requires each email recipient to confirm the SNS subscription from the confirmation email before notifications start arriving.
+- SES verification emails are sent through the `${project_name}-verification-email` configuration set so send, delivery, bounce, complaint, reject, delay, and rendering-failure events land on the default EventBridge bus.
+- SES Virtual Deliverability Manager is enabled account-wide with engagement metrics and optimized shared delivery.
 
 ## Preview Forms API Logs
 
 Tail recent preview Lambda logs:
 
 ```bash
-aws logs tail /aws/lambda/policeconduct-forms-api-preview --since 15m --follow
+aws logs tail /aws/lambda/policeconduct-forms-api-preview --region us-east-1 --since 15m --follow
 ```
 
 Filter for verification, origin, and request errors:
 
 ```bash
-aws logs tail /aws/lambda/policeconduct-forms-api-preview --since 15m \
+aws logs tail /aws/lambda/policeconduct-forms-api-preview --region us-east-1 --since 15m \
   | rg 'ERROR|forms\.submit\.|forms\.verify\.|forms\.request\.error|origin_rejected'
 ```
 
 Look up one request by request ID:
 
 ```bash
-aws logs tail /aws/lambda/policeconduct-forms-api-preview --since 1h \
+aws logs tail /aws/lambda/policeconduct-forms-api-preview --region us-east-1 --since 1h \
   | rg '<request-id>'
 ```
 

@@ -1,5 +1,9 @@
 data "aws_caller_identity" "current" {}
 
+data "aws_cloudwatch_event_bus" "default" {
+  name = "default"
+}
+
 locals {
   provided_oidc_provider_arn            = var.existing_oidc_provider_arn == null || trimspace(var.existing_oidc_provider_arn) == "" ? null : trimspace(var.existing_oidc_provider_arn)
   create_oidc_provider                  = local.provided_oidc_provider_arn == null
@@ -69,9 +73,9 @@ locals {
     for endpoint in var.alert_email_endpoints : trimspace(endpoint)
     if trimspace(endpoint) != ""
   ])
-  has_sentry_auth_token        = nonsensitive(local.sentry_auth_token != null)
-  effective_alarm_actions      = concat(var.alarm_actions, length(local.normalized_alert_email_endpoints) > 0 ? [aws_sns_topic.infrastructure_alerts[0].arn] : [])
-  github_environment_names     = toset(["production", "preview"])
+  has_sentry_auth_token    = nonsensitive(local.sentry_auth_token != null)
+  effective_alarm_actions  = concat(var.alarm_actions, length(local.normalized_alert_email_endpoints) > 0 ? [aws_sns_topic.infrastructure_alerts[0].arn] : [])
+  github_environment_names = toset(["production", "preview"])
   github_environment_variables = {
     production = merge(
       {
@@ -1048,6 +1052,7 @@ resource "aws_lambda_function" "forms_api_prod" {
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
       EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
+      EMAIL_VERIFICATION_CONFIGURATION_SET = aws_sesv2_configuration_set.verification_email.configuration_set_name
       EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
       EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
@@ -1084,6 +1089,7 @@ resource "aws_lambda_function" "forms_api_preview" {
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
       EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
+      EMAIL_VERIFICATION_CONFIGURATION_SET = aws_sesv2_configuration_set.verification_email.configuration_set_name
       EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
       EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
@@ -1719,6 +1725,66 @@ resource "aws_route53_record" "ses_domain_dkim" {
   type    = "CNAME"
   ttl     = 600
   records = ["${aws_ses_domain_dkim.site.dkim_tokens[count.index]}.dkim.amazonses.com"]
+}
+
+resource "aws_sesv2_account_vdm_attributes" "site" {
+  vdm_enabled = "ENABLED"
+
+  dashboard_attributes {
+    engagement_metrics = "ENABLED"
+  }
+
+  guardian_attributes {
+    optimized_shared_delivery = "ENABLED"
+  }
+}
+
+resource "aws_sesv2_configuration_set" "verification_email" {
+  configuration_set_name = "${var.project_name}-verification-email"
+
+  delivery_options {
+    tls_policy = "REQUIRE"
+  }
+
+  reputation_options {
+    reputation_metrics_enabled = true
+  }
+
+  sending_options {
+    sending_enabled = true
+  }
+
+  vdm_options {
+    dashboard_options {
+      engagement_metrics = "ENABLED"
+    }
+
+    guardian_options {
+      optimized_shared_delivery = "ENABLED"
+    }
+  }
+}
+
+resource "aws_sesv2_configuration_set_event_destination" "verification_email_eventbridge" {
+  configuration_set_name = aws_sesv2_configuration_set.verification_email.configuration_set_name
+  event_destination_name = "${var.project_name}-verification-email-eventbridge"
+
+  event_destination {
+    event_bridge_destination {
+      event_bus_arn = data.aws_cloudwatch_event_bus.default.arn
+    }
+
+    enabled = true
+    matching_event_types = [
+      "SEND",
+      "REJECT",
+      "BOUNCE",
+      "COMPLAINT",
+      "DELIVERY",
+      "DELIVERY_DELAY",
+      "RENDERING_FAILURE",
+    ]
+  }
 }
 
 resource "aws_s3_bucket" "site" {

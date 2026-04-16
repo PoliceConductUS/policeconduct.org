@@ -299,6 +299,9 @@ function verificationConfig() {
   const fromAddress = (
     process.env.EMAIL_VERIFICATION_FROM_ADDRESS || ""
   ).trim();
+  const configurationSetName = (
+    process.env.EMAIL_VERIFICATION_CONFIGURATION_SET || ""
+  ).trim();
   const hmacSecret = (process.env.EMAIL_VERIFICATION_HMAC_SECRET || "").trim();
   const ttlSeconds = Number(
     process.env.EMAIL_VERIFICATION_TTL_SECONDS || "900",
@@ -319,6 +322,7 @@ function verificationConfig() {
 
   return {
     bucket,
+    configurationSetName,
     fromAddress,
     hmacSecret,
     kmsKeyId,
@@ -429,7 +433,7 @@ async function sendVerificationEmail({
   token,
   ttlMs,
 }) {
-  const fromAddress = verificationConfig().fromAddress;
+  const { configurationSetName, fromAddress } = verificationConfig();
   const ttlMinutes = Math.max(1, Math.round(ttlMs / 60000));
   const verifyUrl = `${origin}/status/?verify=${encodeURIComponent(token)}`;
   const subjectPrefix =
@@ -451,6 +455,18 @@ async function sendVerificationEmail({
 
   await ses.send(
     new SendEmailCommand({
+      ConfigurationSetName: configurationSetName || undefined,
+      EmailTags: [
+        { Name: "formName", Value: formName },
+        { Name: "submissionId", Value: submissionId },
+        {
+          Name: "environment",
+          Value:
+            sentryEnvironment && sentryEnvironment.trim()
+              ? sentryEnvironment.trim()
+              : "unknown",
+        },
+      ],
       FromEmailAddress: fromAddress,
       Destination: {
         ToAddresses: [toAddress],

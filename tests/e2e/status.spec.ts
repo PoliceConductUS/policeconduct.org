@@ -20,14 +20,15 @@ test.describe("submission status", () => {
       });
     });
 
-    const verifyRequest = page.waitForRequest((request) => {
+    const verifyResponse = page.waitForResponse((response) => {
       return (
-        request.url().includes("/api/forms/verify-link") &&
-        request.method() === "POST"
+        response.url().includes("/api/forms/verify-link") &&
+        response.request().method() === "POST"
       );
     });
     await page.goto("/status/?verify=test-verification-id.test-secret");
-    await verifyRequest;
+    await verifyResponse;
+    await expect.poll(() => new URL(page.url()).search).toBe("");
 
     const result = page.locator("#statusLookupResult");
     await expect(result).toBeVisible();
@@ -58,20 +59,20 @@ test.describe("submission status", () => {
       });
     });
 
-    const verifyRequest = page.waitForRequest((request) => {
+    const verifyResponse = page.waitForResponse((response) => {
       return (
-        request.url().includes("/api/forms/verify-link") &&
-        request.method() === "POST"
+        response.url().includes("/api/forms/verify-link") &&
+        response.request().method() === "POST"
       );
     });
     await page.goto("/status/?verify=test-verification-id.test-secret");
-    await verifyRequest;
+    await verifyResponse;
+    await expect.poll(() => new URL(page.url()).search).toBe("");
 
     const result = page.locator("#statusLookupResult");
     await expect(result).toBeVisible();
     await expect(result).toContainText("Submission Verification Failed");
     await expect(result).toContainText("Verification link expired.");
-    await expect.poll(() => new URL(page.url()).search).toBe("");
   });
 
   test("manual lookup renders submission status text", async ({ page }) => {

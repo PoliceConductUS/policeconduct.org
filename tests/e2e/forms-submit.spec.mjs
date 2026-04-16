@@ -47,59 +47,88 @@ function buildInputValue(type, name) {
 }
 
 async function fillRequiredFields(page, formLocator) {
-  const required = formLocator.locator(
-    "input[required], textarea[required], select[required]",
+  const textLikeFields = formLocator.locator(
+    'input[required]:not([type="radio"]):not([type="checkbox"]), textarea[required]',
   );
-  const count = await required.count();
-  for (let i = 0; i < count; i += 1) {
-    const field = required.nth(i);
-    if (!(await field.isVisible())) {
-      continue;
-    }
-    if (!(await field.isEnabled())) {
-      continue;
-    }
-
-    const tag = await field.evaluate((el) => el.tagName.toLowerCase());
-    const name = (await field.getAttribute("name")) || "";
-
-    if (tag === "select") {
-      const currentValue = await field.inputValue();
-      if (currentValue) {
-        continue;
-      }
-      const optionValue = await field.evaluate((el) => {
-        const select = /** @type {HTMLSelectElement} */ (el);
-        const options = Array.from(select.options).filter(
-          (o) => !o.disabled && o.value !== "",
-        );
-        return options.length > 0 ? options[0].value : "";
-      });
-      if (optionValue) {
-        await field.selectOption(optionValue);
-      }
-      continue;
-    }
-
-    const type = ((await field.getAttribute("type")) || "text").toLowerCase();
-    if (type === "radio") {
-      if (await field.isChecked()) {
-        continue;
-      }
-      await field.check();
-      continue;
-    }
-    if (type === "checkbox") {
-      if (await field.isChecked()) {
-        continue;
-      }
-      await field.check();
+  const textLikeCount = await textLikeFields.count();
+  for (let i = 0; i < textLikeCount; i += 1) {
+    const field = textLikeFields.nth(i);
+    if (!(await field.isVisible()) || !(await field.isEnabled())) {
       continue;
     }
     if (await field.inputValue()) {
       continue;
     }
+
+    const type = ((await field.getAttribute("type")) || "text").toLowerCase();
+    const name = (await field.getAttribute("name")) || "";
     await field.fill(buildInputValue(type, name));
+  }
+
+  const selects = formLocator.locator("select[required]");
+  const selectCount = await selects.count();
+  for (let i = 0; i < selectCount; i += 1) {
+    const field = selects.nth(i);
+    if (!(await field.isVisible()) || !(await field.isEnabled())) {
+      continue;
+    }
+    if (await field.inputValue()) {
+      continue;
+    }
+
+    const optionValues = await field.evaluate((el) => {
+      const select = /** @type {HTMLSelectElement} */ (el);
+      return Array.from(select.options)
+        .filter((o) => !o.disabled && o.value !== "")
+        .map((o) => o.value);
+    });
+    for (const optionValue of optionValues) {
+      await field.selectOption(optionValue);
+      if ((await field.inputValue()) === optionValue) {
+        break;
+      }
+    }
+  }
+
+  const requiredRadioNames = await formLocator.evaluate((form) => {
+    const names = new Set();
+    for (const input of form.querySelectorAll(
+      'input[type="radio"][required]',
+    )) {
+      if (
+        input instanceof HTMLInputElement &&
+        input.name &&
+        input.offsetParent !== null &&
+        !input.disabled
+      ) {
+        names.add(input.name);
+      }
+    }
+    return Array.from(names);
+  });
+  for (const name of requiredRadioNames) {
+    const option = formLocator
+      .locator(`input[type="radio"][required][name="${name}"]`)
+      .first();
+    if (await option.isChecked()) {
+      continue;
+    }
+    await option.check();
+  }
+
+  const requiredCheckboxes = formLocator.locator(
+    'input[type="checkbox"][required]',
+  );
+  const checkboxCount = await requiredCheckboxes.count();
+  for (let i = 0; i < checkboxCount; i += 1) {
+    const field = requiredCheckboxes.nth(i);
+    if (!(await field.isVisible()) || !(await field.isEnabled())) {
+      continue;
+    }
+    if (await field.isChecked()) {
+      continue;
+    }
+    await field.check();
   }
 }
 
