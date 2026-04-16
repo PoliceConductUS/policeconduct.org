@@ -1,0 +1,73 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+type Props = HTMLAttributes<"button"> & {
+  payload: Record<string, unknown> | string;
+  to: string;
+  variant?: "button" | "link";
+};
+
+const {
+  payload,
+  to,
+  variant = "button",
+  class: className = "",
+  ...rest
+} = Astro.props as Props;
+
+const buttonId = `prefill-nav-${Math.random().toString(36).slice(2, 10)}`;
+const payloadJson =
+  typeof payload === "string" ? payload : JSON.stringify(payload);
+const storageKey = new URL(to, "https://www.policeconduct.org").pathname;
+const variantClass =
+  variant === "link" ? "border-0 bg-transparent p-0 text-start" : "";
+---
+
+<button
+  id={buttonId}
+  type="button"
+  class:list={[variantClass, className]}
+  {...rest}
+>
+  <slot />
+</button>
+
+<script is:inline define:vars={{ buttonId, payloadJson, storageKey, to }}>
+  (() => {
+    const button = document.getElementById(buttonId);
+    if (!(button instanceof HTMLButtonElement)) {
+      return;
+    }
+    if (button.dataset.prefillBound === "1") {
+      return;
+    }
+    button.dataset.prefillBound = "1";
+    button.addEventListener("click", () => {
+      const normalizeText = (value) =>
+        value ? value.replace(/\s+/g, " ").trim() : "";
+      const mapLinkType = button.dataset.mapLinkType || "";
+      const destinationUrl = new URL(to, window.location.origin).toString();
+      const analytics = window.__IPC_ANALYTICS__;
+      analytics?.track?.("prefill_link_click", {
+        href_path: new URL(to, window.location.origin).pathname,
+        link_text: normalizeText(button.textContent),
+        page_path: window.location.pathname,
+        prefill_key: storageKey,
+        section_id: button.closest("section[id]")?.id || "",
+      });
+      if (mapLinkType === "header_action") {
+        analytics?.track?.("map_header_action_clicked", {
+          destination_url: destinationUrl,
+          map_label: button.dataset.mapLabel || "",
+          page_path: window.location.pathname,
+        });
+      }
+      try {
+        window.sessionStorage.setItem(storageKey, payloadJson);
+      } catch (_error) {
+        // Ignore sessionStorage failures and continue navigating.
+      }
+      window.location.assign(to);
+    });
+  })();
+</script>

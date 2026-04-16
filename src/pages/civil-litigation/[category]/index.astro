@@ -3,6 +3,7 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
 import Pagination from "#src/components/Pagination.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
   loadCivilCasesByCategory,
@@ -266,17 +267,15 @@ const stats = buildCategoryCollectionStats(
                   <span>
                     No civil litigation listed yet for {categoryLabel}.
                   </span>
-                  <a
+                  <PrefillNavButton
                     class="btn btn-dark rounded-0 w-auto"
-                    href="/civil-litigation/new/"
-                    target="_self"
-                    data-prefill-key="prefill:civilLitigationNew"
-                    data-prefill-payload={JSON.stringify({
+                    to="/civil-litigation/new/"
+                    payload={{
                       jurisdiction: categoryParam,
-                    })}
+                    }}
                   >
                     Add one now
-                  </a>
+                  </PrefillNavButton>
                 </div>
               )
             }

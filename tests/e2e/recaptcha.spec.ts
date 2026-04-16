@@ -21,6 +21,7 @@ const nonRecaptchaRoutes = [
   "/report/",
   "/personnel/tx/",
   "/law-enforcement-agency/tx/",
+  "/status/",
   "/verify/",
 ];
 

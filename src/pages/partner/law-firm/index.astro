@@ -2,6 +2,7 @@
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/partner/law-firm/";
@@ -155,19 +156,17 @@ const structuredData = buildWebPage({
               brief for active matters, send the practice area and jurisdiction.
             </p>
           </div>
-          <a
+          <PrefillNavButton
             class="btn btn-dark rounded-0"
-            href="/about/contact/"
-            target="_self"
-            data-prefill-key="prefill:contact"
-            data-prefill-payload={JSON.stringify({
+            to="/about/contact/"
+            payload={{
               whoami: "Partner",
               message:
                 "I am interested in a scoped law firm partnership for public-record case review.",
-            })}
+            }}
           >
             Contact partnerships
-          </a>
+          </PrefillNavButton>
         </div>
       </div>
     </section>

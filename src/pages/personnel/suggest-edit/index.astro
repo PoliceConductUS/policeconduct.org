@@ -274,7 +274,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 
   <script is:inline>
     window.__IPC_PREFILL__?.prefillFields?.({
-      key: "prefill:personnelSuggestEdit",
+      key: window.location.pathname,
     });
   </script>
 </SiteLayout>

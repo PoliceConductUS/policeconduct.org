@@ -80,11 +80,12 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
         result.appendChild(body);
       };
 
-      const renderStatus = (submissionId, statusText) => {
-        renderMessage(
-          "Status",
-          `Submission ${submissionId} status: ${statusText}`,
-        );
+      const renderStatus = (submissionId, statusText, messageText) => {
+        const message =
+          typeof messageText === "string" && messageText.trim()
+            ? messageText.trim()
+            : `Submission ${submissionId} status: ${statusText}`;
+        renderMessage("Status", message);
       };
 
       setSubmitEnabled(false);
@@ -126,16 +127,20 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
             typeof payload.status === "string" && payload.status.trim()
               ? payload.status.trim()
               : "pending";
-          renderStatus(submissionId, status);
+          const message =
+            typeof payload.message === "string" && payload.message.trim()
+              ? payload.message.trim()
+              : "";
+          renderStatus(submissionId, status, message);
         } catch (_error) {
-          renderStatus(submissionId, "pending");
+          renderStatus(submissionId, "pending", "");
         } finally {
           setSubmitEnabled(Boolean(input.value.trim()));
         }
       });
 
       const flashedPrefill = window.__IPC_PREFILL__?.readAndConsume?.(
-        "prefill:submissionStatusLookup",
+        window.location.pathname,
       );
       const flashedSubmissionId =
         flashedPrefill &&

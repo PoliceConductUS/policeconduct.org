@@ -194,8 +194,7 @@ if (federalItemList) {
             href: newCivilLandingHref,
             label: "Suggest a new civil case",
             target: "_self",
-            prefillKey: "prefill:civilLitigationNew",
-            prefillPayload: JSON.stringify({ jurisdiction: "" }),
+            prefillPayload: { jurisdiction: "" },
           }}
           federalPanel={{
             eyebrow: "Federal",

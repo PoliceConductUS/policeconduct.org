@@ -255,7 +255,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
       const prefill = window.__IPC_PREFILL__;
       if (prefill?.prefillFields) {
         const result = prefill.prefillFields({
-          key: "prefill:civilLitigationNew",
+          key: window.location.pathname,
           root: form,
         });
         const jurisdictionInput = form.querySelector('[name="jurisdiction"]');

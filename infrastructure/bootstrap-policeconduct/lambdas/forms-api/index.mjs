@@ -97,20 +97,20 @@ function emailDomain(email) {
 
 function verificationFailureMessage(reason) {
   const generic =
-    "We received your submission, but could not send the verification email. Please contact hello@policeconduct.org if you do not hear from us.";
+    "We received your submission, but could not send the verification email. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
   if (sentryEnvironment === "production") {
     return generic;
   }
 
   switch (reason) {
     case "missing_origin":
-      return "We received your submission, but this environment could not build the verification link.";
+      return "We received your submission, but this environment could not build the verification link. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
     case "missing_email":
-      return "We received your submission, but no verification email address was present in the request.";
+      return "We received your submission, but no verification email address was present in the request. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
     case "invalid_email":
-      return "We received your submission, but the verification email address was invalid.";
+      return "We received your submission, but the verification email address was invalid. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
     case "send_failed":
-      return "We received your submission, but sending the verification email failed in this environment.";
+      return "We received your submission, but sending the verification email failed in this environment. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
     default:
       return generic;
   }
@@ -123,6 +123,38 @@ function verificationFailureResponse(requestId, reason) {
     verificationFailureReason: reason,
     verificationPending: false,
   });
+}
+
+function defaultStatusMessage(submissionId, status) {
+  const normalizedSubmissionId = normalizeSubmissionId(submissionId);
+  const normalizedStatus =
+    typeof status === "string" && status.trim().length > 0
+      ? status.trim()
+      : "pending";
+  const identifier = normalizedSubmissionId
+    ? `Submission ${normalizedSubmissionId}`
+    : "Submission";
+  switch (normalizedStatus) {
+    case "in_review":
+      return `${identifier} status: in_review`;
+    case "pending":
+      return `${identifier} status: pending`;
+    default:
+      return `${identifier} status: ${normalizedStatus}`;
+  }
+}
+
+function pendingStatusPayload(submissionId) {
+  return {
+    message: defaultStatusMessage(submissionId, "pending"),
+    status: "pending",
+  };
+}
+
+function verificationLinkFailureMessage(message) {
+  const detail =
+    typeof message === "string" && message.trim() ? `${message.trim()} ` : "";
+  return `We could not verify your submission. ${detail}Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.`;
 }
 
 function sentryRequestContext(context, extra = {}) {
@@ -183,13 +215,6 @@ function normalizeSubmissionId(raw) {
     return "";
   }
   return raw.trim();
-}
-
-function pendingStatusPayload(submissionId) {
-  return {
-    submissionId,
-    status: "pending",
-  };
 }
 
 function normalizeVerificationId(raw) {
@@ -855,13 +880,17 @@ async function getSubmissionStatus(event, requestId) {
   try {
     const parsed = await readJsonObject(bucket, key);
     if (!parsed) {
-      return json(200, { status: "pending" });
+      return json(200, pendingStatusPayload(submissionId));
     }
     const status =
       typeof parsed.status === "string" && parsed.status.trim().length > 0
         ? parsed.status.trim()
         : "pending";
-    return json(200, { status });
+    const message =
+      typeof parsed.message === "string" && parsed.message.trim().length > 0
+        ? parsed.message.trim()
+        : defaultStatusMessage(submissionId, status);
+    return json(200, { status, message });
   } catch (error) {
     captureLambdaException(error, context, {
       key,
@@ -886,18 +915,28 @@ async function verifySubmissionLink(event, requestId) {
   const { verificationId, secret } = parseVerificationToken(payload?.token);
 
   if (!verificationId || !secret) {
-    return json(400, { error: "Invalid verification token." });
+    return json(400, {
+      message: verificationLinkFailureMessage("Invalid verification token."),
+    });
   }
 
   const { config, key, record } = await loadVerificationRecord(verificationId);
   if (!record) {
-    return json(400, { error: "Verification link not found." });
+    return json(400, {
+      message: verificationLinkFailureMessage("Verification link not found."),
+    });
   }
   if (verificationExpired(record)) {
-    return json(400, { error: "Verification link expired." });
+    return json(400, {
+      message: verificationLinkFailureMessage("Verification link expired."),
+    });
   }
   if (record.usedAt) {
-    return json(400, { error: "Verification link already used." });
+    return json(400, {
+      message: verificationLinkFailureMessage(
+        "Verification link already used.",
+      ),
+    });
   }
 
   const expectedHash = hashVerificationSecret(
@@ -906,7 +945,9 @@ async function verifySubmissionLink(event, requestId) {
     config.hmacSecret,
   );
   if (expectedHash !== record.secretHash) {
-    return json(400, { error: "Invalid verification token." });
+    return json(400, {
+      message: verificationLinkFailureMessage("Invalid verification token."),
+    });
   }
 
   const verifiedAt = new Date().toISOString();
@@ -930,6 +971,8 @@ async function verifySubmissionLink(event, requestId) {
   );
 
   return json(200, {
+    message:
+      "Your submission has been verified. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.",
     submissionId: record.submissionId,
   });
 }
@@ -1198,7 +1241,7 @@ async function submitForm(event, requestId) {
 
   return json(200, {
     message:
-      "We received your submission. Check your email and open the verification link within 15 minutes to continue.",
+      "We received your submission. Check your email and open the verification link within 15 minutes. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.",
     verificationPending: true,
   });
 }

@@ -15,7 +15,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
         <div class="col-12 col-lg-8">
           <h1 class="display-6 fw-bold mb-3">Verify Submission</h1>
           <p class="text-muted mb-4">
-            Use the verification link from your email to continue.
+            Use the verification link from your email to verify your submission.
           </p>
 
           <div
@@ -41,6 +41,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 
   <script is:inline>
     (function () {
+      const storedVerificationResultKey = "ipc_verify_result_v1";
       const result = document.getElementById("verificationResult");
       const actions = document.getElementById("verificationActions");
       const checkStatusButton = document.getElementById("checkStatusButton");
@@ -49,6 +50,43 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
       }
 
       let verifiedSubmissionId = "";
+
+      const readStoredVerificationResult = () => {
+        try {
+          const raw = window.sessionStorage.getItem(
+            storedVerificationResultKey,
+          );
+          if (!raw) {
+            return null;
+          }
+          const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            return null;
+          }
+          return parsed;
+        } catch (_error) {
+          return null;
+        }
+      };
+
+      const writeStoredVerificationResult = (value) => {
+        try {
+          window.sessionStorage.setItem(
+            storedVerificationResultKey,
+            JSON.stringify(value),
+          );
+        } catch (_error) {
+          // Ignore storage failures.
+        }
+      };
+
+      const clearStoredVerificationResult = () => {
+        try {
+          window.sessionStorage.removeItem(storedVerificationResultKey);
+        } catch (_error) {
+          // Ignore storage failures.
+        }
+      };
 
       const renderMessage = (headingText, bodyText) => {
         result.innerHTML = "";
@@ -65,8 +103,27 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
         result.appendChild(body);
       };
 
-      const renderVerified = (submissionId) => {
-        renderMessage("Submission Verified", `Submission ID: ${submissionId}`);
+      const renderVerified = (submissionId, messageText) => {
+        result.innerHTML = "";
+
+        const heading = document.createElement("h2");
+        heading.className = "h5 mb-3";
+        heading.textContent = "Submission Verified";
+
+        const body = document.createElement("p");
+        body.className = "mb-3";
+        body.textContent =
+          typeof messageText === "string" && messageText.trim()
+            ? messageText.trim()
+            : "Your submission has been verified.";
+
+        const details = document.createElement("p");
+        details.className = "mb-0";
+        details.textContent = `Submission ID: ${submissionId}. This is the only place your submission ID will be shown. Please save it now.`;
+
+        result.appendChild(heading);
+        result.appendChild(body);
+        result.appendChild(details);
         actions.classList.remove("d-none");
       };
 
@@ -74,13 +131,43 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
         if (!verifiedSubmissionId) {
           return;
         }
-        window.__IPC_PREFILL__?.set?.("prefill:submissionStatusLookup", {
+        window.__IPC_PREFILL__?.set?.("/status/", {
           submissionId: verifiedSubmissionId,
         });
+        clearStoredVerificationResult();
         window.location.assign("/status/");
       });
 
       const token = new URLSearchParams(window.location.search).get("token");
+      const storedVerificationResult = readStoredVerificationResult();
+      const storedSubmissionId =
+        storedVerificationResult &&
+        typeof storedVerificationResult.submissionId === "string" &&
+        storedVerificationResult.submissionId.trim()
+          ? storedVerificationResult.submissionId.trim()
+          : "";
+      const storedMessage =
+        storedVerificationResult &&
+        typeof storedVerificationResult.message === "string" &&
+        storedVerificationResult.message.trim()
+          ? storedVerificationResult.message.trim()
+          : "";
+      const storedToken =
+        storedVerificationResult &&
+        typeof storedVerificationResult.token === "string" &&
+        storedVerificationResult.token.trim()
+          ? storedVerificationResult.token.trim()
+          : "";
+
+      if (storedSubmissionId && (!token || storedToken === token)) {
+        verifiedSubmissionId = storedSubmissionId;
+        if (token) {
+          window.history.replaceState({}, "", "/verify/");
+        }
+        renderVerified(storedSubmissionId, storedMessage);
+        return;
+      }
+
       if (!token) {
         renderMessage(
           "Submission Verification Failed",
@@ -110,9 +197,9 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
           if (!response.ok) {
             const message =
               payload &&
-              typeof payload.error === "string" &&
-              payload.error.trim()
-                ? payload.error.trim()
+              typeof payload.message === "string" &&
+              payload.message.trim()
+                ? payload.message.trim()
                 : "We could not verify that link.";
             renderMessage("Submission Verification Failed", message);
             return;
@@ -124,6 +211,12 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
             payload.submissionId.trim()
               ? payload.submissionId.trim()
               : "";
+          const message =
+            payload &&
+            typeof payload.message === "string" &&
+            payload.message.trim()
+              ? payload.message.trim()
+              : "";
 
           if (!submissionId) {
             renderMessage(
@@ -134,7 +227,13 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
           }
 
           verifiedSubmissionId = submissionId;
-          renderVerified(submissionId);
+          writeStoredVerificationResult({
+            message,
+            submissionId,
+            token,
+          });
+          window.history.replaceState({}, "", "/verify/");
+          renderVerified(submissionId, message);
         } catch (_error) {
           renderMessage(
             "Submission Verification Failed",

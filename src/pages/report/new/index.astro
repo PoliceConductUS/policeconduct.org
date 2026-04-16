@@ -1473,14 +1473,14 @@ const traitsWithRubrics = sortedTraits
 
           const applyPrefill = () => {
             const payload = window.__IPC_PREFILL__?.readAndConsume?.(
-              "prefill:reportNew",
+              window.location.pathname,
             ) as ReportNewPrefill | null;
             if (!payload?.officer) {
               return;
             }
 
             trackReportEvent("report_prefill_used", {
-              prefill_key: "prefill:reportNew",
+              prefill_key: window.location.pathname,
             });
             draft.officers = [
               {

@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
 
+const verificationInstructions =
+  "We received your submission. Check your email and open the verification link within 15 minutes. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+const verificationEmailFailedMessage =
+  "We received your submission, but sending the verification email failed in this environment. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+
 const forms = [
   { path: "/about/contact/", formName: "contact" },
   { path: "/volunteer/", formName: "volunteer" },
@@ -166,7 +171,6 @@ test.describe("form submissions", () => {
     }) => {
       await installRecaptchaMock(page);
       let submitRequestBody = null;
-      const successMessage = `Check your email for ${form.formName}.`;
 
       await page.route("**/api/forms/submit", async (route) => {
         const req = route.request();
@@ -179,7 +183,7 @@ test.describe("form submissions", () => {
           status: 200,
           contentType: "application/json",
           body: JSON.stringify({
-            message: successMessage,
+            message: verificationInstructions,
             verificationPending: true,
           }),
         });
@@ -232,7 +236,8 @@ test.describe("form submissions", () => {
       await expect(page).toHaveURL(new RegExp(`${originalPathname}$`));
       const success = formLocator.locator("[data-form-submit-success]");
       await expect(success).toBeVisible();
-      await expect(success).toContainText(successMessage);
+      await expect(success).toContainText(verificationInstructions);
+      await expect(success).not.toContainText("submissionId");
       await expect(success.locator("[data-submission-id]")).toHaveCount(0);
       await expect(
         formLocator.locator("[data-form-submit-error]"),
@@ -309,8 +314,7 @@ test.describe("form submissions", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          message:
-            "We received your submission, but sending the verification email failed in this environment.",
+          message: verificationEmailFailedMessage,
           requestId: "req_e2e_verification_failure",
           verificationFailureReason: "send_failed",
           verificationPending: false,
@@ -338,12 +342,11 @@ test.describe("form submissions", () => {
     await expect(page).toHaveURL(new RegExp(`${originalPathname}$`));
     const success = formLocator.locator("[data-form-submit-success]");
     await expect(success).toBeVisible();
-    await expect(success).toContainText(
-      "We received your submission, but sending the verification email failed in this environment.",
-    );
+    await expect(success).toContainText(verificationEmailFailedMessage);
     await expect(success).toContainText(
       "Reference: req_e2e_verification_failure.",
     );
+    await expect(success).not.toContainText("submissionId");
     await expect(success.locator("[data-submission-id]")).toHaveCount(0);
     await expect(formLocator.locator("[data-form-submit-error]")).toBeHidden();
 

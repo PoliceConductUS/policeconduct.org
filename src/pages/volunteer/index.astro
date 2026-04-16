@@ -2,6 +2,7 @@
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 ---
 
 <SiteLayout
@@ -248,18 +249,17 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 
       <div class="mt-5 border-top pt-4">
         <p class="text-muted mb-2">Not sure where to start?</p>
-        <a
-          href="/about/contact/"
+        <PrefillNavButton
           class="link-dark"
-          target="_self"
-          data-prefill-key="prefill:contact"
-          data-prefill-payload={JSON.stringify({
+          to="/about/contact/"
+          payload={{
             whoami: "Volunteer",
             message: "Help me find the right volunteer role.",
-          })}
+          }}
+          variant="link"
         >
-          Reach out and we will match you to a role.</a
-        >
+          Reach out and we will match you to a role.
+        </PrefillNavButton>
       </div>
     </div>
   </main>

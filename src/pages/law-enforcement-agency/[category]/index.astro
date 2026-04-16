@@ -4,6 +4,7 @@ import AlphaNavigation from "#src/components/AlphaNavigation.astro";
 import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
 import Pagination from "#src/components/Pagination.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import { buildAlphaPageMap } from "#src/lib/alpha-navigation.js";
 import {
   buildCategoryCollectionStats,
@@ -210,17 +211,15 @@ const structuredData = {
               role="status"
             >
               <span>No agencies listed yet for {categoryLabel}.</span>
-              <a
+              <PrefillNavButton
                 class="btn btn-dark rounded-0 w-auto"
-                href="/law-enforcement-agency/suggest-edit/"
-                target="_self"
-                data-prefill-key="prefill:agencySuggestEdit"
-                data-prefill-payload={JSON.stringify({
+                to="/law-enforcement-agency/suggest-edit/"
+                payload={{
                   jurisdiction: categoryParam.toLowerCase(),
-                })}
+                }}
               >
                 Add one now
-              </a>
+              </PrefillNavButton>
             </div>
           ) : (
             <div class="row row-cols-1 g-3">
