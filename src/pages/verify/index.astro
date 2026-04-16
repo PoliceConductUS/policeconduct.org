@@ -1,0 +1,147 @@
+---
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+---
+
+<SiteLayout
+  title="Verify Submission | PoliceConduct.org"
+  pagePath="/verify/"
+  robots="noindex,follow"
+>
+  <PrefillBootstrap />
+  <main class="flex-grow-1 py-vh-3">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+          <h1 class="display-6 fw-bold mb-3">Verify Submission</h1>
+          <p class="text-muted mb-4">
+            Use the verification link from your email to continue.
+          </p>
+
+          <div
+            id="verificationResult"
+            class="border p-4 bg-light"
+            aria-live="polite"
+          >
+          </div>
+
+          <div id="verificationActions" class="mt-4 d-none">
+            <button
+              id="checkStatusButton"
+              type="button"
+              class="btn btn-dark rounded-0"
+            >
+              Check status
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script is:inline>
+    (function () {
+      const result = document.getElementById("verificationResult");
+      const actions = document.getElementById("verificationActions");
+      const checkStatusButton = document.getElementById("checkStatusButton");
+      if (!result || !actions || !checkStatusButton) {
+        return;
+      }
+
+      let verifiedSubmissionId = "";
+
+      const renderMessage = (headingText, bodyText) => {
+        result.innerHTML = "";
+
+        const heading = document.createElement("h2");
+        heading.className = "h5 mb-3";
+        heading.textContent = headingText;
+
+        const body = document.createElement("p");
+        body.className = "mb-0";
+        body.textContent = bodyText;
+
+        result.appendChild(heading);
+        result.appendChild(body);
+      };
+
+      const renderVerified = (submissionId) => {
+        renderMessage("Submission Verified", `Submission ID: ${submissionId}`);
+        actions.classList.remove("d-none");
+      };
+
+      checkStatusButton.addEventListener("click", function () {
+        if (!verifiedSubmissionId) {
+          return;
+        }
+        window.__IPC_PREFILL__?.set?.("prefill:submissionStatusLookup", {
+          submissionId: verifiedSubmissionId,
+        });
+        window.location.assign("/status/");
+      });
+
+      const token = new URLSearchParams(window.location.search).get("token");
+      if (!token) {
+        renderMessage(
+          "Submission Verification Failed",
+          "Missing verification token.",
+        );
+        return;
+      }
+
+      renderMessage("Verification", "Verifying your submission...");
+
+      void (async function () {
+        try {
+          const response = await fetch("/api/forms/verify-link", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ token }),
+          });
+          let payload;
+          try {
+            payload = await response.json();
+          } catch (_error) {
+            payload = null;
+          }
+
+          if (!response.ok) {
+            const message =
+              payload &&
+              typeof payload.error === "string" &&
+              payload.error.trim()
+                ? payload.error.trim()
+                : "We could not verify that link.";
+            renderMessage("Submission Verification Failed", message);
+            return;
+          }
+
+          const submissionId =
+            payload &&
+            typeof payload.submissionId === "string" &&
+            payload.submissionId.trim()
+              ? payload.submissionId.trim()
+              : "";
+
+          if (!submissionId) {
+            renderMessage(
+              "Submission Verification Failed",
+              "The verification response did not include a submission ID.",
+            );
+            return;
+          }
+
+          verifiedSubmissionId = submissionId;
+          renderVerified(submissionId);
+        } catch (_error) {
+          renderMessage(
+            "Submission Verification Failed",
+            "We could not verify that link right now.",
+          );
+        }
+      })();
+    })();
+  </script>
+</SiteLayout>

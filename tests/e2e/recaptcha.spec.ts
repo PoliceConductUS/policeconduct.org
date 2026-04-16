@@ -21,6 +21,7 @@ const nonRecaptchaRoutes = [
   "/report/",
   "/personnel/tx/",
   "/law-enforcement-agency/tx/",
+  "/verify/",
 ];
 
 const repoRoot = path.resolve(process.cwd());
@@ -47,7 +48,7 @@ test.describe("recaptcha", () => {
   test.describe("route loading", () => {
     for (const route of recaptchaFormRoutes) {
       test(`${route} initializes recaptcha`, async ({ page }) => {
-        await page.goto(route);
+        await page.goto(route, { waitUntil: "domcontentloaded" });
         const recaptchaScript = page.locator(
           'script[src*="google.com/recaptcha/enterprise.js"]',
         );
@@ -57,7 +58,7 @@ test.describe("recaptcha", () => {
 
     for (const route of nonRecaptchaRoutes) {
       test(`${route} does not load recaptcha`, async ({ page }) => {
-        await page.goto(route);
+        await page.goto(route, { waitUntil: "domcontentloaded" });
         const recaptchaScript = page.locator(
           'script[src*="google.com/recaptcha/enterprise.js"]',
         );

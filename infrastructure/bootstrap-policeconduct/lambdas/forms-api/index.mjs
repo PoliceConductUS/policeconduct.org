@@ -435,7 +435,7 @@ async function sendVerificationEmail({
 }) {
   const { configurationSetName, fromAddress } = verificationConfig();
   const ttlMinutes = Math.max(1, Math.round(ttlMs / 60000));
-  const verifyUrl = `${origin}/status/?verify=${encodeURIComponent(token)}`;
+  const verifyUrl = `${origin}/verify/?token=${encodeURIComponent(token)}`;
   const subjectPrefix =
     sentryEnvironment && sentryEnvironment !== "production"
       ? `[${sentryEnvironment}] `

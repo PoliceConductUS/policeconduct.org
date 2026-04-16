@@ -46,7 +46,19 @@ function buildInputValue(type, name) {
   return "E2E Test";
 }
 
-async function fillRequiredFields(page, formLocator) {
+async function fillRequiredFields(page, formLocator, formName = "") {
+  if (formName === "dataSubjectAccessRequest") {
+    await formLocator.locator("#dsarName").fill("E2E Test");
+    await formLocator.locator("#dsarEmail").fill("e2e@example.org");
+    await formLocator.locator("#requestAsPersonal").check();
+    await formLocator.locator("#dsarLaw").selectOption("gdpr");
+    await formLocator.locator("#actionKnow").check();
+    await formLocator.locator("#confirmAccurate").check();
+    await formLocator.locator("#confirmDeletion").check();
+    await formLocator.locator("#confirmEmail").check();
+    return;
+  }
+
   const textLikeFields = formLocator.locator(
     'input[required]:not([type="radio"]):not([type="checkbox"]), textarea[required]',
   );
@@ -204,7 +216,7 @@ test.describe("form submissions", () => {
       await expect(formLocator).toBeVisible();
       const originalPathname = new URL(page.url()).pathname;
 
-      await fillRequiredFields(page, formLocator);
+      await fillRequiredFields(page, formLocator, form.formName);
 
       const submitResponsePromise = page.waitForResponse((response) => {
         return (
@@ -253,7 +265,7 @@ test.describe("form submissions", () => {
     await expect(formLocator).toBeVisible();
     const originalPathname = new URL(page.url()).pathname;
 
-    await fillRequiredFields(page, formLocator);
+    await fillRequiredFields(page, formLocator, "contact");
     const submitResponsePromise = page.waitForResponse((response) => {
       return (
         response.url().includes("/api/forms/submit") &&
@@ -311,7 +323,7 @@ test.describe("form submissions", () => {
     await expect(formLocator).toBeVisible();
     const originalPathname = new URL(page.url()).pathname;
 
-    await fillRequiredFields(page, formLocator);
+    await fillRequiredFields(page, formLocator, "contact");
     const submitResponsePromise = page.waitForResponse((response) => {
       return (
         response.url().includes("/api/forms/submit") &&

@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 ---
 
 <SiteLayout
@@ -7,6 +8,7 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
   pagePath="/status/"
   robots="noindex,follow"
 >
+  <PrefillBootstrap />
   <main class="flex-grow-1 py-vh-3">
     <div class="container">
       <div class="row justify-content-center">
@@ -58,8 +60,6 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
         return;
       }
 
-      let lockedId = "";
-
       const setSubmitEnabled = (enabled) => {
         submitButton.disabled = !enabled;
       };
@@ -87,82 +87,10 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
         );
       };
 
-      const verifyFromLink = async (token) => {
-        renderMessage("Verification", "Verifying your submission...");
-        setSubmitEnabled(false);
-
-        try {
-          const response = await fetch("/api/forms/verify-link", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ token }),
-          });
-          let payload;
-          try {
-            payload = await response.json();
-          } catch (_error) {
-            payload = null;
-          }
-
-          if (!response.ok) {
-            const message =
-              payload &&
-              typeof payload.error === "string" &&
-              payload.error.trim()
-                ? payload.error.trim()
-                : "We could not verify that link.";
-            renderMessage("Submission Verification Failed", message);
-            return;
-          }
-
-          const submissionId =
-            payload &&
-            typeof payload.submissionId === "string" &&
-            payload.submissionId.trim()
-              ? payload.submissionId.trim()
-              : "";
-
-          if (!submissionId) {
-            renderMessage(
-              "Submission Verification Failed",
-              "The verification response did not include a submission ID.",
-            );
-            return;
-          }
-
-          lockedId = submissionId;
-          input.value = submissionId;
-          renderStatus(submissionId, "in_review");
-        } catch (_error) {
-          renderMessage(
-            "Submission Verification Failed",
-            "We could not verify that link right now.",
-          );
-        } finally {
-          const nextUrl = new URL(window.location.href);
-          nextUrl.searchParams.delete("verify");
-          window.history.replaceState(
-            {},
-            "",
-            nextUrl.pathname + nextUrl.search,
-          );
-          setSubmitEnabled(Boolean(input.value.trim()));
-        }
-      };
-
       setSubmitEnabled(false);
 
       input.addEventListener("input", function () {
-        const nextId = input.value.trim();
-        if (!nextId) {
-          setSubmitEnabled(false);
-          return;
-        }
-        if (!lockedId || nextId !== lockedId) {
-          setSubmitEnabled(true);
-        }
+        setSubmitEnabled(Boolean(input.value.trim()));
       });
 
       form.addEventListener("submit", async function (event) {
@@ -172,7 +100,6 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           return;
         }
 
-        lockedId = submissionId;
         setSubmitEnabled(false);
 
         try {
@@ -202,14 +129,23 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           renderStatus(submissionId, status);
         } catch (_error) {
           renderStatus(submissionId, "pending");
+        } finally {
+          setSubmitEnabled(Boolean(input.value.trim()));
         }
       });
 
-      const verifyToken = new URLSearchParams(window.location.search).get(
-        "verify",
+      const flashedPrefill = window.__IPC_PREFILL__?.readAndConsume?.(
+        "prefill:submissionStatusLookup",
       );
-      if (verifyToken) {
-        void verifyFromLink(verifyToken);
+      const flashedSubmissionId =
+        flashedPrefill &&
+        typeof flashedPrefill.submissionId === "string" &&
+        flashedPrefill.submissionId.trim()
+          ? flashedPrefill.submissionId.trim()
+          : "";
+      if (flashedSubmissionId) {
+        input.value = flashedSubmissionId;
+        setSubmitEnabled(true);
       }
     })();
   </script>

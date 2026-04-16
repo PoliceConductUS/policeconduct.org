@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("submission status", () => {
-  test("verification link success shows submission status and clears token from URL", async ({
+  test("verification link success shows submission ID and passes it to status lookup", async ({
     page,
   }) => {
     await page.route("**/api/forms/verify-link", async (route) => {
@@ -26,18 +26,17 @@ test.describe("submission status", () => {
         response.request().method() === "POST"
       );
     });
-    await page.goto("/status/?verify=test-verification-id.test-secret");
+    await page.goto("/verify/?token=test-verification-id.test-secret");
     await verifyResponse;
-    await expect.poll(() => new URL(page.url()).search).toBe("");
 
-    const result = page.locator("#statusLookupResult");
+    const result = page.locator("#verificationResult");
     await expect(result).toBeVisible();
-    await expect(result).toContainText("Status");
-    await expect(result).toContainText(
-      "Submission sub_e2e_verified status: in_review",
-    );
+    await expect(result).toContainText("Submission Verified");
+    await expect(result).toContainText("Submission ID: sub_e2e_verified");
+    await page.getByRole("button", { name: "Check status" }).click();
+
+    await expect(page).toHaveURL(/\/status\/$/);
     await expect(page.locator("#submissionId")).toHaveValue("sub_e2e_verified");
-    await expect.poll(() => new URL(page.url()).search).toBe("");
   });
 
   test("verification link failure shows inline failure message", async ({
@@ -65,11 +64,10 @@ test.describe("submission status", () => {
         response.request().method() === "POST"
       );
     });
-    await page.goto("/status/?verify=test-verification-id.test-secret");
+    await page.goto("/verify/?token=test-verification-id.test-secret");
     await verifyResponse;
-    await expect.poll(() => new URL(page.url()).search).toBe("");
 
-    const result = page.locator("#statusLookupResult");
+    const result = page.locator("#verificationResult");
     await expect(result).toBeVisible();
     await expect(result).toContainText("Submission Verification Failed");
     await expect(result).toContainText("Verification link expired.");
