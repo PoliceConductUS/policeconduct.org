@@ -3,11 +3,11 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1002.0",
-    "@aws-sdk/client-sesv2": "^3.1029.0",
+    "@aws-sdk/client-s3": "^3.1030.0",
+    "@aws-sdk/client-sesv2": "^3.1030.0",
     "@google-cloud/recaptcha-enterprise": "^6.4.0",
     "@paralleldrive/cuid2": "^3.3.0",
-    "@sentry/node": "^10.43.0",
-    "google-auth-library": "^10.6.1"
+    "@sentry/node": "^10.48.0",
+    "google-auth-library": "^10.6.2"
   }
 }
