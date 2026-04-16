@@ -739,14 +739,28 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
       "[data-form-submit-success-detail]",
     );
     if (detailNode) {
+      const verificationPending =
+        (result as { verificationPending?: unknown })?.verificationPending !==
+        false;
       const message =
         typeof (result as { message?: unknown })?.message === "string"
           ? (result as { message: string }).message.trim()
           : "";
-      detailNode.textContent =
+      const requestId =
+        typeof (result as { requestId?: unknown })?.requestId === "string"
+          ? (result as { requestId: string }).requestId.trim()
+          : "";
+      let detailMessage =
         getSuccessDetail?.({ result }) ||
         message ||
         "Check your email and open the verification link within 15 minutes to continue.";
+      if (!verificationPending) {
+        console.error("Form verification email failed", result);
+        if (requestId) {
+          detailMessage = `${detailMessage} Reference: ${requestId}.`;
+        }
+      }
+      detailNode.textContent = detailMessage;
     }
     setSubmitButtonBusy(submitButton, false);
     if (submitButton) {

@@ -86,6 +86,44 @@ function errorInfo(error) {
   };
 }
 
+function emailDomain(email) {
+  if (typeof email !== "string") {
+    return null;
+  }
+  const [, domain = ""] = email.split("@", 2);
+  return domain.trim().toLowerCase() || null;
+}
+
+function verificationFailureMessage(reason) {
+  const generic =
+    "We received your submission, but could not send the verification email. Please contact hello@policeconduct.org if you do not hear from us.";
+  if (sentryEnvironment === "production") {
+    return generic;
+  }
+
+  switch (reason) {
+    case "missing_origin":
+      return "We received your submission, but this environment could not build the verification link.";
+    case "missing_email":
+      return "We received your submission, but no verification email address was present in the request.";
+    case "invalid_email":
+      return "We received your submission, but the verification email address was invalid.";
+    case "send_failed":
+      return "We received your submission, but sending the verification email failed in this environment.";
+    default:
+      return generic;
+  }
+}
+
+function verificationFailureResponse(requestId, reason) {
+  return json(200, {
+    message: verificationFailureMessage(reason),
+    requestId,
+    verificationFailureReason: reason,
+    verificationPending: false,
+  });
+}
+
 function sentryRequestContext(context, extra = {}) {
   return {
     extra: {
@@ -1006,6 +1044,22 @@ async function submitForm(event, requestId) {
   const origin = getSiteOrigin(event);
   const verificationEmail = getVerificationEmail(data, formName);
   if (!verificationEmail || !isValidEmail(verificationEmail) || !origin) {
+    const verificationFailureReason = !origin
+      ? "missing_origin"
+      : !verificationEmail
+        ? "missing_email"
+        : "invalid_email";
+    captureLambdaException(
+      new Error(`Verification email not sent: ${verificationFailureReason}`),
+      baseLogContext(event, requestId),
+      {
+        formName,
+        operation: "prepare_verification_email",
+        submissionId,
+        verificationEmailDomain: emailDomain(verificationEmail),
+        verificationFailureReason,
+      },
+    );
     console.warn(
       JSON.stringify({
         msg: "forms.submit.verification_email_not_sent",
@@ -1013,14 +1067,12 @@ async function submitForm(event, requestId) {
         formName,
         hasOrigin: Boolean(origin),
         hasVerificationEmail: Boolean(verificationEmail),
+        verificationEmailDomain: emailDomain(verificationEmail),
+        verificationFailureReason,
         submissionId,
       }),
     );
-    return json(200, {
-      message:
-        "We received your submission, but could not send the verification email. Please contact hello@policeconduct.org if you do not hear from us.",
-      verificationPending: false,
-    });
+    return verificationFailureResponse(requestId, verificationFailureReason);
   }
 
   const verificationId = createId();
@@ -1078,11 +1130,7 @@ async function submitForm(event, requestId) {
         error: errorInfo(error),
       }),
     );
-    return json(200, {
-      message:
-        "We received your submission, but could not send the verification email. Please contact hello@policeconduct.org if you do not hear from us.",
-      verificationPending: false,
-    });
+    return verificationFailureResponse(requestId, "send_failed");
   }
 
   return json(200, {

@@ -245,6 +245,78 @@ test.describe("form submissions", () => {
     await expect(error).toContainText("Mocked submission failure for e2e.");
   });
 
+  test("verification email failure › contact shows request reference and logs diagnostics", async ({
+    page,
+  }) => {
+    await installRecaptchaMock(page);
+
+    const consoleMessages = [];
+    page.on("console", (msg) => {
+      consoleMessages.push({
+        text: msg.text(),
+        type: msg.type(),
+      });
+    });
+
+    await page.route("**/api/forms/submit", async (route) => {
+      const req = route.request();
+      if (req.method() !== "POST") {
+        await route.fallback();
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          message:
+            "We received your submission, but sending the verification email failed in this environment.",
+          requestId: "req_e2e_verification_failure",
+          verificationFailureReason: "send_failed",
+          verificationPending: false,
+        }),
+      });
+    });
+
+    await page.goto("/about/contact/");
+    const formLocator = page.locator('form[name="contact"]');
+    await expect(formLocator).toBeVisible();
+    const originalPathname = new URL(page.url()).pathname;
+
+    await fillRequiredFields(page, formLocator);
+    const submitResponsePromise = page.waitForResponse((response) => {
+      return (
+        response.url().includes("/api/forms/submit") &&
+        response.request().method() === "POST"
+      );
+    });
+    await Promise.all([
+      submitResponsePromise,
+      formLocator.locator('button[type="submit"]').click(),
+    ]);
+
+    await expect(page).toHaveURL(new RegExp(`${originalPathname}$`));
+    const success = formLocator.locator("[data-form-submit-success]");
+    await expect(success).toBeVisible();
+    await expect(success).toContainText(
+      "We received your submission, but sending the verification email failed in this environment.",
+    );
+    await expect(success).toContainText(
+      "Reference: req_e2e_verification_failure.",
+    );
+    await expect(success.locator("[data-submission-id]")).toHaveCount(0);
+    await expect(formLocator.locator("[data-form-submit-error]")).toBeHidden();
+
+    expect(
+      consoleMessages.some(
+        (entry) =>
+          entry.type === "error" &&
+          entry.text.includes("Form verification email failed") &&
+          entry.text.includes("req_e2e_verification_failure") &&
+          entry.text.includes("send_failed"),
+      ),
+    ).toBe(true);
+  });
+
   test("feedback › footer report issue opens Sentry feedback", async ({
     page,
   }) => {
