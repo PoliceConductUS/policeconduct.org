@@ -1519,12 +1519,12 @@ resource "aws_route53_zone" "site" {
 }
 
 resource "aws_ses_domain_identity" "site" {
-  domain = var.domain_name
+  domain = var.forms_email_verification_domain
 }
 
 resource "aws_route53_record" "ses_domain_identity_verification" {
   zone_id = local.route53_zone_id
-  name    = "_amazonses.${var.domain_name}"
+  name    = "_amazonses.${var.forms_email_verification_domain}"
   type    = "TXT"
   ttl     = 600
   records = [aws_ses_domain_identity.site.verification_token]
@@ -1544,7 +1544,7 @@ resource "aws_route53_record" "ses_domain_dkim" {
   count = 3
 
   zone_id = local.route53_zone_id
-  name    = "${aws_ses_domain_dkim.site.dkim_tokens[count.index]}._domainkey.${var.domain_name}"
+  name    = "${aws_ses_domain_dkim.site.dkim_tokens[count.index]}._domainkey.${var.forms_email_verification_domain}"
   type    = "CNAME"
   ttl     = 600
   records = ["${aws_ses_domain_dkim.site.dkim_tokens[count.index]}.dkim.amazonses.com"]

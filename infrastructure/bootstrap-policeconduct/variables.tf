@@ -194,7 +194,13 @@ variable "forms_draft_max_bytes" {
 variable "forms_email_verification_from_address" {
   description = "Sender address for post-submit verification emails."
   type        = string
-  default     = "noreply@policeconduct.org"
+  default     = "noreply@mail.policeconduct.org"
+}
+
+variable "forms_email_verification_domain" {
+  description = "SES-verified domain used for post-submit verification emails."
+  type        = string
+  default     = "mail.policeconduct.org"
 }
 
 variable "forms_email_verification_ttl_seconds" {

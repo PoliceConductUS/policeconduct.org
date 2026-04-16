@@ -152,6 +152,9 @@ Current default includes Google Workspace MX:
 
 Add your domain-specific TXT verification/DKIM records in local `terraform.tfvars` under `extra_dns_records` so they are applied with the zone.
 
+Verification email is sent from `noreply@mail.policeconduct.org` by default.
+Terraform creates the SES identity verification and DKIM records under `mail.policeconduct.org`.
+
 ## GitHub Environments + Vars
 
 Terraform manages these GitHub environments automatically:
