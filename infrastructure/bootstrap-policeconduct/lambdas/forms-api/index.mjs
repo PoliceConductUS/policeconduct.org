@@ -50,6 +50,7 @@ const FORMS_WITH_EMAIL_VERIFICATION = new Map([
   ["dataSubjectAccessRequest", "email"],
   ["reportNew", "reporterEmail"],
 ]);
+const PREVIEW_ORIGIN_HOST_RE = /^pr-\d+\.preview\.policeconduct\.org$/;
 
 let recaptchaClientPromise;
 
@@ -213,24 +214,80 @@ function parseVerificationToken(raw) {
   };
 }
 
-function getSiteOrigin(event) {
+function normalizeOriginUrl(raw) {
+  if (typeof raw !== "string" || raw.trim() === "") {
+    return "";
+  }
+  try {
+    const url = new URL(raw.trim());
+    if (url.protocol !== "https:") {
+      return "";
+    }
+    return url.origin;
+  } catch (_error) {
+    return "";
+  }
+}
+
+function getRequestOrigin(event) {
   const headers = event?.headers || {};
   const lowerCaseHeaders = Object.fromEntries(
     Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]),
   );
-  const host =
-    typeof lowerCaseHeaders.host === "string"
-      ? lowerCaseHeaders.host.trim()
-      : "";
-  const protocol =
-    typeof lowerCaseHeaders["x-forwarded-proto"] === "string" &&
-    lowerCaseHeaders["x-forwarded-proto"].trim()
-      ? lowerCaseHeaders["x-forwarded-proto"].trim()
-      : "https";
-  if (!host) {
-    return "";
+  return normalizeOriginUrl(lowerCaseHeaders.origin);
+}
+
+function isAllowedOrigin(origin) {
+  if (!origin) {
+    return false;
   }
-  return `${protocol}://${host}`;
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== "https:") {
+      return false;
+    }
+    const hostname = url.hostname.toLowerCase();
+    if (
+      hostname === "policeconduct.org" ||
+      hostname === "www.policeconduct.org"
+    ) {
+      return true;
+    }
+    return PREVIEW_ORIGIN_HOST_RE.test(hostname);
+  } catch (_error) {
+    return false;
+  }
+}
+
+function corsHeaders(origin) {
+  if (!isAllowedOrigin(origin)) {
+    return {};
+  }
+  return {
+    "access-control-allow-origin": origin,
+    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-headers": "content-type",
+    "access-control-max-age": "86400",
+    vary: "Origin",
+  };
+}
+
+function withCors(response, origin) {
+  if (!response || !isAllowedOrigin(origin)) {
+    return response;
+  }
+  return {
+    ...response,
+    headers: {
+      ...(response.headers || {}),
+      ...corsHeaders(origin),
+    },
+  };
+}
+
+function getSiteOrigin(event) {
+  const origin = getRequestOrigin(event);
+  return isAllowedOrigin(origin) ? origin : "";
 }
 
 function verificationConfig() {
@@ -782,21 +839,13 @@ async function getSubmissionStatus(event, requestId) {
   try {
     const parsed = await readJsonObject(bucket, key);
     if (!parsed) {
-      return json(200, pendingStatusPayload(submissionId));
+      return json(200, { status: "pending" });
     }
-    if (
-      typeof parsed.submissionId !== "string" ||
-      parsed.submissionId.trim().length === 0
-    ) {
-      parsed.submissionId = submissionId;
-    }
-    if (
-      typeof parsed.status !== "string" ||
-      parsed.status.trim().length === 0
-    ) {
-      parsed.status = "pending";
-    }
-    return json(200, parsed);
+    const status =
+      typeof parsed.status === "string" && parsed.status.trim().length > 0
+        ? parsed.status.trim()
+        : "pending";
+    return json(200, { status });
   } catch (error) {
     captureLambdaException(error, context, {
       key,
@@ -865,10 +914,7 @@ async function verifySubmissionLink(event, requestId) {
   );
 
   return json(200, {
-    status: "in_review",
     submissionId: record.submissionId,
-    statusChangedAt: verifiedAt,
-    verified: true,
   });
 }
 
@@ -1080,6 +1126,7 @@ async function submitForm(event, requestId) {
   const config = verificationConfig();
   const createdAt = new Date().toISOString();
   const expiresAt = new Date(Date.now() + config.ttlMs).toISOString();
+
   const verificationRecord = {
     createdAt,
     email: verificationEmail,
@@ -1143,10 +1190,13 @@ async function submitForm(event, requestId) {
 export const handler = async (event) => {
   const requestId = getRequestId(event);
   const context = baseLogContext(event, requestId);
+  const requestOrigin = getRequestOrigin(event);
+  const allowedOrigin = isAllowedOrigin(requestOrigin) ? requestOrigin : "";
   console.info(
     JSON.stringify({
       msg: "forms.request.received",
       ...context,
+      requestOrigin: requestOrigin || null,
     }),
   );
 
@@ -1154,39 +1204,81 @@ export const handler = async (event) => {
     const method = context.method || "";
     const path = context.path || "";
 
+    if (method === "OPTIONS") {
+      if (!allowedOrigin) {
+        console.warn(
+          JSON.stringify({
+            msg: "forms.request.origin_rejected",
+            ...context,
+            requestOrigin: requestOrigin || null,
+            reason: "origin_not_allowed",
+          }),
+        );
+        return json(403, { error: "Origin not allowed.", requestId });
+      }
+      return withCors(
+        {
+          statusCode: 204,
+          headers: {
+            "cache-control": "no-store",
+          },
+        },
+        allowedOrigin,
+      );
+    }
+
     if (method === "GET" && path === "/forms/draft") {
-      return await getDraft(event);
+      return withCors(await getDraft(event), allowedOrigin);
     }
 
     if (method === "POST" && path === "/forms/draft") {
-      return await saveDraft(event);
+      return withCors(await saveDraft(event), allowedOrigin);
     }
 
     if (method === "POST" && path === "/forms/submit") {
-      return await submitForm(event, requestId);
+      if (!allowedOrigin) {
+        const originError = new Error(
+          "Verification email not sent: missing_origin",
+        );
+        captureLambdaException(originError, context, {
+          operation: "validate_origin",
+          requestOrigin: requestOrigin || null,
+          verificationFailureReason: "missing_origin",
+        });
+        console.warn(
+          JSON.stringify({
+            msg: "forms.submit.origin_rejected",
+            ...context,
+            requestOrigin: requestOrigin || null,
+            verificationFailureReason: "missing_origin",
+          }),
+        );
+        return verificationFailureResponse(requestId, "missing_origin");
+      }
+      return withCors(await submitForm(event, requestId), allowedOrigin);
     }
 
     if (method === "POST" && path === "/forms/verify-link") {
-      return await verifySubmissionLink(event, requestId);
+      return withCors(
+        await verifySubmissionLink(event, requestId),
+        allowedOrigin,
+      );
     }
 
     if (method === "GET" && path.startsWith("/status/")) {
-      return await getSubmissionStatus(event, requestId);
+      return withCors(
+        await getSubmissionStatus(event, requestId),
+        allowedOrigin,
+      );
     }
 
-    if (method === "OPTIONS") {
-      return {
-        statusCode: 204,
-        headers: {
-          "cache-control": "no-store",
-        },
-      };
-    }
-
-    return json(
-      405,
-      { error: "Method not allowed." },
-      { Allow: "GET, POST, OPTIONS" },
+    return withCors(
+      json(
+        405,
+        { error: "Method not allowed." },
+        { Allow: "GET, POST, OPTIONS" },
+      ),
+      allowedOrigin,
     );
   } catch (error) {
     const info = errorInfo(error);
@@ -1198,10 +1290,13 @@ export const handler = async (event) => {
         error: info,
       }),
     );
-    return json(500, {
-      error: info.message || "Internal server error",
-      requestId,
-    });
+    return withCors(
+      json(500, {
+        error: info.message || "Internal server error",
+        requestId,
+      }),
+      allowedOrigin,
+    );
   } finally {
     if (sentryEnabled) {
       await Sentry.flush(2000);

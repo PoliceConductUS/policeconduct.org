@@ -209,4 +209,37 @@ If `sentry_auth_token` is set, Terraform also writes `SENTRY_AUTH_TOKEN` as a Gi
   - Forms API Lambda `Errors`
   - Forms API Lambda p95 `Duration`
   - Forms API Lambda `Throttles`
-- Configure `alarm_actions` with SNS topic ARNs (or other supported action ARNs) to receive notifications.
+  - Verification email send failures and verification email preparation failures for both preview and production
+- Configure `alert_email_endpoints` to have Terraform create and wire an SNS topic for alarm notifications automatically.
+- You can still add extra alarm destinations directly with `alarm_actions`.
+- AWS still requires each email recipient to confirm the SNS subscription from the confirmation email before notifications start arriving.
+
+## Preview Forms API Logs
+
+Tail recent preview Lambda logs:
+
+```bash
+aws logs tail /aws/lambda/policeconduct-forms-api-preview --since 15m --follow
+```
+
+Filter for verification, origin, and request errors:
+
+```bash
+aws logs tail /aws/lambda/policeconduct-forms-api-preview --since 15m \
+  | rg 'ERROR|forms\.submit\.|forms\.verify\.|forms\.request\.error|origin_rejected'
+```
+
+Look up one request by request ID:
+
+```bash
+aws logs tail /aws/lambda/policeconduct-forms-api-preview --since 1h \
+  | rg '<request-id>'
+```
+
+Useful message keys for this flow:
+
+- `forms.submit.verification_email_failed`
+- `forms.submit.verification_email_not_sent`
+- `forms.submit.origin_rejected`
+- `forms.verify.success`
+- `forms.request.error`

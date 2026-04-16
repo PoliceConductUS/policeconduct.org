@@ -312,6 +312,18 @@ variable "alarm_actions" {
   default     = []
 }
 
+variable "alert_topic_name" {
+  description = "SNS topic name for stack-managed infrastructure alerts. Leave null/empty to use <project_name>-alerts."
+  type        = string
+  default     = null
+}
+
+variable "alert_email_endpoints" {
+  description = "Email endpoints subscribed to the stack-managed infrastructure alerts SNS topic."
+  type        = list(string)
+  default     = []
+}
+
 variable "site_bucket_force_destroy" {
   description = "If true, allows deleting a non-empty site bucket."
   type        = bool

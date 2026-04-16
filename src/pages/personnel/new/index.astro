@@ -288,16 +288,6 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
           event,
           form,
           formName: "personnelNew",
-          getSuccessDetail({ result }) {
-            const message =
-              typeof (result as { message?: unknown })?.message === "string"
-                ? (result as { message: string }).message.trim()
-                : "";
-            return (
-              message ||
-              "We received your submission. Check your email and open the verification link within 15 minutes to continue."
-            );
-          },
           onReset: function () {
             form.classList.remove("was-validated");
           },

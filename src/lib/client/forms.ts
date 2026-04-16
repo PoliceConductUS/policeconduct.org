@@ -753,7 +753,7 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
       let detailMessage =
         getSuccessDetail?.({ result }) ||
         message ||
-        "Check your email and open the verification link within 15 minutes to continue.";
+        "We received your submission. Check your email and open the verification link within 15 minutes. Your submission will not be accepted for review until you verify it.";
       if (!verificationPending) {
         console.error("Form verification email failed", result);
         if (requestId) {

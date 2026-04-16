@@ -80,68 +80,11 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
         result.appendChild(body);
       };
 
-      const renderScalar = (value) => {
-        if (value === null) return "null";
-        if (value === undefined) return "";
-        if (typeof value === "boolean") return value ? "true" : "false";
-        return String(value);
-      };
-
-      const appendEntries = (container, data) => {
-        if (!data || typeof data !== "object") {
-          return;
-        }
-        const list = document.createElement("dl");
-        list.className = "row mb-0";
-
-        for (const [key, value] of Object.entries(data)) {
-          const dt = document.createElement("dt");
-          dt.className = "col-sm-4 text-muted";
-          dt.textContent = key;
-
-          const dd = document.createElement("dd");
-          dd.className = "col-sm-8";
-
-          if (Array.isArray(value)) {
-            if (value.length === 0) {
-              dd.textContent = "[]";
-            } else {
-              const ul = document.createElement("ul");
-              ul.className = "mb-0";
-              for (const item of value) {
-                const li = document.createElement("li");
-                if (item && typeof item === "object") {
-                  appendEntries(li, item);
-                } else {
-                  li.textContent = renderScalar(item);
-                }
-                ul.appendChild(li);
-              }
-              dd.appendChild(ul);
-            }
-          } else if (value && typeof value === "object") {
-            const nested = document.createElement("div");
-            appendEntries(nested, value);
-            dd.appendChild(nested);
-          } else {
-            dd.textContent = renderScalar(value);
-          }
-
-          list.appendChild(dt);
-          list.appendChild(dd);
-        }
-
-        container.appendChild(list);
-      };
-
-      const renderResult = (payload) => {
-        result.classList.remove("d-none");
-        result.innerHTML = "";
-        const heading = document.createElement("h2");
-        heading.className = "h5 mb-3";
-        heading.textContent = "Status";
-        result.appendChild(heading);
-        appendEntries(result, payload);
+      const renderStatus = (submissionId, statusText) => {
+        renderMessage(
+          "Status",
+          `Submission ${submissionId} status: ${statusText}`,
+        );
       };
 
       const verifyFromLink = async (token) => {
@@ -183,20 +126,18 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 
           if (!submissionId) {
             renderMessage(
-              "Verification failed",
+              "Submission Verification Failed",
               "The verification response did not include a submission ID.",
             );
             return;
           }
 
-          renderResult({
-            status: payload?.status || "in_review",
-            statusChangedAt: payload?.statusChangedAt || "",
-            submissionId,
-          });
+          lockedId = submissionId;
+          input.value = submissionId;
+          renderStatus(submissionId, "in_review");
         } catch (_error) {
           renderMessage(
-            "Verification failed",
+            "Submission Verification Failed",
             "We could not verify that link right now.",
           );
         } finally {
@@ -245,18 +186,22 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           try {
             payload = await response.json();
           } catch (_error) {
-            payload = { submissionId, status: "pending" };
+            payload = { status: "pending" };
           }
           if (
             !payload ||
             typeof payload !== "object" ||
             Array.isArray(payload)
           ) {
-            payload = { submissionId, status: "pending" };
+            payload = { status: "pending" };
           }
-          renderResult(payload);
+          const status =
+            typeof payload.status === "string" && payload.status.trim()
+              ? payload.status.trim()
+              : "pending";
+          renderStatus(submissionId, status);
         } catch (_error) {
-          renderResult({ submissionId, status: "pending" });
+          renderStatus(submissionId, "pending");
         }
       });
 

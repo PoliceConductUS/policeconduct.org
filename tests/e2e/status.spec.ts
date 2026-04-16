@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("submission status", () => {
-  test("verification link success shows submission details and clears token from URL", async ({
+  test("verification link success shows submission status and clears token from URL", async ({
     page,
   }) => {
     await page.route("**/api/forms/verify-link", async (route) => {
@@ -15,10 +15,7 @@ test.describe("submission status", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          status: "in_review",
-          statusChangedAt: "2026-04-13T10:30:00.000Z",
           submissionId: "sub_e2e_verified",
-          verified: true,
         }),
       });
     });
@@ -35,9 +32,10 @@ test.describe("submission status", () => {
     const result = page.locator("#statusLookupResult");
     await expect(result).toBeVisible();
     await expect(result).toContainText("Status");
-    await expect(result).toContainText("in_review");
-    await expect(result).toContainText("2026-04-13T10:30:00.000Z");
-    await expect(result).toContainText("sub_e2e_verified");
+    await expect(result).toContainText(
+      "Submission sub_e2e_verified status: in_review",
+    );
+    await expect(page.locator("#submissionId")).toHaveValue("sub_e2e_verified");
     await expect.poll(() => new URL(page.url()).search).toBe("");
   });
 
@@ -71,12 +69,12 @@ test.describe("submission status", () => {
 
     const result = page.locator("#statusLookupResult");
     await expect(result).toBeVisible();
-    await expect(result).toContainText("Verification failed");
+    await expect(result).toContainText("Submission Verification Failed");
     await expect(result).toContainText("Verification link expired.");
     await expect.poll(() => new URL(page.url()).search).toBe("");
   });
 
-  test("manual lookup renders returned status payload", async ({ page }) => {
+  test("manual lookup renders submission status text", async ({ page }) => {
     await page.route("**/api/status/**", async (route) => {
       const request = route.request();
       if (request.method() !== "GET") {
@@ -89,9 +87,6 @@ test.describe("submission status", () => {
         contentType: "application/json",
         body: JSON.stringify({
           status: "in_review",
-          statusChangedAt: "2026-04-13T10:45:00.000Z",
-          submissionId: "sub_manual_lookup",
-          verificationId: "verify_e2e",
         }),
       });
     });
@@ -103,9 +98,11 @@ test.describe("submission status", () => {
     const result = page.locator("#statusLookupResult");
     await expect(result).toBeVisible();
     await expect(result).toContainText("Status");
-    await expect(result).toContainText("in_review");
-    await expect(result).toContainText("2026-04-13T10:45:00.000Z");
-    await expect(result).toContainText("sub_manual_lookup");
-    await expect(result).toContainText("verify_e2e");
+    await expect(result).toContainText(
+      "Submission sub_manual_lookup status: in_review",
+    );
+    await expect(result).not.toContainText("submissionId");
+    await expect(result).not.toContainText("verificationId");
+    await expect(result).not.toContainText("statusChangedAt");
   });
 });
