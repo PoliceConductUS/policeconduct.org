@@ -2,6 +2,7 @@
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const documents = [
@@ -110,18 +111,16 @@ const structuredData = buildWebPage({
               <div class="card-body d-flex flex-column gap-3">
                 <div class="text-uppercase small text-muted">Need help?</div>
                 <div class="d-grid gap-2">
-                  <a
+                  <PrefillNavButton
                     class="btn btn-dark rounded-0"
-                    href="/about/contact/"
-                    target="_self"
-                    data-prefill-key="prefill:contact"
-                    data-prefill-payload={JSON.stringify({
+                    to="/about/contact/"
+                    payload={{
                       whoami: "Partner",
                       message: "I have a question about your legal policies.",
-                    })}
+                    }}
                   >
                     Contact the team
-                  </a>
+                  </PrefillNavButton>
                   <a
                     class="btn btn-outline-dark rounded-0"
                     href="/legal-notice/data-subject-access-request/"

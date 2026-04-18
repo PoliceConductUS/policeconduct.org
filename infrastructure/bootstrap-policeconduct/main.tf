@@ -1,5 +1,9 @@
 data "aws_caller_identity" "current" {}
 
+data "aws_cloudwatch_event_bus" "default" {
+  name = "default"
+}
+
 locals {
   provided_oidc_provider_arn            = var.existing_oidc_provider_arn == null || trimspace(var.existing_oidc_provider_arn) == "" ? null : trimspace(var.existing_oidc_provider_arn)
   create_oidc_provider                  = local.provided_oidc_provider_arn == null
@@ -64,8 +68,22 @@ locals {
   sentry_auth_token            = var.sentry_auth_token == null || trimspace(var.sentry_auth_token) == "" ? null : trimspace(var.sentry_auth_token)
   recaptcha_project_id         = var.recaptcha_project_id == null || trimspace(var.recaptcha_project_id) == "" ? null : trimspace(var.recaptcha_project_id)
   recaptcha_site_key           = var.recaptcha_site_key == null || trimspace(var.recaptcha_site_key) == "" ? null : trimspace(var.recaptcha_site_key)
-  has_sentry_auth_token        = nonsensitive(local.sentry_auth_token != null)
-  github_environment_names     = toset(["production", "preview"])
+  forms_email_mail_from_domain = "${var.forms_email_mail_from_subdomain}.${var.forms_email_verification_domain}"
+  forms_email_dmarc_value = join("; ", compact([
+    "v=DMARC1",
+    "p=${var.forms_email_dmarc_policy}",
+    "adkim=s",
+    "aspf=r",
+    var.forms_email_dmarc_aggregate_report_address == null || trimspace(var.forms_email_dmarc_aggregate_report_address) == "" ? null : "rua=mailto:${trimspace(var.forms_email_dmarc_aggregate_report_address)}",
+  ]))
+  alert_topic_name = var.alert_topic_name == null || trimspace(var.alert_topic_name) == "" ? "${var.project_name}-alerts" : trimspace(var.alert_topic_name)
+  normalized_alert_email_endpoints = distinct([
+    for endpoint in var.alert_email_endpoints : trimspace(endpoint)
+    if trimspace(endpoint) != ""
+  ])
+  has_sentry_auth_token    = nonsensitive(local.sentry_auth_token != null)
+  effective_alarm_actions  = concat(var.alarm_actions, length(local.normalized_alert_email_endpoints) > 0 ? [aws_sns_topic.infrastructure_alerts[0].arn] : [])
+  github_environment_names = toset(["production", "preview"])
   github_environment_variables = {
     production = merge(
       {
@@ -773,6 +791,11 @@ resource "aws_iam_role" "forms_lambda" {
   assume_role_policy = data.aws_iam_policy_document.forms_lambda_assume_role.json
 }
 
+resource "random_password" "forms_email_verification_hmac_secret" {
+  length  = 64
+  special = false
+}
+
 data "aws_iam_policy_document" "forms_lambda_permissions" {
   statement {
     sid    = "CloudWatchLogsWrite"
@@ -815,6 +838,15 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
   }
 
   statement {
+    sid    = "SubmissionBucketRead"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = ["${aws_s3_bucket.forms_submissions.arn}/*"]
+  }
+
+  statement {
     sid    = "PreviewDraftBucketWriteRead"
     effect = "Allow"
     actions = [
@@ -831,6 +863,15 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
     actions = [
       "s3:PutObject",
       "s3:PutObjectTagging",
+    ]
+    resources = ["${aws_s3_bucket.forms_submissions_preview.arn}/*"]
+  }
+
+  statement {
+    sid    = "PreviewSubmissionBucketRead"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
     ]
     resources = ["${aws_s3_bucket.forms_submissions_preview.arn}/*"]
   }
@@ -868,6 +909,16 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
   }
 
   statement {
+    sid    = "SubmissionBucketKmsDecrypt"
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+    ]
+    resources = [aws_kms_key.forms_submissions.arn]
+  }
+
+  statement {
     sid    = "PreviewDraftBucketKmsEncryptDecrypt"
     effect = "Allow"
     actions = [
@@ -888,6 +939,29 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
       "kms:DescribeKey",
     ]
     resources = [aws_kms_key.forms_submissions_preview.arn]
+  }
+
+  statement {
+    sid    = "PreviewSubmissionBucketKmsDecrypt"
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+    ]
+    resources = [aws_kms_key.forms_submissions_preview.arn]
+  }
+
+  statement {
+    sid       = "SesSendVerificationEmail"
+    effect    = "Allow"
+    actions   = ["ses:SendEmail"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "ses:FromAddress"
+      values   = [var.forms_email_verification_from_address]
+    }
   }
 }
 
@@ -985,6 +1059,11 @@ resource "aws_lambda_function" "forms_api_prod" {
       RECAPTCHA_MIN_SCORE                  = tostring(var.recaptcha_min_score)
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
+      EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
+      EMAIL_VERIFICATION_CONFIGURATION_SET = aws_sesv2_configuration_set.verification_email.configuration_set_name
+      EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
+      EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
+      SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
       SENTRY_DSN                           = local.sentry_dsn_production == null ? "" : local.sentry_dsn_production
       SENTRY_ENVIRONMENT                   = "production"
     }
@@ -1017,6 +1096,11 @@ resource "aws_lambda_function" "forms_api_preview" {
       RECAPTCHA_MIN_SCORE                  = tostring(var.recaptcha_min_score)
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
+      EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
+      EMAIL_VERIFICATION_CONFIGURATION_SET = aws_sesv2_configuration_set.verification_email.configuration_set_name
+      EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
+      EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
+      SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
       SENTRY_DSN                           = local.sentry_dsn_preview == null ? "" : local.sentry_dsn_preview
       SENTRY_ENVIRONMENT                   = "preview"
     }
@@ -1126,6 +1210,19 @@ resource "aws_wafv2_web_acl" "forms_api_cloudfront" {
   }
 }
 
+resource "aws_sns_topic" "infrastructure_alerts" {
+  count = length(local.normalized_alert_email_endpoints) > 0 ? 1 : 0
+  name  = local.alert_topic_name
+}
+
+resource "aws_sns_topic_subscription" "infrastructure_alert_emails" {
+  for_each = length(local.normalized_alert_email_endpoints) > 0 ? toset(local.normalized_alert_email_endpoints) : []
+
+  topic_arn = aws_sns_topic.infrastructure_alerts[0].arn
+  protocol  = "email"
+  endpoint  = each.value
+}
+
 resource "aws_cloudwatch_metric_alarm" "forms_api_prod_errors" {
   alarm_name          = "${var.project_name}-forms-api-prod-errors"
   alarm_description   = "Forms API prod Lambda is returning errors."
@@ -1137,8 +1234,8 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_errors" {
   threshold           = var.forms_api_alarm_5xx_threshold
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.alarm_actions
-  ok_actions          = var.alarm_actions
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_prod.function_name
@@ -1156,8 +1253,8 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_duration_p95" {
   threshold           = var.forms_api_alarm_latency_p95_ms_threshold
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.alarm_actions
-  ok_actions          = var.alarm_actions
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_prod.function_name
@@ -1175,8 +1272,8 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_throttles" {
   threshold           = var.forms_lambda_alarm_throttles_threshold
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.alarm_actions
-  ok_actions          = var.alarm_actions
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_prod.function_name
@@ -1194,8 +1291,8 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_errors" {
   threshold           = var.forms_api_alarm_5xx_threshold
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.alarm_actions
-  ok_actions          = var.alarm_actions
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_preview.function_name
@@ -1213,8 +1310,8 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_duration_p95" {
   threshold           = var.forms_api_alarm_latency_p95_ms_threshold
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.alarm_actions
-  ok_actions          = var.alarm_actions
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_preview.function_name
@@ -1232,12 +1329,120 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_throttles" {
   threshold           = var.forms_lambda_alarm_throttles_threshold
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.alarm_actions
-  ok_actions          = var.alarm_actions
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_preview.function_name
   }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "forms_api_prod_verification_email_failed" {
+  name           = "${var.project_name}-forms-api-prod-verification-email-failed"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_prod.function_name}"
+  pattern        = "{ $.msg = \"forms.submit.verification_email_failed\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-prod-verification-email-failed"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_prod_verification_email_failed" {
+  alarm_name          = "${var.project_name}-forms-api-prod-verification-email-failed"
+  alarm_description   = "Forms API prod Lambda failed to send verification email."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_prod_verification_email_failed.metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
+}
+
+resource "aws_cloudwatch_log_metric_filter" "forms_api_prod_verification_email_not_sent" {
+  name           = "${var.project_name}-forms-api-prod-verification-email-not-sent"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_prod.function_name}"
+  pattern        = "{ $.msg = \"forms.submit.verification_email_not_sent\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-prod-verification-email-not-sent"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_prod_verification_email_not_sent" {
+  alarm_name          = "${var.project_name}-forms-api-prod-verification-email-not-sent"
+  alarm_description   = "Forms API prod Lambda could not prepare a verification email."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_prod_verification_email_not_sent.metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
+}
+
+resource "aws_cloudwatch_log_metric_filter" "forms_api_preview_verification_email_failed" {
+  name           = "${var.project_name}-forms-api-preview-verification-email-failed"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_preview.function_name}"
+  pattern        = "{ $.msg = \"forms.submit.verification_email_failed\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-preview-verification-email-failed"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_preview_verification_email_failed" {
+  alarm_name          = "${var.project_name}-forms-api-preview-verification-email-failed"
+  alarm_description   = "Forms API preview Lambda failed to send verification email."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_preview_verification_email_failed.metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
+}
+
+resource "aws_cloudwatch_log_metric_filter" "forms_api_preview_verification_email_not_sent" {
+  name           = "${var.project_name}-forms-api-preview-verification-email-not-sent"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_preview.function_name}"
+  pattern        = "{ $.msg = \"forms.submit.verification_email_not_sent\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-preview-verification-email-not-sent"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_preview_verification_email_not_sent" {
+  alarm_name          = "${var.project_name}-forms-api-preview-verification-email-not-sent"
+  alarm_description   = "Forms API preview Lambda could not prepare a verification email."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_preview_verification_email_not_sent.metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
@@ -1496,6 +1701,128 @@ resource "aws_route53_zone" "site" {
   count = local.manage_hosted_zone ? 1 : 0
 
   name = var.domain_name
+}
+
+resource "aws_ses_domain_identity" "site" {
+  domain = var.forms_email_verification_domain
+}
+
+resource "aws_route53_record" "ses_domain_identity_verification" {
+  zone_id = local.route53_zone_id
+  name    = "_amazonses.${var.forms_email_verification_domain}"
+  type    = "TXT"
+  ttl     = 600
+  records = [aws_ses_domain_identity.site.verification_token]
+}
+
+resource "aws_ses_domain_identity_verification" "site" {
+  domain = aws_ses_domain_identity.site.id
+
+  depends_on = [aws_route53_record.ses_domain_identity_verification]
+}
+
+resource "aws_ses_domain_dkim" "site" {
+  domain = aws_ses_domain_identity.site.domain
+}
+
+resource "aws_ses_domain_mail_from" "site" {
+  domain                 = aws_ses_domain_identity.site.domain
+  mail_from_domain       = local.forms_email_mail_from_domain
+  behavior_on_mx_failure = "RejectMessage"
+}
+
+resource "aws_route53_record" "ses_domain_dkim" {
+  count = 3
+
+  zone_id = local.route53_zone_id
+  name    = "${aws_ses_domain_dkim.site.dkim_tokens[count.index]}._domainkey.${var.forms_email_verification_domain}"
+  type    = "CNAME"
+  ttl     = 600
+  records = ["${aws_ses_domain_dkim.site.dkim_tokens[count.index]}.dkim.amazonses.com"]
+}
+
+resource "aws_route53_record" "ses_mail_from_mx" {
+  zone_id = local.route53_zone_id
+  name    = local.forms_email_mail_from_domain
+  type    = "MX"
+  ttl     = 600
+  records = ["10 feedback-smtp.${var.aws_region}.amazonses.com"]
+}
+
+resource "aws_route53_record" "ses_mail_from_spf" {
+  zone_id = local.route53_zone_id
+  name    = local.forms_email_mail_from_domain
+  type    = "TXT"
+  ttl     = 600
+  records = ["v=spf1 include:amazonses.com ~all"]
+}
+
+resource "aws_route53_record" "ses_dmarc" {
+  zone_id = local.route53_zone_id
+  name    = "_dmarc.${var.forms_email_verification_domain}"
+  type    = "TXT"
+  ttl     = 600
+  records = [local.forms_email_dmarc_value]
+}
+
+resource "aws_sesv2_account_vdm_attributes" "site" {
+  vdm_enabled = "ENABLED"
+
+  dashboard_attributes {
+    engagement_metrics = "ENABLED"
+  }
+
+  guardian_attributes {
+    optimized_shared_delivery = "ENABLED"
+  }
+}
+
+resource "aws_sesv2_configuration_set" "verification_email" {
+  configuration_set_name = "${var.project_name}-verification-email"
+
+  delivery_options {
+    tls_policy = "REQUIRE"
+  }
+
+  reputation_options {
+    reputation_metrics_enabled = true
+  }
+
+  sending_options {
+    sending_enabled = true
+  }
+
+  vdm_options {
+    dashboard_options {
+      engagement_metrics = "ENABLED"
+    }
+
+    guardian_options {
+      optimized_shared_delivery = "ENABLED"
+    }
+  }
+}
+
+resource "aws_sesv2_configuration_set_event_destination" "verification_email_eventbridge" {
+  configuration_set_name = aws_sesv2_configuration_set.verification_email.configuration_set_name
+  event_destination_name = "${var.project_name}-verification-email-eventbridge"
+
+  event_destination {
+    event_bridge_destination {
+      event_bus_arn = data.aws_cloudwatch_event_bus.default.arn
+    }
+
+    enabled = true
+    matching_event_types = [
+      "SEND",
+      "REJECT",
+      "BOUNCE",
+      "COMPLAINT",
+      "DELIVERY",
+      "DELIVERY_DELAY",
+      "RENDERING_FAILURE",
+    ]
+  }
 }
 
 resource "aws_s3_bucket" "site" {

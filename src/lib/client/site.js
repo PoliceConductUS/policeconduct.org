@@ -112,39 +112,6 @@ const initHeaderScroll = () => {
   onScroll();
 };
 
-const initPrefillLinks = () => {
-  document.addEventListener("click", (event) => {
-    const target = event.target.closest("[data-prefill-key]");
-    if (!target) {
-      return;
-    }
-    const key = target.getAttribute("data-prefill-key");
-    const payloadRaw = target.getAttribute("data-prefill-payload");
-    if (!key || !payloadRaw) {
-      return;
-    }
-    try {
-      const payload = JSON.parse(payloadRaw);
-      if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-        return;
-      }
-      window.__IPC_PREFILL__?.set?.(key, payload);
-      if (target instanceof HTMLAnchorElement) {
-        const hrefDetails = getHrefDetails(target);
-        trackAnalytics("prefill_link_click", {
-          href_path: hrefDetails?.path || "",
-          link_text: normalizeText(target.textContent),
-          page_path: window.location.pathname,
-          prefill_key: key,
-          section_id: getSectionId(target),
-        });
-      }
-    } catch (_error) {
-      // Ignore malformed payloads.
-    }
-  });
-};
-
 const initAnalyticsClicks = () => {
   document.addEventListener("click", (event) => {
     const target = event.target;
@@ -159,10 +126,6 @@ const initAnalyticsClicks = () => {
 
     const hrefDetails = getHrefDetails(anchor);
     if (!hrefDetails || !hrefDetails.href || hrefDetails.href.startsWith("#")) {
-      return;
-    }
-
-    if (anchor.matches("[data-prefill-key]")) {
       return;
     }
 
@@ -289,7 +252,6 @@ const initMapAnalyticsClicks = () => {
 
 initBetaBanner();
 initHeaderScroll();
-initPrefillLinks();
 initAnalyticsClicks();
 initProfileTabsAnalytics();
 initMapAnalyticsClicks();

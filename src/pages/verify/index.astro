@@ -1,0 +1,246 @@
+---
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+---
+
+<SiteLayout
+  title="Verify Submission | PoliceConduct.org"
+  pagePath="/verify/"
+  robots="noindex,follow"
+>
+  <PrefillBootstrap />
+  <main class="flex-grow-1 py-vh-3">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+          <h1 class="display-6 fw-bold mb-3">Verify Submission</h1>
+          <p class="text-muted mb-4">
+            Use the verification link from your email to verify your submission.
+          </p>
+
+          <div
+            id="verificationResult"
+            class="border p-4 bg-light"
+            aria-live="polite"
+          >
+          </div>
+
+          <div id="verificationActions" class="mt-4 d-none">
+            <button
+              id="checkStatusButton"
+              type="button"
+              class="btn btn-dark rounded-0"
+            >
+              Check status
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script is:inline>
+    (function () {
+      const storedVerificationResultKey = "ipc_verify_result_v1";
+      const result = document.getElementById("verificationResult");
+      const actions = document.getElementById("verificationActions");
+      const checkStatusButton = document.getElementById("checkStatusButton");
+      if (!result || !actions || !checkStatusButton) {
+        return;
+      }
+
+      let verifiedSubmissionId = "";
+
+      const readStoredVerificationResult = () => {
+        try {
+          const raw = window.sessionStorage.getItem(
+            storedVerificationResultKey,
+          );
+          if (!raw) {
+            return null;
+          }
+          const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            return null;
+          }
+          return parsed;
+        } catch (_error) {
+          return null;
+        }
+      };
+
+      const writeStoredVerificationResult = (value) => {
+        try {
+          window.sessionStorage.setItem(
+            storedVerificationResultKey,
+            JSON.stringify(value),
+          );
+        } catch (_error) {
+          // Ignore storage failures.
+        }
+      };
+
+      const clearStoredVerificationResult = () => {
+        try {
+          window.sessionStorage.removeItem(storedVerificationResultKey);
+        } catch (_error) {
+          // Ignore storage failures.
+        }
+      };
+
+      const renderMessage = (headingText, bodyText) => {
+        result.innerHTML = "";
+
+        const heading = document.createElement("h2");
+        heading.className = "h5 mb-3";
+        heading.textContent = headingText;
+
+        const body = document.createElement("p");
+        body.className = "mb-0";
+        body.textContent = bodyText;
+
+        result.appendChild(heading);
+        result.appendChild(body);
+      };
+
+      const renderVerified = (submissionId, messageText) => {
+        result.innerHTML = "";
+
+        const heading = document.createElement("h2");
+        heading.className = "h5 mb-3";
+        heading.textContent = "Submission Verified";
+
+        const body = document.createElement("p");
+        body.className = "mb-3";
+        body.textContent =
+          typeof messageText === "string" && messageText.trim()
+            ? messageText.trim()
+            : "Your submission has been verified.";
+
+        const details = document.createElement("p");
+        details.className = "mb-0";
+        details.textContent = `Submission ID: ${submissionId}. This is the only place your submission ID will be shown. Please save it now.`;
+
+        result.appendChild(heading);
+        result.appendChild(body);
+        result.appendChild(details);
+        actions.classList.remove("d-none");
+      };
+
+      checkStatusButton.addEventListener("click", function () {
+        if (!verifiedSubmissionId) {
+          return;
+        }
+        window.__IPC_PREFILL__?.set?.("/status/", {
+          submissionId: verifiedSubmissionId,
+        });
+        clearStoredVerificationResult();
+        window.location.assign("/status/");
+      });
+
+      const token = new URLSearchParams(window.location.search).get("token");
+      const storedVerificationResult = readStoredVerificationResult();
+      const storedSubmissionId =
+        storedVerificationResult &&
+        typeof storedVerificationResult.submissionId === "string" &&
+        storedVerificationResult.submissionId.trim()
+          ? storedVerificationResult.submissionId.trim()
+          : "";
+      const storedMessage =
+        storedVerificationResult &&
+        typeof storedVerificationResult.message === "string" &&
+        storedVerificationResult.message.trim()
+          ? storedVerificationResult.message.trim()
+          : "";
+      const storedToken =
+        storedVerificationResult &&
+        typeof storedVerificationResult.token === "string" &&
+        storedVerificationResult.token.trim()
+          ? storedVerificationResult.token.trim()
+          : "";
+
+      if (storedSubmissionId && (!token || storedToken === token)) {
+        verifiedSubmissionId = storedSubmissionId;
+        if (token) {
+          window.history.replaceState({}, "", "/verify/");
+        }
+        renderVerified(storedSubmissionId, storedMessage);
+        return;
+      }
+
+      if (!token) {
+        renderMessage(
+          "Submission Verification Failed",
+          "Missing verification token.",
+        );
+        return;
+      }
+
+      renderMessage("Verification", "Verifying your submission...");
+
+      void (async function () {
+        try {
+          const response = await fetch("/api/forms/verify-link", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ token }),
+          });
+          let payload;
+          try {
+            payload = await response.json();
+          } catch (_error) {
+            payload = null;
+          }
+
+          if (!response.ok) {
+            const message =
+              payload &&
+              typeof payload.message === "string" &&
+              payload.message.trim()
+                ? payload.message.trim()
+                : "We could not verify that link.";
+            renderMessage("Submission Verification Failed", message);
+            return;
+          }
+
+          const submissionId =
+            payload &&
+            typeof payload.submissionId === "string" &&
+            payload.submissionId.trim()
+              ? payload.submissionId.trim()
+              : "";
+          const message =
+            payload &&
+            typeof payload.message === "string" &&
+            payload.message.trim()
+              ? payload.message.trim()
+              : "";
+
+          if (!submissionId) {
+            renderMessage(
+              "Submission Verification Failed",
+              "The verification response did not include a submission ID.",
+            );
+            return;
+          }
+
+          verifiedSubmissionId = submissionId;
+          writeStoredVerificationResult({
+            message,
+            submissionId,
+            token,
+          });
+          window.history.replaceState({}, "", "/verify/");
+          renderVerified(submissionId, message);
+        } catch (_error) {
+          renderMessage(
+            "Submission Verification Failed",
+            "We could not verify that link right now.",
+          );
+        }
+      })();
+    })();
+  </script>
+</SiteLayout>

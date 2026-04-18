@@ -1,4 +1,5 @@
 ---
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import { USA_STATE_PATHS } from "#src/lib/geo/us-state-paths.js";
 
 type StateStat = {
@@ -27,8 +28,7 @@ type FederalPanel = {
 type HeaderAction = {
   href: string;
   label: string;
-  prefillKey?: string;
-  prefillPayload?: string;
+  prefillPayload?: Record<string, unknown> | string;
   target?: string;
 };
 
@@ -122,17 +122,27 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
           {
             headerAction ? (
               <div class="d-flex justify-content-lg-end align-items-start">
-                <a
-                  class="btn btn-outline-dark rounded-0"
-                  href={headerAction.href}
-                  target={headerAction.target || "_self"}
-                  data-map-link-type="header_action"
-                  data-map-label={headerAction.label}
-                  data-prefill-key={headerAction.prefillKey}
-                  data-prefill-payload={headerAction.prefillPayload}
-                >
-                  {headerAction.label}
-                </a>
+                {headerAction.prefillPayload ? (
+                  <PrefillNavButton
+                    class="btn btn-outline-dark rounded-0"
+                    to={headerAction.href}
+                    payload={headerAction.prefillPayload}
+                    data-map-link-type="header_action"
+                    data-map-label={headerAction.label}
+                  >
+                    {headerAction.label}
+                  </PrefillNavButton>
+                ) : (
+                  <a
+                    class="btn btn-outline-dark rounded-0"
+                    href={headerAction.href}
+                    target={headerAction.target || "_self"}
+                    data-map-link-type="header_action"
+                    data-map-label={headerAction.label}
+                  >
+                    {headerAction.label}
+                  </a>
+                )}
               </div>
             ) : null
           }

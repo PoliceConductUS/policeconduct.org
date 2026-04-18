@@ -172,3 +172,8 @@ output "forms_api_waf_web_acl_arn" {
   description = "WAFv2 Web ACL ARN protecting /api traffic on CloudFront."
   value       = aws_wafv2_web_acl.forms_api_cloudfront.arn
 }
+
+output "alert_topic_arn" {
+  description = "SNS topic ARN for stack-managed infrastructure alerts."
+  value       = length(aws_sns_topic.infrastructure_alerts) > 0 ? aws_sns_topic.infrastructure_alerts[0].arn : null
+}

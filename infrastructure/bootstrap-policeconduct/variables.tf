@@ -191,6 +191,43 @@ variable "forms_draft_max_bytes" {
   default     = 1048576
 }
 
+variable "forms_email_verification_from_address" {
+  description = "Sender address for post-submit verification emails."
+  type        = string
+  default     = "noreply@mail.policeconduct.org"
+}
+
+variable "forms_email_verification_domain" {
+  description = "SES-verified domain used for post-submit verification emails."
+  type        = string
+  default     = "mail.policeconduct.org"
+}
+
+variable "forms_email_mail_from_subdomain" {
+  description = "Subdomain used for the SES custom MAIL FROM domain under the verification domain."
+  type        = string
+  default     = "bounce"
+}
+
+variable "forms_email_dmarc_policy" {
+  description = "DMARC policy applied to the verification email domain."
+  type        = string
+  default     = "none"
+}
+
+variable "forms_email_dmarc_aggregate_report_address" {
+  description = "Optional mailbox for DMARC aggregate reports."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+variable "forms_email_verification_ttl_seconds" {
+  description = "Lifetime of post-submit verification links in seconds."
+  type        = number
+  default     = 900
+}
+
 variable "forms_api_rate_limit_per_5m" {
   description = "Rate limit (requests per 5 minutes per source IP) for forms API."
   type        = number
@@ -290,6 +327,18 @@ variable "recaptcha_min_score" {
 
 variable "alarm_actions" {
   description = "Optional list of SNS topic ARNs (or other alarm action ARNs) to notify when alarms trigger."
+  type        = list(string)
+  default     = []
+}
+
+variable "alert_topic_name" {
+  description = "SNS topic name for stack-managed infrastructure alerts. Leave null/empty to use <project_name>-alerts."
+  type        = string
+  default     = null
+}
+
+variable "alert_email_endpoints" {
+  description = "Email endpoints subscribed to the stack-managed infrastructure alerts SNS topic."
   type        = list(string)
   default     = []
 }

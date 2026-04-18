@@ -292,6 +292,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
             form.classList.remove("was-validated");
           },
           recaptchaAction: "personnelNewSubmit",
+          successKind: "verification_pending",
         });
       });
     }
@@ -300,7 +301,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
     const prefill = window.__IPC_PREFILL__;
     if (prefill?.prefillFields) {
       const result = prefill.prefillFields({
-        key: "prefill:personnelNew",
+        key: window.location.pathname,
       });
       const stateInput = document.querySelector('[name="currentAgencyState"]');
       if (

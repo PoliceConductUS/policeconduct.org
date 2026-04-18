@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 ---
 
 <SiteLayout
@@ -7,6 +8,7 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
   pagePath="/status/"
   robots="noindex,follow"
 >
+  <PrefillBootstrap />
   <main class="flex-grow-1 py-vh-3">
     <div class="container">
       <div class="row justify-content-center">
@@ -58,87 +60,38 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
         return;
       }
 
-      let lockedId = "";
-
       const setSubmitEnabled = (enabled) => {
         submitButton.disabled = !enabled;
       };
 
-      const renderScalar = (value) => {
-        if (value === null) return "null";
-        if (value === undefined) return "";
-        if (typeof value === "boolean") return value ? "true" : "false";
-        return String(value);
-      };
-
-      const appendEntries = (container, data) => {
-        if (!data || typeof data !== "object") {
-          return;
-        }
-        const list = document.createElement("dl");
-        list.className = "row mb-0";
-
-        for (const [key, value] of Object.entries(data)) {
-          const dt = document.createElement("dt");
-          dt.className = "col-sm-4 text-muted";
-          dt.textContent = key;
-
-          const dd = document.createElement("dd");
-          dd.className = "col-sm-8";
-
-          if (Array.isArray(value)) {
-            if (value.length === 0) {
-              dd.textContent = "[]";
-            } else {
-              const ul = document.createElement("ul");
-              ul.className = "mb-0";
-              for (const item of value) {
-                const li = document.createElement("li");
-                if (item && typeof item === "object") {
-                  appendEntries(li, item);
-                } else {
-                  li.textContent = renderScalar(item);
-                }
-                ul.appendChild(li);
-              }
-              dd.appendChild(ul);
-            }
-          } else if (value && typeof value === "object") {
-            const nested = document.createElement("div");
-            appendEntries(nested, value);
-            dd.appendChild(nested);
-          } else {
-            dd.textContent = renderScalar(value);
-          }
-
-          list.appendChild(dt);
-          list.appendChild(dd);
-        }
-
-        container.appendChild(list);
-      };
-
-      const renderResult = (payload) => {
+      const renderMessage = (headingText, bodyText) => {
         result.classList.remove("d-none");
         result.innerHTML = "";
+
         const heading = document.createElement("h2");
         heading.className = "h5 mb-3";
-        heading.textContent = "Status";
+        heading.textContent = headingText;
+
+        const body = document.createElement("p");
+        body.className = "mb-0";
+        body.textContent = bodyText;
+
         result.appendChild(heading);
-        appendEntries(result, payload);
+        result.appendChild(body);
+      };
+
+      const renderStatus = (submissionId, statusText, messageText) => {
+        const message =
+          typeof messageText === "string" && messageText.trim()
+            ? messageText.trim()
+            : `Submission ${submissionId} status: ${statusText}`;
+        renderMessage("Status", message);
       };
 
       setSubmitEnabled(false);
 
       input.addEventListener("input", function () {
-        const nextId = input.value.trim();
-        if (!nextId) {
-          setSubmitEnabled(false);
-          return;
-        }
-        if (!lockedId || nextId !== lockedId) {
-          setSubmitEnabled(true);
-        }
+        setSubmitEnabled(Boolean(input.value.trim()));
       });
 
       form.addEventListener("submit", async function (event) {
@@ -148,7 +101,6 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           return;
         }
 
-        lockedId = submissionId;
         setSubmitEnabled(false);
 
         try {
@@ -162,20 +114,44 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           try {
             payload = await response.json();
           } catch (_error) {
-            payload = { submissionId, status: "pending" };
+            payload = { status: "pending" };
           }
           if (
             !payload ||
             typeof payload !== "object" ||
             Array.isArray(payload)
           ) {
-            payload = { submissionId, status: "pending" };
+            payload = { status: "pending" };
           }
-          renderResult(payload);
+          const status =
+            typeof payload.status === "string" && payload.status.trim()
+              ? payload.status.trim()
+              : "pending";
+          const message =
+            typeof payload.message === "string" && payload.message.trim()
+              ? payload.message.trim()
+              : "";
+          renderStatus(submissionId, status, message);
         } catch (_error) {
-          renderResult({ submissionId, status: "pending" });
+          renderStatus(submissionId, "pending", "");
+        } finally {
+          setSubmitEnabled(Boolean(input.value.trim()));
         }
       });
+
+      const flashedPrefill = window.__IPC_PREFILL__?.readAndConsume?.(
+        window.location.pathname,
+      );
+      const flashedSubmissionId =
+        flashedPrefill &&
+        typeof flashedPrefill.submissionId === "string" &&
+        flashedPrefill.submissionId.trim()
+          ? flashedPrefill.submissionId.trim()
+          : "";
+      if (flashedSubmissionId) {
+        input.value = flashedSubmissionId;
+        setSubmitEnabled(true);
+      }
     })();
   </script>
 </SiteLayout>

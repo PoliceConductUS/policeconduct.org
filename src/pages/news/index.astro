@@ -2,6 +2,7 @@
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import {
   formatNewsDate,
   loadNewsArticles,
@@ -38,16 +39,14 @@ const nextUrl = totalPages > 1 ? "/news/page/2/" : null;
               Product updates, policy notes, and community announcements.
             </p>
             <div class="d-flex flex-wrap gap-2 mt-3">
-              <a
+              <PrefillNavButton
                 class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
-                href="/about/contact/"
-                target="_self"
-                data-prefill-key="prefill:contact"
-                data-prefill-payload={JSON.stringify({
+                to="/about/contact/"
+                payload={{
                   whoami: "Subscriber",
                   message:
                     "Please notify me about news updates from PoliceConduct.org: /news/",
-                })}
+                }}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -67,7 +66,7 @@ const nextUrl = totalPages > 1 ? "/news/page/2/" : null;
                   <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
                 </svg>
                 <span>Notify me about news updates</span>
-              </a>
+              </PrefillNavButton>
             </div>
           </div>
         </div>
