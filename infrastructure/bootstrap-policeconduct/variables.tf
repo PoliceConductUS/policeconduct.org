@@ -203,6 +203,25 @@ variable "forms_email_verification_domain" {
   default     = "mail.policeconduct.org"
 }
 
+variable "forms_email_mail_from_subdomain" {
+  description = "Subdomain used for the SES custom MAIL FROM domain under the verification domain."
+  type        = string
+  default     = "bounce"
+}
+
+variable "forms_email_dmarc_policy" {
+  description = "DMARC policy applied to the verification email domain."
+  type        = string
+  default     = "none"
+}
+
+variable "forms_email_dmarc_aggregate_report_address" {
+  description = "Optional mailbox for DMARC aggregate reports."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "forms_email_verification_ttl_seconds" {
   description = "Lifetime of post-submit verification links in seconds."
   type        = number

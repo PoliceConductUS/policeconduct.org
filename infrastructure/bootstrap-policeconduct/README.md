@@ -154,7 +154,10 @@ Add your domain-specific TXT verification/DKIM records in local `terraform.tfvar
 
 Verification email is sent from `noreply@mail.policeconduct.org` by default.
 Terraform creates the SES identity verification and DKIM records under `mail.policeconduct.org`.
+Terraform also configures a custom SES MAIL FROM domain at `bounce.mail.policeconduct.org` by default, with the required MX and SPF records.
+Terraform creates a DMARC TXT record for `_dmarc.mail.policeconduct.org` and defaults it to monitoring mode (`p=none`).
 Terraform also enables SES Virtual Deliverability Manager, creates a dedicated verification email configuration set, and publishes verification email events to the default EventBridge bus.
+Custom MAIL FROM can remain in `Pending` for a while after apply while SES checks DNS. AWS documents that this can take up to 72 hours, though Route 53 changes are often detected sooner.
 
 ## GitHub Environments + Vars
 

@@ -68,7 +68,15 @@ locals {
   sentry_auth_token            = var.sentry_auth_token == null || trimspace(var.sentry_auth_token) == "" ? null : trimspace(var.sentry_auth_token)
   recaptcha_project_id         = var.recaptcha_project_id == null || trimspace(var.recaptcha_project_id) == "" ? null : trimspace(var.recaptcha_project_id)
   recaptcha_site_key           = var.recaptcha_site_key == null || trimspace(var.recaptcha_site_key) == "" ? null : trimspace(var.recaptcha_site_key)
-  alert_topic_name             = var.alert_topic_name == null || trimspace(var.alert_topic_name) == "" ? "${var.project_name}-alerts" : trimspace(var.alert_topic_name)
+  forms_email_mail_from_domain = "${var.forms_email_mail_from_subdomain}.${var.forms_email_verification_domain}"
+  forms_email_dmarc_value = join("; ", compact([
+    "v=DMARC1",
+    "p=${var.forms_email_dmarc_policy}",
+    "adkim=s",
+    "aspf=r",
+    var.forms_email_dmarc_aggregate_report_address == null || trimspace(var.forms_email_dmarc_aggregate_report_address) == "" ? null : "rua=mailto:${trimspace(var.forms_email_dmarc_aggregate_report_address)}",
+  ]))
+  alert_topic_name = var.alert_topic_name == null || trimspace(var.alert_topic_name) == "" ? "${var.project_name}-alerts" : trimspace(var.alert_topic_name)
   normalized_alert_email_endpoints = distinct([
     for endpoint in var.alert_email_endpoints : trimspace(endpoint)
     if trimspace(endpoint) != ""
@@ -1717,6 +1725,12 @@ resource "aws_ses_domain_dkim" "site" {
   domain = aws_ses_domain_identity.site.domain
 }
 
+resource "aws_ses_domain_mail_from" "site" {
+  domain                 = aws_ses_domain_identity.site.domain
+  mail_from_domain       = local.forms_email_mail_from_domain
+  behavior_on_mx_failure = "RejectMessage"
+}
+
 resource "aws_route53_record" "ses_domain_dkim" {
   count = 3
 
@@ -1725,6 +1739,30 @@ resource "aws_route53_record" "ses_domain_dkim" {
   type    = "CNAME"
   ttl     = 600
   records = ["${aws_ses_domain_dkim.site.dkim_tokens[count.index]}.dkim.amazonses.com"]
+}
+
+resource "aws_route53_record" "ses_mail_from_mx" {
+  zone_id = local.route53_zone_id
+  name    = local.forms_email_mail_from_domain
+  type    = "MX"
+  ttl     = 600
+  records = ["10 feedback-smtp.${var.aws_region}.amazonses.com"]
+}
+
+resource "aws_route53_record" "ses_mail_from_spf" {
+  zone_id = local.route53_zone_id
+  name    = local.forms_email_mail_from_domain
+  type    = "TXT"
+  ttl     = 600
+  records = ["v=spf1 include:amazonses.com ~all"]
+}
+
+resource "aws_route53_record" "ses_dmarc" {
+  zone_id = local.route53_zone_id
+  name    = "_dmarc.${var.forms_email_verification_domain}"
+  type    = "TXT"
+  ttl     = 600
+  records = [local.forms_email_dmarc_value]
 }
 
 resource "aws_sesv2_account_vdm_attributes" "site" {

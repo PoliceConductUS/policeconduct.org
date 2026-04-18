@@ -37,3 +37,4 @@ forms-api.zip
 upgrade.log
 test-results/
 .deploy-cache/
+rollback.json
