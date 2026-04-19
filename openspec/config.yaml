@@ -1,0 +1,47 @@
+schema: spec-driven
+
+context: |
+  Project: policeconduct.org
+  Current role: public web application and static publisher for policeconduct.org.
+  Current stack: Astro 6, TypeScript, Node.js, Playwright, PostgreSQL, AWS S3/CloudFront, Lambda for forms.
+  Public URL conventions:
+  - Report URLs use /report/{slug}/ when category-independent and /report/{category}/{slug}/ for current report pages.
+  - Agency URLs use /law-enforcement-agency/{category}/{slug}/.
+  - Personnel URLs use /personnel/{slug}/.
+  - Pagination uses /page/{number}/ and page 1 is the base path.
+  Database expectations:
+  - Agencies, personnel, and reports require unique slug fields.
+  - Agency category is required.
+  - Seed data must be deterministic with explicit ids and slugs.
+  Rendering expectations:
+  - The site is currently a large static Astro build against PostgreSQL.
+  - Architecture changes should preserve the current site as the publishing app unless explicitly changed.
+  Architecture defaults already chosen for the data platform:
+  - A separate pipeline repository will own ingestion and rating/stat jobs.
+  - One canonical Postgres core plus S3 raw/archive storage.
+  - Code-first pipeline jobs scheduled on AWS ECS/Fargate.
+  - SQL-first transforms inside Postgres.
+  - Static site remains the default serving model.
+  - Delta publish manifest plus nightly full rebuild.
+  - Minimal review queue in v1; no full admin product.
+  Implementation scope for the first change:
+  - This first OpenSpec change is architecture-only.
+  - It must not implement the pipeline itself.
+  - It must lock system boundaries, contracts, and rollout expectations for later changes.
+
+rules:
+  proposal:
+    - Lock architecture decisions clearly and explicitly.
+    - Focus on the problem, the chosen operating model, and why this repo is the right place for the first architecture change.
+    - List new capabilities as data-platform, publish-contract, and site-publishing.
+  specs:
+    - Write concrete, testable requirements with Given/When/Then style scenarios.
+    - Capture stable interfaces and ownership boundaries, not aspirational tooling.
+    - Treat required route identifiers and slug/category behavior as mandatory.
+  design:
+    - Describe data layers, job topology, schemas, lineage, backfills, and publish contract shape.
+    - Prefer simple, maintainable architecture over platform-heavy abstractions.
+    - Keep orchestration responsibilities separate from business logic responsibilities.
+  tasks:
+    - Use follow-on changes and workstreams, not implementation details for this repo.
+    - Keep tasks architecture-aligned and ordered so later repos can execute them directly.
