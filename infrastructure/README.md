@@ -22,25 +22,27 @@ export AWS_PROFILE=policeconduct-setup-admin
 aws sts get-caller-identity
 ```
 
-6. Run bootstrap:
+6. Run the full bootstrap in the correct order:
 
 ```bash
-export GITHUB_TOKEN=<github-token-with-repo-admin-access>
-terraform -chdir=infrastructure/bootstrap-policeconduct init
-terraform -chdir=infrastructure/bootstrap-policeconduct apply
+bash scripts/bootstrap-all.sh
 ```
 
-Or load from local `.env` (gitignored):
+This wrapper runs:
+
+1. `infrastructure/bootstrap-recaptcha/scripts/apply.sh`
+2. `infrastructure/bootstrap-policeconduct/scripts/apply.sh`
+
+Load credentials and local env first if needed:
 
 ```bash
 set -a
 source .env
 set +a
-terraform -chdir=infrastructure/bootstrap-policeconduct init
-terraform -chdir=infrastructure/bootstrap-policeconduct apply
+bash scripts/bootstrap-all.sh
 ```
 
-Optional phased bootstrap (create buckets/KMS/forms API first, sync `.env`, then finish DNS/CDN):
+Optional: if you are only working on the AWS/bootstrap stack and want the phased flow, use:
 
 ```bash
 PHASE=foundation bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
@@ -54,10 +56,10 @@ terraform -chdir=infrastructure/bootstrap-policeconduct output route53_name_serv
 dig +short NS <your-domain>
 ```
 
-8. Wait for DNS propagation, then re-run bootstrap apply if ACM is still pending:
+8. Wait for DNS propagation, then rerun the bootstrap if ACM is still pending:
 
 ```bash
-terraform -chdir=infrastructure/bootstrap-policeconduct apply
+bash scripts/bootstrap-all.sh
 ```
 
 If apply is waiting at `aws_acm_certificate_validation.site`, fetch nameservers from the just-created zone and update your registrar:
@@ -107,7 +109,7 @@ aws sts get-caller-identity
 
 Bootstrap is manual/local only and creates infra.
 
-1. Run `infrastructure/bootstrap-policeconduct` locally once.
+1. Run `bash scripts/bootstrap-all.sh` locally once.
 2. Then GitHub deploy workflows (`deploy.yml`, `preview.yml`, `preview-cleanup.yml`) only publish content and assume infra already exists.
 
 Credentials used by deploy workflows:

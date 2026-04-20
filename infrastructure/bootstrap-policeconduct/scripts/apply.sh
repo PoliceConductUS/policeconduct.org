@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 DOTENV_FILE="${REPO_ROOT}/.env"
+POLICECONDUCT_DOTENV_FILE="${REPO_ROOT}/.env-policeconduct"
 RECAPTCHA_DOTENV_FILE="${REPO_ROOT}/.env-recaptcha"
 PHASE="${PHASE:-full}"
 
@@ -45,6 +46,7 @@ load_env_file_if_present() {
 
 load_dotenv_if_present() {
   load_env_file_if_present "${DOTENV_FILE}"
+  load_env_file_if_present "${POLICECONDUCT_DOTENV_FILE}"
   load_env_file_if_present "${RECAPTCHA_DOTENV_FILE}"
 }
 
@@ -88,6 +90,9 @@ map_common_env_to_tf_vars() {
   fi
   if [[ -n "${RECAPTCHA_MIN_SCORE+x}" ]] && [[ -z "${TF_VAR_recaptcha_min_score+x}" ]]; then
     export TF_VAR_recaptcha_min_score="${RECAPTCHA_MIN_SCORE}"
+  fi
+  if [[ -n "${RESEND_API_KEY+x}" ]] && [[ -z "${TF_VAR_forms_email_resend_api_key+x}" ]]; then
+    export TF_VAR_forms_email_resend_api_key="${RESEND_API_KEY}"
   fi
 }
 
@@ -182,6 +187,19 @@ warn_if_sentry_tf_var_missing() {
     echo "Warning: TF_VAR_sentry_auth_token is not set." >&2
     echo "Warning: Bootstrap will not write GitHub environment secret SENTRY_AUTH_TOKEN." >&2
     echo "Warning: Deploy/preview workflows will fail at Sentry sourcemap upload." >&2
+  fi
+}
+
+preflight_resend_requirements() {
+  if [[ -z "${RESEND_API_KEY+x}" && -z "${TF_VAR_forms_email_resend_api_key+x}" ]]; then
+    echo "Error: missing RESEND_API_KEY for the forms Lambda send path." >&2
+    echo "Set RESEND_API_KEY in .env-policeconduct/.env or export TF_VAR_forms_email_resend_api_key." >&2
+    exit 1
+  fi
+  if [[ -z "${RESEND_API_KEY_FULL_ACCESS+x}" ]]; then
+    echo "Error: missing RESEND_API_KEY_FULL_ACCESS for Resend domain bootstrap." >&2
+    echo "Set RESEND_API_KEY_FULL_ACCESS in .env-policeconduct/.env." >&2
+    exit 1
   fi
 }
 
@@ -324,6 +342,7 @@ set_github_tf_vars_from_origin
 preflight_explicit_tf_var_secrets
 preflight_sentry_upload_requirements
 warn_if_sentry_tf_var_missing
+preflight_resend_requirements
 preflight_account_check
 prepare_forms_lambda_package
 case "${PHASE}" in

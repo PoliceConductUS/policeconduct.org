@@ -4,6 +4,16 @@ data "aws_cloudwatch_event_bus" "default" {
   name = "default"
 }
 
+data "external" "resend_domain" {
+  program = [
+    "node",
+    "${path.module}/../../scripts/bootstrap-resend-domain.mjs",
+    "--apply",
+  ]
+
+  query = {}
+}
+
 locals {
   provided_oidc_provider_arn            = var.existing_oidc_provider_arn == null || trimspace(var.existing_oidc_provider_arn) == "" ? null : trimspace(var.existing_oidc_provider_arn)
   create_oidc_provider                  = local.provided_oidc_provider_arn == null
@@ -76,6 +86,10 @@ locals {
     "aspf=r",
     var.forms_email_dmarc_aggregate_report_address == null || trimspace(var.forms_email_dmarc_aggregate_report_address) == "" ? null : "rua=mailto:${trimspace(var.forms_email_dmarc_aggregate_report_address)}",
   ]))
+  resend_domain_records = jsondecode(data.external.resend_domain.result.records_json)
+  resend_domain_records_map = {
+    for record in local.resend_domain_records : record.id => record
+  }
   alert_topic_name = var.alert_topic_name == null || trimspace(var.alert_topic_name) == "" ? "${var.project_name}-alerts" : trimspace(var.alert_topic_name)
   normalized_alert_email_endpoints = distinct([
     for endpoint in var.alert_email_endpoints : trimspace(endpoint)
@@ -1060,7 +1074,7 @@ resource "aws_lambda_function" "forms_api_prod" {
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
       EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
-      EMAIL_VERIFICATION_CONFIGURATION_SET = aws_sesv2_configuration_set.verification_email.configuration_set_name
+      RESEND_API_KEY                       = var.forms_email_resend_api_key == null ? "" : var.forms_email_resend_api_key
       EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
       EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
@@ -1097,7 +1111,7 @@ resource "aws_lambda_function" "forms_api_preview" {
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
       EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
-      EMAIL_VERIFICATION_CONFIGURATION_SET = aws_sesv2_configuration_set.verification_email.configuration_set_name
+      RESEND_API_KEY                       = var.forms_email_resend_api_key == null ? "" : var.forms_email_resend_api_key
       EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
       EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
@@ -1705,6 +1719,17 @@ resource "aws_route53_zone" "site" {
 
 resource "aws_ses_domain_identity" "site" {
   domain = var.forms_email_verification_domain
+}
+
+resource "aws_route53_record" "resend_domain_record" {
+  for_each = local.resend_domain_records_map
+
+  allow_overwrite = true
+  zone_id         = local.route53_zone_id
+  name            = each.value.name
+  type            = each.value.type
+  ttl             = each.value.ttl
+  records         = each.value.values
 }
 
 resource "aws_route53_record" "ses_domain_identity_verification" {

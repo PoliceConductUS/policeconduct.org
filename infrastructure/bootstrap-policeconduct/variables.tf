@@ -197,6 +197,14 @@ variable "forms_email_verification_from_address" {
   default     = "noreply@mail.policeconduct.org"
 }
 
+variable "forms_email_resend_api_key" {
+  description = "Resend API key used for post-submit verification emails."
+  type        = string
+  default     = null
+  nullable    = true
+  sensitive   = true
+}
+
 variable "forms_email_verification_domain" {
   description = "SES-verified domain used for post-submit verification emails."
   type        = string

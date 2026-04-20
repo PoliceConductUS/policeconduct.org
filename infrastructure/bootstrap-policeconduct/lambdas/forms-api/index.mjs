@@ -4,14 +4,12 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { GoogleAuth } from "google-auth-library";
 import { RecaptchaEnterpriseServiceClient } from "@google-cloud/recaptcha-enterprise";
 import { createId } from "@paralleldrive/cuid2";
 import crypto from "crypto";
 
 const s3 = new S3Client({});
-const ses = new SESv2Client({});
 const sentryDsn = (process.env.SENTRY_DSN || "").trim();
 const sentryEnvironment = (process.env.SENTRY_ENVIRONMENT || "").trim();
 const sentryRelease = (process.env.SENTRY_RELEASE || "").trim();
@@ -324,9 +322,7 @@ function verificationConfig() {
   const fromAddress = (
     process.env.EMAIL_VERIFICATION_FROM_ADDRESS || ""
   ).trim();
-  const configurationSetName = (
-    process.env.EMAIL_VERIFICATION_CONFIGURATION_SET || ""
-  ).trim();
+  const resendApiKey = (process.env.RESEND_API_KEY || "").trim();
   const hmacSecret = (process.env.EMAIL_VERIFICATION_HMAC_SECRET || "").trim();
   const ttlSeconds = Number(
     process.env.EMAIL_VERIFICATION_TTL_SECONDS || "900",
@@ -341,17 +337,20 @@ function verificationConfig() {
   if (!fromAddress) {
     throw new Error("Missing EMAIL_VERIFICATION_FROM_ADDRESS");
   }
+  if (!resendApiKey) {
+    throw new Error("Missing RESEND_API_KEY");
+  }
   if (!hmacSecret) {
     throw new Error("Missing EMAIL_VERIFICATION_HMAC_SECRET");
   }
 
   return {
     bucket,
-    configurationSetName,
     fromAddress,
     hmacSecret,
     kmsKeyId,
     prefix,
+    resendApiKey,
     ttlMs:
       Number.isFinite(ttlSeconds) && ttlSeconds > 0
         ? ttlSeconds * 1000
@@ -458,7 +457,7 @@ async function sendVerificationEmail({
   token,
   ttlMs,
 }) {
-  const { configurationSetName, fromAddress } = verificationConfig();
+  const { fromAddress, resendApiKey } = verificationConfig();
   const ttlMinutes = Math.max(1, Math.round(ttlMs / 60000));
   const verifyUrl = `${origin}/verify/?token=${encodeURIComponent(token)}`;
   const subjectPrefix =
@@ -478,41 +477,61 @@ async function sendVerificationEmail({
     "This mailbox is not monitored.",
   ].join("\n");
 
-  await ses.send(
-    new SendEmailCommand({
-      ConfigurationSetName: configurationSetName || undefined,
-      EmailTags: [
-        { Name: "formName", Value: formName },
-        { Name: "submissionId", Value: submissionId },
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: fromAddress,
+      subject: `${subjectPrefix}Verify your PoliceConduct.org submission`,
+      tags: [
+        { name: "formName", value: formName },
+        { name: "submissionId", value: submissionId },
         {
-          Name: "environment",
-          Value:
+          name: "environment",
+          value:
             sentryEnvironment && sentryEnvironment.trim()
               ? sentryEnvironment.trim()
               : "unknown",
         },
       ],
-      FromEmailAddress: fromAddress,
-      Destination: {
-        ToAddresses: [toAddress],
-      },
-      Content: {
-        Simple: {
-          Subject: {
-            Charset: "UTF-8",
-            Data: `${subjectPrefix}Verify your PoliceConduct.org submission`,
-          },
-          Body: {
-            Text: {
-              Charset: "UTF-8",
-              Data: body,
-            },
-          },
-        },
-      },
+      text: body,
+      to: [toAddress],
     }),
-  );
+    signal: AbortSignal.timeout(5000),
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  let payload = null;
+  if (contentType.includes("application/json")) {
+    payload = await response.json();
+  } else {
+    const text = await response.text();
+    payload = text ? { message: text } : null;
+  }
+
+  if (!response.ok) {
+    const details =
+      payload && typeof payload === "object"
+        ? payload.message ||
+          payload.error ||
+          payload.name ||
+          JSON.stringify(payload)
+        : "";
+    throw new Error(
+      `Resend email send failed (${response.status})${details ? `: ${details}` : ""}`,
+    );
+  }
+
+  return payload;
 }
+
+export const __testables = {
+  sendVerificationEmail,
+  verificationConfig,
+};
 
 function normalizedPath(event) {
   const raw = event?.rawPath || event?.requestContext?.http?.path || "";

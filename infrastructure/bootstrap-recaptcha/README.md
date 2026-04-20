@@ -19,6 +19,14 @@ terraform init
 bash scripts/apply.sh
 ```
 
+If you want the full infrastructure bootstrap in the correct order across stacks, run the repo-level wrapper from the project root:
+
+```bash
+bash scripts/bootstrap-all.sh
+```
+
+That wrapper runs this stack first and then `infrastructure/bootstrap-policeconduct/scripts/apply.sh`.
+
 `scripts/apply.sh` also syncs Terraform outputs into `.env-recaptcha` at repo root by default.
 Use `ENV_FILE_NAME=.env` to write directly into your main env file.
 
