@@ -1,12 +1,9 @@
 import * as Sentry from "@sentry/astro";
 
-const createSubmissionSuccessMarkup = () =>
-  `<div>
+const createSubmissionSuccessMarkup = () => `<div>
     <p class="mb-1"><strong>Submission received.</strong></p>
-    <p class="mb-1">Submission ID: <code data-submission-id></code></p>
-    <p class="mb-0">Save this ID in a safe place. It cannot be recovered or displayed again. You can print this page and use this ID for follow-up questions or change requests.</p>
+    <p class="mb-0" data-form-submit-success-detail></p>
     <div class="mt-3 d-flex flex-wrap gap-2">
-      <button type="button" class="btn btn-sm btn-outline-dark" data-print-submission>Print</button>
       <button type="button" class="btn btn-sm btn-dark" data-dismiss-submit-success>Reset</button>
     </div>
   </div>`;
@@ -73,7 +70,6 @@ type SubmitSuccessArgs = {
   recaptchaToken: string;
   response: Response;
   result: unknown;
-  submissionId: string;
   submitButton: HTMLButtonElement | null;
 };
 
@@ -90,6 +86,8 @@ type SubmitJsonFormOptions = {
   onBeforeSubmit?: () => unknown | Promise<unknown>;
   buildPayload?: (args: SubmitPayloadArgs) => unknown | Promise<unknown>;
   onSuccess?: (args: SubmitSuccessArgs) => void | Promise<void>;
+  successKind?: "verification_pending";
+  getSuccessDetail?: (args: { result: unknown }) => string;
 };
 
 const trackAnalytics = (
@@ -596,9 +594,6 @@ const getSubmitSuccess = ({
     const dismissButton = inlineSuccess.querySelector<HTMLButtonElement>(
       "[data-dismiss-submit-success]",
     );
-    const printButton = inlineSuccess.querySelector<HTMLButtonElement>(
-      "[data-print-submission]",
-    );
 
     dismissButton?.addEventListener("click", function () {
       trackFormAnalytics("form_success_reset", formName);
@@ -609,11 +604,6 @@ const getSubmitSuccess = ({
       }
       form.dataset.submitLocked = "false";
       setSubmitButtonBusy(submitButton, false);
-    });
-
-    printButton?.addEventListener("click", function () {
-      trackFormAnalytics("form_success_print", formName);
-      window.print();
     });
 
     inlineSuccess.dataset.submitUiBound = "1";
@@ -638,6 +628,8 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
     onBeforeSubmit,
     buildPayload,
     onSuccess,
+    successKind: _successKind,
+    getSuccessDetail,
   } = options;
 
   const inlineError = getInlineError(form);
@@ -741,22 +733,34 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
 
     failureStage = "response";
     const result = await response.json();
-    const submissionId =
-      typeof (result as { submissionId?: unknown })?.submissionId === "string"
-        ? (result as { submissionId: string }).submissionId
-        : "";
-    if (!submissionId) {
-      throw new Error(
-        "Submission succeeded but no submission ID was returned.",
-      );
-    }
 
     form.classList.remove("was-validated");
-    const submissionIdNode = inlineSuccess.querySelector<HTMLElement>(
-      "[data-submission-id]",
+    const detailNode = inlineSuccess.querySelector<HTMLElement>(
+      "[data-form-submit-success-detail]",
     );
-    if (submissionIdNode) {
-      submissionIdNode.textContent = submissionId;
+    if (detailNode) {
+      const verificationPending =
+        (result as { verificationPending?: unknown })?.verificationPending !==
+        false;
+      const message =
+        typeof (result as { message?: unknown })?.message === "string"
+          ? (result as { message: string }).message.trim()
+          : "";
+      const requestId =
+        typeof (result as { requestId?: unknown })?.requestId === "string"
+          ? (result as { requestId: string }).requestId.trim()
+          : "";
+      let detailMessage =
+        getSuccessDetail?.({ result }) ||
+        message ||
+        "We received your submission. Check your email and open the verification link within 15 minutes. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+      if (!verificationPending) {
+        console.error("Form verification email failed", result);
+        if (requestId) {
+          detailMessage = `${detailMessage} Reference: ${requestId}.`;
+        }
+      }
+      detailNode.textContent = detailMessage;
     }
     setSubmitButtonBusy(submitButton, false);
     if (submitButton) {
@@ -773,7 +777,6 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
       recaptchaToken,
       response,
       result,
-      submissionId,
       submitButton,
     });
     submissionCompleted = true;

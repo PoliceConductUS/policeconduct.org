@@ -1,13 +1,12 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-export type PrefillKey =
-  | "prefill:contact"
-  | "prefill:reportNew"
-  | "prefill:issueNew"
-  | "prefill:civilLitigationNew"
-  | "prefill:personnelNew"
-  | "prefill:personnelSuggestEdit"
-  | "prefill:agencySuggestEdit";
+export type PrefillPath =
+  | "/about/contact/"
+  | "/report/new/"
+  | "/civil-litigation/new/"
+  | "/personnel/new/"
+  | "/personnel/suggest-edit/"
+  | "/law-enforcement-agency/suggest-edit/";
 
 type PrefillFieldConfig = {
   kind: "input" | "textarea" | "select";
@@ -38,8 +37,8 @@ const flattenPayload = (
   return flat;
 };
 
-const FIELD_CONFIG: Record<PrefillKey, Record<string, PrefillFieldConfig>> = {
-  "prefill:contact": {
+const FIELD_CONFIG: Record<PrefillPath, Record<string, PrefillFieldConfig>> = {
+  "/about/contact/": {
     whoami: {
       kind: "select",
       selector: "#whoami",
@@ -51,7 +50,7 @@ const FIELD_CONFIG: Record<PrefillKey, Record<string, PrefillFieldConfig>> = {
       toExpectedValue: identity,
     },
   },
-  "prefill:reportNew": {
+  "/report/new/": {
     "officer.department": {
       kind: "input",
       selector: '[name="officers[0][department]"]',
@@ -63,14 +62,7 @@ const FIELD_CONFIG: Record<PrefillKey, Record<string, PrefillFieldConfig>> = {
       toExpectedValue: identity,
     },
   },
-  "prefill:issueNew": {
-    message: {
-      kind: "textarea",
-      selector: "#message",
-      toExpectedValue: identity,
-    },
-  },
-  "prefill:civilLitigationNew": {
+  "/civil-litigation/new/": {
     jurisdiction: {
       kind: "select",
       selector: "#jurisdiction",
@@ -95,7 +87,7 @@ const FIELD_CONFIG: Record<PrefillKey, Record<string, PrefillFieldConfig>> = {
       toExpectedValue: identity,
     },
   },
-  "prefill:personnelNew": {
+  "/personnel/new/": {
     firstName: {
       kind: "input",
       selector: "#firstName",
@@ -147,7 +139,7 @@ const FIELD_CONFIG: Record<PrefillKey, Record<string, PrefillFieldConfig>> = {
       toExpectedValue: identity,
     },
   },
-  "prefill:personnelSuggestEdit": {
+  "/personnel/suggest-edit/": {
     officerPath: {
       kind: "input",
       selector: "#officerPath",
@@ -179,7 +171,7 @@ const FIELD_CONFIG: Record<PrefillKey, Record<string, PrefillFieldConfig>> = {
       toExpectedValue: identity,
     },
   },
-  "prefill:agencySuggestEdit": {
+  "/law-enforcement-agency/suggest-edit/": {
     agencyPath: {
       kind: "input",
       selector: "#agencyPath",
@@ -238,7 +230,7 @@ const expectEmptyField = async (
 
 export async function seedFlashPrefill(
   page: Page,
-  key: PrefillKey,
+  key: PrefillPath,
   payload: Record<string, unknown>,
 ): Promise<void> {
   await page.goto("/");
@@ -250,22 +242,60 @@ export async function seedFlashPrefill(
   );
 }
 
-export async function readPrefillFromLink(locator: Locator): Promise<{
-  key: PrefillKey;
+export async function installPrefillCapture(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    if (
+      (window as typeof window & { __IPC_PREFILL_CAPTURED__?: boolean })
+        .__IPC_PREFILL_CAPTURED__
+    ) {
+      return;
+    }
+    (
+      window as typeof window & { __IPC_PREFILL_CAPTURED__?: boolean }
+    ).__IPC_PREFILL_CAPTURED__ = true;
+
+    const originalSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (
+        this === window.sessionStorage &&
+        typeof key === "string" &&
+        key.startsWith("/") &&
+        key !== "__e2e_last_prefill__"
+      ) {
+        originalSetItem.call(
+          this,
+          "__e2e_last_prefill__",
+          JSON.stringify({
+            key,
+            value: String(value),
+          }),
+        );
+      }
+      return originalSetItem.call(this, key, value);
+    };
+  });
+}
+
+export async function readCapturedPrefill(page: Page): Promise<{
+  key: PrefillPath;
   payload: Record<string, unknown>;
-  href: string;
 }> {
-  const key = (await locator.getAttribute("data-prefill-key")) as PrefillKey;
-  const payload = JSON.parse(
-    (await locator.getAttribute("data-prefill-payload")) || "{}",
-  ) as Record<string, unknown>;
-  const href = (await locator.getAttribute("href")) || "";
-  return { key, payload, href };
+  const raw = await page.evaluate(() => {
+    return window.sessionStorage.getItem("__e2e_last_prefill__");
+  });
+  if (!raw) {
+    throw new Error("No prefill payload was captured.");
+  }
+  const parsed = JSON.parse(raw) as { key: PrefillPath; value: string };
+  return {
+    key: parsed.key,
+    payload: JSON.parse(parsed.value) as Record<string, unknown>,
+  };
 }
 
 export async function assertPrefillApplied(
   page: Page,
-  key: PrefillKey,
+  key: PrefillPath,
   payload: Record<string, unknown>,
   expectedFields?: string[],
 ): Promise<void> {
@@ -307,7 +337,7 @@ export async function assertPrefillApplied(
 
 export async function assertPrefillConsumed(
   page: Page,
-  key: PrefillKey,
+  key: PrefillPath,
 ): Promise<void> {
   const value = await page.evaluate((prefillKey) => {
     return window.sessionStorage.getItem(prefillKey);

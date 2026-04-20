@@ -271,6 +271,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
             form.classList.remove("was-validated");
           },
           recaptchaAction: "agencyEditSubmit",
+          successKind: "verification_pending",
         });
       });
     }
@@ -280,7 +281,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
     const prefill = window.__IPC_PREFILL__;
     if (prefill?.prefillFields) {
       const result = prefill.prefillFields({
-        key: "prefill:agencySuggestEdit",
+        key: window.location.pathname,
       });
       const jurisdictionInput = document.querySelector('[name="jurisdiction"]');
       if (

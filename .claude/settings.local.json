@@ -1,5 +1,9 @@
 {
   "permissions": {
-    "allow": ["WebFetch(domain:pr-1.preview.section1983.org)"]
+    "allow": [
+      "WebFetch(domain:pr-1.preview.section1983.org)",
+      "Bash(grep:*)",
+      "Bash(unzip -l trace.zip)"
+    ]
   }
 }

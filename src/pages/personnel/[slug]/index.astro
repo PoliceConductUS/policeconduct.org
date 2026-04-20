@@ -1,6 +1,7 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import DisqusComments from "#src/components/DisqusComments.astro";
 import { withDb } from "#src/lib/db.js";
@@ -399,52 +400,42 @@ const structuredData = {
                   <dd class="col-sm-8">{pastEmployers.length}</dd>
                 </dl>
                 <div class="d-flex flex-wrap gap-2 mt-3">
-                  <a
+                  <PrefillNavButton
                     class="btn btn-dark rounded-0"
-                    href="/report/new/"
-                    target="_self"
-                    data-prefill-key="prefill:reportNew"
-                    data-prefill-payload={reportNewPrefillPayload}
+                    to="/report/new/"
+                    payload={reportNewPrefillPayload}
                   >
                     Submit Report
-                  </a>
-                  <a
+                  </PrefillNavButton>
+                  <PrefillNavButton
                     class="btn btn-outline-dark rounded-0"
-                    href={addCivilCaseHref}
-                    target="_self"
-                    data-prefill-key="prefill:civilLitigationNew"
-                    data-prefill-payload={addCivilCasePrefillPayload}
+                    to={addCivilCaseHref}
+                    payload={addCivilCasePrefillPayload}
                   >
                     Add a civil case
-                  </a>
-                  <a
+                  </PrefillNavButton>
+                  <PrefillNavButton
                     class="btn btn-outline-dark rounded-0"
-                    href={pastEmployerHref}
-                    target="_self"
-                    data-prefill-key="prefill:personnelNew"
-                    data-prefill-payload={pastEmployerPrefillPayload}
+                    to={pastEmployerHref}
+                    payload={pastEmployerPrefillPayload}
                   >
                     Submit past employer
-                  </a>
-                  <a
+                  </PrefillNavButton>
+                  <PrefillNavButton
                     class="btn btn-outline-dark rounded-0"
-                    href={suggestEditHref}
-                    target="_self"
-                    data-prefill-key="prefill:personnelSuggestEdit"
-                    data-prefill-payload={suggestEditPrefillPayload}
+                    to={suggestEditHref}
+                    payload={suggestEditPrefillPayload}
                   >
                     Suggest edit
-                  </a>
-                  <a
+                  </PrefillNavButton>
+                  <PrefillNavButton
                     class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
-                    href="/about/contact/"
-                    target="_self"
-                    data-testid="personnel-subscribe-link"
-                    data-prefill-key="prefill:contact"
-                    data-prefill-payload={JSON.stringify({
+                    to="/about/contact/"
+                    payload={{
                       whoami: "Subscriber",
                       message: `Please notify me when this profile changes: /personnel/${data.officer.slug}/`,
-                    })}
+                    }}
+                    data-testid="personnel-subscribe-link"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -465,7 +456,7 @@ const structuredData = {
                       <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
                     </svg>
                     <span>Notify me when this profile changes</span>
-                  </a>
+                  </PrefillNavButton>
                 </div>
               </div>
               <div class="col-12 col-lg-5 text-center">
@@ -521,16 +512,15 @@ const structuredData = {
             />
 
             <div class="mt-3">
-              <a
+              <PrefillNavButton
                 class="link-dark small"
-                href={claimProfileHref}
-                target="_self"
+                to={claimProfileHref}
+                payload={claimProfilePrefillPayload}
                 data-testid="personnel-claim-profile-link"
-                data-prefill-key="prefill:contact"
-                data-prefill-payload={claimProfilePrefillPayload}
+                variant="link"
               >
                 Claim this profile
-              </a>
+              </PrefillNavButton>
             </div>
 
             <div class="my-5">

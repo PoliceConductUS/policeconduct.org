@@ -36,6 +36,19 @@ const ALLOWED_FORM_NAMES = new Set([
   "dataSubjectAccessRequest",
   "reportNew",
 ]);
+const FORMS_WITH_EMAIL_VERIFICATION = new Map([
+  ["contact", "email"],
+  ["volunteer", "email"],
+  ["civilLitigationNew", "reporterEmail"],
+  ["civilLitigationEdit", "reporterEmail"],
+  ["agencyNew", "submitterEmail"],
+  ["agencyEdit", "submitterEmail"],
+  ["personnelNew", "submitterEmail"],
+  ["officerEdit", "submitterEmail"],
+  ["dataSubjectAccessRequest", "email"],
+  ["reportNew", "reporterEmail"],
+]);
+const PREVIEW_ORIGIN_HOST_RE = /^pr-\d+\.preview\.policeconduct\.org$/;
 
 let recaptchaClientPromise;
 
@@ -70,6 +83,76 @@ function errorInfo(error) {
   return {
     message: String(error),
   };
+}
+
+function emailDomain(email) {
+  if (typeof email !== "string") {
+    return null;
+  }
+  const [, domain = ""] = email.split("@", 2);
+  return domain.trim().toLowerCase() || null;
+}
+
+function verificationFailureMessage(reason) {
+  const generic =
+    "We received your submission, but could not send the verification email. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+  if (sentryEnvironment === "production") {
+    return generic;
+  }
+
+  switch (reason) {
+    case "missing_origin":
+      return "We received your submission, but this environment could not build the verification link. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+    case "missing_email":
+      return "We received your submission, but no verification email address was present in the request. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+    case "invalid_email":
+      return "We received your submission, but the verification email address was invalid. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+    case "send_failed":
+      return "We received your submission, but sending the verification email failed in this environment. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+    default:
+      return generic;
+  }
+}
+
+function verificationFailureResponse(requestId, reason) {
+  return json(200, {
+    message: verificationFailureMessage(reason),
+    requestId,
+    verificationFailureReason: reason,
+    verificationPending: false,
+  });
+}
+
+function defaultStatusMessage(submissionId, status) {
+  const normalizedSubmissionId = normalizeSubmissionId(submissionId);
+  const normalizedStatus =
+    typeof status === "string" && status.trim().length > 0
+      ? status.trim()
+      : "pending";
+  const identifier = normalizedSubmissionId
+    ? `Submission ${normalizedSubmissionId}`
+    : "Submission";
+  switch (normalizedStatus) {
+    case "in_review":
+      return `${identifier} status: in_review`;
+    case "pending":
+      return `${identifier} status: pending`;
+    default:
+      return `${identifier} status: ${normalizedStatus}`;
+  }
+}
+
+function pendingStatusPayload(submissionId) {
+  return {
+    message: defaultStatusMessage(submissionId, "pending"),
+    status: "pending",
+  };
+}
+
+function verificationLinkFailureMessage(message) {
+  const detail =
+    typeof message === "string" && message.trim() ? `${message.trim()} ` : "";
+  return `We could not verify your submission. ${detail}Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.`;
 }
 
 function sentryRequestContext(context, extra = {}) {
@@ -114,6 +197,17 @@ function parseJsonBody(event) {
   }
 }
 
+function normalizeEmail(raw) {
+  if (typeof raw !== "string") {
+    return "";
+  }
+  return raw.trim().toLowerCase();
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 function normalizeSubmissionId(raw) {
   if (typeof raw !== "string") {
     return "";
@@ -121,12 +215,323 @@ function normalizeSubmissionId(raw) {
   return raw.trim();
 }
 
-function pendingStatusPayload(submissionId) {
+function normalizeVerificationId(raw) {
+  if (typeof raw !== "string") {
+    return "";
+  }
+  return raw.trim();
+}
+
+function parseVerificationToken(raw) {
+  if (typeof raw !== "string") {
+    return { verificationId: "", secret: "" };
+  }
+  const trimmed = raw.trim();
+  if (!trimmed.includes(".")) {
+    return { verificationId: "", secret: "" };
+  }
+  const [verificationId, secret] = trimmed.split(".", 2);
   return {
-    submissionId,
-    status: "pending",
+    verificationId: normalizeVerificationId(verificationId),
+    secret: typeof secret === "string" ? secret.trim() : "",
   };
 }
+
+function normalizeOriginUrl(raw) {
+  if (typeof raw !== "string" || raw.trim() === "") {
+    return "";
+  }
+  try {
+    const url = new URL(raw.trim());
+    if (url.protocol !== "https:") {
+      return "";
+    }
+    return url.origin;
+  } catch (_error) {
+    return "";
+  }
+}
+
+function getRequestOrigin(event) {
+  const headers = event?.headers || {};
+  const lowerCaseHeaders = Object.fromEntries(
+    Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]),
+  );
+  return normalizeOriginUrl(lowerCaseHeaders.origin);
+}
+
+function isAllowedOrigin(origin) {
+  if (!origin) {
+    return false;
+  }
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== "https:") {
+      return false;
+    }
+    const hostname = url.hostname.toLowerCase();
+    if (
+      hostname === "policeconduct.org" ||
+      hostname === "www.policeconduct.org"
+    ) {
+      return true;
+    }
+    return PREVIEW_ORIGIN_HOST_RE.test(hostname);
+  } catch (_error) {
+    return false;
+  }
+}
+
+function corsHeaders(origin) {
+  if (!isAllowedOrigin(origin)) {
+    return {};
+  }
+  return {
+    "access-control-allow-origin": origin,
+    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-headers": "content-type",
+    "access-control-max-age": "86400",
+    vary: "Origin",
+  };
+}
+
+function withCors(response, origin) {
+  if (!response || !isAllowedOrigin(origin)) {
+    return response;
+  }
+  return {
+    ...response,
+    headers: {
+      ...(response.headers || {}),
+      ...corsHeaders(origin),
+    },
+  };
+}
+
+function getSiteOrigin(event) {
+  const origin = getRequestOrigin(event);
+  return isAllowedOrigin(origin) ? origin : "";
+}
+
+function verificationConfig() {
+  const bucket = process.env.SUBMISSIONS_BUCKET;
+  const kmsKeyId = process.env.SUBMISSIONS_KMS_KEY_ID;
+  const prefix = process.env.SUBMISSIONS_PREFIX ?? "submissions/";
+  const verificationPrefix =
+    process.env.SUBMISSIONS_VERIFY_PREFIX ?? `${prefix}verify/`;
+  const fromAddress = (
+    process.env.EMAIL_VERIFICATION_FROM_ADDRESS || ""
+  ).trim();
+  const resendApiKey = (process.env.RESEND_API_KEY || "").trim();
+  const hmacSecret = (process.env.EMAIL_VERIFICATION_HMAC_SECRET || "").trim();
+  const ttlSeconds = Number(
+    process.env.EMAIL_VERIFICATION_TTL_SECONDS || "900",
+  );
+
+  if (!bucket) {
+    throw new Error("Missing SUBMISSIONS_BUCKET");
+  }
+  if (!kmsKeyId) {
+    throw new Error("Missing SUBMISSIONS_KMS_KEY_ID");
+  }
+  if (!fromAddress) {
+    throw new Error("Missing EMAIL_VERIFICATION_FROM_ADDRESS");
+  }
+  if (!resendApiKey) {
+    throw new Error("Missing RESEND_API_KEY");
+  }
+  if (!hmacSecret) {
+    throw new Error("Missing EMAIL_VERIFICATION_HMAC_SECRET");
+  }
+
+  return {
+    bucket,
+    fromAddress,
+    hmacSecret,
+    kmsKeyId,
+    prefix,
+    resendApiKey,
+    ttlMs:
+      Number.isFinite(ttlSeconds) && ttlSeconds > 0
+        ? ttlSeconds * 1000
+        : 900000,
+    verificationPrefix,
+  };
+}
+
+function verificationKey(verificationPrefix, verificationId) {
+  return `${verificationPrefix}${verificationId}.json`;
+}
+
+function hashVerificationSecret(verificationId, secret, hmacSecret) {
+  return crypto
+    .createHmac("sha256", hmacSecret)
+    .update(`${verificationId}:${secret}`)
+    .digest("hex");
+}
+
+function createVerificationSecret() {
+  return crypto.randomBytes(24).toString("base64url");
+}
+
+async function readJsonObject(bucket, key) {
+  let raw = "";
+  try {
+    const object = await s3.send(
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      }),
+    );
+    raw = object?.Body ? await object.Body.transformToString("utf8") : "";
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      (error.code === "NoSuchKey" || error.name === "NoSuchKey")
+    ) {
+      return null;
+    }
+    throw error;
+  }
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+async function writeJsonObject(bucket, kmsKeyId, key, body) {
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: JSON.stringify(body),
+      ContentType: "application/json",
+      ServerSideEncryption: "aws:kms",
+      SSEKMSKeyId: kmsKeyId,
+    }),
+  );
+}
+
+async function saveVerificationRecord(record) {
+  const config = verificationConfig();
+  const key = verificationKey(config.verificationPrefix, record.verificationId);
+  await writeJsonObject(config.bucket, config.kmsKeyId, key, record);
+  return { config, key };
+}
+
+async function loadVerificationRecord(verificationId) {
+  const config = verificationConfig();
+  const key = verificationKey(config.verificationPrefix, verificationId);
+  const record = await readJsonObject(config.bucket, key);
+  return { config, key, record };
+}
+
+function verificationExpired(record) {
+  const expiresAtMs = new Date(record?.expiresAt || 0).getTime();
+  return !expiresAtMs || Date.now() > expiresAtMs;
+}
+
+function getVerificationEmail(data, formName) {
+  const emailField = FORMS_WITH_EMAIL_VERIFICATION.get(formName);
+  if (!emailField) {
+    return "";
+  }
+  return normalizeEmail(data?.[emailField]);
+}
+
+async function sendVerificationEmail({
+  formName,
+  origin,
+  submissionId,
+  toAddress,
+  token,
+  ttlMs,
+}) {
+  const { fromAddress, resendApiKey } = verificationConfig();
+  const ttlMinutes = Math.max(1, Math.round(ttlMs / 60000));
+  const verifyUrl = `${origin}/verify/?token=${encodeURIComponent(token)}`;
+  const subjectPrefix =
+    sentryEnvironment && sentryEnvironment !== "production"
+      ? `[${sentryEnvironment}] `
+      : "";
+  const body = [
+    "PoliceConduct.org submission verification",
+    "",
+    "Please verify your submission by opening this link:",
+    verifyUrl,
+    "",
+    `This link expires in ${ttlMinutes} minute${ttlMinutes === 1 ? "" : "s"}.`,
+    `Form: ${formName}`,
+    "",
+    "If you did not request this, you can ignore this email.",
+    "This mailbox is not monitored.",
+  ].join("\n");
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: fromAddress,
+      subject: `${subjectPrefix}Verify your PoliceConduct.org submission`,
+      tags: [
+        { name: "formName", value: formName },
+        { name: "submissionId", value: submissionId },
+        {
+          name: "environment",
+          value:
+            sentryEnvironment && sentryEnvironment.trim()
+              ? sentryEnvironment.trim()
+              : "unknown",
+        },
+      ],
+      text: body,
+      to: [toAddress],
+    }),
+    signal: AbortSignal.timeout(5000),
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  let payload = null;
+  if (contentType.includes("application/json")) {
+    payload = await response.json();
+  } else {
+    const text = await response.text();
+    payload = text ? { message: text } : null;
+  }
+
+  if (!response.ok) {
+    const details =
+      payload && typeof payload === "object"
+        ? payload.message ||
+          payload.error ||
+          payload.name ||
+          JSON.stringify(payload)
+        : "";
+    throw new Error(
+      `Resend email send failed (${response.status})${details ? `: ${details}` : ""}`,
+    );
+  }
+
+  return payload;
+}
+
+export const __testables = {
+  sendVerificationEmail,
+  verificationConfig,
+};
 
 function normalizedPath(event) {
   const raw = event?.rawPath || event?.requestContext?.http?.path || "";
@@ -447,7 +852,7 @@ async function markDraftSubmitted(draftId, submissionId, requestId, formName) {
   );
 }
 
-async function saveSubmissionStatus(submissionId, status) {
+async function saveSubmissionStatus(submissionId, status, verificationId) {
   const bucket = process.env.SUBMISSIONS_BUCKET;
   const kmsKeyId = process.env.SUBMISSIONS_KMS_KEY_ID;
   const prefix = process.env.SUBMISSIONS_PREFIX ?? "submissions/";
@@ -458,20 +863,11 @@ async function saveSubmissionStatus(submissionId, status) {
 
   const key = `${prefix}status/${submissionId}.json`;
   const body = {
-    submissionId,
     status,
+    statusChangedAt: new Date().toISOString(),
+    verificationId,
   };
-
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: JSON.stringify(body),
-      ContentType: "application/json",
-      ServerSideEncryption: "aws:kms",
-      SSEKMSKeyId: kmsKeyId,
-    }),
-  );
+  await writeJsonObject(bucket, kmsKeyId, key, body);
 }
 
 async function getSubmissionStatus(event, requestId) {
@@ -501,33 +897,19 @@ async function getSubmissionStatus(event, requestId) {
   }
 
   try {
-    const object = await s3.send(
-      new GetObjectCommand({
-        Bucket: bucket,
-        Key: key,
-      }),
-    );
-    const raw = object?.Body ? await object.Body.transformToString("utf8") : "";
-    if (!raw) {
+    const parsed = await readJsonObject(bucket, key);
+    if (!parsed) {
       return json(200, pendingStatusPayload(submissionId));
     }
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return json(200, pendingStatusPayload(submissionId));
-    }
-    if (
-      typeof parsed.submissionId !== "string" ||
-      parsed.submissionId.trim().length === 0
-    ) {
-      parsed.submissionId = submissionId;
-    }
-    if (
-      typeof parsed.status !== "string" ||
-      parsed.status.trim().length === 0
-    ) {
-      parsed.status = "pending";
-    }
-    return json(200, parsed);
+    const status =
+      typeof parsed.status === "string" && parsed.status.trim().length > 0
+        ? parsed.status.trim()
+        : "pending";
+    const message =
+      typeof parsed.message === "string" && parsed.message.trim().length > 0
+        ? parsed.message.trim()
+        : defaultStatusMessage(submissionId, status);
+    return json(200, { status, message });
   } catch (error) {
     captureLambdaException(error, context, {
       key,
@@ -545,6 +927,73 @@ async function getSubmissionStatus(event, requestId) {
     );
     return json(200, pendingStatusPayload(submissionId));
   }
+}
+
+async function verifySubmissionLink(event, requestId) {
+  const payload = parseJsonBody(event);
+  const { verificationId, secret } = parseVerificationToken(payload?.token);
+
+  if (!verificationId || !secret) {
+    return json(400, {
+      message: verificationLinkFailureMessage("Invalid verification token."),
+    });
+  }
+
+  const { config, key, record } = await loadVerificationRecord(verificationId);
+  if (!record) {
+    return json(400, {
+      message: verificationLinkFailureMessage("Verification link not found."),
+    });
+  }
+  if (verificationExpired(record)) {
+    return json(400, {
+      message: verificationLinkFailureMessage("Verification link expired."),
+    });
+  }
+  if (record.usedAt) {
+    return json(400, {
+      message: verificationLinkFailureMessage(
+        "Verification link already used.",
+      ),
+    });
+  }
+
+  const expectedHash = hashVerificationSecret(
+    verificationId,
+    secret,
+    config.hmacSecret,
+  );
+  if (expectedHash !== record.secretHash) {
+    return json(400, {
+      message: verificationLinkFailureMessage("Invalid verification token."),
+    });
+  }
+
+  const verifiedAt = new Date().toISOString();
+  const nextRecord = {
+    ...record,
+    secretHash: "",
+    usedAt: verifiedAt,
+    verifiedAt,
+  };
+
+  await writeJsonObject(config.bucket, config.kmsKeyId, key, nextRecord);
+  await saveSubmissionStatus(record.submissionId, "in_review", verificationId);
+
+  console.info(
+    JSON.stringify({
+      msg: "forms.verify.success",
+      requestId,
+      submissionId: record.submissionId,
+      verificationId,
+    }),
+  );
+
+  return json(200, {
+    message:
+      "Your submission has been verified. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.",
+    submissionId: record.submissionId,
+  });
 }
 
 async function submitForm(event, requestId) {
@@ -677,32 +1126,6 @@ async function submitForm(event, requestId) {
     }),
   );
 
-  try {
-    await saveSubmissionStatus(submissionId, "received");
-  } catch (error) {
-    captureLambdaException(
-      error,
-      {
-        formName,
-        requestId,
-        stage: event?.requestContext?.stage || null,
-      },
-      {
-        operation: "save_submission_status",
-        submissionId,
-      },
-    );
-    console.error(
-      JSON.stringify({
-        msg: "forms.submit.status_save_failed",
-        requestId,
-        formName,
-        submissionId,
-        error: errorInfo(error),
-      }),
-    );
-  }
-
   if (draftId) {
     try {
       await markDraftSubmitted(draftId, submissionId, requestId, formName);
@@ -741,16 +1164,117 @@ async function submitForm(event, requestId) {
       key,
     }),
   );
-  return json(200, { submissionId });
+
+  const origin = getSiteOrigin(event);
+  const verificationEmail = getVerificationEmail(data, formName);
+  if (!verificationEmail || !isValidEmail(verificationEmail) || !origin) {
+    const verificationFailureReason = !origin
+      ? "missing_origin"
+      : !verificationEmail
+        ? "missing_email"
+        : "invalid_email";
+    captureLambdaException(
+      new Error(`Verification email not sent: ${verificationFailureReason}`),
+      baseLogContext(event, requestId),
+      {
+        formName,
+        operation: "prepare_verification_email",
+        submissionId,
+        verificationEmailDomain: emailDomain(verificationEmail),
+        verificationFailureReason,
+      },
+    );
+    console.warn(
+      JSON.stringify({
+        msg: "forms.submit.verification_email_not_sent",
+        requestId,
+        formName,
+        hasOrigin: Boolean(origin),
+        hasVerificationEmail: Boolean(verificationEmail),
+        verificationEmailDomain: emailDomain(verificationEmail),
+        verificationFailureReason,
+        submissionId,
+      }),
+    );
+    return verificationFailureResponse(requestId, verificationFailureReason);
+  }
+
+  const verificationId = createId();
+  const secret = createVerificationSecret();
+  const config = verificationConfig();
+  const createdAt = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + config.ttlMs).toISOString();
+
+  const verificationRecord = {
+    createdAt,
+    email: verificationEmail,
+    expiresAt,
+    formName,
+    secretHash: hashVerificationSecret(
+      verificationId,
+      secret,
+      config.hmacSecret,
+    ),
+    submissionId,
+    usedAt: null,
+    verificationId,
+    verifiedAt: null,
+  };
+
+  try {
+    await saveVerificationRecord(verificationRecord);
+    await sendVerificationEmail({
+      formName,
+      origin,
+      submissionId,
+      toAddress: verificationEmail,
+      token: `${verificationId}.${secret}`,
+      ttlMs: config.ttlMs,
+    });
+  } catch (error) {
+    captureLambdaException(
+      error,
+      {
+        formName,
+        requestId,
+        stage: event?.requestContext?.stage || null,
+      },
+      {
+        operation: "send_verification_email",
+        submissionId,
+        verificationId,
+      },
+    );
+    console.error(
+      JSON.stringify({
+        msg: "forms.submit.verification_email_failed",
+        requestId,
+        formName,
+        submissionId,
+        verificationId,
+        error: errorInfo(error),
+      }),
+    );
+    return verificationFailureResponse(requestId, "send_failed");
+  }
+
+  return json(200, {
+    message:
+      "We received your submission. Check your email and open the verification link within 15 minutes. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.",
+    verificationPending: true,
+  });
 }
 
 export const handler = async (event) => {
   const requestId = getRequestId(event);
   const context = baseLogContext(event, requestId);
+  const requestOrigin = getRequestOrigin(event);
+  const allowedOrigin = isAllowedOrigin(requestOrigin) ? requestOrigin : "";
   console.info(
     JSON.stringify({
       msg: "forms.request.received",
       ...context,
+      requestOrigin: requestOrigin || null,
     }),
   );
 
@@ -758,35 +1282,81 @@ export const handler = async (event) => {
     const method = context.method || "";
     const path = context.path || "";
 
+    if (method === "OPTIONS") {
+      if (!allowedOrigin) {
+        console.warn(
+          JSON.stringify({
+            msg: "forms.request.origin_rejected",
+            ...context,
+            requestOrigin: requestOrigin || null,
+            reason: "origin_not_allowed",
+          }),
+        );
+        return json(403, { error: "Origin not allowed.", requestId });
+      }
+      return withCors(
+        {
+          statusCode: 204,
+          headers: {
+            "cache-control": "no-store",
+          },
+        },
+        allowedOrigin,
+      );
+    }
+
     if (method === "GET" && path === "/forms/draft") {
-      return await getDraft(event);
+      return withCors(await getDraft(event), allowedOrigin);
     }
 
     if (method === "POST" && path === "/forms/draft") {
-      return await saveDraft(event);
+      return withCors(await saveDraft(event), allowedOrigin);
     }
 
     if (method === "POST" && path === "/forms/submit") {
-      return await submitForm(event, requestId);
+      if (!allowedOrigin) {
+        const originError = new Error(
+          "Verification email not sent: missing_origin",
+        );
+        captureLambdaException(originError, context, {
+          operation: "validate_origin",
+          requestOrigin: requestOrigin || null,
+          verificationFailureReason: "missing_origin",
+        });
+        console.warn(
+          JSON.stringify({
+            msg: "forms.submit.origin_rejected",
+            ...context,
+            requestOrigin: requestOrigin || null,
+            verificationFailureReason: "missing_origin",
+          }),
+        );
+        return verificationFailureResponse(requestId, "missing_origin");
+      }
+      return withCors(await submitForm(event, requestId), allowedOrigin);
+    }
+
+    if (method === "POST" && path === "/forms/verify-link") {
+      return withCors(
+        await verifySubmissionLink(event, requestId),
+        allowedOrigin,
+      );
     }
 
     if (method === "GET" && path.startsWith("/status/")) {
-      return await getSubmissionStatus(event, requestId);
+      return withCors(
+        await getSubmissionStatus(event, requestId),
+        allowedOrigin,
+      );
     }
 
-    if (method === "OPTIONS") {
-      return {
-        statusCode: 204,
-        headers: {
-          "cache-control": "no-store",
-        },
-      };
-    }
-
-    return json(
-      405,
-      { error: "Method not allowed." },
-      { Allow: "GET, POST, OPTIONS" },
+    return withCors(
+      json(
+        405,
+        { error: "Method not allowed." },
+        { Allow: "GET, POST, OPTIONS" },
+      ),
+      allowedOrigin,
     );
   } catch (error) {
     const info = errorInfo(error);
@@ -798,10 +1368,13 @@ export const handler = async (event) => {
         error: info,
       }),
     );
-    return json(500, {
-      error: info.message || "Internal server error",
-      requestId,
-    });
+    return withCors(
+      json(500, {
+        error: info.message || "Internal server error",
+        requestId,
+      }),
+      allowedOrigin,
+    );
   } finally {
     if (sentryEnabled) {
       await Sentry.flush(2000);

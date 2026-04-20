@@ -147,7 +147,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
     if (select instanceof HTMLSelectElement) {
       const prefill = window.__IPC_PREFILL__;
       const result = prefill?.prefillFields
-        ? prefill.prefillFields({ key: "prefill:contact" })
+        ? prefill.prefillFields({ key: window.location.pathname })
         : { payload: null };
       const value = String(result?.payload?.whoami || "").toLowerCase();
       if (value) {
@@ -253,6 +253,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
             form.classList.remove("was-validated");
           },
           recaptchaAction: "contactSubmit",
+          successKind: "verification_pending",
         });
       });
     }

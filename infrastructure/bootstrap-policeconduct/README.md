@@ -34,6 +34,14 @@ terraform init
 bash scripts/apply.sh
 ```
 
+If you want the full infrastructure bootstrap in the correct order across stacks, run the repo-level wrapper from the project root:
+
+```bash
+bash scripts/bootstrap-all.sh
+```
+
+That wrapper runs reCAPTCHA bootstrap first and then this stack.
+
 ### Phased Apply (Recommended for Long DNS/ACM setup)
 
 Create buckets/KMS/forms API first, sync `.env`, and start uploads while DNS propagates:
@@ -62,6 +70,12 @@ Then run this stack:
 
 ```bash
 bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
+```
+
+Or use the single wrapper from repo root:
+
+```bash
+bash scripts/bootstrap-all.sh
 ```
 
 If reCAPTCHA apply fails with Google auth errors (`invalid_grant` /
@@ -152,6 +166,63 @@ Current default includes Google Workspace MX:
 
 Add your domain-specific TXT verification/DKIM records in local `terraform.tfvars` under `extra_dns_records` so they are applied with the zone.
 
+Verification email is sent from `noreply@mail.policeconduct.org` by default.
+The forms Lambda currently sends verification email through Resend using `RESEND_API_KEY`.
+Terraform still creates the SES identity verification and DKIM records under `mail.policeconduct.org`.
+Terraform also configures a custom SES MAIL FROM domain at `bounce.mail.policeconduct.org` by default, with the required MX and SPF records.
+Terraform creates a DMARC TXT record for `_dmarc.mail.policeconduct.org` and defaults it to monitoring mode (`p=none`).
+Terraform also enables SES Virtual Deliverability Manager, creates a dedicated verification email configuration set, and publishes verification email events to the default EventBridge bus.
+Custom MAIL FROM can remain in `Pending` for a while after apply while SES checks DNS. AWS documents that this can take up to 72 hours, though Route 53 changes are often detected sooner.
+
+## Resend Domain Bootstrap
+
+- create or look up the Resend sending domain for `forms_email_verification_domain`
+- keep open/click tracking disabled
+- fetch the required DNS records from Resend
+- create those DNS records in Route 53 automatically
+
+The values are fixed in this repo:
+
+- sending domain: `mail.policeconduct.org`
+- SES custom MAIL FROM: `bounce.mail.policeconduct.org`
+- tracking host, if you ever enable it later in code: `links.mail.policeconduct.org`
+
+If a previous bootstrap wrote incorrect doubled-`mail` Route 53 records such as
+`send.mail.mail.policeconduct.org`, rerunning
+`bash infrastructure/bootstrap-policeconduct/scripts/apply.sh` will replace the
+managed records with the corrected names and delete the old managed records as
+part of the same apply.
+
+`infrastructure/bootstrap-policeconduct/scripts/apply.sh` now loads `.env-policeconduct` and maps `RESEND_API_KEY` into the Terraform input used by the forms Lambda. The same shell environment is used by the Resend bootstrap script, so keeping `RESEND_API_KEY` in `.env-policeconduct` is enough for the normal apply flow.
+
+Key split:
+
+- `RESEND_API_KEY`: send-only key used by the forms Lambda verification-email path
+- `RESEND_API_KEY_FULL_ACCESS`: full-access key used only by `scripts/bootstrap-resend-domain.mjs` for Resend Domains API calls
+
+`apply.sh` expects both keys to be present in `.env-policeconduct` or the shell environment.
+
+Example:
+
+```bash
+export PATH=/opt/homebrew/bin:$PATH
+bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
+```
+
+To inspect or verify the domain manually, you can also run:
+
+```bash
+source .env-policeconduct
+node scripts/bootstrap-resend-domain.mjs --apply
+```
+
+If you want to trigger a Resend verification pass manually after DNS changes:
+
+```bash
+source .env-policeconduct
+node scripts/bootstrap-resend-domain.mjs --verify
+```
+
 ## GitHub Environments + Vars
 
 Terraform manages these GitHub environments automatically:
@@ -206,4 +277,39 @@ If `sentry_auth_token` is set, Terraform also writes `SENTRY_AUTH_TOKEN` as a Gi
   - Forms API Lambda `Errors`
   - Forms API Lambda p95 `Duration`
   - Forms API Lambda `Throttles`
-- Configure `alarm_actions` with SNS topic ARNs (or other supported action ARNs) to receive notifications.
+  - Verification email send failures and verification email preparation failures for both preview and production
+- Configure `alert_email_endpoints` to have Terraform create and wire an SNS topic for alarm notifications automatically.
+- You can still add extra alarm destinations directly with `alarm_actions`.
+- AWS still requires each email recipient to confirm the SNS subscription from the confirmation email before notifications start arriving.
+- SES verification-email infrastructure remains provisioned, but the forms Lambda currently sends verification email through Resend.
+- SES Virtual Deliverability Manager is enabled account-wide with engagement metrics and optimized shared delivery.
+
+## Preview Forms API Logs
+
+Tail recent preview Lambda logs:
+
+```bash
+aws logs tail /aws/lambda/policeconduct-forms-api-preview --region us-east-1 --since 15m --follow
+```
+
+Filter for verification, origin, and request errors:
+
+```bash
+aws logs tail /aws/lambda/policeconduct-forms-api-preview --region us-east-1 --since 15m \
+  | rg 'ERROR|forms\.submit\.|forms\.verify\.|forms\.request\.error|origin_rejected'
+```
+
+Look up one request by request ID:
+
+```bash
+aws logs tail /aws/lambda/policeconduct-forms-api-preview --region us-east-1 --since 1h \
+  | rg '<request-id>'
+```
+
+Useful message keys for this flow:
+
+- `forms.submit.verification_email_failed`
+- `forms.submit.verification_email_not_sent`
+- `forms.submit.origin_rejected`
+- `forms.verify.success`
+- `forms.request.error`
