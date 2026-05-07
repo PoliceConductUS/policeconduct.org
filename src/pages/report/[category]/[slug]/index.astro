@@ -54,6 +54,7 @@ if (reportStateSlug !== categorySlug) {
 const pagePath = `/report/${categorySlug}/${slug}/`;
 const tags = data.tags;
 const officers = data.officers;
+const civilCases = data.civilCases;
 const evidenceLinks = data.evidenceLinks;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
@@ -143,7 +144,8 @@ const agencyEntities = Array.from(
 const videoEntities = evidenceLinks
   .filter((link) => Boolean(link.embed))
   .map((link, index) => {
-    const watchPath = `/report/${categorySlug}/${slug}/watch/${link.id}/`;
+    const watchPath =
+      link.videoPath || `/report/${categorySlug}/${slug}/watch/${link.id}/`;
     const watchUrl = new URL(watchPath, siteUrl).toString();
     return {
       "@type": "VideoObject",
@@ -417,6 +419,39 @@ const ratedOfficers = officers
 
             <hr class="my-5" />
 
+            <h2 class="h4 text-uppercase text-muted">
+              Related civil litigation
+            </h2>
+            {
+              civilCases.length ? (
+                <div class="list-group">
+                  {civilCases.map((civilCase) => (
+                    <a
+                      class="list-group-item list-group-item-action"
+                      href={civilCase.path}
+                    >
+                      <div class="d-flex w-100 justify-content-between gap-3">
+                        <h3 class="h6 mb-1">{civilCase.title}</h3>
+                        {civilCase.filedDate ? (
+                          <small class="text-muted">
+                            {formatLongDate(civilCase.filedDate)}
+                          </small>
+                        ) : null}
+                      </div>
+                      <p class="mb-1">{civilCase.causeNumber}</p>
+                      {civilCase.court ? (
+                        <small class="text-muted">{civilCase.court}</small>
+                      ) : null}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p class="text-muted">No related civil litigation listed.</p>
+              )
+            }
+
+            <hr class="my-5" />
+
             <h2 class="h4 text-uppercase text-muted">Desired outcome</h2>
             <p>{data.report.desired_outcome!}</p>
 
@@ -446,7 +481,10 @@ const ratedOfficers = officers
                       {link.embed ? (
                         <a
                           class="d-block text-decoration-none text-reset mt-3"
-                          href={`/report/${categorySlug}/${slug}/watch/${link.id}/`}
+                          href={
+                            link.videoPath ||
+                            `/report/${categorySlug}/${slug}/watch/${link.id}/`
+                          }
                         >
                           <div class="border bg-white">
                             <div class="ratio ratio-16x9 bg-dark">

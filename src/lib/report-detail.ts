@@ -1,6 +1,11 @@
 import { withDb } from "./db.js";
 import { groupBy, mapBy } from "./data.js";
-import { getVideoEmbedUrl, getYouTubeThumbnailUrl } from "./video.js";
+import { loadVideoPathsByUrls, loadVideosForReport } from "./data/videos.js";
+import {
+  getVideoEmbedUrl,
+  getYouTubeThumbnailUrl,
+  normalizeVideoUrl,
+} from "./video.js";
 
 const assertValue = <T>(value: T | null | undefined, message: string): T => {
   if (value === null || value === undefined) {
@@ -47,12 +52,21 @@ export type ReportDetailModel = {
   reportAttachments: Record<string, unknown>[];
   tags: string[];
   officers: ReportOfficerEntry[];
+  civilCases: {
+    id: string;
+    title: string;
+    causeNumber: string;
+    court: string | null;
+    filedDate: string | null;
+    path: string;
+  }[];
   evidenceLinks: {
     id: string;
     title: string;
     url: string;
     embed: string | null;
     thumbnail: string | null;
+    videoPath: string | null;
   }[];
 };
 
@@ -138,6 +152,7 @@ const buildEvidenceLinks = (links: EvidenceLinkSource[]): EvidenceLink[] =>
       url: link.url,
       embed: getVideoEmbedUrl(link.url),
       thumbnail: getYouTubeThumbnailUrl(link.url),
+      videoPath: null,
     };
   });
 
@@ -234,12 +249,58 @@ export const loadReportDetail = async (
   if (!data.report) {
     return null;
   }
+  const reportId = assertValue(data.report.id, "Missing id for report row");
 
   const tagsById = mapBy(data.tags, "id");
   const tags = (data.reportTags || [])
     .map((entry: { tag_id: string }) => tagsById[entry.tag_id])
     .filter(Boolean)
     .map((tag: { label: string }) => tag.label);
+
+  const evidenceLinks = buildEvidenceLinks(data.reportLinks ?? []);
+  const videoPathsByUrl = await loadVideoPathsByUrls(
+    evidenceLinks.map((link) => link.url),
+  );
+  const linkedVideos = await loadVideosForReport(String(data.report.id));
+  const linkedVideoRows = linkedVideos
+    .filter(
+      (video) =>
+        !evidenceLinks.some(
+          (link) => normalizeVideoUrl(link.url) === video.normalizedUrl,
+        ),
+    )
+    .map((video) => ({
+      id: `video:${video.id}`,
+      title: video.title,
+      url: video.url,
+      embed: video.embed,
+      thumbnail: video.thumbnail,
+      videoPath: video.path,
+    }));
+  const civilCases = await withDb(async (client) => {
+    return (
+      await client.query(
+        `
+          select distinct
+            civil_case.id,
+            civil_case.title,
+            civil_case.cause_number,
+            civil_case.court,
+            civil_case.filed_date,
+            civil_case.category,
+            civil_case.slug
+          from public.civil_cases civil_case
+          join public.civil_case_officers civil_case_officer
+            on civil_case_officer.civil_case_id = civil_case.id
+          join public.review_officers review_officer
+            on review_officer.agency_officer_id = civil_case_officer.agency_officer_id
+          where review_officer.review_id = $1
+          order by civil_case.filed_date desc nulls last, civil_case.title
+        `,
+        [reportId],
+      )
+    ).rows;
+  });
 
   return {
     report: data.report,
@@ -249,6 +310,40 @@ export const loadReportDetail = async (
     officers: buildOfficerEntries(
       data as ReportDetailQuery & { report: Record<string, unknown> },
     ),
-    evidenceLinks: buildEvidenceLinks(data.reportLinks ?? []),
+    civilCases: civilCases.map((civilCase: Record<string, string | null>) => {
+      const id = assertValue(civilCase.id, "Missing id for civil case row");
+      const title = assertValue(
+        civilCase.title,
+        `Missing title for civil case ${id}`,
+      );
+      const causeNumber = assertValue(
+        civilCase.cause_number,
+        `Missing cause_number for civil case ${id}`,
+      );
+      const category = assertValue(
+        civilCase.category,
+        `Missing category for civil case ${id}`,
+      );
+      const slug = assertValue(
+        civilCase.slug,
+        `Missing slug for civil case ${id}`,
+      );
+
+      return {
+        id,
+        title,
+        causeNumber,
+        court: civilCase.court,
+        filedDate: civilCase.filed_date,
+        path: `/civil-litigation/${category}/${slug}/`,
+      };
+    }),
+    evidenceLinks: [
+      ...evidenceLinks.map((link) => ({
+        ...link,
+        videoPath: videoPathsByUrl.get(link.url) || null,
+      })),
+      ...linkedVideoRows,
+    ],
   };
 };

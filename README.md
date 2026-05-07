@@ -2,6 +2,16 @@
 
 Astro static site with AWS infrastructure managed by Terraform.
 
+## Purpose
+
+PoliceConduct.org helps residents evaluate whether law-enforcement agencies and
+the people working there appear safe, accountable, transparent, and improving.
+The site also aims to identify positive deviance: officers, supervisors, units,
+agencies, policies, and practices that produce unusually good public-trust and
+public-safety outcomes under comparable constraints. Positive examples must be
+evidence-backed and framed as practices to investigate or learn from, not as
+blanket endorsements.
+
 ## Local Development
 
 ```bash

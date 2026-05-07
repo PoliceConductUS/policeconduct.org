@@ -4,6 +4,13 @@ Purpose
 
 - This file captures project-specific standards for Codex agents working in this repo.
 
+Project Goal
+
+- PoliceConduct.org helps residents evaluate whether law-enforcement agencies and the people working there appear safe, accountable, transparent, and improving.
+- Part of that goal is identifying positive deviance: agencies, officers, supervisors, units, policies, practices, and community workflows that produce unusually good public-trust and public-safety outcomes under comparable constraints.
+- Agents should look for what is working unusually well, not only failures, misconduct, lawsuits, or weak policies. Positive findings must be evidence-backed, clearly scoped, and never presented as unsupported praise or overall endorsement.
+- Positive-deviance analysis should follow an asset-based, community-informed workflow: define the problem and desired outcome, determine whether positive deviants exist, discover uncommon successful practices, develop ways to share or test those practices, and discern results through monitoring and revision.
+
 Change Approval Workflow
 
 - Before making any edits, summarize the exact files and changes you intend to make and wait for explicit user approval. Do not proceed without that approval.
@@ -29,6 +36,7 @@ Database Expectations
 - seed.sql must be fully deterministic: every row must include explicit ids and slugs, with no triggers, generated slugs, or runtime ID generators (e.g., generate_cuid). Rerunning seed.sql must yield identical data and identifiers.
 - When adding federal agencies, keep the hash in the slug for consistency and safety.
 - If a migration adds a required DB field, update seed.sql in the Supabase repo.
+- Missing expected database tables or fields must fail the build. Do not add silent fallbacks, empty results, or missing-schema guards for required data.
 
 Templates (Critical Fields)
 

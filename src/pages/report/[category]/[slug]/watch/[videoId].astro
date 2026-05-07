@@ -1,12 +1,6 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
-import { formatLongDate } from "#src/lib/format.js";
-import { loadReportDetail } from "#src/lib/report-detail.js";
 import { loadReportSummaries } from "#src/lib/data/summaries.js";
-import { US_STATE_TILES } from "#src/lib/geo/states.js";
-import { getSiteUrl } from "#src/lib/structured-data.js";
-import { isDirectVideoContentUrl } from "#src/lib/video.js";
+import { loadReportDetail } from "#src/lib/report-detail.js";
 
 export async function getStaticPaths() {
   const reports = await loadReportSummaries();
@@ -18,10 +12,7 @@ export async function getStaticPaths() {
       continue;
     }
 
-    const embeddableLinks = detail.evidenceLinks.filter((link) =>
-      Boolean(link.embed),
-    );
-    for (const link of embeddableLinks) {
+    for (const link of detail.evidenceLinks.filter((item) => item.embed)) {
       paths.push({
         params: {
           category: report.state,
@@ -36,256 +27,29 @@ export async function getStaticPaths() {
 }
 
 const { category, slug, videoId } = Astro.params;
-const categorySlug = (category as string).toLowerCase();
-const categoryCode = categorySlug.toUpperCase();
-const categoryMeta = US_STATE_TILES.find(
-  (entry) => entry.code === categoryCode,
-);
-const categoryName = categoryMeta?.name || categoryCode;
-
-const data = await loadReportDetail(slug);
+const categorySlug = String(category || "").toLowerCase();
+const data = await loadReportDetail(String(slug || ""));
 if (!data) {
   throw new Error(`Report ${slug} not found.`);
-}
-
-const primaryAgency = data.officers[0]?.agency;
-if (!primaryAgency) {
-  throw new Error(`Report ${slug} is missing a primary agency.`);
-}
-
-const primaryAgencyCategory = primaryAgency.category as string | null;
-const primaryAgencySlug = primaryAgency.slug as string | null;
-if (!primaryAgencyCategory || !primaryAgencySlug) {
-  throw new Error(`Report ${slug} primary agency is missing category or slug.`);
 }
 
 const reportStateSlug = String(data.report.category || "")
   .trim()
   .toLowerCase();
-if (!reportStateSlug) {
-  throw new Error(`Report ${slug} is missing category.`);
-}
-if (reportStateSlug !== categorySlug) {
+if (reportStateSlug && reportStateSlug !== categorySlug) {
   return Astro.redirect(
     `/report/${reportStateSlug}/${slug}/watch/${videoId}/`,
     301,
   );
 }
 
-const reportTitle =
-  typeof data.report.title === "string" ? data.report.title : "Report";
-const reportPath = `/report/${categorySlug}/${slug}/`;
-const watchPath = `/report/${categorySlug}/${slug}/watch/${videoId}/`;
-const siteUrl = getSiteUrl(Astro.site);
-const pageUrl = new URL(watchPath, siteUrl).toString();
-const reportUrl = new URL(reportPath, siteUrl).toString();
-
-const videos = data.evidenceLinks.filter((link) => Boolean(link.embed));
-const videoIndex = videos.findIndex((link) => link.id === videoId);
-if (videoIndex === -1) {
+const video = data.evidenceLinks.find((link) => link.id === videoId);
+if (!video) {
   throw new Error(`Video ${videoId} not found on report ${slug}.`);
 }
 
-const video = videos[videoIndex]!;
-const prevVideo = videoIndex > 0 ? videos[videoIndex - 1] : null;
-const nextVideo =
-  videoIndex < videos.length - 1 ? videos[videoIndex + 1] : null;
-
-const normalizeIsoDate = (value?: string | Date | null) => {
-  if (!value) {
-    return null;
-  }
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
-};
-
-const stripHtml = (value?: string | null) =>
-  value
-    ? value
-        .replace(/<[^>]*>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim()
-    : "";
-
-const reportDescription = stripHtml(
-  typeof data.report.description === "string" ? data.report.description : "",
+return Astro.redirect(
+  video.videoPath || `/report/${categorySlug}/${slug}/`,
+  video.videoPath ? 301 : 302,
 );
-const createdAtIso = normalizeIsoDate(
-  data.report.created_at as string | Date | null,
-);
-const updatedAtIso = normalizeIsoDate(
-  data.report.updated_at as string | Date | null,
-);
-const incidentDate = data.report.incident_date;
-
-const videoTitle = video.title?.trim() || `Video Evidence ${videoIndex + 1}`;
-const videoDescription =
-  reportDescription || `Evidence video from report: ${reportTitle}.`;
-
-const websiteId = new URL("/", siteUrl).toString();
-const webpageId = `${pageUrl}#webpage`;
-const reportEntityId = `${reportUrl}#report`;
-const videoObjectId = `${pageUrl}#video`;
-const structuredData = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": websiteId,
-      url: websiteId,
-      name: "PoliceConduct.org",
-    },
-    {
-      "@type": "WebPage",
-      "@id": webpageId,
-      url: pageUrl,
-      name: `${videoTitle} | Watch | PoliceConduct.org`,
-      description: videoDescription,
-      isPartOf: { "@id": websiteId },
-      mainEntity: { "@id": videoObjectId },
-    },
-    {
-      "@type": "Report",
-      "@id": reportEntityId,
-      name: reportTitle,
-      url: reportUrl,
-    },
-    {
-      "@type": "VideoObject",
-      "@id": videoObjectId,
-      name: videoTitle,
-      description: videoDescription,
-      embedUrl: video.embed,
-      mainEntityOfPage: { "@id": webpageId },
-      url: pageUrl,
-      isPartOf: { "@id": reportEntityId },
-      ...(video.thumbnail ? { thumbnailUrl: video.thumbnail } : {}),
-      ...(isDirectVideoContentUrl(video.url) ? { contentUrl: video.url } : {}),
-      ...(createdAtIso ? { uploadDate: createdAtIso } : {}),
-      ...(updatedAtIso ? { dateModified: updatedAtIso } : {}),
-    },
-  ],
-};
 ---
-
-<SiteLayout
-  title={`${videoTitle} | Watch | PoliceConduct.org`}
-  description={videoDescription}
-  pagePath={watchPath}
-  canonicalUrl={watchPath}
-  structuredData={structuredData}
->
-  <main>
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
-      <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-12 col-lg-10 col-xl-8">
-            <Breadcrumbs
-              items={[
-                { label: "Reports", href: "/report/" },
-                { label: categoryName, href: `/report/${categorySlug}/` },
-                { label: reportTitle, href: reportPath },
-                { label: "Watch", href: watchPath, current: true },
-              ]}
-            />
-
-            <p class="text-uppercase small text-muted mb-2">Watch page</p>
-            <h1 class="display-6 fw-bold">{videoTitle}</h1>
-            <p class="lead mb-2">
-              From report: <a class="link-dark" href={reportPath}
-                >{reportTitle}</a
-              >
-            </p>
-            {
-              incidentDate ? (
-                <p class="text-muted mb-0">
-                  Incident date: {formatLongDate(incidentDate)}
-                </p>
-              ) : null
-            }
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-vh-2">
-      <div class="container">
-        <div class="row justify-content-center">
-          <article class="col-12 col-lg-10 col-xl-8">
-            <div class="ratio ratio-16x9 border mb-3">
-              <iframe
-                src={video.embed!}
-                title={videoTitle}
-                loading="lazy"
-                allow="
-                  accelerometer;
-                  autoplay;
-                  clipboard-write;
-                  encrypted-media;
-                  gyroscope;
-                  picture-in-picture;
-                  web-share;
-                "
-                referrerpolicy="strict-origin-when-cross-origin"
-                allowfullscreen></iframe>
-            </div>
-
-            <div class="d-flex flex-wrap gap-2 mb-4">
-              <a class="btn btn-dark rounded-0" href={reportPath}
-                >Back to report</a
-              >
-              <a
-                class="btn btn-outline-dark rounded-0"
-                href={video.url}
-                target="_blank"
-                rel="noopener">Open original source</a
-              >
-            </div>
-
-            <div
-              class="d-flex flex-wrap justify-content-between gap-2 border-top border-bottom py-3 mb-4"
-            >
-              {
-                prevVideo ? (
-                  <a
-                    class="link-dark fw-semibold"
-                    href={`/report/${categorySlug}/${slug}/watch/${prevVideo.id}/`}
-                  >
-                    Previous video
-                  </a>
-                ) : (
-                  <span class="text-muted">Previous video</span>
-                )
-              }
-              {
-                nextVideo ? (
-                  <a
-                    class="link-dark fw-semibold"
-                    href={`/report/${categorySlug}/${slug}/watch/${nextVideo.id}/`}
-                  >
-                    Next video
-                  </a>
-                ) : (
-                  <span class="text-muted">Next video</span>
-                )
-              }
-            </div>
-
-            <div class="small text-muted">
-              <p class="mb-1">
-                Evidence links are user-submitted and published for
-                transparency. Publication does not imply endorsement.
-              </p>
-              <p class="mb-0">
-                See our <a
-                  class="link-secondary"
-                  href="/legal-notice/terms-of-service">Terms of Service</a
-                > for full disclaimers.
-              </p>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-  </main>
-</SiteLayout>

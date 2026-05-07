@@ -1,5 +1,13 @@
 import { withDb } from "#src/lib/db.js";
-import { getVideoEmbedUrl, getYouTubeThumbnailUrl } from "#src/lib/video.js";
+import {
+  loadVideoPathsByUrls,
+  loadVideosForCivilCase,
+} from "#src/lib/data/videos.js";
+import {
+  getVideoEmbedUrl,
+  getYouTubeThumbnailUrl,
+  normalizeVideoUrl,
+} from "#src/lib/video.js";
 
 export type CivilCaseCoverageLink = {
   id: string;
@@ -7,6 +15,7 @@ export type CivilCaseCoverageLink = {
   url: string;
   embed: string | null;
   thumbnail: string | null;
+  videoPath: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -88,8 +97,31 @@ export const loadCivilCaseDetail = async (
         ...link,
         embed: getVideoEmbedUrl(link.url),
         thumbnail: getYouTubeThumbnailUrl(link.url),
+        videoPath: null,
       }),
     );
+    const videoPathsByUrl = await loadVideoPathsByUrls(
+      coverageLinks.map((link: CivilCaseCoverageLink) => link.url),
+    );
+    const linkedVideos = await loadVideosForCivilCase(civilCase.id);
+    const linkedVideoRows = linkedVideos
+      .filter(
+        (video) =>
+          !coverageLinks.some(
+            (link: CivilCaseCoverageLink) =>
+              normalizeVideoUrl(link.url) === video.normalizedUrl,
+          ),
+      )
+      .map((video) => ({
+        id: `video:${video.id}`,
+        title: video.title,
+        url: video.url,
+        embed: video.embed,
+        thumbnail: video.thumbnail,
+        videoPath: video.path,
+        created_at: video.publishedAt || video.recordedAt || video.updatedAt,
+        updated_at: video.updatedAt,
+      }));
 
     const officers = (
       await client.query(
@@ -137,7 +169,13 @@ export const loadCivilCaseDetail = async (
       civilCase,
       officers,
       agencies,
-      coverageLinks,
+      coverageLinks: [
+        ...coverageLinks.map((link: CivilCaseCoverageLink) => ({
+          ...link,
+          videoPath: videoPathsByUrl.get(link.url) || null,
+        })),
+        ...linkedVideoRows,
+      ],
     };
   });
 };

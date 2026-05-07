@@ -10,6 +10,8 @@ const isYouTubeUrl = (url: string) => {
   }
 };
 
+const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
+
 const DIRECT_VIDEO_EXTENSIONS = [
   ".mp4",
   ".m4v",
@@ -67,4 +69,20 @@ export const getYouTubeVideoId = (url: string) => {
 export const getYouTubeThumbnailUrl = (url: string) => {
   const videoId = getYouTubeVideoId(url);
   return videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null;
+};
+
+export const normalizeVideoUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    const youtubeId = getYouTubeVideoId(url);
+    if (youtubeId) {
+      return `https://www.youtube.com/watch?v=${youtubeId}`;
+    }
+    parsed.hash = "";
+    parsed.hostname = parsed.hostname.toLowerCase().replace(/^www\./, "");
+    parsed.pathname = trimTrailingSlash(parsed.pathname);
+    return parsed.toString();
+  } catch {
+    return url.trim();
+  }
 };

@@ -10,6 +10,7 @@ import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { getPersonnelImageById } from "#src/lib/personnel-images.js";
 import ProfileTabs from "#src/components/ProfileTabs.astro";
+import { loadVideosForOfficer } from "#src/lib/data/videos.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
@@ -110,6 +111,7 @@ const data = await withDb(async (client) => {
     civilCases,
   };
 });
+const videoItems = await loadVideosForOfficer(officerId);
 
 const agenciesById = mapBy(data.agencies, "id");
 const history = normalizeAgencyHistory(data.agencyOfficers);
@@ -260,6 +262,7 @@ const personnelImageSrc =
   getPersonnelImageById(data.officer.id) || defaultPersonnelImagePath;
 const civilCaseCount = data.civilCases.length;
 const reportCount = data.reports.length;
+const videoCount = videoItems.length;
 const pastEmployerCount = pastEmployers.length;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(officerPath, siteUrl).toString();
@@ -396,6 +399,8 @@ const structuredData = {
                   <dd class="col-sm-8">{data.civilCases.length}</dd>
                   <dt class="col-sm-4">Reports</dt>
                   <dd class="col-sm-8">{reportCount}</dd>
+                  <dt class="col-sm-4">Videos</dt>
+                  <dd class="col-sm-8">{videoCount}</dd>
                   <dt class="col-sm-4">Past employers</dt>
                   <dd class="col-sm-8">{pastEmployers.length}</dd>
                 </dl>
@@ -493,6 +498,12 @@ const structuredData = {
                   tabType: "reports",
                 },
                 {
+                  id: "officer-videos",
+                  label: "Videos",
+                  badge: videoCount,
+                  tabType: "videos",
+                },
+                {
                   id: "officer-past",
                   label: "Past employers",
                   badge: pastEmployerCount,
@@ -505,6 +516,9 @@ const structuredData = {
               reports={{
                 items: reportItems,
                 layout: "table",
+              }}
+              videos={{
+                items: videoItems,
               }}
               pastEmployers={{
                 entries: pastEmployers,

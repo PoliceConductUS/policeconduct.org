@@ -1,0 +1,272 @@
+---
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+---
+
+<SiteLayout
+  title="Suggest Video | PoliceConduct.org"
+  pagePath="/video/new/"
+  robots="noindex,follow"
+>
+  <PrefillBootstrap />
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">New video</p>
+            <h1 class="display-5 fw-bold mb-3">Suggest a video</h1>
+            <p class="text-muted mb-0">
+              Share public, verifiable video links that can be connected to
+              identifiable personnel, agencies, reports, or civil cases.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2" data-form-shell="videoNew">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-8">
+            <div class="border p-4 bg-white shadow-sm">
+              <h2 class="h5 fw-semibold">Video intake form</h2>
+              <p class="text-muted mb-3">
+                Include enough context for review. Videos should identify at
+                least one law-enforcement officer or be clearly tied to an
+                existing public record.
+              </p>
+              <div class="alert alert-warning rounded-0 small">
+                Please do not submit private addresses, private phone numbers,
+                family details, or identifying information about uninvolved
+                private people.
+              </div>
+              <form
+                name="videoNew"
+                method="POST"
+                data-netlify-honeypot="organization"
+                class="needs-validation"
+                novalidate
+              >
+                <input type="hidden" name="form-name" value="videoNew" />
+                <div class="honeypot visually-hidden">
+                  <label>
+                    Organization
+                    <input type="text" name="organization" />
+                  </label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="url"
+                    class="form-control"
+                    id="videoUrl"
+                    name="videoUrl"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    required
+                  />
+                  <label for="videoUrl">Video URL*</label>
+                  <div class="invalid-feedback">
+                    Please provide a public video URL.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="videoTitle"
+                    name="videoTitle"
+                    placeholder="Video title"
+                  />
+                  <label for="videoTitle">Video title</label>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="sourceChannel"
+                        name="sourceChannel"
+                        placeholder="Channel or source"
+                      />
+                      <label for="sourceChannel">Channel or source</label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="category"
+                        name="category"
+                        placeholder="State or federal"
+                      />
+                      <label for="category">Primary location</label>
+                      <div class="form-text">
+                        Use state abbreviation or federal where appropriate.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="recordedAt"
+                    name="recordedAt"
+                    placeholder="Recorded date"
+                  />
+                  <label for="recordedAt">Recorded date</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="linkedPersonnel"
+                    name="linkedPersonnel"
+                    placeholder="Linked personnel"
+                    style="height: 110px"></textarea>
+                  <label for="linkedPersonnel">Linked personnel</label>
+                  <div class="form-text">
+                    List officers actually seen, heard, named, or otherwise
+                    identifiable in the video.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="linkedAgencies"
+                    name="linkedAgencies"
+                    placeholder="Linked agencies"
+                    style="height: 90px"></textarea>
+                  <label for="linkedAgencies">Linked agencies</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="linkedCasesReports"
+                    name="linkedCasesReports"
+                    placeholder="Linked reports or civil cases"
+                    style="height: 120px"></textarea>
+                  <label for="linkedCasesReports">Linked reports or civil cases</label>
+                  <div class="form-text">
+                    Include PoliceConduct.org paths, case numbers, report paths,
+                    docket links, or public source links.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="summary"
+                    name="summary"
+                    placeholder="Summary"
+                    style="height: 130px"></textarea>
+                  <label for="summary">Summary and context</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="sourceLinks"
+                    name="sourceLinks"
+                    placeholder="Source links"
+                    style="height: 110px"></textarea>
+                  <label for="sourceLinks">Additional source links</label>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="submitterName"
+                        name="submitterName"
+                        placeholder="Full name"
+                        required
+                      />
+                      <label for="submitterName">Submitter full name*</label>
+                      <div class="invalid-feedback">
+                        Please provide your full name.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="email"
+                        class="form-control"
+                        id="submitterEmail"
+                        name="submitterEmail"
+                        placeholder="Email"
+                        required
+                      />
+                      <label for="submitterEmail">Submitter email*</label>
+                      <div class="invalid-feedback">
+                        Please provide a valid email address.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="tel"
+                        class="form-control"
+                        id="submitterPhone"
+                        name="submitterPhone"
+                        placeholder="Phone"
+                      />
+                      <label for="submitterPhone"
+                        >Submitter phone (optional)</label
+                      >
+                    </div>
+                  </div>
+                </div>
+                <div class="small text-muted mb-3">
+                  Protected by reCAPTCHA Enterprise.
+                </div>
+                <button type="submit" class="btn btn-dark rounded-0 w-100">
+                  Submit video suggestion
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    import {
+      initRecaptcha,
+      showFormLoadError,
+      submitJsonForm,
+    } from "#src/lib/client/forms.ts";
+
+    const form = document.querySelector(
+      'form[name="videoNew"]',
+    ) as HTMLFormElement | null;
+    const shell = document.querySelector(
+      '[data-form-shell="videoNew"]',
+    ) as HTMLElement | null;
+
+    if (!form) {
+      showFormLoadError({ formName: "videoNew", shell });
+    } else {
+      initRecaptcha();
+      form.addEventListener("submit", async function (event) {
+        await submitJsonForm({
+          event,
+          form,
+          formName: "videoNew",
+          onReset: function () {
+            form.classList.remove("was-validated");
+          },
+          recaptchaAction: "videoNewSubmit",
+          successKind: "verification_pending",
+        });
+      });
+    }
+  </script>
+  <script is:inline>
+    window.__IPC_PREFILL__?.prefillFields?.({
+      key: window.location.pathname,
+    });
+  </script>
+</SiteLayout>

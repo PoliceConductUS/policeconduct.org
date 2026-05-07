@@ -185,16 +185,17 @@ const auditHtml = async () => {
     }
 
     if (
-      normalizedRoute.startsWith("/report/") &&
-      normalizedRoute.includes("/watch/")
+      normalizedRoute.startsWith("/video/") &&
+      normalizedRoute !== "/video/" &&
+      /^\/video\/[^/]+\/[^/]+\/$/.test(normalizedRoute)
     ) {
       if (!/"@type"\s*:\s*"VideoObject"/i.test(html)) {
         addError(
-          `Watch page missing VideoObject structured data: ${normalizedRoute}`,
+          `Video page missing VideoObject structured data: ${normalizedRoute}`,
         );
       }
       if (!description || !description.trim()) {
-        addWarning(`Watch page missing meta description: ${normalizedRoute}`);
+        addWarning(`Video page missing meta description: ${normalizedRoute}`);
       }
     }
   }

@@ -4,10 +4,7 @@ import process from "node:process";
 
 const DOMAIN_NAME = "mail.policeconduct.org";
 const DNS_ZONE_NAME = "policeconduct.org";
-const TRACKING_SUBDOMAIN = "links";
 const REGION = "us-east-1";
-const OPEN_TRACKING_ENABLED = false;
-const CLICK_TRACKING_ENABLED = false;
 const RESEND_RATE_LIMIT_RETRY_ATTEMPTS = 3;
 const RESEND_RATE_LIMIT_RETRY_DELAY_MS = 300;
 
@@ -63,10 +60,7 @@ function buildRoute53Records(domain) {
       if (!type) {
         return false;
       }
-      if (
-        record?.record === "Tracking" &&
-        !(OPEN_TRACKING_ENABLED || CLICK_TRACKING_ENABLED)
-      ) {
+      if (record?.record === "Tracking") {
         return false;
       }
       return true;
@@ -157,10 +151,9 @@ async function createDomain(apiKey, config) {
 
 async function updateDomain(apiKey, config, domainId) {
   const body = {
-    clickTracking: config.clickTracking,
-    openTracking: config.openTracking,
-    trackingSubdomain:
-      config.trackingSubdomain || TRACKING_SUBDOMAIN,
+    clickTracking: false,
+    openTracking: false,
+    trackingSubdomain: "links",
   };
   return resendRequest(apiKey, `/domains/${encodeURIComponent(domainId)}`, {
     method: "PATCH",
@@ -244,14 +237,11 @@ async function readJsonStdin() {
 function loadConfig() {
   return {
     apiKey: trimToNull(process.env.RESEND_API_KEY_FULL_ACCESS),
-    clickTracking: CLICK_TRACKING_ENABLED,
+    clickTracking: false,
     domainName: DOMAIN_NAME,
-    openTracking: OPEN_TRACKING_ENABLED,
+    openTracking: false,
     region: REGION,
-    trackingSubdomain:
-      OPEN_TRACKING_ENABLED || CLICK_TRACKING_ENABLED
-        ? TRACKING_SUBDOMAIN
-        : null,
+    trackingSubdomain: null,
   };
 }
 

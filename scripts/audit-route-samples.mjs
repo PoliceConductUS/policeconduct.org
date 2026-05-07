@@ -22,8 +22,8 @@ export const FORM_ROUTES = [
 
 const OPTIONAL_SAMPLE_SPECS = [
   {
-    label: "report watch",
-    pattern: /^\/report\/[^/]+\/[^/]+\/watch\/[^/]+\/$/,
+    label: "video detail",
+    pattern: /^\/video\/[^/]+\/[^/]+\/$/,
   },
   {
     label: "report pagination",
@@ -40,10 +40,6 @@ const OPTIONAL_SAMPLE_SPECS = [
   {
     label: "civil litigation pagination",
     pattern: /^\/civil-litigation\/[^/]+\/page\/\d+\/$/,
-  },
-  {
-    label: "civil litigation watch",
-    pattern: /^\/civil-litigation\/[^/]+\/[^/]+\/watch\/[^/]+\/$/,
   },
 ];
 
@@ -86,6 +82,8 @@ const REQUIRED_SAMPLE_SPECS = [
     label: "civil litigation detail",
     pattern: /^\/civil-litigation\/[^/]+\/[^/]+\/$/,
   },
+  { label: "video index", pattern: /^\/video\/$/ },
+  { label: "video category", pattern: /^\/video\/[a-z]{2,8}\/$/ },
 ];
 
 const sortRoutes = (routes) =>

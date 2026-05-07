@@ -1,0 +1,227 @@
+---
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+---
+
+<SiteLayout
+  title="Suggest Video Edit | PoliceConduct.org"
+  pagePath="/video/suggest-edit/"
+  robots="noindex,follow"
+>
+  <PrefillBootstrap />
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">
+              Video corrections
+            </p>
+            <h1 class="display-5 fw-bold mb-3">Suggest a video edit</h1>
+            <p class="text-muted mb-0">
+              Share verified corrections, missing relationships, or source
+              updates for a published video page.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2" data-form-shell="videoEdit">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-8">
+            <div class="border p-4 bg-white shadow-sm">
+              <h2 class="h5 fw-semibold">Video correction form</h2>
+              <p class="text-muted mb-3">
+                Tell us exactly what should change and include public sources so
+                the correction can be reviewed.
+              </p>
+              <div class="alert alert-warning rounded-0 small">
+                Please do not include private information about uninvolved
+                people. Corrections should focus on public, verifiable facts.
+              </div>
+              <form
+                name="videoEdit"
+                method="POST"
+                data-netlify-honeypot="organization"
+                class="needs-validation"
+                novalidate
+              >
+                <input type="hidden" name="form-name" value="videoEdit" />
+                <div class="honeypot visually-hidden">
+                  <label>
+                    Organization
+                    <input type="text" name="organization" />
+                  </label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="videoPath"
+                    name="videoPath"
+                    placeholder="/video/tx/example-video/"
+                    required
+                  />
+                  <label for="videoPath">Video page path*</label>
+                  <div class="invalid-feedback">
+                    Please include the video page path.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="url"
+                    class="form-control"
+                    id="videoUrl"
+                    name="videoUrl"
+                    placeholder="https://"
+                  />
+                  <label for="videoUrl">Original video URL</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="videoTitle"
+                    name="videoTitle"
+                    placeholder="Video title"
+                  />
+                  <label for="videoTitle">Video title</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="correctionDetails"
+                    name="correctionDetails"
+                    placeholder="Correction details"
+                    style="height: 130px"></textarea>
+                  <label for="correctionDetails">Correction details</label>
+                  <div class="form-text">
+                    Be specific about the field, link, person, agency, report,
+                    civil case, date, source, or summary that should change.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="relationshipCorrections"
+                    name="relationshipCorrections"
+                    placeholder="Relationship corrections"
+                    style="height: 120px"></textarea>
+                  <label for="relationshipCorrections">
+                    Relationship corrections
+                  </label>
+                  <div class="form-text">
+                    Include personnel, agencies, reports, civil cases, or links
+                    that should be added or removed.
+                  </div>
+                </div>
+                <div class="form-floating mb-3">
+                  <textarea
+                    class="form-control"
+                    id="sourceLinks"
+                    name="sourceLinks"
+                    placeholder="Source links"
+                    style="height: 110px"></textarea>
+                  <label for="sourceLinks">Source links</label>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="submitterName"
+                        name="submitterName"
+                        placeholder="Full name"
+                        required
+                      />
+                      <label for="submitterName">Submitter full name*</label>
+                      <div class="invalid-feedback">
+                        Please provide your full name.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="email"
+                        class="form-control"
+                        id="submitterEmail"
+                        name="submitterEmail"
+                        placeholder="Email"
+                        required
+                      />
+                      <label for="submitterEmail">Submitter email*</label>
+                      <div class="invalid-feedback">
+                        Please provide a valid email address.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-floating">
+                      <input
+                        type="tel"
+                        class="form-control"
+                        id="submitterPhone"
+                        name="submitterPhone"
+                        placeholder="Phone"
+                      />
+                      <label for="submitterPhone"
+                        >Submitter phone (optional)</label
+                      >
+                    </div>
+                  </div>
+                </div>
+                <div class="small text-muted mb-3">
+                  Protected by reCAPTCHA Enterprise.
+                </div>
+                <button type="submit" class="btn btn-dark rounded-0 w-100">
+                  Submit video correction
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    import {
+      initRecaptcha,
+      showFormLoadError,
+      submitJsonForm,
+    } from "#src/lib/client/forms.ts";
+
+    const form = document.querySelector(
+      'form[name="videoEdit"]',
+    ) as HTMLFormElement | null;
+    const shell = document.querySelector(
+      '[data-form-shell="videoEdit"]',
+    ) as HTMLElement | null;
+
+    if (!form) {
+      showFormLoadError({ formName: "videoEdit", shell });
+    } else {
+      initRecaptcha();
+      form.addEventListener("submit", async function (event) {
+        await submitJsonForm({
+          event,
+          form,
+          formName: "videoEdit",
+          onReset: function () {
+            form.classList.remove("was-validated");
+          },
+          recaptchaAction: "videoEditSubmit",
+          successKind: "verification_pending",
+        });
+      });
+    }
+  </script>
+  <script is:inline>
+    window.__IPC_PREFILL__?.prefillFields?.({
+      key: window.location.pathname,
+    });
+  </script>
+</SiteLayout>

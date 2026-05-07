@@ -23,6 +23,21 @@ type ReportItem = {
   url: string;
 };
 
+type VideoItem = {
+  title: string;
+  path: string;
+  thumbnail?: string | null;
+  summary?: string | null;
+  description?: string | null;
+  sourceLabel?: string | null;
+  officers?: {
+    relationshipType: string;
+    agency?: { name: string } | null;
+  }[];
+  civilCases?: { title: string; path: string; relationshipType: string }[];
+  reports?: { title: string; path: string; relationshipType: string }[];
+};
+
 type PersonnelEntry = {
   entry: {
     start_date?: string | null;
@@ -47,7 +62,12 @@ type PastEmployerEntry = {
   } | null;
 };
 
-type TabType = "litigation" | "reports" | "personnel" | "pastEmployers";
+type TabType =
+  | "litigation"
+  | "reports"
+  | "personnel"
+  | "pastEmployers"
+  | "videos";
 type TabDescriptor = {
   id: string;
   label: string;
@@ -69,6 +89,10 @@ type ProfileTabsProps = {
     emptyMessage?: string;
     layout?: "table" | "list";
   };
+  videos?: {
+    items?: VideoItem[];
+    emptyMessage?: string;
+  };
   personnel?: {
     entries?: PersonnelEntry[];
   };
@@ -83,6 +107,7 @@ const {
   extraNavClasses = "",
   litigation = null,
   reports = null,
+  videos = null,
   personnel = null,
   pastEmployers = null,
 } = Astro.props as ProfileTabsProps;
@@ -96,16 +121,23 @@ const normalizedTabs = tabs.map((tab, index) => ({
 
 const litigationCases = litigation?.cases || [];
 const reportsItems = reports?.items || [];
+const videoItems = videos?.items || [];
 const personnelEntries = personnel?.entries || [];
 const pastEmployerEntries = pastEmployers?.entries || [];
 const hasLitigation = litigationCases.length > 0;
 const hasReports = reportsItems.length > 0;
+const hasVideos = videoItems.length > 0;
 const hasPersonnel = personnelEntries.length > 0;
 const hasPastEmployers = pastEmployerEntries.length > 0;
 
 const formatCaseYear = (date?: string | null) =>
   date ? new Date(date).getFullYear() : "—";
 const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
+const formatRelationLabel = (value: string) =>
+  value
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 ---
 
 <div data-profile-tabs>
@@ -254,6 +286,69 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
               ) : (
                 <p class="text-muted">
                   {reports?.emptyMessage ?? "No reports published yet."}
+                </p>
+              )}
+            </>
+          ) : tab.tabType === "videos" ? (
+            <>
+              {hasVideos ? (
+                <div class="d-grid gap-3">
+                  {videoItems.map((video) => (
+                    <article class="border rounded-2 p-3">
+                      <div class="row g-3 align-items-start">
+                        {video.thumbnail ? (
+                          <div class="col-12 col-md-4">
+                            <a class="d-block" href={video.path}>
+                              <div class="ratio ratio-16x9 bg-dark">
+                                <img
+                                  src={video.thumbnail}
+                                  alt={`Video thumbnail for ${video.title}`}
+                                  class="w-100 h-100 object-fit-cover"
+                                  loading="lazy"
+                                />
+                              </div>
+                            </a>
+                          </div>
+                        ) : null}
+                        <div class="col">
+                          <div class="text-uppercase small text-muted mb-1">
+                            {video.sourceLabel || "Video"}
+                          </div>
+                          <h3 class="h6 mb-2">
+                            <a class="link-dark" href={video.path}>
+                              {video.title}
+                            </a>
+                          </h3>
+                          {video.summary || video.description ? (
+                            <p class="text-muted mb-2">
+                              {video.summary || video.description}
+                            </p>
+                          ) : null}
+                          <div class="small text-muted mb-3">
+                            {video.officers?.[0]?.relationshipType
+                              ? formatRelationLabel(
+                                  video.officers[0].relationshipType,
+                                )
+                              : "Linked video"}
+                            {video.officers?.[0]?.agency
+                              ? ` at ${video.officers[0].agency.name}`
+                              : ""}
+                          </div>
+                          <a
+                            class="btn btn-sm btn-outline-dark"
+                            href={video.path}
+                            data-profile-link-type="video"
+                          >
+                            Watch video
+                          </a>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p class="text-muted">
+                  {videos?.emptyMessage ?? "No videos linked yet."}
                 </p>
               )}
             </>

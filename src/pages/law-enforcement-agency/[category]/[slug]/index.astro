@@ -10,6 +10,7 @@ import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import ProfileTabs from "#src/components/ProfileTabs.astro";
+import { loadVideosForAgency } from "#src/lib/data/videos.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
@@ -163,6 +164,7 @@ const data = await withDb(async (client) => {
     civilOfficers,
   };
 });
+const videoItems = await loadVideosForAgency(agencyId);
 
 const officersById = mapBy(data.officers, "id");
 const officerStatsById = mapBy(data.officerStats, "id");
@@ -235,6 +237,7 @@ const reportedReports = data.reports
 const civilCaseCount = civilCases.length;
 const reportCount = reportedReports.length;
 const personnelCount = employees.length;
+const videoCount = videoItems.length;
 const categorySlug = data.agency.category?.toLowerCase() || "";
 const categoryMeta = US_STATE_TILES.find(
   (entry) => entry.code.toLowerCase() === categorySlug,
@@ -607,6 +610,12 @@ const structuredData = {
               badge: personnelCount,
               tabType: "personnel",
             },
+            {
+              id: "agency-videos",
+              label: "Videos",
+              badge: videoCount,
+              tabType: "videos",
+            },
           ]}
           extraNavClasses="mb-3"
           litigation={{
@@ -618,6 +627,9 @@ const structuredData = {
           }}
           personnel={{
             entries: employees,
+          }}
+          videos={{
+            items: videoItems,
           }}
         />
         <div class="mt-3">

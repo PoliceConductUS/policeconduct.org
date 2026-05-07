@@ -54,18 +54,6 @@ const setCategoryLastmod = (map, key, value) => {
   }
 };
 
-const hasEmbeddableVideo = (url) => {
-  try {
-    const parsed = new URL(url);
-    return (
-      parsed.hostname.includes("youtube.com") ||
-      parsed.hostname.includes("youtu.be")
-    );
-  } catch {
-    return false;
-  }
-};
-
 const addPaginatedPaths = (map, basePath, count, lastmod) => {
   setLastmod(map, basePath, lastmod);
   const totalPages = Math.max(1, Math.ceil((count || 0) / PAGE_SIZE));
@@ -111,44 +99,33 @@ export const buildSitemapLastmodMap = async () => {
       setLastmod(pathLastmods, "/report/", lastmod);
     }
 
-    const reportWatchRows = (
+    const videoRows = (
       await client.query(
         `
-          select
-            lower(r.category) as category,
-            r.slug,
-            rl.id,
-            rl.url,
-            rl.created_at,
-            rl.updated_at,
-            r.created_at as review_created_at,
-            r.updated_at as review_updated_at
-          from public.review_links rl
-          join public.reviews r on r.id = rl.review_id
-          where r.slug is not null
-        `,
+            select slug, lower(category) as category, created_at, updated_at, published_at, recorded_at
+            from public.videos
+            where slug is not null
+          `,
       )
     ).rows;
 
-    for (const row of reportWatchRows) {
-      if (
-        !row.category ||
-        !row.slug ||
-        !row.id ||
-        !hasEmbeddableVideo(row.url)
-      ) {
+    for (const video of videoRows) {
+      if (!video.slug) {
         continue;
       }
+      const lastmod = getLatestDate(
+        video.updated_at,
+        video.created_at,
+        video.published_at,
+        video.recorded_at,
+      );
       setLastmod(
         pathLastmods,
-        `/report/${row.category}/${row.slug}/watch/${row.id}/`,
-        getLatestDate(
-          row.updated_at,
-          row.created_at,
-          row.review_updated_at,
-          row.review_created_at,
-        ),
+        `/video/${video.category}/${video.slug}/`,
+        lastmod,
       );
+      setLastmod(pathLastmods, `/video/${video.category}/`, lastmod);
+      setLastmod(pathLastmods, "/video/", lastmod);
     }
 
     const agencyRows = (
@@ -366,46 +343,6 @@ export const buildSitemapLastmodMap = async () => {
         lastmod,
       );
       setLastmod(pathLastmods, "/civil-litigation/", lastmod);
-    }
-
-    const civilCaseWatchRows = (
-      await client.query(
-        `
-          select
-            lower(c.category) as category,
-            c.slug,
-            ccl.id,
-            ccl.url,
-            ccl.created_at,
-            ccl.updated_at,
-            c.created_at as civil_case_created_at,
-            c.updated_at as civil_case_updated_at
-          from public.civil_case_links ccl
-          join public.civil_cases c on c.id = ccl.civil_case_id
-          where c.slug is not null
-        `,
-      )
-    ).rows;
-
-    for (const row of civilCaseWatchRows) {
-      if (
-        !row.category ||
-        !row.slug ||
-        !row.id ||
-        !hasEmbeddableVideo(row.url)
-      ) {
-        continue;
-      }
-      setLastmod(
-        pathLastmods,
-        `/civil-litigation/${row.category}/${row.slug}/watch/${row.id}/`,
-        getLatestDate(
-          row.updated_at,
-          row.created_at,
-          row.civil_case_updated_at,
-          row.civil_case_created_at,
-        ),
-      );
     }
   });
 
