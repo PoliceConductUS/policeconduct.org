@@ -99,10 +99,7 @@ async function resendRequest(apiKey, path, { method = "GET", body } = {}) {
       return payload;
     }
 
-    if (
-      response.status === 429 &&
-      attempt < RESEND_RATE_LIMIT_RETRY_ATTEMPTS
-    ) {
+    if (response.status === 429 && attempt < RESEND_RATE_LIMIT_RETRY_ATTEMPTS) {
       const retryAfterSeconds = Number(response.headers.get("retry-after"));
       const retryDelayMs =
         Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0

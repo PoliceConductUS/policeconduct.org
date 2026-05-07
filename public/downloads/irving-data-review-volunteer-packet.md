@@ -14,7 +14,6 @@ The larger question is whether the same method can be applied agency-by-agency, 
 
 We are collecting records across multiple categories so the data can be compared. A single spreadsheet may not say much by itself. The clues usually appear when records are connected across systems, dates, officers, outcomes, complaints, use-of-force records, and public-records correspondence.
 
-
 ## Analysis lens
 
 We are interested in the kinds of factors that matter when civil-rights investigators, journalists, lawyers, and community groups evaluate whether a police department has a pattern or practice problem. That includes not just the arrest itself, but the full context around the encounter and the department's response afterward.
@@ -199,7 +198,6 @@ Helpful experience:
 - Google Sheets filtering, sorting, and basic formulas;
 - careful file naming;
 - writing short research notes with citations to source files.
-
 
 ## Pending requests and request tracking
 

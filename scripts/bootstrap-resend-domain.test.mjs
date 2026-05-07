@@ -163,7 +163,9 @@ test("verifyExistingDomain does not patch domain settings", async () => {
 
     if (method === "GET" && String(url).endsWith("/domains")) {
       return new Response(
-        JSON.stringify({ data: [{ id: "domain_123", name: "mail.policeconduct.org" }] }),
+        JSON.stringify({
+          data: [{ id: "domain_123", name: "mail.policeconduct.org" }],
+        }),
         {
           status: 200,
           headers: { "content-type": "application/json" },
@@ -181,7 +183,10 @@ test("verifyExistingDomain does not patch domain settings", async () => {
       );
     }
 
-    if (method === "POST" && String(url).endsWith("/domains/domain_123/verify")) {
+    if (
+      method === "POST" &&
+      String(url).endsWith("/domains/domain_123/verify")
+    ) {
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { "content-type": "application/json" },
@@ -199,7 +204,10 @@ test("verifyExistingDomain does not patch domain settings", async () => {
 
     assert.equal(result.verificationTriggered, true);
     assert.deepEqual(
-      calls.map(({ method, url }) => `${method} ${url.replace("https://api.resend.com", "")}`),
+      calls.map(
+        ({ method, url }) =>
+          `${method} ${url.replace("https://api.resend.com", "")}`,
+      ),
       [
         "GET /domains",
         "GET /domains/domain_123",

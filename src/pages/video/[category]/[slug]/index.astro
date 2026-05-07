@@ -152,7 +152,9 @@ const linkedPersonnelSummary = video.officers
       `${entry.officer.firstName} ${entry.officer.lastName} - ${entry.agency.name}`,
   )
   .join("\n");
-const linkedAgencySummary = linkedAgencies.map((agency) => agency.name).join("\n");
+const linkedAgencySummary = linkedAgencies
+  .map((agency) => agency.name)
+  .join("\n");
 const linkedCaseReportSummary = [
   ...video.civilCases.map((caseItem) => `${caseItem.title} - ${caseItem.path}`),
   ...video.reports.map((report) => `${report.title} - ${report.path}`),

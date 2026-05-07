@@ -27,19 +27,19 @@ Description review:
 
 ### Louisville Police Officer Saves Unconscious Newborn Baby
 
-| Field | Value |
-| --- | --- |
-| Reddit post | https://www.reddit.com/r/GoodCop/comments/x1o435/louisville_police_officer_saves_unconscious/ |
-| Source video | https://youtu.be/81ZPuZbpEzs |
-| Normalized video URL | https://www.youtube.com/watch?v=81ZPuZbpEzs |
-| Video title | Louisville Police Officer Save Unconscious Newborn Baby |
-| Source channel | PoliceActivity |
-| Primary location | Kentucky |
-| Agency clues | Louisville Police / Louisville Metro Police Department. Existing seed data includes Louisville Metro Police Department. |
+| Field                         | Value                                                                                                                                    |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Reddit post                   | https://www.reddit.com/r/GoodCop/comments/x1o435/louisville_police_officer_saves_unconscious/                                            |
+| Source video                  | https://youtu.be/81ZPuZbpEzs                                                                                                             |
+| Normalized video URL          | https://www.youtube.com/watch?v=81ZPuZbpEzs                                                                                              |
+| Video title                   | Louisville Police Officer Save Unconscious Newborn Baby                                                                                  |
+| Source channel                | PoliceActivity                                                                                                                           |
+| Primary location              | Kentucky                                                                                                                                 |
+| Agency clues                  | Louisville Police / Louisville Metro Police Department. Existing seed data includes Louisville Metro Police Department.                  |
 | Officer identification status | Description identifies Louisville Metro Police Officers Nick Green and Noah Cole; needs manual verification and agency-officer matching. |
-| Related reports/civil cases | None identified from initial review. |
-| Suggested tags | `positive-policing`, `medical-aid`, `rescue`, `source-subreddit-goodcop`, `source-channel-policeactivity` |
-| Processing status | Hold - needs officer identification. |
+| Related reports/civil cases   | None identified from initial review.                                                                                                     |
+| Suggested tags                | `positive-policing`, `medical-aid`, `rescue`, `source-subreddit-goodcop`, `source-channel-policeactivity`                                |
+| Processing status             | Hold - needs officer identification.                                                                                                     |
 
 Notes:
 
@@ -52,19 +52,19 @@ Notes:
 
 ### Stillwater Body Camera Footage Shows 150 MPH Crash Scene
 
-| Field | Value |
-| --- | --- |
-| Reddit post | https://www.reddit.com/r/GoodCop/comments/ykkoq7/stillwater_ok_police_first_to_respond_bodycam/ |
-| Source video | https://youtu.be/O99v_X5Eq-E |
-| Normalized video URL | https://www.youtube.com/watch?v=O99v_X5Eq-E |
-| Video title | Stillwater body camera footage shows 150 mph crash scene that killed two |
-| Source channel | KFOR Oklahoma's News 4 |
-| Primary location | Oklahoma |
-| Agency clues | Stillwater, Oklahoma police first response. Agency not checked against seed data yet. |
-| Officer identification status | YouTube description does not identify officer names. |
-| Related reports/civil cases | None identified from initial review. |
-| Suggested tags | `positive-policing`, `medical-aid`, `source-subreddit-goodcop`, `source-channel-kfor-oklahomas-news-4` |
-| Processing status | Hold - needs officer identification. |
+| Field                         | Value                                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Reddit post                   | https://www.reddit.com/r/GoodCop/comments/ykkoq7/stillwater_ok_police_first_to_respond_bodycam/        |
+| Source video                  | https://youtu.be/O99v_X5Eq-E                                                                           |
+| Normalized video URL          | https://www.youtube.com/watch?v=O99v_X5Eq-E                                                            |
+| Video title                   | Stillwater body camera footage shows 150 mph crash scene that killed two                               |
+| Source channel                | KFOR Oklahoma's News 4                                                                                 |
+| Primary location              | Oklahoma                                                                                               |
+| Agency clues                  | Stillwater, Oklahoma police first response. Agency not checked against seed data yet.                  |
+| Officer identification status | YouTube description does not identify officer names.                                                   |
+| Related reports/civil cases   | None identified from initial review.                                                                   |
+| Suggested tags                | `positive-policing`, `medical-aid`, `source-subreddit-goodcop`, `source-channel-kfor-oklahomas-news-4` |
+| Processing status             | Hold - needs officer identification.                                                                   |
 
 Notes:
 
@@ -77,19 +77,19 @@ Notes:
 
 ### Cincinnati Police Officers Rush to Help Man Shot in Over-The-Rhine
 
-| Field | Value |
-| --- | --- |
-| Reddit post | https://www.reddit.com/r/GoodCop/comments/144osal/because_departments_dont_see_or_hear_about_most/ |
-| Source video | https://www.youtube.com/watch?v=C2m3Vlot-Ak |
-| Normalized video URL | https://www.youtube.com/watch?v=C2m3Vlot-Ak |
-| Video title | Video shows Cincinnati police officers rush to help man shot in Over-The-Rhine |
-| Source channel | WLWT |
-| Primary location | Ohio |
-| Agency clues | Cincinnati Police Department. Agency not checked against seed data yet. |
-| Officer identification status | YouTube description does not identify officer names. |
-| Related reports/civil cases | None identified from initial review. |
-| Suggested tags | `positive-policing`, `medical-aid`, `source-subreddit-goodcop`, `source-channel-wlwt` |
-| Processing status | Hold - needs officer identification. |
+| Field                         | Value                                                                                              |
+| ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| Reddit post                   | https://www.reddit.com/r/GoodCop/comments/144osal/because_departments_dont_see_or_hear_about_most/ |
+| Source video                  | https://www.youtube.com/watch?v=C2m3Vlot-Ak                                                        |
+| Normalized video URL          | https://www.youtube.com/watch?v=C2m3Vlot-Ak                                                        |
+| Video title                   | Video shows Cincinnati police officers rush to help man shot in Over-The-Rhine                     |
+| Source channel                | WLWT                                                                                               |
+| Primary location              | Ohio                                                                                               |
+| Agency clues                  | Cincinnati Police Department. Agency not checked against seed data yet.                            |
+| Officer identification status | YouTube description does not identify officer names.                                               |
+| Related reports/civil cases   | None identified from initial review.                                                               |
+| Suggested tags                | `positive-policing`, `medical-aid`, `source-subreddit-goodcop`, `source-channel-wlwt`              |
+| Processing status             | Hold - needs officer identification.                                                               |
 
 Notes:
 
@@ -101,19 +101,19 @@ Notes:
 
 ### Brownfield Officer Rescues Woman Before Storm Destroys Home
 
-| Field | Value |
-| --- | --- |
-| Reddit post | https://www.reddit.com/r/GoodCop/comments/hdtv0n/video_a_police_officer_in_brownfield_texas/ |
-| Source article/video | https://www.kcbd.com/2020/06/19/caught-camera-woman-rescued-home-seconds-before-it-collapsed-during-storm/ |
-| Normalized video URL | Article URL; direct video URL not extracted. |
-| Video title | Caught on camera: woman rescued from home seconds before it collapsed during storm |
-| Source channel | KCBD |
-| Primary location | Texas |
-| Agency clues | Brownfield, Texas police. Existing seed data includes Brownfield Police Department. |
-| Officer identification status | Article metadata/extract did not identify officer names. |
-| Related reports/civil cases | None identified from initial review. |
-| Suggested tags | `positive-policing`, `rescue`, `community-assistance`, `source-subreddit-goodcop`, `source-channel-kcbd` |
-| Processing status | Hold - needs officer identification and direct video URL. |
+| Field                         | Value                                                                                                      |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Reddit post                   | https://www.reddit.com/r/GoodCop/comments/hdtv0n/video_a_police_officer_in_brownfield_texas/               |
+| Source article/video          | https://www.kcbd.com/2020/06/19/caught-camera-woman-rescued-home-seconds-before-it-collapsed-during-storm/ |
+| Normalized video URL          | Article URL; direct video URL not extracted.                                                               |
+| Video title                   | Caught on camera: woman rescued from home seconds before it collapsed during storm                         |
+| Source channel                | KCBD                                                                                                       |
+| Primary location              | Texas                                                                                                      |
+| Agency clues                  | Brownfield, Texas police. Existing seed data includes Brownfield Police Department.                        |
+| Officer identification status | Article metadata/extract did not identify officer names.                                                   |
+| Related reports/civil cases   | None identified from initial review.                                                                       |
+| Suggested tags                | `positive-policing`, `rescue`, `community-assistance`, `source-subreddit-goodcop`, `source-channel-kcbd`   |
+| Processing status             | Hold - needs officer identification and direct video URL.                                                  |
 
 Notes:
 
@@ -124,19 +124,19 @@ Notes:
 
 ### Florida Deputy Finds Missing Woman Thanks to Loyal Dog
 
-| Field | Value |
-| --- | --- |
-| Reddit post | https://www.reddit.com/r/GoodCop/comments/1o1q4x2/florida_deputy_finds_missing_woman_thanks_to/ |
-| Source video | https://youtu.be/T8CVWrzz5BQ |
-| Normalized video URL | https://www.youtube.com/watch?v=T8CVWrzz5BQ |
-| Video title | Florida Deputy Finds Missing Woman Thanks to Loyal Dog |
-| Source channel | RawCamPOV |
-| Primary location | Florida |
-| Agency clues | Florida deputy; specific agency not identified from initial listing. |
-| Officer identification status | YouTube description could not be extracted during initial review. |
-| Related reports/civil cases | None identified from initial review. |
-| Suggested tags | `positive-policing`, `rescue`, `community-assistance`, `source-subreddit-goodcop`, `source-channel-rawcampov` |
-| Processing status | Hold - needs agency and officer identification. |
+| Field                         | Value                                                                                                         |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Reddit post                   | https://www.reddit.com/r/GoodCop/comments/1o1q4x2/florida_deputy_finds_missing_woman_thanks_to/               |
+| Source video                  | https://youtu.be/T8CVWrzz5BQ                                                                                  |
+| Normalized video URL          | https://www.youtube.com/watch?v=T8CVWrzz5BQ                                                                   |
+| Video title                   | Florida Deputy Finds Missing Woman Thanks to Loyal Dog                                                        |
+| Source channel                | RawCamPOV                                                                                                     |
+| Primary location              | Florida                                                                                                       |
+| Agency clues                  | Florida deputy; specific agency not identified from initial listing.                                          |
+| Officer identification status | YouTube description could not be extracted during initial review.                                             |
+| Related reports/civil cases   | None identified from initial review.                                                                          |
+| Suggested tags                | `positive-policing`, `rescue`, `community-assistance`, `source-subreddit-goodcop`, `source-channel-rawcampov` |
+| Processing status             | Hold - needs agency and officer identification.                                                               |
 
 Notes:
 
@@ -147,19 +147,19 @@ Notes:
 
 ### Fired Buffalo Officer Says "I Don't Regret It"
 
-| Field | Value |
-| --- | --- |
-| Reddit post | https://www.reddit.com/r/GoodCop/comments/7pkb28/at_last_a_good_cop_does_the_right_thing_and_loses/ |
-| Source video | https://www.youtube.com/watch?v=O4OOcGfVWns |
-| Normalized video URL | https://www.youtube.com/watch?v=O4OOcGfVWns |
-| Video title | Fired cop says "I don't regret it" after stopping police officer from choking suspect |
-| Source channel | WKBW TV \| Buffalo, NY |
-| Primary location | New York |
-| Agency clues | Buffalo Police Department. Officer appears to be Cariol Horne, but this must be manually verified before seed insertion. |
-| Officer identification status | YouTube description identifies Cariol Horne and Gregory Kwiatkowski; needs manual verification and agency-officer matching. |
-| Related reports/civil cases | Possible civil/labor/legal history should be researched before linking. |
-| Suggested tags | `positive-policing`, `officer-intervention`, `de-escalation`, `source-subreddit-goodcop`, `source-channel-wkbw-tv-buffalo-ny` |
-| Processing status | Hold - needs officer verification and relationship research. |
+| Field                         | Value                                                                                                                         |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Reddit post                   | https://www.reddit.com/r/GoodCop/comments/7pkb28/at_last_a_good_cop_does_the_right_thing_and_loses/                           |
+| Source video                  | https://www.youtube.com/watch?v=O4OOcGfVWns                                                                                   |
+| Normalized video URL          | https://www.youtube.com/watch?v=O4OOcGfVWns                                                                                   |
+| Video title                   | Fired cop says "I don't regret it" after stopping police officer from choking suspect                                         |
+| Source channel                | WKBW TV \| Buffalo, NY                                                                                                        |
+| Primary location              | New York                                                                                                                      |
+| Agency clues                  | Buffalo Police Department. Officer appears to be Cariol Horne, but this must be manually verified before seed insertion.      |
+| Officer identification status | YouTube description identifies Cariol Horne and Gregory Kwiatkowski; needs manual verification and agency-officer matching.   |
+| Related reports/civil cases   | Possible civil/labor/legal history should be researched before linking.                                                       |
+| Suggested tags                | `positive-policing`, `officer-intervention`, `de-escalation`, `source-subreddit-goodcop`, `source-channel-wkbw-tv-buffalo-ny` |
+| Processing status             | Hold - needs officer verification and relationship research.                                                                  |
 
 Notes:
 
@@ -172,19 +172,19 @@ Notes:
 
 ### Pantigo, Texas Officer Allows Filming During Traffic Stop
 
-| Field | Value |
-| --- | --- |
-| Reddit post | https://www.reddit.com/r/GoodCop/comments/kr5eoj/good_officers_like_being_filmed_on_duty/ |
-| Source video | https://youtu.be/tdyBqziABJc?t=687 |
-| Normalized video URL | https://www.youtube.com/watch?v=tdyBqziABJc |
-| Video title | Pantigo Texas -I don't know what you have on you, can I search? |
-| Source channel | James Freeman |
-| Primary location | Texas |
-| Agency clues | Pantigo, Texas officer. Agency likely Pantego/Pantego Police Department; spelling in Reddit/Youtube title may be wrong. |
-| Officer identification status | YouTube description could not be extracted during initial review. |
-| Related reports/civil cases | None identified from initial review. |
-| Suggested tags | `positive-policing`, `de-escalation`, `right-to-record-police`, `source-subreddit-goodcop`, `source-channel-james-freeman` |
-| Processing status | Hold - needs agency spelling check and officer identification. |
+| Field                         | Value                                                                                                                      |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Reddit post                   | https://www.reddit.com/r/GoodCop/comments/kr5eoj/good_officers_like_being_filmed_on_duty/                                  |
+| Source video                  | https://youtu.be/tdyBqziABJc?t=687                                                                                         |
+| Normalized video URL          | https://www.youtube.com/watch?v=tdyBqziABJc                                                                                |
+| Video title                   | Pantigo Texas -I don't know what you have on you, can I search?                                                            |
+| Source channel                | James Freeman                                                                                                              |
+| Primary location              | Texas                                                                                                                      |
+| Agency clues                  | Pantigo, Texas officer. Agency likely Pantego/Pantego Police Department; spelling in Reddit/Youtube title may be wrong.    |
+| Officer identification status | YouTube description could not be extracted during initial review.                                                          |
+| Related reports/civil cases   | None identified from initial review.                                                                                       |
+| Suggested tags                | `positive-policing`, `de-escalation`, `right-to-record-police`, `source-subreddit-goodcop`, `source-channel-james-freeman` |
+| Processing status             | Hold - needs agency spelling check and officer identification.                                                             |
 
 Notes:
 

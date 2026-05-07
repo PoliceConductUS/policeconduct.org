@@ -5,8 +5,7 @@ process.env.SENTRY_DSN = "";
 process.env.SENTRY_ENVIRONMENT = "";
 process.env.SUBMISSIONS_BUCKET = "test-submissions-bucket";
 process.env.SUBMISSIONS_KMS_KEY_ID = "test-kms-key";
-process.env.EMAIL_VERIFICATION_FROM_ADDRESS =
-  "noreply@mail.policeconduct.org";
+process.env.EMAIL_VERIFICATION_FROM_ADDRESS = "noreply@mail.policeconduct.org";
 process.env.EMAIL_VERIFICATION_HMAC_SECRET = "test-hmac-secret";
 
 const { __testables } = await import("./index.mjs");

@@ -46,7 +46,8 @@ if (!video) {
 }
 
 return Astro.redirect(
-  video.videoPath || `/civil-litigation/${categoryParam}/${data.civilCase.slug}/`,
+  video.videoPath ||
+    `/civil-litigation/${categoryParam}/${data.civilCase.slug}/`,
   video.videoPath ? 301 : 302,
 );
 ---
