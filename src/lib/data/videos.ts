@@ -46,7 +46,6 @@ export type VideoReference = {
   path: string;
   tags: { slug: string; label: string }[];
   officers: {
-    relationshipType: string;
     confidence: string;
     notes: string | null;
     agencyOfficerId: string;
@@ -67,17 +66,16 @@ export type VideoReference = {
     };
   }[];
   civilCases: {
-    relationshipType: string;
     notes: string | null;
     id: string;
     slug: string;
     category: string;
     title: string;
     causeNumber: string;
+    primarySourceUrl: string | null;
     path: string;
   }[];
   reports: {
-    relationshipType: string;
     notes: string | null;
     id: string;
     slug: string;
@@ -115,9 +113,8 @@ const hydrateVideos = async (rows: any[]): Promise<VideoReference[]> => {
   const videoIds = rows.map((row) => row.id);
   const { tagRows, officerRows, civilCaseRows, reportRows } = await withDb(
     async (client) => {
-      const [tags, officers, civilCases, reports] = await Promise.all([
-        client.query(
-          `
+      const tags = await client.query(
+        `
             select
               link.video_id,
               tag.slug,
@@ -127,13 +124,12 @@ const hydrateVideos = async (rows: any[]): Promise<VideoReference[]> => {
             where link.video_id = any($1)
             order by tag.label
           `,
-          [videoIds],
-        ),
-        client.query(
-          `
+        [videoIds],
+      );
+      const officers = await client.query(
+        `
             select
               link.video_id,
-              link.relationship_type,
               link.confidence,
               link.notes,
               agency_officer.id as agency_officer_id,
@@ -156,34 +152,33 @@ const hydrateVideos = async (rows: any[]): Promise<VideoReference[]> => {
             join public.agency agency
               on agency.id = agency_officer.agency_id
             where link.video_id = any($1)
-            order by officer.last_name, officer.first_name, link.relationship_type
+            order by officer.last_name, officer.first_name
           `,
-          [videoIds],
-        ),
-        client.query(
-          `
+        [videoIds],
+      );
+      const civilCases = await client.query(
+        `
             select
               link.video_id,
-              link.relationship_type,
               link.notes,
               civil_case.id,
               civil_case.slug,
               civil_case.category,
               civil_case.title,
-              civil_case.cause_number
+              civil_case.cause_number,
+              civil_case.primary_source_url
             from public.video_civil_cases link
             join public.civil_cases civil_case
               on civil_case.id = link.civil_case_id
             where link.video_id = any($1)
             order by civil_case.filed_date nulls last, civil_case.title
           `,
-          [videoIds],
-        ),
-        client.query(
-          `
+        [videoIds],
+      );
+      const reports = await client.query(
+        `
             select
               link.video_id,
-              link.relationship_type,
               link.notes,
               review.id,
               review.slug,
@@ -196,9 +191,8 @@ const hydrateVideos = async (rows: any[]): Promise<VideoReference[]> => {
             where link.video_id = any($1)
             order by review.incident_date nulls last, review.title
           `,
-          [videoIds],
-        ),
-      ]);
+        [videoIds],
+      );
 
       return {
         tagRows: tags.rows,
@@ -233,7 +227,6 @@ const hydrateVideos = async (rows: any[]): Promise<VideoReference[]> => {
         label: tag.label,
       })),
       officers: (officersByVideo.get(video.id) || []).map((entry: any) => ({
-        relationshipType: entry.relationship_type,
         confidence: entry.confidence,
         notes: entry.notes || null,
         agencyOfficerId: entry.agency_officer_id,
@@ -254,17 +247,16 @@ const hydrateVideos = async (rows: any[]): Promise<VideoReference[]> => {
         },
       })),
       civilCases: (civilCasesByVideo.get(video.id) || []).map((entry: any) => ({
-        relationshipType: entry.relationship_type,
         notes: entry.notes || null,
         id: entry.id,
         slug: entry.slug,
         category: entry.category,
         title: entry.title,
         causeNumber: entry.cause_number,
+        primarySourceUrl: entry.primary_source_url || null,
         path: `/civil-litigation/${entry.category}/${entry.slug}/`,
       })),
       reports: (reportsByVideo.get(video.id) || []).map((entry: any) => ({
-        relationshipType: entry.relationship_type,
         notes: entry.notes || null,
         id: entry.id,
         slug: entry.slug,

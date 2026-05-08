@@ -47,7 +47,6 @@ const [agencies, personnel, reports, civilCasesData] = await Promise.all([
 const civilCasesByCategory = new Map(
   civilCasesData.categoryCounts.map((entry) => [entry.category, entry.count]),
 );
-const totalCivilCases = civilCasesData.totalCount;
 const reportCountsByCategory = reports.reduce(
   (acc: Map<string, number>, report) => {
     const key = String(report.category || "").toLowerCase();

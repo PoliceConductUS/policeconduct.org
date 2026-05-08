@@ -85,7 +85,6 @@ const stats = buildCategoryCollectionStats(
   categoryCounts,
 );
 const pagePath = `/report/${categorySlug}/page/${page.currentPage}/`;
-const totalCount = page.total ?? page.data.length;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const reportItems = page.data.map((report: ReportSummary, index: number) => ({

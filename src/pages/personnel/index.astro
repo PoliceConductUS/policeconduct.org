@@ -66,7 +66,9 @@ const personnelItems = personnelRows.slice(0, 25).map((person, index) => ({
   position: index + 1,
   item: {
     "@type": "Person",
-    name: person.name,
+    name: `${person.firstName} ${person.lastName}${
+      person.nameSuffix ? ` ${person.nameSuffix}` : ""
+    }`,
     url: new URL(`/personnel/${person.slug}/`, siteUrl).toString(),
     ...(person.agencyName
       ? {

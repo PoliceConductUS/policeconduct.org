@@ -96,11 +96,48 @@ const data = await withDb(async (client) => {
   const civilCases = civilCaseIds.length
     ? (
         await client.query(
-          "select * from public.civil_cases where id = any($1)",
+          `select *
+           from public.civil_cases
+           where id = any($1)
+           order by filed_date desc nulls last, title asc, cause_number asc`,
           [civilCaseIds],
         )
       ).rows
     : [];
+  const coverageLinks = (
+    await client.query(
+      `select *
+       from public.personnel_coverage_links
+       where officer_id = $1
+       order by
+         case
+           when source_name like 'City of %' then 0
+           when source_name ilike '%mortuary%' then 0
+           else 1
+         end,
+         published_at desc nulls last,
+         title asc`,
+      [officerId],
+    )
+  ).rows;
+  const sameNameOfficers = (
+    await client.query(
+      `select
+         o.id,
+         o.slug,
+         concat_ws(' ', o.first_name, o.middle_name, o.last_name, o.suffix) as name,
+         array_remove(array_agg(distinct a.name order by a.name), null) as agency_names
+       from public.officers o
+       join public.agency_officers ao on ao.officer_id = o.id
+       join public.agency a on a.id = ao.agency_id
+       where lower(o.first_name) = lower($1)
+         and lower(o.last_name) = lower($2)
+         and o.id <> $3
+       group by o.id, o.slug, o.first_name, o.middle_name, o.last_name, o.suffix
+       order by o.last_name asc, o.first_name asc, o.middle_name asc nulls last`,
+      [officer.first_name, officer.last_name, officerId],
+    )
+  ).rows;
 
   return {
     officer,
@@ -109,17 +146,43 @@ const data = await withDb(async (client) => {
     agencies,
     reports,
     civilCases,
+    coverageLinks,
+    sameNameOfficers,
   };
 });
 const videoItems = await loadVideosForOfficer(officerId);
 
 const agenciesById = mapBy(data.agencies, "id");
 const history = normalizeAgencyHistory(data.agencyOfficers);
-const currentAssignment = history[history.length - 1];
+const assignmentHistory = history
+  .map((entry) => ({
+    ...entry,
+    agency: agenciesById[entry.agency_id],
+  }))
+  .filter((entry) => entry.agency);
+const activeAssignment =
+  [...history].reverse().find((entry) => !entry.end_date) || null;
+const currentAssignment = activeAssignment || history[history.length - 1];
+const hasCurrentAssignment = Boolean(activeAssignment);
 const currentBadge = currentAssignment?.badge_number || null;
 const currentAgency = currentAssignment
   ? agenciesById[currentAssignment.agency_id]
   : null;
+const currentTitle = currentAssignment?.title || null;
+const assignmentDateRange = currentAssignment
+  ? [
+      currentAssignment.start_date
+        ? formatShortDate(currentAssignment.start_date)
+        : null,
+      currentAssignment.end_date
+        ? formatShortDate(currentAssignment.end_date)
+        : hasCurrentAssignment
+          ? "Current"
+          : null,
+    ]
+      .filter(Boolean)
+      .join(" to ")
+  : "";
 
 const civilCasesWithPaths = data.civilCases.map(
   (caseItem: {
@@ -164,17 +227,18 @@ const deceasedPublicMessage =
   (deceasedOnDisplay
     ? `Reported deceased on ${deceasedOnDisplay}.`
     : "This individual is reported deceased.");
-const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${data.officer.first_name} ${data.officer.last_name} | ${currentAgency!.name}`;
+const assignmentStatusLabel = hasCurrentAssignment
+  ? "Current agency"
+  : "Last known agency";
+const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${data.officer.first_name} ${data.officer.last_name} | ${hasCurrentAssignment ? currentAgency!.name : `Last known: ${currentAgency!.name}`}`;
 const pageDescription = isDeceased
   ? `${officerName} personnel profile with agency history, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
-  : `${officerName} personnel profile with agency history, public reports, and civil litigation records.`;
-const pastEmployerSummary = history
-  .slice(0, -1)
+  : `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}, agency history, public reports, videos, coverage, and civil litigation records.`;
+const pastEmployerSummary = assignmentHistory
+  .filter((entry) => entry.id !== activeAssignment?.id)
   .map((entry) => ({
     ...entry,
-    agency: agenciesById[entry.agency_id],
   }))
-  .filter((entry) => entry.agency)
   .map((entry) => {
     const segments = [entry.agency?.name];
     const dateRange = [
@@ -249,21 +313,14 @@ const claimProfilePrefillPayload = JSON.stringify({
   message: `I would like to claim ownership of this profile.\nProfile path: ${officerPath}`,
 });
 
-const pastEmployers = history
-  .slice(0, -1)
-  .map((entry) => ({
-    ...entry,
-    agency: agenciesById[entry.agency_id],
-  }))
-  .filter((entry) => entry.agency);
-
 const defaultPersonnelImagePath = "/img/personnel/default.webp";
 const personnelImageSrc =
   getPersonnelImageById(data.officer.id) || defaultPersonnelImagePath;
 const civilCaseCount = data.civilCases.length;
 const reportCount = data.reports.length;
 const videoCount = videoItems.length;
-const pastEmployerCount = pastEmployers.length;
+const coverageCount = data.coverageLinks.length;
+const assignmentHistoryCount = assignmentHistory.length;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(officerPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
@@ -337,8 +394,8 @@ const structuredData = {
         <div class="row align-items-center">
           <div class="col-lg-12">
             <p class="text-uppercase small text-muted mb-2">
-              {currentAgency!.name} • {currentAgency!.city || "Unknown"},{" "}
-              {currentAgency!.state}
+              {assignmentStatusLabel}: {currentAgency!.name} •{" "}
+              {currentAgency!.city || "Unknown"}, {currentAgency!.state}
             </p>
             <h1 class="display-4 fw-bold mb-3">
               {data.officer.first_name}
@@ -368,7 +425,33 @@ const structuredData = {
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-12 col-lg-10">
-            <h2 class="h4 text-uppercase text-muted">Basic details</h2>
+            {
+              data.sameNameOfficers.length ? (
+                <div class="alert alert-light border rounded-2 mb-4">
+                  <div class="fw-semibold mb-2">
+                    Similar names in the database
+                  </div>
+                  <ul class="mb-0">
+                    {data.sameNameOfficers.map(
+                      (person: {
+                        slug: string;
+                        name: string;
+                        agency_names?: string[] | null;
+                      }) => (
+                        <li>
+                          <a href={`/personnel/${person.slug}/`}>
+                            {person.name}
+                          </a>
+                          {person.agency_names?.length
+                            ? ` — ${person.agency_names.join(", ")}`
+                            : ""}
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                </div>
+              ) : null
+            }
             <div class="row align-items-start">
               <div class="col-12 col-lg-7">
                 <dl class="row mb-4 mb-lg-0">
@@ -376,22 +459,21 @@ const structuredData = {
                   <dd class="col-sm-8">
                     {currentBadge || "Not publicly listed"}
                   </dd>
-                  <dt class="col-sm-4">Agency</dt>
+                  <dt class="col-sm-4">{assignmentStatusLabel}</dt>
                   <dd class="col-sm-8">
-                    {
-                      currentAgency ? (
-                        <a
-                          href={`/law-enforcement-agency/${currentAgency.category}/${currentAgency.slug}/`}
-                        >
-                          {currentAgency.name}
-                        </a>
-                      ) : (
-                        "Not listed"
-                      )
-                    }
+                    <a
+                      href={`/law-enforcement-agency/${currentAgency!.category}/${currentAgency!.slug}/`}
+                    >
+                      {currentAgency!.name}
+                    </a>
                     {
                       currentAssignment?.start_date
-                        ? ` since: ${formatShortDate(currentAssignment.start_date)}`
+                        ? `${hasCurrentAssignment ? " since" : " from"}: ${formatShortDate(currentAssignment.start_date)}`
+                        : ""
+                    }
+                    {
+                      currentAssignment?.end_date
+                        ? `; ended: ${formatShortDate(currentAssignment.end_date)}`
                         : ""
                     }
                   </dd>
@@ -401,8 +483,8 @@ const structuredData = {
                   <dd class="col-sm-8">{reportCount}</dd>
                   <dt class="col-sm-4">Videos</dt>
                   <dd class="col-sm-8">{videoCount}</dd>
-                  <dt class="col-sm-4">Past employers</dt>
-                  <dd class="col-sm-8">{pastEmployers.length}</dd>
+                  <dt class="col-sm-4">Agency history</dt>
+                  <dd class="col-sm-8">{assignmentHistoryCount}</dd>
                 </dl>
                 <div class="d-flex flex-wrap gap-2 mt-3">
                   <PrefillNavButton
@@ -504,9 +586,15 @@ const structuredData = {
                   tabType: "videos",
                 },
                 {
+                  id: "officer-coverage",
+                  label: "Coverage",
+                  badge: coverageCount,
+                  tabType: "coverage",
+                },
+                {
                   id: "officer-past",
-                  label: "Past employers",
-                  badge: pastEmployerCount,
+                  label: "Agency history",
+                  badge: assignmentHistoryCount,
                   tabType: "pastEmployers",
                 },
               ]}
@@ -520,8 +608,11 @@ const structuredData = {
               videos={{
                 items: videoItems,
               }}
+              coverage={{
+                links: data.coverageLinks,
+              }}
               pastEmployers={{
-                entries: pastEmployers,
+                entries: assignmentHistory,
               }}
             />
 

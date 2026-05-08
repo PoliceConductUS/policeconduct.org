@@ -118,7 +118,10 @@ const data = await withDb(async (client) => {
   const civilCases = civilCaseIds.length
     ? (
         await client.query(
-          "select * from public.civil_cases where id = any($1)",
+          `select *
+           from public.civil_cases
+           where id = any($1)
+           order by filed_date desc nulls last, title asc, cause_number asc`,
           [civilCaseIds],
         )
       ).rows

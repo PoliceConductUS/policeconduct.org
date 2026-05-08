@@ -106,7 +106,6 @@ const pagePath =
   page.currentPage > 1
     ? `/personnel/${categoryParam}/page/${page.currentPage}/`
     : `/personnel/${categoryParam}/`;
-const totalCount = page.total ?? page.data.length;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const personnelItems = page.data.map(

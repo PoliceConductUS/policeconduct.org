@@ -9,7 +9,7 @@ const { pageUrl, disqusIdentifier } = Astro.props;
 
 <div id="disqus_thread"></div>
 <script is:inline define:vars={{ pageUrl, disqusIdentifier }}>
-  const disqus_config = function () {
+  window.disqus_config = function () {
     this.page.url = pageUrl;
     this.page.identifier = disqusIdentifier;
   };

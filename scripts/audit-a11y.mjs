@@ -16,14 +16,6 @@ const BASE_URL = `http://${HOST}:${PORT}`;
 const FRESH_BUILD_REQUIRED_MESSAGE =
   "Fresh full build required. Run `npm run build` before `npm run audit` or `npm run audit:a11y`. Audits do not build automatically, and stale or partial dist/ output is not supported.";
 
-const readText = async (filePath) => {
-  try {
-    return await fs.readFile(filePath, "utf8");
-  } catch {
-    return null;
-  }
-};
-
 const startStaticServer = async () => {
   const contentTypes = {
     ".html": "text/html; charset=utf-8",

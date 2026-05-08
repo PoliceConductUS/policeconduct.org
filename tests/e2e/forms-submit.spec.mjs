@@ -51,7 +51,7 @@ function buildInputValue(type, name) {
   return "E2E Test";
 }
 
-async function fillRequiredFields(page, formLocator, formName = "") {
+async function fillRequiredFields(formLocator, formName = "") {
   if (formName === "dataSubjectAccessRequest") {
     await formLocator.locator("#dsarName").fill("E2E Test");
     await formLocator.locator("#dsarEmail").fill("e2e@example.org");
@@ -170,15 +170,12 @@ test.describe("form submissions", () => {
       page,
     }) => {
       await installRecaptchaMock(page);
-      let submitRequestBody = null;
-
       await page.route("**/api/forms/submit", async (route) => {
         const req = route.request();
         if (req.method() !== "POST") {
           await route.fallback();
           return;
         }
-        submitRequestBody = req.postDataJSON();
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -220,7 +217,7 @@ test.describe("form submissions", () => {
       await expect(formLocator).toBeVisible();
       const originalPathname = new URL(page.url()).pathname;
 
-      await fillRequiredFields(page, formLocator, form.formName);
+      await fillRequiredFields(formLocator, form.formName);
 
       const submitResponsePromise = page.waitForResponse((response) => {
         return (
@@ -270,7 +267,7 @@ test.describe("form submissions", () => {
     await expect(formLocator).toBeVisible();
     const originalPathname = new URL(page.url()).pathname;
 
-    await fillRequiredFields(page, formLocator, "contact");
+    await fillRequiredFields(formLocator, "contact");
     const submitResponsePromise = page.waitForResponse((response) => {
       return (
         response.url().includes("/api/forms/submit") &&
@@ -327,7 +324,7 @@ test.describe("form submissions", () => {
     await expect(formLocator).toBeVisible();
     const originalPathname = new URL(page.url()).pathname;
 
-    await fillRequiredFields(page, formLocator, "contact");
+    await fillRequiredFields(formLocator, "contact");
     const submitResponsePromise = page.waitForResponse((response) => {
       return (
         response.url().includes("/api/forms/submit") &&

@@ -32,9 +32,9 @@ const variantClass =
   <slot />
 </button>
 
-<script is:inline define:vars={{ buttonId, payloadJson, storageKey, to }}>
+<script is:inline define:vars={{ payloadJson, storageKey, to }}>
   (() => {
-    const button = document.getElementById(buttonId);
+    const button = document.currentScript?.previousElementSibling;
     if (!(button instanceof HTMLButtonElement)) {
       return;
     }

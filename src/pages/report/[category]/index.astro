@@ -10,6 +10,7 @@ import {
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { loadReportSummaries } from "#src/lib/data/summaries.js";
+import type { ReportSummary } from "#src/lib/data/types.js";
 import { PAGE_SIZE } from "#src/lib/pagination.js";
 import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
 
@@ -57,7 +58,7 @@ const {
     civilCaseCount: 0,
   },
 } = Astro.props as {
-  allReports: any[];
+  allReports: ReportSummary[];
   categoryCounts: CategoryCollectionCounts;
 };
 const totalCount = allReports.length;

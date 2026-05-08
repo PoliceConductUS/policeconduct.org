@@ -141,11 +141,6 @@ const structuredData = {
   ],
 };
 
-const relationLabel = (value: string) =>
-  value
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 const linkedPersonnelSummary = video.officers
   .map(
     (entry) =>
@@ -159,6 +154,25 @@ const linkedCaseReportSummary = [
   ...video.civilCases.map((caseItem) => `${caseItem.title} - ${caseItem.path}`),
   ...video.reports.map((report) => `${report.title} - ${report.path}`),
 ].join("\n");
+const sourceLinks = [
+  {
+    href: video.url,
+    label: video.sourceLabel || video.sourcePlatform || "Video source",
+  },
+  ...video.civilCases.flatMap((caseItem) =>
+    caseItem.primarySourceUrl
+      ? [
+          {
+            href: caseItem.primarySourceUrl,
+            label: `${caseItem.title} source`,
+          },
+        ]
+      : [],
+  ),
+].filter(
+  (link, index, links) =>
+    links.findIndex((candidate) => candidate.href === link.href) === index,
+);
 const videoNewPrefillPayload = JSON.stringify({
   category: video.category,
   linkedPersonnel: linkedPersonnelSummary,
@@ -254,14 +268,6 @@ const videoEditPrefillPayload = JSON.stringify({
             }
 
             <div class="d-flex flex-wrap gap-2 mb-4">
-              <a
-                class="btn btn-dark rounded-0"
-                href={video.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open original source
-              </a>
               <PrefillNavButton
                 class="btn btn-outline-dark rounded-0"
                 to="/video/suggest-edit/"
@@ -321,7 +327,7 @@ const videoEditPrefillPayload = JSON.stringify({
                               {entry.officer.firstName} {entry.officer.lastName}
                             </a>{" "}
                             <span class="text-muted">
-                              {relationLabel(entry.relationshipType)} at{" "}
+                              from{" "}
                               <a
                                 class="link-secondary"
                                 href={`/law-enforcement-agency/${entry.agency.category}/${entry.agency.slug}/`}
@@ -344,10 +350,7 @@ const videoEditPrefillPayload = JSON.stringify({
                       <ul class="mb-0">
                         {video.civilCases.map((caseItem) => (
                           <li>
-                            <a href={caseItem.path}>{caseItem.title}</a>{" "}
-                            <span class="text-muted">
-                              {relationLabel(caseItem.relationshipType)}
-                            </span>
+                            <a href={caseItem.path}>{caseItem.title}</a>
                           </li>
                         ))}
                       </ul>
@@ -363,10 +366,7 @@ const videoEditPrefillPayload = JSON.stringify({
                       <ul class="mb-0">
                         {video.reports.map((report) => (
                           <li>
-                            <a href={report.path}>{report.title}</a>{" "}
-                            <span class="text-muted">
-                              {relationLabel(report.relationshipType)}
-                            </span>
+                            <a href={report.path}>{report.title}</a>
                           </li>
                         ))}
                       </ul>
@@ -376,6 +376,26 @@ const videoEditPrefillPayload = JSON.stringify({
                   }
                 </div>
               </div>
+            </section>
+
+            <section class="small text-muted border-top pt-3 mb-3">
+              <h2 class="h6 text-uppercase text-muted mb-2">Sources</h2>
+              <ul class="mb-0">
+                {
+                  sourceLinks.map((link) => (
+                    <li>
+                      <a
+                        class="link-secondary"
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ))
+                }
+              </ul>
             </section>
 
             <div class="small text-muted border-top pt-3">

@@ -3,21 +3,6 @@ import type { PersonnelSummary } from "#src/lib/data/types.js";
 
 const { person } = Astro.props as { person: PersonnelSummary };
 
-const formatDate = (value: string | null) => {
-  if (!value) {
-    return null;
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
-
 const fullName = `${person.lastName}, ${person.firstName}${
   person.nameSuffix ? ` ${person.nameSuffix}` : ""
 }`;
@@ -25,7 +10,6 @@ const initials =
   `${person.firstName?.[0] || ""}${person.lastName?.[0] || ""}`.toUpperCase();
 const detailUrl = `/personnel/${person.slug}/`;
 const agencyUrl = `/law-enforcement-agency/${person.agencySlug}/`;
-const lastUpdatedLabel = formatDate(person.lastUpdatedAt);
 const reportLabel = `${person.reportCount} reports`;
 ---
 
@@ -81,13 +65,6 @@ const reportLabel = `${person.reportCount} reports`;
       >
         {person.agencyName}
       </a>
-      {
-        lastUpdatedLabel ? (
-          <span class="ms-auto fw-semibold text-dark">
-            Updated {lastUpdatedLabel}
-          </span>
-        ) : null
-      }
     </div>
   </div>
 </article>

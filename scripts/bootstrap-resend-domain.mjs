@@ -146,7 +146,7 @@ async function createDomain(apiKey, config) {
   });
 }
 
-async function updateDomain(apiKey, config, domainId) {
+async function updateDomain(apiKey, domainId) {
   const body = {
     clickTracking: false,
     openTracking: false,
@@ -187,7 +187,7 @@ async function ensureDomain(config) {
     trimToNull(domain?.tracking_subdomain) !== config.trackingSubdomain;
 
   if (needsUpdate) {
-    await updateDomain(config.apiKey, config, domain.id);
+    await updateDomain(config.apiKey, domain.id);
     domain = await getDomain(config.apiKey, domain.id);
   }
 

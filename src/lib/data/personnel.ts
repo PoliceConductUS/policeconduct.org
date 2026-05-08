@@ -122,9 +122,6 @@ export const loadPersonnelSummaries = async (
       if (activeAssignments.length === 0) {
         return null;
       }
-      const officerReportCount = Number(
-        reportCountsByOfficer[officerId]?.report_count || 0,
-      );
       // Use most recent active assignment
       const eligibleAssignment =
         activeAssignments[activeAssignments.length - 1];

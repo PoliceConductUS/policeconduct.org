@@ -109,7 +109,19 @@ const officerEntities = Array.from(
           },
         ] as const;
       })
-      .filter(Boolean),
+      .filter(
+        (
+          entry,
+        ): entry is readonly [
+          `${string}#person`,
+          {
+            readonly "@type": "Person";
+            readonly "@id": `${string}#person`;
+            readonly name: string;
+            readonly url: string;
+          },
+        ] => Boolean(entry),
+      ),
   ).values(),
 );
 const agencyEntities = Array.from(
@@ -220,20 +232,6 @@ const structuredData = {
     reportEntity,
   ],
 };
-
-const ratedOfficers = officers
-  .filter((entry) => entry.ratings.length)
-  .map((entry) => {
-    const badgeColor =
-      entry.ratingOverall !== null && entry.ratingOverall <= 1.5
-        ? "#ef4444"
-        : "#f59e0b";
-    const badgeLabel =
-      entry.ratingOverall !== null && entry.ratingOverall <= 1.5
-        ? "Unacceptable"
-        : "Needs Improvement";
-    return { ...entry, badgeColor, badgeLabel };
-  });
 ---
 
 <SiteLayout
