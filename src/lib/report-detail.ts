@@ -1,11 +1,6 @@
 import { withDb } from "./db.js";
 import { groupBy, mapBy } from "./data.js";
-import { loadVideoPathsByUrls, loadVideosForReport } from "./data/videos.js";
-import {
-  getVideoEmbedUrl,
-  getYouTubeThumbnailUrl,
-  normalizeVideoUrl,
-} from "./video.js";
+import { loadCoverageLinksForReport } from "./data/coverage.js";
 
 const assertValue = <T>(value: T | null | undefined, message: string): T => {
   if (value === null || value === undefined) {
@@ -64,9 +59,9 @@ export type ReportDetailModel = {
     id: string;
     title: string;
     url: string;
-    embed: string | null;
-    thumbnail: string | null;
-    videoPath: string | null;
+    source_name?: string | null;
+    published_at?: string | null;
+    notes?: string | null;
   }[];
 };
 
@@ -138,8 +133,9 @@ type EvidenceLink = {
   id: string;
   title: string;
   url: string;
-  embed: string | null;
-  thumbnail: string | null;
+  source_name?: string | null;
+  published_at?: string | null;
+  notes?: string | null;
 };
 type EvidenceLinkSource = { id: string; title: string; url: string };
 
@@ -150,9 +146,6 @@ const buildEvidenceLinks = (links: EvidenceLinkSource[]): EvidenceLink[] =>
       id,
       title: link.title,
       url: link.url,
-      embed: getVideoEmbedUrl(link.url),
-      thumbnail: getYouTubeThumbnailUrl(link.url),
-      videoPath: null,
     };
   });
 
@@ -258,25 +251,7 @@ export const loadReportDetail = async (
     .map((tag: { label: string }) => tag.label);
 
   const evidenceLinks = buildEvidenceLinks(data.reportLinks ?? []);
-  const videoPathsByUrl = await loadVideoPathsByUrls(
-    evidenceLinks.map((link) => link.url),
-  );
-  const linkedVideos = await loadVideosForReport(String(data.report.id));
-  const linkedVideoRows = linkedVideos
-    .filter(
-      (video) =>
-        !evidenceLinks.some(
-          (link) => normalizeVideoUrl(link.url) === video.normalizedUrl,
-        ),
-    )
-    .map((video) => ({
-      id: `video:${video.id}`,
-      title: video.title,
-      url: video.url,
-      embed: video.embed,
-      thumbnail: video.thumbnail,
-      videoPath: video.path,
-    }));
+  const coverageLinks = await loadCoverageLinksForReport(String(data.report.id));
   const civilCases = await withDb(async (client) => {
     return (
       await client.query(
@@ -338,12 +313,6 @@ export const loadReportDetail = async (
         path: `/civil-litigation/${category}/${slug}/`,
       };
     }),
-    evidenceLinks: [
-      ...evidenceLinks.map((link) => ({
-        ...link,
-        videoPath: videoPathsByUrl.get(link.url) || null,
-      })),
-      ...linkedVideoRows,
-    ],
+    evidenceLinks: [...evidenceLinks, ...coverageLinks],
   };
 };

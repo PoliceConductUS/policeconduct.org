@@ -159,11 +159,6 @@ const auditHtml = async () => {
       html,
       /<meta\s+name=["']robots["']\s+content=["']([^"']+)["'][^>]*>/i,
     );
-    const description = extract(
-      html,
-      /<meta\s+name=["']description["']\s+content=["']([^"']+)["'][^>]*>/i,
-    );
-
     if (!title || !title.trim()) {
       addError(`Missing <title> for ${normalizedRoute}`);
     }
@@ -184,20 +179,6 @@ const auditHtml = async () => {
       }
     }
 
-    if (
-      normalizedRoute.startsWith("/video/") &&
-      normalizedRoute !== "/video/" &&
-      /^\/video\/[^/]+\/[^/]+\/$/.test(normalizedRoute)
-    ) {
-      if (!/"@type"\s*:\s*"VideoObject"/i.test(html)) {
-        addError(
-          `Video page missing VideoObject structured data: ${normalizedRoute}`,
-        );
-      }
-      if (!description || !description.trim()) {
-        addWarning(`Video page missing meta description: ${normalizedRoute}`);
-      }
-    }
   }
 };
 

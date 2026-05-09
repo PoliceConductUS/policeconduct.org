@@ -69,7 +69,6 @@ const navItems = [
     href: "/civil-litigation/",
     title: "Civil litigation cases",
   },
-  { label: "Videos", href: "/video/", title: "Video records" },
   { label: "News", href: "/news/", title: "Police conduct news" },
 ];
 
@@ -283,7 +282,10 @@ const isActivePath = (href: string) =>
       <div
         class="container d-flex flex-wrap justify-content-between align-items-center gap-3"
       >
-        <div class="me-3">
+        <div
+          class="me-3 beta-banner-message"
+          style="flex: 1 1 0; max-width: calc(100% - 3rem); min-width: 0; overflow-wrap: break-word;"
+        >
           Early beta: We have limited capacity and manually review submissions.
           If you want this to exist, please <a href="/donate">donate</a>.
         </div>
@@ -716,6 +718,13 @@ const isActivePath = (href: string) =>
     <script>
       import "#src/lib/client/site.js";
     </script>
+    <style>
+      @media (max-width: 575.98px) {
+        .beta-banner-message {
+          max-width: 20rem !important;
+        }
+      }
+    </style>
     <script is:inline define:vars={{ issueMessage }}>
       (function () {
         const openFeedback = function (message) {

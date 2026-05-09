@@ -4,255 +4,40 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import DisqusComments from "#src/components/DisqusComments.astro";
-import { withDb } from "#src/lib/db.js";
-import { groupBy, mapBy } from "#src/lib/data.js";
-import { formatShortDate } from "#src/lib/format.js";
+import {
+  loadAgencyDetail,
+  loadAgencyStaticPaths,
+} from "#src/lib/data/agency-detail.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
-import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import ProfileTabs from "#src/components/ProfileTabs.astro";
-import { loadVideosForAgency } from "#src/lib/data/videos.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
-  const agencies = await withDb(async (client) => {
-    return (
-      await client.query(
-        "select id, name, state, slug, category from public.agency",
-      )
-    ).rows;
-  });
-  return agencies.map(
-    (agency: { id: string; slug: string; category?: string | null }) => {
-      const categoryValue = (agency.category || "federal").toLowerCase();
-      return {
-        params: {
-          category: categoryValue,
-          slug: agency.slug,
-        },
-        props: { agencyId: agency.id },
-      };
-    },
-  );
+  return loadAgencyStaticPaths();
 }
 
 const { agencyId } = Astro.props;
-const data = await withDb(async (client) => {
-  const agency = (
-    await client.query("select * from public.agency where id = $1", [agencyId])
-  ).rows[0];
-  const agencyLinks = (
-    await client.query(
-      "select * from public.agency_links where agency_id = $1",
-      [agencyId],
-    )
-  ).rows;
-  const agencyPhones = (
-    await client.query(
-      "select * from public.agency_phone_numbers where agency_id = $1",
-      [agencyId],
-    )
-  ).rows;
-  const agencyOfficers = (
-    await client.query(
-      "select * from public.agency_officers where agency_id = $1",
-      [agencyId],
-    )
-  ).rows;
-  const agencyStats = (
-    await client.query("select * from public.agency_stats where id = $1", [
-      agencyId,
-    ])
-  ).rows[0];
-  const officerIds = agencyOfficers.map(
-    (entry: { officer_id: string }) => entry.officer_id,
-  );
-  const officers = officerIds.length
-    ? (
-        await client.query("select * from public.officers where id = any($1)", [
-          officerIds,
-        ])
-      ).rows
-    : [];
-  const officerStats = officerIds.length
-    ? (
-        await client.query(
-          "select * from public.officers_stats where id = any($1)",
-          [officerIds],
-        )
-      ).rows
-    : [];
-  const agencyOfficerIds = agencyOfficers.map(
-    (entry: { id: string }) => entry.id,
-  );
-  const reportOfficers = agencyOfficerIds.length
-    ? (
-        await client.query(
-          "select * from public.review_officers where agency_officer_id = any($1)",
-          [agencyOfficerIds],
-        )
-      ).rows
-    : [];
-  const reportIds = [
-    ...new Set(
-      reportOfficers.map((entry: { review_id: string }) => entry.review_id),
-    ),
-  ];
-  const reports = reportIds.length
-    ? (
-        await client.query("select * from public.reviews where id = any($1)", [
-          reportIds,
-        ])
-      ).rows
-    : [];
-
-  // Find civil cases involving officers from this agency
-  const civilCaseIds = (
-    await client.query(
-      `select distinct cco.civil_case_id
-             from public.agency_officers ao
-             join public.civil_case_officers cco on cco.agency_officer_id = ao.id
-             where ao.agency_id = $1`,
-      [agencyId],
-    )
-  ).rows.map((row: { civil_case_id: string }) => row.civil_case_id);
-  const civilCases = civilCaseIds.length
-    ? (
-        await client.query(
-          `select *
-           from public.civil_cases
-           where id = any($1)
-           order by filed_date desc nulls last, title asc, cause_number asc`,
-          [civilCaseIds],
-        )
-      ).rows
-    : [];
-  const civilCaseOfficers = civilCaseIds.length
-    ? (
-        await client.query(
-          `select cco.civil_case_id, ao.officer_id
-                 from public.civil_case_officers cco
-                 join public.agency_officers ao on ao.id = cco.agency_officer_id
-                 where cco.civil_case_id = any($1)`,
-          [civilCaseIds],
-        )
-      ).rows
-    : [];
-  const civilOfficerIds = [
-    ...new Set(
-      civilCaseOfficers.map(
-        (entry: { officer_id: string }) => entry.officer_id,
-      ),
-    ),
-  ];
-  const civilOfficers = civilOfficerIds.length
-    ? (
-        await client.query("select * from public.officers where id = any($1)", [
-          civilOfficerIds,
-        ])
-      ).rows
-    : [];
-
-  return {
-    agency,
-    agencyLinks,
-    agencyPhones,
-    agencyOfficers,
-    agencyStats,
-    officers,
-    officerStats,
-    reports,
-    reportOfficers,
-    civilCases,
-    civilCaseOfficers,
-    civilOfficers,
-  };
-});
-const videoItems = await loadVideosForAgency(agencyId);
-
-const officersById = mapBy(data.officers, "id");
-const officerStatsById = mapBy(data.officerStats, "id");
-const civilCaseOfficersByCase = groupBy(
-  data.civilCaseOfficers,
-  "civil_case_id",
-);
-const civilOfficersById = mapBy(data.civilOfficers, "id");
-
-const employees = data.agencyOfficers
-  .filter((entry: { end_date?: string | null }) => !entry.end_date)
-  .map(
-    (entry: {
-      officer_id: string;
-      badge_number?: string | null;
-      start_date?: string | null;
-      end_date?: string | null;
-    }) => {
-      const officer = officersById[entry.officer_id];
-      const stats = officerStatsById[entry.officer_id];
-      return {
-        entry,
-        officer,
-        reportCount: stats?.review_count ?? 0,
-        rating: stats?.weighted_average ?? null,
-      };
-    },
-  );
+const data = await loadAgencyDetail(agencyId);
 
 const agencyRatingPercent =
   data.agencyStats && data.agencyStats.review_count > 0
     ? Math.round(Number(data.agencyStats.weighted_average || 0) * 10)
     : 0;
 
-const civilCases = data.civilCases.map(
-  (record: {
-    id: string;
-    slug: string;
-    category: string;
-    title?: string | null;
-    cause_number?: string | null;
-    filed_date?: string | null;
-    court?: string | null;
-    primary_source_url?: string | null;
-  }) => {
-    const officerLinks = (civilCaseOfficersByCase[record.id] || []).map(
-      (entry: { officer_id: string }) => civilOfficersById[entry.officer_id],
-    );
-    return {
-      ...record,
-      officers: officerLinks.filter(Boolean),
-      caseUrl: `/civil-litigation/${record.category}/${record.slug}/`,
-    };
-  },
-);
-
-const reportedReports = data.reports
-  .map((report: { incident_date: string; slug: string; category: string }) => {
-    return {
-      ...report,
-      incidentDate: formatShortDate(report.incident_date),
-      url: `/report/${report.category}/${report.slug}/`,
-    };
-  })
-  .sort((a, b) => {
-    const left = new Date(b.incident_date).getTime();
-    const right = new Date(a.incident_date).getTime();
-    return left - right;
-  });
-const civilCaseCount = civilCases.length;
-const reportCount = reportedReports.length;
-const personnelCount = employees.length;
-const videoCount = videoItems.length;
-const categorySlug = data.agency.category?.toLowerCase() || "";
-const categoryMeta = US_STATE_TILES.find(
-  (entry) => entry.code.toLowerCase() === categorySlug,
-);
-const categoryLabel =
-  categorySlug === "federal"
-    ? "Federal"
-    : categoryMeta?.name || data.agency.category?.toUpperCase() || "State";
-const categoryPath = categorySlug
-  ? `/law-enforcement-agency/${categorySlug}/`
-  : "/law-enforcement-agency/";
-const agencyPath = `/law-enforcement-agency/${categorySlug}/${data.agency.slug}/`;
+const {
+  agencyName,
+  agencyState,
+  agencySlug,
+  categorySlug,
+  categoryLabel,
+  categoryPath,
+  agencyPath,
+  civilCases,
+  reportedReports,
+  employees,
+  coverageLinks,
+  counts,
+} = data;
 const agencyLinksSummary = data.agencyLinks
   .map((link: { url?: string | null; label?: string | null }) =>
     [link.label || null, link.url || null].filter(Boolean).join(" — "),
@@ -279,14 +64,14 @@ const reportLinksSummary = reportedReports
   .join("\n");
 const reportNewPrefillPayload = JSON.stringify({
   officer: {
-    department: data.agency.name,
+    department: agencyName,
   },
 } satisfies ReportNewPrefill);
 const addCivilCaseHref = "/civil-litigation/new/";
 const addCivilCasePrefillPayload = JSON.stringify({
-  jurisdiction: data.agency.category?.toLowerCase() || "",
-  defendants: data.agency.name || "",
-  summary: `${data.agency.name} agency profile: ${agencyPath}`,
+  jurisdiction: categorySlug,
+  defendants: agencyName,
+  summary: `${agencyName} agency profile: ${agencyPath}`,
   links: [
     agencyPath,
     ...reportedReports.slice(0, 3).map((report) => report.url),
@@ -297,8 +82,8 @@ const addCivilCasePrefillPayload = JSON.stringify({
 const suggestEditHref = "/law-enforcement-agency/suggest-edit/";
 const suggestEditPrefillPayload = JSON.stringify({
   agencyPath,
-  agencyName: data.agency.name,
-  jurisdiction: data.agency.category?.toLowerCase() || "",
+  agencyName,
+  jurisdiction: categorySlug,
   departmentWebsite: primaryWebsite,
   departmentHead: data.agency.contact_name || "",
   socialLinks: agencyLinksSummary,
@@ -306,9 +91,9 @@ const suggestEditPrefillPayload = JSON.stringify({
 });
 const suggestPersonnelHref = "/personnel/new/";
 const suggestPersonnelPrefillPayload = JSON.stringify({
-  currentAgency: data.agency.name,
+  currentAgency: agencyName,
   currentAgencyCity: data.agency.city || "",
-  currentAgencyState: data.agency.state || "",
+  currentAgencyState: agencyState,
   civilLitigation: civilLitigationSummary,
   reportLinks: reportLinksSummary,
 });
@@ -320,12 +105,12 @@ const claimProfilePrefillPayload = JSON.stringify({
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(agencyPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
-const disqusIdentifier = `agency:${data.agency.slug}`;
-const pageDescription = `${data.agency.name} agency profile with contact information, personnel, public reports, and recent civil litigation references.`;
+const disqusIdentifier = `agency:${agencySlug}`;
+const pageDescription = `${agencyName} agency profile with contact information, personnel, public reports, and recent civil litigation references.`;
 const addressAvailable =
   data.agency.address ||
   data.agency.city ||
-  data.agency.state ||
+  agencyState ||
   data.agency.zip_code;
 const address = addressAvailable
   ? {
@@ -333,7 +118,7 @@ const address = addressAvailable
       addressCountry: "US",
       ...(data.agency.address ? { streetAddress: data.agency.address } : {}),
       ...(data.agency.city ? { addressLocality: data.agency.city } : {}),
-      ...(data.agency.state ? { addressRegion: data.agency.state } : {}),
+      addressRegion: agencyState,
       ...(data.agency.zip_code ? { postalCode: data.agency.zip_code } : {}),
     }
   : null;
@@ -350,16 +135,14 @@ const sameAs = data.agencyLinks
 const organization = {
   "@type": "GovernmentOrganization",
   "@id": `${pageUrl}#organization`,
-  name: data.agency.name,
+  name: agencyName,
   url: pageUrl,
   mainEntityOfPage: { "@id": profilePageId },
   ...(address ? { address } : {}),
   ...(data.agency.contact_email ? { email: data.agency.contact_email } : {}),
   ...(contactPoints.length ? { contactPoint: contactPoints } : {}),
   ...(sameAs.length ? { sameAs } : {}),
-  ...(data.agency.state
-    ? { areaServed: { "@type": "AdministrativeArea", name: data.agency.state } }
-    : {}),
+  areaServed: { "@type": "AdministrativeArea", name: agencyState },
 };
 const websiteId = new URL("/", siteUrl).toString();
 const structuredData = {
@@ -375,7 +158,7 @@ const structuredData = {
       "@type": "ProfilePage",
       "@id": profilePageId,
       url: pageUrl,
-      name: `${data.agency.name} | PoliceConduct.org`,
+      name: `${agencyName} | PoliceConduct.org`,
       description: pageDescription,
       isPartOf: { "@id": websiteId },
       mainEntity: { "@id": organization["@id"] },
@@ -389,7 +172,7 @@ const structuredData = {
 ---
 
 <SiteLayout
-  title={`${data.agency.name} | PoliceConduct.org`}
+  title={`${agencyName} | PoliceConduct.org`}
   description={pageDescription}
   pagePath={agencyPath}
   structuredData={structuredData}
@@ -401,15 +184,15 @@ const structuredData = {
         items={[
           { label: "Agencies", href: "/law-enforcement-agency/" },
           { label: categoryLabel, href: categoryPath },
-          { label: data.agency.name, href: agencyPath, current: true },
+          { label: agencyName, href: agencyPath, current: true },
         ]}
       />
       <div class="row justify-content-between align-items-start">
         <div class="col-lg-7">
           <p class="text-uppercase small text-muted mb-2">Agency profile</p>
-          <h1 class="display-5 fw-bold">{data.agency.name}</h1>
+          <h1 class="display-5 fw-bold">{agencyName}</h1>
           <p class="text-muted">
-            {data.agency.city || "Unknown"}, {data.agency.state}
+            {data.agency.city || "Unknown"}, {agencyState}
           </p>
         </div>
         <div class="col-lg-4">
@@ -417,7 +200,7 @@ const structuredData = {
             <h2 class="h6 text-uppercase text-muted">Address</h2>
             <p class="mb-1">{data.agency.address || "Not listed"}</p>
             <p class="mb-0">
-              {data.agency.city || "Unknown"}, {data.agency.state},{" "}
+              {data.agency.city || "Unknown"}, {agencyState},{" "}
               {data.agency.zip_code || "N/A"}
             </p>
           </div>
@@ -460,14 +243,24 @@ const structuredData = {
                 <>
                   <h3 class="h6 text-uppercase text-muted mt-3">Links</h3>
                   {data.agencyLinks.map(
-                    (link: { url?: string | null; label?: string | null }) => (
+                    (link: {
+                      url: string;
+                      label: string;
+                      description?: string | null;
+                    }) => (
                       <p class="mb-1">
                         <a
                           href={link.url}
                           target="_blank"
                           rel="noopener noreferrer"
+                          title={link.description || undefined}
+                          aria-label={
+                            link.description
+                              ? `${link.label}: ${link.description}`
+                              : undefined
+                          }
                         >
-                          {link.label || link.url}
+                          {link.label}
                         </a>
                       </p>
                     ),
@@ -561,7 +354,7 @@ const structuredData = {
                     to="/about/contact/"
                     payload={{
                       whoami: "Subscriber",
-                      message: `Please notify me when this agency page changes: /law-enforcement-agency/${data.agency.category}/${data.agency.slug}/`,
+                      message: `Please notify me when this agency page changes: ${agencyPath}`,
                     }}
                     data-testid="agency-subscribe-link"
                   >
@@ -596,28 +389,28 @@ const structuredData = {
         <ProfileTabs
           tabs={[
             {
+              id: "agency-reports",
+              label: "Reports",
+              badge: counts.reports,
+              tabType: "reports",
+            },
+            {
               id: "agency-litigation",
               label: "Civil litigation",
-              badge: civilCaseCount,
+              badge: counts.civilCases,
               tabType: "litigation",
             },
             {
-              id: "agency-reports",
-              label: "Reports",
-              badge: reportCount,
-              tabType: "reports",
+              id: "agency-coverage",
+              label: "Related Links",
+              badge: counts.coverage,
+              tabType: "coverage",
             },
             {
               id: "agency-personnel",
               label: "Personnel",
-              badge: personnelCount,
+              badge: counts.personnel,
               tabType: "personnel",
-            },
-            {
-              id: "agency-videos",
-              label: "Videos",
-              badge: videoCount,
-              tabType: "videos",
             },
           ]}
           extraNavClasses="mb-3"
@@ -631,8 +424,10 @@ const structuredData = {
           personnel={{
             entries: employees,
           }}
-          videos={{
-            items: videoItems,
+          coverage={{
+            links: coverageLinks,
+            helperText:
+              "Links about this agency or personnel connected to it.",
           }}
         />
         <div class="mt-3">

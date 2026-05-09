@@ -152,9 +152,6 @@ const stats = buildCategoryCollectionStats(
               ]}
               className="mb-2"
             />
-            <p class="text-uppercase small text-muted mb-2">
-              Civil litigation • {categoryLabel}
-            </p>
             <h1 class="display-4 fw-bold mb-3">
               {categoryLabel} civil litigation
             </h1>
@@ -170,92 +167,60 @@ const stats = buildCategoryCollectionStats(
         </div>
       </div>
     </section>
-    <div class="bg-white border-bottom border-dark">
-      <CollectionStatsBand items={stats} />
-    </div>
-
     <section class="py-vh-2">
       <div class="container">
         <div class="row">
           <div class="col-12">
             {
               caseCount ? (
-                <div class="row row-cols-1 g-3">
+                <div class="profile-record-list">
                   {pageCases.map((caseItem) => {
                     const casePath = `/civil-litigation/${categoryParam}/${caseItem.slug}/`;
+                    const defendants = [
+                      ...caseItem.officers.map((officer: OfficerRef) => ({
+                        href: `/personnel/${officer.slug}/`,
+                        label: `${officer.first_name} ${officer.last_name}`,
+                      })),
+                      ...caseItem.agencies.map((agency: AgencyRef) => ({
+                        href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+                        label: agency.name,
+                      })),
+                    ];
                     return (
-                      <div class="col">
-                        <article class="card shadow-sm border-0 rounded-0 h-100">
-                          <div class="card-body d-flex flex-column gap-3">
-                            <div class="row g-3 align-items-start">
-                              <div class="col-12 col-md-2 col-xl-1">
-                                <div class="text-uppercase small text-muted">
-                                  Year
-                                </div>
-                                <div class="fw-bold">
-                                  {caseItem.filed_date
-                                    ? new Date(
-                                        caseItem.filed_date,
-                                      ).getFullYear()
-                                    : "—"}
-                                </div>
-                              </div>
-                              <div class="col-12 col-md-5 col-xl-4">
-                                <div class="text-uppercase small text-muted">
-                                  Case
-                                </div>
-                                <a
-                                  class="link-dark fw-semibold"
-                                  href={casePath}
-                                >
-                                  {caseItem.title || "Unnamed case"}
-                                </a>
-                                <div class="text-muted small">
-                                  {caseItem.cause_number ||
-                                    "No cause number listed"}
-                                </div>
-                              </div>
-                              <div class="col-12 col-md-5 col-xl-4">
-                                <div class="text-uppercase small text-muted">
-                                  Defendants
-                                </div>
-                                <div class="d-flex flex-wrap align-items-center gap-1">
-                                  {[
-                                    ...caseItem.officers.map(
-                                      (officer: OfficerRef) => ({
-                                        href: `/personnel/${officer.slug}/`,
-                                        label: `${officer.first_name} ${officer.last_name}`,
-                                      }),
-                                    ),
-                                    ...caseItem.agencies.map(
-                                      (agency: AgencyRef) => ({
-                                        href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
-                                        label: agency.name,
-                                      }),
-                                    ),
-                                  ].map((entry, index) => (
-                                    <>
-                                      {index > 0 ? (
-                                        <span class="mx-1 text-muted">•</span>
-                                      ) : null}
-                                      <a
-                                        class="link-dark text-decoration-none"
-                                        href={entry.href}
-                                      >
-                                        {entry.label}
-                                      </a>
-                                    </>
-                                  ))}
-                                  {caseItem.officers.length === 0 &&
-                                  caseItem.agencies.length === 0 ? (
-                                    <span class="text-muted">—</span>
-                                  ) : null}
-                                </div>
-                              </div>
-                            </div>
+                      <article class="profile-record">
+                        <div class="profile-record-meta">
+                          <span>
+                            {caseItem.filed_date
+                              ? new Date(caseItem.filed_date).getFullYear()
+                              : "Year not listed"}
+                          </span>
+                          {caseItem.cause_number ? (
+                            <span>{caseItem.cause_number}</span>
+                          ) : null}
+                        </div>
+                        <div class="profile-record-body">
+                          <h2 class="profile-record-title">
+                            <a href={casePath}>
+                              {caseItem.title || "Unnamed case"}
+                            </a>
+                          </h2>
+                          <div class="profile-record-detail">
+                            {defendants.length ? (
+                              <span>
+                                Defendants:{" "}
+                                {defendants.map((entry, index) => (
+                                  <>
+                                    {index > 0 ? ", " : null}
+                                    <a href={entry.href}>{entry.label}</a>
+                                  </>
+                                ))}
+                              </span>
+                            ) : (
+                              <span>Defendants not listed</span>
+                            )}
                           </div>
+                        </div>
                         </article>
-                      </div>
                     );
                   })}
                 </div>
@@ -284,5 +249,148 @@ const stats = buildCategoryCollectionStats(
         <Pagination basePath={pagePath} currentPage={1} lastPage={totalPages} />
       </div>
     </section>
+    <CollectionStatsBand items={stats} variant="compact" />
   </main>
 </SiteLayout>
+<style>
+  .display-4 {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .profile-record-list {
+    border-top: 0;
+    display: grid;
+    gap: 0;
+  }
+
+  .profile-record {
+    align-items: start;
+    border-top: 1px solid var(--bs-border-color);
+    display: grid;
+    gap: 0.75rem 1.25rem;
+    grid-template-columns: minmax(0, 1fr) minmax(8rem, 13rem);
+    padding: 0.95rem 0;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease;
+  }
+
+  .profile-record:hover {
+    background: color-mix(in srgb, var(--bs-gray-100) 42%, var(--bs-white));
+  }
+
+  .profile-record-body {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .profile-record-meta {
+    align-items: flex-end;
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-direction: column;
+    font-size: 0.8125rem;
+    gap: 0.25rem;
+    grid-column: 2;
+    grid-row: 1;
+    line-height: 1.35;
+    min-width: 0;
+    text-align: right;
+  }
+
+  .profile-record-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin: 0;
+  }
+
+  .profile-record-title a,
+  .profile-record-detail a {
+    color: var(--bs-dark);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .profile-record-detail {
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.875rem;
+    gap: 0.35rem 0.85rem;
+    line-height: 1.5;
+    margin-top: 0.35rem;
+    min-width: 0;
+  }
+
+  .profile-record-detail > span[aria-hidden="true"] {
+    display: none;
+  }
+
+  .profile-record-meta span,
+  .profile-record-meta a {
+    color: var(--bs-secondary-color);
+    max-width: 100%;
+  }
+
+  .profile-record-title a {
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  .profile-record-detail a {
+    font-weight: 600;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.16em;
+  }
+
+  .profile-record-title,
+  .profile-record-detail,
+  .profile-record-meta {
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 991.98px) {
+    .display-4 {
+      font-size: clamp(2.25rem, 12vw, 3.5rem);
+      line-height: 1.05;
+    }
+
+    .profile-record {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .profile-record-body,
+    .profile-record-meta {
+      grid-column: 1;
+    }
+
+    .profile-record-meta {
+      align-items: flex-start;
+      flex-direction: row;
+      flex-wrap: wrap;
+      grid-row: 2;
+      text-align: left;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .profile-record-list,
+    .profile-record {
+      max-width: calc(100vw - 1rem);
+    }
+
+    .profile-record-detail {
+      align-items: flex-start;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .profile-record-detail > * {
+      margin-right: 0;
+    }
+  }
+</style>

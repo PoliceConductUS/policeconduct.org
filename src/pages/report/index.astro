@@ -1,6 +1,7 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import ReportDisclaimer from "#src/components/ReportDisclaimer.astro";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import {
@@ -124,18 +125,22 @@ if (reportItemList) {
     </section>
     <section class="py-vh-2">
       <div class="container">
+        <div class="row mb-4">
+          <div class="col-12 col-lg-10 col-xl-8">
+            <ReportDisclaimer />
+          </div>
+        </div>
         <UsaChoroplethMap
           stats={stateStats}
           title="States"
-          subtitle="Counts of reports by agency state."
+          subtitle="Select a state to view published reports for agencies in that jurisdiction."
           emptyLabel="No reports yet"
-          interactionLabel="Hover over a state to see the count."
+          interactionLabel="Hover for counts; click a state to browse reports."
           headerAction={{
             href: suggestReportHref,
             label: "Submit a report",
           }}
           federalPanel={{
-            eyebrow: "Federal",
             title: "Federal agencies",
             value: federalAgencies.length,
             description: "Federal agencies referenced in listed reports.",

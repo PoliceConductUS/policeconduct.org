@@ -187,7 +187,7 @@ if (federalItemList) {
         <UsaChoroplethMap
           stats={stateStats}
           title="States"
-          subtitle="Civil litigation by agency category"
+          subtitle="Select a state to view civil cases tied to agencies and personnel there."
           emptyLabel="No cases yet"
           interactionLabel="Click a state to view its cases."
           headerAction={{
@@ -197,7 +197,6 @@ if (federalItemList) {
             prefillPayload: { jurisdiction: "" },
           }}
           federalPanel={{
-            eyebrow: "Federal",
             title: "Federal agencies",
             value: federalAgencies.length,
             description: "Federal agencies linked to listed cases.",

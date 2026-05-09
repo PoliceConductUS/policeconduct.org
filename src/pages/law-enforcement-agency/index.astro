@@ -115,16 +115,15 @@ if (agencyItemList) {
         <UsaChoroplethMap
           stats={stateStats}
           title="States"
-          subtitle="Click a state to jump to its agencies."
+          subtitle="Select a state to view law enforcement agencies in that jurisdiction."
           emptyLabel="No agencies yet"
-          interactionLabel="Hover over a state to see the count; click to view agencies."
+          interactionLabel="Hover for counts; click a state to browse agencies."
           headerAction={{
             href: suggestAgencyHref,
             label: "Suggest a new agency",
             target: "_self",
           }}
           federalPanel={{
-            eyebrow: "Federal",
             title: "Federal agencies",
             value: federalAgencies.length,
             description: "Federal agencies listed separately from states.",

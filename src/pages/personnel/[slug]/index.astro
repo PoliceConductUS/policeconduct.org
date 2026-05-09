@@ -10,7 +10,7 @@ import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { getPersonnelImageById } from "#src/lib/personnel-images.js";
 import ProfileTabs from "#src/components/ProfileTabs.astro";
-import { loadVideosForOfficer } from "#src/lib/data/videos.js";
+import { loadCoverageLinksForOfficer } from "#src/lib/data/coverage.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
@@ -104,22 +104,6 @@ const data = await withDb(async (client) => {
         )
       ).rows
     : [];
-  const coverageLinks = (
-    await client.query(
-      `select *
-       from public.personnel_coverage_links
-       where officer_id = $1
-       order by
-         case
-           when source_name like 'City of %' then 0
-           when source_name ilike '%mortuary%' then 0
-           else 1
-         end,
-         published_at desc nulls last,
-         title asc`,
-      [officerId],
-    )
-  ).rows;
   const sameNameOfficers = (
     await client.query(
       `select
@@ -146,11 +130,10 @@ const data = await withDb(async (client) => {
     agencies,
     reports,
     civilCases,
-    coverageLinks,
     sameNameOfficers,
   };
 });
-const videoItems = await loadVideosForOfficer(officerId);
+const coverageLinks = await loadCoverageLinksForOfficer(officerId);
 
 const agenciesById = mapBy(data.agencies, "id");
 const history = normalizeAgencyHistory(data.agencyOfficers);
@@ -168,21 +151,6 @@ const currentBadge = currentAssignment?.badge_number || null;
 const currentAgency = currentAssignment
   ? agenciesById[currentAssignment.agency_id]
   : null;
-const currentTitle = currentAssignment?.title || null;
-const assignmentDateRange = currentAssignment
-  ? [
-      currentAssignment.start_date
-        ? formatShortDate(currentAssignment.start_date)
-        : null,
-      currentAssignment.end_date
-        ? formatShortDate(currentAssignment.end_date)
-        : hasCurrentAssignment
-          ? "Current"
-          : null,
-    ]
-      .filter(Boolean)
-      .join(" to ")
-  : "";
 
 const civilCasesWithPaths = data.civilCases.map(
   (caseItem: {
@@ -233,7 +201,7 @@ const assignmentStatusLabel = hasCurrentAssignment
 const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${data.officer.first_name} ${data.officer.last_name} | ${hasCurrentAssignment ? currentAgency!.name : `Last known: ${currentAgency!.name}`}`;
 const pageDescription = isDeceased
   ? `${officerName} personnel profile with agency history, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
-  : `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}, agency history, public reports, videos, coverage, and civil litigation records.`;
+  : `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}, agency history, public reports, coverage, and civil litigation records.`;
 const pastEmployerSummary = assignmentHistory
   .filter((entry) => entry.id !== activeAssignment?.id)
   .map((entry) => ({
@@ -318,8 +286,7 @@ const personnelImageSrc =
   getPersonnelImageById(data.officer.id) || defaultPersonnelImagePath;
 const civilCaseCount = data.civilCases.length;
 const reportCount = data.reports.length;
-const videoCount = videoItems.length;
-const coverageCount = data.coverageLinks.length;
+const coverageCount = coverageLinks.length;
 const assignmentHistoryCount = assignmentHistory.length;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(officerPath, siteUrl).toString();
@@ -481,8 +448,6 @@ const structuredData = {
                   <dd class="col-sm-8">{data.civilCases.length}</dd>
                   <dt class="col-sm-4">Reports</dt>
                   <dd class="col-sm-8">{reportCount}</dd>
-                  <dt class="col-sm-4">Videos</dt>
-                  <dd class="col-sm-8">{videoCount}</dd>
                   <dt class="col-sm-4">Agency history</dt>
                   <dd class="col-sm-8">{assignmentHistoryCount}</dd>
                 </dl>
@@ -568,26 +533,20 @@ const structuredData = {
             <ProfileTabs
               tabs={[
                 {
-                  id: "officer-litigation",
-                  label: "Civil litigation",
-                  badge: civilCaseCount,
-                  tabType: "litigation",
-                },
-                {
                   id: "officer-reports",
                   label: "Reports",
                   badge: reportCount,
                   tabType: "reports",
                 },
                 {
-                  id: "officer-videos",
-                  label: "Videos",
-                  badge: videoCount,
-                  tabType: "videos",
+                  id: "officer-litigation",
+                  label: "Civil litigation",
+                  badge: civilCaseCount,
+                  tabType: "litigation",
                 },
                 {
                   id: "officer-coverage",
-                  label: "Coverage",
+                  label: "Related Links",
                   badge: coverageCount,
                   tabType: "coverage",
                 },
@@ -605,11 +564,9 @@ const structuredData = {
                 items: reportItems,
                 layout: "table",
               }}
-              videos={{
-                items: videoItems,
-              }}
               coverage={{
-                links: data.coverageLinks,
+                links: coverageLinks,
+                helperText: "Links about this officer.",
               }}
               pastEmployers={{
                 entries: assignmentHistory,

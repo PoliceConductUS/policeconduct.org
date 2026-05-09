@@ -3,8 +3,10 @@ import { formatShortDate } from "#src/lib/format.js";
 
 type OfficerRef = {
   slug: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
+  firstName?: string;
+  lastName?: string;
 };
 
 type LitigationCase = {
@@ -21,21 +23,7 @@ type ReportItem = {
   incidentDate?: string | null;
   title?: string | null;
   url: string;
-};
-
-type VideoItem = {
-  title: string;
-  path: string;
-  thumbnail?: string | null;
-  summary?: string | null;
-  description?: string | null;
-  sourceLabel?: string | null;
-  officers?: {
-    relationshipType: string;
-    agency?: { name: string } | null;
-  }[];
-  civilCases?: { title: string; path: string; relationshipType: string }[];
-  reports?: { title: string; path: string; relationshipType: string }[];
+  officers?: OfficerRef[] | null;
 };
 
 type CoverageLink = {
@@ -44,6 +32,7 @@ type CoverageLink = {
   source_name?: string | null;
   published_at?: string | null;
   notes?: string | null;
+  officers?: OfficerRef[] | null;
 };
 
 type PersonnelEntry = {
@@ -75,8 +64,7 @@ type TabType =
   | "reports"
   | "coverage"
   | "personnel"
-  | "pastEmployers"
-  | "videos";
+  | "pastEmployers";
 type TabDescriptor = {
   id: string;
   label: string;
@@ -98,13 +86,10 @@ type ProfileTabsProps = {
     emptyMessage?: string;
     layout?: "table" | "list";
   };
-  videos?: {
-    items?: VideoItem[];
-    emptyMessage?: string;
-  };
   coverage?: {
     links?: CoverageLink[];
     emptyMessage?: string;
+    helperText?: string;
   };
   personnel?: {
     entries?: PersonnelEntry[];
@@ -120,7 +105,6 @@ const {
   extraNavClasses = "",
   litigation = null,
   reports = null,
-  videos = null,
   coverage = null,
   personnel = null,
   pastEmployers = null,
@@ -135,13 +119,11 @@ const normalizedTabs = tabs.map((tab, index) => ({
 
 const litigationCases = litigation?.cases || [];
 const reportsItems = reports?.items || [];
-const videoItems = videos?.items || [];
 const coverageLinks = coverage?.links || [];
 const personnelEntries = personnel?.entries || [];
 const pastEmployerEntries = pastEmployers?.entries || [];
 const hasLitigation = litigationCases.length > 0;
 const hasReports = reportsItems.length > 0;
-const hasVideos = videoItems.length > 0;
 const hasCoverage = coverageLinks.length > 0;
 const hasPersonnel = personnelEntries.length > 0;
 const hasPastEmployers = pastEmployerEntries.length > 0;
@@ -149,10 +131,12 @@ const hasPastEmployers = pastEmployerEntries.length > 0;
 const formatCaseYear = (date?: string | null) =>
   date ? new Date(date).getFullYear() : "—";
 const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
-const formatRelationLabel = (value: string) =>
-  value
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+const getOfficerName = (officer: OfficerRef) =>
+  [
+    officer.first_name || officer.firstName,
+    officer.last_name || officer.lastName,
+  ]
+    .filter(Boolean)
     .join(" ");
 ---
 
@@ -194,53 +178,37 @@ const formatRelationLabel = (value: string) =>
         >
           {tab.tabType === "litigation" ? (
             <>
-              <div class="mb-3">
-                <span class="text-uppercase small text-muted mb-0">Cases</span>
-              </div>
               {hasLitigation ? (
-                <div class="table-responsive">
-                  <table class="table table-striped align-middle mb-0">
-                    <thead>
-                      <tr>
-                        <th scope="col">Year</th>
-                        <th scope="col">Cause #</th>
-                        <th scope="col">Case</th>
-                        <th scope="col">Court / notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {litigationCases.map((caseItem) => (
-                        <tr>
-                          <td>{formatCaseYear(caseItem.filed_date)}</td>
-                          <td>
-                            <strong>
-                              {caseItem.cause_number ? (
-                                <a
-                                  class="link-dark"
-                                  href={caseItem.caseUrl}
-                                  data-profile-link-type="case_reference"
-                                >
-                                  {caseItem.cause_number}
-                                </a>
-                              ) : (
-                                "—"
-                              )}
-                            </strong>
-                          </td>
-                          <td>
-                            <strong>
-                              <a
-                                class="link-dark"
-                                href={caseItem.caseUrl}
-                                data-profile-link-type="case_reference"
-                              >
-                                {caseItem.title || "Civil case"}
-                              </a>
-                            </strong>
-                            {caseItem.officers?.length ? (
-                              <>
-                                {" "}
-                                —{" "}
+                <div class="profile-record-list">
+                  {litigationCases.map((caseItem) => (
+                    <article class="profile-record">
+                      <div class="profile-record-meta">
+                        <span>{formatCaseYear(caseItem.filed_date)}</span>
+                        {caseItem.cause_number ? (
+                          <a
+                            href={caseItem.caseUrl}
+                            data-profile-link-type="case_reference"
+                          >
+                            {caseItem.cause_number}
+                          </a>
+                        ) : null}
+                      </div>
+                      <div class="profile-record-body">
+                        <h3 class="profile-record-title">
+                          <a
+                            href={caseItem.caseUrl}
+                            data-profile-link-type="case_reference"
+                          >
+                            {caseItem.title || "Civil case"}
+                          </a>
+                        </h3>
+                        <div class="profile-record-detail">
+                          <span>{caseItem.court || "Court not listed"}</span>
+                          {caseItem.officers?.length ? (
+                            <>
+                              <span aria-hidden="true">/</span>
+                              <span>
+                                Officers:{" "}
                                 {caseItem.officers.map((officer, index) => (
                                   <>
                                     {index > 0 ? ", " : null}
@@ -248,18 +216,17 @@ const formatRelationLabel = (value: string) =>
                                       href={`/personnel/${officer.slug}/`}
                                       data-profile-link-type="personnel_profile"
                                     >
-                                      {officer.first_name} {officer.last_name}
+                                      {getOfficerName(officer)}
                                     </a>
                                   </>
                                 ))}
-                              </>
-                            ) : null}
-                          </td>
-                          <td>{caseItem.court || "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                              </span>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               ) : (
                 <p class="text-muted">
@@ -271,31 +238,38 @@ const formatRelationLabel = (value: string) =>
           ) : tab.tabType === "reports" ? (
             <>
               {hasReports ? (
-                <div class="d-grid gap-3">
+                <div class="profile-record-list">
                   {reportsItems.map((report) => (
-                    <article class="border rounded-2 p-3 mb-3">
-                      <div class="d-flex justify-content-between align-items-baseline mb-2">
-                        <span class="text-uppercase small text-muted">
-                          Date
-                        </span>
-                        <strong>{formatReportDate(report)}</strong>
+                    <article class="profile-record">
+                      <div class="profile-record-meta">
+                        <span>{formatReportDate(report)}</span>
                       </div>
-                      <div class="mb-3">
-                        <a
-                          class="fw-bold text-dark"
+                      <div class="profile-record-body">
+                        <h3 class="profile-record-title">
+                          <a
                           href={report.url}
                           data-profile-link-type="report"
                         >
                           {report.title}
                         </a>
+                        </h3>
+                        {report.officers?.length ? (
+                          <div class="profile-record-detail">
+                            Officers:{" "}
+                            {report.officers.map((officer, index) => (
+                              <>
+                                {index > 0 ? ", " : null}
+                                <a
+                                  href={`/personnel/${officer.slug}/`}
+                                  data-profile-link-type="personnel_profile"
+                                >
+                                  {getOfficerName(officer)}
+                                </a>
+                              </>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
-                      <a
-                        class="btn btn-sm btn-outline-dark"
-                        href={report.url}
-                        data-profile-link-type="report"
-                      >
-                        View report
-                      </a>
                     </article>
                   ))}
                 </div>
@@ -305,184 +279,113 @@ const formatRelationLabel = (value: string) =>
                 </p>
               )}
             </>
-          ) : tab.tabType === "videos" ? (
-            <>
-              {hasVideos ? (
-                <div class="d-grid gap-3">
-                  {videoItems.map((video) => (
-                    <article class="border rounded-2 p-3">
-                      <div class="row g-3 align-items-start">
-                        {video.thumbnail ? (
-                          <div class="col-12 col-md-4">
-                            <a class="d-block" href={video.path}>
-                              <div class="ratio ratio-16x9 bg-dark">
-                                <img
-                                  src={video.thumbnail}
-                                  alt={`Video thumbnail for ${video.title}`}
-                                  class="w-100 h-100 object-fit-cover"
-                                  loading="lazy"
-                                />
-                              </div>
-                            </a>
-                          </div>
-                        ) : null}
-                        <div class="col">
-                          <div class="text-uppercase small text-muted mb-1">
-                            {video.sourceLabel || "Video"}
-                          </div>
-                          <h3 class="h6 mb-2">
-                            <a class="link-dark" href={video.path}>
-                              {video.title}
-                            </a>
-                          </h3>
-                          {video.summary || video.description ? (
-                            <p class="text-muted mb-2">
-                              {video.summary || video.description}
-                            </p>
-                          ) : null}
-                          <div class="small text-muted mb-3">
-                            {video.officers?.[0]?.relationshipType
-                              ? formatRelationLabel(
-                                  video.officers[0].relationshipType,
-                                )
-                              : "Linked video"}
-                            {video.officers?.[0]?.agency
-                              ? ` at ${video.officers[0].agency.name}`
-                              : ""}
-                          </div>
-                          <a
-                            class="btn btn-sm btn-outline-dark"
-                            href={video.path}
-                            data-profile-link-type="video"
-                          >
-                            Watch video
-                          </a>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <p class="text-muted">
-                  {videos?.emptyMessage ?? "No videos linked yet."}
-                </p>
-              )}
-            </>
           ) : tab.tabType === "coverage" ? (
             <>
+              {coverage?.helperText ? (
+                <p class="text-muted small mb-3">{coverage.helperText}</p>
+              ) : null}
               {hasCoverage ? (
-                <div class="list-group">
+                <div class="profile-record-list">
                   {coverageLinks.map((link) => (
-                    <article class="list-group-item">
-                      <div class="d-flex flex-column flex-md-row gap-2 justify-content-between">
-                        <div>
-                          <div class="text-uppercase small text-muted mb-1">
-                            {[
-                              link.source_name,
-                              link.published_at
-                                ? formatShortDate(link.published_at)
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" • ") || "Coverage"}
-                          </div>
-                          <h3 class="h6 mb-2">
-                            <a
-                              class="link-dark"
-                              href={link.url}
-                              data-profile-link-type="coverage"
-                            >
-                              {link.title}
-                            </a>
-                          </h3>
-                          {link.notes ? (
-                            <p class="text-muted mb-0">{link.notes}</p>
-                          ) : null}
-                        </div>
-                        <div class="flex-shrink-0">
+                    <article class="profile-record">
+                      <div class="profile-record-meta">
+                        <span>
+                          {[
+                            link.source_name,
+                            link.published_at
+                              ? formatShortDate(link.published_at)
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" / ") || "Related link"}
+                        </span>
+                      </div>
+                      <div class="profile-record-body">
+                        <h3 class="profile-record-title">
                           <a
-                            class="btn btn-sm btn-outline-dark"
                             href={link.url}
                             data-profile-link-type="coverage"
+                            target="_blank"
+                            rel="noopener noreferrer"
                           >
-                            Open source
+                            {link.title}
                           </a>
-                        </div>
+                        </h3>
+                        {link.notes ? (
+                          <p class="profile-record-summary">{link.notes}</p>
+                        ) : null}
+                        {link.officers?.length ? (
+                          <div class="profile-record-detail">
+                            Officers:{" "}
+                            {link.officers.map((officer, index) => (
+                              <>
+                                {index > 0 ? ", " : null}
+                                <a
+                                  href={`/personnel/${officer.slug}/`}
+                                  data-profile-link-type="personnel_profile"
+                                >
+                                  {getOfficerName(officer)}
+                                </a>
+                              </>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     </article>
                   ))}
                 </div>
               ) : (
                 <p class="text-muted">
-                  {coverage?.emptyMessage ?? "No coverage links listed yet."}
+                  {coverage?.emptyMessage ?? "No related links listed yet."}
                 </p>
               )}
             </>
           ) : tab.tabType === "personnel" ? (
             <>
               {hasPersonnel ? (
-                <div class="list-group">
+                <div class="profile-record-list">
                   {personnelEntries.map((employee) => (
-                    <div class="list-group-item">
-                      <div class="row g-3 align-items-start">
-                        <div class="col-auto">
-                          <div class="text-uppercase small text-muted">
-                            Start
-                          </div>
-                          <div class="fw-semibold">
-                            {employee.entry.start_date
-                              ? formatShortDate(employee.entry.start_date)
-                              : "Unknown"}
-                          </div>
-                        </div>
-                        <div class="col-auto">
-                          <div class="text-uppercase small text-muted">End</div>
-                          <div>
-                            {employee.entry.end_date
-                              ? formatShortDate(employee.entry.end_date)
-                              : "Current"}
-                          </div>
-                        </div>
-                        <div class="col-12 col-md">
-                          <div class="text-uppercase small text-muted">
-                            Name
-                          </div>
+                    <article class="profile-record">
+                      <div class="profile-record-meta">
+                        <span>
+                          {employee.entry.start_date
+                            ? formatShortDate(employee.entry.start_date)
+                            : "Start date unknown"}
+                        </span>
+                        <span>
+                          {employee.entry.end_date
+                            ? formatShortDate(employee.entry.end_date)
+                            : "Current"}
+                        </span>
+                      </div>
+                      <div class="profile-record-body">
+                        <h3 class="profile-record-title">
                           {employee.officer ? (
                             <a
                               href={`/personnel/${employee.officer.slug}/`}
                               data-profile-link-type="personnel_profile"
                             >
-                              {employee.officer.first_name}{" "}
-                              {employee.officer.last_name}
+                              {getOfficerName(employee.officer)}
                             </a>
                           ) : (
-                            "Unknown"
+                            "Unknown person"
                           )}
-                        </div>
-                        <div class="col-6 col-md-2">
-                          <div class="text-uppercase small text-muted">
-                            Badge #
-                          </div>
-                          <div>{employee.entry.badge_number || "Unknown"}</div>
-                        </div>
-                        <div class="col-6 col-md-2">
-                          <div class="text-uppercase small text-muted">
-                            Reports
-                          </div>
-                          <div>{employee.reportCount}</div>
-                        </div>
-                        <div class="col-12 col-md-2">
-                          <div class="text-uppercase small text-muted">
-                            Rating
-                          </div>
-                          <div>
+                        </h3>
+                        <div class="profile-record-detail">
+                          <span>
+                            Badge: {employee.entry.badge_number || "Unknown"}
+                          </span>
+                          <span aria-hidden="true">/</span>
+                          <span>{employee.reportCount || 0} reports</span>
+                          <span aria-hidden="true">/</span>
+                          <span>
                             {employee.rating && employee.rating > 0
-                              ? employee.rating.toFixed(1)
+                              ? `Rating ${employee.rating.toFixed(1)}`
                               : "Not rated"}
-                          </div>
+                          </span>
                         </div>
                       </div>
-                    </div>
+                    </article>
                   ))}
                 </div>
               ) : (
@@ -492,32 +395,23 @@ const formatRelationLabel = (value: string) =>
           ) : tab.tabType === "pastEmployers" ? (
             <>
               {hasPastEmployers ? (
-                <div class="list-group">
+                <div class="profile-record-list">
                   {pastEmployerEntries.map((entry) => (
-                    <div class="list-group-item">
-                      <div class="row g-3 align-items-start">
-                        <div class="col-auto">
-                          <div class="text-uppercase small text-muted">
-                            Start
-                          </div>
-                          <div class="fw-semibold">
-                            {entry.start_date
-                              ? formatShortDate(entry.start_date)
-                              : "Unknown"}
-                          </div>
-                        </div>
-                        <div class="col-auto">
-                          <div class="text-uppercase small text-muted">End</div>
-                          <div>
-                            {entry.end_date
-                              ? formatShortDate(entry.end_date)
-                              : "Current"}
-                          </div>
-                        </div>
-                        <div class="col-12 col-md">
-                          <div class="text-uppercase small text-muted">
-                            Name
-                          </div>
+                    <article class="profile-record">
+                      <div class="profile-record-meta">
+                        <span>
+                          {entry.start_date
+                            ? formatShortDate(entry.start_date)
+                            : "Start date unknown"}
+                        </span>
+                        <span>
+                          {entry.end_date
+                            ? formatShortDate(entry.end_date)
+                            : "Current"}
+                        </span>
+                      </div>
+                      <div class="profile-record-body">
+                        <h3 class="profile-record-title">
                           {entry.agency ? (
                             <a
                               href={`/law-enforcement-agency/${entry.agency.category}/${entry.agency.slug}/`}
@@ -526,33 +420,22 @@ const formatRelationLabel = (value: string) =>
                               {entry.agency.name}
                             </a>
                           ) : (
-                            "Unknown"
+                            "Unknown agency"
                           )}
-                        </div>
-                        <div class="col-6 col-md-2">
-                          <div class="text-uppercase small text-muted">
-                            Badge #
-                          </div>
-                          <div>{entry.badge_number || "Unknown"}</div>
-                        </div>
-                        <div class="col-6 col-md-2">
-                          <div class="text-uppercase small text-muted">
-                            Reports
-                          </div>
-                          <div>{entry.reportCount || 0}</div>
-                        </div>
-                        <div class="col-12 col-md-2">
-                          <div class="text-uppercase small text-muted">
-                            Rating
-                          </div>
-                          <div>
+                        </h3>
+                        <div class="profile-record-detail">
+                          <span>Badge: {entry.badge_number || "Unknown"}</span>
+                          <span aria-hidden="true">/</span>
+                          <span>{entry.reportCount || 0} reports</span>
+                          <span aria-hidden="true">/</span>
+                          <span>
                             {entry.rating && entry.rating > 0
-                              ? entry.rating.toFixed(1)
+                              ? `Rating ${entry.rating.toFixed(1)}`
                               : "Not rated"}
-                          </div>
+                          </span>
                         </div>
                       </div>
-                    </div>
+                    </article>
                   ))}
                 </div>
               ) : (
@@ -565,17 +448,195 @@ const formatRelationLabel = (value: string) =>
     }
   </div>
 </div>
-<style is:global>
-  .case-grid {
-    display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
-    gap: 0.25rem 0.75rem;
-    align-items: baseline;
+<style>
+  .profile-record-list {
+    border-top: 1px solid var(--bs-border-color);
   }
-  .case-grid-label {
-    text-transform: uppercase;
-    font-size: 0.625rem;
-    letter-spacing: 0.1em;
-    color: #6c757d;
+
+  .profile-record {
+    border-bottom: 1px solid var(--bs-border-color);
+    display: grid;
+    gap: 0.75rem 1.25rem;
+    grid-template-columns: minmax(7rem, 10rem) minmax(0, 1fr);
+    padding: 1rem 0;
+  }
+
+  .profile-record-media {
+    grid-template-columns: minmax(7rem, 10rem) minmax(7rem, 10rem) minmax(
+        0,
+        1fr
+      );
+  }
+
+  .profile-record-meta {
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-direction: column;
+    font-size: 0.875rem;
+    gap: 0.25rem;
+    line-height: 1.35;
+  }
+
+  .profile-record-meta a,
+  .profile-record-title a,
+  .profile-record-detail a {
+    color: var(--bs-dark);
+  }
+
+  .profile-record-title {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin: 0;
+  }
+
+  .profile-record-summary {
+    color: var(--bs-secondary-color);
+    margin: 0.35rem 0 0;
+  }
+
+  .profile-record-detail {
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.875rem;
+    gap: 0.25rem 0.5rem;
+    margin-top: 0.35rem;
+  }
+
+  .profile-record-thumb {
+    aspect-ratio: 16 / 9;
+    background: var(--bs-dark);
+    display: block;
+    overflow: hidden;
+  }
+
+  .profile-record-thumb img {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  @media (max-width: 767.98px) {
+    .profile-record,
+    .profile-record-media {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .profile-record-meta {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    .profile-record-thumb {
+      max-width: 18rem;
+    }
+  }
+
+  .profile-record-list {
+    border-top: 0;
+    display: grid;
+    gap: 0.875rem;
+  }
+
+  .profile-record {
+    align-items: start;
+    background: var(--bs-white);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+    grid-template-columns: minmax(0, 1fr) minmax(9rem, 14rem);
+    padding: 1rem 1.125rem;
+  }
+
+  .profile-record-media {
+    grid-template-columns: clamp(9rem, 16vw, 13rem) minmax(0, 1fr) minmax(
+        9rem,
+        13rem
+      );
+  }
+
+  .profile-record-body {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .profile-record-meta {
+    align-items: flex-end;
+    font-size: 0.8125rem;
+    grid-column: 2;
+    grid-row: 1;
+    text-align: right;
+  }
+
+  .profile-record-media .profile-record-thumb {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .profile-record-media .profile-record-body {
+    grid-column: 2;
+  }
+
+  .profile-record-media .profile-record-meta {
+    grid-column: 3;
+  }
+
+  .profile-record-title {
+    font-size: 1.0625rem;
+  }
+
+  .profile-record-summary {
+    line-height: 1.55;
+    max-width: 62rem;
+  }
+
+  .profile-record-detail {
+    gap: 0.35rem 0.85rem;
+    line-height: 1.5;
+  }
+
+  .profile-record-detail > span[aria-hidden="true"] {
+    display: none;
+  }
+
+  @media (max-width: 991.98px) {
+    .profile-record,
+    .profile-record-media {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .profile-record-body,
+    .profile-record-meta,
+    .profile-record-media .profile-record-body,
+    .profile-record-media .profile-record-meta,
+    .profile-record-media .profile-record-thumb {
+      grid-column: 1;
+    }
+
+    .profile-record-media .profile-record-thumb {
+      grid-row: 1;
+    }
+
+    .profile-record-media .profile-record-body {
+      grid-row: 2;
+    }
+
+    .profile-record-media .profile-record-meta {
+      grid-row: 3;
+    }
+
+    .profile-record-meta {
+      align-items: flex-start;
+      flex-direction: row;
+      flex-wrap: wrap;
+      grid-row: 2;
+      text-align: left;
+    }
+
+    .profile-record-thumb {
+      max-width: 22rem;
+    }
   }
 </style>

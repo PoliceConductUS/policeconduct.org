@@ -311,7 +311,10 @@ const structuredData = {
         <div class="row justify-content-center mt-1">
           <div class="col-12 col-xl-10">
             <section class="border p-4 bg-white">
-              <h2 class="h5 mb-3">Coverage</h2>
+              <h2 class="h5 mb-2">Related Links</h2>
+              <p class="text-muted small mb-3">
+                Links connected to this civil case.
+              </p>
               {
                 coverageLinks.length ? (
                   <div class="d-grid gap-3">
@@ -330,17 +333,6 @@ const structuredData = {
                             </a>
                           </div>
                           <div class="d-flex flex-wrap gap-2">
-                            {link.embed ? (
-                              <a
-                                class="btn btn-outline-dark rounded-0 btn-sm"
-                                href={
-                                  link.videoPath ||
-                                  `/civil-litigation/${categoryParam}/${data.civilCase.slug}/watch/${link.id}/`
-                                }
-                              >
-                                Watch
-                              </a>
-                            ) : null}
                             <a
                               class="btn btn-dark rounded-0 btn-sm"
                               href={link.url}
@@ -355,7 +347,7 @@ const structuredData = {
                     ))}
                   </div>
                 ) : (
-                  <p class="mb-0">No coverage links listed.</p>
+                  <p class="mb-0">No related links listed.</p>
                 )
               }
             </section>

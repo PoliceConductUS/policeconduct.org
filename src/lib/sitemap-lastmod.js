@@ -99,35 +99,6 @@ export const buildSitemapLastmodMap = async () => {
       setLastmod(pathLastmods, "/report/", lastmod);
     }
 
-    const videoRows = (
-      await client.query(
-        `
-            select slug, lower(category) as category, created_at, updated_at, published_at, recorded_at
-            from public.videos
-            where slug is not null
-          `,
-      )
-    ).rows;
-
-    for (const video of videoRows) {
-      if (!video.slug) {
-        continue;
-      }
-      const lastmod = getLatestDate(
-        video.updated_at,
-        video.created_at,
-        video.published_at,
-        video.recorded_at,
-      );
-      setLastmod(
-        pathLastmods,
-        `/video/${video.category}/${video.slug}/`,
-        lastmod,
-      );
-      setLastmod(pathLastmods, `/video/${video.category}/`, lastmod);
-      setLastmod(pathLastmods, "/video/", lastmod);
-    }
-
     const agencyRows = (
       await client.query(
         `

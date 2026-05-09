@@ -148,16 +148,15 @@ if (personnelItemList) {
         <UsaChoroplethMap
           stats={stateStats}
           title="States"
-          subtitle="Counts of active personnel by agency state."
+          subtitle="Select a state to view active personnel by agency jurisdiction."
           emptyLabel="No personnel yet"
-          interactionLabel="Hover over a state to see the count."
+          interactionLabel="Hover for counts; click a state to browse personnel."
           headerAction={{
             href: suggestPersonnelHref,
             label: "Suggest new person",
             target: "_self",
           }}
           federalPanel={{
-            eyebrow: "Federal",
             title: "Federal agencies",
             value: federalAgencies.length,
             description: "Federal agencies with listed personnel.",

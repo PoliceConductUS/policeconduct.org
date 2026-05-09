@@ -1,11 +1,17 @@
 import { withDb } from "#src/lib/db.js";
 import type { AgencySummary } from "./types.js";
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
-const normalizeCategory = (value?: string | null) =>
-  (value || "").trim().toLowerCase();
 
 const compareNullable = (left?: string | null, right?: string | null) =>
   nameCollator.compare(left || "", right || "");
+
+const requireText = (value: unknown, fieldName: string, agencyId: string) => {
+  const text = String(value ?? "").trim();
+  if (!text) {
+    throw new Error(`Agency ${agencyId} is missing required ${fieldName}`);
+  }
+  return text;
+};
 
 export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
   const agencies = await withDb(async (client): Promise<any[]> => {
@@ -56,20 +62,24 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
     ).rows;
   });
 
-  const summaries: AgencySummary[] = agencies.map((agency: any) => ({
-    id: agency.id,
-    name: agency.name,
-    state: agency.state,
-    category: normalizeCategory(agency.category),
-    slug: agency.slug,
-    city: agency.city || null,
-    address: agency.address || null,
-    zipCode: agency.zip_code || null,
-    phoneNumber: agency.phone_number || null,
-    activePersonnelCount: Number(agency.active_personnel_count || 0),
-    reportCount: Number(agency.report_count || 0),
-    civilCaseCount: Number(agency.civil_case_count || 0),
-  }));
+  const summaries: AgencySummary[] = agencies.map((agency: any) => {
+    const id = requireText(agency.id, "id", "unknown");
+
+    return {
+      id,
+      name: requireText(agency.name, "name", id),
+      state: requireText(agency.state, "state", id),
+      category: requireText(agency.category, "category", id).toLowerCase(),
+      slug: requireText(agency.slug, "slug", id),
+      city: agency.city || null,
+      address: agency.address || null,
+      zipCode: agency.zip_code || null,
+      phoneNumber: agency.phone_number || null,
+      activePersonnelCount: Number(agency.active_personnel_count || 0),
+      reportCount: Number(agency.report_count || 0),
+      civilCaseCount: Number(agency.civil_case_count || 0),
+    };
+  });
 
   summaries.sort((a, b) => {
     const nameCompare = nameCollator.compare(a.name, b.name);

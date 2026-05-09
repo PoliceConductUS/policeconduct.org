@@ -13,7 +13,6 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { loadAgencySummaries } from "#src/lib/data/summaries.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { PAGE_SIZE } from "#src/lib/pagination.js";
-import AgencyCard from "#src/components/AgencyCard.astro";
 import { buildItemList, getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths({ paginate }: { paginate: any }) {
@@ -195,13 +194,6 @@ const structuredData = {
               ]}
               className="mb-2"
             />
-            <p class="text-uppercase small text-muted mb-2">
-              {
-                categoryParam.toLowerCase() === "federal"
-                  ? "Federal view"
-                  : "State view"
-              }
-            </p>
             <h1 class="display-4 fw-bold">{title}</h1>
             <p class="lead text-muted mb-0">
               Showing agencies with at least two active personnel assignments in {
@@ -215,10 +207,6 @@ const structuredData = {
         </div>
       </div>
     </section>
-    <div class="bg-white border-bottom border-dark">
-      <CollectionStatsBand items={stats} />
-    </div>
-
     <section class="py-vh-2">
       <div class="container">
         <AlphaNavigation
@@ -236,11 +224,57 @@ const structuredData = {
               No agencies listed yet for {categoryLabel}.
             </div>
           ) : (
-            <div class="row row-cols-1 g-3">
+            <div class="profile-record-list">
               {page.data.map((agency: any) => (
-                <div class="col">
-                  <AgencyCard agency={agency} />
-                </div>
+                <article class="profile-record">
+                  <div class="profile-record-meta">
+                    <span>{[agency.city, agency.state].filter(Boolean).join(", ")}</span>
+                    {agency.activePersonnelCount > 0 ? (
+                      <span>{agency.activePersonnelCount} personnel</span>
+                    ) : null}
+                  </div>
+                  <div class="profile-record-body">
+                    <h2 class="profile-record-title">
+                      <a
+                        href={`/law-enforcement-agency/${agency.category}/${agency.slug}/`}
+                      >
+                        {agency.name}
+                      </a>
+                    </h2>
+                    <div class="profile-record-detail">
+                      {agency.address ? <span>{agency.address}</span> : null}
+                      {agency.phoneNumber ? (
+                        <>
+                          <span aria-hidden="true">/</span>
+                          <a href={`tel:${agency.phoneNumber.replace(/[^\d+]/g, "")}`}>
+                            {agency.phoneNumber}
+                          </a>
+                        </>
+                      ) : null}
+                      {agency.activePersonnelCount > 0 ? (
+                        <a href={`/personnel/${agency.category}/`}>
+                          {agency.activePersonnelCount} personnel
+                        </a>
+                      ) : null}
+                      {agency.reportCount > 0 ? (
+                        <a
+                          href={
+                            agency.category === "federal"
+                              ? "/report/"
+                              : `/report/${agency.category}/`
+                          }
+                        >
+                          {agency.reportCount} reports
+                        </a>
+                      ) : null}
+                      {agency.civilCaseCount > 0 ? (
+                        <a href={`/civil-litigation/${agency.category}/`}>
+                          {agency.civilCaseCount} civil cases
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                </article>
               ))}
             </div>
           )
@@ -252,6 +286,7 @@ const structuredData = {
         />
       </div>
     </section>
+    <CollectionStatsBand items={stats} variant="compact" />
   </main>
   <script
     is:inline
@@ -259,3 +294,145 @@ const structuredData = {
     src="https://policeconduct.disqus.com/count.js"
     async></script>
 </SiteLayout>
+<style>
+  .display-4 {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .profile-record-list {
+    border-top: 0;
+    display: grid;
+    gap: 0;
+  }
+
+  .profile-record {
+    align-items: start;
+    border-top: 1px solid var(--bs-border-color);
+    display: grid;
+    gap: 0.75rem 1.25rem;
+    grid-template-columns: minmax(0, 1fr) minmax(8rem, 13rem);
+    padding: 0.95rem 0;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease;
+  }
+
+  .profile-record:hover {
+    background: color-mix(in srgb, var(--bs-gray-100) 42%, var(--bs-white));
+  }
+
+  .profile-record-body {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .profile-record-meta {
+    align-items: flex-end;
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-direction: column;
+    font-size: 0.8125rem;
+    gap: 0.25rem;
+    grid-column: 2;
+    grid-row: 1;
+    line-height: 1.35;
+    min-width: 0;
+    text-align: right;
+  }
+
+  .profile-record-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin: 0;
+  }
+
+  .profile-record-title a,
+  .profile-record-detail a {
+    color: var(--bs-dark);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .profile-record-detail {
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.875rem;
+    gap: 0.35rem 0.85rem;
+    line-height: 1.5;
+    margin-top: 0.35rem;
+    min-width: 0;
+  }
+
+  .profile-record-detail > span[aria-hidden="true"] {
+    display: none;
+  }
+
+  .profile-record-meta span,
+  .profile-record-meta a {
+    color: var(--bs-secondary-color);
+    max-width: 100%;
+  }
+
+  .profile-record-title a {
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  .profile-record-detail a {
+    font-weight: 600;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.16em;
+  }
+
+  .profile-record-title,
+  .profile-record-detail,
+  .profile-record-meta {
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 991.98px) {
+    .display-4 {
+      font-size: clamp(2.25rem, 12vw, 3.5rem);
+      line-height: 1.05;
+    }
+
+    .profile-record {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .profile-record-body,
+    .profile-record-meta {
+      grid-column: 1;
+    }
+
+    .profile-record-meta {
+      align-items: flex-start;
+      flex-direction: row;
+      flex-wrap: wrap;
+      grid-row: 2;
+      text-align: left;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .profile-record-list,
+    .profile-record {
+      max-width: calc(100vw - 1rem);
+    }
+
+    .profile-record-detail {
+      align-items: flex-start;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .profile-record-detail > * {
+      margin-right: 0;
+    }
+  }
+</style>

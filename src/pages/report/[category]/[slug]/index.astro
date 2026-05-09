@@ -2,6 +2,7 @@
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
+import ReportDisclaimer from "#src/components/ReportDisclaimer.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import DisqusComments from "#src/components/DisqusComments.astro";
 import { formatLongDate } from "#src/lib/format.js";
@@ -10,7 +11,6 @@ import { loadReportSummaries } from "#src/lib/data/summaries.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import RatingBadge from "#src/components/RatingBadge.astro";
 import { getSiteUrl } from "#src/lib/structured-data.js";
-import { isDirectVideoContentUrl } from "#src/lib/video.js";
 
 export async function getStaticPaths() {
   const reports = await loadReportSummaries();
@@ -153,23 +153,6 @@ const agencyEntities = Array.from(
     }),
   ).values(),
 );
-const videoEntities = evidenceLinks
-  .filter((link) => Boolean(link.embed))
-  .map((link, index) => {
-    const watchPath =
-      link.videoPath || `/report/${categorySlug}/${slug}/watch/${link.id}/`;
-    const watchUrl = new URL(watchPath, siteUrl).toString();
-    return {
-      "@type": "VideoObject",
-      "@id": `${watchUrl}#video`,
-      name: link.title?.trim() || `Video Evidence ${index + 1}`,
-      url: watchUrl,
-      embedUrl: link.embed,
-      ...(link.thumbnail ? { thumbnailUrl: link.thumbnail } : {}),
-      ...(isDirectVideoContentUrl(link.url) ? { contentUrl: link.url } : {}),
-      isPartOf: { "@id": `${pageUrl}#report` },
-    };
-  });
 const reportEntity = {
   "@type": "Report",
   "@id": `${pageUrl}#report`,
@@ -192,16 +175,9 @@ const reportEntity = {
   ...(reportAddress
     ? { contentLocation: { "@type": "Place", name: reportAddress } }
     : {}),
-  ...(officerEntities.length || agencyEntities.length || videoEntities.length
+  ...(officerEntities.length || agencyEntities.length
     ? {
         about: [...officerEntities, ...agencyEntities].map((entity) => ({
-          "@id": entity["@id"],
-        })),
-      }
-    : {}),
-  ...(videoEntities.length
-    ? {
-        hasPart: videoEntities.map((entity) => ({
           "@id": entity["@id"],
         })),
       }
@@ -228,7 +204,6 @@ const structuredData = {
     },
     ...agencyEntities,
     ...officerEntities,
-    ...videoEntities,
     reportEntity,
   ],
 };
@@ -476,49 +451,11 @@ const structuredData = {
                 <>
                   {evidenceLinks.map((link) => (
                     <div class="mb-4">
-                      {link.embed ? (
-                        <a
-                          class="d-block text-decoration-none text-reset mt-3"
-                          href={
-                            link.videoPath ||
-                            `/report/${categorySlug}/${slug}/watch/${link.id}/`
-                          }
-                        >
-                          <div class="border bg-white">
-                            <div class="ratio ratio-16x9 bg-dark">
-                              {link.thumbnail ? (
-                                <img
-                                  src={link.thumbnail}
-                                  alt={`Video thumbnail for ${link.title}`}
-                                  class="w-100 h-100 object-fit-cover"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <div class="d-flex align-items-center justify-content-center text-white text-uppercase small fw-semibold">
-                                  Watch video
-                                </div>
-                              )}
-                            </div>
-                            <div class="p-3 d-flex justify-content-between align-items-center gap-3">
-                              <div>
-                                <div class="text-uppercase small text-muted">
-                                  Watch page
-                                </div>
-                                <div class="fw-semibold">{link.title}</div>
-                              </div>
-                              <span class="btn btn-outline-dark rounded-0">
-                                Open video
-                              </span>
-                            </div>
-                          </div>
+                      <p class="fs-5 mb-2">
+                        <a href={link.url} target="_blank" rel="noopener">
+                          {link.title}
                         </a>
-                      ) : (
-                        <p class="fs-5 mb-2">
-                          <a href={link.url} target="_blank" rel="noopener">
-                            {link.title}
-                          </a>
-                        </p>
-                      )}
+                      </p>
                     </div>
                   ))}
                 </>
@@ -563,21 +500,7 @@ const structuredData = {
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-12 col-lg-10 col-xl-8">
-            <div class="small text-muted">
-              <p class="mb-1">
-                Reports are user-submitted accounts published for transparency.
-                We do not verify every claim before publication, and publication
-                does not imply endorsement. Allegations are unproven and reflect
-                the reporter’s perspective.
-              </p>
-              <p class="mb-0">
-                See our{" "}
-                <a class="link-secondary" href="/legal-notice/terms-of-service">
-                  Terms of Service
-                </a>{" "}
-                for full disclaimers and conditions of use.
-              </p>
-            </div>
+            <ReportDisclaimer />
           </div>
         </div>
       </div>

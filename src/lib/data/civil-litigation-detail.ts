@@ -1,23 +1,13 @@
 import { withDb } from "#src/lib/db.js";
-import {
-  loadVideoPathsByUrls,
-  loadVideosForCivilCase,
-} from "#src/lib/data/videos.js";
-import {
-  getVideoEmbedUrl,
-  getYouTubeThumbnailUrl,
-  normalizeVideoUrl,
-} from "#src/lib/video.js";
+import { loadCoverageLinksForCivilCase } from "./coverage.js";
 
 export type CivilCaseCoverageLink = {
   id: string;
   title: string;
   url: string;
-  embed: string | null;
-  thumbnail: string | null;
-  videoPath: string | null;
-  created_at: string;
-  updated_at: string;
+  source_name?: string | null;
+  published_at?: string | null;
+  notes?: string | null;
 };
 
 export type CivilCaseDetailOfficer = {
@@ -76,7 +66,7 @@ export const loadCivilCaseDetail = async (
       return null;
     }
 
-    const coverageLinks = (
+    const civilCaseLinks = (
       await client.query(
         `
           select id, title, url, created_at, updated_at
@@ -91,37 +81,11 @@ export const loadCivilCaseDetail = async (
         id: string;
         title: string;
         url: string;
-        created_at: string;
-        updated_at: string;
       }) => ({
         ...link,
-        embed: getVideoEmbedUrl(link.url),
-        thumbnail: getYouTubeThumbnailUrl(link.url),
-        videoPath: null,
       }),
     );
-    const videoPathsByUrl = await loadVideoPathsByUrls(
-      coverageLinks.map((link: CivilCaseCoverageLink) => link.url),
-    );
-    const linkedVideos = await loadVideosForCivilCase(civilCase.id);
-    const linkedVideoRows = linkedVideos
-      .filter(
-        (video) =>
-          !coverageLinks.some(
-            (link: CivilCaseCoverageLink) =>
-              normalizeVideoUrl(link.url) === video.normalizedUrl,
-          ),
-      )
-      .map((video) => ({
-        id: `video:${video.id}`,
-        title: video.title,
-        url: video.url,
-        embed: video.embed,
-        thumbnail: video.thumbnail,
-        videoPath: video.path,
-        created_at: video.publishedAt || video.recordedAt || video.updatedAt,
-        updated_at: video.updatedAt,
-      }));
+    const coverageLinks = await loadCoverageLinksForCivilCase(civilCase.id);
 
     const officers = (
       await client.query(
@@ -169,13 +133,7 @@ export const loadCivilCaseDetail = async (
       civilCase,
       officers,
       agencies,
-      coverageLinks: [
-        ...coverageLinks.map((link: CivilCaseCoverageLink) => ({
-          ...link,
-          videoPath: videoPathsByUrl.get(link.url) || null,
-        })),
-        ...linkedVideoRows,
-      ],
+      coverageLinks: [...civilCaseLinks, ...coverageLinks],
     };
   });
 };
