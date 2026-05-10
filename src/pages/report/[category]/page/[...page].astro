@@ -94,7 +94,7 @@ const reportItems = page.data.map((report: ReportSummary, index: number) => ({
   item: {
     "@type": "Report",
     name: report.title,
-    url: new URL(`/report/${categorySlug}/${report.slug}/`, siteUrl).toString(),
+    url: new URL(`/report/${report.slug}/`, siteUrl).toString(),
     ...(report.agencyName
       ? {
           about: {
@@ -210,7 +210,7 @@ const formatDisplayDate = (value?: string | null) => {
                   </div>
                   <div class="profile-record-body">
                     <h2 class="profile-record-title">
-                      <a href={`/report/${categorySlug}/${report.slug}/`}>
+                      <a href={`/report/${report.slug}/`}>
                         {report.title}
                       </a>
                     </h2>

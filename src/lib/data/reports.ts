@@ -48,7 +48,16 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
       agencies: any[];
       agencyOfficers: any[];
     }> => {
-      const reports = (await client.query("select * from public.reviews")).rows;
+      const reports = (
+        await client.query(
+          `
+            select r.*, lp.state_or_territory_slug, lp.path as location_path
+            from public.reviews r
+            join public.location_path lp
+              on lp.location_path_id = r.location_path_id
+          `,
+        )
+      ).rows;
       const reportOfficers = (
         await client.query("select * from public.review_officers")
       ).rows;
@@ -107,19 +116,15 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
       agenciesById[agencyOfficer.agency_id],
       `Missing agency ${agencyOfficer.agency_id} for agency_officer ${agencyOfficer.id}`,
     );
-    const agencyCategory = assertValue(
-      agency.category,
-      `Missing category for agency ${agency.id}`,
-    );
     const reportState = assertValue(
-      report.category,
-      `Missing category for report ${report.id}`,
+      report.state_or_territory_slug,
+      `Missing location state for report ${report.id}`,
     )
       .toString()
       .trim()
       .toLowerCase();
     if (!reportState) {
-      throw new Error(`Blank category for report ${report.id}`);
+      throw new Error(`Blank location state for report ${report.id}`);
     }
     const agencySlug = assertValue(
       agency.slug,
@@ -138,12 +143,13 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
       title: report.title,
       incidentDate: incidentDate || report.incident_date || "",
       address: report.address || null,
-      agencySlug: `${agencyCategory}/${agencySlug}`,
+      agencySlug,
       agencyName,
       agencyCanonicalPath: requireAgencyCanonicalPath(agency),
-      category: report.category
-        ? report.category.toString().toLowerCase()
-        : null,
+      locationPath: assertValue(
+        report.location_path,
+        `Missing location path for report ${report.id}`,
+      ),
       ratingOverall:
         report.rating_overall !== undefined && report.rating_overall !== null
           ? Number(report.rating_overall)

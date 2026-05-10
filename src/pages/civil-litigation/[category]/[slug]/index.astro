@@ -6,18 +6,20 @@ export async function getStaticPaths() {
     return (
       await client.query(
         `
-          select category, slug
-          from public.civil_cases
-          where slug is not null
-          order by category, filed_date desc nulls last, title
+          select lp.state_or_territory_slug as state, c.slug
+          from public.civil_cases c
+          join public.location_path lp
+            on lp.location_path_id = c.location_path_id
+          where c.slug is not null
+          order by lp.state_or_territory_slug, c.filed_date desc nulls last, c.title
         `,
       )
     ).rows;
   });
 
-  return civilCases.map((civilCase: { category: string; slug: string }) => ({
+  return civilCases.map((civilCase: { state: string; slug: string }) => ({
     params: {
-      category: civilCase.category,
+      category: civilCase.state,
       slug: civilCase.slug,
     },
     props: {

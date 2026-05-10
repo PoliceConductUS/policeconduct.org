@@ -34,7 +34,6 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
            a.address,
            a.zip_code,
            a.slug,
-           a.category,
            ap.phone_number,
            count(distinct ao.officer_id) as active_personnel_count,
            coalesce(
@@ -71,7 +70,7 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
           and ao.end_date is null
          group by a.id, a.name, a.state, a.administrative_area,
            a.administrative_area_slug, a.city, a.place_slug, a.address,
-           a.zip_code, a.slug, a.category, ap.phone_number`,
+           a.zip_code, a.slug, ap.phone_number`,
       )
     ).rows;
   });
@@ -83,7 +82,6 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
       id,
       name: requireText(agency.name, "name", id),
       state: requireText(agency.state, "state", id),
-      category: requireText(agency.category, "category", id).toLowerCase(),
       slug: requireText(agency.slug, "slug", id),
       administrativeArea: getAgencyAdministrativeArea(agency),
       administrativeAreaSlug: getAgencyAdministrativeAreaSlug(agency),
@@ -113,7 +111,7 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
 export const resolveAgencyByStateSlug = async (state: string, slug: string) => {
   const agencies = await loadAgencySummaries();
   return agencies.find(
-    (agency) => agency.category === state && agency.slug === slug,
+    (agency) => agency.state.toLowerCase() === state && agency.slug === slug,
   );
 };
 
@@ -126,7 +124,7 @@ export const resolveAgencyByLocationSlug = async (
   const agencies = await loadAgencySummaries();
   return agencies.find(
     (agency) =>
-      agency.category === state.toLowerCase() &&
+      agency.state.toLowerCase() === state.toLowerCase() &&
       agency.administrativeAreaSlug === administrativeArea.toLowerCase() &&
       agency.placeSlug === place.toLowerCase() &&
       agency.slug === slug,

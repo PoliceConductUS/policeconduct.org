@@ -1,7 +1,6 @@
 import { slugify } from "#src/lib/slug.js";
 
 type AgencyLocationInput = {
-  category?: string | null;
   state?: string | null;
   administrativeArea?: string | null;
   administrative_area?: string | null;

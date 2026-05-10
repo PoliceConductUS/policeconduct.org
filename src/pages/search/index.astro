@@ -175,7 +175,7 @@ const structuredData = buildWebPage({
               reports.slice(0, 200).map((report) => (
                 <a
                   class="search-result"
-                  href={`/report/${report.category}/${report.slug}/`}
+                  href={`/report/${report.slug}/`}
                   data-search-item={`${report.title} ${report.address || ""} ${report.agencyName}`}
                 >
                   <span>{report.title}</span>

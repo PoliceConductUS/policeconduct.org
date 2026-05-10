@@ -21,7 +21,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
   const agenciesByCategory = new Map();
 
   agencies.forEach((agency) => {
-    const category = agency.category?.toLowerCase();
+    const category = agency.state?.toLowerCase();
     if (!category) {
       return;
     }
@@ -251,13 +251,7 @@ const structuredData = {
                         <span>{agency.activePersonnelCount} personnel</span>
                       ) : null}
                       {agency.reportCount > 0 ? (
-                        <a
-                          href={
-                            agency.category === "federal"
-                              ? "/report/"
-                              : `/report/${agency.category}/`
-                          }
-                        >
+                        <a href={`/report/${agency.state.toLowerCase()}/`}>
                           {agency.reportCount} reports
                         </a>
                       ) : null}

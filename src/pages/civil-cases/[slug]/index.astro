@@ -4,7 +4,6 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { withDb } from "#src/lib/db.js";
 import { loadCivilCaseDetailBySlug } from "#src/lib/data/civil-litigation-detail.js";
 import { formatLongDate } from "#src/lib/format.js";
-import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
@@ -14,7 +13,7 @@ export async function getStaticPaths() {
         `
           select slug
           from public.civil_cases
-          order by category, filed_date desc nulls last, title
+          order by filed_date desc nulls last, title
         `,
       )
     ).rows;
@@ -32,14 +31,7 @@ const data = await loadCivilCaseDetailBySlug(String(slug || ""));
 if (!data) {
   throw new Error(`Civil case ${slug} not found.`);
 }
-const categoryParam = data.civilCase.category.toLowerCase();
-const categoryMeta = US_STATE_TILES.find(
-  (entry) => entry.code.toLowerCase() === categoryParam,
-);
-const categoryLabel =
-  categoryParam === "federal"
-    ? "Federal"
-    : categoryMeta?.name || categoryParam.toUpperCase();
+const locationPath = data.civilCase.location_path || "/";
 
 const caseTitle =
   data.civilCase.title || data.civilCase.cause_number || "Civil case";
@@ -177,15 +169,15 @@ const structuredData = {
                 { label: "Home", href: "/" },
                 { label: "Civil cases", href: "/civil-litigation/" },
                 {
-                  label: categoryLabel,
-                  href: `/${categoryParam}/`,
+                  label: "Location",
+                  href: locationPath,
                 },
                 { label: caseTitle, href: casePath, current: true },
               ]}
               className="mb-2"
             />
             <p class="text-uppercase small text-muted mb-2">
-              Civil case • {categoryLabel}
+              Civil case
             </p>
             <h1 class="display-5 fw-bold mb-3">{caseTitle}</h1>
             <div class="d-flex flex-wrap gap-4 text-muted">

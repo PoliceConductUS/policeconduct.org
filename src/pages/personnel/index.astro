@@ -2,54 +2,20 @@
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import { loadPersonnelSummaries } from "#src/lib/data/summaries.js";
+import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
-import { withDb } from "#src/lib/db.js";
 import {
   buildItemList,
   buildWebPage,
   getSiteUrl,
 } from "#src/lib/structured-data.js";
-import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 
 const personnelRows = await loadPersonnelSummaries();
-const federalAgencies = await withDb(async (client) => {
-  const agencies = (
-    await client.query(
-      `
-        select
-          a.id,
-          a.name,
-          a.slug,
-          a.category,
-          a.administrative_area,
-          a.administrative_area_slug,
-          a.city,
-          a.place_slug,
-          count(distinct ao.officer_id) as active_personnel_count
-        from public.agency a
-        left join public.agency_officers ao
-          on ao.agency_id = a.id
-         and ao.end_date is null
-        where lower(a.category) = 'federal'
-        group by a.id, a.name, a.slug, a.category, a.administrative_area,
-          a.administrative_area_slug, a.city, a.place_slug
-        order by a.name
-      `,
-    )
-  ).rows;
-  return agencies.map((agency: any) => ({
-    id: agency.id,
-    name: agency.name,
-    slug: agency.slug,
-    category: agency.category,
-    canonicalPath: requireAgencyCanonicalPath(agency),
-    activePersonnelCount: Number(agency.active_personnel_count || 0),
-  }));
-});
+const federalAgencies = await loadFederalAgencySummaries();
 const stateStats = US_STATE_TILES.map((state) => {
   const count = personnelRows.filter(
-    (person) => person.agencyCategory?.toUpperCase() === state.code,
+    (person) => person.agencyState?.toUpperCase() === state.code,
   ).length;
   return {
     code: state.code,
@@ -60,9 +26,6 @@ const stateStats = US_STATE_TILES.map((state) => {
 const totalPersonnel = personnelRows.length;
 const statesWithPersonnel = stateStats.filter(
   (state) => state.count > 0,
-).length;
-const federalPersonnelCount = personnelRows.filter(
-  (person) => person.agencyCategory?.toLowerCase() === "federal",
 ).length;
 const pagePath = "/personnel/";
 const suggestPersonnelHref = "/personnel/new/";
@@ -129,9 +92,6 @@ if (personnelItemList) {
               <span class="badge bg-light text-dark border rounded-0">
                 {statesWithPersonnel} states covered
               </span>
-              <span class="badge bg-light text-dark border rounded-0">
-                {federalPersonnelCount} federal personnel
-              </span>
             </div>
           </div>
           <div class="col-12 col-lg-4 d-none d-lg-flex justify-content-lg-end">
@@ -141,9 +101,6 @@ if (personnelItemList) {
               </span>
               <span class="badge bg-light text-dark border rounded-0">
                 {statesWithPersonnel} states covered
-              </span>
-              <span class="badge bg-light text-dark border rounded-0">
-                {federalPersonnelCount} federal personnel
               </span>
             </div>
           </div>
@@ -169,8 +126,8 @@ if (personnelItemList) {
             description: "Federal agencies with listed personnel.",
             items: federalAgencies.map((agency) => ({
               label: agency.name,
-              href: agency.canonicalPath,
-              badgeText: `Personnel: ${agency.activePersonnelCount}`,
+              href: agency.path,
+              badgeText: `${agency.branchCount} locations`,
             })),
           }}
         />

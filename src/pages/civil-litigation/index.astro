@@ -4,7 +4,7 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { withDb } from "#src/lib/db.js";
-import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
+import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import {
   buildItemList,
@@ -12,85 +12,49 @@ import {
   getSiteUrl,
 } from "#src/lib/structured-data.js";
 
-type CategoryCount = {
-  category: string;
+type StateCount = {
+  state: string;
   count: number;
 };
 
 type FederalAgency = {
   id: string;
   name: string;
-  category: string;
-  slug: string;
-  canonicalPath: string;
-  count: number;
+  path: string;
+  branchCount: number;
 };
 
-const { totalCases, categoryCounts, federalAgencies } = await withDb(
-  async (client) => {
+const [caseData, federalAgencies] = await Promise.all([
+  withDb(async (client) => {
     const totalResult = await client.query(
       "select count(*) as count from public.civil_cases",
     );
-    // Get category counts by joining civil_case_officers → agency_officers → agency
-    const categoryResult = await client.query(
+    const stateResult = await client.query(
       `
-        select upper(a.category) as category, count(distinct cco.civil_case_id) as case_count
-        from public.civil_case_officers cco
-        join public.agency_officers ao on ao.id = cco.agency_officer_id
-        join public.agency a on ao.agency_id = a.id
-        where a.category is not null
-        group by upper(a.category)
-      `,
-    );
-    const federalAgenciesResult = await client.query(
-      `
-        select a.id, a.name, a.category, a.slug, a.administrative_area,
-          a.administrative_area_slug, a.city, a.place_slug,
-          count(distinct cco.civil_case_id) as case_count
-        from public.agency a
-        left join public.agency_officers ao on ao.agency_id = a.id
-        left join public.civil_case_officers cco on cco.agency_officer_id = ao.id
-        where upper(a.category) = 'FEDERAL'
-        group by a.id, a.name, a.category, a.slug, a.administrative_area,
-          a.administrative_area_slug, a.city, a.place_slug
-        order by case_count desc, a.name
+        select upper(lp.state_or_territory_slug) as state, count(distinct c.id) as case_count
+        from public.civil_cases c
+        join public.location_path lp
+          on lp.location_path_id = c.location_path_id
+        group by upper(lp.state_or_territory_slug)
       `,
     );
     return {
       totalCases: Number(totalResult.rows[0]?.count ?? 0),
-      categoryCounts: categoryResult.rows.map(
-        (row: { category: string; case_count: string | number }) => ({
-          category: row.category,
+      stateCounts: stateResult.rows.map(
+        (row: { state: string; case_count: string | number }) => ({
+          state: row.state,
           count: Number(row.case_count),
         }),
       ),
-      federalAgencies: federalAgenciesResult.rows.map(
-        (row: {
-          id: string;
-          name: string;
-          category: string;
-          slug: string;
-          administrative_area?: string | null;
-          administrative_area_slug?: string | null;
-          city?: string | null;
-          place_slug?: string | null;
-          case_count?: string | number | null;
-        }) => ({
-          id: row.id,
-          name: row.name,
-          category: row.category,
-          slug: row.slug,
-          canonicalPath: requireAgencyCanonicalPath(row),
-          count: Number(row.case_count || 0),
-        }),
-      ),
     };
-  },
-);
+  }),
+  loadFederalAgencySummaries(),
+]);
+const { totalCases, stateCounts } = caseData;
 
 const countsByCategory = new Map(
-  (categoryCounts as CategoryCount[]).map((entry) => [
-    entry.category,
+  (stateCounts as StateCount[]).map((entry) => [
+    entry.state,
     entry.count,
   ]),
 );
@@ -101,8 +65,6 @@ const stateStats = US_STATE_TILES.map((state) => ({
 }));
 const totalCaseCount = totalCases;
 const statesWithCases = stateStats.filter((state) => state.count > 0).length;
-const federalCaseCount = countsByCategory.get("FEDERAL") ?? 0;
-
 const civilLandingPath = "/civil-litigation/";
 const newCivilLandingHref = "/civil-litigation/new/";
 const siteUrl = getSiteUrl(Astro.site);
@@ -114,7 +76,7 @@ const federalAgencyItems = (federalAgencies as FederalAgency[]).map(
     item: {
       "@type": "GovernmentOrganization",
       name: agency.name,
-      url: new URL(agency.canonicalPath, siteUrl).toString(),
+      url: new URL(agency.path, siteUrl).toString(),
     },
   }),
 );
@@ -167,9 +129,6 @@ if (federalItemList) {
               <span class="badge bg-light text-dark border rounded-0">
                 {statesWithCases} states covered
               </span>
-              <span class="badge bg-light text-dark border rounded-0">
-                {federalCaseCount} federal cases
-              </span>
             </div>
           </div>
           <div class="col-12 col-lg-4 d-none d-lg-flex justify-content-lg-end">
@@ -179,9 +138,6 @@ if (federalItemList) {
               </span>
               <span class="badge bg-light text-dark border rounded-0">
                 {statesWithCases} states covered
-              </span>
-              <span class="badge bg-light text-dark border rounded-0">
-                {federalCaseCount} federal cases
               </span>
             </div>
           </div>
@@ -208,8 +164,8 @@ if (federalItemList) {
             description: "Federal agencies linked to listed cases.",
             items: (federalAgencies as FederalAgency[]).map((agency) => ({
               label: agency.name,
-              href: agency.canonicalPath,
-              badgeText: `Cases: ${agency.count}`,
+              href: agency.path,
+              badgeText: `${agency.branchCount} locations`,
             })),
           }}
         />

@@ -8,7 +8,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
   const personnelByCategory = new Map<string, PersonnelSummary[]>();
 
   for (const person of personnel) {
-    const category = person.agencyCategory?.toLowerCase();
+    const category = person.agencyState?.toLowerCase();
     if (!category) {
       continue;
     }

@@ -1,5 +1,5 @@
 ---
-import { loadCivilCasesByCategory } from "#src/lib/data/civil-litigation-category.js";
+import { loadCivilCasesByState } from "#src/lib/data/civil-litigation-category.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { PAGE_SIZE } from "#src/lib/pagination.js";
 
@@ -10,7 +10,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
     ...US_STATE_TILES.map((state) => state.code.toLowerCase()),
     "federal",
   ]) {
-    const cases = await loadCivilCasesByCategory(category.toUpperCase());
+    const cases = await loadCivilCasesByState(category.toUpperCase());
     paginate(cases, {
       pageSize: PAGE_SIZE,
       params: { category },

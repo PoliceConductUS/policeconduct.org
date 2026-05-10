@@ -23,7 +23,6 @@ export type CivilCaseDetailAgency = {
   id: string;
   name: string;
   slug: string;
-  category: string;
   city: string | null;
   state: string | null;
   administrative_area: string | null;
@@ -36,7 +35,8 @@ export type CivilCaseDetail = {
   civilCase: {
     id: string;
     slug: string;
-    category: string;
+    location_path: string | null;
+    state_or_territory_slug: string | null;
     title: string;
     cause_number: string;
     court: string | null;
@@ -53,19 +53,19 @@ export type CivilCaseDetail = {
 };
 
 export const loadCivilCaseDetail = async (
-  category: string,
   slug: string,
 ): Promise<CivilCaseDetail | null> => {
   return withDb(async (client) => {
     const civilCase = (
       await client.query(
         `
-          select *
-          from public.civil_cases
-          where lower(category) = $1
-            and slug = $2
+          select c.*, lp.path as location_path, lp.state_or_territory_slug
+          from public.civil_cases c
+          left join public.location_path lp
+            on lp.location_path_id = c.location_path_id
+          where c.slug = $1
         `,
-        [category.toLowerCase(), slug],
+        [slug],
       )
     ).rows[0];
     if (!civilCase) {
@@ -115,7 +115,6 @@ export const loadCivilCaseDetail = async (
             agency.id,
             agency.name,
             agency.slug,
-            agency.category,
             agency.city,
             agency.state,
             agency.administrative_area,
@@ -148,22 +147,5 @@ export const loadCivilCaseDetail = async (
 export const loadCivilCaseDetailBySlug = async (
   slug: string,
 ): Promise<CivilCaseDetail | null> => {
-  const categoryRow = await withDb(async (client) => {
-    return (
-      await client.query(
-        `
-          select category
-          from public.civil_cases
-          where slug = $1
-        `,
-        [slug],
-      )
-    ).rows[0];
-  });
-
-  if (!categoryRow?.category) {
-    return null;
-  }
-
-  return loadCivilCaseDetail(categoryRow.category, slug);
+  return loadCivilCaseDetail(slug);
 };

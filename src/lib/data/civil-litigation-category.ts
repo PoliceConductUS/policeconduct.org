@@ -13,14 +13,14 @@ export type AgencyRef = {
   id: string;
   slug: string;
   name: string;
-  category: string;
   canonicalPath?: string | null;
 };
 
 export type CivilCaseSummary = {
   id: string;
   slug: string;
-  category: string;
+  state: string;
+  locationPath: string;
   title: string;
   cause_number: string;
   court: string | null;
@@ -33,8 +33,8 @@ export type CivilCaseSummary = {
   agencies: AgencyRef[];
 };
 
-export const loadCivilCasesByCategory = async (
-  categoryCode: string,
+export const loadCivilCasesByState = async (
+  stateCode: string,
 ): Promise<CivilCaseSummary[]> => {
   const {
     civilCases = [],
@@ -44,11 +44,13 @@ export const loadCivilCasesByCategory = async (
   } = await withDb(async (client) => {
     const casesResult = await client.query(
       `
-        select *
-        from public.civil_cases
-        where upper(category) = $1
+        select c.*, lp.state_or_territory_slug as state, lp.path as location_path
+        from public.civil_cases c
+        join public.location_path lp
+          on lp.location_path_id = c.location_path_id
+        where upper(lp.state_or_territory_slug) = $1
       `,
-      [categoryCode],
+      [stateCode],
     );
     const caseIds = casesResult.rows.map((row: { id: string }) => row.id);
     if (!caseIds.length) {
@@ -97,7 +99,6 @@ export const loadCivilCasesByCategory = async (
             a.id,
             a.slug,
             a.name,
-            a.category,
             a.administrative_area,
             a.administrative_area_slug,
             a.city,
@@ -135,7 +136,6 @@ export const loadCivilCasesByCategory = async (
           id: entry.id,
           slug: entry.slug,
           name: entry.name,
-          category: entry.category,
           canonicalPath: requireAgencyCanonicalPath(entry),
         }),
       ),

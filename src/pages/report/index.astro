@@ -4,18 +4,18 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import ReportDisclaimer from "#src/components/ReportDisclaimer.astro";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
-import {
-  loadAgencySummaries,
-  loadReportSummaries,
-} from "#src/lib/data/summaries.js";
+import { loadReportSummaries } from "#src/lib/data/summaries.js";
+import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import {
   buildItemList,
   buildWebPage,
   getSiteUrl,
 } from "#src/lib/structured-data.js";
 
-const reports = await loadReportSummaries();
-const agencies = await loadAgencySummaries();
+const [reports, federalAgencies] = await Promise.all([
+  loadReportSummaries(),
+  loadFederalAgencySummaries(),
+]);
 const reportCountsByState = new Map<string, number>();
 for (const report of reports) {
   reportCountsByState.set(
@@ -28,12 +28,6 @@ const stateStats = US_STATE_TILES.map((state) => ({
   count: reportCountsByState.get(state.code) || 0,
   href: `/report/${state.code.toLowerCase()}/`,
 }));
-const federalAgencies = agencies.filter(
-  (agency) => agency.category === "federal",
-);
-const federalReportCount = reports.filter((report) =>
-  report.agencySlug?.toLowerCase().startsWith("federal/"),
-).length;
 const totalReports = reports.length;
 const statesWithReports = stateStats.filter((state) => state.count > 0).length;
 const pagePath = "/report/";
@@ -102,9 +96,6 @@ if (reportItemList) {
               <span class="badge bg-light text-dark border rounded-0">
                 {statesWithReports} states covered
               </span>
-              <span class="badge bg-light text-dark border rounded-0">
-                {federalReportCount} federal reports
-              </span>
             </div>
           </div>
           <div class="col-12 col-lg-4 d-none d-lg-flex justify-content-lg-end">
@@ -114,9 +105,6 @@ if (reportItemList) {
               </span>
               <span class="badge bg-light text-dark border rounded-0">
                 {statesWithReports} states covered
-              </span>
-              <span class="badge bg-light text-dark border rounded-0">
-                {federalReportCount} federal reports
               </span>
             </div>
           </div>
@@ -146,8 +134,8 @@ if (reportItemList) {
             description: "Federal agencies referenced in listed reports.",
             items: federalAgencies.map((agency) => ({
               label: agency.name,
-              href: agency.canonicalPath,
-              badgeText: `Reports: ${agency.reportCount}`,
+              href: agency.path,
+              badgeText: `${agency.branchCount} locations`,
             })),
           }}
         />

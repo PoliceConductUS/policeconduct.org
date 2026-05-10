@@ -233,7 +233,6 @@ await withDb(async (client) => {
             a.id,
             a.name,
             a.slug,
-            a.category,
             a.state,
             a.administrative_area,
             a.administrative_area_slug,
@@ -401,7 +400,6 @@ await withDb(async (client) => {
     await client.query("delete from public.build_page_payload");
     await client.query("delete from public.agency_zip_index");
     await client.query("delete from public.location_path_closure");
-    await client.query("delete from public.location_path");
 
     const locations = [];
     for (const state of states.values()) {
@@ -470,6 +468,24 @@ await withDb(async (client) => {
             updated_at
           )
           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, timezone('utc'::text, now()))
+          on conflict (location_path_id) do update set
+            path = excluded.path,
+            level = excluded.level,
+            state_or_territory_slug = excluded.state_or_territory_slug,
+            administrative_area_slug = excluded.administrative_area_slug,
+            place_slug = excluded.place_slug,
+            state_or_territory_name = excluded.state_or_territory_name,
+            administrative_area_name = excluded.administrative_area_name,
+            place_name = excluded.place_name,
+            parent_location_path_id = excluded.parent_location_path_id,
+            latitude = excluded.latitude,
+            longitude = excluded.longitude,
+            map_min_lat = excluded.map_min_lat,
+            map_min_lng = excluded.map_min_lng,
+            map_max_lat = excluded.map_max_lat,
+            map_max_lng = excluded.map_max_lng,
+            map_position_source = excluded.map_position_source,
+            updated_at = excluded.updated_at
         `,
         [
           location.id,

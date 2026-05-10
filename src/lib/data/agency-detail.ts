@@ -24,7 +24,7 @@ export const loadAgencyStaticPaths = async () => {
   const agencies = await withDb(async (client) => {
     return (
       await client.query(
-        `select a.id, a.slug, a.category, bpp.path as canonical_path
+        `select a.id, a.slug, a.state, bpp.path as canonical_path
          from public.agency a
          join public.build_page_payload bpp
            on bpp.page_type = 'agency'
@@ -37,19 +37,19 @@ export const loadAgencyStaticPaths = async () => {
     (agency: {
       id: string;
       slug: string;
-      category?: string | null;
+      state?: string | null;
       canonical_path: string;
     }) => {
       const agencyId = requireAgencyText(agency.id, "id", "unknown");
-      const categoryValue = requireAgencyText(
-        agency.category,
-        "category",
+      const stateValue = requireAgencyText(
+        agency.state,
+        "state",
         agencyId,
       ).toLowerCase();
 
       return {
         params: {
-          category: categoryValue,
+          category: stateValue,
           slug: requireAgencyText(agency.slug, "slug", agencyId),
         },
         props: { canonicalAgencyPath: agency.canonical_path },
@@ -308,11 +308,6 @@ export const loadAgencyDetail = async (agencyId: string) => {
     "slug",
     agencyRequiredId,
   );
-  const agencyCategory = requireAgencyText(
-    data.agency.category,
-    "category",
-    agencyRequiredId,
-  );
   const categorySlug = agencyState.toLowerCase();
   const categoryMeta = US_STATE_TILES.find(
     (entry) => entry.code.toLowerCase() === categorySlug,
@@ -455,7 +450,7 @@ export const loadAgencyDetail = async (agencyId: string) => {
         return {
           ...report,
           incidentDate: formatShortDate(report.incident_date),
-          url: `/report/${report.category}/${report.slug}/`,
+          url: `/report/${report.slug}/`,
           officers: linkedOfficers,
         };
       },
@@ -475,7 +470,6 @@ export const loadAgencyDetail = async (agencyId: string) => {
     agencyName,
     agencyState,
     agencySlug,
-    agencyCategory,
     categorySlug,
     categoryLabel,
     categoryPath,

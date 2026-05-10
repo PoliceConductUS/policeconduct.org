@@ -116,7 +116,7 @@ const administrativeAreaPluralForState = (
 
 const requireLocation = (agency: AgencySummary) => {
   if (
-    !agency.category ||
+    !agency.state ||
     !agency.administrativeArea ||
     !agency.administrativeAreaSlug ||
     !agency.city ||
@@ -138,7 +138,7 @@ export const loadLocationRollups = async () => {
   const states = new Map<string, StateRollup>();
 
   for (const agency of agencies) {
-    const state = agency.category.toLowerCase();
+    const state = agency.state.toLowerCase();
     const stateLabel = stateLabelFor(state);
     let stateRollup = states.get(state);
 

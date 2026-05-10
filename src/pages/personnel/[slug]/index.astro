@@ -189,7 +189,7 @@ const reportItems = data.reports.map(
     return {
       ...report,
       incidentDate: formatShortDate(report.incident_date),
-      url: `/report/${report.category}/${report.slug}/`,
+      url: `/report/${report.slug}/`,
     };
   },
 );

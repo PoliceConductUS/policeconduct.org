@@ -158,7 +158,16 @@ export const loadReportDetail = async (
 ): Promise<ReportDetailModel | null> => {
   const data = await withDb(async (client): Promise<ReportDetailQuery> => {
     const report = (
-      await client.query("select * from public.reviews where slug = $1", [slug])
+      await client.query(
+        `
+          select r.*, lp.path as location_path, lp.state_or_territory_slug
+          from public.reviews r
+          left join public.location_path lp
+            on lp.location_path_id = r.location_path_id
+          where r.slug = $1
+        `,
+        [slug],
+      )
     ).rows[0];
     if (!report) {
       return {

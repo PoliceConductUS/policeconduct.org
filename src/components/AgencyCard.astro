@@ -4,16 +4,13 @@ import type { AgencySummary } from "#src/lib/data/types.js";
 const { agency } = Astro.props as { agency: AgencySummary };
 
 const detailUrl = agency.canonicalPath;
-const categoryLabel = agency.category === "federal" ? "Federal" : null;
-const showCategory = Boolean(categoryLabel);
 const personnelLabel = `${agency.activePersonnelCount} personnel`;
 const reportLabel = `${agency.reportCount} reports`;
 const civilCaseLabel = `${agency.civilCaseCount} civil cases`;
 const locationLabel = [agency.city, agency.state, agency.zipCode]
   .filter(Boolean)
   .join(", ");
-const reportHref =
-  agency.category === "federal" ? "/report/" : `/report/${agency.category}/`;
+const reportHref = `/report/${agency.state.toLowerCase()}/`;
 const phoneHref = agency.phoneNumber
   ? agency.phoneNumber.replace(/[^\d+]/g, "")
   : null;
@@ -23,15 +20,6 @@ const phoneHref = agency.phoneNumber
   <div class="card-body d-flex flex-column gap-3">
     <div class="row g-3 align-items-start">
       <div class="col-12 col-xl-4 position-relative">
-        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-          {
-            showCategory ? (
-              <span class="badge bg-light text-dark border rounded-0 text-uppercase">
-                {categoryLabel}
-              </span>
-            ) : null
-          }
-        </div>
         <div class="text-uppercase small text-muted">Agency</div>
         <h3 class="h5 mb-1">
           <a

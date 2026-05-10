@@ -138,9 +138,8 @@ export const loadPersonnelSummaries = async (
         nameSuffix: officer.suffix || null,
         licenseType: eligibleAssignment?.title || null,
         roleTitle: eligibleAssignment?.title || null,
-        agencySlug: `${agency.category}/${agency.slug}`,
         agencyName: agency.name,
-        agencyCategory: agency.category,
+        agencyState: String(agency.state || "").toLowerCase(),
         agencyCanonicalPath: requireAgencyCanonicalPath(agency),
         reportCount: Number(
           reportCountsByOfficer[officer.id]?.report_count || 0,

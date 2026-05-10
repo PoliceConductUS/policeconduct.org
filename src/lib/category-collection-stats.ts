@@ -30,12 +30,11 @@ export const loadCategoryCollectionCounts = async (): Promise<
     withDb(async (client) => {
       const result = await client.query(
         `
-          select upper(a.category) as category, count(distinct cco.civil_case_id) as case_count
-          from public.civil_case_officers cco
-          join public.agency_officers ao on ao.id = cco.agency_officer_id
-          join public.agency a on ao.agency_id = a.id
-          where a.category is not null
-          group by upper(a.category)
+          select upper(lp.state_or_territory_slug) as category, count(distinct c.id) as case_count
+          from public.civil_cases c
+          join public.location_path lp
+            on lp.location_path_id = c.location_path_id
+          group by upper(lp.state_or_territory_slug)
         `,
       );
       return result.rows.map(
@@ -49,15 +48,16 @@ export const loadCategoryCollectionCounts = async (): Promise<
 
   const agencyCounts = new Map<string, number>();
   for (const agency of agencies) {
+    const state = agency.state.toLowerCase();
     agencyCounts.set(
-      agency.category,
-      (agencyCounts.get(agency.category) || 0) + 1,
+      state,
+      (agencyCounts.get(state) || 0) + 1,
     );
   }
 
   const personnelCounts = new Map<string, number>();
   for (const entry of personnel) {
-    const category = entry.agencyCategory?.toLowerCase();
+    const category = entry.agencyState?.toLowerCase();
     if (!category) {
       continue;
     }
@@ -66,15 +66,8 @@ export const loadCategoryCollectionCounts = async (): Promise<
 
   const reportCounts = new Map<string, number>();
   for (const report of reports) {
-    const agencySlug = report.agencySlug?.toLowerCase();
-    if (!agencySlug) {
-      continue;
-    }
-    const slashIndex = agencySlug.indexOf("/");
-    if (slashIndex === -1) {
-      continue;
-    }
-    const category = agencySlug.slice(0, slashIndex);
+    const category = report.state?.toLowerCase();
+    if (!category) continue;
     reportCounts.set(category, (reportCounts.get(category) || 0) + 1);
   }
 
@@ -108,8 +101,7 @@ export const buildCategoryCollectionStats = (
   categoryLabel: string,
   counts: CategoryCollectionCounts,
 ): StatItem[] => {
-  const reportHref =
-    category === "federal" ? "/report/" : `/report/${category}/`;
+  const reportHref = `/report/${category}/`;
 
   return [
     {

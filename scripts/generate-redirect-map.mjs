@@ -20,14 +20,29 @@ const redirects = await withDb(async (client) => {
   const agencyRows = (
     await client.query(
       `
-        select a.category, a.slug, bpp.path as canonical_path
+        select lower(a.state) as state, a.slug, bpp.path as canonical_path
         from public.agency a
         join public.build_page_payload bpp
           on bpp.page_type = 'agency'
          and bpp.entity_id = a.id
-        where a.category is not null
+        where a.state is not null
           and a.slug is not null
-        order by a.category, a.slug
+        order by lower(a.state), a.slug
+      `,
+    )
+  ).rows;
+
+  const federalBranchRows = (
+    await client.query(
+      `
+        select a.slug, bpp.path as canonical_path
+        from public.federal_agency_branch fab
+        join public.agency a on a.id = fab.agency_id
+        join public.build_page_payload bpp
+          on bpp.page_type = 'agency'
+         and bpp.entity_id = a.id
+        where a.slug is not null
+        order by a.slug
       `,
     )
   ).rows;
@@ -35,22 +50,36 @@ const redirects = await withDb(async (client) => {
   const civilCaseRows = (
     await client.query(
       `
-        select category, slug
-        from public.civil_cases
-        where category is not null
-          and slug is not null
-        order by category, slug
+        select lp.state_or_territory_slug as state, c.slug
+        from public.civil_cases c
+        join public.location_path lp
+          on lp.location_path_id = c.location_path_id
+        where c.slug is not null
+        order by lp.state_or_territory_slug, c.slug
       `,
     )
   ).rows;
 
-  const categoryRows = (
+  const reportRows = (
     await client.query(
       `
-        select distinct lower(category) as category
+        select lp.state_or_territory_slug as state, r.slug
+        from public.reviews r
+        join public.location_path lp
+          on lp.location_path_id = r.location_path_id
+        where r.slug is not null
+        order by lp.state_or_territory_slug, r.slug
+      `,
+    )
+  ).rows;
+
+  const stateRows = (
+    await client.query(
+      `
+        select distinct lower(state) as state
         from public.agency
-        where category is not null
-        order by lower(category)
+        where state is not null
+        order by lower(state)
       `,
     )
   ).rows;
@@ -58,42 +87,54 @@ const redirects = await withDb(async (client) => {
   return [
     ...agencyRows.map((agency) => ({
       from: normalizePath(
-        `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+        `/law-enforcement-agency/${agency.state}/${agency.slug}/`,
       ),
       to: normalizePath(agency.canonical_path),
       status: 301,
       source: "build_page_payload.path",
     })),
+    ...federalBranchRows.map((agency) => ({
+      from: normalizePath(`/law-enforcement-agency/federal/${agency.slug}/`),
+      to: normalizePath(agency.canonical_path),
+      status: 301,
+      source: "federal_agency_branch legacy agency route",
+    })),
     ...civilCaseRows.map((civilCase) => ({
       from: normalizePath(
-        `/civil-litigation/${civilCase.category}/${civilCase.slug}/`,
+        `/civil-litigation/${civilCase.state}/${civilCase.slug}/`,
       ),
       to: normalizePath(`/civil-cases/${civilCase.slug}/`),
       status: 301,
       source: "civil_cases.slug",
     })),
-    ...categoryRows.flatMap((entry) => [
+    ...reportRows.map((report) => ({
+      from: normalizePath(`/report/${report.state}/${report.slug}/`),
+      to: normalizePath(`/report/${report.slug}/`),
+      status: 301,
+      source: "reviews.slug",
+    })),
+    ...stateRows.flatMap((entry) => [
       {
-        from: normalizePath(`/personnel/${entry.category}/`),
-        to: normalizePath(`/${entry.category}/`),
+        from: normalizePath(`/personnel/${entry.state}/`),
+        to: normalizePath(`/${entry.state}/`),
         status: 301,
         source: "state-scoped personnel routes retired",
       },
       {
-        from: `/personnel/${entry.category}/page/*`,
-        to: normalizePath(`/${entry.category}/`),
+        from: `/personnel/${entry.state}/page/*`,
+        to: normalizePath(`/${entry.state}/`),
         status: 301,
         source: "state-scoped personnel pagination retired",
       },
       {
-        from: normalizePath(`/civil-litigation/${entry.category}/`),
-        to: normalizePath(`/${entry.category}/`),
+        from: normalizePath(`/civil-litigation/${entry.state}/`),
+        to: normalizePath(`/${entry.state}/`),
         status: 301,
         source: "state-scoped civil case routes retired",
       },
       {
-        from: `/civil-litigation/${entry.category}/page/*`,
-        to: normalizePath(`/${entry.category}/`),
+        from: `/civil-litigation/${entry.state}/page/*`,
+        to: normalizePath(`/${entry.state}/`),
         status: 301,
         source: "state-scoped civil case pagination retired",
       },

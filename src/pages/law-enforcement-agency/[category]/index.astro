@@ -23,7 +23,7 @@ export async function getStaticPaths() {
   const agenciesByCategory = new Map<string, typeof agencies>();
 
   agencies.forEach((agency) => {
-    const category = agency.category?.toLowerCase();
+    const category = agency.state?.toLowerCase();
     if (!category) {
       return;
     }
@@ -35,7 +35,6 @@ export async function getStaticPaths() {
   const allCategories = new Set<string>(
     US_STATE_TILES.map((stateEntry) => stateEntry.code.toLowerCase()),
   );
-  allCategories.add("federal");
 
   return Array.from(allCategories).map((category) => {
     const categoryAgencies = agenciesByCategory.get(category) || [];
@@ -237,13 +236,7 @@ const structuredData = {
                         <span>{agency.activePersonnelCount} personnel</span>
                       ) : null}
                       {agency.reportCount > 0 ? (
-                        <a
-                          href={
-                            agency.category === "federal"
-                              ? "/report/"
-                              : `/report/${agency.category}/`
-                          }
-                        >
+                        <a href={`/report/${agency.state.toLowerCase()}/`}>
                           {agency.reportCount} reports
                         </a>
                       ) : null}

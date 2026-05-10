@@ -8,9 +8,8 @@ export type PersonnelSummary = {
   roleTitle: string | null;
   reportCount: number;
   civilCaseCount: number;
-  agencySlug: string;
   agencyName: string;
-  agencyCategory: string;
+  agencyState: string;
   agencyCanonicalPath: string;
 };
 
@@ -19,7 +18,6 @@ export type AgencySummary = {
   slug: string;
   name: string;
   state: string;
-  category: string;
   administrativeArea?: string | null;
   administrativeAreaSlug?: string | null;
   city?: string | null;
@@ -37,13 +35,13 @@ export type ReportSummary = {
   id: string;
   slug: string;
   state: string;
+  locationPath: string;
   title: string;
   incidentDate: string;
   address?: string | null;
   agencySlug: string;
   agencyName: string;
   agencyCanonicalPath: string;
-  category?: string | null;
   ratingOverall?: number | null;
   personnel?: {
     licenseType?: string | null;

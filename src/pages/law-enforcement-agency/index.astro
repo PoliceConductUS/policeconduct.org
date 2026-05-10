@@ -2,6 +2,7 @@
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import { loadAgencySummaries } from "#src/lib/data/summaries.js";
+import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import {
@@ -10,10 +11,13 @@ import {
   getSiteUrl,
 } from "#src/lib/structured-data.js";
 
-const agencies = await loadAgencySummaries();
+const [agencies, federalAgencies] = await Promise.all([
+  loadAgencySummaries(),
+  loadFederalAgencySummaries(),
+]);
 const stateStats = US_STATE_TILES.map((state) => {
   const count = agencies.filter(
-    (agency) => agency.category?.toUpperCase() === state.code,
+    (agency) => agency.state?.toUpperCase() === state.code,
   ).length;
   return {
     code: state.code,
@@ -21,9 +25,6 @@ const stateStats = US_STATE_TILES.map((state) => {
     href: `/law-enforcement-agency/${state.code.toLowerCase()}/`,
   };
 });
-const federalAgencies = agencies.filter(
-  (agency) => agency.category === "federal",
-);
 const totalAgencies = agencies.length;
 const statesWithAgencies = stateStats.filter((state) => state.count > 0).length;
 const pagePath = "/law-enforcement-agency/";
@@ -126,8 +127,8 @@ if (agencyItemList) {
             description: "Federal agencies listed separately from states.",
             items: federalAgencies.map((agency) => ({
               label: agency.name,
-              href: agency.canonicalPath,
-              badgeText: `Reports: ${agency.reportCount}`,
+              href: agency.path,
+              badgeText: `${agency.branchCount} locations`,
             })),
           }}
         />

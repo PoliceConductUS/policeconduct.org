@@ -22,23 +22,22 @@ const [agencies, personnel, reports, civilCasesData, federalAgencies] =
     loadPersonnelSummaries(),
     loadReportSummaries(),
     withDb(async (client) => {
-      const categoryResult = await client.query(
+      const stateResult = await client.query(
         `
-        select upper(a.category) as category, count(distinct cco.civil_case_id) as case_count
-        from public.civil_case_officers cco
-        join public.agency_officers ao on ao.id = cco.agency_officer_id
-        join public.agency a on ao.agency_id = a.id
-        where a.category is not null
-        group by upper(a.category)
+        select upper(lp.state_or_territory_slug) as state, count(distinct c.id) as case_count
+        from public.civil_cases c
+        join public.location_path lp
+          on lp.location_path_id = c.location_path_id
+        group by upper(lp.state_or_territory_slug)
       `,
       );
       const result = await client.query(
         "select count(*) as count from public.civil_cases",
       );
       return {
-        categoryCounts: categoryResult.rows.map(
-          (row: { category: string; case_count: string | number }) => ({
-            category: String(row.category || "").toLowerCase(),
+        stateCounts: stateResult.rows.map(
+          (row: { state: string; case_count: string | number }) => ({
+            state: String(row.state || "").toLowerCase(),
             count: Number(row.case_count || 0),
           }),
         ),
@@ -48,11 +47,11 @@ const [agencies, personnel, reports, civilCasesData, federalAgencies] =
     loadFederalAgencySummaries(),
   ]);
 const civilCasesByCategory = new Map(
-  civilCasesData.categoryCounts.map((entry) => [entry.category, entry.count]),
+  civilCasesData.stateCounts.map((entry) => [entry.state, entry.count]),
 );
 const reportCountsByCategory = reports.reduce(
   (acc: Map<string, number>, report) => {
-    const key = String(report.category || "").toLowerCase();
+    const key = String(report.state || "").toLowerCase();
     if (!key) {
       return acc;
     }
@@ -63,7 +62,7 @@ const reportCountsByCategory = reports.reduce(
 );
 const personnelCountsByCategory = personnel.reduce(
   (acc: Map<string, number>, entry) => {
-    const key = String(entry.agencyCategory || "").toLowerCase();
+    const key = String(entry.agencyState || "").toLowerCase();
     if (!key) {
       return acc;
     }
