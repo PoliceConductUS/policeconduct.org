@@ -1,5 +1,6 @@
 import { withDb } from "#src/lib/db.js";
 import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
+import { requireAgencyCanonicalPath } from "./location-paths.js";
 import type { PersonnelSummary } from "./types.js";
 
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
@@ -135,10 +136,12 @@ export const loadPersonnelSummaries = async (
         lastName: officer.last_name,
         firstName: officer.first_name,
         nameSuffix: officer.suffix || null,
+        licenseType: eligibleAssignment?.title || null,
         roleTitle: eligibleAssignment?.title || null,
         agencySlug: `${agency.category}/${agency.slug}`,
         agencyName: agency.name,
         agencyCategory: agency.category,
+        agencyCanonicalPath: requireAgencyCanonicalPath(agency),
         reportCount: Number(
           reportCountsByOfficer[officer.id]?.report_count || 0,
         ),

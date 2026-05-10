@@ -4,6 +4,7 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { withDb } from "#src/lib/db.js";
+import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import {
   buildItemList,
@@ -21,6 +22,7 @@ type FederalAgency = {
   name: string;
   category: string;
   slug: string;
+  canonicalPath: string;
   count: number;
 };
 
@@ -42,13 +44,15 @@ const { totalCases, categoryCounts, federalAgencies } = await withDb(
     );
     const federalAgenciesResult = await client.query(
       `
-        select a.id, a.name, a.category, a.slug,
+        select a.id, a.name, a.category, a.slug, a.administrative_area,
+          a.administrative_area_slug, a.city, a.place_slug,
           count(distinct cco.civil_case_id) as case_count
         from public.agency a
         left join public.agency_officers ao on ao.agency_id = a.id
         left join public.civil_case_officers cco on cco.agency_officer_id = ao.id
         where upper(a.category) = 'FEDERAL'
-        group by a.id, a.name, a.category, a.slug
+        group by a.id, a.name, a.category, a.slug, a.administrative_area,
+          a.administrative_area_slug, a.city, a.place_slug
         order by case_count desc, a.name
       `,
     );
@@ -66,12 +70,17 @@ const { totalCases, categoryCounts, federalAgencies } = await withDb(
           name: string;
           category: string;
           slug: string;
+          administrative_area?: string | null;
+          administrative_area_slug?: string | null;
+          city?: string | null;
+          place_slug?: string | null;
           case_count?: string | number | null;
         }) => ({
           id: row.id,
           name: row.name,
           category: row.category,
           slug: row.slug,
+          canonicalPath: requireAgencyCanonicalPath(row),
           count: Number(row.case_count || 0),
         }),
       ),
@@ -88,7 +97,7 @@ const countsByCategory = new Map(
 const stateStats = US_STATE_TILES.map((state) => ({
   code: state.code,
   count: countsByCategory.get(state.code) ?? 0,
-  href: `/civil-litigation/${state.code.toLowerCase()}/`,
+  href: `/${state.code.toLowerCase()}/`,
 }));
 const totalCaseCount = totalCases;
 const statesWithCases = stateStats.filter((state) => state.count > 0).length;
@@ -105,10 +114,7 @@ const federalAgencyItems = (federalAgencies as FederalAgency[]).map(
     item: {
       "@type": "GovernmentOrganization",
       name: agency.name,
-      url: new URL(
-        `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
-        siteUrl,
-      ).toString(),
+      url: new URL(agency.canonicalPath, siteUrl).toString(),
     },
   }),
 );
@@ -187,9 +193,9 @@ if (federalItemList) {
         <UsaChoroplethMap
           stats={stateStats}
           title="States"
-          subtitle="Select a state to view civil cases tied to agencies and personnel there."
+          subtitle="Select a state to browse available records by place."
           emptyLabel="No cases yet"
-          interactionLabel="Click a state to view its cases."
+          interactionLabel="Click a state to browse available records."
           headerAction={{
             href: newCivilLandingHref,
             label: "Suggest a new civil case",
@@ -202,7 +208,7 @@ if (federalItemList) {
             description: "Federal agencies linked to listed cases.",
             items: (federalAgencies as FederalAgency[]).map((agency) => ({
               label: agency.name,
-              href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+              href: agency.canonicalPath,
               badgeText: `Cases: ${agency.count}`,
             })),
           }}

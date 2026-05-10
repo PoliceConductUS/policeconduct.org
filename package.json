@@ -4,7 +4,10 @@
   "version": "0.0.1",
   "scripts": {
     "astro": "astro",
-    "build": "node scripts/validate-build-env.mjs && GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-$(git rev-parse --short=12 HEAD)} GIT_COMMIT_DIRTY=${GIT_COMMIT_DIRTY:-$(if git diff --quiet HEAD -- && [ -z \"$(git ls-files --others --exclude-standard)\" ]; then echo 0; else echo 1; fi)} astro build",
+    "build": "node scripts/validate-build-env.mjs && node scripts/refresh-build-projections.mjs && GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-$(git rev-parse --short=12 HEAD)} GIT_COMMIT_DIRTY=${GIT_COMMIT_DIRTY:-$(if git diff --quiet HEAD -- && [ -z \"$(git ls-files --others --exclude-standard)\" ]; then echo 0; else echo 1; fi)} astro build && node scripts/generate-redirect-map.mjs",
+    "enrich:agency-coordinates": "node scripts/enrich-missing-agency-coordinates.mjs",
+    "geocode:agencies": "node scripts/geocode-agency-locations.mjs",
+    "refresh:build-projections": "node scripts/refresh-build-projections.mjs",
     "dev": "node scripts/dev.mjs",
     "deploy:prod": "bash scripts/deploy-incremental.sh",
     "deploy:preview": "bash scripts/deploy-preview.sh",
@@ -23,6 +26,7 @@
     "astro": "^6.2.2",
     "bootstrap": "^5.3.8",
     "dotenv": "^17.4.2",
+    "leaflet": "^1.9.4",
     "pg": "^8.20.0"
   },
   "devDependencies": {
@@ -30,6 +34,7 @@
     "@axe-core/playwright": "^4.11.1",
     "@fullhuman/postcss-purgecss": "^8.0.0",
     "@playwright/test": "^1.59.1",
+    "@types/leaflet": "^1.9.21",
     "@types/pg": "^8.20.0",
     "postcss": "^8.5.10",
     "prettier": "^3.8.3",

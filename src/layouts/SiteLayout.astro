@@ -53,23 +53,18 @@ const serializeStructuredData = (value: unknown) =>
   JSON.stringify(value).replace(/</g, "\\u003c");
 
 const navItems = [
-  { label: "Reports", href: "/report/", title: "User submitted reports" },
+  { label: "Find My Area", href: "/find-my-area/", title: "Browse by place" },
+  { label: "Search", href: "/search/", title: "Search available records" },
   {
-    label: "Agencies",
-    href: "/law-enforcement-agency/",
-    title: "Law Enforcement Agencies",
+    label: "Submit",
+    href: "/report/new/",
+    title: "Submit a police interaction report",
   },
   {
-    label: "Personnel",
-    href: "/personnel/",
-    title: "Law Enforcement Agency Personnel",
+    label: "About the Data",
+    href: "/about/",
+    title: "About PoliceConduct.org data",
   },
-  {
-    label: "Civil Cases",
-    href: "/civil-litigation/",
-    title: "Civil litigation cases",
-  },
-  { label: "News", href: "/news/", title: "Police conduct news" },
 ];
 
 const isActivePath = (href: string) =>

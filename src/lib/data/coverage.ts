@@ -4,6 +4,7 @@ export type CoverageOfficerRef = {
   slug: string;
   first_name: string;
   last_name: string;
+  licenseType?: string | null;
 };
 
 export type CoverageLink = {
@@ -30,7 +31,8 @@ const hydrateCoverageLinks = async (rows: any[]): Promise<CoverageLink[]> => {
             coverage_officer.coverage_link_id,
             officer.slug,
             officer.first_name,
-            officer.last_name
+            officer.last_name,
+            agency_officer.title as license_type
           from public.coverage_link_agency_officers coverage_officer
           join public.agency_officers agency_officer
             on agency_officer.id = coverage_officer.agency_officer_id
@@ -51,6 +53,7 @@ const hydrateCoverageLinks = async (rows: any[]): Promise<CoverageLink[]> => {
       slug: officer.slug,
       first_name: officer.first_name,
       last_name: officer.last_name,
+      licenseType: officer.license_type || null,
     });
     officersByLink.set(officer.coverage_link_id, list);
   }

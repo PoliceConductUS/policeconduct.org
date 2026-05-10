@@ -1,6 +1,7 @@
 import { withDb } from "./db.js";
 import { groupBy, mapBy } from "./data.js";
 import { loadCoverageLinksForReport } from "./data/coverage.js";
+import { requireAgencyCanonicalPath } from "./data/location-paths.js";
 
 const assertValue = <T>(value: T | null | undefined, message: string): T => {
   if (value === null || value === undefined) {
@@ -120,7 +121,10 @@ const buildOfficerEntries = (
     return {
       officer,
       agencyOfficer,
-      agency,
+      agency: {
+        ...agency,
+        canonicalPath: requireAgencyCanonicalPath(agency),
+      },
       path,
       badge: agencyOfficer.badge_number || null,
       ratingOverall,
@@ -251,7 +255,9 @@ export const loadReportDetail = async (
     .map((tag: { label: string }) => tag.label);
 
   const evidenceLinks = buildEvidenceLinks(data.reportLinks ?? []);
-  const coverageLinks = await loadCoverageLinksForReport(String(data.report.id));
+  const coverageLinks = await loadCoverageLinksForReport(
+    String(data.report.id),
+  );
   const civilCases = await withDb(async (client) => {
     return (
       await client.query(
@@ -295,10 +301,6 @@ export const loadReportDetail = async (
         civilCase.cause_number,
         `Missing cause_number for civil case ${id}`,
       );
-      const category = assertValue(
-        civilCase.category,
-        `Missing category for civil case ${id}`,
-      );
       const slug = assertValue(
         civilCase.slug,
         `Missing slug for civil case ${id}`,
@@ -310,7 +312,7 @@ export const loadReportDetail = async (
         causeNumber,
         court: civilCase.court,
         filedDate: civilCase.filed_date,
-        path: `/civil-litigation/${category}/${slug}/`,
+        path: `/civil-cases/${slug}/`,
       };
     }),
     evidenceLinks: [...evidenceLinks, ...coverageLinks],

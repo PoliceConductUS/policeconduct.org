@@ -9,7 +9,7 @@ const fullName = `${person.lastName}, ${person.firstName}${
 const initials =
   `${person.firstName?.[0] || ""}${person.lastName?.[0] || ""}`.toUpperCase();
 const detailUrl = `/personnel/${person.slug}/`;
-const agencyUrl = `/law-enforcement-agency/${person.agencySlug}/`;
+const agencyUrl = person.agencyCanonicalPath;
 const reportLabel = `${person.reportCount} reports`;
 ---
 
@@ -27,9 +27,9 @@ const reportLabel = `${person.reportCount} reports`;
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
           <span class="badge bg-dark rounded-0">Active</span>
           {
-            person.roleTitle ? (
+            person.licenseType ? (
               <span class="badge bg-light text-dark border rounded-0">
-                {person.roleTitle}
+                License type: {person.licenseType}
               </span>
             ) : null
           }

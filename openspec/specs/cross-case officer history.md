@@ -41,18 +41,18 @@ That requires cross-system searching.
 
 The lawyer might have to search:
 
-* county criminal records
-* district court records
-* municipal court records
-* federal PACER/CourtListener
-* state appellate opinions
-* police complaint portals
-* prosecutor Brady lists, if public
-* agency discipline files
-* MuckRock/FOIA/TPIA releases
-* news archives
-* YouTube
-* prior defense-lawyer knowledge
+- county criminal records
+- district court records
+- municipal court records
+- federal PACER/CourtListener
+- state appellate opinions
+- police complaint portals
+- prosecutor Brady lists, if public
+- agency discipline files
+- MuckRock/FOIA/TPIA releases
+- news archives
+- YouTube
+- prior defense-lawyer knowledge
 
 That is a lot of work for one case.
 
@@ -307,14 +307,14 @@ That last one matters for your point: conduct is relative to training.
 
 If officers repeatedly misunderstand the same constitutional boundary, that may be less about one “bad officer” and more about:
 
-* bad training
-* missing policy
-* supervisor tolerance
-* bad incentives
-* poor report review
-* lack of corrective feedback
-* prosecutor tolerance
-* court under-enforcement
+- bad training
+- missing policy
+- supervisor tolerance
+- bad incentives
+- poor report review
+- lack of corrective feedback
+- prosecutor tolerance
+- court under-enforcement
 
 ## The agency-use case
 
@@ -362,12 +362,12 @@ Suggested prosecutor disclosure review topics
 
 This is immediately useful to:
 
-* criminal defense lawyers
-* prosecutors
-* civil-rights lawyers
-* journalists
-* agencies
-* researchers
+- criminal defense lawyers
+- prosecutors
+- civil-rights lawyers
+- journalists
+- agencies
+- researchers
 
 ## Best language for the feature
 

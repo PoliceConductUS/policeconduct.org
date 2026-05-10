@@ -1,0 +1,191 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
+import { loadLocationBuildPayloads } from "#src/lib/data/build-payloads.js";
+import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+
+const [locations, federalAgencies] = await Promise.all([
+  loadLocationBuildPayloads(),
+  loadFederalAgencySummaries(),
+]);
+const states = locations.filter(
+  (location) =>
+    location.level === "state" && (location.children?.length ?? 0) > 0,
+);
+const pagePath = "/find-my-area/";
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const description =
+  "Start from a state, county, or place to browse available PoliceConduct.org records.";
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: "Find My Area | PoliceConduct.org",
+  description,
+  type: "CollectionPage",
+});
+---
+
+<SiteLayout
+  title="Find My Area | PoliceConduct.org"
+  description={description}
+  pagePath={pagePath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Find My Area", href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+        <div class="row g-4 align-items-end">
+          <div class="col-12">
+            <h1 class="display-4 fw-bold mb-3">Find My Area</h1>
+            <p class="lead text-muted mb-0">
+              Start with a place, then open agencies and available records
+              connected to that location.
+            </p>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label fw-semibold" for="areaSearch">
+              Search states, counties, places, or agencies
+            </label>
+            <input
+              class="form-control rounded-0"
+              id="areaSearch"
+              type="search"
+              placeholder="Example: Irving or Dallas County"
+              data-filter-input
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-12 col-lg-8">
+            <div class="profile-record-list" data-filter-list>
+              {
+                states.map((state) => (
+                  <section
+                    class="area-group"
+                    data-filter-item={`${state.stateLabel} ${state.state}`}
+                  >
+                    <h2 class="h4">
+                      <a href={state.path}>{state.stateLabel}</a>
+                    </h2>
+                    <div class="profile-record-detail mb-3">
+                      <span>
+                        {state.children?.length ?? 0}{" "}
+                        {state.administrativeAreaPlural?.toLowerCase()}
+                      </span>
+                    </div>
+                    <div class="area-link-grid">
+                      {(state.children || []).slice(0, 24).map((area) => (
+                        <a
+                          href={area.path}
+                          data-filter-item={`${state.stateLabel} ${area.label}`}
+                        >
+                          {area.label}
+                        </a>
+                      ))}
+                    </div>
+                  </section>
+                ))
+              }
+            </div>
+          </div>
+          <aside class="col-12 col-lg-4">
+            <div class="federal-panel">
+              <div
+                class="d-flex align-items-baseline justify-content-between gap-3"
+              >
+                <h2 class="h5 mb-0">Federal agencies</h2>
+                <a href="/federal/">View all</a>
+              </div>
+              <div class="profile-record-detail my-3">
+                <span>
+                  {federalAgencies.length}{" "}
+                  {federalAgencies.length === 1 ? "agency" : "agencies"}
+                </span>
+              </div>
+              <div class="federal-link-list">
+                {
+                  federalAgencies.map((agency) => (
+                    <a href={agency.path} data-filter-item={agency.name}>
+                      {agency.name}
+                    </a>
+                  ))
+                }
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script is:inline>
+    const filterInput = document.querySelector("[data-filter-input]");
+    const filterItems = [...document.querySelectorAll("[data-filter-item]")];
+    filterInput?.addEventListener("input", () => {
+      const query = filterInput.value.trim().toLowerCase();
+      filterItems.forEach((item) => {
+        const text = item.getAttribute("data-filter-item")?.toLowerCase() || "";
+        item.hidden = Boolean(query) && !text.includes(query);
+      });
+    });
+  </script>
+</SiteLayout>
+
+<style>
+  .area-group {
+    border-top: 1px solid var(--bs-border-color);
+    padding: 1.25rem 0;
+  }
+
+  .area-group:last-child {
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+
+  .area-group a {
+    color: var(--bs-dark);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  .area-link-grid {
+    display: grid;
+    gap: 0.45rem 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  }
+
+  .profile-record-detail {
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.875rem;
+    gap: 0.4rem 0.9rem;
+  }
+
+  .federal-panel {
+    border: 1px solid var(--bs-border-color);
+    padding: 1.25rem;
+  }
+
+  .federal-panel a {
+    color: var(--bs-dark);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  .federal-link-list {
+    display: grid;
+    gap: 0.65rem;
+  }
+</style>

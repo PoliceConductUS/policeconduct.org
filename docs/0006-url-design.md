@@ -22,7 +22,7 @@ The site serves multiple user outcomes, including:
 - evaluating agency performance;
 - understanding what happened in a police-public incident;
 - reviewing personnel history across agencies;
-- understanding video in context;
+- understanding media or coverage in context;
 - researching civil litigation;
 - tracking enforcement outcomes;
 - submitting or correcting information.
@@ -33,10 +33,10 @@ The site also stores and relates multiple data entities, including:
 - personnel;
 - incidents;
 - accounts;
-- videos;
+- coverage and media links;
 - civil cases;
 - places;
-- administrative areas;
+- counties, parishes, boroughs, municipios, districts, and named county-equivalents;
 - enforcement actions;
 - criminal cases;
 - outcomes.
@@ -49,7 +49,7 @@ For example:
 - personnel can work for multiple agencies and should not be tied to one agency URL;
 - an incident usually has a primary place and date, but may involve multiple agencies;
 - a civil case can involve multiple agencies, personnel, incidents, courts, and governments;
-- a video can relate to multiple agencies, personnel, incidents, accounts, and cases.
+- a media or coverage link can relate to multiple agencies, personnel, incidents, accounts, and cases.
 
 The URL design should not force every entity under one agency or one place when that entity can naturally have multiple relationships.
 
@@ -58,7 +58,7 @@ The URL design should not force every entity under one agency or one place when 
 PoliceConduct.org will use a hybrid URL model:
 
 1. Geography and agency pages use address-based paths.
-2. Personnel, civil cases, and videos use top-level canonical entity paths.
+2. Personnel and civil cases use top-level canonical entity paths.
 3. Incidents use place/date/event paths.
 4. Contextual collection pages may exist under geography, agency, personnel, and incident pages.
 5. Canonical pages and contextual pages are connected by links, structured data, and canonical tags.
@@ -74,16 +74,16 @@ State or territory:
 /{state-or-territory}/
 ```
 
-Administrative area:
+County, parish, borough, municipio, district, or named county-equivalent:
 
 ```txt
-/{state-or-territory}/{administrative-area}/
+/{state-or-territory}/{county-equivalent}/
 ```
 
 Place:
 
 ```txt
-/{state-or-territory}/{administrative-area}/{place}/
+/{state-or-territory}/{county-equivalent}/{place}/
 ```
 
 Examples:
@@ -100,16 +100,16 @@ Examples:
 /dc/
 ```
 
-The term `administrative-area` is intentionally broader than `county`.
+The `{county-equivalent}` segment is intentionally broader than `county`.
 
-It may represent a county, parish, borough, municipio, district, island, or other administrative area appropriate to the state or territory.
+It may represent a county, parish, borough, municipio, district, island, or other named county-equivalent appropriate to the state or territory.
 
 ### Agency Pages
 
 Agency pages use the agency's official address location.
 
 ```txt
-/{state-or-territory}/{administrative-area}/{place}/{agency-slug}/
+/{state-or-territory}/{county-equivalent}/{place}/{agency-slug}/
 ```
 
 Examples:
@@ -127,12 +127,10 @@ The agency page may display:
 
 - official address;
 - agency type;
-- primary jurisdiction;
-- service area;
 - agencies related to it;
 - personnel;
 - incidents;
-- videos;
+- coverage and media links;
 - civil cases;
 - transparency and data-quality information.
 
@@ -236,7 +234,7 @@ Example:
 
 A civil case should not be canonical under one agency because a civil case can involve multiple agencies, personnel, governments, courts, incidents, and claims.
 
-Contextual civil-case collection pages may exist under agencies, personnel, incidents, places, or administrative areas.
+Contextual civil-case collection pages may exist under agencies, personnel, incidents, places, counties, parishes, boroughs, districts, or named county-equivalents.
 
 Examples:
 
@@ -248,33 +246,22 @@ Examples:
 
 Those pages list or summarize related civil cases but do not replace the canonical civil-case URL.
 
-### Videos
+### Coverage and Media Links
 
-Videos are top-level canonical entities.
+Videos are not top-level canonical entities.
 
-```txt
-/videos/{video-slug}/
-```
-
-Example:
-
-```txt
-/videos/2023-12-04-irving-body-camera-v-789abc/
-```
-
-Video collection pages may exist under geography, agency, personnel, and incident pages.
+Coverage and media may appear as related links on the agency, personnel, incident, civil-case, account, or other relevant record page where the data supports that relationship.
 
 Examples:
 
 ```txt
-/videos/
-/tx/dallas-county/irving/videos/
-/tx/dallas-county/irving/irving-police-department/videos/
-/personnel/james-markham-v-7635c7/videos/
-/tx/dallas-county/irving/incidents/2023/12/04/public-intoxication-arrest-i-7f31c2/videos/
+/tx/dallas-county/irving/irving-police-department/
+/personnel/james-markham-v-7635c7/
+/tx/dallas-county/irving/incidents/2023/12/04/public-intoxication-arrest-i-7f31c2/
+/civil-cases/ndtx-3-25-cv-03329-lotts-v-city-of-irving/
 ```
 
-A video card in any contextual collection should link to the canonical video page.
+Coverage and media links should not create a `/videos/` top-level section or canonical video record URL.
 
 ## Incident URLs
 
@@ -339,7 +326,6 @@ Incident child routes may include:
 /{incident-url}/accounts/
 /{incident-url}/personnel/
 /{incident-url}/agencies/
-/{incident-url}/videos/
 /{incident-url}/civil-cases/
 /{incident-url}/criminal-cases/
 /{incident-url}/enforcement/
@@ -351,7 +337,6 @@ Example:
 
 ```txt
 /tx/dallas-county/irving/incidents/2023/12/04/public-intoxication-arrest-i-7f31c2/accounts/
-/tx/dallas-county/irving/incidents/2023/12/04/public-intoxication-arrest-i-7f31c2/videos/
 /tx/dallas-county/irving/incidents/2023/12/04/public-intoxication-arrest-i-7f31c2/enforcement/
 ```
 
@@ -432,16 +417,13 @@ Examples:
 ```txt
 /tx/dallas-county/irving/personnel/
 /tx/dallas-county/irving/incidents/
-/tx/dallas-county/irving/videos/
 /tx/dallas-county/irving/civil-cases/
 
 /tx/dallas-county/irving/irving-police-department/personnel/
 /tx/dallas-county/irving/irving-police-department/incidents/
-/tx/dallas-county/irving/irving-police-department/videos/
 /tx/dallas-county/irving/irving-police-department/civil-cases/
 
 /personnel/james-markham-v-7635c7/incidents/
-/personnel/james-markham-v-7635c7/videos/
 /personnel/james-markham-v-7635c7/civil-cases/
 ```
 
@@ -456,15 +438,17 @@ Canonical pages should use self-canonical tags.
 Examples:
 
 ```html
-<link rel="canonical" href="https://www.policeconduct.org/personnel/james-markham-v-7635c7/" />
+<link
+  rel="canonical"
+  href="https://www.policeconduct.org/personnel/james-markham-v-7635c7/"
+/>
 ```
 
 ```html
-<link rel="canonical" href="https://www.policeconduct.org/videos/2023-12-04-irving-body-camera-v-789abc/" />
-```
-
-```html
-<link rel="canonical" href="https://www.policeconduct.org/civil-cases/ndtx-3-25-cv-03329-lotts-v-city-of-irving/" />
+<link
+  rel="canonical"
+  href="https://www.policeconduct.org/civil-cases/ndtx-3-25-cv-03329-lotts-v-city-of-irving/"
+/>
 ```
 
 Contextual pages should self-canonical only when they provide substantial unique contextual value.
@@ -483,7 +467,7 @@ Structured data should help search engines understand:
 - related agencies;
 - related personnel;
 - related incidents;
-- related videos;
+- related coverage and media links;
 - related civil cases;
 - parent and branch agency relationships.
 
@@ -499,34 +483,30 @@ URL:
 
 ```html
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "ProfilePage",
-  "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/#profile-page",
-  "url": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/",
-  "name": "Irving Police Department - Agency Profile",
-  "mainEntity": {
-    "@type": "GovernmentOrganization",
-    "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/#agency",
-    "name": "Irving Police Department",
+  {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/#profile-page",
     "url": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/",
-    "identifier": {
-      "@type": "PropertyValue",
-      "propertyID": "PoliceConduct.org agency identifier",
-      "value": "agency-049f9a"
-    },
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "Irving",
-      "addressRegion": "TX",
-      "addressCountry": "US"
-    },
-    "areaServed": {
-      "@type": "AdministrativeArea",
-      "name": "Irving, Texas"
+    "name": "Irving Police Department - Agency Profile",
+    "mainEntity": {
+      "@type": "GovernmentOrganization",
+      "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/#agency",
+      "name": "Irving Police Department",
+      "url": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/",
+      "identifier": {
+        "@type": "PropertyValue",
+        "propertyID": "PoliceConduct.org agency identifier",
+        "value": "agency-049f9a"
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Irving",
+        "addressRegion": "TX",
+        "addressCountry": "US"
+      }
     }
   }
-}
 </script>
 ```
 
@@ -540,39 +520,39 @@ URL:
 
 ```html
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "ProfilePage",
-  "@id": "https://www.policeconduct.org/personnel/james-markham-v-7635c7/#profile-page",
-  "url": "https://www.policeconduct.org/personnel/james-markham-v-7635c7/",
-  "name": "James Markham - Personnel Profile",
-  "mainEntity": {
-    "@type": "Person",
-    "@id": "https://www.policeconduct.org/personnel/james-markham-v-7635c7/#person",
-    "name": "James Markham",
-    "identifier": {
-      "@type": "PropertyValue",
-      "propertyID": "PoliceConduct.org personnel identifier",
-      "value": "v-7635c7"
-    },
-    "worksFor": [
-      {
-        "@type": "GovernmentOrganization",
-        "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/#agency",
-        "name": "Irving Police Department",
-        "url": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/"
-      }
-    ],
-    "subjectOf": [
-      {
-        "@type": "WebPage",
-        "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/personnel/james-markham-v-7635c7/#agency-personnel-page",
-        "url": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/personnel/james-markham-v-7635c7/",
-        "name": "James Markham at Irving Police Department"
-      }
-    ]
+  {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "@id": "https://www.policeconduct.org/personnel/james-markham-v-7635c7/#profile-page",
+    "url": "https://www.policeconduct.org/personnel/james-markham-v-7635c7/",
+    "name": "James Markham - Personnel Profile",
+    "mainEntity": {
+      "@type": "Person",
+      "@id": "https://www.policeconduct.org/personnel/james-markham-v-7635c7/#person",
+      "name": "James Markham",
+      "identifier": {
+        "@type": "PropertyValue",
+        "propertyID": "PoliceConduct.org personnel identifier",
+        "value": "v-7635c7"
+      },
+      "worksFor": [
+        {
+          "@type": "GovernmentOrganization",
+          "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/#agency",
+          "name": "Irving Police Department",
+          "url": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/"
+        }
+      ],
+      "subjectOf": [
+        {
+          "@type": "WebPage",
+          "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/personnel/james-markham-v-7635c7/#agency-personnel-page",
+          "url": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/personnel/james-markham-v-7635c7/",
+          "name": "James Markham at Irving Police Department"
+        }
+      ]
+    }
   }
-}
 </script>
 ```
 
@@ -586,36 +566,36 @@ URL:
 
 ```html
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "ProfilePage",
-  "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/personnel/james-markham-v-7635c7/#profile-page",
-  "url": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/personnel/james-markham-v-7635c7/",
-  "name": "James Markham at Irving Police Department",
-  "about": [
-    {
-      "@type": "Person",
-      "@id": "https://www.policeconduct.org/personnel/james-markham-v-7635c7/#person",
-      "name": "James Markham"
-    },
-    {
-      "@type": "GovernmentOrganization",
-      "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/#agency",
-      "name": "Irving Police Department"
-    }
-  ],
-  "mainEntity": {
-    "@type": "Role",
-    "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/personnel/james-markham-v-7635c7/#agency-association",
-    "roleName": "Personnel association",
-    "person": {
-      "@id": "https://www.policeconduct.org/personnel/james-markham-v-7635c7/#person"
-    },
-    "worksFor": {
-      "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/#agency"
+  {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/personnel/james-markham-v-7635c7/#profile-page",
+    "url": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/personnel/james-markham-v-7635c7/",
+    "name": "James Markham at Irving Police Department",
+    "about": [
+      {
+        "@type": "Person",
+        "@id": "https://www.policeconduct.org/personnel/james-markham-v-7635c7/#person",
+        "name": "James Markham"
+      },
+      {
+        "@type": "GovernmentOrganization",
+        "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/#agency",
+        "name": "Irving Police Department"
+      }
+    ],
+    "mainEntity": {
+      "@type": "Role",
+      "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/personnel/james-markham-v-7635c7/#agency-association",
+      "roleName": "Personnel association",
+      "person": {
+        "@id": "https://www.policeconduct.org/personnel/james-markham-v-7635c7/#person"
+      },
+      "worksFor": {
+        "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/#agency"
+      }
     }
   }
-}
 </script>
 ```
 
@@ -629,85 +609,38 @@ URL:
 
 ```html
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Event",
-  "@id": "https://www.policeconduct.org/tx/dallas-county/irving/incidents/2023/12/04/public-intoxication-arrest-i-7f31c2/#incident",
-  "url": "https://www.policeconduct.org/tx/dallas-county/irving/incidents/2023/12/04/public-intoxication-arrest-i-7f31c2/",
-  "name": "Public intoxication arrest involving Irving Police Department",
-  "startDate": "2023-12-04",
-  "eventStatus": "https://schema.org/EventCompleted",
-  "location": {
-    "@type": "Place",
-    "name": "Irving, Dallas County, Texas",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "Irving",
-      "addressRegion": "TX",
-      "addressCountry": "US"
-    }
-  },
-  "organizer": [
-    {
-      "@type": "GovernmentOrganization",
-      "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/#agency",
-      "name": "Irving Police Department"
-    }
-  ],
-  "subjectOf": [
-    {
-      "@type": "VideoObject",
-      "@id": "https://www.policeconduct.org/videos/2023-12-04-irving-body-camera-v-789abc/#video"
+  {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "@id": "https://www.policeconduct.org/tx/dallas-county/irving/incidents/2023/12/04/public-intoxication-arrest-i-7f31c2/#incident",
+    "url": "https://www.policeconduct.org/tx/dallas-county/irving/incidents/2023/12/04/public-intoxication-arrest-i-7f31c2/",
+    "name": "Public intoxication arrest involving Irving Police Department",
+    "startDate": "2023-12-04",
+    "eventStatus": "https://schema.org/EventCompleted",
+    "location": {
+      "@type": "Place",
+      "name": "Irving, Dallas County, Texas",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Irving",
+        "addressRegion": "TX",
+        "addressCountry": "US"
+      }
     },
-    {
-      "@type": "WebPage",
-      "@id": "https://www.policeconduct.org/civil-cases/ndtx-3-25-cv-03329-lotts-v-city-of-irving/#case-page"
-    }
-  ]
-}
-</script>
-```
-
-### Video Page
-
-URL:
-
-```txt
-/videos/2023-12-04-irving-body-camera-v-789abc/
-```
-
-```html
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "VideoObject",
-  "@id": "https://www.policeconduct.org/videos/2023-12-04-irving-body-camera-v-789abc/#video",
-  "url": "https://www.policeconduct.org/videos/2023-12-04-irving-body-camera-v-789abc/",
-  "name": "Body camera video from December 4, 2023 Irving incident",
-  "description": "Body camera video associated with a December 4, 2023 police-public interaction in Irving, Texas.",
-  "uploadDate": "2026-04-29",
-  "thumbnailUrl": [
-    "https://www.policeconduct.org/media/thumbnails/2023-12-04-irving-body-camera-v-789abc.jpg"
-  ],
-  "contentUrl": "https://www.policeconduct.org/media/videos/2023-12-04-irving-body-camera-v-789abc.mp4",
-  "publisher": {
-    "@type": "Organization",
-    "@id": "https://www.policeconduct.org/#organization",
-    "name": "PoliceConduct.org"
-  },
-  "about": [
-    {
-      "@type": "Event",
-      "@id": "https://www.policeconduct.org/tx/dallas-county/irving/incidents/2023/12/04/public-intoxication-arrest-i-7f31c2/#incident",
-      "name": "December 4, 2023 Irving incident"
-    },
-    {
-      "@type": "GovernmentOrganization",
-      "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/#agency",
-      "name": "Irving Police Department"
-    }
-  ]
-}
+    "organizer": [
+      {
+        "@type": "GovernmentOrganization",
+        "@id": "https://www.policeconduct.org/tx/dallas-county/irving/irving-police-department/#agency",
+        "name": "Irving Police Department"
+      }
+    ],
+    "subjectOf": [
+      {
+        "@type": "WebPage",
+        "@id": "https://www.policeconduct.org/civil-cases/ndtx-3-25-cv-03329-lotts-v-city-of-irving/#case-page"
+      }
+    ]
+  }
 </script>
 ```
 
@@ -729,22 +662,22 @@ Parent agency JSON-LD:
 
 ```html
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "GovernmentOrganization",
-  "@id": "https://www.policeconduct.org/federal/fbi/#agency",
-  "url": "https://www.policeconduct.org/federal/fbi/",
-  "name": "Federal Bureau of Investigation",
-  "alternateName": "FBI",
-  "subOrganization": [
-    {
-      "@type": "GovernmentOrganization",
-      "@id": "https://www.policeconduct.org/tx/dallas-county/dallas/fbi-dallas-field-office/#agency",
-      "name": "FBI Dallas Field Office",
-      "url": "https://www.policeconduct.org/tx/dallas-county/dallas/fbi-dallas-field-office/"
-    }
-  ]
-}
+  {
+    "@context": "https://schema.org",
+    "@type": "GovernmentOrganization",
+    "@id": "https://www.policeconduct.org/federal/fbi/#agency",
+    "url": "https://www.policeconduct.org/federal/fbi/",
+    "name": "Federal Bureau of Investigation",
+    "alternateName": "FBI",
+    "subOrganization": [
+      {
+        "@type": "GovernmentOrganization",
+        "@id": "https://www.policeconduct.org/tx/dallas-county/dallas/fbi-dallas-field-office/#agency",
+        "name": "FBI Dallas Field Office",
+        "url": "https://www.policeconduct.org/tx/dallas-county/dallas/fbi-dallas-field-office/"
+      }
+    ]
+  }
 </script>
 ```
 
@@ -752,29 +685,25 @@ Branch office JSON-LD:
 
 ```html
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "GovernmentOrganization",
-  "@id": "https://www.policeconduct.org/tx/dallas-county/dallas/fbi-dallas-field-office/#agency",
-  "url": "https://www.policeconduct.org/tx/dallas-county/dallas/fbi-dallas-field-office/",
-  "name": "FBI Dallas Field Office",
-  "parentOrganization": {
+  {
+    "@context": "https://schema.org",
     "@type": "GovernmentOrganization",
-    "@id": "https://www.policeconduct.org/federal/fbi/#agency",
-    "name": "Federal Bureau of Investigation",
-    "url": "https://www.policeconduct.org/federal/fbi/"
-  },
-  "address": {
-    "@type": "PostalAddress",
-    "addressLocality": "Dallas",
-    "addressRegion": "TX",
-    "addressCountry": "US"
-  },
-  "areaServed": {
-    "@type": "AdministrativeArea",
-    "name": "North Texas"
+    "@id": "https://www.policeconduct.org/tx/dallas-county/dallas/fbi-dallas-field-office/#agency",
+    "url": "https://www.policeconduct.org/tx/dallas-county/dallas/fbi-dallas-field-office/",
+    "name": "FBI Dallas Field Office",
+    "parentOrganization": {
+      "@type": "GovernmentOrganization",
+      "@id": "https://www.policeconduct.org/federal/fbi/#agency",
+      "name": "Federal Bureau of Investigation",
+      "url": "https://www.policeconduct.org/federal/fbi/"
+    },
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Dallas",
+      "addressRegion": "TX",
+      "addressCountry": "US"
+    }
   }
-}
 </script>
 ```
 
@@ -789,14 +718,13 @@ Examples:
 - agency to parent agency;
 - agency to branch office;
 - agency to place;
-- agency to jurisdiction or service area;
 - personnel to agency;
 - incident to agency;
 - incident to personnel;
-- incident to video;
+- incident to coverage or media link;
 - incident to civil case;
-- video to agency;
-- video to personnel;
+- coverage or media link to agency;
+- coverage or media link to personnel;
 - civil case to agency;
 - civil case to personnel;
 - civil case to incident.
@@ -840,7 +768,7 @@ This design:
 - gives agencies human-readable address-based URLs;
 - keeps personnel stable across agencies;
 - keeps civil cases independent of any one agency;
-- keeps videos canonical and reusable;
+- keeps coverage and media connected to the records they support;
 - keeps incidents tied to place and date without forcing agency ownership;
 - supports contextual collection pages without duplicate canonical records;
 - supports federal parent and branch office relationships;
@@ -878,12 +806,6 @@ Use this for civil cases:
 
 ```txt
 /civil-cases/{case-slug}/
-```
-
-Use this for videos:
-
-```txt
-/videos/{video-slug}/
 ```
 
 Use this for federal agencies:

@@ -1,0 +1,213 @@
+---
+import "leaflet/dist/leaflet.css";
+import type { LocationMapBounds } from "#src/lib/data/build-payloads.js";
+
+type Point = {
+  count?: number;
+  href: string;
+  label: string;
+  lat: number;
+  lng: number;
+  meta?: string | null;
+};
+
+type Props = {
+  bounds?: LocationMapBounds | null;
+  description?: string;
+  emptyLabel?: string;
+  points: Point[];
+  title: string;
+};
+
+const {
+  bounds = null,
+  description = "Map of available records.",
+  emptyLabel = "No mapped records.",
+  points,
+  title,
+} = Astro.props as Props;
+const mapData = JSON.stringify({ bounds, points });
+---
+
+<section class="location-map-panel" aria-label={title}>
+  <div class="location-map-header">
+    <h2 class="h5 mb-1">{title}</h2>
+    <p class="text-muted small mb-0">{description}</p>
+  </div>
+  {
+    points.length && bounds ? (
+      <div
+        class="location-map"
+        data-location-map
+        data-location-map-payload={mapData}
+      />
+    ) : (
+      <p class="text-muted mb-0">{emptyLabel}</p>
+    )
+  }
+</section>
+
+<script>
+  import L from "leaflet";
+
+  type ClientPoint = {
+    count?: number;
+    href: string;
+    label: string;
+    lat: number;
+    lng: number;
+    meta?: string | null;
+  };
+
+  const escapeHtml = (value: string) =>
+    value.replace(/[&<>"']/g, (char) => {
+      if (char === "&") return "&amp;";
+      if (char === "<") return "&lt;";
+      if (char === ">") return "&gt;";
+      if (char === '"') return "&quot;";
+      return "&#39;";
+    });
+
+  document
+    .querySelectorAll<HTMLElement>("[data-location-map]")
+    .forEach((el) => {
+      const payload = JSON.parse(el.dataset.locationMapPayload || "{}") as {
+        bounds?: {
+          maxLat: number;
+          maxLng: number;
+          minLat: number;
+          minLng: number;
+        } | null;
+        points?: ClientPoint[];
+      };
+      const points = payload.points || [];
+      const bounds = payload.bounds;
+      if (!bounds || !points.length) return;
+
+      const map = L.map(el, {
+        attributionControl: true,
+        scrollWheelZoom: false,
+      });
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      }).addTo(map);
+
+      const markerIcon = L.divIcon({
+        className: "location-map-marker",
+        html: "<span></span>",
+        iconAnchor: [10, 10],
+        iconSize: [20, 20],
+        popupAnchor: [0, -10],
+      });
+
+      points.forEach((point) => {
+        const navigate = () => {
+          window.location.href = point.href;
+        };
+        const marker = L.marker([point.lat, point.lng], {
+          icon: markerIcon,
+          keyboard: true,
+          title: point.label,
+        }).addTo(map);
+        marker.on("click", navigate);
+        marker.on("keypress", (event) => {
+          const keyboardEvent = event.originalEvent as KeyboardEvent;
+          if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
+            keyboardEvent.preventDefault();
+            navigate();
+          }
+        });
+        marker.bindTooltip(escapeHtml(point.label), {
+          className: "location-map-tooltip",
+          direction: "top",
+          interactive: true,
+          offset: [0, -12],
+          permanent: true,
+        });
+        marker.on("tooltipopen", () => {
+          const tooltip = marker.getTooltip()?.getElement();
+          if (!tooltip) return;
+          tooltip.setAttribute("role", "link");
+          tooltip.setAttribute("tabindex", "0");
+          tooltip.addEventListener("click", navigate);
+          tooltip.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              navigate();
+            }
+          });
+        });
+      });
+
+      const leafletBounds = L.latLngBounds(
+        [bounds.minLat, bounds.minLng],
+        [bounds.maxLat, bounds.maxLng],
+      );
+      map.fitBounds(leafletBounds, {
+        maxZoom: points.length === 1 ? 12 : 13,
+        padding: [28, 28],
+      });
+    });
+</script>
+
+<style>
+  .location-map-panel {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .location-map {
+    background: var(--bs-gray-100);
+    border: 1px solid var(--bs-border-color);
+    min-height: clamp(26rem, 60vh, 42rem);
+    width: 100%;
+  }
+
+  :global(.location-map-marker) {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+  }
+
+  :global(.location-map-marker span) {
+    background: var(--bs-dark);
+    border: 2px solid var(--bs-white);
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.32);
+    display: block;
+    height: 16px;
+    width: 16px;
+  }
+
+  :global(.location-map-marker),
+  :global(.location-map-tooltip) {
+    cursor: pointer;
+  }
+
+  :global(.location-map-tooltip) {
+    background: color-mix(in srgb, var(--bs-white) 94%, var(--bs-gray-100));
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+    color: var(--bs-dark);
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.15;
+    padding: 0.2rem 0.35rem;
+    pointer-events: auto;
+    white-space: normal;
+  }
+
+  :global(.location-map-tooltip::before) {
+    display: none;
+  }
+
+  @media (max-width: 767.98px) {
+    .location-map-panel {
+      display: none;
+    }
+  }
+</style>

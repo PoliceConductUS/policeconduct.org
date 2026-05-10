@@ -178,7 +178,6 @@ const auditHtml = async () => {
         addError(`Expected noindex,follow on form page ${normalizedRoute}`);
       }
     }
-
   }
 };
 

@@ -6,6 +6,7 @@ import {
   loadPersonnelSummaries,
   loadReportSummaries,
 } from "#src/lib/data/summaries.js";
+import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import { withDb } from "#src/lib/db.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
@@ -15,13 +16,14 @@ const pageDescription =
   "Independent public record for police interaction reports, commendations, law enforcement agencies, personnel profiles, and civil litigation records across the United States.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const [agencies, personnel, reports, civilCasesData] = await Promise.all([
-  loadAgencySummaries(),
-  loadPersonnelSummaries(),
-  loadReportSummaries(),
-  withDb(async (client) => {
-    const categoryResult = await client.query(
-      `
+const [agencies, personnel, reports, civilCasesData, federalAgencies] =
+  await Promise.all([
+    loadAgencySummaries(),
+    loadPersonnelSummaries(),
+    loadReportSummaries(),
+    withDb(async (client) => {
+      const categoryResult = await client.query(
+        `
         select upper(a.category) as category, count(distinct cco.civil_case_id) as case_count
         from public.civil_case_officers cco
         join public.agency_officers ao on ao.id = cco.agency_officer_id
@@ -29,21 +31,22 @@ const [agencies, personnel, reports, civilCasesData] = await Promise.all([
         where a.category is not null
         group by upper(a.category)
       `,
-    );
-    const result = await client.query(
-      "select count(*) as count from public.civil_cases",
-    );
-    return {
-      categoryCounts: categoryResult.rows.map(
-        (row: { category: string; case_count: string | number }) => ({
-          category: String(row.category || "").toLowerCase(),
-          count: Number(row.case_count || 0),
-        }),
-      ),
-      totalCount: Number(result.rows[0]?.count ?? 0),
-    };
-  }),
-]);
+      );
+      const result = await client.query(
+        "select count(*) as count from public.civil_cases",
+      );
+      return {
+        categoryCounts: categoryResult.rows.map(
+          (row: { category: string; case_count: string | number }) => ({
+            category: String(row.category || "").toLowerCase(),
+            count: Number(row.case_count || 0),
+          }),
+        ),
+        totalCount: Number(result.rows[0]?.count ?? 0),
+      };
+    }),
+    loadFederalAgencySummaries(),
+  ]);
 const civilCasesByCategory = new Map(
   civilCasesData.categoryCounts.map((entry) => [entry.category, entry.count]),
 );
@@ -71,7 +74,7 @@ const personnelCountsByCategory = personnel.reduce(
 );
 const agencyCountsByCategory = agencies.reduce(
   (acc: Map<string, number>, agency) => {
-    const key = String(agency.category || "").toLowerCase();
+    const key = String(agency.state || "").toLowerCase();
     if (!key) {
       return acc;
     }
@@ -79,9 +82,6 @@ const agencyCountsByCategory = agencies.reduce(
     return acc;
   },
   new Map<string, number>(),
-);
-const federalAgencies = agencies.filter(
-  (agency) => String(agency.category || "").toLowerCase() === "federal",
 );
 const categoryCoverageStats = US_STATE_TILES.map((state) => {
   const category = state.code.toLowerCase();
@@ -94,18 +94,13 @@ const categoryCoverageStats = US_STATE_TILES.map((state) => {
   return {
     code: state.code,
     count: totalCount,
-    href: `/${category}/`,
+    href: agencyCount > 0 ? `/${category}/` : undefined,
     hoverLabel:
       totalCount > 0
         ? `${state.name}: ${reportCount} reports, ${personnelCount} personnel, ${agencyCount} agencies, ${civilCaseCount} civil cases`
         : `${state.name}: no entries yet`,
   };
 });
-const federalCoverageCount =
-  (reportCountsByCategory.get("federal") ?? 0) +
-  (personnelCountsByCategory.get("federal") ?? 0) +
-  (agencyCountsByCategory.get("federal") ?? 0) +
-  (civilCasesByCategory.get("federal") ?? 0);
 const organization = {
   "@type": "NonprofitOrganization",
   "@id": `${pageUrl}#organization`,
@@ -210,25 +205,24 @@ structuredData.mainEntity = organization;
               title="United States"
               subtitle="Combined coverage across reports, personnel, agencies, and civil litigation."
               emptyLabel="No entries yet"
-              interactionLabel="Select a state to view its overview."
+              interactionLabel="Select a state with agency records."
               federalPanel={{
                 eyebrow: "Federal",
-                title: "Federal overview",
-                value: federalCoverageCount,
-                description:
-                  "Combined federal entries across reports, personnel, agencies, and civil litigation.",
+                title: "Federal agencies",
+                value: federalAgencies.length,
+                description: "Federal agencies and linked locations.",
                 items: [
                   {
-                    label: "Federal overview",
+                    label: "Federal agencies",
                     href: "/federal/",
                   },
                   ...federalAgencies.map((agency) => ({
                     label: agency.name,
-                    href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+                    href: agency.path,
                   })),
                 ],
                 actionHref: "/federal/",
-                actionLabel: "Open federal overview",
+                actionLabel: "Open federal agencies",
               }}
             />
           </div>

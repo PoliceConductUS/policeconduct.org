@@ -4,12 +4,14 @@ export type PersonnelSummary = {
   lastName: string;
   firstName: string;
   nameSuffix?: string | null;
+  licenseType: string | null;
   roleTitle: string | null;
   reportCount: number;
   civilCaseCount: number;
   agencySlug: string;
   agencyName: string;
   agencyCategory: string;
+  agencyCanonicalPath: string;
 };
 
 export type AgencySummary = {
@@ -18,10 +20,14 @@ export type AgencySummary = {
   name: string;
   state: string;
   category: string;
+  administrativeArea?: string | null;
+  administrativeAreaSlug?: string | null;
   city?: string | null;
+  placeSlug?: string | null;
   address?: string | null;
   zipCode?: string | null;
   phoneNumber?: string | null;
+  canonicalPath: string;
   activePersonnelCount: number;
   reportCount: number;
   civilCaseCount: number;
@@ -36,8 +42,13 @@ export type ReportSummary = {
   address?: string | null;
   agencySlug: string;
   agencyName: string;
+  agencyCanonicalPath: string;
   category?: string | null;
   ratingOverall?: number | null;
-  personnel?: { name: string; slug?: string | null }[];
+  personnel?: {
+    licenseType?: string | null;
+    name: string;
+    slug?: string | null;
+  }[];
   personnelSlugs?: string[];
 };

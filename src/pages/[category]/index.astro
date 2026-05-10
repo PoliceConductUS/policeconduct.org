@@ -1,165 +1,44 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
-import CollectionStatsBand from "#src/components/CollectionStatsBand.astro";
+import LocationMap from "#src/components/LocationMap.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
-  loadAgencySummaries,
-  loadPersonnelSummaries,
-  loadReportSummaries,
-} from "#src/lib/data/summaries.js";
-import { withDb } from "#src/lib/db.js";
-import { US_STATE_TILES } from "#src/lib/geo/states.js";
+  loadLocationBuildPayloads,
+  type LocationPagePayload,
+} from "#src/lib/data/build-payloads.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
-type StateOverviewProps = {
-  agencyCount: number;
-  personnelCount: number;
-  reportCount: number;
-  civilCaseCount: number;
-};
-
 export async function getStaticPaths() {
-  const [agencies, personnel, reports, civilCaseCounts] = await Promise.all([
-    loadAgencySummaries(),
-    loadPersonnelSummaries(),
-    loadReportSummaries(),
-    withDb(async (client) => {
-      const result = await client.query(
-        `
-          select upper(a.category) as category, count(distinct cco.civil_case_id) as case_count
-          from public.civil_case_officers cco
-          join public.agency_officers ao on ao.id = cco.agency_officer_id
-          join public.agency a on ao.agency_id = a.id
-          where a.category is not null
-          group by upper(a.category)
-        `,
-      );
-      return result.rows.map(
-        (row: { category: string; case_count: string | number }) => ({
-          category: String(row.category || "").toLowerCase(),
-          count: Number(row.case_count || 0),
-        }),
-      );
-    }),
-  ]);
+  const locations = await loadLocationBuildPayloads();
 
-  const agencyCounts = new Map<string, number>();
-  for (const agency of agencies) {
-    agencyCounts.set(
-      agency.category,
-      (agencyCounts.get(agency.category) || 0) + 1,
-    );
-  }
-
-  const personnelCounts = new Map<string, number>();
-  for (const entry of personnel) {
-    const category = entry.agencyCategory?.toLowerCase();
-    if (!category) continue;
-    personnelCounts.set(category, (personnelCounts.get(category) || 0) + 1);
-  }
-
-  const reportCounts = new Map<string, number>();
-  for (const report of reports) {
-    const agencySlug = report.agencySlug?.toLowerCase();
-    if (!agencySlug) continue;
-    const slashIndex = agencySlug.indexOf("/");
-    if (slashIndex === -1) continue;
-    const category = agencySlug.slice(0, slashIndex);
-    reportCounts.set(category, (reportCounts.get(category) || 0) + 1);
-  }
-
-  const civilCaseCountMap = new Map<string, number>();
-  for (const entry of civilCaseCounts) {
-    civilCaseCountMap.set(entry.category, entry.count);
-  }
-
-  const categories = [
-    ...US_STATE_TILES.map((state) => state.code.toLowerCase()),
-    "federal",
-  ];
-
-  return categories.map((category) => ({
-    params: { category },
-    props: {
-      agencyCount: agencyCounts.get(category) || 0,
-      personnelCount: personnelCounts.get(category) || 0,
-      reportCount: reportCounts.get(category) || 0,
-      civilCaseCount: civilCaseCountMap.get(category) || 0,
-    } satisfies StateOverviewProps,
-  }));
+  return locations
+    .filter(
+      (location) =>
+        location.level === "state" && (location.children?.length ?? 0) > 0,
+    )
+    .map((state) => ({
+      params: { category: state.state },
+      props: { state },
+    }));
 }
 
-const { category } = Astro.params;
-const { agencyCount, personnelCount, reportCount, civilCaseCount } =
-  Astro.props as StateOverviewProps;
-const categoryParam = String(category || "").toLowerCase();
-const categoryCode = categoryParam.toUpperCase();
-const categoryMeta = US_STATE_TILES.find(
-  (entry) => entry.code.toLowerCase() === categoryParam,
-);
-const categoryLabel =
-  categoryParam === "federal" ? "Federal" : categoryMeta?.name || categoryCode;
-const pagePath = `/${categoryParam}/`;
+const { state } = Astro.props as { state: LocationPagePayload };
+const pagePath = state.path;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const reportPath =
-  categoryParam === "federal" ? "/report/" : `/report/${categoryParam}/`;
-const personnelPath = `/personnel/${categoryParam}/`;
-const agencyPath = `/law-enforcement-agency/${categoryParam}/`;
-const civilPath = `/civil-litigation/${categoryParam}/`;
-
-const stats = [
-  {
-    label: "Reports",
-    value: reportCount,
-    title:
-      categoryParam === "federal"
-        ? "Browse all reports"
-        : `View reports in ${categoryLabel}`,
-    description:
-      categoryParam === "federal"
-        ? "Reports tied to federal agencies are tracked in the main reports directory."
-        : `Reports currently listed for ${categoryLabel}.`,
-    href: reportPath,
-    actionLabel: "Open reports",
-  },
-  {
-    label: "Personnel",
-    value: personnelCount,
-    title: `View personnel in ${categoryLabel}`,
-    description:
-      categoryParam === "federal"
-        ? "Listed personnel attached to federal agencies."
-        : `Listed personnel attached to ${categoryLabel} agencies.`,
-    href: personnelPath,
-    actionLabel: "Open personnel",
-  },
-  {
-    label: "Agencies",
-    value: agencyCount,
-    title: `View agencies in ${categoryLabel}`,
-    description: `Law enforcement agencies listed for ${categoryLabel}.`,
-    href: agencyPath,
-    actionLabel: "Open agencies",
-  },
-  {
-    label: "Civil Cases",
-    value: civilCaseCount,
-    title: `View civil cases in ${categoryLabel}`,
-    description: `Civil litigation tied to ${categoryLabel} agencies or personnel.`,
-    href: civilPath,
-    actionLabel: "Open civil cases",
-  },
-];
-
-const title =
-  categoryParam === "federal"
-    ? "Federal Overview | PoliceConduct.org"
-    : `${categoryLabel} Overview | PoliceConduct.org`;
-const description =
-  categoryParam === "federal"
-    ? "Federal overview across reports, personnel, law enforcement agencies, and civil litigation."
-    : `${categoryLabel} overview across reports, personnel, law enforcement agencies, and civil litigation.`;
+const title = `${state.stateLabel} Places | PoliceConduct.org`;
+const administrativeAreaPlural = state.administrativeAreaPlural!;
+const description = `Browse ${state.stateLabel} by ${administrativeAreaPlural.toLowerCase()} and place.`;
+const mapPoints = (state.children || [])
+  .filter((area) => area.mapPoint)
+  .map((area) => ({
+    count: area.childCount,
+    href: area.path,
+    label: area.label,
+    meta: `${area.childCount} places`,
+    lat: area.mapPoint!.lat,
+    lng: area.mapPoint!.lng,
+  }));
 const structuredData = buildWebPage({
   siteUrl,
   pageUrl,
@@ -183,21 +62,150 @@ const structuredData = buildWebPage({
             <Breadcrumbs
               items={[
                 { label: "Home", href: "/" },
-                { label: categoryLabel, href: pagePath, current: true },
+                { label: "Find My Area", href: "/find-my-area/" },
+                { label: state.stateLabel, href: pagePath, current: true },
               ]}
               className="mb-2"
             />
-            <h1 class="display-4 fw-bold mb-3">{categoryLabel}</h1>
+            <p class="text-uppercase small text-muted mb-2">State overview</p>
+            <h1 class="display-4 fw-bold mb-3">{state.stateLabel}</h1>
             <p class="lead text-muted mb-0">
-              Cross-site overview for reports, personnel, agencies, and civil
-              litigation linked to {categoryLabel}.
+              Browse by {administrativeAreaPlural.toLowerCase()}, then by place.
             </p>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label fw-semibold" for="areaJump">
+              Jump to {administrativeAreaPlural.toLowerCase()}
+            </label>
+            <select
+              class="form-select rounded-0"
+              id="areaJump"
+              data-jump-select
+            >
+              <option value=""
+                >Select {administrativeAreaPlural.toLowerCase()}</option
+              >
+              {
+                (state.children || []).map((area) => (
+                  <option value={area.path}>
+                    {area.label} ({area.childCount})
+                  </option>
+                ))
+              }
+            </select>
+            <label class="form-label fw-semibold mt-3" for="areaSearch">
+              Search {administrativeAreaPlural.toLowerCase()}
+            </label>
+            <input
+              class="form-control rounded-0"
+              id="areaSearch"
+              type="search"
+              placeholder={`Search ${administrativeAreaPlural.toLowerCase()}`}
+              data-location-filter-input
+            />
           </div>
         </div>
       </div>
     </section>
-    <div class="bg-white border-bottom border-dark">
-      <CollectionStatsBand items={stats} />
-    </div>
+    <section class="py-vh-2">
+      <div class="container">
+        <LocationMap
+          title={`${state.stateLabel} ${administrativeAreaPlural}`}
+          description={`${administrativeAreaPlural} with available agency records.`}
+          bounds={state.mapBounds}
+          points={mapPoints}
+          emptyLabel={`No mapped ${administrativeAreaPlural.toLowerCase()} records.`}
+        />
+      </div>
+    </section>
+    <section class="py-vh-2 pt-0">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-12">
+            <h2 class="h4 mb-3">{administrativeAreaPlural}</h2>
+            <div class="profile-record-list">
+              {
+                (state.children || []).map((area) => (
+                  <article
+                    class="profile-record"
+                    data-location-filter-item
+                    data-location-filter-text={`${area.label} ${area.childCount} places`}
+                  >
+                    <div class="profile-record-body">
+                      <h3 class="profile-record-title">
+                        <a href={area.path}>{area.label}</a>
+                      </h3>
+                      <div class="profile-record-detail">
+                        <span>{area.childCount} places</span>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
+  <script is:inline>
+    document.querySelectorAll("[data-jump-select]").forEach((select) => {
+      select.addEventListener("change", () => {
+        if (select.value) {
+          window.location.href = select.value;
+        }
+      });
+    });
+
+    document
+      .querySelectorAll("[data-location-filter-input]")
+      .forEach((input) => {
+        input.addEventListener("input", () => {
+          const query = input.value.trim().toLowerCase();
+          document
+            .querySelectorAll("[data-location-filter-item]")
+            .forEach((item) => {
+              const text =
+                item.getAttribute("data-location-filter-text")?.toLowerCase() ||
+                "";
+              item.hidden = Boolean(query) && !text.includes(query);
+            });
+        });
+      });
+  </script>
 </SiteLayout>
+
+<style>
+  .profile-record-list {
+    display: grid;
+  }
+
+  .profile-record {
+    border-top: 1px solid var(--bs-border-color);
+    padding: 1rem 0;
+  }
+
+  .profile-record:last-child {
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+
+  .profile-record-title {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+
+  .profile-record-title a {
+    color: var(--bs-dark);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  .profile-record-detail {
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.875rem;
+    gap: 0.4rem 0.9rem;
+    margin-top: 0.35rem;
+  }
+</style>

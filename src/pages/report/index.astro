@@ -146,7 +146,7 @@ if (reportItemList) {
             description: "Federal agencies referenced in listed reports.",
             items: federalAgencies.map((agency) => ({
               label: agency.name,
-              href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+              href: agency.canonicalPath,
               badgeText: `Reports: ${agency.reportCount}`,
             })),
           }}

@@ -164,7 +164,7 @@ locals {
     "object-src 'none';",
     "frame-ancestors 'self';",
     "form-action 'self';",
-    "img-src 'self' data: blob: https://i.ytimg.com https://www.google-analytics.com https://stats.g.doubleclick.net https://c.disquscdn.com https://*.disqus.com https://www.gstatic.com https://www.google.com;",
+    "img-src 'self' data: blob: https://tile.openstreetmap.org https://i.ytimg.com https://www.google-analytics.com https://stats.g.doubleclick.net https://c.disquscdn.com https://*.disqus.com https://www.gstatic.com https://www.google.com;",
     "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com;",
     "style-src 'self' 'unsafe-inline';",
     "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com https://*.ingest.us.sentry.io https://*.sentry.io;",
@@ -1975,6 +1975,77 @@ function handler(event) {
       statusDescription: 'Moved Permanently',
       headers: {
         location: { value: 'https://' + wwwHost + uri + qs },
+        'cache-control': { value: 'public, max-age=3600' }
+      }
+    };
+  }
+
+  var personnelStatePageMatch = uri.match(/^\/personnel\/([a-z]{2}|federal)\/page(?:\/.*)?\/?$/);
+  if (personnelStatePageMatch) {
+    return {
+      statusCode: 301,
+      statusDescription: 'Moved Permanently',
+      headers: {
+        location: { value: '/' + personnelStatePageMatch[1] + '/' + qs },
+        'cache-control': { value: 'public, max-age=3600' }
+      }
+    };
+  }
+
+  var personnelStateMatch = uri.match(/^\/personnel\/([a-z]{2}|federal)\/?$/);
+  if (personnelStateMatch) {
+    return {
+      statusCode: 301,
+      statusDescription: 'Moved Permanently',
+      headers: {
+        location: { value: '/' + personnelStateMatch[1] + '/' + qs },
+        'cache-control': { value: 'public, max-age=3600' }
+      }
+    };
+  }
+
+  var civilStatePageMatch = uri.match(/^\/civil-litigation\/([a-z]{2}|federal)\/page(?:\/.*)?\/?$/);
+  if (civilStatePageMatch) {
+    return {
+      statusCode: 301,
+      statusDescription: 'Moved Permanently',
+      headers: {
+        location: { value: '/' + civilStatePageMatch[1] + '/' + qs },
+        'cache-control': { value: 'public, max-age=3600' }
+      }
+    };
+  }
+
+  var civilStateMatch = uri.match(/^\/civil-litigation\/([a-z]{2}|federal)\/?$/);
+  if (civilStateMatch) {
+    return {
+      statusCode: 301,
+      statusDescription: 'Moved Permanently',
+      headers: {
+        location: { value: '/' + civilStateMatch[1] + '/' + qs },
+        'cache-control': { value: 'public, max-age=3600' }
+      }
+    };
+  }
+
+  var civilCaseMatch = uri.match(/^\/civil-litigation\/[^\/]+\/([^\/]+)\/?$/);
+  if (civilCaseMatch) {
+    return {
+      statusCode: 301,
+      statusDescription: 'Moved Permanently',
+      headers: {
+        location: { value: '/civil-cases/' + civilCaseMatch[1] + '/' + qs },
+        'cache-control': { value: 'public, max-age=3600' }
+      }
+    };
+  }
+
+  if (uri === '/videos' || uri === '/videos/' || uri.indexOf('/videos/') === 0 || uri === '/video' || uri === '/video/' || uri.indexOf('/video/') === 0) {
+    return {
+      statusCode: 301,
+      statusDescription: 'Moved Permanently',
+      headers: {
+        location: { value: '/search/' + qs },
         'cache-control': { value: 'public, max-age=3600' }
       }
     };

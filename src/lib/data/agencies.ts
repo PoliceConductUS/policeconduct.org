@@ -1,4 +1,10 @@
 import { withDb } from "#src/lib/db.js";
+import {
+  getAgencyAdministrativeArea,
+  getAgencyAdministrativeAreaSlug,
+  getAgencyPlaceSlug,
+  requireAgencyCanonicalPath,
+} from "./location-paths.js";
 import type { AgencySummary } from "./types.js";
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
 
@@ -21,7 +27,10 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
            a.id,
            a.name,
            a.state,
+           a.administrative_area,
+           a.administrative_area_slug,
            a.city,
+           a.place_slug,
            a.address,
            a.zip_code,
            a.slug,
@@ -47,6 +56,9 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
              0
            ) as civil_case_count
          from public.agency a
+         join public.build_page_payload bpp
+           on bpp.page_type = 'agency'
+          and bpp.entity_id = a.id
          left join lateral (
            select phone_number
            from public.agency_phone_numbers apn
@@ -57,7 +69,9 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
          left join public.agency_officers ao
            on ao.agency_id = a.id
           and ao.end_date is null
-         group by a.id, a.name, a.state, a.slug, a.category, ap.phone_number`,
+         group by a.id, a.name, a.state, a.administrative_area,
+           a.administrative_area_slug, a.city, a.place_slug, a.address,
+           a.zip_code, a.slug, a.category, ap.phone_number`,
       )
     ).rows;
   });
@@ -71,10 +85,14 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
       state: requireText(agency.state, "state", id),
       category: requireText(agency.category, "category", id).toLowerCase(),
       slug: requireText(agency.slug, "slug", id),
+      administrativeArea: getAgencyAdministrativeArea(agency),
+      administrativeAreaSlug: getAgencyAdministrativeAreaSlug(agency),
       city: agency.city || null,
+      placeSlug: getAgencyPlaceSlug(agency),
       address: agency.address || null,
       zipCode: agency.zip_code || null,
       phoneNumber: agency.phone_number || null,
+      canonicalPath: requireAgencyCanonicalPath(agency),
       activePersonnelCount: Number(agency.active_personnel_count || 0),
       reportCount: Number(agency.report_count || 0),
       civilCaseCount: Number(agency.civil_case_count || 0),
@@ -96,5 +114,21 @@ export const resolveAgencyByStateSlug = async (state: string, slug: string) => {
   const agencies = await loadAgencySummaries();
   return agencies.find(
     (agency) => agency.category === state && agency.slug === slug,
+  );
+};
+
+export const resolveAgencyByLocationSlug = async (
+  state: string,
+  administrativeArea: string,
+  place: string,
+  slug: string,
+) => {
+  const agencies = await loadAgencySummaries();
+  return agencies.find(
+    (agency) =>
+      agency.category === state.toLowerCase() &&
+      agency.administrativeAreaSlug === administrativeArea.toLowerCase() &&
+      agency.placeSlug === place.toLowerCase() &&
+      agency.slug === slug,
   );
 };

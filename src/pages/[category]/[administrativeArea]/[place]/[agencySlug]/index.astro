@@ -1,0 +1,489 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import DisqusComments from "#src/components/DisqusComments.astro";
+import {
+  loadAgencyDetail,
+  loadAgencyLocationStaticPaths,
+} from "#src/lib/data/agency-detail.js";
+import type { ReportNewPrefill } from "#src/lib/forms/prefill";
+import ProfileTabs from "#src/components/ProfileTabs.astro";
+import { getSiteUrl } from "#src/lib/structured-data.js";
+
+export async function getStaticPaths() {
+  return loadAgencyLocationStaticPaths();
+}
+
+const { agencyId } = Astro.props;
+const data = await loadAgencyDetail(agencyId);
+
+const agencyRatingPercent =
+  data.agencyStats && data.agencyStats.review_count > 0
+    ? Math.round(Number(data.agencyStats.weighted_average || 0) * 10)
+    : 0;
+
+const {
+  agencyName,
+  agencyState,
+  agencySlug,
+  categorySlug,
+  categoryLabel,
+  agencyPath,
+  administrativeArea,
+  placeLabel,
+  placePath,
+  civilCases,
+  reportedReports,
+  employees,
+  coverageLinks,
+  counts,
+} = data;
+const agencyLinksSummary = data.agencyLinks
+  .map((link: { url?: string | null; label?: string | null }) =>
+    [link.label || null, link.url || null].filter(Boolean).join(" — "),
+  )
+  .filter(Boolean)
+  .join("\n");
+const primaryWebsite =
+  data.agencyLinks.find((link: { url?: string | null }) =>
+    /^https?:\/\//i.test(link.url || ""),
+  )?.url || "";
+const civilLitigationSummary = civilCases
+  .map((record) => {
+    const segments = [
+      record.title || "Civil case",
+      record.cause_number || null,
+      record.court || null,
+      record.caseUrl,
+    ];
+    return segments.filter(Boolean).join(" — ");
+  })
+  .join("\n");
+const reportLinksSummary = reportedReports
+  .map((report) => report.url)
+  .join("\n");
+const reportNewPrefillPayload = JSON.stringify({
+  officer: {
+    department: agencyName,
+  },
+} satisfies ReportNewPrefill);
+const addCivilCaseHref = "/civil-litigation/new/";
+const addCivilCasePrefillPayload = JSON.stringify({
+  jurisdiction: categorySlug,
+  defendants: agencyName,
+  summary: `${agencyName} agency profile: ${agencyPath}`,
+  links: [
+    agencyPath,
+    ...reportedReports.slice(0, 3).map((report) => report.url),
+  ]
+    .filter(Boolean)
+    .join("\n"),
+});
+const suggestEditHref = "/law-enforcement-agency/suggest-edit/";
+const suggestEditPrefillPayload = JSON.stringify({
+  agencyPath,
+  agencyName,
+  jurisdiction: categorySlug,
+  departmentWebsite: primaryWebsite,
+  departmentHead: data.agency.contact_name || "",
+  socialLinks: agencyLinksSummary,
+  civilLitigation: civilLitigationSummary,
+});
+const suggestPersonnelHref = "/personnel/new/";
+const suggestPersonnelPrefillPayload = JSON.stringify({
+  currentAgency: agencyName,
+  currentAgencyCity: data.agency.city || "",
+  currentAgencyState: agencyState,
+  civilLitigation: civilLitigationSummary,
+  reportLinks: reportLinksSummary,
+});
+const claimProfileHref = "/about/contact/";
+const claimProfilePrefillPayload = JSON.stringify({
+  whoami: "Profile Owner",
+  message: `I would like to claim ownership of this profile.\nProfile path: ${agencyPath}`,
+});
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(agencyPath, siteUrl).toString();
+const profilePageId = `${pageUrl}#profilepage`;
+const disqusIdentifier = `agency:${agencySlug}`;
+const pageDescription = `${agencyName} agency profile with contact information, personnel, public reports, and recent civil litigation references.`;
+const addressAvailable =
+  data.agency.address ||
+  data.agency.city ||
+  agencyState ||
+  data.agency.zip_code;
+const address = addressAvailable
+  ? {
+      "@type": "PostalAddress",
+      addressCountry: "US",
+      ...(data.agency.address ? { streetAddress: data.agency.address } : {}),
+      ...(data.agency.city ? { addressLocality: data.agency.city } : {}),
+      addressRegion: agencyState,
+      ...(data.agency.zip_code ? { postalCode: data.agency.zip_code } : {}),
+    }
+  : null;
+const contactPoints = data.agencyPhones.map(
+  (phone: { phone_number: string; label?: string | null }) => ({
+    "@type": "ContactPoint",
+    telephone: phone.phone_number,
+    ...(phone.label ? { contactType: phone.label } : {}),
+  }),
+);
+const sameAs = data.agencyLinks
+  .map((link: { url?: string | null }) => link.url)
+  .filter(Boolean);
+const federalAgency = data.federalAgency
+  ? {
+      name: data.federalAgency.name,
+      path: `/federal/${data.federalAgency.slug}/`,
+    }
+  : null;
+const organization = {
+  "@type": "GovernmentOrganization",
+  "@id": `${pageUrl}#organization`,
+  name: agencyName,
+  url: pageUrl,
+  mainEntityOfPage: { "@id": profilePageId },
+  ...(address ? { address } : {}),
+  ...(data.agency.contact_email ? { email: data.agency.contact_email } : {}),
+  ...(contactPoints.length ? { contactPoint: contactPoints } : {}),
+  ...(sameAs.length ? { sameAs } : {}),
+  areaServed: { "@type": "AdministrativeArea", name: agencyState },
+};
+const websiteId = new URL("/", siteUrl).toString();
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": websiteId,
+      url: websiteId,
+      name: "PoliceConduct.org",
+    },
+    {
+      "@type": "ProfilePage",
+      "@id": profilePageId,
+      url: pageUrl,
+      name: `${agencyName} | PoliceConduct.org`,
+      description: pageDescription,
+      isPartOf: { "@id": websiteId },
+      mainEntity: { "@id": organization["@id"] },
+      ...(data.agency.updated_at
+        ? { dateModified: String(data.agency.updated_at) }
+        : {}),
+    },
+    organization,
+  ],
+};
+---
+
+<SiteLayout
+  title={`${agencyName} | PoliceConduct.org`}
+  description={pageDescription}
+  pagePath={agencyPath}
+  structuredData={structuredData}
+>
+  <PrefillBootstrap />
+  <main class="flex-grow-1 py-vh-3">
+    <div class="container">
+      <Breadcrumbs
+        items={[
+          { label: "Find My Area", href: "/find-my-area/" },
+          { label: categoryLabel, href: `/${categorySlug}/` },
+          {
+            label: administrativeArea,
+            href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+          },
+          {
+            label: placeLabel,
+            href: placePath,
+          },
+          { label: agencyName, href: agencyPath, current: true },
+        ]}
+      />
+      <div class="row justify-content-between align-items-start">
+        <div class="col-lg-7">
+          <p class="text-uppercase small text-muted mb-2">Agency profile</p>
+          <h1 class="display-5 fw-bold">{agencyName}</h1>
+          <p class="text-muted">
+            {placeLabel}, {administrativeArea}, {agencyState}
+          </p>
+          {
+            federalAgency ? (
+              <p class="mb-0">
+                <span class="text-uppercase small text-muted me-2">
+                  Federal agency
+                </span>
+                <a href={federalAgency.path}>{federalAgency.name}</a>
+              </p>
+            ) : null
+          }
+        </div>
+        <div class="col-lg-4">
+          <div class="border p-4 bg-white shadow-sm">
+            <h2 class="h6 text-uppercase text-muted">Address</h2>
+            <p class="mb-1">{data.agency.address || "Not listed"}</p>
+            <p class="mb-0">
+              {placeLabel}, {agencyState},{" "}
+              {data.agency.zip_code || "N/A"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-4 g-4">
+        <div class="col-lg-6" data-aos="fade-up">
+          <div class="border p-4 h-100">
+            <h2 class="h6 text-uppercase text-muted">Contact Information</h2>
+            <p class="mb-1">{data.agency.contact_name || "Contact pending"}</p>
+            <p class="mb-2">
+              {
+                data.agency.contact_email ? (
+                  <a href={`mailto:${data.agency.contact_email}`}>
+                    {data.agency.contact_email}
+                  </a>
+                ) : (
+                  "No email listed"
+                )
+              }
+            </p>
+            <h3 class="h6 text-uppercase text-muted mt-3">Phone Numbers</h3>
+            {
+              data.agencyPhones.length ? (
+                data.agencyPhones.map(
+                  (phone: { phone_number: string; label?: string | null }) => (
+                    <p class="mb-1">
+                      {phone.phone_number}{" "}
+                      {phone.label ? `(${phone.label})` : ""}
+                    </p>
+                  ),
+                )
+              ) : (
+                <p class="mb-0">No phone numbers listed.</p>
+              )
+            }
+            {
+              data.agencyLinks.length ? (
+                <>
+                  <h3 class="h6 text-uppercase text-muted mt-3">Links</h3>
+                  {data.agencyLinks.map(
+                    (link: {
+                      url: string;
+                      label: string;
+                      description?: string | null;
+                    }) => (
+                      <p class="mb-1">
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={link.description || undefined}
+                          aria-label={
+                            link.description
+                              ? `${link.label}: ${link.description}`
+                              : undefined
+                          }
+                        >
+                          {link.label}
+                        </a>
+                      </p>
+                    ),
+                  )}
+                </>
+              ) : null
+            }
+          </div>
+        </div>
+        <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
+          <div class="border p-4 h-100">
+            <h2 class="h6 text-uppercase text-muted">Cumulative ratings</h2>
+            <div
+              class="d-flex flex-column flex-md-row align-items-center gap-4"
+            >
+              <div
+                class="position-relative"
+                style="width: 160px; height: 160px"
+              >
+                <svg viewBox="0 0 120 120" class="w-100 h-100">
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="48"
+                    fill="none"
+                    stroke="#e5e7eb"
+                    stroke-width="12"></circle>
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="48"
+                    fill="none"
+                    stroke="#111827"
+                    stroke-width="12"
+                    stroke-dasharray={`${agencyRatingPercent * 3.02} 302`}
+                    stroke-linecap="round"
+                    transform="rotate(-90 60 60)"></circle>
+                </svg>
+                <div
+                  class="position-absolute top-50 start-50 translate-middle text-center"
+                >
+                  <div class="h4 mb-0">{agencyRatingPercent}%</div>
+                  <div class="small text-muted">Rated</div>
+                </div>
+              </div>
+              <div>
+                {
+                  data.agencyStats && data.agencyStats.review_count > 0 ? (
+                    <p class="mb-2 text-muted">
+                      {data.agencyStats.review_count} reports rated for this
+                      agency.
+                    </p>
+                  ) : (
+                    <p class="mb-2 text-muted">
+                      No reports published yet for this agency. Submit a report
+                      to help build a transparent record.
+                    </p>
+                  )
+                }
+                <div class="d-flex flex-wrap gap-2">
+                  <PrefillNavButton
+                    class="btn btn-outline-dark rounded-0"
+                    to="/report/new/"
+                    payload={reportNewPrefillPayload}
+                  >
+                    Submit a report
+                  </PrefillNavButton>
+                  <PrefillNavButton
+                    class="btn btn-outline-dark rounded-0"
+                    to={addCivilCaseHref}
+                    payload={addCivilCasePrefillPayload}
+                  >
+                    Add a civil case
+                  </PrefillNavButton>
+                  <PrefillNavButton
+                    class="btn btn-outline-dark rounded-0"
+                    to={suggestPersonnelHref}
+                    payload={suggestPersonnelPrefillPayload}
+                  >
+                    Suggest new personnel
+                  </PrefillNavButton>
+                  <PrefillNavButton
+                    class="btn btn-outline-dark rounded-0"
+                    to={suggestEditHref}
+                    payload={suggestEditPrefillPayload}
+                  >
+                    Suggest edit
+                  </PrefillNavButton>
+                  <PrefillNavButton
+                    class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
+                    to="/about/contact/"
+                    payload={{
+                      whoami: "Subscriber",
+                      message: `Please notify me when this agency page changes: ${agencyPath}`,
+                    }}
+                    data-testid="agency-subscribe-link"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="lucide lucide-bell"
+                    >
+                      <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
+                      <path
+                        d="M3.262 15a4 4 0 0 0 3.938 3h9.6a4 4 0 0 0 3.938-3"
+                      ></path>
+                      <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
+                    </svg>
+                    <span>Notify me when this agency page changes</span>
+                  </PrefillNavButton>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5" data-aos="fade-up">
+        <ProfileTabs
+          tabs={[
+            {
+              id: "agency-reports",
+              label: "Reports",
+              badge: counts.reports,
+              tabType: "reports",
+            },
+            {
+              id: "agency-litigation",
+              label: "Civil litigation",
+              badge: counts.civilCases,
+              tabType: "litigation",
+            },
+            {
+              id: "agency-coverage",
+              label: "Related Links",
+              badge: counts.coverage,
+              tabType: "coverage",
+            },
+            {
+              id: "agency-personnel",
+              label: "Personnel",
+              badge: counts.personnel,
+              tabType: "personnel",
+            },
+          ]}
+          extraNavClasses="mb-3"
+          litigation={{
+            cases: civilCases,
+          }}
+          reports={{
+            items: reportedReports,
+            layout: "list",
+          }}
+          personnel={{
+            entries: employees,
+          }}
+          coverage={{
+            links: coverageLinks,
+            helperText: "Links about this agency or personnel connected to it.",
+          }}
+        />
+        <div class="mt-3">
+          <PrefillNavButton
+            class="link-dark small"
+            to={claimProfileHref}
+            payload={claimProfilePrefillPayload}
+            data-testid="agency-claim-profile-link"
+            variant="link"
+          >
+            Claim this profile
+          </PrefillNavButton>
+        </div>
+      </div>
+
+      <div class="mt-5">
+        <h2 class="h5 text-uppercase text-muted">Comments</h2>
+        <DisqusComments pageUrl={pageUrl} disqusIdentifier={disqusIdentifier} />
+      </div>
+    </div>
+  </main>
+  <script>
+    import AOS from "aos";
+    import "aos/dist/aos.css";
+
+    if (!document.documentElement.dataset.aosInit) {
+      AOS.init({
+        duration: 800,
+        once: true,
+      });
+      document.documentElement.dataset.aosInit = "1";
+    }
+  </script>
+</SiteLayout>

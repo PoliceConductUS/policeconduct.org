@@ -1,0 +1,266 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import {
+  loadAgencySummaries,
+  loadPersonnelSummaries,
+  loadReportSummaries,
+} from "#src/lib/data/summaries.js";
+import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
+import { loadLocationBuildPayloads } from "#src/lib/data/build-payloads.js";
+import { withDb } from "#src/lib/db.js";
+import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+
+const [locations, federalAgencies, agencies, personnel, reports, civilCases] =
+  await Promise.all([
+    loadLocationBuildPayloads(),
+    loadFederalAgencySummaries(),
+    loadAgencySummaries(),
+    loadPersonnelSummaries(),
+    loadReportSummaries(),
+    withDb(async (client) => {
+      return (
+        await client.query(
+          `
+          select slug, category, title, cause_number, court
+          from public.civil_cases
+          where slug is not null
+          order by filed_date desc nulls last, title asc
+          limit 200
+        `,
+        )
+      ).rows;
+    }),
+  ]);
+
+const places = locations
+  .filter((location) => location.level === "place")
+  .map((place) => ({
+    label: `${place.displayName}, ${place.administrativeArea}, ${place.stateLabel}`,
+    href: place.path,
+    meta: `${place.agencies?.length ?? 0} agencies located here`,
+  }));
+const pagePath = "/search/";
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const description =
+  "Search available places, agencies, personnel, reports, and civil cases on PoliceConduct.org.";
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: "Search | PoliceConduct.org",
+  description,
+  type: "SearchResultsPage",
+});
+---
+
+<SiteLayout
+  title="Search | PoliceConduct.org"
+  description={description}
+  pagePath={pagePath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Search", href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+        <div class="row g-4 align-items-end">
+          <div class="col-12 col-lg-8">
+            <h1 class="display-4 fw-bold mb-3">Search</h1>
+            <p class="lead text-muted mb-0">
+              Search by place, agency, personnel, report, or civil case.
+            </p>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label fw-semibold" for="siteSearch">
+              Search available records
+            </label>
+            <input
+              class="form-control rounded-0"
+              id="siteSearch"
+              type="search"
+              placeholder="Place, agency, person, case, or report"
+              data-search-input
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="search-groups" data-search-list>
+          <section class="search-group">
+            <h2 class="h4">Places</h2>
+            {
+              places.map((place) => (
+                <a
+                  class="search-result"
+                  href={place.href}
+                  data-search-item={place.label}
+                >
+                  <span>{place.label}</span>
+                  <small>{place.meta}</small>
+                </a>
+              ))
+            }
+          </section>
+          <section class="search-group">
+            <h2 class="h4">Federal Agencies</h2>
+            {
+              federalAgencies.map((agency) => (
+                <a
+                  class="search-result"
+                  href={agency.path}
+                  data-search-item={agency.name}
+                >
+                  <span>{agency.name}</span>
+                  <small>
+                    {agency.branchCount}{" "}
+                    {agency.branchCount === 1 ? "location" : "locations"}
+                  </small>
+                </a>
+              ))
+            }
+          </section>
+          <section class="search-group">
+            <h2 class="h4">Agencies</h2>
+            {
+              agencies.map((agency) => (
+                <a
+                  class="search-result"
+                  href={agency.canonicalPath}
+                  data-search-item={`${agency.name} ${agency.city || ""} ${agency.administrativeArea || ""} ${agency.state}`}
+                >
+                  <span>{agency.name}</span>
+                  <small>
+                    {[agency.city, agency.administrativeArea, agency.state]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </small>
+                </a>
+              ))
+            }
+          </section>
+          <section class="search-group">
+            <h2 class="h4">Personnel</h2>
+            {
+              personnel.slice(0, 300).map((person) => (
+                <a
+                  class="search-result"
+                  href={`/personnel/${person.slug}/`}
+                  data-search-item={`${person.firstName} ${person.lastName} ${person.nameSuffix || ""} ${person.agencyName}`}
+                >
+                  <span>
+                    {person.firstName} {person.lastName}
+                    {person.nameSuffix ? ` ${person.nameSuffix}` : ""}
+                  </span>
+                  <small>
+                    {[person.licenseType, person.agencyName]
+                      .filter(Boolean)
+                      .join(" / ")}
+                  </small>
+                </a>
+              ))
+            }
+          </section>
+          <section class="search-group">
+            <h2 class="h4">Reports</h2>
+            {
+              reports.slice(0, 200).map((report) => (
+                <a
+                  class="search-result"
+                  href={`/report/${report.category}/${report.slug}/`}
+                  data-search-item={`${report.title} ${report.address || ""} ${report.agencyName}`}
+                >
+                  <span>{report.title}</span>
+                  <small>
+                    {[report.agencyName, report.incidentDate]
+                      .filter(Boolean)
+                      .join(" / ")}
+                  </small>
+                </a>
+              ))
+            }
+          </section>
+          <section class="search-group">
+            <h2 class="h4">Civil Cases</h2>
+            {
+              civilCases.map((civilCase: any) => (
+                <a
+                  class="search-result"
+                  href={`/civil-cases/${civilCase.slug}/`}
+                  data-search-item={`${civilCase.title} ${civilCase.cause_number || ""} ${civilCase.court || ""}`}
+                >
+                  <span>{civilCase.title}</span>
+                  <small>
+                    {[civilCase.cause_number, civilCase.court]
+                      .filter(Boolean)
+                      .join(" / ")}
+                  </small>
+                </a>
+              ))
+            }
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script is:inline>
+    const input = document.querySelector("[data-search-input]");
+    const items = [...document.querySelectorAll("[data-search-item]")];
+    input?.addEventListener("input", () => {
+      const query = input.value.trim().toLowerCase();
+      items.forEach((item) => {
+        const text = item.getAttribute("data-search-item")?.toLowerCase() || "";
+        item.hidden = Boolean(query) && !text.includes(query);
+      });
+    });
+  </script>
+</SiteLayout>
+
+<style>
+  .search-groups {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .search-group {
+    border-top: 1px solid var(--bs-border-color);
+    padding-top: 1rem;
+  }
+
+  .search-result {
+    align-items: baseline;
+    border-bottom: 1px solid var(--bs-border-color);
+    color: var(--bs-dark);
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 0.65rem 0;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  .search-result small {
+    color: var(--bs-secondary-color);
+    text-align: right;
+  }
+
+  @media (max-width: 767.98px) {
+    .search-result {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .search-result small {
+      text-align: left;
+    }
+  }
+</style>

@@ -13,9 +13,9 @@ export type CategoryCollectionCounts = {
 };
 
 type StatItem = {
-  actionLabel: string;
+  actionLabel?: string;
   description: string;
-  href: string;
+  href?: string;
   label: string;
   value: number;
 };
@@ -123,8 +123,6 @@ export const buildCategoryCollectionStats = (
       label: "Personnel",
       value: counts.personnelCount,
       description: `Listed personnel in ${categoryLabel}.`,
-      href: `/personnel/${category}/`,
-      actionLabel: "Open personnel",
     },
     {
       label: "Reports",
@@ -140,8 +138,6 @@ export const buildCategoryCollectionStats = (
       label: "Civil Cases",
       value: counts.civilCaseCount,
       description: `Civil litigation tied to ${categoryLabel}.`,
-      href: `/civil-litigation/${category}/`,
-      actionLabel: "Open civil cases",
     },
   ];
 };

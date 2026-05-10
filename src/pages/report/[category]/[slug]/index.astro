@@ -131,14 +131,18 @@ const agencyEntities = Array.from(
         name?: string;
         slug?: string;
         category?: string;
+        canonicalPath: string;
       } | null;
-      if (!agency || !agency.name || !agency.slug || !agency.category) {
+      if (
+        !agency ||
+        !agency.name ||
+        !agency.slug ||
+        !agency.category ||
+        !agency.canonicalPath
+      ) {
         return [];
       }
-      const agencyUrl = new URL(
-        `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
-        siteUrl,
-      ).toString();
+      const agencyUrl = new URL(agency.canonicalPath, siteUrl).toString();
       return [
         [
           `${agencyUrl}#organization`,
@@ -333,6 +337,9 @@ const structuredData = {
                                 ? ` ${entry.officer!.suffix}`
                                 : ""}
                             </span>
+                            <span class="small text-muted">
+                              License type: {entry.agencyOfficer.title}
+                            </span>
                             <RatingBadge rating={entry.ratingOverall} />
                           </div>
                         </button>
@@ -358,7 +365,13 @@ const structuredData = {
 
                             <a
                               class="link-secondary small"
-                              href={`/law-enforcement-agency/${entry.agency!.category}/${entry.agency!.slug}/`}
+                              href={
+                                (
+                                  entry.agency as typeof entry.agency & {
+                                    canonicalPath: string;
+                                  }
+                                ).canonicalPath
+                              }
                             >
                               {entry.agency!.name}
                             </a>

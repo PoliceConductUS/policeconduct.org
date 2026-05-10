@@ -218,6 +218,9 @@ const formatDisplayDate = (value?: string | null) => {
                                 ) : (
                                   <span>{person.name}</span>
                                 )}
+                                {person.licenseType
+                                  ? ` (${person.licenseType})`
+                                  : ""}
                               </>
                             ))}
                           </span>

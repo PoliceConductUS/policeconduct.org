@@ -1,0 +1,353 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { withDb } from "#src/lib/db.js";
+import { loadCivilCaseDetailBySlug } from "#src/lib/data/civil-litigation-detail.js";
+import { formatLongDate } from "#src/lib/format.js";
+import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { getSiteUrl } from "#src/lib/structured-data.js";
+
+export async function getStaticPaths() {
+  const civilCases = await withDb(async (client) => {
+    return (
+      await client.query(
+        `
+          select slug
+          from public.civil_cases
+          order by category, filed_date desc nulls last, title
+        `,
+      )
+    ).rows;
+  });
+
+  return civilCases.map((civilCase: { slug: string }) => ({
+    params: {
+      slug: civilCase.slug,
+    },
+  }));
+}
+
+const { slug } = Astro.params;
+const data = await loadCivilCaseDetailBySlug(String(slug || ""));
+if (!data) {
+  throw new Error(`Civil case ${slug} not found.`);
+}
+const categoryParam = data.civilCase.category.toLowerCase();
+const categoryMeta = US_STATE_TILES.find(
+  (entry) => entry.code.toLowerCase() === categoryParam,
+);
+const categoryLabel =
+  categoryParam === "federal"
+    ? "Federal"
+    : categoryMeta?.name || categoryParam.toUpperCase();
+
+const caseTitle =
+  data.civilCase.title || data.civilCase.cause_number || "Civil case";
+const casePath = `/civil-cases/${data.civilCase.slug}/`;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(casePath, siteUrl).toString();
+const coverageLinks = data.coverageLinks;
+const collapseWhitespace = (value?: string | null) =>
+  value ? value.replace(/\s+/g, " ").trim() : "";
+const truncateText = (value: string, maxLength: number) => {
+  if (value.length <= maxLength) {
+    return value;
+  }
+  const truncated = value.slice(0, maxLength + 1);
+  const lastSpace = truncated.lastIndexOf(" ");
+  return `${truncated.slice(0, lastSpace > 0 ? lastSpace : maxLength).trim()}...`;
+};
+const formatLabelList = (values: string[]) => {
+  if (values.length <= 1) {
+    return values[0] || "";
+  }
+  if (values.length === 2) {
+    return `${values[0]} and ${values[1]}`;
+  }
+  return `${values.slice(0, -1).join(", ")}, and ${values[values.length - 1]}`;
+};
+const officerNames = data.officers.map(
+  (officer) => `${officer.first_name} ${officer.last_name}`,
+);
+const agencyNames = data.agencies.map((agency) => agency.name);
+const pageDescriptionParts = [
+  data.civilCase.cause_number
+    ? `Cause number ${data.civilCase.cause_number}.`
+    : null,
+  data.civilCase.court ? `Court: ${data.civilCase.court}.` : null,
+  data.civilCase.filed_date
+    ? `Filed ${formatLongDate(data.civilCase.filed_date)}.`
+    : null,
+  officerNames.length
+    ? `Officers: ${formatLabelList(officerNames.slice(0, 2))}${officerNames.length > 2 ? ", and others" : ""}.`
+    : null,
+  agencyNames.length
+    ? `Agencies: ${formatLabelList(agencyNames.slice(0, 2))}${agencyNames.length > 2 ? ", and others" : ""}.`
+    : null,
+  collapseWhitespace(data.civilCase.claims_summary),
+];
+const pageDescription = truncateText(
+  pageDescriptionParts.filter(Boolean).join(" "),
+  280,
+);
+const websiteId = new URL("/", siteUrl).toString();
+const webpageId = `${pageUrl}#webpage`;
+const legalCaseId = `${pageUrl}#legalcase`;
+const officerEntities = data.officers.map((officer) => {
+  const officerUrl = new URL(`/personnel/${officer.slug}/`, siteUrl).toString();
+  return {
+    "@type": "Person",
+    "@id": `${officerUrl}#person`,
+    name: `${officer.first_name} ${officer.last_name}`,
+    url: officerUrl,
+  };
+});
+const agencyEntities = data.agencies.map((agency) => {
+  const agencyUrl = new URL(agency.canonicalPath, siteUrl).toString();
+  return {
+    "@type": "GovernmentOrganization",
+    "@id": `${agencyUrl}#organization`,
+    name: agency.name,
+    url: agencyUrl,
+  };
+});
+const legalCaseEntity: Record<string, any> = {
+  "@type": "LegalCase",
+  "@id": legalCaseId,
+  name: caseTitle,
+  url: pageUrl,
+  mainEntityOfPage: { "@id": webpageId },
+  ...(data.civilCase.cause_number
+    ? { identifier: data.civilCase.cause_number }
+    : {}),
+  ...(data.civilCase.filed_date
+    ? { dateFiled: new Date(data.civilCase.filed_date).toISOString() }
+    : {}),
+  ...(data.civilCase.court ? { court: data.civilCase.court } : {}),
+  ...(data.civilCase.primary_source_url
+    ? { sameAs: [data.civilCase.primary_source_url] }
+    : {}),
+};
+if (officerEntities.length || agencyEntities.length) {
+  legalCaseEntity.about = [...officerEntities, ...agencyEntities].map(
+    (entity) => ({
+      "@id": entity["@id"],
+    }),
+  );
+}
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": websiteId,
+      url: websiteId,
+      name: "PoliceConduct.org",
+    },
+    {
+      "@type": "WebPage",
+      "@id": webpageId,
+      url: pageUrl,
+      name: `${caseTitle} | PoliceConduct.org`,
+      description: pageDescription,
+      isPartOf: { "@id": websiteId },
+      mainEntity: { "@id": legalCaseId },
+    },
+    ...agencyEntities,
+    ...officerEntities,
+    legalCaseEntity,
+  ],
+};
+---
+
+<SiteLayout
+  title={`${caseTitle} | PoliceConduct.org`}
+  description={pageDescription}
+  pagePath={casePath}
+  canonicalUrl={casePath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-xl-10">
+            <Breadcrumbs
+              items={[
+                { label: "Home", href: "/" },
+                { label: "Civil cases", href: "/civil-litigation/" },
+                {
+                  label: categoryLabel,
+                  href: `/${categoryParam}/`,
+                },
+                { label: caseTitle, href: casePath, current: true },
+              ]}
+              className="mb-2"
+            />
+            <p class="text-uppercase small text-muted mb-2">
+              Civil case • {categoryLabel}
+            </p>
+            <h1 class="display-5 fw-bold mb-3">{caseTitle}</h1>
+            <div class="d-flex flex-wrap gap-4 text-muted">
+              <div>
+                <span class="text-uppercase small d-block">Cause number</span>
+                <strong class="text-dark">
+                  {data.civilCase.cause_number || "—"}
+                </strong>
+              </div>
+              <div>
+                <span class="text-uppercase small d-block">Court</span>
+                <strong class="text-dark">{data.civilCase.court || "—"}</strong>
+              </div>
+              <div>
+                <span class="text-uppercase small d-block">Filed</span>
+                <strong class="text-dark">
+                  {
+                    data.civilCase.filed_date
+                      ? formatLongDate(data.civilCase.filed_date)
+                      : "—"
+                  }
+                </strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row g-4 justify-content-center">
+          <div class="col-12 col-xl-7">
+            <article class="border p-4 bg-white h-100">
+              <h2 class="h5 mb-3">Claims</h2>
+              <p class="mb-0">
+                {data.civilCase.claims_summary || "Not listed."}
+              </p>
+            </article>
+          </div>
+          <div class="col-12 col-xl-3">
+            <aside class="border p-4 bg-white h-100">
+              <h2 class="h6 text-uppercase text-muted">Primary source</h2>
+              {
+                data.civilCase.primary_source_url ? (
+                  <a
+                    href={data.civilCase.primary_source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open source
+                  </a>
+                ) : (
+                  <p class="mb-0">No source link listed.</p>
+                )
+              }
+
+              <h2 class="h6 text-uppercase text-muted mt-4">Outcome</h2>
+              <p class="mb-0">{data.civilCase.outcome || "Not listed."}</p>
+            </aside>
+          </div>
+        </div>
+
+        <div class="row g-4 justify-content-center mt-1">
+          <div class="col-12 col-xl-5">
+            <section class="border p-4 bg-white h-100">
+              <h2 class="h5 mb-3">Officers</h2>
+              {
+                data.officers.length ? (
+                  <ul class="list-unstyled mb-0 d-grid gap-2">
+                    {data.officers.map((officer) => (
+                      <li>
+                        <a href={`/personnel/${officer.slug}/`}>
+                          {officer.first_name} {officer.last_name}
+                        </a>
+                        {officer.license_type
+                          ? ` (${officer.license_type})`
+                          : ""}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p class="mb-0">No officers linked.</p>
+                )
+              }
+            </section>
+          </div>
+          <div class="col-12 col-xl-5">
+            <section class="border p-4 bg-white h-100">
+              <h2 class="h5 mb-3">Agencies</h2>
+              {
+                data.agencies.length ? (
+                  <ul class="list-unstyled mb-0 d-grid gap-2">
+                    {data.agencies.map((agency) => (
+                      <li>
+                        <a href={agency.canonicalPath}>{agency.name}</a>
+                        {agency.city || agency.state ? (
+                          <span class="text-muted">
+                            {" "}
+                            —{" "}
+                            {[agency.city, agency.state]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p class="mb-0">No agencies linked.</p>
+                )
+              }
+            </section>
+          </div>
+        </div>
+
+        <div class="row justify-content-center mt-1">
+          <div class="col-12 col-xl-10">
+            <section class="border p-4 bg-white">
+              <h2 class="h5 mb-2">Related Links</h2>
+              <p class="text-muted small mb-3">
+                Links connected to this civil case.
+              </p>
+              {
+                coverageLinks.length ? (
+                  <div class="d-grid gap-3">
+                    {coverageLinks.map((link) => (
+                      <article class="border p-3">
+                        <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
+                          <div>
+                            <h3 class="h6 mb-1">{link.title}</h3>
+                            <a
+                              class="small"
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {link.url}
+                            </a>
+                          </div>
+                          <div class="d-flex flex-wrap gap-2">
+                            <a
+                              class="btn btn-dark rounded-0 btn-sm"
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Open
+                            </a>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p class="mb-0">No related links listed.</p>
+                )
+              }
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>

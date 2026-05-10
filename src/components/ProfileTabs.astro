@@ -1,5 +1,6 @@
 ---
 import { formatShortDate } from "#src/lib/format.js";
+import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 
 type OfficerRef = {
   slug: string;
@@ -7,6 +8,8 @@ type OfficerRef = {
   last_name?: string;
   firstName?: string;
   lastName?: string;
+  licenseType?: string | null;
+  title?: string | null;
 };
 
 type LitigationCase = {
@@ -40,6 +43,7 @@ type PersonnelEntry = {
     start_date?: string | null;
     end_date?: string | null;
     badge_number?: string | null;
+    title?: string | null;
   };
   officer?: OfficerRef | null;
   reportCount?: number;
@@ -50,10 +54,18 @@ type PastEmployerEntry = {
   start_date?: string | null;
   end_date?: string | null;
   badge_number?: string | null;
+  title?: string | null;
   reportCount?: number;
   rating?: number | null;
   agency?: {
+    administrative_area?: string | null;
+    administrativeArea?: string | null;
+    administrative_area_slug?: string | null;
+    administrativeAreaSlug?: string | null;
     category?: string | null;
+    city?: string | null;
+    place_slug?: string | null;
+    placeSlug?: string | null;
     slug?: string | null;
     name?: string | null;
   } | null;
@@ -138,6 +150,8 @@ const getOfficerName = (officer: OfficerRef) =>
   ]
     .filter(Boolean)
     .join(" ");
+const getOfficerLicenseType = (officer: OfficerRef) =>
+  officer.licenseType || officer.title || "";
 ---
 
 <div data-profile-tabs>
@@ -218,6 +232,9 @@ const getOfficerName = (officer: OfficerRef) =>
                                     >
                                       {getOfficerName(officer)}
                                     </a>
+                                    {getOfficerLicenseType(officer)
+                                      ? ` (${getOfficerLicenseType(officer)})`
+                                      : ""}
                                   </>
                                 ))}
                               </span>
@@ -246,12 +263,9 @@ const getOfficerName = (officer: OfficerRef) =>
                       </div>
                       <div class="profile-record-body">
                         <h3 class="profile-record-title">
-                          <a
-                          href={report.url}
-                          data-profile-link-type="report"
-                        >
-                          {report.title}
-                        </a>
+                          <a href={report.url} data-profile-link-type="report">
+                            {report.title}
+                          </a>
                         </h3>
                         {report.officers?.length ? (
                           <div class="profile-record-detail">
@@ -265,6 +279,9 @@ const getOfficerName = (officer: OfficerRef) =>
                                 >
                                   {getOfficerName(officer)}
                                 </a>
+                                {getOfficerLicenseType(officer)
+                                  ? ` (${getOfficerLicenseType(officer)})`
+                                  : ""}
                               </>
                             ))}
                           </div>
@@ -326,6 +343,9 @@ const getOfficerName = (officer: OfficerRef) =>
                                 >
                                   {getOfficerName(officer)}
                                 </a>
+                                {getOfficerLicenseType(officer)
+                                  ? ` (${getOfficerLicenseType(officer)})`
+                                  : ""}
                               </>
                             ))}
                           </div>
@@ -376,6 +396,10 @@ const getOfficerName = (officer: OfficerRef) =>
                             Badge: {employee.entry.badge_number || "Unknown"}
                           </span>
                           <span aria-hidden="true">/</span>
+                          <span>
+                            License type: {employee.entry.title || ""}
+                          </span>
+                          <span aria-hidden="true">/</span>
                           <span>{employee.reportCount || 0} reports</span>
                           <span aria-hidden="true">/</span>
                           <span>
@@ -414,7 +438,7 @@ const getOfficerName = (officer: OfficerRef) =>
                         <h3 class="profile-record-title">
                           {entry.agency ? (
                             <a
-                              href={`/law-enforcement-agency/${entry.agency.category}/${entry.agency.slug}/`}
+                              href={requireAgencyCanonicalPath(entry.agency)}
                               data-profile-link-type="agency_profile"
                             >
                               {entry.agency.name}
@@ -425,6 +449,8 @@ const getOfficerName = (officer: OfficerRef) =>
                         </h3>
                         <div class="profile-record-detail">
                           <span>Badge: {entry.badge_number || "Unknown"}</span>
+                          <span aria-hidden="true">/</span>
+                          <span>License type: {entry.title || ""}</span>
                           <span aria-hidden="true">/</span>
                           <span>{entry.reportCount || 0} reports</span>
                           <span aria-hidden="true">/</span>

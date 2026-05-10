@@ -56,6 +56,18 @@ const REQUIRED_SAMPLE_SPECS = [
     label: "agency detail",
     pattern: /^\/law-enforcement-agency\/[^/]+\/[^/]+\/$/,
   },
+  {
+    label: "county-equivalent",
+    pattern: /^\/[a-z]{2}\/[^/]+\/$/,
+  },
+  {
+    label: "place",
+    pattern: /^\/[a-z]{2}\/[^/]+\/[^/]+\/$/,
+  },
+  {
+    label: "location agency detail",
+    pattern: /^\/[a-z]{2}\/[^/]+\/[^/]+\/[^/]+\/$/,
+  },
   { label: "personnel index", pattern: /^\/personnel\/$/ },
   {
     label: "personnel category",
@@ -76,7 +88,7 @@ const REQUIRED_SAMPLE_SPECS = [
   },
   {
     label: "civil litigation detail",
-    pattern: /^\/civil-litigation\/[^/]+\/[^/]+\/$/,
+    pattern: /^\/civil-cases\/[^/]+\/$/,
   },
 ];
 

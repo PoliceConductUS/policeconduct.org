@@ -36,10 +36,7 @@ const agencyItems = agencies.slice(0, 25).map((agency, index) => ({
   item: {
     "@type": "GovernmentOrganization",
     name: agency.name,
-    url: new URL(
-      `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
-      siteUrl,
-    ).toString(),
+    url: new URL(agency.canonicalPath, siteUrl).toString(),
   },
 }));
 const structuredData = buildWebPage({
@@ -129,7 +126,7 @@ if (agencyItemList) {
             description: "Federal agencies listed separately from states.",
             items: federalAgencies.map((agency) => ({
               label: agency.name,
-              href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+              href: agency.canonicalPath,
               badgeText: `Reports: ${agency.reportCount}`,
             })),
           }}

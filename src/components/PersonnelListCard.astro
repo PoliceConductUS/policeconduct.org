@@ -8,7 +8,6 @@ const reportHref =
   person.agencyCategory === "federal"
     ? "/report/"
     : `/report/${person.agencyCategory}/`;
-const civilCaseHref = `/civil-litigation/${person.agencyCategory}/`;
 ---
 
 <article class="card shadow-sm border-0 rounded-0 h-100">
@@ -22,14 +21,14 @@ const civilCaseHref = `/civil-litigation/${person.agencyCategory}/`;
         </a>
       </div>
       <div class="col-12 col-md-6 col-xl-2">
-        <div class="text-uppercase small text-muted">Role</div>
-        <div>{person.roleTitle || "—"}</div>
+        <div class="text-uppercase small text-muted">License type</div>
+        <div>{person.licenseType}</div>
       </div>
       <div class="col-12 col-md-6 col-xl-3">
         <div class="text-uppercase small text-muted">Agency</div>
         <a
           class="link-dark text-decoration-none"
-          href={`/law-enforcement-agency/${person.agencySlug}/`}
+          href={person.agencyCanonicalPath}
         >
           {person.agencyName}
         </a>
@@ -43,12 +42,9 @@ const civilCaseHref = `/civil-litigation/${person.agencyCategory}/`;
           >
             {person.reportCount} reports
           </a>
-          <a
-            class="badge bg-light text-dark border rounded-0 text-decoration-none"
-            href={civilCaseHref}
-          >
+          <span class="badge bg-light text-dark border rounded-0">
             {person.civilCaseCount} civil cases
-          </a>
+          </span>
         </div>
       </div>
     </div>

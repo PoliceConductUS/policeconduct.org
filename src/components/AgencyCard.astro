@@ -3,7 +3,7 @@ import type { AgencySummary } from "#src/lib/data/types.js";
 
 const { agency } = Astro.props as { agency: AgencySummary };
 
-const detailUrl = `/law-enforcement-agency/${agency.category}/${agency.slug}/`;
+const detailUrl = agency.canonicalPath;
 const categoryLabel = agency.category === "federal" ? "Federal" : null;
 const showCategory = Boolean(categoryLabel);
 const personnelLabel = `${agency.activePersonnelCount} personnel`;
@@ -12,10 +12,8 @@ const civilCaseLabel = `${agency.civilCaseCount} civil cases`;
 const locationLabel = [agency.city, agency.state, agency.zipCode]
   .filter(Boolean)
   .join(", ");
-const personnelHref = `/personnel/${agency.category}/`;
 const reportHref =
   agency.category === "federal" ? "/report/" : `/report/${agency.category}/`;
-const civilCaseHref = `/civil-litigation/${agency.category}/`;
 const phoneHref = agency.phoneNumber
   ? agency.phoneNumber.replace(/[^\d+]/g, "")
   : null;
@@ -70,24 +68,18 @@ const phoneHref = agency.phoneNumber
       <div class="col-12 col-md-6 col-xl-5">
         <div class="text-uppercase small text-muted">Related records</div>
         <div class="d-flex flex-wrap gap-2">
-          <a
-            class="badge bg-light text-dark border rounded-0 text-decoration-none"
-            href={personnelHref}
-          >
+          <span class="badge bg-light text-dark border rounded-0">
             {personnelLabel}
-          </a>
+          </span>
           <a
             class="badge bg-light text-dark border rounded-0 text-decoration-none"
             href={reportHref}
           >
             {reportLabel}
           </a>
-          <a
-            class="badge bg-light text-dark border rounded-0 text-decoration-none"
-            href={civilCaseHref}
-          >
+          <span class="badge bg-light text-dark border rounded-0">
             {civilCaseLabel}
-          </a>
+          </span>
         </div>
       </div>
     </div>

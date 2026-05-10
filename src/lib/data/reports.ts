@@ -1,5 +1,6 @@
 import { withDb } from "#src/lib/db.js";
 import { groupBy, mapBy } from "#src/lib/data.js";
+import { requireAgencyCanonicalPath } from "./location-paths.js";
 import type { ReportSummary } from "./types.js";
 
 const assertValue = <T>(value: T | null | undefined, message: string): T => {
@@ -84,6 +85,7 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
         `Missing officer ${agencyOfficer.officer_id} for agency_officer ${agencyOfficer.id}`,
       );
       return {
+        licenseType: agencyOfficer.title || null,
         name: `${officer.first_name} ${officer.last_name}${officer.suffix ? ` ${officer.suffix}` : ""}`.trim(),
         slug: officer.slug,
       };
@@ -138,6 +140,7 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
       address: report.address || null,
       agencySlug: `${agencyCategory}/${agencySlug}`,
       agencyName,
+      agencyCanonicalPath: requireAgencyCanonicalPath(agency),
       category: report.category
         ? report.category.toString().toLowerCase()
         : null,

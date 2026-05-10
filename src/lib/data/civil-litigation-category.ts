@@ -1,5 +1,6 @@
 import { withDb } from "#src/lib/db.js";
 import { groupBy, mapBy } from "#src/lib/data.js";
+import { requireAgencyCanonicalPath } from "./location-paths.js";
 
 export type OfficerRef = {
   id: string;
@@ -13,6 +14,7 @@ export type AgencyRef = {
   slug: string;
   name: string;
   category: string;
+  canonicalPath?: string | null;
 };
 
 export type CivilCaseSummary = {
@@ -95,7 +97,11 @@ export const loadCivilCasesByCategory = async (
             a.id,
             a.slug,
             a.name,
-            a.category
+            a.category,
+            a.administrative_area,
+            a.administrative_area_slug,
+            a.city,
+            a.place_slug
           from public.civil_case_officers cco
           join public.agency_officers ao on ao.id = cco.agency_officer_id
           join public.agency a on a.id = ao.agency_id
@@ -130,6 +136,7 @@ export const loadCivilCasesByCategory = async (
           slug: entry.slug,
           name: entry.name,
           category: entry.category,
+          canonicalPath: requireAgencyCanonicalPath(entry),
         }),
       ),
     }))

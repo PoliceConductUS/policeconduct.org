@@ -21,27 +21,72 @@ const { variant = "default" } = Astro.props as {
 
 {
   items.length > 0 ? (
-    <section class:list={["collection-stats-band", variant === "compact" ? "collection-stats-band-compact py-3" : "py-4"]}>
+    <section
+      class:list={[
+        "collection-stats-band",
+        variant === "compact" ? "collection-stats-band-compact py-3" : "py-4",
+      ]}
+    >
       <div class="container">
-        <div class:list={[variant === "compact" ? "collection-stats-compact" : "row g-3"]}>
+        <div
+          class:list={[
+            variant === "compact" ? "collection-stats-compact" : "row g-3",
+          ]}
+        >
           {items.map((item) => {
             const content = (
-              <div class:list={[variant === "compact" ? "collection-stat-compact" : "card shadow-sm rounded-0 border-dark h-100"]}>
-                <div class:list={[variant === "compact" ? "collection-stat-compact-body" : "card-body d-flex flex-column gap-2 h-100"]}>
-                  <div class:list={[variant === "compact" ? "collection-stat-label" : "text-uppercase small text-muted"]}>
+              <div
+                class:list={[
+                  variant === "compact"
+                    ? "collection-stat-compact"
+                    : "card shadow-sm rounded-0 border-dark h-100",
+                ]}
+              >
+                <div
+                  class:list={[
+                    variant === "compact"
+                      ? "collection-stat-compact-body"
+                      : "card-body d-flex flex-column gap-2 h-100",
+                  ]}
+                >
+                  <div
+                    class:list={[
+                      variant === "compact"
+                        ? "collection-stat-label"
+                        : "text-uppercase small text-muted",
+                    ]}
+                  >
                     {item.label}
                   </div>
-                  <div class:list={[variant === "compact" ? "collection-stat-value" : "display-6 fw-bold"]}>
+                  <div
+                    class:list={[
+                      variant === "compact"
+                        ? "collection-stat-value"
+                        : "display-6 fw-bold",
+                    ]}
+                  >
                     {item.value}
                   </div>
                   {item.title ? <div class="h5 mb-0">{item.title}</div> : null}
                   {item.description ? (
-                    <div class:list={[variant === "compact" ? "collection-stat-description" : "text-muted small"]}>
+                    <div
+                      class:list={[
+                        variant === "compact"
+                          ? "collection-stat-description"
+                          : "text-muted small",
+                      ]}
+                    >
                       {item.description}
                     </div>
                   ) : null}
                   {item.actionLabel && item.href ? (
-                    <div class:list={[variant === "compact" ? "collection-stat-action" : "mt-auto pt-2 fw-semibold text-dark"]}>
+                    <div
+                      class:list={[
+                        variant === "compact"
+                          ? "collection-stat-action"
+                          : "mt-auto pt-2 fw-semibold text-dark",
+                      ]}
+                    >
                       {item.actionLabel}
                     </div>
                   ) : null}
@@ -51,7 +96,13 @@ const { variant = "default" } = Astro.props as {
             const isLinked = Boolean(item.href);
 
             return (
-              <div class:list={[variant === "compact" ? "collection-stat-compact-wrap" : "col-12 col-sm-6 col-xl-3"]}>
+              <div
+                class:list={[
+                  variant === "compact"
+                    ? "collection-stat-compact-wrap"
+                    : "col-12 col-sm-6 col-xl-3",
+                ]}
+              >
                 {isLinked ? (
                   <a
                     class="text-decoration-none text-reset d-block h-100"

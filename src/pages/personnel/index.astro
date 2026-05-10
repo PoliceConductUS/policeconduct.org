@@ -10,6 +10,7 @@ import {
   buildWebPage,
   getSiteUrl,
 } from "#src/lib/structured-data.js";
+import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 
 const personnelRows = await loadPersonnelSummaries();
 const federalAgencies = await withDb(async (client) => {
@@ -21,13 +22,18 @@ const federalAgencies = await withDb(async (client) => {
           a.name,
           a.slug,
           a.category,
+          a.administrative_area,
+          a.administrative_area_slug,
+          a.city,
+          a.place_slug,
           count(distinct ao.officer_id) as active_personnel_count
         from public.agency a
         left join public.agency_officers ao
           on ao.agency_id = a.id
          and ao.end_date is null
         where lower(a.category) = 'federal'
-        group by a.id, a.name, a.slug, a.category
+        group by a.id, a.name, a.slug, a.category, a.administrative_area,
+          a.administrative_area_slug, a.city, a.place_slug
         order by a.name
       `,
     )
@@ -37,6 +43,7 @@ const federalAgencies = await withDb(async (client) => {
     name: agency.name,
     slug: agency.slug,
     category: agency.category,
+    canonicalPath: requireAgencyCanonicalPath(agency),
     activePersonnelCount: Number(agency.active_personnel_count || 0),
   }));
 });
@@ -47,7 +54,7 @@ const stateStats = US_STATE_TILES.map((state) => {
   return {
     code: state.code,
     count,
-    href: `/personnel/${state.code.toLowerCase()}/`,
+    href: `/${state.code.toLowerCase()}/`,
   };
 });
 const totalPersonnel = personnelRows.length;
@@ -148,9 +155,9 @@ if (personnelItemList) {
         <UsaChoroplethMap
           stats={stateStats}
           title="States"
-          subtitle="Select a state to view active personnel by agency jurisdiction."
+          subtitle="Select a state to browse available records by place."
           emptyLabel="No personnel yet"
-          interactionLabel="Hover for counts; click a state to browse personnel."
+          interactionLabel="Hover for counts; click a state to browse available records."
           headerAction={{
             href: suggestPersonnelHref,
             label: "Suggest new person",
@@ -162,7 +169,7 @@ if (personnelItemList) {
             description: "Federal agencies with listed personnel.",
             items: federalAgencies.map((agency) => ({
               label: agency.name,
-              href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
+              href: agency.canonicalPath,
               badgeText: `Personnel: ${agency.activePersonnelCount}`,
             })),
           }}

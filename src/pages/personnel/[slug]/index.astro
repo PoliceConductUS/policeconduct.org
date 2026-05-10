@@ -11,6 +11,7 @@ import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { getPersonnelImageById } from "#src/lib/personnel-images.js";
 import ProfileTabs from "#src/components/ProfileTabs.astro";
 import { loadCoverageLinksForOfficer } from "#src/lib/data/coverage.js";
+import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
@@ -148,9 +149,22 @@ const activeAssignment =
 const currentAssignment = activeAssignment || history[history.length - 1];
 const hasCurrentAssignment = Boolean(activeAssignment);
 const currentBadge = currentAssignment?.badge_number || null;
+const currentLicenseType =
+  typeof currentAssignment?.title === "string"
+    ? currentAssignment.title.trim()
+    : "";
 const currentAgency = currentAssignment
   ? agenciesById[currentAssignment.agency_id]
   : null;
+const isPlaceholderPersonnel =
+  data.officer.slug === "unknown-personnel-935d1d" ||
+  (data.officer.first_name === "Unknown" &&
+    data.officer.last_name === "Personnel");
+if (!isPlaceholderPersonnel && !currentLicenseType) {
+  throw new Error(
+    `Personnel ${data.officer.slug} is missing required license type on agency_officers ${currentAssignment?.id || "unknown"}`,
+  );
+}
 
 const civilCasesWithPaths = data.civilCases.map(
   (caseItem: {
@@ -165,7 +179,7 @@ const civilCasesWithPaths = data.civilCases.map(
   }) => {
     return {
       ...caseItem,
-      caseUrl: `/civil-litigation/${caseItem.category}/${caseItem.slug}/`,
+      caseUrl: `/civil-cases/${caseItem.slug}/`,
     };
   },
 );
@@ -293,10 +307,7 @@ const pageUrl = new URL(officerPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
 const disqusIdentifier = `personnel:${data.officer.slug}`;
 const agencyUrl = currentAgency
-  ? new URL(
-      `/law-enforcement-agency/${currentAgency.category}/${currentAgency.slug}/`,
-      siteUrl,
-    ).toString()
+  ? new URL(requireAgencyCanonicalPath(currentAgency), siteUrl).toString()
   : null;
 const organization =
   currentAgency && agencyUrl
@@ -426,11 +437,13 @@ const structuredData = {
                   <dd class="col-sm-8">
                     {currentBadge || "Not publicly listed"}
                   </dd>
+                  <dt class="col-sm-4">License type</dt>
+                  <dd class="col-sm-8">
+                    {currentLicenseType}
+                  </dd>
                   <dt class="col-sm-4">{assignmentStatusLabel}</dt>
                   <dd class="col-sm-8">
-                    <a
-                      href={`/law-enforcement-agency/${currentAgency!.category}/${currentAgency!.slug}/`}
-                    >
+                    <a href={requireAgencyCanonicalPath(currentAgency!)}>
                       {currentAgency!.name}
                     </a>
                     {

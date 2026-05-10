@@ -113,14 +113,10 @@ const agencyItems = pageAgencies.map((agency, index) => {
         ...(agency.zipCode ? { postalCode: agency.zipCode } : {}),
       }
     : null;
-  const categorySlugValue = agency.category || categoryParam.toLowerCase();
   const item = {
     "@type": "GovernmentOrganization",
     name: agency.name,
-    url: new URL(
-      `/law-enforcement-agency/${categorySlugValue}/${agency.slug}/`,
-      siteUrl,
-    ).toString(),
+    url: new URL(agency.canonicalPath, siteUrl).toString(),
     ...(address ? { address } : {}),
     ...(agency.phoneNumber ? { telephone: agency.phoneNumber } : {}),
   };
@@ -214,33 +210,31 @@ const structuredData = {
               {pageAgencies.map((agency) => (
                 <article class="profile-record">
                   <div class="profile-record-meta">
-                    <span>{[agency.city, agency.state].filter(Boolean).join(", ")}</span>
+                    <span>
+                      {[agency.city, agency.state].filter(Boolean).join(", ")}
+                    </span>
                     {agency.activePersonnelCount > 0 ? (
                       <span>{agency.activePersonnelCount} personnel</span>
                     ) : null}
                   </div>
                   <div class="profile-record-body">
                     <h2 class="profile-record-title">
-                      <a
-                        href={`/law-enforcement-agency/${agency.category}/${agency.slug}/`}
-                      >
-                        {agency.name}
-                      </a>
+                      <a href={agency.canonicalPath}>{agency.name}</a>
                     </h2>
                     <div class="profile-record-detail">
                       {agency.address ? <span>{agency.address}</span> : null}
                       {agency.phoneNumber ? (
                         <>
                           <span aria-hidden="true">/</span>
-                          <a href={`tel:${agency.phoneNumber.replace(/[^\d+]/g, "")}`}>
+                          <a
+                            href={`tel:${agency.phoneNumber.replace(/[^\d+]/g, "")}`}
+                          >
                             {agency.phoneNumber}
                           </a>
                         </>
                       ) : null}
                       {agency.activePersonnelCount > 0 ? (
-                        <a href={`/personnel/${agency.category}/`}>
-                          {agency.activePersonnelCount} personnel
-                        </a>
+                        <span>{agency.activePersonnelCount} personnel</span>
                       ) : null}
                       {agency.reportCount > 0 ? (
                         <a
@@ -254,9 +248,7 @@ const structuredData = {
                         </a>
                       ) : null}
                       {agency.civilCaseCount > 0 ? (
-                        <a href={`/civil-litigation/${agency.category}/`}>
-                          {agency.civilCaseCount} civil cases
-                        </a>
+                        <span>{agency.civilCaseCount} civil cases</span>
                       ) : null}
                     </div>
                   </div>
