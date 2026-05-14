@@ -16,6 +16,52 @@ const normalizePath = (value) => {
     : `${withLeadingSlash}/`;
 };
 
+const legacyReportSlugAliases = [
+  {
+    oldSlug: "2023-12-04-75039-1st-amendment-retaliation-arrest-2c545f",
+    newSlug: "first-amendment-retaliation-arrest-2c545f",
+  },
+  {
+    oldSlug: "2026-01-07-55401-death-of-renee-nicole-good-ice-shooting-d1e2f3",
+    newSlug: "death-of-renee-nicole-good-ice-shooting-d1e2f3",
+  },
+  {
+    oldSlug: "2026-01-24-55404-death-of-alex-pretti-federal-officers-shooting-g4h5i6",
+    newSlug: "death-of-alex-pretti-federal-officers-shooting-g4h5i6",
+  },
+  {
+    oldSlug: "2022-06-21-55422-mn-state-patrol-trooper-spenser-stockwell-speeding-j7k8l9",
+    newSlug: "mn-state-patrol-trooper-spenser-stockwell-speeding-j7k8l9",
+  },
+  {
+    oldSlug: "2022-08-02-55422-mn-state-patrol-lt-john-farmakes-voicemail-m0n1o2",
+    newSlug: "mn-state-patrol-lt-john-farmakes-voicemail-m0n1o2",
+  },
+];
+
+const normalizeReportDate = (value) => {
+  if (!value) return "";
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`Invalid report incident date: ${value}`);
+  }
+  return parsed.toISOString().slice(0, 10);
+};
+
+const buildReportPath = (report) => {
+  const date = normalizeReportDate(report.incident_date);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) {
+    throw new Error(`Report ${report.slug} is missing a complete date.`);
+  }
+  return normalizePath(
+    `${report.location_path}reports/${match[1]}/${match[2]}/${match[3]}/${report.slug}/`,
+  );
+};
+
 const redirects = await withDb(async (client) => {
   const agencyRows = (
     await client.query(
@@ -63,7 +109,8 @@ const redirects = await withDb(async (client) => {
   const reportRows = (
     await client.query(
       `
-        select lp.state_or_territory_slug as state, r.slug
+        select lp.state_or_territory_slug as state, lp.path as location_path,
+               r.slug, r.incident_date
         from public.reviews r
         join public.location_path lp
           on lp.location_path_id = r.location_path_id
@@ -83,6 +130,36 @@ const redirects = await withDb(async (client) => {
       `,
     )
   ).rows;
+
+  const reportsBySlug = new Map(
+    reportRows.map((report) => [report.slug, report]),
+  );
+  const legacyReportRedirects = legacyReportSlugAliases.flatMap((alias) => {
+    const report = reportsBySlug.get(alias.newSlug);
+    if (!report) {
+      throw new Error(`Missing report for legacy slug ${alias.oldSlug}`);
+    }
+    return [
+      {
+        from: normalizePath(`/report/${report.state}/${alias.oldSlug}/`),
+        to: buildReportPath(report),
+        status: 301,
+        source: "legacy report slug alias",
+      },
+      {
+        from: normalizePath(`/report/${alias.oldSlug}/`),
+        to: buildReportPath(report),
+        status: 301,
+        source: "legacy report slug alias",
+      },
+      {
+        from: buildReportPath({ ...report, slug: alias.oldSlug }),
+        to: buildReportPath(report),
+        status: 301,
+        source: "legacy report slug alias",
+      },
+    ];
+  });
 
   return [
     ...agencyRows.map((agency) => ({
@@ -109,11 +186,30 @@ const redirects = await withDb(async (client) => {
     })),
     ...reportRows.map((report) => ({
       from: normalizePath(`/report/${report.state}/${report.slug}/`),
-      to: normalizePath(`/report/${report.slug}/`),
+      to: buildReportPath(report),
+      status: 301,
+      source: "reviews.slug",
+    })),
+    ...legacyReportRedirects,
+    ...reportRows.map((report) => ({
+      from: normalizePath(`/report/${report.slug}/`),
+      to: buildReportPath(report),
       status: 301,
       source: "reviews.slug",
     })),
     ...stateRows.flatMap((entry) => [
+      {
+        from: normalizePath(`/report/${entry.state}/`),
+        to: normalizePath(`/${entry.state}/reports/`),
+        status: 301,
+        source: "state-scoped report routes retired",
+      },
+      {
+        from: `/report/${entry.state}/page/*`,
+        to: normalizePath(`/${entry.state}/reports/`),
+        status: 301,
+        source: "state-scoped report pagination retired",
+      },
       {
         from: normalizePath(`/personnel/${entry.state}/`),
         to: normalizePath(`/${entry.state}/`),

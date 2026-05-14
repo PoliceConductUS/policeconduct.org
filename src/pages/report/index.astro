@@ -26,7 +26,7 @@ for (const report of reports) {
 const stateStats = US_STATE_TILES.map((state) => ({
   code: state.code,
   count: reportCountsByState.get(state.code) || 0,
-  href: `/report/${state.code.toLowerCase()}/`,
+  href: `/${state.code.toLowerCase()}/reports/`,
 }));
 const totalReports = reports.length;
 const statesWithReports = stateStats.filter((state) => state.count > 0).length;
@@ -38,7 +38,7 @@ const reportItems = reports.slice(0, 25).map((report, index) => {
   const item = {
     "@type": "Report",
     name: report.title,
-    url: new URL(`/report/${report.state}/${report.slug}/`, siteUrl).toString(),
+    url: new URL(report.canonicalPath, siteUrl).toString(),
     ...(report.agencyName
       ? {
           about: {
@@ -121,7 +121,7 @@ if (reportItemList) {
         <UsaChoroplethMap
           stats={stateStats}
           title="States"
-          subtitle="Select a state to view published reports for agencies in that jurisdiction."
+          subtitle="Select a state to view published reports."
           emptyLabel="No reports yet"
           interactionLabel="Hover for counts; click a state to browse reports."
           headerAction={{

@@ -101,7 +101,7 @@ export const buildCategoryCollectionStats = (
   categoryLabel: string,
   counts: CategoryCollectionCounts,
 ): StatItem[] => {
-  const reportHref = `/report/${category}/`;
+  const reportHref = `/${category}/reports/`;
 
   return [
     {

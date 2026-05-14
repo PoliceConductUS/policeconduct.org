@@ -1,6 +1,11 @@
 import { withDb } from "#src/lib/db.js";
 import { groupBy, mapBy } from "#src/lib/data.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
+import {
+  buildReportCanonicalPath,
+  getReportDateParts,
+  normalizeReportDate,
+} from "./report-paths.js";
 import type { ReportSummary } from "./types.js";
 
 const assertValue = <T>(value: T | null | undefined, message: string): T => {
@@ -14,20 +19,6 @@ const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
 
 const compareNullable = (left?: string | null, right?: string | null) =>
   nameCollator.compare(left || "", right || "");
-
-const normalizeIncidentDate = (value?: string | null) => {
-  if (!value) {
-    return "";
-  }
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return value;
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-  return date.toISOString().slice(0, 10);
-};
 
 const parseDate = (value?: string | null) => {
   if (!value) {
@@ -135,21 +126,40 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
       `Missing name for agency ${agency.id}`,
     );
 
-    const incidentDate = normalizeIncidentDate(report.incident_date || "");
+    const incidentDate = normalizeReportDate(report.incident_date || "");
+    const locationPath = assertValue(
+      report.location_path,
+      `Missing location path for report ${report.id}`,
+    );
+    const dateParts = getReportDateParts(incidentDate, String(report.id));
     return {
       id: report.id,
       slug: reportSlug,
       state: reportState,
+      canonicalPath: buildReportCanonicalPath({
+        id: String(report.id),
+        incidentDate,
+        locationPath,
+        slug: reportSlug,
+      }),
+      year: dateParts.year,
+      month: dateParts.month,
+      day: dateParts.day,
       title: report.title,
       incidentDate: incidentDate || report.incident_date || "",
       address: report.address || null,
+      latitude:
+        report.latitude !== undefined && report.latitude !== null
+          ? Number(report.latitude)
+          : null,
+      longitude:
+        report.longitude !== undefined && report.longitude !== null
+          ? Number(report.longitude)
+          : null,
       agencySlug,
       agencyName,
       agencyCanonicalPath: requireAgencyCanonicalPath(agency),
-      locationPath: assertValue(
-        report.location_path,
-        `Missing location path for report ${report.id}`,
-      ),
+      locationPath,
       ratingOverall:
         report.rating_overall !== undefined && report.rating_overall !== null
           ? Number(report.rating_overall)

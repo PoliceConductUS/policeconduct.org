@@ -20,6 +20,7 @@ Change Approval Workflow
 Data + Routing Conventions
 
 - URLs use database-backed slugs. Do not compute slugs during build/runtime.
+- Do not generate IDs for database entities anywhere in the website, build scripts, seed data, or runtime code. Database entity IDs must come from explicit database or seed data values only.
 - Report URLs must use slug: /report/{slug}/.
 - Agency URLs use a category segment stored in the DB: /law-enforcement-agency/{category}/{slug}/.
 - Agency category rules:

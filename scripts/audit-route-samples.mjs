@@ -22,8 +22,8 @@ export const FORM_ROUTES = [
 
 const OPTIONAL_SAMPLE_SPECS = [
   {
-    label: "report pagination",
-    pattern: /^\/report\/[^/]+\/page\/\d+\/$/,
+    label: "state report date archive",
+    pattern: /^\/[a-z]{2}\/reports\/\d{4}\/\d{2}\/\d{2}\/$/,
   },
   {
     label: "agency pagination",
@@ -42,8 +42,12 @@ const OPTIONAL_SAMPLE_SPECS = [
 const REQUIRED_SAMPLE_SPECS = [
   { label: "home", pattern: /^\/$/ },
   { label: "report index", pattern: /^\/report\/$/ },
-  { label: "report category", pattern: /^\/report\/[a-z]{2,8}\/$/ },
-  { label: "report detail", pattern: /^\/report\/[^/]+\/[^/]+\/$/ },
+  { label: "state report archive", pattern: /^\/[a-z]{2}\/reports\/$/ },
+  {
+    label: "report detail",
+    pattern:
+      /^\/[a-z]{2}\/[^/]+\/[^/]+\/reports\/\d{4}\/\d{2}\/\d{2}\/[^/]+\/$/,
+  },
   {
     label: "agency index",
     pattern: /^\/law-enforcement-agency\/$/,

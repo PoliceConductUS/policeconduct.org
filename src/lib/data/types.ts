@@ -36,9 +36,15 @@ export type ReportSummary = {
   slug: string;
   state: string;
   locationPath: string;
+  canonicalPath: string;
+  year: string;
+  month: string;
+  day: string;
   title: string;
   incidentDate: string;
   address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   agencySlug: string;
   agencyName: string;
   agencyCanonicalPath: string;

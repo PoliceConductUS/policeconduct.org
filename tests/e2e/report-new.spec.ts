@@ -4,24 +4,6 @@ type ReportRequestBody = {
   data: Record<string, unknown>;
 };
 
-async function answerOfficerAssessment(page: Page, officerIndex: number) {
-  const assessment = page
-    .locator("[data-officer-assessment]")
-    .nth(officerIndex);
-  if ((await assessment.getAttribute("open")) === null) {
-    await assessment.locator("summary").click();
-  }
-
-  const notObservedOptions = assessment.locator(
-    'input[data-null-option="true"]',
-  );
-  const optionCount = await notObservedOptions.count();
-
-  for (let index = 0; index < optionCount; index += 1) {
-    await notObservedOptions.nth(index).check();
-  }
-}
-
 async function installRecaptchaMock(page: Page) {
   await page.addInitScript(() => {
     window.grecaptcha = {
@@ -37,157 +19,273 @@ async function installRecaptchaMock(page: Page) {
   });
 }
 
-async function fillRequiredReportFields(page: Page) {
-  await page.locator("#reporterName").fill("E2E Reporter");
-  await page.locator("#reporterEmail").fill("e2e@example.org");
-  await page.locator("#reporterRole").selectOption("Witness (On-site)");
+async function installDraftMock(page: Page) {
+  await page.route("**/api/forms/draft**", async (route) => {
+    const request = route.request();
+    if (request.method() === "GET") {
+      await route.fulfill({ status: 204, body: "" });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        draftId: "e2e-draft-id",
+        updatedAt: new Date().toISOString(),
+      }),
+    });
+  });
+}
+
+async function fillRequiredExperienceFields(page: Page) {
+  await page.locator("#submitterRelationship").selectOption("Directly involved");
+  await page.locator("#interactionType").selectOption("Mixed");
   await page.locator("#incidentDate").fill("2026-02-23");
   await page.locator("#location").fill("Phoenix, AZ");
-  await page.locator('[name="officers[0][name]"]').fill("Officer Zero");
-  await answerOfficerAssessment(page, 0);
-  await page.locator("#title").fill("E2E Test Report");
-  await page.locator("#description").fill("Detailed report narrative.");
-  await page.locator("#outcome").fill("Review the incident.");
+  await page.locator("#whatHappened").fill("The officer explained the stop.");
+  await page
+    .locator("#howFelt")
+    .fill("I felt confused at first, then relieved when it was explained.");
+  await page
+    .locator("#whatElse")
+    .fill("I am not sure whether the stop was handled normally.");
+  await page.locator("#reportPurpose").selectOption("Help me understand whether this was normal");
+  await page.locator("#reporterName").fill("E2E Reporter");
+  await page.locator("#reporterEmail").fill("e2e@example.org");
   await page.locator("#consent").check();
 }
 
 test.describe("report new", () => {
-  test("adds and removes officers", async ({ page }) => {
-    await page.route("**/api/forms/draft**", async (route) => {
-      const request = route.request();
-      if (request.method() === "GET") {
-        await route.fulfill({ status: 204, body: "" });
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          draftId: "e2e-draft-id",
-          updatedAt: new Date().toISOString(),
-        }),
-      });
-    });
-
-    await page.goto("/report/new/");
-    await expect(page.locator('[name="officers[0][name]"]')).toBeVisible();
-    await expect(page.locator('[name="officers[1][name]"]')).toHaveCount(0);
-
-    await page.getByRole("button", { name: "Add another officer" }).click();
-    await expect(page.locator('[name="officers[1][name]"]')).toBeVisible();
-
-    await page.locator("[data-remove-officer]").nth(1).click();
-    await expect(page.locator("[data-officer]")).toHaveCount(1);
-    await expect(page.locator('[name="officers[1][name]"]')).toHaveCount(0);
+  test.beforeEach(async ({ page }) => {
+    await installDraftMock(page);
   });
 
-  test("toggles officer conduct assessment after re-render", async ({
+  test("frames the page as police interaction documentation", async ({
     page,
   }) => {
-    await page.route("**/api/forms/draft**", async (route) => {
-      const request = route.request();
-      if (request.method() === "GET") {
-        await route.fulfill({ status: 204, body: "" });
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          draftId: "e2e-draft-id",
-          updatedAt: new Date().toISOString(),
-        }),
-      });
-    });
-
     await page.goto("/report/new/");
 
-    const firstAssessment = page.locator("[data-officer-assessment]").first();
-    await expect(firstAssessment).not.toHaveAttribute("open", "");
-    await firstAssessment.locator("summary").click();
-    await expect(firstAssessment).toHaveAttribute("open", "");
-    await firstAssessment.locator("summary").click();
-    await expect(firstAssessment).not.toHaveAttribute("open", "");
-
-    await page.getByRole("button", { name: "Add another officer" }).click();
-
-    const secondAssessment = page.locator("[data-officer-assessment]").nth(1);
-    await expect(secondAssessment).not.toHaveAttribute("open", "");
-    await secondAssessment.locator("summary").click();
-    await expect(secondAssessment).toHaveAttribute("open", "");
-    await secondAssessment.locator("summary").click();
-    await expect(secondAssessment).not.toHaveAttribute("open", "");
+    await expect(
+      page.getByRole("heading", { name: "Document a police interaction" }),
+    ).toBeVisible();
+    await expect(page.getByText("You do not need to prove misconduct")).toBeVisible();
+    await expect(page.getByText("Contact information is not published")).toBeVisible();
+    await expect(page.getByText("no account or proof of identity")).toBeVisible();
+    await expect(page.locator("[data-officer-assessment]")).toHaveCount(0);
+    await expect(page.getByText("Open officer conduct assessment")).toHaveCount(
+      0,
+    );
   });
 
-  test("adds and removes witnesses", async ({ page }) => {
-    await page.route("**/api/forms/draft**", async (route) => {
-      const request = route.request();
-      if (request.method() === "GET") {
-        await route.fulfill({ status: 204, body: "" });
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          draftId: "e2e-draft-id",
-          updatedAt: new Date().toISOString(),
-        }),
-      });
-    });
-
+  test("adds and removes optional people involved", async ({ page }) => {
     await page.goto("/report/new/");
-    await expect(page.locator("[data-witness]")).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Add witness" }).click();
-    await expect(page.locator("[data-witness]")).toHaveCount(1);
-    await page.getByRole("button", { name: "Add witness" }).click();
-    await expect(page.locator("[data-witness]")).toHaveCount(2);
-    await expect(page.locator('[name="witnesses[1][name]"]')).toBeVisible();
+    await expect(page.locator("[data-person-involved]")).toHaveCount(1);
+    await expect(page.locator('[name="people[0][name]"]')).toBeVisible();
+    await expect(page.locator('[name="people[1][name]"]')).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Remove witness" }).nth(1).click();
-    await expect(page.locator("[data-witness]")).toHaveCount(1);
-    await page.getByRole("button", { name: "Remove witness" }).click();
-    await expect(page.locator("[data-witness]")).toHaveCount(0);
-    await expect(page.locator('[name="witnesses[0][name]"]')).toHaveCount(0);
+    await page.getByRole("button", { name: "Add another person" }).click();
+    await expect(page.locator("[data-person-involved]")).toHaveCount(2);
+    await expect(page.locator('[name="people[1][actions]"]')).toBeVisible();
+
+    await page.getByRole("button", { name: "Remove person" }).nth(1).click();
+    await expect(page.locator("[data-person-involved]")).toHaveCount(1);
+    await expect(page.locator('[name="people[1][name]"]')).toHaveCount(0);
   });
 
-  test("adds and removes evidence", async ({ page }) => {
-    await page.route("**/api/forms/draft**", async (route) => {
-      const request = route.request();
-      if (request.method() === "GET") {
-        await route.fulfill({ status: 204, body: "" });
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          draftId: "e2e-draft-id",
-          updatedAt: new Date().toISOString(),
-        }),
-      });
-    });
-
+  test("keeps the new flow usable across desktop and mobile widths", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/report/new/");
+
+    await expect(page.locator("#submitterRelationship")).toBeVisible();
+    await expect(page.locator("#whatHappened")).toBeVisible();
+
+    let overflow = await page.evaluate(() => {
+      const shell = document.querySelector("[data-report-form-shell]");
+      if (!shell) return 0;
+      const viewportWidth = window.innerWidth;
+      return Math.max(
+        ...Array.from(shell.querySelectorAll("*")).map((element) => {
+          const rect = element.getBoundingClientRect();
+          return Math.max(0, rect.right - viewportWidth, -rect.left);
+        }),
+      );
+    });
+    expect(overflow).toBeLessThanOrEqual(1);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(
+      page.getByRole("heading", { name: "Document a police interaction" }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Submit my experience" })).toBeVisible();
+    await page.getByRole("button", { name: "Add another person" }).click();
+    await page.getByRole("button", { name: "Add evidence or record" }).click();
+    await expect(page.locator('[name="people[1][actions]"]')).toBeVisible();
+    await expect(page.locator('[name="evidence[0][link]"]')).toBeVisible();
+
+    overflow = await page.evaluate(() => {
+      const shell = document.querySelector("[data-report-form-shell]");
+      if (!shell) return 0;
+      const viewportWidth = window.innerWidth;
+      return Math.max(
+        ...Array.from(shell.querySelectorAll("*")).map((element) => {
+          const rect = element.getBoundingClientRect();
+          return Math.max(0, rect.right - viewportWidth, -rect.left);
+        }),
+      );
+    });
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+
+  test("adds and removes optional evidence links", async ({ page }) => {
+    await page.goto("/report/new/");
+
     await expect(page.locator("[data-evidence]")).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Add evidence" }).click();
-    await page.getByRole("button", { name: "Add evidence" }).click();
+    await page.getByRole("button", { name: "Add evidence or record" }).click();
+    await page.getByRole("button", { name: "Add evidence or record" }).click();
     await expect(page.locator("[data-evidence]")).toHaveCount(2);
     await expect(page.locator('[name="evidence[1][link]"]')).toBeVisible();
 
     await page.getByRole("button", { name: "Remove evidence" }).nth(1).click();
     await page.getByRole("button", { name: "Remove evidence" }).click();
     await expect(page.locator("[data-evidence]")).toHaveCount(0);
-    await expect(page.locator('[name="evidence[0][link]"]')).toHaveCount(0);
   });
 
-  test("saves and restores officers from draft", async ({ page }) => {
+  test("submits required experience fields and keeps optional proof optional", async ({
+    page,
+  }) => {
     await installRecaptchaMock(page);
+    let submitRequestBody: ReportRequestBody | null = null;
 
+    await page.route("**/api/forms/submit", async (route) => {
+      submitRequestBody = route.request().postDataJSON() as ReportRequestBody;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          message:
+            "We received your experience. Please check your email and click the confirmation link. We cannot process the submission until it is confirmed.",
+          verificationPending: true,
+        }),
+      });
+    });
+
+    await page.goto("/report/new/");
+    await fillRequiredExperienceFields(page);
+
+    const submitResponse = page.waitForResponse((response) => {
+      return (
+        response.url().includes("/api/forms/submit") &&
+        response.request().method() === "POST"
+      );
+    });
+
+    await page.getByRole("button", { name: "Submit my experience" }).click();
+    await submitResponse;
+
+    expect(submitRequestBody).not.toBeNull();
+    expect(submitRequestBody!.data).toMatchObject({
+      submitterRelationship: "Directly involved",
+      interactionType: "Mixed",
+      incidentDate: "2026-02-23",
+      location: "Phoenix, AZ",
+      whatHappened: "The officer explained the stop.",
+      howFelt: "I felt confused at first, then relieved when it was explained.",
+      whatElse: "I am not sure whether the stop was handled normally.",
+      reportPurpose: "Help me understand whether this was normal",
+      reporterName: "E2E Reporter",
+      reporterEmail: "e2e@example.org",
+      people: [],
+      evidence: [],
+    });
+    await expect(page.locator("[data-form-submit-success]")).toContainText(
+      "cannot process the submission until it is confirmed",
+    );
+    await expect(page.locator("[data-form-submit-success]")).not.toContainText(
+      "submissionId",
+    );
+  });
+
+  test("submits optional people, evidence, and record metadata", async ({
+    page,
+  }) => {
+    await installRecaptchaMock(page);
+    let submitRequestBody: ReportRequestBody | null = null;
+
+    await page.route("**/api/forms/submit", async (route) => {
+      submitRequestBody = route.request().postDataJSON() as ReportRequestBody;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          message: "Check your email to verify this report.",
+          verificationPending: true,
+        }),
+      });
+    });
+
+    await page.goto("/report/new/");
+    await fillRequiredExperienceFields(page);
+    await page.locator('[name="people[0][name]"]').fill("Officer Zero");
+    await page.locator('[name="people[0][badge]"]').fill("1234");
+    await page
+      .locator('[name="people[0][department]"]')
+      .fill("Phoenix Police Department");
+    await page
+      .locator('[name="people[0][actions]"]')
+      .fill("The officer explained the reason for the stop.");
+    await page.locator('[name="people[0][central]"]').selectOption("Yes");
+    await page.getByRole("button", { name: "Add evidence or record" }).click();
+    await page
+      .locator('[name="evidence[0][link]"]')
+      .fill("https://example.org/evidence-0");
+    await page
+      .locator('[name="evidence[0][description]"]')
+      .fill("Video from the stop.");
+    await page.locator("#bodycamRequested").selectOption("Not sure");
+    await page.locator("#complaintFiled").selectOption("No");
+    await page.locator("#caseNumber").fill("AZ-123");
+
+    const submitResponse = page.waitForResponse((response) => {
+      return (
+        response.url().includes("/api/forms/submit") &&
+        response.request().method() === "POST"
+      );
+    });
+
+    await page.getByRole("button", { name: "Submit my experience" }).click();
+    await submitResponse;
+
+    expect(submitRequestBody).not.toBeNull();
+    expect(submitRequestBody!.data).toMatchObject({
+      bodycamRequested: "Not sure",
+      complaintFiled: "No",
+      caseNumber: "AZ-123",
+      people: [
+        {
+          actions: "The officer explained the reason for the stop.",
+          badge: "1234",
+          central: "Yes",
+          department: "Phoenix Police Department",
+          name: "Officer Zero",
+        },
+      ],
+      evidence: [
+        {
+          description: "Video from the stop.",
+          link: "https://example.org/evidence-0",
+        },
+      ],
+    });
+  });
+
+  test("restores draft data for new flow fields", async ({ page }) => {
     let savedDraftData: Record<string, unknown> | null = null;
 
+    await page.unroute("**/api/forms/draft**");
     await page.route("**/api/forms/draft**", async (route) => {
       const request = route.request();
       if (request.method() === "GET") {
@@ -216,28 +314,19 @@ test.describe("report new", () => {
     });
 
     await page.goto("/report/new/");
-    await page.locator('[name="officers[0][name]"]').fill("Officer Zero");
+    await page.locator("#submitterRelationship").selectOption("Directly involved");
+    await page.locator("#interactionType").selectOption("Helpful or positive");
+    await page.locator("#whatHappened").fill("An officer helped unlock a car.");
+    await page.locator("#howFelt").fill("I felt grateful.");
+    await page.locator("#whatElse").fill("No proof was available.");
+    await page.locator('[name="people[0][name]"]').fill("Officer One");
     await page
-      .locator('[name="officers[0][department]"]')
-      .fill("Department Zero");
-
-    await page.getByRole("button", { name: "Add another officer" }).click();
-    await page.locator('[name="officers[1][name]"]').fill("Officer One");
-    await page
-      .locator('[name="officers[1][department]"]')
-      .fill("Department One");
-    await page.getByRole("button", { name: "Add witness" }).click();
-    await page.locator('[name="witnesses[0][name]"]').fill("Witness Zero");
-    await page
-      .locator('[name="witnesses[0][email]"]')
-      .fill("witness0@example.org");
-    await page.getByRole("button", { name: "Add evidence" }).click();
+      .locator('[name="people[0][actions]"]')
+      .fill("Helped open the car.");
+    await page.getByRole("button", { name: "Add evidence or record" }).click();
     await page
       .locator('[name="evidence[0][link]"]')
       .fill("https://example.org/evidence-0");
-    await page
-      .locator('[name="evidence[0][description]"]')
-      .fill("Evidence Zero");
 
     const draftSave = page.waitForResponse((response) => {
       return (
@@ -245,313 +334,36 @@ test.describe("report new", () => {
         response.request().method() === "POST"
       );
     });
-    await page.locator("#title").click();
+    await page.locator("#reportPurpose").selectOption("Recognize helpful conduct");
     await draftSave;
 
     await page.reload();
 
-    await expect(page.locator("[data-officer]")).toHaveCount(2);
-    await expect(page.locator('[name="officers[0][name]"]')).toHaveValue(
-      "Officer Zero",
+    await expect(page.locator("#submitterRelationship")).toHaveValue(
+      "Directly involved",
     );
-    await expect(page.locator('[name="officers[1][name]"]')).toHaveValue(
+    await expect(page.locator("#interactionType")).toHaveValue(
+      "Helpful or positive",
+    );
+    await expect(page.locator("#whatHappened")).toHaveValue(
+      "An officer helped unlock a car.",
+    );
+    await expect(page.locator("#howFelt")).toHaveValue("I felt grateful.");
+    await expect(page.locator("#whatElse")).toHaveValue(
+      "No proof was available.",
+    );
+    await expect(page.locator("#reportPurpose")).toHaveValue(
+      "Recognize helpful conduct",
+    );
+    await expect(page.locator('[name="people[0][name]"]')).toHaveValue(
       "Officer One",
     );
-    await expect(page.locator('[name="officers[1][department]"]')).toHaveValue(
-      "Department One",
-    );
-    await expect(page.locator("[data-witness]")).toHaveCount(1);
-    await expect(page.locator('[name="witnesses[0][name]"]')).toHaveValue(
-      "Witness Zero",
-    );
-    await expect(page.locator('[name="witnesses[0][email]"]')).toHaveValue(
-      "witness0@example.org",
+    await expect(page.locator('[name="people[0][actions]"]')).toHaveValue(
+      "Helped open the car.",
     );
     await expect(page.locator("[data-evidence]")).toHaveCount(1);
     await expect(page.locator('[name="evidence[0][link]"]')).toHaveValue(
       "https://example.org/evidence-0",
     );
-    await expect(page.locator('[name="evidence[0][description]"]')).toHaveValue(
-      "Evidence Zero",
-    );
-  });
-
-  test("validates and submits after add/remove officers", async ({ page }) => {
-    await installRecaptchaMock(page);
-
-    let submitRequestBody: ReportRequestBody | null = null;
-    let submitCount = 0;
-
-    await page.route("**/api/forms/draft**", async (route) => {
-      const request = route.request();
-      if (request.method() === "GET") {
-        await route.fulfill({ status: 204, body: "" });
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          draftId: "e2e-draft-id",
-          updatedAt: new Date().toISOString(),
-        }),
-      });
-    });
-
-    await page.route("**/api/forms/submit", async (route) => {
-      submitCount += 1;
-      submitRequestBody = route.request().postDataJSON() as ReportRequestBody;
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          message: "Check your email to verify this report.",
-          verificationPending: true,
-        }),
-      });
-    });
-
-    await page.goto("/report/new/");
-    await page.getByRole("button", { name: "Add another officer" }).click();
-    await page.getByRole("button", { name: "Add another officer" }).click();
-    await expect(page.locator("[data-officer]")).toHaveCount(3);
-    await expect(page.locator("[data-officer-assessment]")).toHaveCount(3);
-
-    await page.locator('[name="officers[0][name]"]').fill("Officer Zero");
-    await page
-      .locator('[name="officers[0][department]"]')
-      .fill("Department Zero");
-    await page.locator('[name="officers[1][name]"]').fill("Officer One");
-    await page
-      .locator('[name="officers[1][department]"]')
-      .fill("Department One");
-    await page.locator('[name="officers[2][name]"]').fill("Officer Two");
-    await page
-      .locator('[name="officers[2][department]"]')
-      .fill("Department Two");
-    await page.getByRole("button", { name: "Add witness" }).click();
-    await page.locator('[name="witnesses[0][name]"]').fill("Witness Zero");
-    await page
-      .locator('[name="witnesses[0][email]"]')
-      .fill("witness0@example.org");
-    await page.getByRole("button", { name: "Add evidence" }).click();
-    await page
-      .locator('[name="evidence[0][link]"]')
-      .fill("https://example.org/evidence-0");
-    await page
-      .locator('[name="evidence[0][description]"]')
-      .fill("Evidence Zero");
-
-    await page.locator("[data-remove-officer]").nth(1).click();
-    await expect(page.locator("[data-officer]")).toHaveCount(2);
-    await expect(page.locator("[data-officer-assessment]")).toHaveCount(2);
-    await expect(page.locator('[name="officers[0][name]"]')).toHaveValue(
-      "Officer Zero",
-    );
-    await expect(page.locator('[name="officers[1][name]"]')).toHaveValue(
-      "Officer Two",
-    );
-    await page.getByRole("button", { name: "Remove witness" }).click();
-    await page.getByRole("button", { name: "Remove evidence" }).click();
-    await answerOfficerAssessment(page, 0);
-    await answerOfficerAssessment(page, 1);
-
-    await page.getByRole("button", { name: "Submit report" }).click();
-    await page.waitForTimeout(250);
-    expect(submitCount).toBe(0);
-    await expect(page.locator("[data-officer]")).toHaveCount(2);
-
-    await fillRequiredReportFields(page);
-
-    const submitResponse = page.waitForResponse((response) => {
-      return (
-        response.url().includes("/api/forms/submit") &&
-        response.request().method() === "POST"
-      );
-    });
-
-    await page.getByRole("button", { name: "Submit report" }).click();
-    await submitResponse;
-
-    expect(submitRequestBody).not.toBeNull();
-    const data = submitRequestBody!.data;
-
-    expect(data).toMatchObject({
-      officers: [
-        {
-          department: "Department Zero",
-          name: "Officer Zero",
-        },
-        {
-          department: "Department Two",
-          name: "Officer Two",
-        },
-      ],
-      witnesses: [],
-      evidence: [],
-    });
-    expect(data.officers).toHaveLength(2);
-    expect(data.witnesses).toHaveLength(0);
-    expect(data.evidence).toHaveLength(0);
-    await expect(page.locator("[data-form-submit-success]")).toBeVisible();
-  });
-
-  test("requires officer assessment answers before submit", async ({
-    page,
-  }) => {
-    await installRecaptchaMock(page);
-
-    let submitCount = 0;
-
-    await page.route("**/api/forms/draft**", async (route) => {
-      const request = route.request();
-      if (request.method() === "GET") {
-        await route.fulfill({ status: 204, body: "" });
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          draftId: "e2e-draft-id",
-          updatedAt: new Date().toISOString(),
-        }),
-      });
-    });
-
-    await page.route("**/api/forms/submit", async (route) => {
-      submitCount += 1;
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          message: "Check your email to verify this report.",
-          verificationPending: true,
-        }),
-      });
-    });
-
-    await page.goto("/report/new/");
-    await page.locator("#reporterName").fill("E2E Reporter");
-    await page.locator("#reporterEmail").fill("e2e@example.org");
-    await page.locator("#reporterRole").selectOption("Witness (On-site)");
-    await page.locator("#incidentDate").fill("2026-02-23");
-    await page.locator("#location").fill("Phoenix, AZ");
-    await page.locator('[name="officers[0][name]"]').fill("Officer Zero");
-    await page.locator("#title").fill("E2E Test Report");
-    await page.locator("#description").fill("Detailed report narrative.");
-    await page.locator("#outcome").fill("Review the incident.");
-    await page.locator("#consent").check();
-
-    await page.getByRole("button", { name: "Submit report" }).click();
-    await page.waitForTimeout(250);
-    expect(submitCount).toBe(0);
-
-    const firstAssessment = page.locator("[data-officer-assessment]").first();
-    await expect(firstAssessment).toHaveAttribute("open", "");
-
-    await answerOfficerAssessment(page, 0);
-
-    const submitResponse = page.waitForResponse((response) => {
-      return (
-        response.url().includes("/api/forms/submit") &&
-        response.request().method() === "POST"
-      );
-    });
-
-    await page.getByRole("button", { name: "Submit report" }).click();
-    await submitResponse;
-
-    expect(submitCount).toBe(1);
-  });
-
-  test("requires complete witness and evidence rows before submit", async ({
-    page,
-  }) => {
-    await installRecaptchaMock(page);
-
-    let submitCount = 0;
-
-    await page.route("**/api/forms/draft**", async (route) => {
-      const request = route.request();
-      if (request.method() === "GET") {
-        await route.fulfill({ status: 204, body: "" });
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          draftId: "e2e-draft-id",
-          updatedAt: new Date().toISOString(),
-        }),
-      });
-    });
-
-    await page.route("**/api/forms/submit", async (route) => {
-      submitCount += 1;
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          message: "Check your email to verify this report.",
-          verificationPending: true,
-        }),
-      });
-    });
-
-    await page.goto("/report/new/");
-    await fillRequiredReportFields(page);
-
-    await page.getByRole("button", { name: "Add witness" }).click();
-    await expect(page.locator('label[for="witness-0-name"]')).toHaveText(
-      "Name*",
-    );
-    await expect(page.locator('label[for="witness-0-phone"]')).toHaveText(
-      "Phone*",
-    );
-    await expect(page.locator('label[for="witness-0-email"]')).toHaveText(
-      "Email*",
-    );
-    await page.locator('[name="witnesses[0][name]"]').fill("Witness Zero");
-    await page
-      .locator('[name="witnesses[0][email]"]')
-      .fill("witness0@example.org");
-
-    await page.getByRole("button", { name: "Submit report" }).click();
-    await page.waitForTimeout(250);
-    expect(submitCount).toBe(0);
-
-    await page.locator('[name="witnesses[0][phone]"]').fill("555-0100");
-    await page.getByRole("button", { name: "Add evidence" }).click();
-    await expect(page.locator('label[for="evidence-link-0"]')).toHaveText(
-      "Evidence link*",
-    );
-    await expect(
-      page.locator('label[for="evidence-description-0"]'),
-    ).toHaveText("Description*");
-    await page
-      .locator('[name="evidence[0][link]"]')
-      .fill("https://example.org/evidence-0");
-
-    await page.getByRole("button", { name: "Submit report" }).click();
-    await page.waitForTimeout(250);
-    expect(submitCount).toBe(0);
-
-    const submitResponse = page.waitForResponse((response) => {
-      return (
-        response.url().includes("/api/forms/submit") &&
-        response.request().method() === "POST"
-      );
-    });
-
-    await page
-      .locator('[name="evidence[0][description]"]')
-      .fill("Evidence Zero");
-    await page.getByRole("button", { name: "Submit report" }).click();
-    await submitResponse;
-
-    expect(submitCount).toBe(1);
-    await expect(page.locator("[data-form-submit-success]")).toBeVisible();
   });
 });

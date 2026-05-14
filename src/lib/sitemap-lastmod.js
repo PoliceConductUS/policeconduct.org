@@ -75,6 +75,55 @@ const requireAgencyCanonicalPath = (agency) => {
   return `/${agency.state.toLowerCase()}/${agency.administrative_area_slug}/${agency.place_slug}/${agency.slug}/`;
 };
 
+const normalizeReportDate = (value) => {
+  if (!value) return "";
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+  return parsed.toISOString().slice(0, 10);
+};
+
+const buildReportCanonicalPath = (report) => {
+  const date = normalizeReportDate(report.incident_date);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!report.location_path || !report.slug || !match) {
+    return null;
+  }
+  return `${report.location_path}reports/${match[1]}/${match[2]}/${match[3]}/${report.slug}/`;
+};
+
+const setReportArchiveLastmods = (pathLastmods, report, lastmod) => {
+  const date = normalizeReportDate(report.incident_date);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!report.location_path || !report.state || !match) {
+    return;
+  }
+  const parts = report.location_path.split("/").filter(Boolean);
+  if (parts.length !== 3) {
+    return;
+  }
+  const [state, area, place] = parts;
+  const prefixes = [
+    `/${state}/reports/`,
+    `/${state}/${area}/reports/`,
+    `/${state}/${area}/${place}/reports/`,
+  ];
+  for (const prefix of prefixes) {
+    setLastmod(pathLastmods, prefix, lastmod);
+    setLastmod(pathLastmods, `${prefix}${match[1]}/`, lastmod);
+    setLastmod(pathLastmods, `${prefix}${match[1]}/${match[2]}/`, lastmod);
+    setLastmod(
+      pathLastmods,
+      `${prefix}${match[1]}/${match[2]}/${match[3]}/`,
+      lastmod,
+    );
+  }
+};
+
 export const buildSitemapLastmodMap = async () => {
   const pathLastmods = new Map();
   const reportCountsByCategory = new Map();
@@ -92,6 +141,8 @@ export const buildSitemapLastmodMap = async () => {
         `
           select
             r.slug,
+            r.incident_date,
+            lp.path as location_path,
             lp.state_or_territory_slug as state,
             r.created_at,
             r.updated_at
@@ -108,7 +159,11 @@ export const buildSitemapLastmodMap = async () => {
       if (!report.state || !report.slug) {
         continue;
       }
-      setLastmod(pathLastmods, `/report/${report.slug}/`, lastmod);
+      const reportPath = buildReportCanonicalPath(report);
+      if (reportPath) {
+        setLastmod(pathLastmods, reportPath, lastmod);
+      }
+      setReportArchiveLastmods(pathLastmods, report, lastmod);
       incrementCount(reportCountsByCategory, report.state);
       setCategoryLastmod(reportLastmodsByCategory, report.state, lastmod);
       setLastmod(pathLastmods, "/report/", lastmod);
@@ -341,17 +396,6 @@ export const buildSitemapLastmodMap = async () => {
       setLastmod(pathLastmods, "/civil-litigation/", lastmod);
     }
   });
-
-  for (const category of US_STATE_TILES.map((state) =>
-    state.code.toLowerCase(),
-  )) {
-    addPaginatedPaths(
-      pathLastmods,
-      `/report/${category}/`,
-      reportCountsByCategory.get(category) || 0,
-      reportLastmodsByCategory.get(category),
-    );
-  }
 
   for (const category of CATEGORY_SLUGS) {
     addPaginatedPaths(

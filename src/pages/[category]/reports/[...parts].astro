@@ -1,0 +1,13 @@
+---
+import ReportArchivePage from "#src/components/ReportArchivePage.astro";
+import { buildReportArchiveStaticPaths } from "#src/lib/data/report-archives.js";
+import { loadReportSummaries } from "#src/lib/data/summaries.js";
+
+export async function getStaticPaths() {
+  return buildReportArchiveStaticPaths(await loadReportSummaries(), "state");
+}
+
+const { pagePath, reports, title } = Astro.props;
+---
+
+<ReportArchivePage pagePath={pagePath} reports={reports} title={title} />

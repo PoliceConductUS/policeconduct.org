@@ -13,6 +13,7 @@ export type AgencyRef = {
   id: string;
   slug: string;
   name: string;
+  state: string;
   canonicalPath?: string | null;
 };
 
@@ -99,6 +100,7 @@ export const loadCivilCasesByState = async (
             a.id,
             a.slug,
             a.name,
+            a.state,
             a.administrative_area,
             a.administrative_area_slug,
             a.city,

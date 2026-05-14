@@ -15,7 +15,6 @@ const {
   ...rest
 } = Astro.props as Props;
 
-const buttonId = `prefill-nav-${Math.random().toString(36).slice(2, 10)}`;
 const payloadJson =
   typeof payload === "string" ? payload : JSON.stringify(payload);
 const storageKey = new URL(to, "https://www.policeconduct.org").pathname;
@@ -24,7 +23,6 @@ const variantClass =
 ---
 
 <button
-  id={buttonId}
   type="button"
   class:list={[variantClass, className]}
   {...rest}

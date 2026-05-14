@@ -1,0 +1,62 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { formatShortDate } from "#src/lib/format.js";
+import type { ReportSummary } from "#src/lib/data/types.js";
+
+type Props = {
+  pagePath: string;
+  reports: ReportSummary[];
+  title: string;
+};
+
+const { pagePath, reports, title } = Astro.props as Props;
+---
+
+<SiteLayout
+  title={`${title} | PoliceConduct.org`}
+  description={`Published reports for ${title}.`}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Reports", href: "/report/" },
+            { label: title, href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+        <h1 class="display-4 fw-bold">{title}</h1>
+        <p class="lead text-muted mb-0">{reports.length} reports</p>
+      </div>
+    </section>
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="list-group">
+          {
+            reports.map((report) => (
+              <a
+                class="list-group-item list-group-item-action py-3"
+                href={report.canonicalPath}
+              >
+                <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+                  <h2 class="h5 mb-1">{report.title}</h2>
+                  <span class="text-muted small">
+                    {formatShortDate(report.incidentDate)}
+                  </span>
+                </div>
+                {report.address ? (
+                  <p class="text-muted mb-0">{report.address}</p>
+                ) : null}
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>

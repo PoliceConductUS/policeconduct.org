@@ -7,6 +7,7 @@ import {
   buildPlacePath,
   requireAgencyCanonicalPath,
 } from "./location-paths.js";
+import { buildReportCanonicalPath } from "./report-paths.js";
 
 export const requireAgencyText = (
   value: unknown,
@@ -179,7 +180,12 @@ const loadAgencyRows = async (agencyId: string) =>
     const reports = reportIds.length
       ? (
           await client.query(
-            "select * from public.reviews where id = any($1)",
+            `
+              select r.*, lp.path as location_path
+              from public.reviews r
+              join public.location_path lp on lp.location_path_id = r.location_path_id
+              where r.id = any($1)
+            `,
             [reportIds],
           )
         ).rows
@@ -419,8 +425,8 @@ export const loadAgencyDetail = async (agencyId: string) => {
       (report: {
         id: string;
         incident_date: string;
+        location_path: string;
         slug: string;
-        category: string;
       }) => {
         const linkedOfficers = (reportOfficersByReport[report.id] || [])
           .map((entry: { agency_officer_id: string }) => {
@@ -450,7 +456,12 @@ export const loadAgencyDetail = async (agencyId: string) => {
         return {
           ...report,
           incidentDate: formatShortDate(report.incident_date),
-          url: `/report/${report.slug}/`,
+          url: buildReportCanonicalPath({
+            id: report.id,
+            incidentDate: report.incident_date,
+            locationPath: report.location_path,
+            slug: report.slug,
+          }),
           officers: linkedOfficers,
         };
       },

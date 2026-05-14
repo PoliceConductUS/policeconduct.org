@@ -1,2026 +1,860 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
-import { groupBy } from "#src/lib/data.js";
-import { withDb } from "#src/lib/db.js";
-
-const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
-
-const { traits, rubrics } = await withDb(async (client) => {
-  const traits = (await client.query("select * from public.traits")).rows;
-  const rubrics = (await client.query("select * from public.rubrics")).rows;
-  return { traits, rubrics };
-});
-
-const toNumber = (value: unknown) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-};
-
-const getTraitSortValue = (trait: any) =>
-  toNumber(
-    trait.sort_order ??
-      trait.sortOrder ??
-      trait.position ??
-      trait.rank ??
-      trait.sequence ??
-      trait.order,
-  );
-
-const getRubricSortValue = (rubric: any) => {
-  const value = toNumber(rubric.rubric_value);
-  if (value === null) {
-    throw new Error(`Missing rubric_value for rubric ${rubric.id}`);
-  }
-  return value;
-};
-
-const getTraitLabel = (trait: any) => {
-  if (!trait.label) {
-    throw new Error(`Missing label for trait ${trait.id}`);
-  }
-  return trait.label;
-};
-const getTraitDescription = (trait: any) => trait.description || null;
-const getTraitHelp = (trait: any) => trait.help || null;
-const getRubricDescription = (rubric: any) => {
-  if (!rubric.description) {
-    throw new Error(`Missing description for rubric ${rubric.id}`);
-  }
-  return rubric.description;
-};
-const getRubricHelp = (rubric: any) => rubric.help || null;
-
-const rubricsByTrait = groupBy(rubrics, "trait_id");
-
-const sortedTraits = [...traits].sort((a, b) => {
-  const aOrder = getTraitSortValue(a);
-  const bOrder = getTraitSortValue(b);
-  if (aOrder !== null && bOrder !== null && aOrder !== bOrder) {
-    return aOrder - bOrder;
-  }
-  if (aOrder !== null && bOrder === null) {
-    return -1;
-  }
-  if (aOrder === null && bOrder !== null) {
-    return 1;
-  }
-  return nameCollator.compare(getTraitLabel(a), getTraitLabel(b));
-});
-
-const traitsWithRubrics = sortedTraits
-  .map((trait) => {
-    const traitRubrics = [...(rubricsByTrait[trait.id] || [])].sort((a, b) => {
-      const aValue = getRubricSortValue(a);
-      const bValue = getRubricSortValue(b);
-      if (aValue !== null && bValue !== null && aValue !== bValue) {
-        return bValue - aValue;
-      }
-      if (aValue !== null && bValue === null) {
-        return -1;
-      }
-      if (aValue === null && bValue !== null) {
-        return 1;
-      }
-      return nameCollator.compare(
-        getRubricDescription(a),
-        getRubricDescription(b),
-      );
-    });
-    return {
-      ...trait,
-      label: getTraitLabel(trait),
-      description: getTraitDescription(trait),
-      help: getTraitHelp(trait),
-      rubrics: traitRubrics.map((rubric) => ({
-        ...rubric,
-        description: getRubricDescription(rubric),
-        help: getRubricHelp(rubric),
-      })),
-    };
-  })
-  .filter((trait) => trait.rubrics.length);
 ---
 
 <SiteLayout
-  title="Submit a Report | PoliceConduct.org"
-  description="Share a first-hand police interaction report with PoliceConduct.org."
+  title="Document a Police Interaction | PoliceConduct.org"
+  description="Share what happened during a police interaction, how it felt, and what people should know."
   pagePath="/report/new/"
   robots="noindex,follow"
 >
-  <PrefillBootstrap />
-  <main class="">
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
-      <div class="container">
-        <div class="row justify-content-between align-items-center">
-          <div class="col-lg-7">
-            <p class="text-uppercase small text-muted mb-2">Report intake</p>
-            <h1 class="display-4 fw-bold">Submit a report</h1>
-            <p class="lead mb-0">
-              Share the details of your police interaction—good or bad—so we can
-              verify and publish it in the same format as other
-              PoliceConduct.org reports.
-            </p>
-            <p class="small text-muted mt-3 mb-0">
-              If this is your first report, consider reading the
-              <a class="link-dark" href="/help-center/">Help Center</a> first.
-            </p>
-          </div>
-          <div class="col-lg-4 mt-4 mt-lg-0">
-            <div class="alert alert-light border-dark rounded-0" role="alert">
-              <strong>Privacy note:</strong> We only publish the content you provide
-              for the final report. Contact details are used strictly for follow-up
-              questions.
-            </div>
+  <section class="bg-primary-subtle border-bottom">
+    <div class="container py-5">
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <p class="text-uppercase fw-semibold text-primary small mb-2">Share your experience</p>
+          <h1 class="display-5 fw-bold text-primary-emphasis mb-3">Document a police interaction</h1>
+          <p class="lead mb-3">
+            Share what happened, how you felt, and what people should know.
+          </p>
+          <p class="mb-3">
+            Police interactions can be helpful, routine, confusing, frightening, harmful, respectful,
+            or life-changing. All of those experiences can help communities understand how policing
+            works in real life.
+          </p>
+          <div class="alert alert-info mb-0" role="note">
+            <strong>You do not need to prove misconduct to share what happened.</strong>
+            Contact information is not published. There is no account or proof of identity required,
+            but you do need to confirm your submission by email before PoliceConduct.org can process it.
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="py-vh-2" data-form-shell="reportNew">
-      <div class="container">
+  <main class="container py-5">
+    <div class="row gx-0 gy-4 gx-lg-4 align-items-start">
+      <aside class="col-lg-3">
+        <nav class="report-new-nav sticky-lg-top" aria-label="Report form sections">
+          <a href="#start">Start</a>
+          <a href="#basic-details">Basic details</a>
+          <a href="#story">What happened</a>
+          <a href="#people-involved">People involved</a>
+          <a href="#records">Records</a>
+          <a href="#contact">Contact</a>
+        </nav>
+      </aside>
+
+      <div class="col-lg-9" data-report-form-shell>
         <form
-          id="reportForm"
-          class="needs-validation"
+          id="report-form"
+          class="d-grid gap-4"
           novalidate
-          name="reportNew"
-          method="POST"
-          data-netlify-honeypot="organization"
+          data-form-endpoint="/api/report/submit"
+          data-form-draft-key="report-new"
+          data-form-draft-cookiename="reportDraftId"
+          data-form-success-kind="verification_pending"
         >
-          <input type="hidden" name="form-name" value="reportNew" />
-          <div class="honeypot visually-hidden">
-            <label>
-              Organization
-              <input type="text" name="organization" />
-            </label>
-          </div>
-          <div class="report-new-section-nav mb-4">
-            <p class="report-new-section-nav-label mb-2">Jump to a section</p>
-            <div class="report-new-section-nav-links">
-              <a href="#report-contact" data-report-jump>Contact</a>
-              <a href="#report-role" data-report-jump>Role</a>
-              <a href="#report-incident" data-report-jump>Incident</a>
-              <a href="#report-officers" data-report-jump>Officers</a>
-              <a href="#report-narrative" data-report-jump>Narrative</a>
-              <a href="#report-witnesses" data-report-jump>Witnesses</a>
-              <a href="#report-evidence" data-report-jump>Evidence</a>
-              <a href="#report-tags" data-report-jump>Tags</a>
-              <a href="#report-consent" data-report-jump>Consent</a>
-            </div>
-          </div>
-          <div class="row g-5">
-            <div class="col-12" id="report-contact">
-              <h2 class="h4 text-uppercase text-muted">Your contact details</h2>
-            </div>
-            <div class="col-md-6">
-              <div class="form-floating">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="reporterName"
-                  name="reporterName"
-                  placeholder="Full name"
-                  required
-                />
-                <label for="reporterName">Full name*</label>
-                <div class="invalid-feedback">Please provide your name.</div>
+          <section id="start" class="report-new-section">
+            <h2>Start</h2>
+            <p>
+              Your experience matters even if you are not sure what to call it. Helpful, routine,
+              confusing, mixed, concerning, harmful, severe, and uncertain interactions all belong.
+            </p>
+            <div class="row gx-0 gy-3 gx-md-3">
+              <div class="col-md-6">
+                <label class="form-label" for="submitterRelationship">Did this happen to you?</label>
+                <select class="form-select" id="submitterRelationship" name="submitterRelationship" required>
+                  <option value="">Choose one</option>
+                  <option>Directly involved</option>
+                  <option>Witnessed in person</option>
+                  <option>Helping someone else</option>
+                  <option>Records or evidence only</option>
+                </select>
+                <div class="form-text">
+                  Firsthand interactions are the main focus, but other reports can still help.
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="interactionType">How would you describe it?</label>
+                <select class="form-select" id="interactionType" name="interactionType" required>
+                  <option value="">Choose one</option>
+                  <option>Helpful or positive</option>
+                  <option>Routine but worth sharing</option>
+                  <option>Confusing or uncomfortable</option>
+                  <option>Mixed</option>
+                  <option>Concerning or harmful</option>
+                  <option>Severe harm or death</option>
+                  <option>I am not sure</option>
+                </select>
+                <div class="form-text">
+                  This does not decide whether misconduct happened. It helps us understand what this
+                  felt like to you.
+                </div>
               </div>
             </div>
-            <div class="col-md-6">
-              <div class="form-floating">
+          </section>
+
+          <section id="basic-details" class="report-new-section">
+            <h2>Basic details</h2>
+            <p>Approximate details are okay. If you do not know something, leave it blank or write "not sure."</p>
+            <div class="row gx-0 gy-3 gx-md-3">
+              <div class="col-md-6">
+                <label class="form-label" for="incidentDate">Approximate date</label>
+                <input class="form-control" id="incidentDate" name="incidentDate" type="date" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="incidentTime">Approximate time</label>
+                <input class="form-control" id="incidentTime" name="incidentTime" type="time" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="location">City and state</label>
+                <input class="form-control" id="location" name="location" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="setting">Location or setting</label>
                 <input
-                  type="email"
+                  class="form-control"
+                  id="setting"
+                  name="setting"
+                  placeholder="Traffic stop, home, jail, school, sidewalk"
+                />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="agencyName">Police agency, if known</label>
+                <input class="form-control" id="agencyName" name="agencyName" autocomplete="organization" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="caseNumber">Case, citation, or report number</label>
+                <input class="form-control" id="caseNumber" name="caseNumber" />
+              </div>
+            </div>
+          </section>
+
+          <section id="story" class="report-new-section">
+            <h2>What happened?</h2>
+            <div class="d-grid gap-3">
+              <div>
+                <label class="form-label" for="whatHappened">Tell us what happened</label>
+                <textarea
+                  class="form-control"
+                  id="whatHappened"
+                  name="whatHappened"
+                  rows="7"
+                  required
+                ></textarea>
+                <div class="form-text">
+                  Start with what led up to the interaction. Then describe what happened in order.
+                  Include what officers or personnel did or said, what you did or said, and how it ended.
+                </div>
+              </div>
+              <div>
+                <label class="form-label" for="howFelt">How did you feel during or after this interaction?</label>
+                <textarea class="form-control" id="howFelt" name="howFelt" rows="4" required></textarea>
+                <div class="form-text">
+                  You can describe feeling helped, respected, confused, ignored, intimidated, unsafe,
+                  relieved, harmed, grateful, afraid, or unsure.
+                </div>
+              </div>
+              <div>
+                <label class="form-label" for="whatElse">What else should people know?</label>
+                <textarea class="form-control" id="whatElse" name="whatElse" rows="4" required></textarea>
+                <div class="form-text">
+                  This could include what happened before or after, whether this has happened before,
+                  whether records exist, whether anyone followed up, or anything you are unsure about.
+                </div>
+              </div>
+            </div>
+
+            <details class="report-new-disclosure mt-4">
+              <summary>Examples: what happened and what it meant to you</summary>
+              <div class="d-grid gap-3 mt-3">
+                <p>
+                  You do not need to remove feelings or conclusions. When you can, connect them to
+                  what you saw, heard, felt, or experienced.
+                </p>
+                <div>
+                  <p class="mb-1"><strong>Less useful:</strong> "The officer was trying to intimidate me."</p>
+                  <p class="mb-0">
+                    <strong>More useful:</strong> "The officer stepped close to me, raised his voice, and
+                    said, 'You do not want to make this harder.' I felt intimidated and believed he was
+                    trying to pressure me to stop asking questions."
+                  </p>
+                </div>
+                <div>
+                  <p class="mb-1"><strong>Less useful:</strong> "She lied about why she stopped me."</p>
+                  <p class="mb-0">
+                    <strong>More useful:</strong> "The officer first said I was stopped for speeding. Later,
+                    the citation listed failure to signal. I do not know why the reason changed, but it
+                    made me question whether the stop was properly explained."
+                  </p>
+                </div>
+                <div>
+                  <p class="mb-1"><strong>Less useful:</strong> "He was racist."</p>
+                  <p class="mb-0">
+                    <strong>More useful:</strong> "The officer searched my car after asking where I was
+                    from and whether I belonged in this neighborhood. I experienced the interaction as
+                    discriminatory because of those comments and the way I was treated."
+                  </p>
+                </div>
+                <div>
+                  <p class="mb-1"><strong>Less useful:</strong> "The officer saved my life."</p>
+                  <p class="mb-0">
+                    <strong>More useful:</strong> "The officer applied pressure to the wound, called for
+                    medical assistance, and stayed with me until paramedics arrived. I believe those
+                    actions may have saved my life."
+                  </p>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <section id="people-involved" class="report-new-section">
+            <h2>People involved</h2>
+            <p>
+              You do not need a name or badge number. Descriptions are helpful. Separating people helps
+              avoid treating everyone involved as if they did the same thing.
+            </p>
+            <div data-people-list class="d-grid gap-3" aria-live="polite"></div>
+            <button class="btn btn-outline-primary mt-3" type="button" data-add-person>
+              Add another person
+            </button>
+          </section>
+
+          <section id="records" class="report-new-section">
+            <h2>Records and evidence</h2>
+            <p>
+              You do not need proof to share what happened. Photos, videos, records, or links can help,
+              but they are not required.
+            </p>
+            <div class="row gx-0 gy-3 gx-md-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label" for="bodycamRequested">Was body camera footage requested?</label>
+                <select class="form-select" id="bodycamRequested" name="bodycamRequested">
+                  <option value="">Choose one</option>
+                  <option>Yes</option>
+                  <option>No</option>
+                  <option>Not sure</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="complaintFiled">Was a complaint filed?</label>
+                <select class="form-select" id="complaintFiled" name="complaintFiled">
+                  <option value="">Choose one</option>
+                  <option>Yes</option>
+                  <option>No</option>
+                  <option>Not sure</option>
+                </select>
+              </div>
+            </div>
+            <div data-evidence-list class="d-grid gap-3" aria-live="polite"></div>
+            <button class="btn btn-outline-primary mt-3" type="button" data-add-evidence>
+              Add evidence or record
+            </button>
+          </section>
+
+          <section id="purpose" class="report-new-section">
+            <h2>What do you want this to help with?</h2>
+            <label class="form-label" for="reportPurpose">Choose the closest answer</label>
+            <select class="form-select" id="reportPurpose" name="reportPurpose" required>
+              <option value="">Choose one</option>
+              <option>Preserve what happened</option>
+              <option>Recognize helpful conduct</option>
+              <option>Help others see a pattern</option>
+              <option>Support accountability or review</option>
+              <option>Add context to an officer or agency record</option>
+              <option>Help me understand whether this was normal</option>
+              <option>I am not sure</option>
+            </select>
+          </section>
+
+          <section id="contact" class="report-new-section">
+            <h2>Contact and privacy</h2>
+            <p>
+              We use this to follow up if we need clarification. We do not publish your contact
+              information. You do not need to create an account or prove your identity.
+            </p>
+            <div class="row gx-0 gy-3 gx-md-3">
+              <div class="col-md-6">
+                <label class="form-label" for="reporterName">Your name</label>
+                <input class="form-control" id="reporterName" name="reporterName" autocomplete="name" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="reporterEmail">Email</label>
+                <input
                   class="form-control"
                   id="reporterEmail"
                   name="reporterEmail"
-                  placeholder="Email"
+                  type="email"
+                  autocomplete="email"
                   required
                 />
-                <label for="reporterEmail">Email*</label>
-                <div class="invalid-feedback">
-                  We use email to confirm details about your report.
-                </div>
               </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-floating">
-                <input
-                  type="tel"
-                  class="form-control"
-                  id="reporterPhone"
-                  name="reporterPhone"
-                  placeholder="Phone"
-                />
-                <label for="reporterPhone">Phone (optional)</label>
+              <div class="col-md-6">
+                <label class="form-label" for="reporterPhone">Phone</label>
+                <input class="form-control" id="reporterPhone" name="reporterPhone" type="tel" autocomplete="tel" />
               </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-floating">
-                <select
-                  class="form-select"
-                  id="preferredContact"
-                  name="preferredContact"
-                >
-                  <option value="Email" selected>Email</option>
-                  <option value="Phone">Phone</option>
-                  <option value="Either">Either</option>
+              <div class="col-md-6">
+                <label class="form-label" for="preferredContact">Preferred contact method</label>
+                <select class="form-select" id="preferredContact" name="preferredContact">
+                  <option value="">Choose one</option>
+                  <option>Email</option>
+                  <option>Phone</option>
+                  <option>Either is okay</option>
                 </select>
-                <label for="preferredContact">Preferred contact method</label>
               </div>
             </div>
+          </section>
 
-            <div class="col-12 pt-2" id="report-role">
-              <h2 class="h4 text-uppercase text-muted">Your role</h2>
-              <p class="text-muted">
-                Selecting the correct role helps us verify the accuracy of the
-                report. If you were not there but have evidence, choose
-                Concerned Citizen or Representative.
-              </p>
+          <section class="report-new-section">
+            <h2>Review and submit</h2>
+            <div class="alert alert-warning" role="note">
+              After you submit, we will send you an email confirmation link. PoliceConduct.org cannot
+              process the submission until it is confirmed. After confirmation, you will receive a
+              submission ID that you can use to check status or follow up by email.
             </div>
-            <div class="col-md-6">
-              <div class="form-floating">
-                <select
-                  class="form-select"
-                  id="reporterRole"
-                  name="reporterRole"
-                  required
-                >
-                  <option value="" selected>Select a role</option>
-                  <option value="Primary Participant (Self)">
-                    Primary Participant (Self)
-                  </option>
-                  <option value="Witness (On-site)">Witness (On-site)</option>
-                  <option value="Representative (On behalf of)">
-                    Representative (On behalf of)
-                  </option>
-                  <option value="Legal/Professional Advocate">
-                    Legal/Professional Advocate
-                  </option>
-                  <option value="Concerned Citizen (Indirect)">
-                    Concerned Citizen (Indirect)
-                  </option>
-                </select>
-                <label for="reporterRole">Role*</label>
-                <div class="invalid-feedback">Please select a role.</div>
-              </div>
+            <div class="form-check">
+              <input class="form-check-input" id="consent" name="consent" type="checkbox" value="yes" required />
+              <label class="form-check-label" for="consent">
+                I am sharing this truthfully to the best of my knowledge. I understand PoliceConduct.org
+                may review, summarize, redact, or ask for clarification before publishing. My report may
+                include what happened, what I saw or heard, how I felt, what I believe it meant, and any
+                supporting context. PoliceConduct.org may distinguish those from verified records or final
+                findings.
+              </label>
             </div>
-            <div class="col-md-6">
-              <div class="form-floating">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="relationship"
-                  name="relationship"
-                  placeholder="Relationship"
-                />
-                <label for="relationship"
-                  >Relationship to primary participant</label
-                >
-              </div>
-            </div>
+          </section>
 
-            <div class="col-12 pt-2" id="report-incident">
-              <h2 class="h4 text-uppercase text-muted">Incident basics</h2>
-            </div>
-            <div class="col-md-4 col-lg-2">
-              <div class="form-floating">
-                <input
-                  type="date"
-                  class="form-control"
-                  id="incidentDate"
-                  name="incidentDate"
-                  placeholder="Incident date"
-                  required
-                />
-                <label for="incidentDate">Incident date*</label>
-                <div class="invalid-feedback">
-                  When did the interaction happen?
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4 col-lg-5">
-              <div class="form-floating">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="location"
-                  name="location"
-                  placeholder="City, state, street or landmark"
-                  required
-                />
-                <label for="location">Location*</label>
-                <div class="invalid-feedback">
-                  Please describe where the interaction occurred.
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4 col-lg-5">
-              <div class="form-floating">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="charges"
-                  name="charges"
-                  placeholder="e.g., Public intoxication"
-                />
-                <label for="charges">Charges or allegations (if any)</label>
-              </div>
-            </div>
-
-            <div class="col-12 pt-2" id="report-officers">
-              <h2 class="h4 text-uppercase text-muted">Officers involved</h2>
-              <p class="text-muted">
-                Add each officer you interacted with—name, badge number, and
-                department. If the department is the same as the previous
-                officer, enter "Same."
-              </p>
-              <p class="text-muted mb-0">
-                Rate officer conduct inside each officer card below.
-              </p>
-            </div>
-            <div class="col-12">
-              <div data-officers></div>
-              <template id="officerTemplate">
-                <div
-                  class="card rounded-0 border-0 shadow-sm mb-3"
-                  data-officer
-                >
-                  <div class="card-body">
-                    <div class="row g-3">
-                      <div
-                        class="col-12 d-flex justify-content-between align-items-center"
-                      >
-                        <h3
-                          class="h6 text-uppercase text-muted mb-0"
-                          data-officer-title
-                        >
-                          Officer 1
-                        </h3>
-                        <button
-                          type="button"
-                          class="btn btn-outline-dark rounded-0 report-new-remove-btn"
-                          data-remove-officer
-                        >
-                          Remove officer
-                        </button>
-                      </div>
-                      <div class="col-md-5">
-                        <div class="form-floating">
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="officers-0-name"
-                            name="officers[0][name]"
-                            data-officer-field="name"
-                            placeholder="Officer name"
-                            required
-                          />
-                          <label for="officers-0-name" data-officer-label="name"
-                            >Officer name*</label
-                          >
-                          <div class="invalid-feedback">
-                            Please provide the officer's name or identifying
-                            description.
-                          </div>
-                        </div>
-                        <div class="form-text">
-                          If you do not know the officer's name, enter a
-                          physical description or other identifying details
-                          here.
-                        </div>
-                      </div>
-                      <div class="col-md-3">
-                        <div class="form-floating">
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="officers-0-badge"
-                            name="officers[0][badge]"
-                            data-officer-field="badge"
-                            placeholder="Badge #"
-                          />
-                          <label
-                            for="officers-0-badge"
-                            data-officer-label="badge">Badge #</label
-                          >
-                        </div>
-                      </div>
-                      <div class="col-md-4">
-                        <div class="form-floating">
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="officers-0-department"
-                            name="officers[0][department]"
-                            data-officer-field="department"
-                            placeholder="Department"
-                          />
-                          <label
-                            for="officers-0-department"
-                            data-officer-label="department">Department</label
-                          >
-                        </div>
-                      </div>
-                      <div class="col-12">
-                        <details
-                          class="report-new-disclosure mt-3"
-                          data-officer-assessment
-                        >
-                          <summary>Open officer conduct assessment</summary>
-                          <div class="report-new-disclosure-body">
-                            <p class="small text-muted mb-3">
-                              Choose the statement that best matches what you
-                              observed. Leave any trait marked “Not Observed /
-                              Does not apply” if you cannot rate it.
-                            </p>
-                            <div
-                              class="invalid-feedback d-none mb-3"
-                              data-officer-assessment-error
-                              role="alert"
-                            >
-                              Please answer every officer conduct assessment
-                              question or choose “Not Observed / Does not
-                              apply.”
-                            </div>
-                            <div class="row g-3">
-                              {
-                                traitsWithRubrics.map((trait) => (
-                                  <div class="col-12 col-lg-6">
-                                    <fieldset class="report-new-trait-group border rounded-0 p-3 h-100">
-                                      <legend class="h6 text-uppercase text-muted mb-1">
-                                        {trait.label}
-                                      </legend>
-                                      <div>
-                                        {trait.help ? (
-                                          <p class="small text-muted mb-1">
-                                            {trait.help}
-                                          </p>
-                                        ) : null}
-                                        {trait.description ? (
-                                          <p class="small text-muted mb-0">
-                                            {trait.description}
-                                          </p>
-                                        ) : null}
-                                        <div class="row g-2">
-                                          {trait.rubrics.map((rubric: any) => (
-                                            <div class="col-12">
-                                              <label class="form-check border rounded-0 p-3 h-100 report-new-trait-option">
-                                                <input
-                                                  class="form-check-input"
-                                                  type="radio"
-                                                  name={`officers[0][traits][${trait.id}]`}
-                                                  id={`officer-0-trait-${trait.id}-${rubric.id}`}
-                                                  value={rubric.id}
-                                                  data-officer-trait={trait.id}
-                                                  data-officer-rubric={
-                                                    rubric.id
-                                                  }
-                                                />
-                                                <span class="form-check-label d-block fw-semibold">
-                                                  {rubric.description}
-                                                </span>
-                                                {rubric.help ? (
-                                                  <span class="small text-muted d-block">
-                                                    {rubric.help}
-                                                  </span>
-                                                ) : null}
-                                              </label>
-                                            </div>
-                                          ))}
-                                          <div class="col-12">
-                                            <label class="form-check border rounded-0 p-3 h-100 report-new-trait-option">
-                                              <input
-                                                class="form-check-input"
-                                                type="radio"
-                                                name={`officers[0][traits][${trait.id}]`}
-                                                id={`officer-0-trait-${trait.id}-not-observed`}
-                                                value="__not_observed__"
-                                                data-null-option="true"
-                                                data-officer-trait={trait.id}
-                                                data-officer-rubric="__not_observed__"
-                                              />
-                                              <span class="form-check-label d-block fw-semibold">
-                                                Not Observed / Does not apply
-                                              </span>
-                                              <span class="small text-muted d-block">
-                                                Skip rating this trait for this
-                                                officer.
-                                              </span>
-                                            </label>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </fieldset>
-                                  </div>
-                                ))
-                              }
-                            </div>
-                          </div>
-                        </details>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </template>
-              <button
-                type="button"
-                class="btn btn-outline-dark rounded-0"
-                data-add-officer
-              >
-                Add another officer
-              </button>
-            </div>
-
-            <div class="col-12 pt-2" id="report-narrative">
-              <h2 class="h4 text-uppercase text-muted">Narrative</h2>
-            </div>
-            <div class="col-12">
-              <div class="form-floating">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="title"
-                  name="title"
-                  placeholder="Title"
-                  required
-                />
-                <label for="title">Title*</label>
-                <div class="invalid-feedback">
-                  Please add a short title for this report.
-                </div>
-              </div>
-              <div class="form-text">
-                Example: “Traffic stop with Officer Smith on I-35”
-              </div>
-            </div>
-            <div class="col-12">
-              <div class="form-floating">
-                <textarea
-                  class="form-control"
-                  id="description"
-                  name="description"
-                  placeholder="Narrative"
-                  maxlength="2500"
-                  style="height: 160px"
-                  required></textarea>
-                <label for="description">Narrative*</label>
-                <div class="invalid-feedback">
-                  Please describe what happened in factual detail.
-                </div>
-              </div>
-              <details class="report-new-disclosure mt-2">
-                <summary>Open writing prompt template</summary>
-                <div class="report-new-disclosure-body">
-                  <ul class="mb-0">
-                    <li>
-                      Start with where the interaction began and what led up to
-                      it.
-                    </li>
-                    <li>
-                      Describe what happened first in the order it occurred.
-                    </li>
-                    <li>
-                      Note what the officer did and said, using direct quotes if
-                      you remember them.
-                    </li>
-                    <li>Explain how you responded and what happened next.</li>
-                    <li>
-                      End with how the interaction concluded and what happened
-                      immediately after.
-                    </li>
-                  </ul>
-                </div>
-              </details>
-              <div class="form-text">
-                Provide a detailed, factual narrative of what happened. Focus on
-                dates, times, locations, actions, and direct quotes. Avoid
-                emotional language, opinions, or conclusions about anyone’s
-                intent or motives, other than your own.
-              </div>
-            </div>
-            <div class="col-12">
-              <div class="form-floating">
-                <textarea
-                  class="form-control"
-                  id="outcome"
-                  name="outcome"
-                  placeholder="Desired outcome"
-                  rows="3"
-                  required></textarea>
-                <label for="outcome">Desired outcome*</label>
-                <div class="invalid-feedback">
-                  Please describe the outcome you want from this submission.
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12 pt-2" id="report-witnesses">
-              <h2 class="h4 text-uppercase text-muted">Witnesses</h2>
-              <p class="text-muted">
-                Adding a witness means you have confirmed it is okay for us to
-                contact them to verify this report.
-              </p>
-            </div>
-            <div class="col-12">
-              <div data-witnesses></div>
-              <template id="witnessTemplate">
-                <div
-                  class="border rounded-0 p-3 mb-3 report-new-repeat-row"
-                  data-witness
-                >
-                  <div class="row g-3">
-                    <div
-                      class="col-12 d-flex justify-content-between align-items-center"
-                    >
-                      <h3
-                        class="h6 text-uppercase text-muted mb-0"
-                        data-witness-title
-                      >
-                        Witness 1
-                      </h3>
-                      <button
-                        type="button"
-                        class="btn btn-outline-dark rounded-0 report-new-remove-btn"
-                        data-remove-witness
-                      >
-                        Remove witness
-                      </button>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="text"
-                          class="form-control"
-                          id="witness-0-name"
-                          name="witnesses[0][name]"
-                          data-witness-field="name"
-                          placeholder="Name"
-                          required
-                        />
-                        <label for="witness-0-name" data-witness-label="name"
-                          >Name*</label
-                        >
-                        <div class="invalid-feedback">
-                          Please provide the witness name.
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="tel"
-                          class="form-control"
-                          id="witness-0-phone"
-                          name="witnesses[0][phone]"
-                          data-witness-field="phone"
-                          placeholder="Phone"
-                          required
-                        />
-                        <label for="witness-0-phone" data-witness-label="phone"
-                          >Phone*</label
-                        >
-                        <div class="invalid-feedback">
-                          Please provide the witness phone number.
-                        </div>
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="email"
-                          class="form-control"
-                          id="witness-0-email"
-                          name="witnesses[0][email]"
-                          data-witness-field="email"
-                          placeholder="Email"
-                          required
-                        />
-                        <label for="witness-0-email" data-witness-label="email"
-                          >Email*</label
-                        >
-                        <div class="invalid-feedback">
-                          Please provide the witness email address.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </template>
-              <button
-                type="button"
-                class="btn btn-outline-dark rounded-0"
-                data-add-witness
-              >
-                Add witness
-              </button>
-            </div>
-
-            <div class="col-12 pt-2" id="report-evidence">
-              <h2 class="h4 text-uppercase text-muted">Evidence links</h2>
-              <p class="text-muted">
-                Link to videos, photos, docket entries, or news coverage.
-              </p>
-            </div>
-            <div class="col-12">
-              <div data-evidence-list></div>
-              <template id="evidenceTemplate">
-                <div
-                  class="border rounded-0 p-3 mb-3 report-new-repeat-row"
-                  data-evidence
-                >
-                  <div class="row g-3 align-items-start">
-                    <div
-                      class="col-12 d-flex justify-content-between align-items-center"
-                    >
-                      <h3
-                        class="h6 text-uppercase text-muted mb-0"
-                        data-evidence-title
-                      >
-                        Evidence 1
-                      </h3>
-                      <button
-                        type="button"
-                        class="btn btn-outline-dark rounded-0 report-new-remove-btn"
-                        data-remove-evidence
-                      >
-                        Remove evidence
-                      </button>
-                    </div>
-                    <div class="col-md-8">
-                      <div class="form-floating">
-                        <input
-                          type="url"
-                          class="form-control"
-                          id="evidence-link-0"
-                          name="evidence[0][link]"
-                          data-evidence-field="link"
-                          placeholder="https://"
-                          required
-                        />
-                        <label for="evidence-link-0" data-evidence-label="link"
-                          >Evidence link*</label
-                        >
-                        <div class="invalid-feedback">
-                          Please provide a valid evidence URL.
-                        </div>
-                      </div>
-                      <div class="form-text">
-                        Example: https://drive.google.com/...
-                      </div>
-                    </div>
-                    <div class="col-md-4">
-                      <div class="form-floating">
-                        <input
-                          type="text"
-                          class="form-control"
-                          id="evidence-description-0"
-                          name="evidence[0][description]"
-                          data-evidence-field="description"
-                          placeholder="e.g., Bodycam video"
-                          required
-                        />
-                        <label
-                          for="evidence-description-0"
-                          data-evidence-label="description">Description*</label
-                        >
-                        <div class="invalid-feedback">
-                          Please describe what this evidence shows.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </template>
-              <button
-                type="button"
-                class="btn btn-outline-dark rounded-0"
-                data-add-evidence
-              >
-                Add evidence
-              </button>
-            </div>
-
-            <div class="col-12 pt-2" id="report-tags">
-              <details class="report-new-disclosure">
-                <summary>Open optional tags</summary>
-                <div class="report-new-disclosure-body">
-                  <h2 class="h4 text-uppercase text-muted">Tags</h2>
-                  <p class="text-muted">
-                    Select tags that describe the interaction. These help
-                    readers scan the report.
-                  </p>
-                  <div class="row g-4">
-                    <div class="col-12 col-md-6">
-                      <h3 class="h6 text-muted fw-semibold mb-2">
-                        Commendation Tags
-                      </h3>
-                      <div class="form-check">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Appropriate use of force"
-                          id="tagAppropriateForce"
-                        />
-                        <label
-                          class="form-check-label"
-                          for="tagAppropriateForce"
-                          >Appropriate use of force</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Clear Miranda / Rights explanation"
-                          id="tagMiranda"
-                        />
-                        <label class="form-check-label" for="tagMiranda"
-                          >Clear Miranda / Rights explanation</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Compassionate welfare check"
-                          id="tagWelfareCheck"
-                        />
-                        <label class="form-check-label" for="tagWelfareCheck"
-                          >Compassionate welfare check</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Diligent / Honest investigation"
-                          id="tagHonestInvestigation"
-                        />
-                        <label
-                          class="form-check-label"
-                          for="tagHonestInvestigation"
-                          >Diligent / Honest investigation</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Effective de-escalation"
-                          id="tagDeescalation"
-                        />
-                        <label class="form-check-label" for="tagDeescalation"
-                          >Effective de-escalation</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Life-saving aid / Medical assistance"
-                          id="tagMedicalAid"
-                        />
-                        <label class="form-check-label" for="tagMedicalAid"
-                          >Life-saving aid / Medical assistance</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Procedural transparency"
-                          id="tagTransparency"
-                        />
-                        <label class="form-check-label" for="tagTransparency"
-                          >Procedural transparency</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Professionalism / Community outreach"
-                          id="tagProfessionalism"
-                        />
-                        <label class="form-check-label" for="tagProfessionalism"
-                          >Professionalism / Community outreach</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Proper use of body-cam / Evidence"
-                          id="tagBodycamProper"
-                        />
-                        <label class="form-check-label" for="tagBodycamProper"
-                          >Proper use of body-cam / Evidence</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Respect for recording / First Amendment"
-                          id="tagRespectRecording"
-                        />
-                        <label
-                          class="form-check-label"
-                          for="tagRespectRecording"
-                          >Respect for recording / First Amendment</label
-                        >
-                      </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                      <h3 class="h6 text-muted fw-semibold mb-2">
-                        Misconduct Tags
-                      </h3>
-                      <div class="form-check">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Body-worn camera (e.g., turned off / muted)"
-                          id="tagBWC"
-                        />
-                        <label class="form-check-label" for="tagBWC"
-                          >Body-worn camera (e.g., turned off / muted)</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Coerced questioning"
-                          id="tagQuestioning"
-                        />
-                        <label class="form-check-label" for="tagQuestioning"
-                          >Coerced questioning</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Dishonest report / false statement"
-                          id="tagFalseStatement"
-                        />
-                        <label class="form-check-label" for="tagFalseStatement"
-                          >Dishonest report / false statement</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Excessive force"
-                          id="tagForce"
-                        />
-                        <label class="form-check-label" for="tagForce"
-                          >Excessive force</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Fabricated or planted evidence"
-                          id="tagPlantedEvidence"
-                        />
-                        <label class="form-check-label" for="tagPlantedEvidence"
-                          >Fabricated or planted evidence</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Failure to perform welfare check"
-                          id="tagWelfareFailure"
-                        />
-                        <label class="form-check-label" for="tagWelfareFailure"
-                          >Failure to perform welfare check</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Medical care concern"
-                          id="tagMedical"
-                        />
-                        <label class="form-check-label" for="tagMedical"
-                          >Medical care concern</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Retaliatory stop / abuse of discretion"
-                          id="tagRetaliatoryStop"
-                        />
-                        <label class="form-check-label" for="tagRetaliatoryStop"
-                          >Retaliatory stop / abuse of discretion</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Retaliation for speech / recording"
-                          id="tagRetaliation"
-                        />
-                        <label class="form-check-label" for="tagRetaliation"
-                          >Retaliation for speech / recording</label
-                        >
-                      </div>
-                      <div class="form-check mt-2">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          name="tags[]"
-                          value="Unlawful detention / denied due process"
-                          id="tagDueProcess"
-                        />
-                        <label class="form-check-label" for="tagDueProcess"
-                          >Unlawful detention / denied due process</label
-                        >
-                      </div>
-                    </div>
-                  </div>
-                  <div class="mt-3 form-floating">
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="customTags"
-                      name="customTags"
-                      placeholder="e.g., Pilot license, Retaliation"
-                    />
-                    <label for="customTags"
-                      >Additional tags (comma separated)</label
-                    >
-                  </div>
-                </div>
-              </details>
-            </div>
-
-            <div class="col-12 pt-2" id="report-consent">
-              <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  value="1"
-                  id="consent"
-                  name="consent"
-                  required
-                />
-                <label class="form-check-label" for="consent">
-                  <span class="d-block fw-semibold mb-2">
-                    I affirm this report is truthful to the best of my
-                    knowledge, and I understand:
-                  </span>
-                  <span class="report-new-consent-list">
-                    <span
-                      >Reports are public and may be reviewed or redacted.</span
-                    >
-                    <span>
-                      I will not include sensitive personal data such as home
-                      addresses, Social Security numbers, or medical records.
-                    </span>
-                    <span
-                      >PoliceConduct.org may contact me about this report.</span
-                    >
-                  </span>
-                </label>
-                <div class="invalid-feedback">Consent is required.</div>
-              </div>
-            </div>
-
-            <div class="col-12">
-              <div class="small text-muted mb-3">
-                Protected by reCAPTCHA Enterprise.
-              </div>
-              <button type="submit" class="btn btn-dark btn-lg rounded-0">
-                Submit report
-              </button>
-            </div>
-
-            <div class="col-12"></div>
+          <div class="d-flex flex-column flex-sm-row gap-3 align-items-sm-center">
+            <button class="btn btn-primary btn-lg" type="submit">Submit my experience</button>
+            <p class="text-secondary mb-0">
+              Unconfirmed submissions cannot be processed.
+            </p>
           </div>
+
+          <template id="person-template">
+            <article class="report-new-repeat border rounded p-3" data-person-involved>
+              <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-3">
+                <h3 class="h5 mb-0" data-person-label>Person involved</h3>
+                <button class="btn btn-sm btn-outline-danger" type="button" data-remove-person>
+                  Remove person
+                </button>
+              </div>
+              <div class="row gx-0 gy-3 gx-md-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="person-name-0">Name, badge number, or description</label>
+                  <input class="form-control" id="person-name-0" name="people[0][name]" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="person-badge-0">Badge number</label>
+                  <input class="form-control" id="person-badge-0" name="people[0][badge]" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="person-department-0">Agency, if known</label>
+                  <input class="form-control" id="person-department-0" name="people[0][department]" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="person-central-0">Was this person central to what happened?</label>
+                  <select class="form-select" id="person-central-0" name="people[0][central]">
+                    <option value="">Choose one</option>
+                    <option>Yes</option>
+                    <option>No</option>
+                    <option>Not sure</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="person-actions-0">What did this person do or say?</label>
+                  <textarea class="form-control" id="person-actions-0" name="people[0][actions]" rows="3"></textarea>
+                </div>
+              </div>
+            </article>
+          </template>
+
+          <template id="evidence-template">
+            <article class="report-new-repeat border rounded p-3" data-evidence>
+              <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-3">
+                <h3 class="h5 mb-0" data-evidence-label>Evidence or record</h3>
+                <button class="btn btn-sm btn-outline-danger" type="button" data-remove-evidence>
+                  Remove evidence
+                </button>
+              </div>
+              <div class="row gx-0 gy-3 gx-md-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="evidence-link-0">Link or file name</label>
+                  <input class="form-control" id="evidence-link-0" name="evidence[0][link]" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="evidence-description-0">What is this?</label>
+                  <input class="form-control" id="evidence-description-0" name="evidence[0][description]" />
+                </div>
+              </div>
+            </article>
+          </template>
         </form>
       </div>
-    </section>
+    </div>
   </main>
-  <script>
-    import {
-      flattenFormData,
-      initRecaptcha,
-      showFormLoadError,
-      submitJsonForm,
-    } from "#src/lib/client/forms.ts";
-    import type { ReportNewPrefill } from "#src/lib/forms/prefill";
+</SiteLayout>
 
-    const form = document.getElementById(
-      "reportForm",
-    ) as HTMLFormElement | null;
-    const formShell = document.querySelector(
-      '[data-form-shell="reportNew"]',
-    ) as HTMLElement | null;
-    const trackReportEvent = (
-      eventName: string,
-      params: Record<string, unknown> = {},
-    ) => {
-      window.__IPC_ANALYTICS__?.track?.(eventName, {
-        form_name: "reportNew",
-        ...params,
+<script>
+  import {
+    flattenFormData,
+    initRecaptcha,
+    showFormLoadError,
+    submitJsonForm,
+  } from "#src/lib/client/forms.ts";
+
+  type PersonDraft = {
+    name?: string;
+    badge?: string;
+    department?: string;
+    actions?: string;
+    central?: string;
+  };
+
+  type EvidenceDraft = {
+    link?: string;
+    description?: string;
+  };
+
+  type ReportDraft = Record<string, unknown> & {
+    people?: PersonDraft[];
+    evidence?: EvidenceDraft[];
+  };
+
+  const form = document.querySelector<HTMLFormElement>("#report-form");
+  const personList = form?.querySelector<HTMLElement>("[data-people-list]");
+  const personTemplate = form?.querySelector<HTMLTemplateElement>("#person-template");
+  const evidenceList = form?.querySelector<HTMLElement>("[data-evidence-list]");
+  const evidenceTemplate = form?.querySelector<HTMLTemplateElement>("#evidence-template");
+
+  const formShell = document.querySelector<HTMLElement>("[data-report-form-shell]");
+
+  if (!form || !personList || !personTemplate || !evidenceList || !evidenceTemplate) {
+    showFormLoadError({ formName: "reportNew", shell: formShell });
+    throw new Error("Report form missing required elements.");
+  }
+
+  const structuredRoots = ["people", "evidence"];
+
+  const draftEndpoint = "/api/forms/draft";
+  const reportDraftCookieName = "reportDraftId";
+
+  const emptyPerson = (): PersonDraft => ({
+    name: "",
+    badge: "",
+    department: "",
+    actions: "",
+    central: "",
+  });
+  const emptyEvidence = (): EvidenceDraft => ({ link: "", description: "" });
+
+  let draft: ReportDraft = {
+    people: [emptyPerson()],
+    evidence: [],
+  };
+
+  const hasValue = (value: unknown): boolean => typeof value === "string" && value.trim().length > 0;
+
+  const trackReportEvent = (eventName: string, params: Record<string, unknown> = {}) => {
+    window.__IPC_ANALYTICS__?.track?.(eventName, {
+      form_name: "reportNew",
+      ...params,
+    });
+  };
+
+  const getReportDraftId = () => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${reportDraftCookieName}=`);
+    if (parts.length !== 2) return "";
+    return decodeURIComponent(parts.pop()?.split(";").shift() || "");
+  };
+
+  const setReportDraftId = (draftId: string) => {
+    document.cookie = `${reportDraftCookieName}=${encodeURIComponent(
+      draftId,
+    )}; Path=/report/new/; SameSite=Lax; Max-Age=2592000`;
+  };
+
+  const clearReportDraftCookie = () => {
+    document.cookie = `${reportDraftCookieName}=; Max-Age=0; Path=/report/new/; SameSite=Lax`;
+  };
+
+  const filterPeople = (people: PersonDraft[] | undefined): PersonDraft[] =>
+    (Array.isArray(people) ? people : []).filter((person) =>
+      [person.name, person.badge, person.department, person.actions, person.central].some(hasValue),
+    );
+
+  const filterEvidence = (evidence: EvidenceDraft[] | undefined): EvidenceDraft[] =>
+    (Array.isArray(evidence) ? evidence : []).filter((item) =>
+      [item.link, item.description].some(hasValue),
+    );
+
+  const readReportData = ({ keepEmptyRows = false }: { keepEmptyRows?: boolean } = {}): ReportDraft => {
+    const data = flattenFormData(new FormData(form), ...structuredRoots) as ReportDraft;
+    data.people = keepEmptyRows ? (Array.isArray(data.people) ? data.people : []) : filterPeople(data.people);
+    data.evidence = keepEmptyRows
+      ? (Array.isArray(data.evidence) ? data.evidence : [])
+      : filterEvidence(data.evidence);
+    return data;
+  };
+
+  const writeIndexedAttribute = (
+    element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLLabelElement,
+    attribute: "for" | "id" | "name",
+    index: number,
+  ) => {
+    const value = element.getAttribute(attribute);
+    if (!value) return;
+    element.setAttribute(
+      attribute,
+      value
+        .replace(/people\[\d+\]/g, `people[${index}]`)
+        .replace(/person-([a-z-]+)-\d+/g, `person-$1-${index}`)
+        .replace(/evidence\[\d+\]/g, `evidence[${index}]`)
+        .replace(/evidence-([a-z-]+)-\d+/g, `evidence-$1-${index}`),
+    );
+  };
+
+  const setFieldValue = (
+    root: HTMLElement,
+    name: string,
+    value: string | undefined,
+  ) => {
+    const field = root.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+      `[name="${CSS.escape(name)}"]`,
+    );
+    if (field) field.value = value ?? "";
+  };
+
+  const renderPeople = () => {
+    const people = Array.isArray(draft.people) && draft.people.length > 0 ? draft.people : [emptyPerson()];
+    personList.replaceChildren();
+    people.forEach((person, index) => {
+      const fragment = personTemplate.content.cloneNode(true) as DocumentFragment;
+      const entry = fragment.querySelector<HTMLElement>("[data-person-involved]");
+      if (!entry) return;
+      entry.querySelector<HTMLElement>("[data-person-label]")!.textContent = `Person ${index + 1}`;
+      entry
+        .querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLLabelElement>(
+          "input, select, textarea, label",
+        )
+        .forEach((element) => {
+          writeIndexedAttribute(element, "for", index);
+          writeIndexedAttribute(element, "id", index);
+          writeIndexedAttribute(element, "name", index);
+        });
+      setFieldValue(entry, `people[${index}][name]`, person.name);
+      setFieldValue(entry, `people[${index}][badge]`, person.badge);
+      setFieldValue(entry, `people[${index}][department]`, person.department);
+      setFieldValue(entry, `people[${index}][central]`, person.central);
+      setFieldValue(entry, `people[${index}][actions]`, person.actions);
+
+      const removeButton = entry.querySelector<HTMLButtonElement>("[data-remove-person]");
+      if (removeButton) {
+        removeButton.hidden = people.length === 1;
+        removeButton.addEventListener("click", () => {
+          draft = readReportData({ keepEmptyRows: true });
+          const nextPeople = Array.isArray(draft.people) && draft.people.length > 0 ? draft.people : [emptyPerson()];
+          nextPeople.splice(index, 1);
+          draft.people = nextPeople.length > 0 ? nextPeople : [emptyPerson()];
+          renderPeople();
+          markDraftDirty();
+        });
+      }
+      personList.appendChild(fragment);
+    });
+  };
+
+  const renderEvidence = () => {
+    const evidence = Array.isArray(draft.evidence) ? draft.evidence : [];
+    evidenceList.replaceChildren();
+    evidence.forEach((item, index) => {
+      const fragment = evidenceTemplate.content.cloneNode(true) as DocumentFragment;
+      const entry = fragment.querySelector<HTMLElement>("[data-evidence]");
+      if (!entry) return;
+      entry.querySelector<HTMLElement>("[data-evidence-label]")!.textContent = `Evidence or record ${index + 1}`;
+      entry
+        .querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLLabelElement>(
+          "input, select, textarea, label",
+        )
+        .forEach((element) => {
+          writeIndexedAttribute(element, "for", index);
+          writeIndexedAttribute(element, "id", index);
+          writeIndexedAttribute(element, "name", index);
+        });
+      setFieldValue(entry, `evidence[${index}][link]`, item.link);
+      setFieldValue(entry, `evidence[${index}][description]`, item.description);
+
+      entry.querySelector<HTMLButtonElement>("[data-remove-evidence]")?.addEventListener("click", () => {
+        draft = readReportData({ keepEmptyRows: true });
+        const nextEvidence = Array.isArray(draft.evidence) ? draft.evidence : [];
+        nextEvidence.splice(index, 1);
+        draft.evidence = nextEvidence;
+        renderEvidence();
+        markDraftDirty();
       });
-    };
+      evidenceList.appendChild(fragment);
+    });
+  };
 
-    if (form) {
-      const draftEndpoint = "/api/forms/draft";
-      const reportDraftCookieName = "pc_report_draft";
-      const officerList = form.querySelector("[data-officers]") as HTMLElement;
-      const addOfficerButton = form.querySelector(
-        "[data-add-officer]",
-      ) as HTMLButtonElement;
-      const officerTemplateElement = document.getElementById(
-        "officerTemplate",
-      ) as HTMLTemplateElement | null;
-      const witnessList = form.querySelector("[data-witnesses]") as HTMLElement;
-      const addWitnessButton = form.querySelector(
-        "[data-add-witness]",
-      ) as HTMLButtonElement;
-      const witnessTemplateElement = document.getElementById(
-        "witnessTemplate",
-      ) as HTMLTemplateElement | null;
-      const evidenceList = form.querySelector(
-        "[data-evidence-list]",
-      ) as HTMLElement;
-      const addEvidenceButton = form.querySelector(
-        "[data-add-evidence]",
-      ) as HTMLButtonElement;
-      const evidenceTemplateElement = document.getElementById(
-        "evidenceTemplate",
-      ) as HTMLTemplateElement | null;
+  const restoreStaticFields = (data: ReportDraft) => {
+    Object.entries(data).forEach(([name, rawValue]) => {
+      if (structuredRoots.includes(name)) return;
+      const values = Array.isArray(rawValue)
+        ? rawValue.map((value) => String(value ?? ""))
+        : [String(rawValue ?? "")];
 
-      type OfficerDraft = {
-        name: string;
-        badge: string;
-        department: string;
-        traits: Record<string, string>;
-      };
-      type WitnessDraft = {
-        name: string;
-        phone: string;
-        email: string;
-      };
-      type EvidenceDraft = {
-        link: string;
-        description: string;
-      };
-
-      type ReportDraft = {
-        officers: OfficerDraft[];
-        witnesses: WitnessDraft[];
-        evidence: EvidenceDraft[];
-        [key: string]: unknown;
-      };
-      const structuredRoots = ["officers", "witnesses", "evidence"];
-
-      const getReportDraftId = () => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${reportDraftCookieName}=`);
-        if (parts.length !== 2) {
-          return "";
-        }
-        const cookieValue = parts.pop();
-        return cookieValue ? cookieValue.split(";")[0] : "";
-      };
-
-      const setReportDraftId = (draftId: string) => {
-        document.cookie = `${reportDraftCookieName}=${draftId}; Max-Age=${60 * 60}; Path=/report/new/; SameSite=Lax`;
-      };
-
-      const clearReportDraftCookie = () => {
-        document.cookie = `${reportDraftCookieName}=; Max-Age=0; Path=/report/new/; SameSite=Lax`;
-      };
-
-      const emptyOfficer = (): OfficerDraft => ({
-        name: "",
-        badge: "",
-        department: "",
-        traits: {},
-      });
-      const emptyWitness = (): WitnessDraft => ({
-        name: "",
-        phone: "",
-        email: "",
-      });
-      const emptyEvidence = (): EvidenceDraft => ({
-        link: "",
-        description: "",
-      });
-
-      let draft: ReportDraft = {
-        officers: [emptyOfficer()],
-        witnesses: [],
-        evidence: [],
-      };
-      let reportStarted = false;
-      const trackedDraftOutcomes = new Set<string>();
-
-      const markReportStarted = (startReason: string) => {
-        if (reportStarted) {
+      form.querySelectorAll(`[name="${CSS.escape(name)}"]`).forEach((field) => {
+        if (field instanceof HTMLInputElement && field.type === "checkbox") {
+          field.checked = values.includes(field.value);
           return;
         }
-        reportStarted = true;
-        trackReportEvent("report_form_started", {
-          start_reason: startReason,
-        });
-      };
 
-      if (
-        !officerTemplateElement ||
-        !witnessTemplateElement ||
-        !evidenceTemplateElement
-      ) {
-        showFormLoadError({ formName: "reportNew", shell: formShell });
-      } else {
-        const officerTemplate = officerTemplateElement.content
-          .firstElementChild as HTMLElement | null;
-        const witnessTemplate = witnessTemplateElement.content
-          .firstElementChild as HTMLElement | null;
-        const evidenceTemplate = evidenceTemplateElement.content
-          .firstElementChild as HTMLElement | null;
-
-        if (!officerTemplate || !witnessTemplate || !evidenceTemplate) {
-          showFormLoadError({ formName: "reportNew", shell: formShell });
-        } else {
-          const officerFieldName = (index: number, field: string) =>
-            `officers[${index}][${field}]`;
-          const officerFieldId = (index: number, field: string) =>
-            `officers-${index}-${field}`;
-          const officerTraitName = (index: number, traitId: string) =>
-            `officers[${index}][traits][${traitId}]`;
-          const officerTraitId = (
-            index: number,
-            traitId: string,
-            rubricId: string,
-          ) => `officer-${index}-trait-${traitId}-${rubricId}`;
-          const witnessFieldName = (index: number, field: string) =>
-            `witnesses[${index}][${field}]`;
-          const witnessFieldId = (index: number, field: string) =>
-            `witness-${index}-${field}`;
-          const evidenceFieldName = (index: number, field: string) =>
-            `evidence[${index}][${field}]`;
-          const evidenceFieldId = (index: number, field: string) =>
-            `evidence-${field}-${index}`;
-          const readReportData = (formData: FormData) => {
-            const data = flattenFormData(
-              formData,
-              ...structuredRoots,
-            ) as ReportDraft;
-            data.witnesses ??= [];
-            data.evidence ??= [];
-            return data;
-          };
-
-          const validateOfficerAssessments = () => {
-            let isValid = true;
-            let missingGroupCount = 0;
-
-            form
-              .querySelectorAll<HTMLElement>("[data-officer]")
-              .forEach((officerElement) => {
-                const assessmentError =
-                  officerElement.querySelector<HTMLElement>(
-                    "[data-officer-assessment-error]",
-                  );
-                const traitGroups = new Map<string, HTMLInputElement[]>();
-                let hasAssessmentError = false;
-
-                officerElement
-                  .querySelectorAll<HTMLInputElement>("[data-officer-trait]")
-                  .forEach((field) => {
-                    field.setCustomValidity("");
-                    if (!field.name) {
-                      return;
-                    }
-
-                    const group = traitGroups.get(field.name) || [];
-                    group.push(field);
-                    traitGroups.set(field.name, group);
-                  });
-
-                traitGroups.forEach((fields) => {
-                  if (fields.some((field) => field.checked)) {
-                    return;
-                  }
-
-                  isValid = false;
-                  hasAssessmentError = true;
-                  missingGroupCount += 1;
-                  fields.forEach((field) => {
-                    field.setCustomValidity(
-                      "Please choose an assessment or Not Observed / Does not apply.",
-                    );
-                  });
-                });
-
-                if (assessmentError) {
-                  assessmentError.classList.toggle(
-                    "d-none",
-                    !hasAssessmentError,
-                  );
-                }
-              });
-
-            if (!isValid) {
-              trackReportEvent("report_assessment_validation_failed", {
-                missing_group_count: missingGroupCount,
-              });
-            }
-
-            return isValid;
-          };
-
-          const updateOfficers = (
-            getNextOfficers: (officers: OfficerDraft[]) => OfficerDraft[],
-          ) => {
-            const data = readReportData(new FormData(form));
-            data.officers = getNextOfficers(data.officers);
-            draft = data;
-            renderOfficers();
-          };
-
-          const appendOfficer = () => {
-            updateOfficers((officers) => [...officers, emptyOfficer()]);
-          };
-
-          const deleteOfficer = (index: number) => {
-            updateOfficers((officers) => [
-              ...officers.slice(0, index),
-              ...officers.slice(index + 1),
-            ]);
-          };
-
-          const addOfficer = () => {
-            appendOfficer();
-            markReportStarted("add_officer");
-            trackReportEvent("report_officer_added", {
-              officer_count: draft.officers.length,
-            });
-          };
-
-          const removeOfficer = (index: number) => {
-            deleteOfficer(index);
-            trackReportEvent("report_officer_removed", {
-              officer_count: draft.officers.length,
-              removed_index: index,
-            });
-          };
-
-          const updateWitnesses = (
-            getNextWitnesses: (witnesses: WitnessDraft[]) => WitnessDraft[],
-          ) => {
-            const data = readReportData(new FormData(form));
-            data.witnesses = getNextWitnesses(data.witnesses);
-            draft = data;
-            renderWitnesses();
-          };
-
-          const appendWitness = () => {
-            updateWitnesses((witnesses) => [...witnesses, emptyWitness()]);
-          };
-
-          const deleteWitness = (index: number) => {
-            updateWitnesses((witnesses) => [
-              ...witnesses.slice(0, index),
-              ...witnesses.slice(index + 1),
-            ]);
-          };
-
-          const addWitness = () => {
-            appendWitness();
-            markReportStarted("add_witness");
-            trackReportEvent("report_witness_added", {
-              witness_count: draft.witnesses.length,
-            });
-          };
-
-          const removeWitness = (index: number) => {
-            deleteWitness(index);
-            trackReportEvent("report_witness_removed", {
-              removed_index: index,
-              witness_count: draft.witnesses.length,
-            });
-          };
-
-          const updateEvidence = (
-            getNextEvidence: (evidence: EvidenceDraft[]) => EvidenceDraft[],
-          ) => {
-            const data = readReportData(new FormData(form));
-            data.evidence = getNextEvidence(data.evidence);
-            draft = data;
-            renderEvidence();
-          };
-
-          const appendEvidence = () => {
-            updateEvidence((evidence) => [...evidence, emptyEvidence()]);
-          };
-
-          const deleteEvidence = (index: number) => {
-            updateEvidence((evidence) => [
-              ...evidence.slice(0, index),
-              ...evidence.slice(index + 1),
-            ]);
-          };
-
-          const addEvidence = () => {
-            appendEvidence();
-            markReportStarted("add_evidence");
-            trackReportEvent("report_evidence_added", {
-              evidence_count: draft.evidence.length,
-            });
-          };
-
-          const removeEvidence = (index: number) => {
-            deleteEvidence(index);
-            trackReportEvent("report_evidence_removed", {
-              evidence_count: draft.evidence.length,
-              removed_index: index,
-            });
-          };
-
-          const applyPrefill = () => {
-            const payload = window.__IPC_PREFILL__?.readAndConsume?.(
-              window.location.pathname,
-            ) as ReportNewPrefill | null;
-            if (!payload?.officer) {
-              return;
-            }
-
-            trackReportEvent("report_prefill_used", {
-              prefill_key: window.location.pathname,
-            });
-            draft.officers = [
-              {
-                ...draft.officers[0],
-                ...payload.officer,
-              },
-            ];
-          };
-
-          const renderOfficers = () => {
-            const officers = draft.officers;
-            const officerElements = officers.map((officer, index) => {
-              const currentOfficer = {
-                ...emptyOfficer(),
-                ...officer,
-                traits: officer.traits || {},
-              };
-              const officerElement = officerTemplate.cloneNode(
-                true,
-              ) as HTMLElement;
-              const title = officerElement.querySelector(
-                "[data-officer-title]",
-              );
-              const removeButton = officerElement.querySelector(
-                "[data-remove-officer]",
-              ) as HTMLButtonElement;
-
-              if (title) {
-                title.textContent = `Officer ${index + 1}`;
-              }
-
-              officerElement.dataset.index = String(index);
-
-              if (officers.length === 1) {
-                removeButton.remove();
-              } else {
-                removeButton.addEventListener("click", () =>
-                  removeOfficer(index),
-                );
-              }
-
-              officerElement
-                .querySelectorAll<HTMLElement>("[data-officer-field]")
-                .forEach((field) => {
-                  const key = field.dataset.officerField as keyof OfficerDraft;
-                  if (!key) {
-                    throw new Error("Expected officer field key.");
-                  }
-                  field.setAttribute("name", officerFieldName(index, key));
-                  if (field instanceof HTMLInputElement) {
-                    field.id = officerFieldId(index, key);
-                  }
-                  if (field instanceof HTMLTextAreaElement) {
-                    field.id = officerFieldId(index, key);
-                  }
-                });
-
-              officerElement
-                .querySelectorAll<HTMLLabelElement>("[data-officer-label]")
-                .forEach((label) => {
-                  const key = label.dataset.officerLabel as keyof OfficerDraft;
-                  if (!key) {
-                    throw new Error("Expected officer label key.");
-                  }
-                  label.htmlFor = officerFieldId(index, key);
-                });
-
-              officerElement
-                .querySelectorAll<HTMLInputElement>("[data-officer-trait]")
-                .forEach((field) => {
-                  const traitId = field.dataset.officerTrait;
-                  const rubricId = field.dataset.officerRubric;
-                  if (!traitId || !rubricId) {
-                    throw new Error("Expected officer trait metadata.");
-                  }
-                  field.name = officerTraitName(index, traitId);
-                  field.id = officerTraitId(index, traitId, rubricId);
-                });
-
-              const nameInput = officerElement.querySelector<HTMLInputElement>(
-                `[data-officer-field="name"]`,
-              );
-              const badgeInput = officerElement.querySelector<HTMLInputElement>(
-                `[data-officer-field="badge"]`,
-              );
-              const departmentInput =
-                officerElement.querySelector<HTMLInputElement>(
-                  `[data-officer-field="department"]`,
-                );
-              if (nameInput) {
-                nameInput.value = currentOfficer.name;
-              }
-              if (badgeInput) {
-                badgeInput.value = currentOfficer.badge;
-              }
-              if (departmentInput) {
-                departmentInput.value = currentOfficer.department;
-              }
-
-              Object.entries(currentOfficer.traits).forEach(
-                ([traitId, value]) => {
-                  const traitInput =
-                    officerElement.querySelector<HTMLInputElement>(
-                      `[data-officer-trait="${CSS.escape(traitId)}"][value="${CSS.escape(value)}"]`,
-                    );
-                  if (traitInput) {
-                    traitInput.checked = true;
-                  }
-                },
-              );
-
-              return officerElement;
-            });
-
-            officerList.replaceChildren(...officerElements);
-          };
-
-          const renderWitnesses = () => {
-            const witnessElements = draft.witnesses.map((witness, index) => {
-              const currentWitness = {
-                ...emptyWitness(),
-                ...witness,
-              };
-              const witnessElement = witnessTemplate.cloneNode(
-                true,
-              ) as HTMLElement;
-
-              const title = witnessElement.querySelector(
-                "[data-witness-title]",
-              );
-              const removeButton = witnessElement.querySelector(
-                "[data-remove-witness]",
-              ) as HTMLButtonElement;
-
-              if (title) {
-                title.textContent = `Witness ${index + 1}`;
-              }
-
-              removeButton.addEventListener("click", () =>
-                removeWitness(index),
-              );
-
-              witnessElement
-                .querySelectorAll<HTMLInputElement>("[data-witness-field]")
-                .forEach((field) => {
-                  const key = field.dataset.witnessField as keyof WitnessDraft;
-                  if (!key) {
-                    throw new Error("Expected witness field key.");
-                  }
-                  field.name = witnessFieldName(index, key);
-                  field.id = witnessFieldId(index, key);
-                  field.value = currentWitness[key];
-                });
-
-              witnessElement
-                .querySelectorAll<HTMLLabelElement>("[data-witness-label]")
-                .forEach((label) => {
-                  const key = label.dataset.witnessLabel as keyof WitnessDraft;
-                  if (!key) {
-                    throw new Error("Expected witness label key.");
-                  }
-                  label.htmlFor = witnessFieldId(index, key);
-                });
-
-              return witnessElement;
-            });
-
-            witnessList.replaceChildren(...witnessElements);
-          };
-
-          const renderEvidence = () => {
-            const evidenceElements = draft.evidence.map((item, index) => {
-              const currentEvidence = {
-                ...emptyEvidence(),
-                ...item,
-              };
-              const evidenceElement = evidenceTemplate.cloneNode(
-                true,
-              ) as HTMLElement;
-              const title = evidenceElement.querySelector(
-                "[data-evidence-title]",
-              );
-              const removeButton = evidenceElement.querySelector(
-                "[data-remove-evidence]",
-              ) as HTMLButtonElement;
-
-              if (title) {
-                title.textContent = `Evidence ${index + 1}`;
-              }
-
-              removeButton.addEventListener("click", () =>
-                removeEvidence(index),
-              );
-
-              evidenceElement
-                .querySelectorAll<HTMLInputElement>("[data-evidence-field]")
-                .forEach((field) => {
-                  const key = field.dataset
-                    .evidenceField as keyof EvidenceDraft;
-                  if (!key) {
-                    throw new Error("Expected evidence field key.");
-                  }
-                  field.name = evidenceFieldName(index, key);
-                  field.id = evidenceFieldId(index, key);
-                  field.value = currentEvidence[key];
-                });
-
-              evidenceElement
-                .querySelectorAll<HTMLLabelElement>("[data-evidence-label]")
-                .forEach((label) => {
-                  const key = label.dataset
-                    .evidenceLabel as keyof EvidenceDraft;
-                  if (!key) {
-                    throw new Error("Expected evidence label key.");
-                  }
-                  label.htmlFor = evidenceFieldId(index, key);
-                });
-
-              return evidenceElement;
-            });
-
-            evidenceList.replaceChildren(...evidenceElements);
-          };
-
-          const saveDraft = async (saveMode: "autosave" | "submit") => {
-            const data = readReportData(new FormData(form));
-
-            try {
-              const response = await fetch(draftEndpoint, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  draftId: getReportDraftId() || null,
-                  data,
-                }),
-              });
-
-              if (!response.ok) {
-                const failureKey = `failure:${saveMode}`;
-                if (!trackedDraftOutcomes.has(failureKey)) {
-                  trackedDraftOutcomes.add(failureKey);
-                  trackReportEvent("report_draft_save_failed", {
-                    response_status: response.status,
-                    save_mode: saveMode,
-                  });
-                }
-                return false;
-              }
-
-              const result = await response.json();
-              if (result?.draftId) {
-                setReportDraftId(result.draftId);
-              }
-              const successKey = `success:${saveMode}`;
-              if (!trackedDraftOutcomes.has(successKey)) {
-                trackedDraftOutcomes.add(successKey);
-                trackReportEvent("report_draft_saved", {
-                  save_mode: saveMode,
-                });
-              }
-              return true;
-            } catch (_error) {
-              const failureKey = `failure:${saveMode}`;
-              if (!trackedDraftOutcomes.has(failureKey)) {
-                trackedDraftOutcomes.add(failureKey);
-                trackReportEvent("report_draft_save_failed", {
-                  save_mode: saveMode,
-                });
-              }
-              return false;
-            }
-          };
-
-          let saveDraftTimer: number | null = null;
-          let saveDraftInFlight: Promise<boolean> | null = null;
-          let rerunDraftSave = false;
-          let lastSavedDraftSnapshot = "";
-          let draftDirty = false;
-
-          const getDraftSnapshot = () =>
-            JSON.stringify(readReportData(new FormData(form)));
-
-          const runDraftSave = async (
-            saveMode: "autosave" | "submit" = "autosave",
-          ): Promise<boolean> => {
-            if (!draftDirty) {
-              return true;
-            }
-
-            const snapshot = getDraftSnapshot();
-            if (snapshot === lastSavedDraftSnapshot) {
-              draftDirty = false;
-              return true;
-            }
-
-            while (saveDraftInFlight) {
-              rerunDraftSave = true;
-              await saveDraftInFlight;
-            }
-
-            let result = false;
-            do {
-              const nextSnapshot = getDraftSnapshot();
-              if (nextSnapshot === lastSavedDraftSnapshot) {
-                draftDirty = false;
-                return true;
-              }
-              rerunDraftSave = false;
-              saveDraftInFlight = saveDraft(saveMode);
-              result = await saveDraftInFlight;
-              if (result) {
-                lastSavedDraftSnapshot = nextSnapshot;
-                draftDirty = false;
-              }
-              saveDraftInFlight = null;
-            } while (rerunDraftSave);
-
-            return result;
-          };
-
-          const scheduleDraftSave = (delay = 350) => {
-            if (saveDraftTimer !== null) {
-              window.clearTimeout(saveDraftTimer);
-            }
-
-            saveDraftTimer = window.setTimeout(() => {
-              saveDraftTimer = null;
-              void runDraftSave("autosave");
-            }, delay);
-          };
-
-          const flushDraftSave = async () => {
-            if (saveDraftTimer !== null) {
-              window.clearTimeout(saveDraftTimer);
-              saveDraftTimer = null;
-            }
-
-            return runDraftSave("submit");
-          };
-
-          const markDraftDirty = (delay = 350) => {
-            draftDirty = true;
-            scheduleDraftSave(delay);
-          };
-
-          const restoreDraft = (data: ReportDraft) => {
-            draft = data;
-
-            renderOfficers();
-            renderWitnesses();
-            renderEvidence();
-
-            Object.entries(data).forEach(([name, rawValue]) => {
-              if (structuredRoots.includes(name)) {
-                return;
-              }
-
-              const values = Array.isArray(rawValue)
-                ? rawValue.map((value) => String(value ?? ""))
-                : [String(rawValue ?? "")];
-
-              form
-                .querySelectorAll(`[name="${CSS.escape(name)}"]`)
-                .forEach((field) => {
-                  if (
-                    field instanceof HTMLInputElement &&
-                    field.type === "checkbox"
-                  ) {
-                    field.checked = values.includes(field.value);
-                    return;
-                  }
-
-                  if (
-                    field instanceof HTMLInputElement &&
-                    field.type === "radio"
-                  ) {
-                    field.checked = values.includes(field.value);
-                    return;
-                  }
-
-                  if (
-                    field instanceof HTMLInputElement ||
-                    field instanceof HTMLTextAreaElement ||
-                    field instanceof HTMLSelectElement
-                  ) {
-                    field.value = values[0] || "";
-                  }
-                });
-            });
-          };
-
-          const loadDraft = async () => {
-            const draftId = getReportDraftId();
-
-            if (!draftId) {
-              return;
-            }
-
-            try {
-              const response = await fetch(
-                `${draftEndpoint}?draftId=${encodeURIComponent(draftId)}`,
-                {
-                  headers: { Accept: "application/json" },
-                },
-              );
-
-              if (response.status === 204) {
-                clearReportDraftCookie();
-                return;
-              }
-
-              if (!response.ok) {
-                return;
-              }
-
-              const payload = await response.json();
-              if (payload?.data) {
-                trackReportEvent("report_draft_loaded", {
-                  draft_source: "server",
-                });
-                restoreDraft(payload.data as ReportDraft);
-                lastSavedDraftSnapshot = getDraftSnapshot();
-                draftDirty = false;
-                return;
-              }
-
-              clearReportDraftCookie();
-            } catch (_error) {}
-          };
-
-          applyPrefill();
-          renderOfficers();
-          renderWitnesses();
-          renderEvidence();
-          lastSavedDraftSnapshot = getDraftSnapshot();
-          draftDirty = false;
-
-          form.addEventListener("change", (event) => {
-            const target = event.target;
-            if (
-              !(
-                target instanceof HTMLInputElement ||
-                target instanceof HTMLTextAreaElement ||
-                target instanceof HTMLSelectElement
-              )
-            ) {
-              return;
-            }
-            if (target.matches("[data-officer-trait]") && target.name) {
-              const officerElement = target.closest("[data-officer]");
-              form
-                .querySelectorAll<HTMLInputElement>(
-                  `input[type="radio"][name="${CSS.escape(target.name)}"]`,
-                )
-                .forEach((field) => field.setCustomValidity(""));
-              officerElement
-                ?.querySelector<HTMLElement>("[data-officer-assessment-error]")
-                ?.classList.add("d-none");
-            }
-            markReportStarted("field_change");
-            markDraftDirty();
-          });
-          addOfficerButton.addEventListener("click", addOfficer);
-          addWitnessButton.addEventListener("click", addWitness);
-          addEvidenceButton.addEventListener("click", addEvidence);
-
-          form.addEventListener("submit", async (event) => {
-            await submitJsonForm({
-              event,
-              form,
-              formName: "reportNew",
-              async onBeforeSubmit() {
-                if (await flushDraftSave()) {
-                  return;
-                }
-                throw new Error(
-                  "We could not safely save your progress to the server. Please try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.",
-                );
-              },
-              validate() {
-                return validateOfficerAssessments();
-              },
-              buildPayload({ formData, formName, recaptchaToken }) {
-                return {
-                  data: readReportData(formData),
-                  draftId: getReportDraftId() || null,
-                  formName,
-                  recaptchaToken,
-                };
-              },
-              onSuccess: clearReportDraftCookie,
-              recaptchaAction: "reportNewSubmit",
-              successKind: "verification_pending",
-            });
-          });
-          initRecaptcha();
-
-          const scrollToReportSection = (hash: string) => {
-            if (!hash.startsWith("#")) {
-              return;
-            }
-
-            const target = document.querySelector<HTMLElement>(hash);
-            if (!target) {
-              return;
-            }
-
-            target.closest("details")?.setAttribute("open", "");
-
-            window.requestAnimationFrame(() => {
-              target.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              });
-            });
-          };
-
-          form
-            .querySelectorAll<HTMLAnchorElement>("[data-report-jump]")
-            .forEach((link) => {
-              link.addEventListener("click", (event) => {
-                const hash = link.getAttribute("href") || "";
-                if (!hash.startsWith("#")) {
-                  return;
-                }
-
-                event.preventDefault();
-                trackReportEvent("report_section_jump", {
-                  destination_hash: hash,
-                });
-                history.replaceState(null, "", hash);
-                scrollToReportSection(hash);
-              });
-            });
-
-          void loadDraft();
+        if (field instanceof HTMLInputElement && field.type === "radio") {
+          field.checked = values.includes(field.value);
+          return;
         }
+
+        if (
+          field instanceof HTMLInputElement ||
+          field instanceof HTMLTextAreaElement ||
+          field instanceof HTMLSelectElement
+        ) {
+          field.value = values[0] || "";
+        }
+      });
+    });
+  };
+
+  const restoreDraft = (data: ReportDraft) => {
+    draft = {
+      ...data,
+      people: Array.isArray(data.people) && data.people.length > 0 ? data.people : [emptyPerson()],
+      evidence: Array.isArray(data.evidence) ? data.evidence : [],
+    };
+    renderPeople();
+    renderEvidence();
+    restoreStaticFields(draft);
+  };
+
+  let saveDraftTimer: number | null = null;
+  let saveDraftInFlight: Promise<boolean> | null = null;
+  let rerunDraftSave = false;
+  let lastSavedDraftSnapshot = "";
+  let draftDirty = false;
+
+  const getDraftSnapshot = () => JSON.stringify(readReportData());
+
+  const saveDraft = async (saveMode: "autosave" | "submit") => {
+    try {
+      const response = await fetch(draftEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          draftId: getReportDraftId() || null,
+          data: readReportData(),
+        }),
+      });
+
+      if (!response.ok) {
+        trackReportEvent("report_draft_save_failed", {
+          response_status: response.status,
+          save_mode: saveMode,
+        });
+        return false;
       }
-    } else {
-      showFormLoadError({ formName: "reportNew", shell: formShell });
+
+      const result = await response.json();
+      if (result?.draftId) {
+        setReportDraftId(result.draftId);
+      }
+      trackReportEvent("report_draft_saved", { save_mode: saveMode });
+      return true;
+    } catch (_error) {
+      trackReportEvent("report_draft_save_failed", { save_mode: saveMode });
+      return false;
     }
-  </script>
-</SiteLayout>
+  };
+
+  const runDraftSave = async (saveMode: "autosave" | "submit" = "autosave") => {
+    if (!draftDirty) return true;
+
+    const snapshot = getDraftSnapshot();
+    if (snapshot === lastSavedDraftSnapshot) {
+      draftDirty = false;
+      return true;
+    }
+
+    while (saveDraftInFlight) {
+      rerunDraftSave = true;
+      await saveDraftInFlight;
+    }
+
+    let result = false;
+    do {
+      const nextSnapshot = getDraftSnapshot();
+      if (nextSnapshot === lastSavedDraftSnapshot) {
+        draftDirty = false;
+        return true;
+      }
+      rerunDraftSave = false;
+      saveDraftInFlight = saveDraft(saveMode);
+      result = await saveDraftInFlight;
+      if (result) {
+        lastSavedDraftSnapshot = nextSnapshot;
+        draftDirty = false;
+      }
+      saveDraftInFlight = null;
+    } while (rerunDraftSave);
+
+    return result;
+  };
+
+  const scheduleDraftSave = (delay = 350) => {
+    if (saveDraftTimer !== null) {
+      window.clearTimeout(saveDraftTimer);
+    }
+
+    saveDraftTimer = window.setTimeout(() => {
+      saveDraftTimer = null;
+      void runDraftSave("autosave");
+    }, delay);
+  };
+
+  const markDraftDirty = (delay = 350) => {
+    draftDirty = true;
+    scheduleDraftSave(delay);
+  };
+
+  const flushDraftSave = async () => {
+    if (saveDraftTimer !== null) {
+      window.clearTimeout(saveDraftTimer);
+      saveDraftTimer = null;
+    }
+
+    return runDraftSave("submit");
+  };
+
+  const loadDraft = async () => {
+    const draftId = getReportDraftId();
+    if (!draftId) return;
+
+    try {
+      const response = await fetch(`${draftEndpoint}?draftId=${encodeURIComponent(draftId)}`, {
+        headers: { Accept: "application/json" },
+      });
+
+      if (response.status === 204) {
+        clearReportDraftCookie();
+        return;
+      }
+
+      if (!response.ok) return;
+
+      const payload = await response.json();
+      if (payload?.data) {
+        restoreDraft(payload.data as ReportDraft);
+        trackReportEvent("report_draft_loaded", { draft_source: "server" });
+        lastSavedDraftSnapshot = getDraftSnapshot();
+        draftDirty = false;
+        return;
+      }
+
+      clearReportDraftCookie();
+    } catch (_error) {}
+  };
+
+  let reportStarted = false;
+
+  const markReportStarted = (source: string) => {
+    if (reportStarted) return;
+    reportStarted = true;
+    trackReportEvent("report_form_started", { source });
+  };
+
+  form.querySelector<HTMLButtonElement>("[data-add-person]")?.addEventListener("click", () => {
+    markReportStarted("add_person");
+    trackReportEvent("report_optional_section_used", { section: "people" });
+    draft = readReportData({ keepEmptyRows: true });
+    const people = Array.isArray(draft.people) && draft.people.length > 0 ? draft.people : [emptyPerson()];
+    draft.people = [...people, emptyPerson()];
+    renderPeople();
+    markDraftDirty();
+  });
+
+  form.querySelector<HTMLButtonElement>("[data-add-evidence]")?.addEventListener("click", () => {
+    markReportStarted("add_evidence");
+    trackReportEvent("report_optional_section_used", { section: "evidence" });
+    draft = readReportData({ keepEmptyRows: true });
+    const evidence = Array.isArray(draft.evidence) ? draft.evidence : [];
+    draft.evidence = [...evidence, emptyEvidence()];
+    renderEvidence();
+    markDraftDirty();
+  });
+
+  renderPeople();
+  renderEvidence();
+  lastSavedDraftSnapshot = getDraftSnapshot();
+  draftDirty = false;
+
+  form.addEventListener("change", (event) => {
+    const target = event.target;
+    if (
+      !(
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement
+      )
+    ) {
+      return;
+    }
+    markReportStarted("field_change");
+    trackReportEvent("report_step_progress", {
+      field_name: target.name || target.id || "unknown",
+    });
+    markDraftDirty();
+  });
+
+  form.addEventListener("input", (event) => {
+    const target = event.target;
+    if (
+      !(
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement
+      )
+    ) {
+      return;
+    }
+    markReportStarted("field_input");
+    markDraftDirty();
+  });
+
+  form.addEventListener("submit", async (event) => {
+    await submitJsonForm({
+      event,
+      form,
+      formName: "reportNew",
+      async onBeforeSubmit() {
+        if (await flushDraftSave()) return;
+        throw new Error(
+          "We could not safely save your progress to the server. Please try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.",
+        );
+      },
+      buildPayload({ formName, recaptchaToken }) {
+        return {
+          data: readReportData(),
+          draftId: getReportDraftId() || null,
+          formName,
+          recaptchaToken,
+        };
+      },
+      onSuccess: () => clearReportDraftCookie(),
+      recaptchaAction: "reportNewSubmit",
+      successKind: "verification_pending",
+    });
+  });
+
+  initRecaptcha();
+  void loadDraft();
+</script>

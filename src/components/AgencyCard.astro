@@ -10,7 +10,7 @@ const civilCaseLabel = `${agency.civilCaseCount} civil cases`;
 const locationLabel = [agency.city, agency.state, agency.zipCode]
   .filter(Boolean)
   .join(", ");
-const reportHref = `/report/${agency.state.toLowerCase()}/`;
+const reportHref = `/${agency.state.toLowerCase()}/reports/`;
 const phoneHref = agency.phoneNumber
   ? agency.phoneNumber.replace(/[^\d+]/g, "")
   : null;

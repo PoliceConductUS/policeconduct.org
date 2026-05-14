@@ -1,5 +1,3 @@
-import { slugify } from "#src/lib/slug.js";
-
 type AgencyLocationInput = {
   state?: string | null;
   administrativeArea?: string | null;
@@ -21,9 +19,6 @@ export const normalizeStateSlug = (value: unknown) =>
 export const normalizePlaceLabel = (value: unknown) =>
   trimText(value).replace(/\s+/g, " ");
 
-export const locationSlug = (value: unknown) =>
-  slugify(normalizePlaceLabel(value));
-
 export const getAgencyAdministrativeArea = (agency: AgencyLocationInput) =>
   trimText(agency.administrativeArea ?? agency.administrative_area) || null;
 
@@ -36,8 +31,7 @@ export const getAgencyAdministrativeAreaSlug = (
   if (stored) {
     return stored.toLowerCase();
   }
-  const label = getAgencyAdministrativeArea(agency);
-  return label ? locationSlug(label) : null;
+  return null;
 };
 
 export const getAgencyPlaceLabel = (agency: AgencyLocationInput) =>
@@ -48,8 +42,7 @@ export const getAgencyPlaceSlug = (agency: AgencyLocationInput) => {
   if (stored) {
     return stored.toLowerCase();
   }
-  const label = getAgencyPlaceLabel(agency);
-  return label ? locationSlug(label) : null;
+  return null;
 };
 
 export const buildPlacePath = (agency: AgencyLocationInput) => {

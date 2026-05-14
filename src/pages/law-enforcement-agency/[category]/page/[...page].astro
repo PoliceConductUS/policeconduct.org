@@ -251,7 +251,7 @@ const structuredData = {
                         <span>{agency.activePersonnelCount} personnel</span>
                       ) : null}
                       {agency.reportCount > 0 ? (
-                        <a href={`/report/${agency.state.toLowerCase()}/`}>
+                        <a href={`/${agency.state.toLowerCase()}/reports/`}>
                           {agency.reportCount} reports
                         </a>
                       ) : null}

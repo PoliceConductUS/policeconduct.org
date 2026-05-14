@@ -4,7 +4,7 @@ import type { PersonnelSummary } from "#src/lib/data/types.js";
 const { person } = Astro.props as {
   person: PersonnelSummary;
 };
-const reportHref = `/report/${person.agencyState}/`;
+const reportHref = `/${person.agencyState}/reports/`;
 ---
 
 <article class="card shadow-sm border-0 rounded-0 h-100">

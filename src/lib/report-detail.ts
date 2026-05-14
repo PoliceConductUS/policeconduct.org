@@ -2,6 +2,7 @@ import { withDb } from "./db.js";
 import { groupBy, mapBy } from "./data.js";
 import { loadCoverageLinksForReport } from "./data/coverage.js";
 import { requireAgencyCanonicalPath } from "./data/location-paths.js";
+import { buildReportCanonicalPath } from "./data/report-paths.js";
 
 const assertValue = <T>(value: T | null | undefined, message: string): T => {
   if (value === null || value === undefined) {
@@ -44,6 +45,7 @@ type ReportDetailQuery = {
 
 export type ReportDetailModel = {
   report: Record<string, unknown>;
+  canonicalPath: string;
   reportWitnesses: Record<string, unknown>[];
   reportAttachments: Record<string, unknown>[];
   tags: string[];
@@ -277,7 +279,6 @@ export const loadReportDetail = async (
             civil_case.cause_number,
             civil_case.court,
             civil_case.filed_date,
-            civil_case.category,
             civil_case.slug
           from public.civil_cases civil_case
           join public.civil_case_officers civil_case_officer
@@ -294,6 +295,12 @@ export const loadReportDetail = async (
 
   return {
     report: data.report,
+    canonicalPath: buildReportCanonicalPath({
+      id: String(data.report.id),
+      incidentDate: data.report.incident_date as string | Date | null,
+      locationPath: data.report.location_path as string | null,
+      slug: data.report.slug as string | null,
+    }),
     reportWitnesses: data.reportWitnesses ?? [],
     reportAttachments: data.reportAttachments ?? [],
     tags,

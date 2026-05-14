@@ -103,9 +103,6 @@ const administrativeAreaPluralForState = (areas) =>
       ].join(" and ")
     : "Counties";
 
-const locationIdFor = (path) =>
-  `loc_${crypto.createHash("sha256").update(path).digest("hex").slice(0, 24)}`;
-
 const averageCoordinate = (items, field) => {
   const values = items
     .map((item) => item[field])
@@ -215,6 +212,76 @@ const insertJsonRow = async (client, row) => {
       row.content_updated_at,
     ],
   );
+};
+
+const fetchLocationRowsByPath = async (client, paths) => {
+  if (!paths.length) return new Map();
+
+  const result = await client.query(
+    `
+      select
+        location_path_id,
+        path,
+        level,
+        state_or_territory_slug,
+        administrative_area_slug,
+        place_slug,
+        state_or_territory_name,
+        administrative_area_name,
+        place_name,
+        parent_location_path_id
+      from public.location_path
+      where path = any($1)
+    `,
+    [paths],
+  );
+
+  return new Map(result.rows.map((row) => [row.path, row]));
+};
+
+const requireLocationRow = (locationsByPath, path) => {
+  const row = locationsByPath.get(path);
+  if (!row) {
+    throw new Error(
+      `Missing required location_path row for ${path}. Add the location to the database before refreshing build projections.`,
+    );
+  }
+  return row;
+};
+
+const applyLocationRow = ({
+  location,
+  locationsByPath,
+  expectedLevel,
+  parentPath,
+}) => {
+  const row = requireLocationRow(locationsByPath, location.path);
+
+  if (row.level !== expectedLevel) {
+    throw new Error(
+      `Location ${location.path} has level ${row.level}, expected ${expectedLevel}.`,
+    );
+  }
+
+  const parentRow = parentPath
+    ? requireLocationRow(locationsByPath, parentPath)
+    : null;
+
+  if (parentRow && row.parent_location_path_id !== parentRow.location_path_id) {
+    throw new Error(
+      `Location ${location.path} has parent_location_path_id ${row.parent_location_path_id || "null"}, expected ${parentRow.location_path_id} from ${parentPath}.`,
+    );
+  }
+
+  if (!parentRow && row.parent_location_path_id) {
+    throw new Error(
+      `Root location ${location.path} must not have parent_location_path_id ${row.parent_location_path_id}.`,
+    );
+  }
+
+  location.id = row.location_path_id;
+  location.parentId = row.parent_location_path_id || null;
+  return location;
 };
 
 const startedAt = Date.now();
@@ -329,7 +396,6 @@ await withDb(async (client) => {
       let state = states.get(agency.stateSlug);
       if (!state) {
         state = {
-          id: locationIdFor(`/${agency.stateSlug}/`),
           level: "state",
           state: agency.stateSlug,
           stateLabel: stateNameFor(agency.stateSlug),
@@ -348,7 +414,6 @@ await withDb(async (client) => {
       if (!area) {
         const path = `/${agency.stateSlug}/${agency.administrativeAreaSlug}/`;
         area = {
-          id: locationIdFor(path),
           level: "administrative_area",
           state: agency.stateSlug,
           stateLabel: state.stateLabel,
@@ -356,7 +421,7 @@ await withDb(async (client) => {
           administrativeAreaKind: agency.administrativeAreaKind,
           administrativeAreaSlug: agency.administrativeAreaSlug,
           path,
-          parentId: state.id,
+          parentPath: state.path,
           places: new Map(),
           agencies: [],
           updatedAt: agency.updatedAt || agency.createdAt,
@@ -370,7 +435,6 @@ await withDb(async (client) => {
       if (!place) {
         const path = `${area.path}${agency.placeSlug}/`;
         place = {
-          id: locationIdFor(path),
           level: "place",
           state: agency.stateSlug,
           stateLabel: state.stateLabel,
@@ -380,7 +444,7 @@ await withDb(async (client) => {
           place: agency.city,
           placeSlug: agency.placeSlug,
           path,
-          parentId: area.id,
+          parentPath: area.path,
           agencies: [],
           updatedAt: agency.updatedAt || agency.createdAt,
         };
@@ -389,7 +453,6 @@ await withDb(async (client) => {
         place.place = agency.city;
       }
       place.agencies.push(agency);
-      agency.locationPathId = place.id;
       agency.locationPath = place.path;
       agency.canonicalPath = `${place.path}${agency.agencySlug}/`;
       if (agency.updatedAt > place.updatedAt)
@@ -401,21 +464,54 @@ await withDb(async (client) => {
     await client.query("delete from public.agency_zip_index");
     await client.query("delete from public.location_path_closure");
 
+    const requiredLocationPaths = new Set();
+    for (const state of states.values()) {
+      requiredLocationPaths.add(state.path);
+      for (const area of state.areas.values()) {
+        requiredLocationPaths.add(area.path);
+        for (const place of area.places.values()) {
+          requiredLocationPaths.add(place.path);
+        }
+      }
+    }
+    const locationsByPath = await fetchLocationRowsByPath(
+      client,
+      [...requiredLocationPaths],
+    );
+
     const locations = [];
     for (const state of states.values()) {
+      applyLocationRow({
+        location: state,
+        locationsByPath,
+        expectedLevel: "state",
+      });
       const areas = [...state.areas.values()].sort((a, b) =>
         compareLabel(a.administrativeArea, b.administrativeArea),
       );
       state.administrativeAreaPlural = administrativeAreaPluralForState(areas);
       locations.push(state);
       for (const area of areas) {
+        applyLocationRow({
+          location: area,
+          locationsByPath,
+          expectedLevel: "administrative_area",
+          parentPath: state.path,
+        });
         const places = [...area.places.values()].sort((a, b) =>
           compareLabel(a.place, b.place),
         );
         locations.push(area);
         for (const place of places) {
+          applyLocationRow({
+            location: place,
+            locationsByPath,
+            expectedLevel: "place",
+            parentPath: area.path,
+          });
           place.agencies.sort((a, b) => compareLabel(a.name, b.name));
           for (const agency of place.agencies) {
+            agency.locationPathId = place.id;
             agency.mapPoint =
               Number.isFinite(agency.latitude) &&
               Number.isFinite(agency.longitude)
@@ -453,60 +549,6 @@ await withDb(async (client) => {
             ? { lat: area.latitude, lng: area.longitude }
             : null;
       }
-    }
-
-    for (const location of locations) {
-      await client.query(
-        `
-          insert into public.location_path (
-            location_path_id, path, level, state_or_territory_slug,
-            administrative_area_slug, place_slug, state_or_territory_name,
-            administrative_area_name, place_name, parent_location_path_id,
-            latitude, longitude,
-            map_min_lat, map_min_lng, map_max_lat, map_max_lng,
-            map_position_source,
-            updated_at
-          )
-          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, timezone('utc'::text, now()))
-          on conflict (location_path_id) do update set
-            path = excluded.path,
-            level = excluded.level,
-            state_or_territory_slug = excluded.state_or_territory_slug,
-            administrative_area_slug = excluded.administrative_area_slug,
-            place_slug = excluded.place_slug,
-            state_or_territory_name = excluded.state_or_territory_name,
-            administrative_area_name = excluded.administrative_area_name,
-            place_name = excluded.place_name,
-            parent_location_path_id = excluded.parent_location_path_id,
-            latitude = excluded.latitude,
-            longitude = excluded.longitude,
-            map_min_lat = excluded.map_min_lat,
-            map_min_lng = excluded.map_min_lng,
-            map_max_lat = excluded.map_max_lat,
-            map_max_lng = excluded.map_max_lng,
-            map_position_source = excluded.map_position_source,
-            updated_at = excluded.updated_at
-        `,
-        [
-          location.id,
-          location.path,
-          location.level,
-          location.state,
-          location.administrativeAreaSlug || null,
-          location.placeSlug || null,
-          location.stateLabel,
-          location.administrativeArea || null,
-          location.place || null,
-          location.parentId || null,
-          location.latitude ?? null,
-          location.longitude ?? null,
-          location.mapBounds?.minLat ?? null,
-          location.mapBounds?.minLng ?? null,
-          location.mapBounds?.maxLat ?? null,
-          location.mapBounds?.maxLng ?? null,
-          location.mapPositionSource || null,
-        ],
-      );
     }
 
     for (const location of locations) {

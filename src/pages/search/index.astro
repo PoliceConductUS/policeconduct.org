@@ -22,7 +22,7 @@ const [locations, federalAgencies, agencies, personnel, reports, civilCases] =
       return (
         await client.query(
           `
-          select slug, category, title, cause_number, court
+          select slug, title, cause_number, court
           from public.civil_cases
           where slug is not null
           order by filed_date desc nulls last, title asc
@@ -175,7 +175,7 @@ const structuredData = buildWebPage({
               reports.slice(0, 200).map((report) => (
                 <a
                   class="search-result"
-                  href={`/report/${report.slug}/`}
+                  href={report.canonicalPath}
                   data-search-item={`${report.title} ${report.address || ""} ${report.agencyName}`}
                 >
                   <span>{report.title}</span>

@@ -12,6 +12,7 @@ import { getPersonnelImageById } from "#src/lib/personnel-images.js";
 import ProfileTabs from "#src/components/ProfileTabs.astro";
 import { loadCoverageLinksForOfficer } from "#src/lib/data/coverage.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
+import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
@@ -79,9 +80,15 @@ const data = await withDb(async (client) => {
   );
   const reports = reportIds.length
     ? (
-        await client.query("select * from public.reviews where id = any($1)", [
-          reportIds,
-        ])
+        await client.query(
+          `
+            select r.*, lp.path as location_path
+            from public.reviews r
+            join public.location_path lp on lp.location_path_id = r.location_path_id
+            where r.id = any($1)
+          `,
+          [reportIds],
+        )
       ).rows
     : [];
 
@@ -185,11 +192,21 @@ const civilCasesWithPaths = data.civilCases.map(
 );
 
 const reportItems = data.reports.map(
-  (report: { incident_date: string; slug: string; category: string }) => {
+  (report: {
+    id: string;
+    incident_date: string;
+    location_path: string;
+    slug: string;
+  }) => {
     return {
       ...report,
       incidentDate: formatShortDate(report.incident_date),
-      url: `/report/${report.slug}/`,
+      url: buildReportCanonicalPath({
+        id: report.id,
+        incidentDate: report.incident_date,
+        locationPath: report.location_path,
+        slug: report.slug,
+      }),
     };
   },
 );
@@ -258,7 +275,7 @@ const reportNewPrefillPayload = JSON.stringify({
 } satisfies ReportNewPrefill);
 const addCivilCaseHref = "/civil-litigation/new/";
 const addCivilCasePrefillPayload = JSON.stringify({
-  jurisdiction: currentAgency?.category?.toLowerCase() || "",
+  jurisdiction: String(currentAgency?.state || "").toLowerCase(),
   defendants: [officerName, currentAgency?.name || ""]
     .filter(Boolean)
     .join("\n"),
