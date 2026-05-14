@@ -33,9 +33,9 @@ const mapPoints = (state.children || [])
   .filter((area) => area.mapPoint)
   .map((area) => ({
     count: area.childCount,
-    href: area.path,
-    label: area.label,
-    meta: `${area.childCount} places`,
+    href: area.nextPath || area.path,
+    label: area.nextLabel || area.label,
+    meta: area.nextDetail || `${area.childCount} places`,
     lat: area.mapPoint!.lat,
     lng: area.mapPoint!.lng,
   }));
@@ -73,7 +73,13 @@ const structuredData = buildWebPage({
               Browse by {administrativeAreaPlural.toLowerCase()}, then by place.
             </p>
           </div>
-          <div class="col-12 col-lg-4">
+        </div>
+      </div>
+    </section>
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row g-3 align-items-end mb-4">
+          <div class="col-12 col-md-6">
             <label class="form-label fw-semibold" for="areaJump">
               Jump to {administrativeAreaPlural.toLowerCase()}
             </label>
@@ -87,13 +93,16 @@ const structuredData = buildWebPage({
               >
               {
                 (state.children || []).map((area) => (
-                  <option value={area.path}>
-                    {area.label} ({area.childCount})
+                  <option value={area.nextPath || area.path}>
+                    {area.nextLabel || area.label}
+                    {area.nextDetail ? ` (${area.nextDetail})` : ""}
                   </option>
                 ))
               }
             </select>
-            <label class="form-label fw-semibold mt-3" for="areaSearch">
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-semibold" for="areaSearch">
               Search {administrativeAreaPlural.toLowerCase()}
             </label>
             <input
@@ -105,10 +114,6 @@ const structuredData = buildWebPage({
             />
           </div>
         </div>
-      </div>
-    </section>
-    <section class="py-vh-2">
-      <div class="container">
         <LocationMap
           title={`${state.stateLabel} ${administrativeAreaPlural}`}
           description={`${administrativeAreaPlural} with available agency records.`}
@@ -129,14 +134,18 @@ const structuredData = buildWebPage({
                   <article
                     class="profile-record"
                     data-location-filter-item
-                    data-location-filter-text={`${area.label} ${area.childCount} places`}
+                    data-location-filter-text={`${area.label} ${area.nextLabel || ""} ${area.nextDetail || ""}`}
                   >
                     <div class="profile-record-body">
                       <h3 class="profile-record-title">
-                        <a href={area.path}>{area.label}</a>
+                        <a href={area.nextPath || area.path}>
+                          {area.nextLabel || area.label}
+                        </a>
                       </h3>
                       <div class="profile-record-detail">
-                        <span>{area.childCount} places</span>
+                        <span>
+                          {area.nextDetail || `${area.childCount} places`}
+                        </span>
                       </div>
                     </div>
                   </article>

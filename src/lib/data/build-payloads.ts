@@ -2,9 +2,13 @@ import { withDb } from "#src/lib/db.js";
 
 export type LocationChildPayload = {
   childCount: number;
+  directAgency?: LocationAgencyPayload | null;
   kind?: string | null;
   label: string;
   mapPoint?: LocationMapPoint | null;
+  nextDetail?: string | null;
+  nextLabel?: string | null;
+  nextPath?: string | null;
   path: string;
 };
 
@@ -22,6 +26,8 @@ export type LocationMapPoint = {
 
 export type LocationAgencyPayload = {
   address?: string | null;
+  administrativeArea?: string | null;
+  city?: string | null;
   id: string;
   mapPoint?: LocationMapPoint | null;
   name: string;

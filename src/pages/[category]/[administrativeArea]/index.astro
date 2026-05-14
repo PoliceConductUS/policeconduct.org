@@ -32,9 +32,9 @@ const mapPoints = (area.children || [])
   .filter((place) => place.mapPoint)
   .map((place) => ({
     count: place.childCount,
-    href: place.path,
-    label: place.label,
-    meta: `${place.childCount} agencies located here`,
+    href: place.nextPath || place.path,
+    label: place.nextLabel || place.label,
+    meta: place.nextDetail || `${place.childCount} agencies located here`,
     lat: place.mapPoint!.lat,
     lng: place.mapPoint!.lng,
   }));
@@ -77,7 +77,13 @@ const structuredData = buildWebPage({
             <h1 class="display-4 fw-bold mb-3">{area.administrativeArea}</h1>
             <p class="lead text-muted mb-0">Select a place to see agencies.</p>
           </div>
-          <div class="col-12 col-lg-4">
+        </div>
+      </div>
+    </section>
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="row g-3 align-items-end mb-4">
+          <div class="col-12 col-md-6">
             <label class="form-label fw-semibold" for="placeJump">
               Jump to a place
             </label>
@@ -89,13 +95,16 @@ const structuredData = buildWebPage({
               <option value="">Select a place</option>
               {
                 (area.children || []).map((place) => (
-                  <option value={place.path}>
-                    {place.label} ({place.childCount})
+                  <option value={place.nextPath || place.path}>
+                    {place.nextLabel || place.label}
+                    {place.nextDetail ? ` (${place.nextDetail})` : ""}
                   </option>
                 ))
               }
             </select>
-            <label class="form-label fw-semibold mt-3" for="placeSearch">
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-semibold" for="placeSearch">
               Search places
             </label>
             <input
@@ -107,10 +116,6 @@ const structuredData = buildWebPage({
             />
           </div>
         </div>
-      </div>
-    </section>
-    <section class="py-vh-2">
-      <div class="container">
         <LocationMap
           title={`${area.administrativeArea} places`}
           description="Places with available agency records."
@@ -131,14 +136,19 @@ const structuredData = buildWebPage({
                   <article
                     class="profile-record"
                     data-location-filter-item
-                    data-location-filter-text={`${place.label} ${place.childCount} agencies located here`}
+                    data-location-filter-text={`${place.label} ${place.nextLabel || ""} ${place.nextDetail || ""}`}
                   >
                     <div class="profile-record-body">
                       <h3 class="profile-record-title">
-                        <a href={place.path}>{place.label}</a>
+                        <a href={place.nextPath || place.path}>
+                          {place.nextLabel || place.label}
+                        </a>
                       </h3>
                       <div class="profile-record-detail">
-                        <span>{place.childCount} agencies located here</span>
+                        <span>
+                          {place.nextDetail ||
+                            `${place.childCount} agencies located here`}
+                        </span>
                       </div>
                     </div>
                   </article>

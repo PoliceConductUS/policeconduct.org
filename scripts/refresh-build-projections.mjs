@@ -163,6 +163,62 @@ const locationPayload = ({ path, entityId, payload, contentUpdatedAt }) => ({
   content_updated_at: contentUpdatedAt,
 });
 
+const directAgencyFor = (agencies) => {
+  if (!Array.isArray(agencies) || agencies.length !== 1) return null;
+  const agency = agencies[0];
+  return {
+    id: agency.id,
+    name: agency.name,
+    slug: agency.agencySlug,
+    path: agency.canonicalPath,
+    address: agency.address,
+    administrativeArea: agency.administrativeArea,
+    city: agency.city,
+    mapPoint: agency.mapPoint || null,
+  };
+};
+
+const countLabel = (count, singular, plural) =>
+  `${count} ${count === 1 ? singular : plural}`;
+
+const stateAreaChildPayload = (area) => {
+  const directAgency = directAgencyFor(area.agencies);
+  const places = [...area.places.values()];
+  const directPlace = !directAgency && places.length === 1 ? places[0] : null;
+  return {
+    label: area.administrativeArea,
+    kind: area.administrativeAreaKind,
+    path: area.path,
+    childCount: area.places.size,
+    directAgency,
+    nextPath: directAgency?.path || directPlace?.path || area.path,
+    nextLabel:
+      directAgency?.name || directPlace?.place || area.administrativeArea,
+    nextDetail: directAgency
+      ? `${directAgency.city}, ${area.administrativeArea}`
+      : directPlace
+        ? area.administrativeArea
+        : countLabel(area.places.size, "place", "places"),
+    mapPoint: area.mapPoint,
+  };
+};
+
+const areaPlaceChildPayload = (place) => {
+  const directAgency = directAgencyFor(place.agencies);
+  return {
+    label: place.place,
+    path: place.path,
+    childCount: place.agencies.length,
+    directAgency,
+    nextPath: directAgency?.path || place.path,
+    nextLabel: directAgency?.name || place.place,
+    nextDetail: directAgency
+      ? place.place
+      : `${countLabel(place.agencies.length, "agency", "agencies")} located here`,
+    mapPoint: place.mapPoint,
+  };
+};
+
 const agencyPayload = ({ path, agency, locationPath }) => {
   const payload = {
     pageType: "agency",
@@ -644,13 +700,7 @@ await withDb(async (client) => {
             administrativeAreaPlural: state.administrativeAreaPlural,
             mapBounds: state.mapBounds,
             mapPositionSource: state.mapPositionSource,
-            children: areas.map((area) => ({
-              label: area.administrativeArea,
-              kind: area.administrativeAreaKind,
-              path: area.path,
-              childCount: area.places.size,
-              mapPoint: area.mapPoint,
-            })),
+            children: areas.map(stateAreaChildPayload),
           },
         }),
       );
@@ -676,12 +726,7 @@ await withDb(async (client) => {
               parentPath: state.path,
               mapBounds: area.mapBounds,
               mapPositionSource: area.mapPositionSource,
-              children: places.map((place) => ({
-                label: place.place,
-                path: place.path,
-                childCount: place.agencies.length,
-                mapPoint: place.mapPoint,
-              })),
+              children: places.map(areaPlaceChildPayload),
             },
           }),
         );

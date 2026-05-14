@@ -51,6 +51,9 @@ async function fillRequiredExperienceFields(page: Page) {
   await page
     .locator("#whatElse")
     .fill("I am not sure whether the stop was handled normally.");
+  await page.locator('[name="people[0][name]"]').fill("Officer description");
+  await page.locator("#bodycamRequested").selectOption("Not sure");
+  await page.locator("#complaintFiled").selectOption("Not sure");
   await page
     .locator("#reportPurpose")
     .selectOption("Help me understand whether this was normal");
@@ -87,11 +90,18 @@ test.describe("report new", () => {
     );
   });
 
-  test("adds and removes optional people involved", async ({ page }) => {
+  test("keeps at least one required person involved", async ({ page }) => {
     await page.goto("/report/new/");
 
     await expect(page.locator("[data-person-involved]")).toHaveCount(1);
     await expect(page.locator('[name="people[0][name]"]')).toBeVisible();
+    await expect(page.locator('[name="people[0][name]"]')).toHaveAttribute(
+      "required",
+      "",
+    );
+    await expect(
+      page.getByRole("button", { name: "Remove person" }),
+    ).toHaveCount(0);
     await expect(page.locator('[name="people[1][name]"]')).toHaveCount(0);
 
     await page.getByRole("button", { name: "Add another person" }).click();
@@ -166,7 +176,7 @@ test.describe("report new", () => {
     await expect(page.locator("[data-evidence]")).toHaveCount(0);
   });
 
-  test("submits required experience fields and keeps optional proof optional", async ({
+  test("submits required experience fields and keeps evidence optional", async ({
     page,
   }) => {
     await installRecaptchaMock(page);
@@ -207,10 +217,16 @@ test.describe("report new", () => {
       whatHappened: "The officer explained the stop.",
       howFelt: "I felt confused at first, then relieved when it was explained.",
       whatElse: "I am not sure whether the stop was handled normally.",
+      bodycamRequested: "Not sure",
+      complaintFiled: "Not sure",
       reportPurpose: "Help me understand whether this was normal",
       reporterName: "E2E Reporter",
       reporterEmail: "e2e@example.org",
-      people: [],
+      people: [
+        {
+          name: "Officer description",
+        },
+      ],
       evidence: [],
     });
     await expect(page.locator("[data-form-submit-success]")).toContainText(
@@ -257,7 +273,6 @@ test.describe("report new", () => {
     await page
       .locator('[name="evidence[0][description]"]')
       .fill("Video from the stop.");
-    await page.locator("#bodycamRequested").selectOption("Not sure");
     await page.locator("#complaintFiled").selectOption("No");
     await page.locator("#caseNumber").fill("AZ-123");
 
@@ -292,6 +307,26 @@ test.describe("report new", () => {
         },
       ],
     });
+  });
+
+  test("requires person names and nonblank added evidence rows", async ({
+    page,
+  }) => {
+    await page.goto("/report/new/");
+    await fillRequiredExperienceFields(page);
+
+    await page.locator('[name="people[0][name]"]').fill("");
+    await page.getByRole("button", { name: "Submit my experience" }).click();
+    await expect(page.locator('[name="people[0][name]"]')).toBeFocused();
+
+    await page.locator('[name="people[0][name]"]').fill("Officer description");
+    await page.getByRole("button", { name: "Add evidence or record" }).click();
+    await page.getByRole("button", { name: "Submit my experience" }).click();
+    await expect(page.locator('[name="evidence[0][link]"]')).toBeFocused();
+    await expect(page.locator('[name="evidence[0][link]"]')).toHaveJSProperty(
+      "validationMessage",
+      "Add a link, file name, or description, or remove this evidence row.",
+    );
   });
 
   test("restores draft data for new flow fields", async ({ page }) => {

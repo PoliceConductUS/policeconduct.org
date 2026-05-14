@@ -82,6 +82,20 @@ const structuredData = buildWebPage({
     </section>
     <section class="py-vh-2">
       <div class="container">
+        <div class="row g-3 align-items-end mb-4">
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-semibold" for="agencySearch">
+              Search agencies
+            </label>
+            <input
+              class="form-control rounded-0"
+              id="agencySearch"
+              type="search"
+              placeholder="Search agencies"
+              data-location-filter-input
+            />
+          </div>
+        </div>
         <LocationMap
           title={`${place.displayName} agencies`}
           description="Agencies with available records."
@@ -96,16 +110,6 @@ const structuredData = buildWebPage({
         <div class="row g-4">
           <div class="col-12">
             <h2 class="h4 mb-3">Agencies located here</h2>
-            <label class="form-label fw-semibold" for="agencySearch">
-              Search agencies
-            </label>
-            <input
-              class="form-control rounded-0 mb-3"
-              id="agencySearch"
-              type="search"
-              placeholder="Search agencies"
-              data-location-filter-input
-            />
             <div class="profile-record-list">
               {
                 (place.agencies || []).map((agency) => (

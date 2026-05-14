@@ -324,7 +324,8 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
             <h2>Records and evidence</h2>
             <p>
               You do not need proof to share what happened. Photos, videos,
-              records, or links can help, but they are not required.
+              records, or links can help, but they are not required. If you do
+              not know an answer, choose "Not sure."
             </p>
             <div class="row gx-0 gy-3 gx-md-3 mb-3">
               <div class="col-md-6">
@@ -335,6 +336,7 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
                   class="form-select"
                   id="bodycamRequested"
                   name="bodycamRequested"
+                  required
                 >
                   <option value="">Choose one</option>
                   <option>Yes</option>
@@ -350,6 +352,7 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
                   class="form-select"
                   id="complaintFiled"
                   name="complaintFiled"
+                  required
                 >
                   <option value="">Choose one</option>
                   <option>Yes</option>
@@ -507,12 +510,13 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
               <div class="row gx-0 gy-3 gx-md-3">
                 <div class="col-md-6">
                   <label class="form-label" for="person-name-0"
-                    >Name, badge number, or description</label
+                    >Name or description</label
                   >
                   <input
                     class="form-control"
                     id="person-name-0"
                     name="people[0][name]"
+                    required
                   />
                 </div>
                 <div class="col-md-6">
@@ -708,13 +712,7 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 
   const filterPeople = (people: PersonDraft[] | undefined): PersonDraft[] =>
     (Array.isArray(people) ? people : []).filter((person) =>
-      [
-        person.name,
-        person.badge,
-        person.department,
-        person.actions,
-        person.central,
-      ].some(hasValue),
+      hasValue(person.name),
     );
 
   const filterEvidence = (
@@ -830,6 +828,41 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
       personList.appendChild(fragment);
     });
   };
+
+  const getRepeatFields = (root: HTMLElement) =>
+    Array.from(
+      root.querySelectorAll<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >("input, select, textarea"),
+    );
+
+  const clearRepeatRowValidity = (root: HTMLElement) => {
+    getRepeatFields(root).forEach((field) => field.setCustomValidity(""));
+  };
+
+  const validateEvidenceRows = () => {
+    let valid = true;
+    evidenceList
+      .querySelectorAll<HTMLElement>("[data-evidence]")
+      .forEach((entry) => {
+        clearRepeatRowValidity(entry);
+        const link = entry.querySelector<HTMLInputElement>(
+          'input[name$="[link]"]',
+        );
+        const description = entry.querySelector<HTMLInputElement>(
+          'input[name$="[description]"]',
+        );
+        if (hasValue(link?.value) || hasValue(description?.value)) return;
+        const target = link ?? description;
+        target?.setCustomValidity(
+          "Add a link, file name, or description, or remove this evidence row.",
+        );
+        valid = false;
+      });
+    return valid;
+  };
+
+  const validateRepeatRows = () => validateEvidenceRows();
 
   const renderEvidence = () => {
     const evidence = Array.isArray(draft.evidence) ? draft.evidence : [];
@@ -1097,6 +1130,10 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
     ) {
       return;
     }
+    const repeatRow = target.closest<HTMLElement>(
+      "[data-person-involved], [data-evidence]",
+    );
+    if (repeatRow) clearRepeatRowValidity(repeatRow);
     markReportStarted("field_change");
     trackReportEvent("report_step_progress", {
       field_name: target.name || target.id || "unknown",
@@ -1114,6 +1151,10 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
     ) {
       return;
     }
+    const repeatRow = target.closest<HTMLElement>(
+      "[data-person-involved], [data-evidence]",
+    );
+    if (repeatRow) clearRepeatRowValidity(repeatRow);
     markReportStarted("field_input");
     markDraftDirty();
   });
@@ -1129,6 +1170,7 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           "We could not safely save your progress to the server. Please try again. If you cannot submit this form, print this page and email it to hello@policeconduct.org.",
         );
       },
+      validate: () => validateRepeatRows(),
       buildPayload({ formName, recaptchaToken }) {
         return {
           data: readReportData(),
