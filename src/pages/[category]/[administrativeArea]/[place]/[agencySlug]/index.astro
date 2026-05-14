@@ -35,8 +35,10 @@ const {
   placeLabel,
   placePath,
   civilCases,
+  personnelLinkedCivilCases,
   reportedReports,
-  employees,
+  currentEmployees,
+  formerEmployees,
   coverageLinks,
   counts,
 } = data;
@@ -190,7 +192,7 @@ const structuredData = {
     <div class="container">
       <Breadcrumbs
         items={[
-          { label: "Find My Area", href: "/find-my-area/" },
+          { label: "Find Records", href: "/find-records/" },
           { label: categoryLabel, href: `/${categorySlug}/` },
           {
             label: administrativeArea,
@@ -341,8 +343,8 @@ const structuredData = {
                     </p>
                   ) : (
                     <p class="mb-2 text-muted">
-                      No reports published yet for this agency. Submit a report
-                      to help build a transparent record.
+                      No reports published yet for this agency. Share your
+                      experience to help build a transparent record.
                     </p>
                   )
                 }
@@ -352,7 +354,7 @@ const structuredData = {
                     to="/report/new/"
                     payload={reportNewPrefillPayload}
                   >
-                    Submit a report
+                    Share your experience
                   </PrefillNavButton>
                   <PrefillNavButton
                     class="btn btn-outline-dark rounded-0"
@@ -422,9 +424,15 @@ const structuredData = {
             },
             {
               id: "agency-litigation",
-              label: "Civil litigation",
+              label: "Direct litigation",
               badge: counts.civilCases,
               tabType: "litigation",
+            },
+            {
+              id: "agency-personnel-linked-litigation",
+              label: "Linked litigation",
+              badge: counts.personnelLinkedCivilCases,
+              tabType: "personnelLinkedLitigation",
             },
             {
               id: "agency-coverage",
@@ -433,22 +441,40 @@ const structuredData = {
               tabType: "coverage",
             },
             {
-              id: "agency-personnel",
-              label: "Personnel",
-              badge: counts.personnel,
+              id: "agency-current-personnel",
+              label: "Current personnel",
+              badge: counts.currentPersonnel,
               tabType: "personnel",
+              slotName: "currentPersonnel",
+            },
+            {
+              id: "agency-former-personnel",
+              label: "Former personnel",
+              badge: counts.formerPersonnel,
+              tabType: "personnel",
+              slotName: "formerPersonnel",
             },
           ]}
           extraNavClasses="mb-3"
           litigation={{
             cases: civilCases,
           }}
+          personnelLinkedLitigation={{
+            cases: personnelLinkedCivilCases,
+            helperText:
+              "These cases are not necessarily against this agency. They are shown because current or former personnel associated with this agency are linked to civil litigation from another agency or jurisdiction.",
+          }}
           reports={{
             items: reportedReports,
             layout: "list",
           }}
-          personnel={{
-            entries: employees,
+          currentPersonnel={{
+            entries: currentEmployees,
+            emptyMessage: "No current personnel listed yet.",
+          }}
+          formerPersonnel={{
+            entries: formerEmployees,
+            emptyMessage: "No former personnel listed yet.",
           }}
           coverage={{
             links: coverageLinks,

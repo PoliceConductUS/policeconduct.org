@@ -12,20 +12,27 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
     <div class="container py-5">
       <div class="row justify-content-center">
         <div class="col-lg-9">
-          <p class="text-uppercase fw-semibold text-primary small mb-2">Share your experience</p>
-          <h1 class="display-5 fw-bold text-primary-emphasis mb-3">Document a police interaction</h1>
+          <p class="text-uppercase fw-semibold text-primary small mb-2">
+            Share your experience
+          </p>
+          <h1 class="display-5 fw-bold text-primary-emphasis mb-3">
+            Document a police interaction
+          </h1>
           <p class="lead mb-3">
             Share what happened, how you felt, and what people should know.
           </p>
           <p class="mb-3">
-            Police interactions can be helpful, routine, confusing, frightening, harmful, respectful,
-            or life-changing. All of those experiences can help communities understand how policing
-            works in real life.
+            Police interactions can be helpful, routine, confusing, frightening,
+            harmful, respectful, or life-changing. All of those experiences can
+            help communities understand how policing works in real life.
           </p>
           <div class="alert alert-info mb-0" role="note">
-            <strong>You do not need to prove misconduct to share what happened.</strong>
-            Contact information is not published. There is no account or proof of identity required,
-            but you do need to confirm your submission by email before PoliceConduct.org can process it.
+            <strong
+              >You do not need to prove misconduct to share what happened.</strong
+            >
+            Contact information is not published. There is no account or proof of
+            identity required, but you do need to confirm your submission by email
+            before PoliceConduct.org can process it.
           </div>
         </div>
       </div>
@@ -35,7 +42,10 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
   <main class="container py-5">
     <div class="row gx-0 gy-4 gx-lg-4 align-items-start">
       <aside class="col-lg-3">
-        <nav class="report-new-nav sticky-lg-top" aria-label="Report form sections">
+        <nav
+          class="report-new-nav sticky-lg-top"
+          aria-label="Report form sections"
+        >
           <a href="#start">Start</a>
           <a href="#basic-details">Basic details</a>
           <a href="#story">What happened</a>
@@ -58,13 +68,21 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           <section id="start" class="report-new-section">
             <h2>Start</h2>
             <p>
-              Your experience matters even if you are not sure what to call it. Helpful, routine,
-              confusing, mixed, concerning, harmful, severe, and uncertain interactions all belong.
+              Your experience matters even if you are not sure what to call it.
+              Helpful, routine, confusing, mixed, concerning, harmful, severe,
+              and uncertain interactions all belong.
             </p>
             <div class="row gx-0 gy-3 gx-md-3">
               <div class="col-md-6">
-                <label class="form-label" for="submitterRelationship">Did this happen to you?</label>
-                <select class="form-select" id="submitterRelationship" name="submitterRelationship" required>
+                <label class="form-label" for="submitterRelationship"
+                  >Did this happen to you?</label
+                >
+                <select
+                  class="form-select"
+                  id="submitterRelationship"
+                  name="submitterRelationship"
+                  required
+                >
                   <option value="">Choose one</option>
                   <option>Directly involved</option>
                   <option>Witnessed in person</option>
@@ -72,12 +90,20 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
                   <option>Records or evidence only</option>
                 </select>
                 <div class="form-text">
-                  Firsthand interactions are the main focus, but other reports can still help.
+                  Firsthand interactions are the main focus, but other reports
+                  can still help.
                 </div>
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="interactionType">How would you describe it?</label>
-                <select class="form-select" id="interactionType" name="interactionType" required>
+                <label class="form-label" for="interactionType"
+                  >How would you describe it?</label
+                >
+                <select
+                  class="form-select"
+                  id="interactionType"
+                  name="interactionType"
+                  required
+                >
                   <option value="">Choose one</option>
                   <option>Helpful or positive</option>
                   <option>Routine but worth sharing</option>
@@ -88,8 +114,8 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
                   <option>I am not sure</option>
                 </select>
                 <div class="form-text">
-                  This does not decide whether misconduct happened. It helps us understand what this
-                  felt like to you.
+                  This does not decide whether misconduct happened. It helps us
+                  understand what this felt like to you.
                 </div>
               </div>
             </div>
@@ -97,22 +123,47 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 
           <section id="basic-details" class="report-new-section">
             <h2>Basic details</h2>
-            <p>Approximate details are okay. If you do not know something, leave it blank or write "not sure."</p>
+            <p>
+              Approximate details are okay. If you do not know something, leave
+              it blank or write "not sure."
+            </p>
             <div class="row gx-0 gy-3 gx-md-3">
               <div class="col-md-6">
-                <label class="form-label" for="incidentDate">Approximate date</label>
-                <input class="form-control" id="incidentDate" name="incidentDate" type="date" required />
+                <label class="form-label" for="incidentDate"
+                  >Approximate date</label
+                >
+                <input
+                  class="form-control"
+                  id="incidentDate"
+                  name="incidentDate"
+                  type="date"
+                  required
+                />
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="incidentTime">Approximate time</label>
-                <input class="form-control" id="incidentTime" name="incidentTime" type="time" />
+                <label class="form-label" for="incidentTime"
+                  >Approximate time</label
+                >
+                <input
+                  class="form-control"
+                  id="incidentTime"
+                  name="incidentTime"
+                  type="time"
+                />
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="location">City and state</label>
-                <input class="form-control" id="location" name="location" required />
+                <input
+                  class="form-control"
+                  id="location"
+                  name="location"
+                  required
+                />
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="setting">Location or setting</label>
+                <label class="form-label" for="setting"
+                  >Location or setting</label
+                >
                 <input
                   class="form-control"
                   id="setting"
@@ -121,11 +172,20 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
                 />
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="agencyName">Police agency, if known</label>
-                <input class="form-control" id="agencyName" name="agencyName" autocomplete="organization" />
+                <label class="form-label" for="agencyName"
+                  >Police agency, if known</label
+                >
+                <input
+                  class="form-control"
+                  id="agencyName"
+                  name="agencyName"
+                  autocomplete="organization"
+                />
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="caseNumber">Case, citation, or report number</label>
+                <label class="form-label" for="caseNumber"
+                  >Case, citation, or report number</label
+                >
                 <input class="form-control" id="caseNumber" name="caseNumber" />
               </div>
             </div>
@@ -135,74 +195,108 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
             <h2>What happened?</h2>
             <div class="d-grid gap-3">
               <div>
-                <label class="form-label" for="whatHappened">Tell us what happened</label>
+                <label class="form-label" for="whatHappened"
+                  >Tell us what happened</label
+                >
                 <textarea
                   class="form-control"
                   id="whatHappened"
                   name="whatHappened"
                   rows="7"
-                  required
-                ></textarea>
+                  required></textarea>
                 <div class="form-text">
-                  Start with what led up to the interaction. Then describe what happened in order.
-                  Include what officers or personnel did or said, what you did or said, and how it ended.
+                  Start with what led up to the interaction. Then describe what
+                  happened in order. Include what officers or personnel did or
+                  said, what you did or said, and how it ended.
                 </div>
               </div>
               <div>
-                <label class="form-label" for="howFelt">How did you feel during or after this interaction?</label>
-                <textarea class="form-control" id="howFelt" name="howFelt" rows="4" required></textarea>
+                <label class="form-label" for="howFelt"
+                  >How did you feel during or after this interaction?</label
+                >
+                <textarea
+                  class="form-control"
+                  id="howFelt"
+                  name="howFelt"
+                  rows="4"
+                  required></textarea>
                 <div class="form-text">
-                  You can describe feeling helped, respected, confused, ignored, intimidated, unsafe,
-                  relieved, harmed, grateful, afraid, or unsure.
+                  You can describe feeling helped, respected, confused, ignored,
+                  intimidated, unsafe, relieved, harmed, grateful, afraid, or
+                  unsure.
                 </div>
               </div>
               <div>
-                <label class="form-label" for="whatElse">What else should people know?</label>
-                <textarea class="form-control" id="whatElse" name="whatElse" rows="4" required></textarea>
+                <label class="form-label" for="whatElse"
+                  >What else should people know?</label
+                >
+                <textarea
+                  class="form-control"
+                  id="whatElse"
+                  name="whatElse"
+                  rows="4"
+                  required></textarea>
                 <div class="form-text">
-                  This could include what happened before or after, whether this has happened before,
-                  whether records exist, whether anyone followed up, or anything you are unsure about.
+                  This could include what happened before or after, whether this
+                  has happened before, whether records exist, whether anyone
+                  followed up, or anything you are unsure about.
                 </div>
               </div>
             </div>
 
             <details class="report-new-disclosure mt-4">
-              <summary>Examples: what happened and what it meant to you</summary>
+              <summary>Examples: what happened and what it meant to you</summary
+              >
               <div class="d-grid gap-3 mt-3">
                 <p>
-                  You do not need to remove feelings or conclusions. When you can, connect them to
-                  what you saw, heard, felt, or experienced.
+                  You do not need to remove feelings or conclusions. When you
+                  can, connect them to what you saw, heard, felt, or
+                  experienced.
                 </p>
                 <div>
-                  <p class="mb-1"><strong>Less useful:</strong> "The officer was trying to intimidate me."</p>
+                  <p class="mb-1">
+                    <strong>Less useful:</strong> "The officer was trying to intimidate
+                    me."
+                  </p>
                   <p class="mb-0">
-                    <strong>More useful:</strong> "The officer stepped close to me, raised his voice, and
-                    said, 'You do not want to make this harder.' I felt intimidated and believed he was
-                    trying to pressure me to stop asking questions."
+                    <strong>More useful:</strong> "The officer stepped close to me,
+                    raised his voice, and said, 'You do not want to make this harder.'
+                    I felt intimidated and believed he was trying to pressure me to
+                    stop asking questions."
                   </p>
                 </div>
                 <div>
-                  <p class="mb-1"><strong>Less useful:</strong> "She lied about why she stopped me."</p>
+                  <p class="mb-1">
+                    <strong>Less useful:</strong> "She lied about why she stopped
+                    me."
+                  </p>
                   <p class="mb-0">
-                    <strong>More useful:</strong> "The officer first said I was stopped for speeding. Later,
-                    the citation listed failure to signal. I do not know why the reason changed, but it
-                    made me question whether the stop was properly explained."
+                    <strong>More useful:</strong> "The officer first said I was stopped
+                    for speeding. Later, the citation listed failure to signal. I
+                    do not know why the reason changed, but it made me question whether
+                    the stop was properly explained."
                   </p>
                 </div>
                 <div>
-                  <p class="mb-1"><strong>Less useful:</strong> "He was racist."</p>
+                  <p class="mb-1">
+                    <strong>Less useful:</strong> "He was racist."
+                  </p>
                   <p class="mb-0">
-                    <strong>More useful:</strong> "The officer searched my car after asking where I was
-                    from and whether I belonged in this neighborhood. I experienced the interaction as
-                    discriminatory because of those comments and the way I was treated."
+                    <strong>More useful:</strong> "The officer searched my car after
+                    asking where I was from and whether I belonged in this neighborhood.
+                    I experienced the interaction as discriminatory because of those
+                    comments and the way I was treated."
                   </p>
                 </div>
                 <div>
-                  <p class="mb-1"><strong>Less useful:</strong> "The officer saved my life."</p>
+                  <p class="mb-1">
+                    <strong>Less useful:</strong> "The officer saved my life."
+                  </p>
                   <p class="mb-0">
-                    <strong>More useful:</strong> "The officer applied pressure to the wound, called for
-                    medical assistance, and stayed with me until paramedics arrived. I believe those
-                    actions may have saved my life."
+                    <strong>More useful:</strong> "The officer applied pressure to
+                    the wound, called for medical assistance, and stayed with me until
+                    paramedics arrived. I believe those actions may have saved my
+                    life."
                   </p>
                 </div>
               </div>
@@ -212,11 +306,16 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           <section id="people-involved" class="report-new-section">
             <h2>People involved</h2>
             <p>
-              You do not need a name or badge number. Descriptions are helpful. Separating people helps
-              avoid treating everyone involved as if they did the same thing.
+              You do not need a name or badge number. Descriptions are helpful.
+              Separating people helps avoid treating everyone involved as if
+              they did the same thing.
             </p>
             <div data-people-list class="d-grid gap-3" aria-live="polite"></div>
-            <button class="btn btn-outline-primary mt-3" type="button" data-add-person>
+            <button
+              class="btn btn-outline-primary mt-3"
+              type="button"
+              data-add-person
+            >
               Add another person
             </button>
           </section>
@@ -224,13 +323,19 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           <section id="records" class="report-new-section">
             <h2>Records and evidence</h2>
             <p>
-              You do not need proof to share what happened. Photos, videos, records, or links can help,
-              but they are not required.
+              You do not need proof to share what happened. Photos, videos,
+              records, or links can help, but they are not required.
             </p>
             <div class="row gx-0 gy-3 gx-md-3 mb-3">
               <div class="col-md-6">
-                <label class="form-label" for="bodycamRequested">Was body camera footage requested?</label>
-                <select class="form-select" id="bodycamRequested" name="bodycamRequested">
+                <label class="form-label" for="bodycamRequested"
+                  >Was body camera footage requested?</label
+                >
+                <select
+                  class="form-select"
+                  id="bodycamRequested"
+                  name="bodycamRequested"
+                >
                   <option value="">Choose one</option>
                   <option>Yes</option>
                   <option>No</option>
@@ -238,8 +343,14 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
                 </select>
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="complaintFiled">Was a complaint filed?</label>
-                <select class="form-select" id="complaintFiled" name="complaintFiled">
+                <label class="form-label" for="complaintFiled"
+                  >Was a complaint filed?</label
+                >
+                <select
+                  class="form-select"
+                  id="complaintFiled"
+                  name="complaintFiled"
+                >
                   <option value="">Choose one</option>
                   <option>Yes</option>
                   <option>No</option>
@@ -247,16 +358,28 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
                 </select>
               </div>
             </div>
-            <div data-evidence-list class="d-grid gap-3" aria-live="polite"></div>
-            <button class="btn btn-outline-primary mt-3" type="button" data-add-evidence>
+            <div data-evidence-list class="d-grid gap-3" aria-live="polite">
+            </div>
+            <button
+              class="btn btn-outline-primary mt-3"
+              type="button"
+              data-add-evidence
+            >
               Add evidence or record
             </button>
           </section>
 
           <section id="purpose" class="report-new-section">
             <h2>What do you want this to help with?</h2>
-            <label class="form-label" for="reportPurpose">Choose the closest answer</label>
-            <select class="form-select" id="reportPurpose" name="reportPurpose" required>
+            <label class="form-label" for="reportPurpose"
+              >Choose the closest answer</label
+            >
+            <select
+              class="form-select"
+              id="reportPurpose"
+              name="reportPurpose"
+              required
+            >
               <option value="">Choose one</option>
               <option>Preserve what happened</option>
               <option>Recognize helpful conduct</option>
@@ -271,13 +394,20 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           <section id="contact" class="report-new-section">
             <h2>Contact and privacy</h2>
             <p>
-              We use this to follow up if we need clarification. We do not publish your contact
-              information. You do not need to create an account or prove your identity.
+              We use this to follow up if we need clarification. We do not
+              publish your contact information. You do not need to create an
+              account or prove your identity.
             </p>
             <div class="row gx-0 gy-3 gx-md-3">
               <div class="col-md-6">
                 <label class="form-label" for="reporterName">Your name</label>
-                <input class="form-control" id="reporterName" name="reporterName" autocomplete="name" required />
+                <input
+                  class="form-control"
+                  id="reporterName"
+                  name="reporterName"
+                  autocomplete="name"
+                  required
+                />
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="reporterEmail">Email</label>
@@ -292,11 +422,23 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="reporterPhone">Phone</label>
-                <input class="form-control" id="reporterPhone" name="reporterPhone" type="tel" autocomplete="tel" />
+                <input
+                  class="form-control"
+                  id="reporterPhone"
+                  name="reporterPhone"
+                  type="tel"
+                  autocomplete="tel"
+                />
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="preferredContact">Preferred contact method</label>
-                <select class="form-select" id="preferredContact" name="preferredContact">
+                <label class="form-label" for="preferredContact"
+                  >Preferred contact method</label
+                >
+                <select
+                  class="form-select"
+                  id="preferredContact"
+                  name="preferredContact"
+                >
                   <option value="">Choose one</option>
                   <option>Email</option>
                   <option>Phone</option>
@@ -309,53 +451,99 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
           <section class="report-new-section">
             <h2>Review and submit</h2>
             <div class="alert alert-warning" role="note">
-              After you submit, we will send you an email confirmation link. PoliceConduct.org cannot
-              process the submission until it is confirmed. After confirmation, you will receive a
-              submission ID that you can use to check status or follow up by email.
+              After you submit, we will send you an email confirmation link.
+              PoliceConduct.org cannot process the submission until it is
+              confirmed. After confirmation, you will receive a submission ID
+              that you can use to check status or follow up by email.
             </div>
             <div class="form-check">
-              <input class="form-check-input" id="consent" name="consent" type="checkbox" value="yes" required />
+              <input
+                class="form-check-input"
+                id="consent"
+                name="consent"
+                type="checkbox"
+                value="yes"
+                required
+              />
               <label class="form-check-label" for="consent">
-                I am sharing this truthfully to the best of my knowledge. I understand PoliceConduct.org
-                may review, summarize, redact, or ask for clarification before publishing. My report may
-                include what happened, what I saw or heard, how I felt, what I believe it meant, and any
-                supporting context. PoliceConduct.org may distinguish those from verified records or final
-                findings.
+                I am sharing this truthfully to the best of my knowledge. I
+                understand PoliceConduct.org may review, summarize, redact, or
+                ask for clarification before publishing. My report may include
+                what happened, what I saw or heard, how I felt, what I believe
+                it meant, and any supporting context. PoliceConduct.org may
+                distinguish those from verified records or final findings.
               </label>
             </div>
           </section>
 
-          <div class="d-flex flex-column flex-sm-row gap-3 align-items-sm-center">
-            <button class="btn btn-primary btn-lg" type="submit">Submit my experience</button>
+          <div
+            class="d-flex flex-column flex-sm-row gap-3 align-items-sm-center"
+          >
+            <button class="btn btn-primary btn-lg" type="submit"
+              >Submit my experience</button
+            >
             <p class="text-secondary mb-0">
               Unconfirmed submissions cannot be processed.
             </p>
           </div>
 
           <template id="person-template">
-            <article class="report-new-repeat border rounded p-3" data-person-involved>
-              <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-3">
+            <article
+              class="report-new-repeat border rounded p-3"
+              data-person-involved
+            >
+              <div
+                class="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-3"
+              >
                 <h3 class="h5 mb-0" data-person-label>Person involved</h3>
-                <button class="btn btn-sm btn-outline-danger" type="button" data-remove-person>
+                <button
+                  class="btn btn-sm btn-outline-danger"
+                  type="button"
+                  data-remove-person
+                >
                   Remove person
                 </button>
               </div>
               <div class="row gx-0 gy-3 gx-md-3">
                 <div class="col-md-6">
-                  <label class="form-label" for="person-name-0">Name, badge number, or description</label>
-                  <input class="form-control" id="person-name-0" name="people[0][name]" />
+                  <label class="form-label" for="person-name-0"
+                    >Name, badge number, or description</label
+                  >
+                  <input
+                    class="form-control"
+                    id="person-name-0"
+                    name="people[0][name]"
+                  />
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label" for="person-badge-0">Badge number</label>
-                  <input class="form-control" id="person-badge-0" name="people[0][badge]" />
+                  <label class="form-label" for="person-badge-0"
+                    >Badge number</label
+                  >
+                  <input
+                    class="form-control"
+                    id="person-badge-0"
+                    name="people[0][badge]"
+                  />
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label" for="person-department-0">Agency, if known</label>
-                  <input class="form-control" id="person-department-0" name="people[0][department]" />
+                  <label class="form-label" for="person-department-0"
+                    >Agency, if known</label
+                  >
+                  <input
+                    class="form-control"
+                    id="person-department-0"
+                    name="people[0][department]"
+                  />
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label" for="person-central-0">Was this person central to what happened?</label>
-                  <select class="form-select" id="person-central-0" name="people[0][central]">
+                  <label class="form-label" for="person-central-0"
+                    >Was this person central to what happened?</label
+                  >
+                  <select
+                    class="form-select"
+                    id="person-central-0"
+                    name="people[0][central]"
+                  >
                     <option value="">Choose one</option>
                     <option>Yes</option>
                     <option>No</option>
@@ -363,8 +551,14 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
                   </select>
                 </div>
                 <div class="col-12">
-                  <label class="form-label" for="person-actions-0">What did this person do or say?</label>
-                  <textarea class="form-control" id="person-actions-0" name="people[0][actions]" rows="3"></textarea>
+                  <label class="form-label" for="person-actions-0"
+                    >What did this person do or say?</label
+                  >
+                  <textarea
+                    class="form-control"
+                    id="person-actions-0"
+                    name="people[0][actions]"
+                    rows="3"></textarea>
                 </div>
               </div>
             </article>
@@ -372,20 +566,38 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 
           <template id="evidence-template">
             <article class="report-new-repeat border rounded p-3" data-evidence>
-              <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-3">
+              <div
+                class="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-3"
+              >
                 <h3 class="h5 mb-0" data-evidence-label>Evidence or record</h3>
-                <button class="btn btn-sm btn-outline-danger" type="button" data-remove-evidence>
+                <button
+                  class="btn btn-sm btn-outline-danger"
+                  type="button"
+                  data-remove-evidence
+                >
                   Remove evidence
                 </button>
               </div>
               <div class="row gx-0 gy-3 gx-md-3">
                 <div class="col-md-6">
-                  <label class="form-label" for="evidence-link-0">Link or file name</label>
-                  <input class="form-control" id="evidence-link-0" name="evidence[0][link]" />
+                  <label class="form-label" for="evidence-link-0"
+                    >Link or file name</label
+                  >
+                  <input
+                    class="form-control"
+                    id="evidence-link-0"
+                    name="evidence[0][link]"
+                  />
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label" for="evidence-description-0">What is this?</label>
-                  <input class="form-control" id="evidence-description-0" name="evidence[0][description]" />
+                  <label class="form-label" for="evidence-description-0"
+                    >What is this?</label
+                  >
+                  <input
+                    class="form-control"
+                    id="evidence-description-0"
+                    name="evidence[0][description]"
+                  />
                 </div>
               </div>
             </article>
@@ -424,13 +636,23 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 
   const form = document.querySelector<HTMLFormElement>("#report-form");
   const personList = form?.querySelector<HTMLElement>("[data-people-list]");
-  const personTemplate = form?.querySelector<HTMLTemplateElement>("#person-template");
+  const personTemplate =
+    form?.querySelector<HTMLTemplateElement>("#person-template");
   const evidenceList = form?.querySelector<HTMLElement>("[data-evidence-list]");
-  const evidenceTemplate = form?.querySelector<HTMLTemplateElement>("#evidence-template");
+  const evidenceTemplate =
+    form?.querySelector<HTMLTemplateElement>("#evidence-template");
 
-  const formShell = document.querySelector<HTMLElement>("[data-report-form-shell]");
+  const formShell = document.querySelector<HTMLElement>(
+    "[data-report-form-shell]",
+  );
 
-  if (!form || !personList || !personTemplate || !evidenceList || !evidenceTemplate) {
+  if (
+    !form ||
+    !personList ||
+    !personTemplate ||
+    !evidenceList ||
+    !evidenceTemplate
+  ) {
     showFormLoadError({ formName: "reportNew", shell: formShell });
     throw new Error("Report form missing required elements.");
   }
@@ -454,9 +676,13 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
     evidence: [],
   };
 
-  const hasValue = (value: unknown): boolean => typeof value === "string" && value.trim().length > 0;
+  const hasValue = (value: unknown): boolean =>
+    typeof value === "string" && value.trim().length > 0;
 
-  const trackReportEvent = (eventName: string, params: Record<string, unknown> = {}) => {
+  const trackReportEvent = (
+    eventName: string,
+    params: Record<string, unknown> = {},
+  ) => {
     window.__IPC_ANALYTICS__?.track?.(eventName, {
       form_name: "reportNew",
       ...params,
@@ -482,25 +708,48 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 
   const filterPeople = (people: PersonDraft[] | undefined): PersonDraft[] =>
     (Array.isArray(people) ? people : []).filter((person) =>
-      [person.name, person.badge, person.department, person.actions, person.central].some(hasValue),
+      [
+        person.name,
+        person.badge,
+        person.department,
+        person.actions,
+        person.central,
+      ].some(hasValue),
     );
 
-  const filterEvidence = (evidence: EvidenceDraft[] | undefined): EvidenceDraft[] =>
+  const filterEvidence = (
+    evidence: EvidenceDraft[] | undefined,
+  ): EvidenceDraft[] =>
     (Array.isArray(evidence) ? evidence : []).filter((item) =>
       [item.link, item.description].some(hasValue),
     );
 
-  const readReportData = ({ keepEmptyRows = false }: { keepEmptyRows?: boolean } = {}): ReportDraft => {
-    const data = flattenFormData(new FormData(form), ...structuredRoots) as ReportDraft;
-    data.people = keepEmptyRows ? (Array.isArray(data.people) ? data.people : []) : filterPeople(data.people);
+  const readReportData = ({
+    keepEmptyRows = false,
+  }: { keepEmptyRows?: boolean } = {}): ReportDraft => {
+    const data = flattenFormData(
+      new FormData(form),
+      ...structuredRoots,
+    ) as ReportDraft;
+    data.people = keepEmptyRows
+      ? Array.isArray(data.people)
+        ? data.people
+        : []
+      : filterPeople(data.people);
     data.evidence = keepEmptyRows
-      ? (Array.isArray(data.evidence) ? data.evidence : [])
+      ? Array.isArray(data.evidence)
+        ? data.evidence
+        : []
       : filterEvidence(data.evidence);
     return data;
   };
 
   const writeIndexedAttribute = (
-    element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLLabelElement,
+    element:
+      | HTMLInputElement
+      | HTMLSelectElement
+      | HTMLTextAreaElement
+      | HTMLLabelElement,
     attribute: "for" | "id" | "name",
     index: number,
   ) => {
@@ -521,24 +770,35 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
     name: string,
     value: string | undefined,
   ) => {
-    const field = root.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
-      `[name="${CSS.escape(name)}"]`,
-    );
+    const field = root.querySelector<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >(`[name="${CSS.escape(name)}"]`);
     if (field) field.value = value ?? "";
   };
 
   const renderPeople = () => {
-    const people = Array.isArray(draft.people) && draft.people.length > 0 ? draft.people : [emptyPerson()];
+    const people =
+      Array.isArray(draft.people) && draft.people.length > 0
+        ? draft.people
+        : [emptyPerson()];
     personList.replaceChildren();
     people.forEach((person, index) => {
-      const fragment = personTemplate.content.cloneNode(true) as DocumentFragment;
-      const entry = fragment.querySelector<HTMLElement>("[data-person-involved]");
+      const fragment = personTemplate.content.cloneNode(
+        true,
+      ) as DocumentFragment;
+      const entry = fragment.querySelector<HTMLElement>(
+        "[data-person-involved]",
+      );
       if (!entry) return;
-      entry.querySelector<HTMLElement>("[data-person-label]")!.textContent = `Person ${index + 1}`;
+      entry.querySelector<HTMLElement>("[data-person-label]")!.textContent =
+        `Person ${index + 1}`;
       entry
-        .querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLLabelElement>(
-          "input, select, textarea, label",
-        )
+        .querySelectorAll<
+          | HTMLInputElement
+          | HTMLSelectElement
+          | HTMLTextAreaElement
+          | HTMLLabelElement
+        >("input, select, textarea, label")
         .forEach((element) => {
           writeIndexedAttribute(element, "for", index);
           writeIndexedAttribute(element, "id", index);
@@ -550,12 +810,17 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
       setFieldValue(entry, `people[${index}][central]`, person.central);
       setFieldValue(entry, `people[${index}][actions]`, person.actions);
 
-      const removeButton = entry.querySelector<HTMLButtonElement>("[data-remove-person]");
+      const removeButton = entry.querySelector<HTMLButtonElement>(
+        "[data-remove-person]",
+      );
       if (removeButton) {
         removeButton.hidden = people.length === 1;
         removeButton.addEventListener("click", () => {
           draft = readReportData({ keepEmptyRows: true });
-          const nextPeople = Array.isArray(draft.people) && draft.people.length > 0 ? draft.people : [emptyPerson()];
+          const nextPeople =
+            Array.isArray(draft.people) && draft.people.length > 0
+              ? draft.people
+              : [emptyPerson()];
           nextPeople.splice(index, 1);
           draft.people = nextPeople.length > 0 ? nextPeople : [emptyPerson()];
           renderPeople();
@@ -570,14 +835,20 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
     const evidence = Array.isArray(draft.evidence) ? draft.evidence : [];
     evidenceList.replaceChildren();
     evidence.forEach((item, index) => {
-      const fragment = evidenceTemplate.content.cloneNode(true) as DocumentFragment;
+      const fragment = evidenceTemplate.content.cloneNode(
+        true,
+      ) as DocumentFragment;
       const entry = fragment.querySelector<HTMLElement>("[data-evidence]");
       if (!entry) return;
-      entry.querySelector<HTMLElement>("[data-evidence-label]")!.textContent = `Evidence or record ${index + 1}`;
+      entry.querySelector<HTMLElement>("[data-evidence-label]")!.textContent =
+        `Evidence or record ${index + 1}`;
       entry
-        .querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLLabelElement>(
-          "input, select, textarea, label",
-        )
+        .querySelectorAll<
+          | HTMLInputElement
+          | HTMLSelectElement
+          | HTMLTextAreaElement
+          | HTMLLabelElement
+        >("input, select, textarea, label")
         .forEach((element) => {
           writeIndexedAttribute(element, "for", index);
           writeIndexedAttribute(element, "id", index);
@@ -586,14 +857,18 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
       setFieldValue(entry, `evidence[${index}][link]`, item.link);
       setFieldValue(entry, `evidence[${index}][description]`, item.description);
 
-      entry.querySelector<HTMLButtonElement>("[data-remove-evidence]")?.addEventListener("click", () => {
-        draft = readReportData({ keepEmptyRows: true });
-        const nextEvidence = Array.isArray(draft.evidence) ? draft.evidence : [];
-        nextEvidence.splice(index, 1);
-        draft.evidence = nextEvidence;
-        renderEvidence();
-        markDraftDirty();
-      });
+      entry
+        .querySelector<HTMLButtonElement>("[data-remove-evidence]")
+        ?.addEventListener("click", () => {
+          draft = readReportData({ keepEmptyRows: true });
+          const nextEvidence = Array.isArray(draft.evidence)
+            ? draft.evidence
+            : [];
+          nextEvidence.splice(index, 1);
+          draft.evidence = nextEvidence;
+          renderEvidence();
+          markDraftDirty();
+        });
       evidenceList.appendChild(fragment);
     });
   };
@@ -630,7 +905,10 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
   const restoreDraft = (data: ReportDraft) => {
     draft = {
       ...data,
-      people: Array.isArray(data.people) && data.people.length > 0 ? data.people : [emptyPerson()],
+      people:
+        Array.isArray(data.people) && data.people.length > 0
+          ? data.people
+          : [emptyPerson()],
       evidence: Array.isArray(data.evidence) ? data.evidence : [],
     };
     renderPeople();
@@ -741,9 +1019,12 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
     if (!draftId) return;
 
     try {
-      const response = await fetch(`${draftEndpoint}?draftId=${encodeURIComponent(draftId)}`, {
-        headers: { Accept: "application/json" },
-      });
+      const response = await fetch(
+        `${draftEndpoint}?draftId=${encodeURIComponent(draftId)}`,
+        {
+          headers: { Accept: "application/json" },
+        },
+      );
 
       if (response.status === 204) {
         clearReportDraftCookie();
@@ -773,25 +1054,32 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
     trackReportEvent("report_form_started", { source });
   };
 
-  form.querySelector<HTMLButtonElement>("[data-add-person]")?.addEventListener("click", () => {
-    markReportStarted("add_person");
-    trackReportEvent("report_optional_section_used", { section: "people" });
-    draft = readReportData({ keepEmptyRows: true });
-    const people = Array.isArray(draft.people) && draft.people.length > 0 ? draft.people : [emptyPerson()];
-    draft.people = [...people, emptyPerson()];
-    renderPeople();
-    markDraftDirty();
-  });
+  form
+    .querySelector<HTMLButtonElement>("[data-add-person]")
+    ?.addEventListener("click", () => {
+      markReportStarted("add_person");
+      trackReportEvent("report_optional_section_used", { section: "people" });
+      draft = readReportData({ keepEmptyRows: true });
+      const people =
+        Array.isArray(draft.people) && draft.people.length > 0
+          ? draft.people
+          : [emptyPerson()];
+      draft.people = [...people, emptyPerson()];
+      renderPeople();
+      markDraftDirty();
+    });
 
-  form.querySelector<HTMLButtonElement>("[data-add-evidence]")?.addEventListener("click", () => {
-    markReportStarted("add_evidence");
-    trackReportEvent("report_optional_section_used", { section: "evidence" });
-    draft = readReportData({ keepEmptyRows: true });
-    const evidence = Array.isArray(draft.evidence) ? draft.evidence : [];
-    draft.evidence = [...evidence, emptyEvidence()];
-    renderEvidence();
-    markDraftDirty();
-  });
+  form
+    .querySelector<HTMLButtonElement>("[data-add-evidence]")
+    ?.addEventListener("click", () => {
+      markReportStarted("add_evidence");
+      trackReportEvent("report_optional_section_used", { section: "evidence" });
+      draft = readReportData({ keepEmptyRows: true });
+      const evidence = Array.isArray(draft.evidence) ? draft.evidence : [];
+      draft.evidence = [...evidence, emptyEvidence()];
+      renderEvidence();
+      markDraftDirty();
+    });
 
   renderPeople();
   renderEvidence();

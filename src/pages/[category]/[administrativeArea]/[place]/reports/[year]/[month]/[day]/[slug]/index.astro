@@ -155,12 +155,7 @@ const agencyEntities = Array.from(
         slug?: string;
         canonicalPath: string;
       } | null;
-      if (
-        !agency ||
-        !agency.name ||
-        !agency.slug ||
-        !agency.canonicalPath
-      ) {
+      if (!agency || !agency.name || !agency.slug || !agency.canonicalPath) {
         return [];
       }
       const agencyUrl = new URL(agency.canonicalPath, siteUrl).toString();
@@ -249,7 +244,6 @@ const structuredData = {
           <div class="col-12 col-lg-10 col-xl-8">
             <Breadcrumbs
               items={[
-                { label: "Reports", href: "/report/" },
                 ...(locationPath
                   ? [{ label: "Place", href: locationPath }]
                   : []),

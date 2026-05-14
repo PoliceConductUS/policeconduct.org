@@ -26,8 +26,7 @@ export type CivilCaseDetailAgency = {
   city: string | null;
   state: string | null;
   administrative_area: string | null;
-  administrative_area_slug: string | null;
-  place_slug: string | null;
+  location_path: string | null;
   canonicalPath: string;
 };
 
@@ -115,16 +114,17 @@ export const loadCivilCaseDetail = async (
             agency.id,
             agency.name,
             agency.slug,
-            agency.city,
-            agency.state,
-            agency.administrative_area,
-            agency.administrative_area_slug,
-            agency.place_slug
+            lp.place_name as city,
+            lp.state_or_territory_slug as state,
+            lp.administrative_area_name as administrative_area,
+            lp.path as location_path
           from public.civil_case_officers civil_case_officer
           join public.agency_officers agency_officer
             on agency_officer.id = civil_case_officer.agency_officer_id
           join public.agency agency
             on agency.id = agency_officer.agency_id
+          join public.location_path lp
+            on lp.location_path_id = agency.location_path_id
           where civil_case_officer.civil_case_id = $1
           order by agency.name
         `,

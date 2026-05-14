@@ -22,11 +22,7 @@ const variantClass =
   variant === "link" ? "border-0 bg-transparent p-0 text-start" : "";
 ---
 
-<button
-  type="button"
-  class:list={[variantClass, className]}
-  {...rest}
->
+<button type="button" class:list={[variantClass, className]} {...rest}>
   <slot />
 </button>
 

@@ -1,80 +1,31 @@
 type AgencyLocationInput = {
-  state?: string | null;
-  administrativeArea?: string | null;
-  administrative_area?: string | null;
-  administrativeAreaSlug?: string | null;
-  administrative_area_slug?: string | null;
-  city?: string | null;
-  place?: string | null;
-  placeSlug?: string | null;
-  place_slug?: string | null;
+  id?: string | null;
+  locationPath?: string | null;
+  location_path?: string | null;
   slug?: string | null;
 };
 
 const trimText = (value: unknown) => String(value ?? "").trim();
 
-export const normalizeStateSlug = (value: unknown) =>
-  trimText(value).toLowerCase();
-
-export const normalizePlaceLabel = (value: unknown) =>
-  trimText(value).replace(/\s+/g, " ");
-
-export const getAgencyAdministrativeArea = (agency: AgencyLocationInput) =>
-  trimText(agency.administrativeArea ?? agency.administrative_area) || null;
-
-export const getAgencyAdministrativeAreaSlug = (
-  agency: AgencyLocationInput,
-) => {
-  const stored = trimText(
-    agency.administrativeAreaSlug ?? agency.administrative_area_slug,
-  );
-  if (stored) {
-    return stored.toLowerCase();
-  }
-  return null;
-};
-
-export const getAgencyPlaceLabel = (agency: AgencyLocationInput) =>
-  normalizePlaceLabel(agency.place ?? agency.city) || null;
-
-export const getAgencyPlaceSlug = (agency: AgencyLocationInput) => {
-  const stored = trimText(agency.placeSlug ?? agency.place_slug);
-  if (stored) {
-    return stored.toLowerCase();
-  }
-  return null;
-};
-
-export const buildPlacePath = (agency: AgencyLocationInput) => {
-  const stateSlug = normalizeStateSlug(agency.state);
-  const administrativeAreaSlug = getAgencyAdministrativeAreaSlug(agency);
-  const placeSlug = getAgencyPlaceSlug(agency);
-
-  if (!stateSlug || !administrativeAreaSlug || !placeSlug) {
-    return null;
-  }
-
-  return `/${stateSlug}/${administrativeAreaSlug}/${placeSlug}/`;
-};
+export const getAgencyLocationPath = (agency: AgencyLocationInput) =>
+  trimText(agency.locationPath ?? agency.location_path) || null;
 
 export const buildAgencyCanonicalPath = (agency: AgencyLocationInput) => {
-  const placePath = buildPlacePath(agency);
+  const locationPath = getAgencyLocationPath(agency);
   const agencySlug = trimText(agency.slug);
 
-  if (!placePath || !agencySlug) {
+  if (!locationPath || !agencySlug) {
     return null;
   }
 
-  return `${placePath}${agencySlug}/`;
+  return `${locationPath}${agencySlug}/`;
 };
 
-export const requireAgencyCanonicalPath = (
-  agency: AgencyLocationInput & { id?: string | null },
-) => {
+export const requireAgencyCanonicalPath = (agency: AgencyLocationInput) => {
   const canonicalPath = buildAgencyCanonicalPath(agency);
   if (!canonicalPath) {
     throw new Error(
-      `Agency ${agency.id || agency.slug || "unknown"} is missing required address-based URL fields`,
+      `Agency ${agency.id || agency.slug || "unknown"} is missing required location_path_id-backed URL fields`,
     );
   }
   return canonicalPath;

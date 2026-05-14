@@ -26,15 +26,18 @@ const legacyReportSlugAliases = [
     newSlug: "death-of-renee-nicole-good-ice-shooting-d1e2f3",
   },
   {
-    oldSlug: "2026-01-24-55404-death-of-alex-pretti-federal-officers-shooting-g4h5i6",
+    oldSlug:
+      "2026-01-24-55404-death-of-alex-pretti-federal-officers-shooting-g4h5i6",
     newSlug: "death-of-alex-pretti-federal-officers-shooting-g4h5i6",
   },
   {
-    oldSlug: "2022-06-21-55422-mn-state-patrol-trooper-spenser-stockwell-speeding-j7k8l9",
+    oldSlug:
+      "2022-06-21-55422-mn-state-patrol-trooper-spenser-stockwell-speeding-j7k8l9",
     newSlug: "mn-state-patrol-trooper-spenser-stockwell-speeding-j7k8l9",
   },
   {
-    oldSlug: "2022-08-02-55422-mn-state-patrol-lt-john-farmakes-voicemail-m0n1o2",
+    oldSlug:
+      "2022-08-02-55422-mn-state-patrol-lt-john-farmakes-voicemail-m0n1o2",
     newSlug: "mn-state-patrol-lt-john-farmakes-voicemail-m0n1o2",
   },
 ];
@@ -66,14 +69,16 @@ const redirects = await withDb(async (client) => {
   const agencyRows = (
     await client.query(
       `
-        select lower(a.state) as state, a.slug, bpp.path as canonical_path
+        select
+          lower(lp.state_or_territory_slug) as state,
+          a.slug,
+          lp.path || a.slug || '/' as canonical_path
         from public.agency a
-        join public.build_page_payload bpp
-          on bpp.page_type = 'agency'
-         and bpp.entity_id = a.id
-        where a.state is not null
+        join public.location_path lp
+          on lp.location_path_id = a.location_path_id
+        where lp.state_or_territory_slug is not null
           and a.slug is not null
-        order by lower(a.state), a.slug
+        order by lower(lp.state_or_territory_slug), a.slug
       `,
     )
   ).rows;
@@ -81,12 +86,11 @@ const redirects = await withDb(async (client) => {
   const federalBranchRows = (
     await client.query(
       `
-        select a.slug, bpp.path as canonical_path
+        select a.slug, lp.path || a.slug || '/' as canonical_path
         from public.federal_agency_branch fab
         join public.agency a on a.id = fab.agency_id
-        join public.build_page_payload bpp
-          on bpp.page_type = 'agency'
-         and bpp.entity_id = a.id
+        join public.location_path lp
+          on lp.location_path_id = a.location_path_id
         where a.slug is not null
         order by a.slug
       `,
@@ -123,10 +127,12 @@ const redirects = await withDb(async (client) => {
   const stateRows = (
     await client.query(
       `
-        select distinct lower(state) as state
-        from public.agency
-        where state is not null
-        order by lower(state)
+        select distinct lower(lp.state_or_territory_slug) as state
+        from public.agency a
+        join public.location_path lp
+          on lp.location_path_id = a.location_path_id
+        where lp.state_or_territory_slug is not null
+        order by lower(lp.state_or_territory_slug)
       `,
     )
   ).rows;
@@ -197,6 +203,24 @@ const redirects = await withDb(async (client) => {
       status: 301,
       source: "reviews.slug",
     })),
+    {
+      from: normalizePath("/report/"),
+      to: normalizePath("/find-records/"),
+      status: 301,
+      source: "root collection route retired",
+    },
+    {
+      from: normalizePath("/law-enforcement-agency/"),
+      to: normalizePath("/find-records/"),
+      status: 301,
+      source: "root collection route retired",
+    },
+    {
+      from: normalizePath("/civil-litigation/"),
+      to: normalizePath("/find-records/"),
+      status: 301,
+      source: "root collection route retired",
+    },
     ...stateRows.flatMap((entry) => [
       {
         from: normalizePath(`/report/${entry.state}/`),
@@ -237,13 +261,13 @@ const redirects = await withDb(async (client) => {
     ]),
     {
       from: "/videos/*",
-      to: "/search/",
+      to: "/find-records/",
       status: 301,
       source: "top-level videos retired",
     },
     {
       from: "/video/*",
-      to: "/search/",
+      to: "/find-records/",
       status: 301,
       source: "top-level videos retired",
     },

@@ -293,6 +293,22 @@ await withDb(async (client) => {
       (await client.query("select count(*) as count from public.agency"))
         .rows[0]?.count || 0,
     );
+    const agenciesMissingLocationPath = (
+      await client.query(
+        `
+          select id, name
+          from public.agency
+          where location_path_id is null
+          order by lower(name), id
+          limit 20
+        `,
+      )
+    ).rows;
+    if (agenciesMissingLocationPath.length) {
+      throw new Error(
+        `Cannot refresh build projections: ${agenciesMissingLocationPath.length} sampled agencies have null location_path_id. First missing agencies: ${agenciesMissingLocationPath.map((agency) => `${agency.name} (${agency.id})`).join(", ")}.`,
+      );
+    }
     const agencies = (
       await client.query(
         `
@@ -300,11 +316,13 @@ await withDb(async (client) => {
             a.id,
             a.name,
             a.slug,
-            a.state,
-            a.administrative_area,
-            a.administrative_area_slug,
-            a.city,
-            a.place_slug,
+            a.location_path_id,
+            lp.path as location_path,
+            lp.state_or_territory_slug as state,
+            lp.administrative_area_name as administrative_area,
+            lp.administrative_area_slug as location_administrative_area_slug,
+            lp.place_name as city,
+            lp.place_slug as location_place_slug,
             a.address,
             a.zip_code,
             a.latitude,
@@ -312,6 +330,8 @@ await withDb(async (client) => {
             a.created_at,
             a.updated_at
           from public.agency a
+          join public.location_path lp
+            on lp.location_path_id = a.location_path_id
           where exists (
             select 1
             from public.agency_officers ao
@@ -355,6 +375,16 @@ await withDb(async (client) => {
       )
     ).rows.map((agency) => {
       const id = requireText(agency.id, "id", "unknown");
+      const locationPathId = requireText(
+        agency.location_path_id,
+        "location_path_id",
+        id,
+      );
+      const locationPath = requireText(
+        agency.location_path,
+        "location_path",
+        id,
+      );
       const stateSlug = requireText(agency.state, "state", id).toLowerCase();
       const administrativeArea = requireText(
         agency.administrative_area,
@@ -364,6 +394,8 @@ await withDb(async (client) => {
       const city = normalizePlaceLabel(requireText(agency.city, "city", id));
       return {
         id,
+        locationPathId,
+        locationPath,
         name: requireText(agency.name, "name", id),
         agencySlug: requireText(agency.slug, "slug", id),
         state: requireText(agency.state, "state", id),
@@ -371,13 +403,13 @@ await withDb(async (client) => {
         administrativeArea,
         administrativeAreaKind: administrativeAreaKindFor(administrativeArea),
         administrativeAreaSlug: requireText(
-          agency.administrative_area_slug,
+          agency.location_administrative_area_slug,
           "administrative_area_slug",
           id,
         ).toLowerCase(),
         city,
         placeSlug: requireText(
-          agency.place_slug,
+          agency.location_place_slug,
           "place_slug",
           id,
         ).toLowerCase(),
@@ -453,13 +485,11 @@ await withDb(async (client) => {
         place.place = agency.city;
       }
       place.agencies.push(agency);
-      agency.locationPath = place.path;
-      agency.canonicalPath = `${place.path}${agency.agencySlug}/`;
+      agency.canonicalPath = `${agency.locationPath}${agency.agencySlug}/`;
       if (agency.updatedAt > place.updatedAt)
         place.updatedAt = agency.updatedAt;
     }
 
-    await client.query("update public.agency set location_path_id = null");
     await client.query("delete from public.build_page_payload");
     await client.query("delete from public.agency_zip_index");
     await client.query("delete from public.location_path_closure");
@@ -474,10 +504,9 @@ await withDb(async (client) => {
         }
       }
     }
-    const locationsByPath = await fetchLocationRowsByPath(
-      client,
-      [...requiredLocationPaths],
-    );
+    const locationsByPath = await fetchLocationRowsByPath(client, [
+      ...requiredLocationPaths,
+    ]);
 
     const locations = [];
     for (const state of states.values()) {
@@ -511,7 +540,11 @@ await withDb(async (client) => {
           });
           place.agencies.sort((a, b) => compareLabel(a.name, b.name));
           for (const agency of place.agencies) {
-            agency.locationPathId = place.id;
+            if (agency.locationPathId !== place.id) {
+              throw new Error(
+                `Agency ${agency.id} has location_path_id ${agency.locationPathId}, expected ${place.id} for ${place.path}.`,
+              );
+            }
             agency.mapPoint =
               Number.isFinite(agency.latitude) &&
               Number.isFinite(agency.longitude)
@@ -571,15 +604,6 @@ await withDb(async (client) => {
     }
 
     for (const agency of agencies) {
-      await client.query(
-        `
-          update public.agency
-          set location_path_id = $1,
-              agency_slug = $2
-          where id = $3
-        `,
-        [agency.locationPathId, agency.agencySlug, agency.id],
-      );
       if (
         agency.zipCode &&
         agency.zipCode !== "00000" &&

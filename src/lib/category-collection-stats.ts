@@ -49,10 +49,7 @@ export const loadCategoryCollectionCounts = async (): Promise<
   const agencyCounts = new Map<string, number>();
   for (const agency of agencies) {
     const state = agency.state.toLowerCase();
-    agencyCounts.set(
-      state,
-      (agencyCounts.get(state) || 0) + 1,
-    );
+    agencyCounts.set(state, (agencyCounts.get(state) || 0) + 1);
   }
 
   const personnelCounts = new Map<string, number>();

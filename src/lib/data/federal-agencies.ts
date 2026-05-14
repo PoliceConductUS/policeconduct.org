@@ -73,13 +73,13 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
                 jsonb_build_object(
                   'id', a.id,
                   'name', a.name,
-                  'path', bpp.path,
+                  'path', lp.path || a.slug || '/',
                   'address', a.address,
-                  'city', a.city,
-                  'state', a.state,
-                  'administrativeArea', a.administrative_area
+                  'city', lp.place_name,
+                  'state', lp.state_or_territory_slug,
+                  'administrativeArea', lp.administrative_area_name
                 )
-                order by a.state, a.city, a.name
+                order by lp.state_or_territory_slug, lp.place_name, a.name
               ) filter (where a.id is not null),
               '[]'::jsonb
             ) as branches
@@ -88,9 +88,8 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
             on fab.federal_agency_id = fa.id
           left join public.agency a
             on a.id = fab.agency_id
-          left join public.build_page_payload bpp
-            on bpp.page_type = 'agency'
-           and bpp.entity_id = a.id
+          left join public.location_path lp
+            on lp.location_path_id = a.location_path_id
           where fa.slug = $1
           group by fa.id, fa.name, fa.slug
         `,

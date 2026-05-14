@@ -16,24 +16,21 @@ Change Approval Workflow
 - Before making any edits, summarize the exact files and changes you intend to make and wait for explicit user approval. Do not proceed without that approval.
 - Do not ask for approval to inspect code, search the repo, or read files. Inspect first, then ask for approval only before making edits.
 - Do not preserve backward compatibility unless the user explicitly requests it.
+- All architectural compromises must be explicitly explained and approved before implementation. If an implementation weakens, bypasses, or temporarily works around a stated data model, routing invariant, source-of-truth rule, or project convention, stop and get user approval before coding it.
 
 Data + Routing Conventions
 
 - URLs use database-backed slugs. Do not compute slugs during build/runtime.
 - Do not generate IDs for database entities anywhere in the website, build scripts, seed data, or runtime code. Database entity IDs must come from explicit database or seed data values only.
+- Agency location identity must come from `public.agency.location_path_id` joined to `public.location_path`. Do not reconstruct agency location, agency canonical URLs, or agency route parameters from parallel agency columns, derived slugs, `build_page_payload.path`, or generated path logic.
 - Report URLs must use slug: /report/{slug}/.
-- Agency URLs use a category segment stored in the DB: /law-enforcement-agency/{category}/{slug}/.
-- Agency category rules:
-  - category is stored in public.agency.category.
-  - federal agencies use category = "federal".
-  - non-federal agencies use category = lower(state) for now.
+- Agency canonical URLs use the joined location path plus the agency slug.
 - Pagination URLs use /page/{number}/; page 1 is the base path with no /page/1/.
 
 Database Expectations
 
 - Agencies, personnel, and reports must have unique, required slug fields in the database.
-- Agency category is required in the database.
-- Seed data must populate slugs and category when seeding.
+- Agencies must have a required `location_path_id`.
 - seed.sql must be fully deterministic: every row must include explicit ids and slugs, with no triggers, generated slugs, or runtime ID generators (e.g., generate_cuid). Rerunning seed.sql must yield identical data and identifiers.
 - When adding federal agencies, keep the hash in the slug for consistency and safety.
 - If a migration adds a required DB field, update seed.sql in the Supabase repo.

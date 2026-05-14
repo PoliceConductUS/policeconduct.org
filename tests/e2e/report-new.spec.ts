@@ -38,7 +38,9 @@ async function installDraftMock(page: Page) {
 }
 
 async function fillRequiredExperienceFields(page: Page) {
-  await page.locator("#submitterRelationship").selectOption("Directly involved");
+  await page
+    .locator("#submitterRelationship")
+    .selectOption("Directly involved");
   await page.locator("#interactionType").selectOption("Mixed");
   await page.locator("#incidentDate").fill("2026-02-23");
   await page.locator("#location").fill("Phoenix, AZ");
@@ -49,7 +51,9 @@ async function fillRequiredExperienceFields(page: Page) {
   await page
     .locator("#whatElse")
     .fill("I am not sure whether the stop was handled normally.");
-  await page.locator("#reportPurpose").selectOption("Help me understand whether this was normal");
+  await page
+    .locator("#reportPurpose")
+    .selectOption("Help me understand whether this was normal");
   await page.locator("#reporterName").fill("E2E Reporter");
   await page.locator("#reporterEmail").fill("e2e@example.org");
   await page.locator("#consent").check();
@@ -68,9 +72,15 @@ test.describe("report new", () => {
     await expect(
       page.getByRole("heading", { name: "Document a police interaction" }),
     ).toBeVisible();
-    await expect(page.getByText("You do not need to prove misconduct")).toBeVisible();
-    await expect(page.getByText("Contact information is not published")).toBeVisible();
-    await expect(page.getByText("no account or proof of identity")).toBeVisible();
+    await expect(
+      page.getByText("You do not need to prove misconduct"),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Contact information is not published"),
+    ).toBeVisible();
+    await expect(
+      page.getByText("no account or proof of identity"),
+    ).toBeVisible();
     await expect(page.locator("[data-officer-assessment]")).toHaveCount(0);
     await expect(page.getByText("Open officer conduct assessment")).toHaveCount(
       0,
@@ -119,7 +129,9 @@ test.describe("report new", () => {
     await expect(
       page.getByRole("heading", { name: "Document a police interaction" }),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Submit my experience" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Submit my experience" }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Add another person" }).click();
     await page.getByRole("button", { name: "Add evidence or record" }).click();
     await expect(page.locator('[name="people[1][actions]"]')).toBeVisible();
@@ -314,7 +326,9 @@ test.describe("report new", () => {
     });
 
     await page.goto("/report/new/");
-    await page.locator("#submitterRelationship").selectOption("Directly involved");
+    await page
+      .locator("#submitterRelationship")
+      .selectOption("Directly involved");
     await page.locator("#interactionType").selectOption("Helpful or positive");
     await page.locator("#whatHappened").fill("An officer helped unlock a car.");
     await page.locator("#howFelt").fill("I felt grateful.");
@@ -334,7 +348,9 @@ test.describe("report new", () => {
         response.request().method() === "POST"
       );
     });
-    await page.locator("#reportPurpose").selectOption("Recognize helpful conduct");
+    await page
+      .locator("#reportPurpose")
+      .selectOption("Recognize helpful conduct");
     await draftSave;
 
     await page.reload();

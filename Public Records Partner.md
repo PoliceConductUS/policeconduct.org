@@ -2,7 +2,6 @@
 
 **comply more efficiently by publishing repeat-request data once and updating it on a schedule.**
 
-
 ## 2. Core outcome
 
 Help public agencies reduce the cost, labor, and operational burden of recurring police public-records requests by converting high-demand public records data into periodically published, documented, downloadable datasets hosted on PoliceConduct.org.
@@ -63,26 +62,26 @@ Public agencies often receive repeated requests for overlapping police records.
 
 Each request may trigger some combination of:
 
-* intake
-* request interpretation
-* clarification
-* staff assignment
-* system search
-* data extraction
-* field selection
-* export formatting
-* review
-* redaction
-* approval
-* delivery
-* billing or fee evaluation
-* deadline tracking
-* retention of request history
-* preservation of response copies
-* appeal or complaint support
-* audit trail maintenance
-* future retrieval if the response is challenged
-* repeat explanations to similar requestors
+- intake
+- request interpretation
+- clarification
+- staff assignment
+- system search
+- data extraction
+- field selection
+- export formatting
+- review
+- redaction
+- approval
+- delivery
+- billing or fee evaluation
+- deadline tracking
+- retention of request history
+- preservation of response copies
+- appeal or complaint support
+- audit trail maintenance
+- future retrieval if the response is challenged
+- repeat explanations to similar requestors
 
 When many requests seek the same data, the agency may be recreating substantially the same work many times.
 
@@ -92,17 +91,17 @@ PoliceConduct.org helps agencies reduce recurring public-records costs by identi
 
 The agency benefits by:
 
-* reducing repeated manual data extraction
-* reducing duplicate request processing
-* reducing staff interruptions
-* creating stable public links for common records categories
-* preserving historical downloads
-* documenting field definitions and limitations once
-* improving consistency across responses
-* lowering long-term storage and tracking friction
-* reducing avoidable clarification cycles
-* giving staff a standard answer for recurring data requests
-* supporting compliance while reducing operational waste
+- reducing repeated manual data extraction
+- reducing duplicate request processing
+- reducing staff interruptions
+- creating stable public links for common records categories
+- preserving historical downloads
+- documenting field definitions and limitations once
+- improving consistency across responses
+- lowering long-term storage and tracking friction
+- reducing avoidable clarification cycles
+- giving staff a standard answer for recurring data requests
+- supporting compliance while reducing operational waste
 
 ## 9. Compliance-aligned value
 
@@ -120,35 +119,35 @@ Core idea:
 
 At the end of the pilot, the agency should have:
 
-* one or more complete public police datasets published
-* historical data available for download
-* current data available for download
-* dataset documentation
-* field definitions
-* known exclusions documented
-* redaction categories documented
-* update frequency documented
-* stable public URLs
-* an internal workflow for recurring exports
-* optional download logs
-* measurable evidence of potential request deflection
-* a clearer picture of which data requests are repetitive
+- one or more complete public police datasets published
+- historical data available for download
+- current data available for download
+- dataset documentation
+- field definitions
+- known exclusions documented
+- redaction categories documented
+- update frequency documented
+- stable public URLs
+- an internal workflow for recurring exports
+- optional download logs
+- measurable evidence of potential request deflection
+- a clearer picture of which data requests are repetitive
 
 ## 11. Pilot qualification criteria
 
 A qualifying agency should be willing to provide:
 
-* at least one complete public police dataset
-* preferably five years of historical data, where available
-* recurring monthly or quarterly updates
-* all public fields in the agreed dataset
-* all public rows in the agreed date range
-* documented exclusions
-* documented redaction categories
-* field definitions or source-system documentation
-* agency contact for dataset questions
-* permission for PoliceConduct.org to publish the public datasets
-* permission for the agency to link requestors to the published dataset pages
+- at least one complete public police dataset
+- preferably five years of historical data, where available
+- recurring monthly or quarterly updates
+- all public fields in the agreed dataset
+- all public rows in the agreed date range
+- documented exclusions
+- documented redaction categories
+- field definitions or source-system documentation
+- agency contact for dataset questions
+- permission for PoliceConduct.org to publish the public datasets
+- permission for the agency to link requestors to the published dataset pages
 
 ## 12. Recommended pilot commitment
 
@@ -190,13 +189,13 @@ Recommended first-wave datasets:
 
 PoliceConduct.org helps the agency analyze prior public-records requests to identify:
 
-* repeated request categories
-* duplicate or overlapping requests
-* frequently requested fields
-* recurring date ranges
-* high-labor request types
-* requests that could be served from a reusable dataset
-* records categories that should remain direct-request only
+- repeated request categories
+- duplicate or overlapping requests
+- frequently requested fields
+- recurring date ranges
+- high-labor request types
+- requests that could be served from a reusable dataset
+- records categories that should remain direct-request only
 
 Primary outcome:
 
@@ -208,14 +207,14 @@ PoliceConduct.org and the agency select one or more datasets for publication.
 
 Selection criteria:
 
-* request frequency
-* staff time required
-* data availability
-* legal/public status
-* source-system exportability
-* redaction complexity
-* public usefulness
-* update feasibility
+- request frequency
+- staff time required
+- data availability
+- legal/public status
+- source-system exportability
+- redaction complexity
+- public usefulness
+- update feasibility
 
 Primary outcome:
 
@@ -227,17 +226,17 @@ The agency defines or provides the source export.
 
 PoliceConduct.org documents:
 
-* dataset name
-* source system
-* date range
-* field list
-* field definitions
-* row-level inclusion rules
-* redaction rules
-* exclusions
-* update schedule
-* file format
-* delivery method
+- dataset name
+- source system
+- date range
+- field list
+- field definitions
+- row-level inclusion rules
+- redaction rules
+- exclusions
+- update schedule
+- file format
+- delivery method
 
 Primary outcome:
 
@@ -247,15 +246,15 @@ Primary outcome:
 
 PoliceConduct.org publishes:
 
-* current dataset download
-* historical dataset downloads
-* field dictionary
-* source notes
-* update history
-* version history
-* stable public URL
-* optional agency-specific landing page
-* optional search/filter interface
+- current dataset download
+- historical dataset downloads
+- field dictionary
+- source notes
+- update history
+- version history
+- stable public URL
+- optional agency-specific landing page
+- optional search/filter interface
 
 Primary outcome:
 
@@ -267,12 +266,12 @@ The agency provides updated exports on the agreed schedule.
 
 PoliceConduct.org:
 
-* validates file structure
-* publishes new versions
-* preserves prior versions
-* updates metadata
-* maintains download access
-* logs publication history
+- validates file structure
+- publishes new versions
+- preserves prior versions
+- updates metadata
+- maintains download access
+- logs publication history
 
 Primary outcome:
 
@@ -282,14 +281,14 @@ Primary outcome:
 
 PoliceConduct.org may provide agency-facing reporting, including:
 
-* dataset download counts
-* historical download activity
-* most-accessed datasets
-* referring pages, where available
-* date/time of downloads
-* aggregate usage trends
-* export/version history
-* optional request-deflection estimates if the agency provides request-volume baselines
+- dataset download counts
+- historical download activity
+- most-accessed datasets
+- referring pages, where available
+- date/time of downloads
+- aggregate usage trends
+- export/version history
+- optional request-deflection estimates if the agency provides request-volume baselines
 
 Primary outcome:
 
@@ -299,18 +298,18 @@ Primary outcome:
 
 The platform should help agencies evaluate:
 
-* number of datasets published
-* number of historical files hosted
-* number of downloads
-* number of unique download sessions, where available
-* number of updates completed on schedule
-* number of requests potentially deflected
-* reduction in duplicate requests, if agency provides baseline data
-* staff hours avoided, if agency provides time estimates
-* most requested / downloaded datasets
-* dataset freshness
-* publication reliability
-* recurring export success rate
+- number of datasets published
+- number of historical files hosted
+- number of downloads
+- number of unique download sessions, where available
+- number of updates completed on schedule
+- number of requests potentially deflected
+- reduction in duplicate requests, if agency provides baseline data
+- staff hours avoided, if agency provides time estimates
+- most requested / downloaded datasets
+- dataset freshness
+- publication reliability
+- recurring export success rate
 
 ## 16. Cost-savings model
 
@@ -320,47 +319,47 @@ Cost categories include:
 
 ### Direct request labor
 
-* intake
-* review
-* search
-* extraction
-* redaction
-* delivery
-* correspondence
+- intake
+- review
+- search
+- extraction
+- redaction
+- delivery
+- correspondence
 
 ### Repetition cost
 
-* repeated extraction of similar data
-* repeated explanations
-* repeated formatting
-* repeated review of similar fields
-* repeated approvals
+- repeated extraction of similar data
+- repeated explanations
+- repeated formatting
+- repeated review of similar fields
+- repeated approvals
 
 ### Tracking and compliance cost
 
-* deadline monitoring
-* status updates
-* request logs
-* response preservation
-* audit trails
-* appeal support
-* complaint response support
+- deadline monitoring
+- status updates
+- request logs
+- response preservation
+- audit trails
+- appeal support
+- complaint response support
 
 ### Data management cost
 
-* local storage of response packages
-* version confusion
-* inconsistent exports
-* staff knowledge dependency
-* ad hoc spreadsheets
-* unclear field definitions
+- local storage of response packages
+- version confusion
+- inconsistent exports
+- staff knowledge dependency
+- ad hoc spreadsheets
+- unclear field definitions
 
 ### Opportunity cost
 
-* records staff time diverted from requests requiring actual judgment
-* attorneys reviewing repetitive low-risk data categories
-* supervisors repeatedly approving similar responses
-* IT staff repeatedly pulling similar exports
+- records staff time diverted from requests requiring actual judgment
+- attorneys reviewing repetitive low-risk data categories
+- supervisors repeatedly approving similar responses
+- IT staff repeatedly pulling similar exports
 
 ## 17. Key agency message
 
@@ -376,40 +375,40 @@ PoliceConduct.org provides the service at no cost during the initial pilot for q
 
 Included during pilot:
 
-* request-pattern review
-* dataset selection support
-* publication planning
-* public dataset hosting
-* downloadable files
-* historical file hosting
-* dataset documentation
-* field dictionary support
-* update history
-* stable public links
-* optional download logs
-* basic usage reporting
+- request-pattern review
+- dataset selection support
+- publication planning
+- public dataset hosting
+- downloadable files
+- historical file hosting
+- dataset documentation
+- field dictionary support
+- update history
+- stable public links
+- optional download logs
+- basic usage reporting
 
 Agency provides:
 
-* complete public-data exports
-* historical data where available
-* recurring updates
-* field definitions
-* exclusion/redaction documentation
-* source-system context
-* agency point of contact
+- complete public-data exports
+- historical data where available
+- recurring updates
+- field definitions
+- exclusion/redaction documentation
+- source-system context
+- agency point of contact
 
 ## 19. Conversion goal
 
 The page should cause a qualified agency visitor to take one of these actions:
 
-* request a pilot conversation
-* offer a sample dataset for review
-* ask whether a recurring request category is a good fit
-* request a cost-savings discussion
-* share the page with a records supervisor, city attorney, or city manager
-* ask about free pilot eligibility
-* begin documenting high-volume request categories
+- request a pilot conversation
+- offer a sample dataset for review
+- ask whether a recurring request category is a good fit
+- request a cost-savings discussion
+- share the page with a records supervisor, city attorney, or city manager
+- ask about free pilot eligibility
+- begin documenting high-volume request categories
 
 ## 20. Form requirements
 
@@ -417,50 +416,50 @@ The inquiry form should qualify the opportunity without creating friction.
 
 Recommended fields:
 
-* name
-* agency / organization
-* role
-* email
-* phone optional
-* jurisdiction
-* type of agency
-* current records system optional
-* approximate annual public-records request volume
-* most repeated police-records request categories
-* datasets currently exportable
-* years of historical data available
-* preferred update frequency
-* interest in free pilot
-* message
+- name
+- agency / organization
+- role
+- email
+- phone optional
+- jurisdiction
+- type of agency
+- current records system optional
+- approximate annual public-records request volume
+- most repeated police-records request categories
+- datasets currently exportable
+- years of historical data available
+- preferred update frequency
+- interest in free pilot
+- message
 
 ## 21. Acceptance criteria
 
 The page succeeds when an agency-side visitor can answer these questions quickly:
 
-* Is this for public agencies like mine?
-* What operational problem does this solve?
-* How could this reduce staff time?
-* What would we need to provide?
-* What does PoliceConduct.org provide?
-* Is there a free pilot?
-* What kind of data is a good fit?
-* Can we still control official records decisions?
-* Can we link requestors to published datasets?
-* Can we receive download logs or usage reporting?
-* What is the next step?
+- Is this for public agencies like mine?
+- What operational problem does this solve?
+- How could this reduce staff time?
+- What would we need to provide?
+- What does PoliceConduct.org provide?
+- Is there a free pilot?
+- What kind of data is a good fit?
+- Can we still control official records decisions?
+- Can we link requestors to published datasets?
+- Can we receive download logs or usage reporting?
+- What is the next step?
 
 ## 22. Internal success criteria
 
 PoliceConduct.org should consider the page successful if it creates:
 
-* qualified agency conversations
-* sample dataset reviews
-* pilot interest from records offices or city/county officials
-* clearer knowledge of agency objections
-* better understanding of recurring request categories
-* evidence that cost reduction resonates
-* evidence that free pilot terms are attractive
-* potential grant or sponsorship opportunities
+- qualified agency conversations
+- sample dataset reviews
+- pilot interest from records offices or city/county officials
+- clearer knowledge of agency objections
+- better understanding of recurring request categories
+- evidence that cost reduction resonates
+- evidence that free pilot terms are attractive
+- potential grant or sponsorship opportunities
 
 ## 23. Recommended internal framing
 
@@ -472,27 +471,27 @@ It is a market test for an agency-facing service line:
 
 The first version should validate:
 
-* whether agencies recognize the repetitive-request problem
-* which roles care most
-* which datasets they are willing to publish
-* whether five years of historical data is feasible
-* whether monthly or quarterly updates are realistic
-* whether free pilot terms overcome adoption resistance
-* whether download logs are valuable
-* whether agencies want cost-savings reporting
+- whether agencies recognize the repetitive-request problem
+- which roles care most
+- which datasets they are willing to publish
+- whether five years of historical data is feasible
+- whether monthly or quarterly updates are realistic
+- whether free pilot terms overcome adoption resistance
+- whether download logs are valuable
+- whether agencies want cost-savings reporting
 
 ## 24. Recommended implementation scope
 
 First release should include:
 
-* one partner page
-* one free-pilot offer
-* one contact form
-* one internal lead tag: `public-records-partner`
-* one lightweight follow-up workflow
-* one page analytics event
-* one form submission event
-* optional downloadable one-page PDF later
+- one partner page
+- one free-pilot offer
+- one contact form
+- one internal lead tag: `public-records-partner`
+- one lightweight follow-up workflow
+- one page analytics event
+- one form submission event
+- optional downloadable one-page PDF later
 
 ## 25. Best final positioning
 

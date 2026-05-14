@@ -144,12 +144,19 @@ const missingAgencies = await withDb(async (client) => {
   const result = await client.query(
     `
       select
-        id, name, address, city, state, zip_code,
-        administrative_area, place_slug
-      from public.agency
-      where latitude is null
-         or longitude is null
-      order by lower(state), lower(city), lower(name), id
+        a.id,
+        a.name,
+        a.address,
+        lp.place_name as city,
+        lp.state_or_territory_slug as state,
+        a.zip_code,
+        lp.administrative_area_name as administrative_area
+      from public.agency a
+      join public.location_path lp
+        on lp.location_path_id = a.location_path_id
+      where a.latitude is null
+         or a.longitude is null
+      order by lower(lp.state_or_territory_slug), lower(lp.place_name), lower(a.name), a.id
     `,
   );
   return result.rows;

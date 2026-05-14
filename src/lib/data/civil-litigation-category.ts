@@ -14,6 +14,7 @@ export type AgencyRef = {
   slug: string;
   name: string;
   state: string;
+  location_path?: string | null;
   canonicalPath?: string | null;
 };
 
@@ -100,14 +101,12 @@ export const loadCivilCasesByState = async (
             a.id,
             a.slug,
             a.name,
-            a.state,
-            a.administrative_area,
-            a.administrative_area_slug,
-            a.city,
-            a.place_slug
+            lp.state_or_territory_slug as state,
+            lp.path as location_path
           from public.civil_case_officers cco
           join public.agency_officers ao on ao.id = cco.agency_officer_id
           join public.agency a on a.id = ao.agency_id
+          join public.location_path lp on lp.location_path_id = a.location_path_id
           where cco.civil_case_id = any($1)
           order by a.name
         `,

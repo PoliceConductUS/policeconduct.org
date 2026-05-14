@@ -25,7 +25,6 @@ const { pagePath, reports, title } = Astro.props as Props;
         <Breadcrumbs
           items={[
             { label: "Home", href: "/" },
-            { label: "Reports", href: "/report/" },
             { label: title, href: pagePath, current: true },
           ]}
           className="mb-2"

@@ -54,7 +54,16 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
       ).rows;
       const officers = (await client.query("select * from public.officers"))
         .rows;
-      const agencies = (await client.query("select * from public.agency")).rows;
+      const agencies = (
+        await client.query(
+          `
+            select a.*, lp.path as location_path
+            from public.agency a
+            join public.location_path lp
+              on lp.location_path_id = a.location_path_id
+          `,
+        )
+      ).rows;
       const agencyOfficers = (
         await client.query("select * from public.agency_officers")
       ).rows;

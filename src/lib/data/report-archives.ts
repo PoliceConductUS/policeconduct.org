@@ -1,7 +1,4 @@
-import {
-  getReportDateParts,
-  parseLocationPathParts,
-} from "./report-paths.js";
+import { getReportDateParts, parseLocationPathParts } from "./report-paths.js";
 import type { ReportSummary } from "./types.js";
 
 export type ReportArchiveScope = "state" | "county" | "place";

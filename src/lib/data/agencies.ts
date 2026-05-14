@@ -1,10 +1,5 @@
 import { withDb } from "#src/lib/db.js";
-import {
-  getAgencyAdministrativeArea,
-  getAgencyAdministrativeAreaSlug,
-  getAgencyPlaceSlug,
-  requireAgencyCanonicalPath,
-} from "./location-paths.js";
+import { requireAgencyCanonicalPath } from "./location-paths.js";
 import type { AgencySummary } from "./types.js";
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
 
@@ -26,11 +21,12 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
         `select
            a.id,
            a.name,
-           a.state,
-           a.administrative_area,
-           a.administrative_area_slug,
-           a.city,
-           a.place_slug,
+           lp.state_or_territory_slug as state,
+           lp.administrative_area_name as administrative_area,
+           lp.administrative_area_slug as location_administrative_area_slug,
+           lp.place_name as city,
+           lp.place_slug as location_place_slug,
+           lp.path as location_path,
            a.address,
            a.zip_code,
            a.slug,
@@ -55,6 +51,8 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
              0
            ) as civil_case_count
          from public.agency a
+         join public.location_path lp
+           on lp.location_path_id = a.location_path_id
          join public.build_page_payload bpp
            on bpp.page_type = 'agency'
           and bpp.entity_id = a.id
@@ -68,9 +66,10 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
          left join public.agency_officers ao
            on ao.agency_id = a.id
           and ao.end_date is null
-         group by a.id, a.name, a.state, a.administrative_area,
-           a.administrative_area_slug, a.city, a.place_slug, a.address,
-           a.zip_code, a.slug, ap.phone_number`,
+         group by a.id, a.name, lp.state_or_territory_slug,
+           lp.administrative_area_name, lp.administrative_area_slug,
+           lp.place_name, lp.place_slug, lp.path, a.address, a.zip_code,
+           a.slug, ap.phone_number`,
       )
     ).rows;
   });
@@ -83,14 +82,30 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
       name: requireText(agency.name, "name", id),
       state: requireText(agency.state, "state", id),
       slug: requireText(agency.slug, "slug", id),
-      administrativeArea: getAgencyAdministrativeArea(agency),
-      administrativeAreaSlug: getAgencyAdministrativeAreaSlug(agency),
+      administrativeArea: requireText(
+        agency.administrative_area,
+        "location administrative_area",
+        id,
+      ),
+      administrativeAreaSlug: requireText(
+        agency.location_administrative_area_slug,
+        "location administrative_area_slug",
+        id,
+      ).toLowerCase(),
       city: agency.city || null,
-      placeSlug: getAgencyPlaceSlug(agency),
+      placeSlug: requireText(
+        agency.location_place_slug,
+        "location place_slug",
+        id,
+      ).toLowerCase(),
       address: agency.address || null,
       zipCode: agency.zip_code || null,
       phoneNumber: agency.phone_number || null,
-      canonicalPath: requireAgencyCanonicalPath(agency),
+      canonicalPath: requireAgencyCanonicalPath({
+        id,
+        location_path: agency.location_path,
+        slug: agency.slug,
+      }),
       activePersonnelCount: Number(agency.active_personnel_count || 0),
       reportCount: Number(agency.report_count || 0),
       civilCaseCount: Number(agency.civil_case_count || 0),

@@ -3,9 +3,7 @@ import { US_STATE_TILES } from "./geo/states.js";
 
 const PAGE_SIZE = 50;
 
-const CATEGORY_SLUGS = US_STATE_TILES.map((state) =>
-  state.code.toLowerCase(),
-);
+const CATEGORY_SLUGS = US_STATE_TILES.map((state) => state.code.toLowerCase());
 
 const parseDate = (value) => {
   if (!value) {
@@ -59,20 +57,6 @@ const addPaginatedPaths = (map, basePath, count, lastmod) => {
   for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
     setLastmod(map, `${basePath}page/${pageNumber}/`, lastmod);
   }
-};
-
-const requireAgencyCanonicalPath = (agency) => {
-  if (
-    !agency.state ||
-    !agency.administrative_area_slug ||
-    !agency.place_slug ||
-    !agency.slug
-  ) {
-    throw new Error(
-      `Agency ${agency.id || agency.slug || "unknown"} is missing required address-based URL fields`,
-    );
-  }
-  return `/${agency.state.toLowerCase()}/${agency.administrative_area_slug}/${agency.place_slug}/${agency.slug}/`;
 };
 
 const normalizeReportDate = (value) => {
@@ -176,9 +160,10 @@ export const buildSitemapLastmodMap = async () => {
             select
               a.id,
               a.slug,
-              lower(a.state) as state,
-              a.administrative_area_slug,
-              a.place_slug,
+              lower(lp.state_or_territory_slug) as state,
+              lp.administrative_area_slug as location_administrative_area_slug,
+              lp.place_slug as location_place_slug,
+              lp.path as location_path,
               a.created_at,
               a.updated_at,
               count(distinct ao_active.officer_id) as active_personnel_count,
@@ -188,6 +173,8 @@ export const buildSitemapLastmodMap = async () => {
               max(r.updated_at) as max_report_updated_at,
               max(c.updated_at) as max_civil_case_updated_at
             from public.agency a
+            join public.location_path lp
+              on lp.location_path_id = a.location_path_id
             left join public.agency_officers ao on ao.agency_id = a.id
             left join public.agency_officers ao_active
               on ao_active.agency_id = a.id
@@ -198,8 +185,9 @@ export const buildSitemapLastmodMap = async () => {
             left join public.civil_case_officers cco
               on cco.agency_officer_id = ao.id
             left join public.civil_cases c on c.id = cco.civil_case_id
-            group by a.id, a.slug, a.state, a.administrative_area_slug,
-              a.place_slug, a.created_at, a.updated_at
+            group by a.id, a.slug, lp.state_or_territory_slug,
+              lp.administrative_area_slug, lp.place_slug, lp.path,
+              a.created_at, a.updated_at
           )
           select
             *,
@@ -220,11 +208,16 @@ export const buildSitemapLastmodMap = async () => {
       if (!agency.state || !agency.slug) {
         continue;
       }
-      if (agency.administrative_area_slug && agency.place_slug && agency.slug) {
-        const canonicalPath = requireAgencyCanonicalPath(agency);
+      if (
+        agency.location_administrative_area_slug &&
+        agency.location_place_slug &&
+        agency.location_path &&
+        agency.slug
+      ) {
+        const canonicalPath = `${agency.location_path}${agency.slug}/`;
         const statePath = `/${agency.state}/`;
-        const administrativeAreaPath = `${statePath}${agency.administrative_area_slug}/`;
-        const placePath = `${administrativeAreaPath}${agency.place_slug}/`;
+        const administrativeAreaPath = `${statePath}${agency.location_administrative_area_slug}/`;
+        const placePath = `${administrativeAreaPath}${agency.location_place_slug}/`;
         setLastmod(pathLastmods, statePath, agency.lastmod);
         setLastmod(pathLastmods, administrativeAreaPath, agency.lastmod);
         setLastmod(pathLastmods, placePath, agency.lastmod);
@@ -388,11 +381,7 @@ export const buildSitemapLastmodMap = async () => {
       }
       setLastmod(pathLastmods, `/civil-cases/${civilCase.slug}/`, lastmod);
       incrementCount(civilCaseCountsByCategory, civilCase.state);
-      setCategoryLastmod(
-        civilCaseLastmodsByCategory,
-        civilCase.state,
-        lastmod,
-      );
+      setCategoryLastmod(civilCaseLastmodsByCategory, civilCase.state, lastmod);
       setLastmod(pathLastmods, "/civil-litigation/", lastmod);
     }
   });

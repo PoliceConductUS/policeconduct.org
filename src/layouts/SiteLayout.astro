@@ -53,17 +53,15 @@ const serializeStructuredData = (value: unknown) =>
   JSON.stringify(value).replace(/</g, "\\u003c");
 
 const navItems = [
-  { label: "Find My Area", href: "/find-my-area/", title: "Browse by place" },
-  { label: "Search", href: "/search/", title: "Search available records" },
   {
-    label: "Submit",
-    href: "/report/new/",
-    title: "Submit a police interaction report",
+    label: "Find Records",
+    href: "/find-records/",
+    title: "Find records by place or agency",
   },
   {
-    label: "About the Data",
+    label: "About",
     href: "/about/",
-    title: "About PoliceConduct.org data",
+    title: "About PoliceConduct.org",
   },
 ];
 
@@ -264,29 +262,12 @@ const isActivePath = (href: string) =>
                 <path d="M16 17H8"></path>
                 <path d="M10 9H8"></path>
               </svg>
-              <span>Submit a report</span>
+              <span>Share your experience</span>
             </a>
           </div>
         </div>
       </div>
     </nav>
-    <div
-      class="alert alert-warning alert-dismissible fade show rounded-0 mb-0 beta-banner"
-      role="alert"
-    >
-      <div
-        class="container d-flex flex-wrap justify-content-between align-items-center gap-3"
-      >
-        <div
-          class="me-3 beta-banner-message"
-          style="flex: 1 1 0; max-width: calc(100% - 3rem); min-width: 0; overflow-wrap: break-word;"
-        >
-          Early beta: We have limited capacity and manually review submissions.
-          If you want this to exist, please <a href="/donate">donate</a>.
-        </div>
-        <button type="button" class="btn-close" aria-label="Close"></button>
-      </div>
-    </div>
 
     <slot />
 
@@ -569,7 +550,7 @@ const isActivePath = (href: string) =>
                 <a
                   class="text-muted text-decoration-none"
                   href="#report-issue"
-                  data-issue-message={issueMessage}>Report Issue 🐞</a
+                  data-issue-message={issueMessage}>Report a site issue</a
                 >
               </li>
               <li class="mb-2">
@@ -588,7 +569,7 @@ const isActivePath = (href: string) =>
               </li>
               <li class="mb-2">
                 <a class="text-muted text-decoration-none" href="/status/">
-                  Submission Status
+                  Check submission status
                 </a>
               </li>
               <li class="mb-2">
@@ -713,13 +694,6 @@ const isActivePath = (href: string) =>
     <script>
       import "#src/lib/client/site.js";
     </script>
-    <style>
-      @media (max-width: 575.98px) {
-        .beta-banner-message {
-          max-width: 20rem !important;
-        }
-      }
-    </style>
     <script is:inline define:vars={{ issueMessage }}>
       (function () {
         const openFeedback = function (message) {

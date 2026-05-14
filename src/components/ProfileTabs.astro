@@ -22,6 +22,29 @@ type LitigationCase = {
   officers?: OfficerRef[] | null;
 };
 
+type PersonnelLinkedLitigationCase = LitigationCase & {
+  links?: {
+    officer: OfficerRef;
+    caseAgency: {
+      name: string;
+      canonicalPath: string;
+    };
+    targetAgencyAssignment: {
+      licenseType?: string | null;
+      startDate?: string | null;
+      endDate?: string | null;
+      relationship: "current" | "former";
+    };
+  }[];
+};
+
+type PersonnelLinkedAssignment = {
+  licenseType?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  relationship: "current" | "former";
+};
+
 type ReportItem = {
   incidentDate?: string | null;
   title?: string | null;
@@ -58,13 +81,12 @@ type PastEmployerEntry = {
   reportCount?: number;
   rating?: number | null;
   agency?: {
-    administrative_area?: string | null;
     administrativeArea?: string | null;
-    administrative_area_slug?: string | null;
     administrativeAreaSlug?: string | null;
     category?: string | null;
     city?: string | null;
-    place_slug?: string | null;
+    location_path?: string | null;
+    locationPath?: string | null;
     placeSlug?: string | null;
     slug?: string | null;
     name?: string | null;
@@ -73,6 +95,7 @@ type PastEmployerEntry = {
 
 type TabType =
   | "litigation"
+  | "personnelLinkedLitigation"
   | "reports"
   | "coverage"
   | "personnel"
@@ -93,6 +116,11 @@ type ProfileTabsProps = {
     cases?: LitigationCase[];
     emptyMessage?: string;
   };
+  personnelLinkedLitigation?: {
+    cases?: PersonnelLinkedLitigationCase[];
+    emptyMessage?: string;
+    helperText?: string;
+  };
   reports?: {
     items?: ReportItem[];
     emptyMessage?: string;
@@ -103,8 +131,13 @@ type ProfileTabsProps = {
     emptyMessage?: string;
     helperText?: string;
   };
-  personnel?: {
+  currentPersonnel?: {
     entries?: PersonnelEntry[];
+    emptyMessage?: string;
+  };
+  formerPersonnel?: {
+    entries?: PersonnelEntry[];
+    emptyMessage?: string;
   };
   pastEmployers?: {
     entries?: PastEmployerEntry[];
@@ -116,9 +149,11 @@ const {
   activeId,
   extraNavClasses = "",
   litigation = null,
+  personnelLinkedLitigation = null,
   reports = null,
   coverage = null,
-  personnel = null,
+  currentPersonnel = null,
+  formerPersonnel = null,
   pastEmployers = null,
 } = Astro.props as ProfileTabsProps;
 
@@ -130,14 +165,18 @@ const normalizedTabs = tabs.map((tab, index) => ({
 }));
 
 const litigationCases = litigation?.cases || [];
+const personnelLinkedLitigationCases = personnelLinkedLitigation?.cases || [];
 const reportsItems = reports?.items || [];
 const coverageLinks = coverage?.links || [];
-const personnelEntries = personnel?.entries || [];
+const currentPersonnelEntries = currentPersonnel?.entries || [];
+const formerPersonnelEntries = formerPersonnel?.entries || [];
 const pastEmployerEntries = pastEmployers?.entries || [];
 const hasLitigation = litigationCases.length > 0;
+const hasPersonnelLinkedLitigation = personnelLinkedLitigationCases.length > 0;
 const hasReports = reportsItems.length > 0;
 const hasCoverage = coverageLinks.length > 0;
-const hasPersonnel = personnelEntries.length > 0;
+const hasCurrentPersonnel = currentPersonnelEntries.length > 0;
+const hasFormerPersonnel = formerPersonnelEntries.length > 0;
 const hasPastEmployers = pastEmployerEntries.length > 0;
 
 const formatCaseYear = (date?: string | null) =>
@@ -152,6 +191,10 @@ const getOfficerName = (officer: OfficerRef) =>
     .join(" ");
 const getOfficerLicenseType = (officer: OfficerRef) =>
   officer.licenseType || officer.title || "";
+const formatAssignmentRelationship = (assignment: PersonnelLinkedAssignment) =>
+  assignment.relationship === "current"
+    ? "Current personnel"
+    : "Former personnel";
 ---
 
 <div data-profile-tabs>
@@ -249,6 +292,82 @@ const getOfficerLicenseType = (officer: OfficerRef) =>
                 <p class="text-muted">
                   {litigation?.emptyMessage ??
                     "No civil litigation listed yet."}
+                </p>
+              )}
+            </>
+          ) : tab.tabType === "personnelLinkedLitigation" ? (
+            <>
+              {personnelLinkedLitigation?.helperText ? (
+                <p class="text-muted small mb-3">
+                  {personnelLinkedLitigation.helperText}
+                </p>
+              ) : null}
+              {hasPersonnelLinkedLitigation ? (
+                <div class="profile-record-list">
+                  {personnelLinkedLitigationCases.map((caseItem) => (
+                    <article class="profile-record">
+                      <div class="profile-record-meta">
+                        <span>{formatCaseYear(caseItem.filed_date)}</span>
+                        {caseItem.cause_number ? (
+                          <a
+                            href={caseItem.caseUrl}
+                            data-profile-link-type="case_reference"
+                          >
+                            {caseItem.cause_number}
+                          </a>
+                        ) : null}
+                      </div>
+                      <div class="profile-record-body">
+                        <h3 class="profile-record-title">
+                          <a
+                            href={caseItem.caseUrl}
+                            data-profile-link-type="case_reference"
+                          >
+                            {caseItem.title || "Civil case"}
+                          </a>
+                        </h3>
+                        <div class="profile-record-detail">
+                          <span>{caseItem.court || "Court not listed"}</span>
+                        </div>
+                        {caseItem.links?.length ? (
+                          <div class="profile-record-context">
+                            {caseItem.links.map((link) => (
+                              <p>
+                                <strong>
+                                  {formatAssignmentRelationship(
+                                    link.targetAgencyAssignment,
+                                  )}
+                                  :
+                                </strong>{" "}
+                                <a
+                                  href={`/personnel/${link.officer.slug}/`}
+                                  data-profile-link-type="personnel_profile"
+                                >
+                                  {getOfficerName(link.officer)}
+                                </a>
+                                {getOfficerLicenseType(link.officer)
+                                  ? ` (${getOfficerLicenseType(link.officer)})`
+                                  : ""}{" "}
+                                is linked to this case through{" "}
+                                <a
+                                  href={link.caseAgency.canonicalPath}
+                                  data-profile-link-type="agency_profile"
+                                >
+                                  {link.caseAgency.name}
+                                </a>
+                                .
+                              </p>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p class="text-muted">
+                  {personnelLinkedLitigation?.emptyMessage ??
+                    "No personnel-linked civil litigation listed yet."}
                 </p>
               )}
             </>
@@ -362,59 +481,77 @@ const getOfficerLicenseType = (officer: OfficerRef) =>
             </>
           ) : tab.tabType === "personnel" ? (
             <>
-              {hasPersonnel ? (
-                <div class="profile-record-list">
-                  {personnelEntries.map((employee) => (
-                    <article class="profile-record">
-                      <div class="profile-record-meta">
-                        <span>
-                          {employee.entry.start_date
-                            ? formatShortDate(employee.entry.start_date)
-                            : "Start date unknown"}
-                        </span>
-                        <span>
-                          {employee.entry.end_date
-                            ? formatShortDate(employee.entry.end_date)
-                            : "Current"}
-                        </span>
-                      </div>
-                      <div class="profile-record-body">
-                        <h3 class="profile-record-title">
-                          {employee.officer ? (
-                            <a
-                              href={`/personnel/${employee.officer.slug}/`}
-                              data-profile-link-type="personnel_profile"
-                            >
-                              {getOfficerName(employee.officer)}
-                            </a>
-                          ) : (
-                            "Unknown person"
-                          )}
-                        </h3>
-                        <div class="profile-record-detail">
+              {(() => {
+                const personnelConfig =
+                  tab.slotName === "formerPersonnel"
+                    ? formerPersonnel
+                    : currentPersonnel;
+                const entries =
+                  tab.slotName === "formerPersonnel"
+                    ? formerPersonnelEntries
+                    : currentPersonnelEntries;
+                const hasEntries =
+                  tab.slotName === "formerPersonnel"
+                    ? hasFormerPersonnel
+                    : hasCurrentPersonnel;
+
+                return hasEntries ? (
+                  <div class="profile-record-list">
+                    {entries.map((employee) => (
+                      <article class="profile-record">
+                        <div class="profile-record-meta">
                           <span>
-                            Badge: {employee.entry.badge_number || "Unknown"}
+                            {employee.entry.start_date
+                              ? formatShortDate(employee.entry.start_date)
+                              : "Start date unknown"}
                           </span>
-                          <span aria-hidden="true">/</span>
                           <span>
-                            License type: {employee.entry.title || ""}
-                          </span>
-                          <span aria-hidden="true">/</span>
-                          <span>{employee.reportCount || 0} reports</span>
-                          <span aria-hidden="true">/</span>
-                          <span>
-                            {employee.rating && employee.rating > 0
-                              ? `Rating ${employee.rating.toFixed(1)}`
-                              : "Not rated"}
+                            {employee.entry.end_date
+                              ? formatShortDate(employee.entry.end_date)
+                              : "Current"}
                           </span>
                         </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <p class="text-muted">No personnel listed yet.</p>
-              )}
+                        <div class="profile-record-body">
+                          <h3 class="profile-record-title">
+                            {employee.officer ? (
+                              <a
+                                href={`/personnel/${employee.officer.slug}/`}
+                                data-profile-link-type="personnel_profile"
+                              >
+                                {getOfficerName(employee.officer)}
+                              </a>
+                            ) : (
+                              "Unknown person"
+                            )}
+                          </h3>
+                          <div class="profile-record-detail">
+                            <span>
+                              Badge: {employee.entry.badge_number || "Unknown"}
+                            </span>
+                            <span aria-hidden="true">/</span>
+                            <span>
+                              License type: {employee.entry.title || ""}
+                            </span>
+                            <span aria-hidden="true">/</span>
+                            <span>{employee.reportCount || 0} reports</span>
+                            <span aria-hidden="true">/</span>
+                            <span>
+                              {employee.rating && employee.rating > 0
+                                ? `Rating ${employee.rating.toFixed(1)}`
+                                : "Not rated"}
+                            </span>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p class="text-muted">
+                    {personnelConfig?.emptyMessage ??
+                      "No personnel listed yet."}
+                  </p>
+                );
+              })()}
             </>
           ) : tab.tabType === "pastEmployers" ? (
             <>
@@ -519,6 +656,17 @@ const getOfficerLicenseType = (officer: OfficerRef) =>
   .profile-record-summary {
     color: var(--bs-secondary-color);
     margin: 0.35rem 0 0;
+  }
+
+  .profile-record-context {
+    color: var(--bs-secondary-color);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-top: 0.65rem;
+  }
+
+  .profile-record-context p {
+    margin: 0.25rem 0 0;
   }
 
   .profile-record-detail {

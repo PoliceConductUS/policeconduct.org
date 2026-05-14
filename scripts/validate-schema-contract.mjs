@@ -22,9 +22,7 @@ const requiredTables = {
       "slug",
       "state",
       "administrative_area",
-      "administrative_area_slug",
       "city",
-      "place_slug",
       "address",
       "zip_code",
       "latitude",
@@ -32,9 +30,8 @@ const requiredTables = {
       "created_at",
       "updated_at",
       "location_path_id",
-      "agency_slug",
     ],
-    notNull: ["id", "name", "slug", "state"],
+    notNull: ["id", "name", "slug", "state", "location_path_id"],
     uniqueColumnSets: [["slug"]],
   },
   agency_links: {
@@ -79,7 +76,14 @@ const requiredTables = {
     uniqueColumnSets: [["path"]],
   },
   civil_case_links: {
-    columns: ["id", "civil_case_id", "title", "url", "created_at", "updated_at"],
+    columns: [
+      "id",
+      "civil_case_id",
+      "title",
+      "url",
+      "created_at",
+      "updated_at",
+    ],
     notNull: ["id", "civil_case_id", "title", "url"],
   },
   civil_case_officers: {
@@ -240,7 +244,9 @@ const requiredTables = {
 const getDatabaseUrl = () => {
   const url = process.env.DATABASE_URL;
   if (!url) {
-    throw new Error("DATABASE_URL is required to validate the schema contract.");
+    throw new Error(
+      "DATABASE_URL is required to validate the schema contract.",
+    );
   }
   return url;
 };
