@@ -53,23 +53,16 @@ const serializeStructuredData = (value: unknown) =>
   JSON.stringify(value).replace(/</g, "\\u003c");
 
 const navItems = [
-  { label: "Reports", href: "/report/", title: "User submitted reports" },
   {
-    label: "Agencies",
-    href: "/law-enforcement-agency/",
-    title: "Law Enforcement Agencies",
+    label: "Find Records",
+    href: "/find-records/",
+    title: "Find records by place or agency",
   },
   {
-    label: "Personnel",
-    href: "/personnel/",
-    title: "Law Enforcement Agency Personnel",
+    label: "About",
+    href: "/about/",
+    title: "About PoliceConduct.org",
   },
-  {
-    label: "Civil Cases",
-    href: "/civil-litigation/",
-    title: "Civil litigation cases",
-  },
-  { label: "News", href: "/news/", title: "Police conduct news" },
 ];
 
 const isActivePath = (href: string) =>
@@ -269,26 +262,12 @@ const isActivePath = (href: string) =>
                 <path d="M16 17H8"></path>
                 <path d="M10 9H8"></path>
               </svg>
-              <span>Submit a report</span>
+              <span>Share your experience</span>
             </a>
           </div>
         </div>
       </div>
     </nav>
-    <div
-      class="alert alert-warning alert-dismissible fade show rounded-0 mb-0 beta-banner"
-      role="alert"
-    >
-      <div
-        class="container d-flex flex-wrap justify-content-between align-items-center gap-3"
-      >
-        <div class="me-3">
-          Early beta: We have limited capacity and manually review submissions.
-          If you want this to exist, please <a href="/donate">donate</a>.
-        </div>
-        <button type="button" class="btn-close" aria-label="Close"></button>
-      </div>
-    </div>
 
     <slot />
 
@@ -571,7 +550,7 @@ const isActivePath = (href: string) =>
                 <a
                   class="text-muted text-decoration-none"
                   href="#report-issue"
-                  data-issue-message={issueMessage}>Report Issue 🐞</a
+                  data-issue-message={issueMessage}>Report a site issue</a
                 >
               </li>
               <li class="mb-2">
@@ -590,7 +569,7 @@ const isActivePath = (href: string) =>
               </li>
               <li class="mb-2">
                 <a class="text-muted text-decoration-none" href="/status/">
-                  Submission Status
+                  Check submission status
                 </a>
               </li>
               <li class="mb-2">
@@ -705,6 +684,13 @@ const isActivePath = (href: string) =>
           <p class="mb-1">Institute for Police Conduct, Inc.</p>
           <p class="mb-1">8 The Green #11026</p>
           <p class="mb-1">Dover, DE 19901, United States</p>
+          <p class="mb-1">
+            <a
+              class="text-muted text-decoration-none"
+              href="/about/contact/"
+              data-issue-message={issueMessage}>Report issue</a
+            >
+          </p>
           <p class="mb-0">
             © 2026 Institute for Police Conduct, Inc. All rights reserved.
           </p>

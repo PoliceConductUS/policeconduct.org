@@ -26,7 +26,6 @@ if (sentryEnabled) {
 const ALLOWED_FORM_NAMES = new Set([
   "contact",
   "volunteer",
-  "issue",
   "civilLitigationNew",
   "civilLitigationEdit",
   "agencyNew",
@@ -35,6 +34,8 @@ const ALLOWED_FORM_NAMES = new Set([
   "officerEdit",
   "dataSubjectAccessRequest",
   "reportNew",
+  "videoNew",
+  "videoEdit",
 ]);
 const FORMS_WITH_EMAIL_VERIFICATION = new Map([
   ["contact", "email"],
@@ -47,6 +48,8 @@ const FORMS_WITH_EMAIL_VERIFICATION = new Map([
   ["officerEdit", "submitterEmail"],
   ["dataSubjectAccessRequest", "email"],
   ["reportNew", "reporterEmail"],
+  ["videoNew", "submitterEmail"],
+  ["videoEdit", "submitterEmail"],
 ]);
 const PREVIEW_ORIGIN_HOST_RE = /^pr-\d+\.preview\.policeconduct\.org$/;
 

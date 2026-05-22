@@ -53,12 +53,12 @@ const FIELD_CONFIG: Record<PrefillPath, Record<string, PrefillFieldConfig>> = {
   "/report/new/": {
     "officer.department": {
       kind: "input",
-      selector: '[name="officers[0][department]"]',
+      selector: '[name="people[0][department]"]',
       toExpectedValue: identity,
     },
     "officer.name": {
       kind: "input",
-      selector: '[name="officers[0][name]"]',
+      selector: '[name="people[0][name]"]',
       toExpectedValue: identity,
     },
   },
@@ -121,7 +121,10 @@ const FIELD_CONFIG: Record<PrefillPath, Record<string, PrefillFieldConfig>> = {
     currentAgencyState: {
       kind: "input",
       selector: "#currentAgencyState",
-      toExpectedValue: identity,
+      toExpectedValue: (value) =>
+        String(value ?? "")
+          .trim()
+          .toUpperCase(),
     },
     pastEmployers: {
       kind: "textarea",

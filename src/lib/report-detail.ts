@@ -1,6 +1,8 @@
 import { withDb } from "./db.js";
 import { groupBy, mapBy } from "./data.js";
-import { getVideoEmbedUrl, getYouTubeThumbnailUrl } from "./video.js";
+import { loadCoverageLinksForReport } from "./data/coverage.js";
+import { requireAgencyCanonicalPath } from "./data/location-paths.js";
+import { buildReportCanonicalPath } from "./data/report-paths.js";
 
 const assertValue = <T>(value: T | null | undefined, message: string): T => {
   if (value === null || value === undefined) {
@@ -43,16 +45,26 @@ type ReportDetailQuery = {
 
 export type ReportDetailModel = {
   report: Record<string, unknown>;
+  canonicalPath: string;
   reportWitnesses: Record<string, unknown>[];
   reportAttachments: Record<string, unknown>[];
   tags: string[];
   officers: ReportOfficerEntry[];
+  civilCases: {
+    id: string;
+    title: string;
+    causeNumber: string;
+    court: string | null;
+    filedDate: string | null;
+    path: string;
+  }[];
   evidenceLinks: {
     id: string;
     title: string;
     url: string;
-    embed: string | null;
-    thumbnail: string | null;
+    source_name?: string | null;
+    published_at?: string | null;
+    notes?: string | null;
   }[];
 };
 
@@ -111,7 +123,10 @@ const buildOfficerEntries = (
     return {
       officer,
       agencyOfficer,
-      agency,
+      agency: {
+        ...agency,
+        canonicalPath: requireAgencyCanonicalPath(agency),
+      },
       path,
       badge: agencyOfficer.badge_number || null,
       ratingOverall,
@@ -124,8 +139,9 @@ type EvidenceLink = {
   id: string;
   title: string;
   url: string;
-  embed: string | null;
-  thumbnail: string | null;
+  source_name?: string | null;
+  published_at?: string | null;
+  notes?: string | null;
 };
 type EvidenceLinkSource = { id: string; title: string; url: string };
 
@@ -136,8 +152,6 @@ const buildEvidenceLinks = (links: EvidenceLinkSource[]): EvidenceLink[] =>
       id,
       title: link.title,
       url: link.url,
-      embed: getVideoEmbedUrl(link.url),
-      thumbnail: getYouTubeThumbnailUrl(link.url),
     };
   });
 
@@ -146,7 +160,16 @@ export const loadReportDetail = async (
 ): Promise<ReportDetailModel | null> => {
   const data = await withDb(async (client): Promise<ReportDetailQuery> => {
     const report = (
-      await client.query("select * from public.reviews where slug = $1", [slug])
+      await client.query(
+        `
+          select r.*, lp.path as location_path, lp.state_or_territory_slug
+          from public.reviews r
+          left join public.location_path lp
+            on lp.location_path_id = r.location_path_id
+          where r.slug = $1
+        `,
+        [slug],
+      )
     ).rows[0];
     if (!report) {
       return {
@@ -207,7 +230,16 @@ export const loadReportDetail = async (
       )
     ).rows;
     const officers = (await client.query("select * from public.officers")).rows;
-    const agencies = (await client.query("select * from public.agency")).rows;
+    const agencies = (
+      await client.query(
+        `
+          select a.*, lp.path as location_path
+          from public.agency a
+          join public.location_path lp
+            on lp.location_path_id = a.location_path_id
+        `,
+      )
+    ).rows;
     const agencyOfficers = (
       await client.query("select * from public.agency_officers")
     ).rows;
@@ -234,6 +266,7 @@ export const loadReportDetail = async (
   if (!data.report) {
     return null;
   }
+  const reportId = assertValue(data.report.id, "Missing id for report row");
 
   const tagsById = mapBy(data.tags, "id");
   const tags = (data.reportTags || [])
@@ -241,14 +274,72 @@ export const loadReportDetail = async (
     .filter(Boolean)
     .map((tag: { label: string }) => tag.label);
 
+  const evidenceLinks = buildEvidenceLinks(data.reportLinks ?? []);
+  const coverageLinks = await loadCoverageLinksForReport(
+    String(data.report.id),
+  );
+  const civilCases = await withDb(async (client) => {
+    return (
+      await client.query(
+        `
+          select distinct
+            civil_case.id,
+            civil_case.title,
+            civil_case.cause_number,
+            civil_case.court,
+            civil_case.filed_date,
+            civil_case.slug
+          from public.civil_cases civil_case
+          join public.civil_case_officers civil_case_officer
+            on civil_case_officer.civil_case_id = civil_case.id
+          join public.review_officers review_officer
+            on review_officer.agency_officer_id = civil_case_officer.agency_officer_id
+          where review_officer.review_id = $1
+          order by civil_case.filed_date desc, civil_case.title
+        `,
+        [reportId],
+      )
+    ).rows;
+  });
+
   return {
     report: data.report,
+    canonicalPath: buildReportCanonicalPath({
+      id: String(data.report.id),
+      incidentDate: data.report.incident_date as string | Date | null,
+      locationPath: data.report.location_path as string | null,
+      slug: data.report.slug as string | null,
+    }),
     reportWitnesses: data.reportWitnesses ?? [],
     reportAttachments: data.reportAttachments ?? [],
     tags,
     officers: buildOfficerEntries(
       data as ReportDetailQuery & { report: Record<string, unknown> },
     ),
-    evidenceLinks: buildEvidenceLinks(data.reportLinks ?? []),
+    civilCases: civilCases.map((civilCase: Record<string, string | null>) => {
+      const id = assertValue(civilCase.id, "Missing id for civil case row");
+      const title = assertValue(
+        civilCase.title,
+        `Missing title for civil case ${id}`,
+      );
+      const causeNumber = assertValue(
+        civilCase.cause_number,
+        `Missing cause_number for civil case ${id}`,
+      );
+      const slug = assertValue(
+        civilCase.slug,
+        `Missing slug for civil case ${id}`,
+      );
+
+      return {
+        id,
+        title,
+        causeNumber,
+        court: civilCase.court,
+        filedDate: civilCase.filed_date,
+        path: `/civil-cases/${slug}/`,
+      };
+    }),
+    evidenceLinks: [...evidenceLinks, ...coverageLinks],
   };
 };

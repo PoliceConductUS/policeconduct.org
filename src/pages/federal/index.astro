@@ -1,0 +1,105 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
+import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+
+const federalAgencies = await loadFederalAgencySummaries();
+const pagePath = "/federal/";
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const description = "Federal agencies listed on PoliceConduct.org.";
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: "Federal Agencies | PoliceConduct.org",
+  description,
+  type: "CollectionPage",
+});
+---
+
+<SiteLayout
+  title="Federal Agencies | PoliceConduct.org"
+  description={description}
+  pagePath={pagePath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Federal Agencies", href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+        <div class="row g-4 align-items-end">
+          <div class="col-12 col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">Federal</p>
+            <h1 class="display-4 fw-bold mb-3">Federal Agencies</h1>
+            <p class="lead text-muted mb-0">
+              Browse federal agency records and linked locations.
+            </p>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label fw-semibold" for="federalSearch">
+              Search federal agencies
+            </label>
+            <input
+              class="form-control rounded-0"
+              id="federalSearch"
+              type="search"
+              placeholder="Federal agency"
+              data-federal-filter-input
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="py-vh-2">
+      <div class="container">
+        <div class="profile-record-list">
+          {
+            federalAgencies.map((agency) => (
+              <article
+                class="profile-record"
+                data-federal-filter-item
+                data-federal-filter-text={agency.name}
+              >
+                <div class="profile-record-body">
+                  <h2 class="profile-record-title h4">
+                    <a href={agency.path}>{agency.name}</a>
+                  </h2>
+                  <div class="profile-record-detail">
+                    <span>
+                      {agency.branchCount}{" "}
+                      {agency.branchCount === 1 ? "location" : "locations"}
+                    </span>
+                  </div>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+  <script is:inline>
+    document
+      .querySelectorAll("[data-federal-filter-input]")
+      .forEach((input) => {
+        input.addEventListener("input", () => {
+          const query = input.value.trim().toLowerCase();
+          document
+            .querySelectorAll("[data-federal-filter-item]")
+            .forEach((item) => {
+              const text =
+                item.getAttribute("data-federal-filter-text")?.toLowerCase() ||
+                "";
+              item.hidden = Boolean(query) && !text.includes(query);
+            });
+        });
+      });
+  </script>
+</SiteLayout>

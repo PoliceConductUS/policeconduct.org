@@ -1,5 +1,6 @@
 import { withDb } from "#src/lib/db.js";
 import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
+import { requireAgencyCanonicalPath } from "./location-paths.js";
 import type { PersonnelSummary } from "./types.js";
 
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
@@ -61,7 +62,13 @@ export const loadPersonnelSummaries = async (
       const agencies = agencyIds.length
         ? (
             await client.query(
-              "select * from public.agency where id = any($1)",
+              `
+                select a.*, lp.path as location_path
+                from public.agency a
+                join public.location_path lp
+                  on lp.location_path_id = a.location_path_id
+                where a.id = any($1)
+              `,
               [agencyIds],
             )
           ).rows
@@ -122,9 +129,6 @@ export const loadPersonnelSummaries = async (
       if (activeAssignments.length === 0) {
         return null;
       }
-      const officerReportCount = Number(
-        reportCountsByOfficer[officerId]?.report_count || 0,
-      );
       // Use most recent active assignment
       const eligibleAssignment =
         activeAssignments[activeAssignments.length - 1];
@@ -138,10 +142,11 @@ export const loadPersonnelSummaries = async (
         lastName: officer.last_name,
         firstName: officer.first_name,
         nameSuffix: officer.suffix || null,
+        licenseType: eligibleAssignment?.title || null,
         roleTitle: eligibleAssignment?.title || null,
-        agencySlug: `${agency.category}/${agency.slug}`,
         agencyName: agency.name,
-        agencyCategory: agency.category,
+        agencyState: String(agency.state || "").toLowerCase(),
+        agencyCanonicalPath: requireAgencyCanonicalPath(agency),
         reportCount: Number(
           reportCountsByOfficer[officer.id]?.report_count || 0,
         ),

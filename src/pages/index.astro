@@ -6,51 +6,60 @@ import {
   loadPersonnelSummaries,
   loadReportSummaries,
 } from "#src/lib/data/summaries.js";
+import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
+import { loadLocationBuildPayloads } from "#src/lib/data/build-payloads.js";
 import { withDb } from "#src/lib/db.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/";
 const pageDescription =
-  "Independent public record for police interaction reports, commendations, law enforcement agencies, personnel profiles, and civil litigation records across the United States.";
+  "A civic record for documenting how policing is experienced in real life, from harm and concern to professionalism, help, trust, and accountability.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const [agencies, personnel, reports, civilCasesData] = await Promise.all([
+const [
+  agencies,
+  personnel,
+  reports,
+  civilCasesData,
+  federalAgencies,
+  locationPayloads,
+] = await Promise.all([
   loadAgencySummaries(),
   loadPersonnelSummaries(),
   loadReportSummaries(),
   withDb(async (client) => {
-    const categoryResult = await client.query(
+    const stateResult = await client.query(
       `
-        select upper(a.category) as category, count(distinct cco.civil_case_id) as case_count
-        from public.civil_case_officers cco
-        join public.agency_officers ao on ao.id = cco.agency_officer_id
-        join public.agency a on ao.agency_id = a.id
-        where a.category is not null
-        group by upper(a.category)
+        select upper(lp.state_or_territory_slug) as state, count(distinct c.id) as case_count
+        from public.civil_cases c
+        join public.location_path lp
+          on lp.location_path_id = c.location_path_id
+        group by upper(lp.state_or_territory_slug)
       `,
     );
     const result = await client.query(
       "select count(*) as count from public.civil_cases",
     );
     return {
-      categoryCounts: categoryResult.rows.map(
-        (row: { category: string; case_count: string | number }) => ({
-          category: String(row.category || "").toLowerCase(),
+      stateCounts: stateResult.rows.map(
+        (row: { state: string; case_count: string | number }) => ({
+          state: String(row.state || "").toLowerCase(),
           count: Number(row.case_count || 0),
         }),
       ),
       totalCount: Number(result.rows[0]?.count ?? 0),
     };
   }),
+  loadFederalAgencySummaries(),
+  loadLocationBuildPayloads(),
 ]);
 const civilCasesByCategory = new Map(
-  civilCasesData.categoryCounts.map((entry) => [entry.category, entry.count]),
+  civilCasesData.stateCounts.map((entry) => [entry.state, entry.count]),
 );
-const totalCivilCases = civilCasesData.totalCount;
 const reportCountsByCategory = reports.reduce(
   (acc: Map<string, number>, report) => {
-    const key = String(report.category || "").toLowerCase();
+    const key = String(report.state || "").toLowerCase();
     if (!key) {
       return acc;
     }
@@ -61,7 +70,7 @@ const reportCountsByCategory = reports.reduce(
 );
 const personnelCountsByCategory = personnel.reduce(
   (acc: Map<string, number>, entry) => {
-    const key = String(entry.agencyCategory || "").toLowerCase();
+    const key = String(entry.agencyState || "").toLowerCase();
     if (!key) {
       return acc;
     }
@@ -72,7 +81,7 @@ const personnelCountsByCategory = personnel.reduce(
 );
 const agencyCountsByCategory = agencies.reduce(
   (acc: Map<string, number>, agency) => {
-    const key = String(agency.category || "").toLowerCase();
+    const key = String(agency.state || "").toLowerCase();
     if (!key) {
       return acc;
     }
@@ -81,8 +90,10 @@ const agencyCountsByCategory = agencies.reduce(
   },
   new Map<string, number>(),
 );
-const federalAgencies = agencies.filter(
-  (agency) => String(agency.category || "").toLowerCase() === "federal",
+const stateLocationPayloadsByCategory = new Map(
+  locationPayloads
+    .filter((location) => location.level === "state")
+    .map((location) => [location.state.toLowerCase(), location]),
 );
 const categoryCoverageStats = US_STATE_TILES.map((state) => {
   const category = state.code.toLowerCase();
@@ -92,21 +103,32 @@ const categoryCoverageStats = US_STATE_TILES.map((state) => {
   const civilCaseCount = civilCasesByCategory.get(category) ?? 0;
   const totalCount =
     reportCount + personnelCount + agencyCount + civilCaseCount;
+  const stateLocation = stateLocationPayloadsByCategory.get(category);
+  const onlyChild =
+    stateLocation?.children?.length === 1 ? stateLocation.children[0] : null;
+  const href =
+    totalCount > 0
+      ? onlyChild?.nextPath || stateLocation?.path || undefined
+      : undefined;
+  if (totalCount > 0 && !href) {
+    throw new Error(
+      `Home map cannot render: ${state.name} has public records but no generated route target. The build projection table is missing location routes. Restart the dev server so projections are refreshed, then reload the page.`,
+    );
+  }
   return {
     code: state.code,
     count: totalCount,
-    href: `/${category}/`,
+    href,
     hoverLabel:
       totalCount > 0
-        ? `${state.name}: ${reportCount} reports, ${personnelCount} personnel, ${agencyCount} agencies, ${civilCaseCount} civil cases`
+        ? onlyChild?.nextPath && onlyChild.nextPath !== stateLocation?.path
+          ? `${state.name}: ${onlyChild.nextLabel || onlyChild.label}${
+              onlyChild.nextDetail ? ` (${onlyChild.nextDetail})` : ""
+            }`
+          : `${state.name}: ${reportCount} reports, ${personnelCount} personnel, ${agencyCount} agencies, ${civilCaseCount} civil cases`
         : `${state.name}: no entries yet`,
   };
 });
-const federalCoverageCount =
-  (reportCountsByCategory.get("federal") ?? 0) +
-  (personnelCountsByCategory.get("federal") ?? 0) +
-  (agencyCountsByCategory.get("federal") ?? 0) +
-  (civilCasesByCategory.get("federal") ?? 0);
 const organization = {
   "@type": "NonprofitOrganization",
   "@id": `${pageUrl}#organization`,
@@ -145,7 +167,7 @@ structuredData.mainEntity = organization;
 ---
 
 <SiteLayout
-  title="Police Interaction Reports, Agency Records, and Personnel Profiles | PoliceConduct.org"
+  title="A Civic Record for Police Interactions | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
   socialImage="/img/webp/usa-1778524_1280.webp"
@@ -172,22 +194,23 @@ structuredData.mainEntity = organization;
         <div class="row">
           <div class="col-lg-7 py-vh-2 position-relative" data-aos="fade-right">
             <h1 class="display-1 fw-bold mt-5">
-              Report a police interaction. Research the public record.
+              A civic record for the whole community.
             </h1>
             <p class="lead">
-              PoliceConduct.org helps people document interactions with law
-              enforcement and review public records about agencies, personnel,
-              reports, and civil litigation.
+              PoliceConduct.org helps residents, officers, departments,
+              researchers, and journalists understand how policing is
+              experienced in real life: harm, help, professionalism, confusion,
+              accountability, trust, and everything in between.
             </p>
             <a
               href="/report/new/"
               class="btn btn-dark btn-xl shadow me-3 rounded-0 my-5"
-              >Submit a report</a
+              >Share your experience</a
             >
             <a
-              href="/report/"
+              href="/find-records/"
               class="btn btn-outline-dark btn-xl shadow rounded-0 my-5"
-              >Research records</a
+              >Find Records</a
             >
           </div>
         </div>
@@ -211,25 +234,18 @@ structuredData.mainEntity = organization;
               title="United States"
               subtitle="Combined coverage across reports, personnel, agencies, and civil litigation."
               emptyLabel="No entries yet"
-              interactionLabel="Select a state to view its overview."
+              interactionLabel="Select a state with agency records."
               federalPanel={{
-                eyebrow: "Federal",
-                title: "Federal overview",
-                value: federalCoverageCount,
+                title: "National records",
+                value: federalAgencies.length,
                 description:
-                  "Combined federal entries across reports, personnel, agencies, and civil litigation.",
-                items: [
-                  {
-                    label: "Federal overview",
-                    href: "/federal/",
-                  },
-                  ...federalAgencies.map((agency) => ({
-                    label: agency.name,
-                    href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
-                  })),
-                ],
+                  "Federal agencies with related places and branches.",
+                items: federalAgencies.map((agency) => ({
+                  label: agency.name,
+                  href: agency.path,
+                })),
                 actionHref: "/federal/",
-                actionLabel: "Open federal overview",
+                actionLabel: "Open national records",
               }}
             />
           </div>
@@ -254,13 +270,13 @@ structuredData.mainEntity = organization;
         <div class="row">
           <div class="col-md-6 col-lg-4" data-aos="fade-up">
             <span class="h5 fw-lighter">01.</span>
-            <h3 class="py-4 border-top border-light">Report an interaction</h3>
+            <h3 class="py-4 border-top border-light">Share your experience</h3>
             <p>
-              Add a documented public account, whether the interaction was
-              negative, positive, or mixed.
+              Share helpful, routine, confusing, mixed, concerning, harmful, or
+              severe experiences.
             </p>
             <a class="link-light fw-semibold" href="/report/new/"
-              >Submit a report</a
+              >Share your experience</a
             >
           </div>
           <div
@@ -269,13 +285,13 @@ structuredData.mainEntity = organization;
             data-aos-delay="200"
           >
             <span class="h5 fw-lighter">02.</span>
-            <h3 class="py-4 border-top border-light">Research local records</h3>
+            <h3 class="py-4 border-top border-light">Find Records</h3>
             <p>
-              Review reports, agencies, personnel, and civil litigation by
-              state, agency, or person.
+              Review agencies, personnel, public reports, and related records by
+              place, agency, or person.
             </p>
-            <a class="link-light fw-semibold" href="/report/"
-              >Research records</a
+            <a class="link-light fw-semibold" href="/find-records/"
+              >Find Records</a
             >
           </div>
 
@@ -286,14 +302,14 @@ structuredData.mainEntity = organization;
           >
             <span class="h5 fw-lighter">03.</span>
             <h3 class="py-4 border-top border-light">
-              Partner with the project
+              Help improve the record
             </h3>
             <p>
-              Oversight bodies, law firms, newsrooms, nonprofits, and
-              researchers can extend the usefulness of the record.
+              Help with corrections, partnerships, research, reporting, or
+              community review.
             </p>
             <a class="link-light fw-semibold" href="/partner/"
-              >Explore partner paths</a
+              >Help improve the record</a
             >
           </div>
         </div>
@@ -305,8 +321,8 @@ structuredData.mainEntity = organization;
         <div class="row d-flex justify-content-between align-items-center">
           <div class="col-lg-4">
             <h2 class="py-4 border-top border-dark" data-aos="fade-right">
-              Public records help communities and law enforcement respond to the
-              same facts.
+              A fuller record helps communities and law enforcement see the same
+              facts.
             </h2>
             <small>— Institute for Police Conduct</small>
           </div>
@@ -314,40 +330,41 @@ structuredData.mainEntity = organization;
             <div class="row">
               <div class="col-12">
                 <h2 class="display-6 mb-4" data-aos="fade-down">
-                  What's broken?
+                  What the record can reveal
                 </h2>
                 <h3>
-                  Public information about police conduct is fragmented,
-                  inconsistent, and often difficult for ordinary people to
-                  access or interpret.
+                  A useful public record should show harm and concern,
+                  professionalism and restraint, missing context, and patterns
+                  that only become visible over time.
                 </h3>
                 <p class="mb-0 text-black-50">
                   Relevant material may exist across court dockets,
                   public-records responses, agency materials, news coverage, and
-                  community accounts, but it is rarely organized for fast,
-                  meaningful review.
+                  community accounts, but it is rarely organized so people can
+                  understand both accountability concerns and trust-building
+                  conduct.
                 </p>
               </div>
               <div class="col-md-4" data-aos="fade-up">
-                <h4 class="h5 my-3">Patterns are hard to identify</h4>
+                <h4 class="h5 my-3">Patterns over time</h4>
                 <p class="text-black-50 mb-0">
-                  Incidents that look isolated in one source may look different
-                  alongside prior complaints, litigation, or public reports.
+                  A single interaction may look different alongside earlier
+                  reports, public records, outcomes, and community accounts.
                 </p>
               </div>
               <div class="col-md-4" data-aos="fade-up">
-                <h4 class="h5 my-3">Access is uneven</h4>
+                <h4 class="h5 my-3">Harm and trust</h4>
                 <p class="text-black-50 mb-0">
-                  Journalists, lawyers, and well-resourced organizations may be
-                  able to assemble a fuller picture. Most people cannot.
+                  Serious harm should not be softened or buried. Good conduct,
+                  restraint, and professionalism should be visible too.
                 </p>
               </div>
               <div class="col-md-4" data-aos="fade-up">
-                <h4 class="h5 my-3">Context is easy to lose</h4>
+                <h4 class="h5 my-3">Context for everyone</h4>
                 <p class="text-black-50 mb-0">
-                  Serious concerns may remain obscure, while isolated
-                  allegations may circulate without enough context or
-                  corroboration.
+                  Communities, officers, agencies, journalists, and researchers
+                  need enough context to understand what happened and what it
+                  may mean.
                 </p>
               </div>
             </div>

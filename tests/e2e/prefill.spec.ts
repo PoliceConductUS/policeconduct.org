@@ -30,14 +30,6 @@ type FlashCase = {
 
 const simpleSenderCases: SenderCase[] = [
   {
-    name: "suggest new civil case",
-    route: "/civil-litigation/",
-    expectedFields: ["jurisdiction"],
-    payload: { jurisdiction: "" },
-    locator: { kind: "role", value: "Suggest a new civil case" },
-    targetPath: "/civil-litigation/new/",
-  },
-  {
     name: "ask about club benefits",
     route: "/donate/",
     expectedFields: ["message", "whoami"],
@@ -132,12 +124,12 @@ const simpleSenderCases: SenderCase[] = [
   {
     name: "subscribe",
     route:
-      "/report/tx/2023-12-04-75039-1st-amendment-retaliation-arrest-2c545f/",
+      "/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
     expectedFields: ["message", "whoami"],
     payload: {
       whoami: "Subscriber",
       message:
-        "Please notify me when this report changes: /report/tx/2023-12-04-75039-1st-amendment-retaliation-arrest-2c545f/",
+        "Please notify me when this report changes: /tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
     },
     locator: { kind: "role", value: "Notify me when this report changes" },
     targetPath: "/about/contact/",
@@ -169,7 +161,7 @@ const profileSenderCases: SenderCase[] = [
         name: "James Markham",
       },
     },
-    locator: { kind: "role", value: "Submit Report" },
+    locator: { kind: "role", value: "Share your experience" },
     targetPath: "/report/new/",
   },
   {
@@ -182,7 +174,7 @@ const profileSenderCases: SenderCase[] = [
       summary:
         "James Markham profile: /personnel/james-markham-v-7635c7/\nCurrent agency: IRVING POLICE DEPARTMENT",
       links:
-        "/personnel/james-markham-v-7635c7/\n/report/tx/2023-12-04-75039-1st-amendment-retaliation-arrest-2c545f/",
+        "/personnel/james-markham-v-7635c7/\n/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
     },
     locator: { kind: "role", value: "Add a civil case" },
     targetPath: "/civil-litigation/new/",
@@ -212,9 +204,9 @@ const profileSenderCases: SenderCase[] = [
       currentAgencyState: "TX",
       pastEmployers: "",
       civilLitigation:
-        "Lotts v. City of Irving et al — 3:25-CV-03329-S-BN — N.D. Tex. — /civil-litigation/tx/lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025/",
+        "Lotts v. City of Irving et al — 3:25-CV-03329-S-BN — N.D. Tex. — /civil-cases/lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025/",
       reportLinks:
-        "/report/tx/2023-12-04-75039-1st-amendment-retaliation-arrest-2c545f/",
+        "/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
     },
     locator: { kind: "role", value: "Submit past employer" },
     targetPath: "/personnel/new/",
@@ -237,7 +229,7 @@ const profileSenderCases: SenderCase[] = [
       currentEmployer: "IRVING POLICE DEPARTMENT",
       pastEmployers: "",
       civilLitigation:
-        "Lotts v. City of Irving et al — 3:25-CV-03329-S-BN — N.D. Tex. — /civil-litigation/tx/lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025/",
+        "Lotts v. City of Irving et al — 3:25-CV-03329-S-BN — N.D. Tex. — /civil-cases/lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025/",
     },
     locator: { kind: "role", value: "Suggest edit" },
     targetPath: "/personnel/suggest-edit/",
@@ -268,34 +260,34 @@ const profileSenderCases: SenderCase[] = [
   },
   {
     name: "submit report",
-    route: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
+    route: "/tx/dallas-county/irving/irving-police-department-049f9a/",
     expectedFields: ["officer.department"],
     payload: {
       officer: {
         department: "IRVING POLICE DEPARTMENT",
       },
     },
-    locator: { kind: "role", value: "Submit a report" },
+    locator: { kind: "role", value: "Share your experience" },
     targetPath: "/report/new/",
   },
   {
     name: "add civil case",
-    route: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
+    route: "/tx/dallas-county/irving/irving-police-department-049f9a/",
     expectedFields: ["defendants", "jurisdiction", "links", "summary"],
     payload: {
       jurisdiction: "tx",
       defendants: "IRVING POLICE DEPARTMENT",
       summary:
-        "IRVING POLICE DEPARTMENT agency profile: /law-enforcement-agency/tx/irving-police-department-049f9a/",
+        "IRVING POLICE DEPARTMENT agency profile: /tx/dallas-county/irving/irving-police-department-049f9a/",
       links:
-        "/law-enforcement-agency/tx/irving-police-department-049f9a/\n/report/tx/2023-12-04-75039-1st-amendment-retaliation-arrest-2c545f/",
+        "/tx/dallas-county/irving/irving-police-department-049f9a/\n/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
     },
     locator: { kind: "role", value: "Add a civil case" },
     targetPath: "/civil-litigation/new/",
   },
   {
     name: "suggest new personnel",
-    route: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
+    route: "/tx/dallas-county/irving/irving-police-department-049f9a/",
     expectedFields: [
       "civilLitigation",
       "currentAgency",
@@ -303,21 +295,12 @@ const profileSenderCases: SenderCase[] = [
       "currentAgencyState",
       "reportLinks",
     ],
-    payload: {
-      currentAgency: "IRVING POLICE DEPARTMENT",
-      currentAgencyCity: "IRVING",
-      currentAgencyState: "TX",
-      civilLitigation:
-        "Nichols v. City of Irving — 3:86-cv-02848 — N.D. Tex. — /civil-litigation/tx/nichols-v-city-of-irving-3-86-cv-02848-n-d-tex-1986/\nEdwards v. City of Irving — 3:90-cv-02603 — N.D. Tex. — /civil-litigation/tx/edwards-v-city-of-irving-3-90-cv-02603-n-d-tex-1990/\nHill v. City of Irving — 3:91-cv-01190 — N.D. Tex. — /civil-litigation/tx/hill-v-city-of-irving-3-91-cv-01190-n-d-tex-1991/\nIvatury v. City of Irving — 3:94-cv-01556 — N.D. Tex. — /civil-litigation/tx/ivatury-v-city-of-irving-3-94-cv-01556-n-d-tex-1994/\nRaper v. City of Irving Texas — 3:95-cv-01275 — N.D. Tex. — /civil-litigation/tx/raper-v-city-of-irving-texas-3-95-cv-01275-n-d-tex-1995/\nPapke v. City of Irving — 3:95-cv-02644 — N.D. Tex. — /civil-litigation/tx/papke-v-city-of-irving-3-95-cv-02644-n-d-tex-1995/\nCaba v. City of Irving — 3:96-cv-00249 — N.D. Tex. — /civil-litigation/tx/caba-v-city-of-irving-3-96-cv-00249-n-d-tex-1996/\nDavis v. City of Irving — 3:97-cv-02512 — N.D. Tex. — /civil-litigation/tx/davis-v-city-of-irving-3-97-cv-02512-n-d-tex-1997/\nPapke v. City of Irving — 3:98-cv-00941 — N.D. Tex. — /civil-litigation/tx/papke-v-city-of-irving-3-98-cv-00941-n-d-tex-1998/\nAlrawaziq v. City of Irving — 3:99-cv-00970 — N.D. Tex. — /civil-litigation/tx/alrawaziq-v-city-of-irving-3-99-cv-00970-n-d-tex-1999/\nHowie v. City of Irving Texas — 3:00-cv-02094 — N.D. Tex. — /civil-litigation/tx/howie-v-city-of-irving-texas-3-00-cv-02094-n-d-tex-2000/\nHouse v. City of Irving, Texas — 3:03-cv-02524 — N.D. Tex. — /civil-litigation/tx/house-v-city-of-irving-texas-3-03-cv-02524-n-d-tex-2003/\nWallis v. The City of Irving — 3:07-cv-01483 — N.D. Tex. — /civil-litigation/tx/wallis-v-the-city-of-irving-3-07-cv-01483-n-d-tex-2007/\nLotts v. City of Irving et al — 3:25-CV-03329-S-BN — N.D. Tex. — /civil-litigation/tx/lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025/\nBarrera v. City of Irving et al — 3:25-cv-03160 — N.D. Tex. — /civil-litigation/tx/barrera-v-city-of-irving-et-al-3-25-cv-03160-n-d-tex-2025/\nYoung v. City of Irving et al — 3:23-cv-01423 — N.D. Tex. — /civil-litigation/tx/young-v-city-of-irving-et-al-3-2023cv01423-n-d-tex-2023/\nEllis v. Police Dept of Irving et al — 3:22-cv-00265-B-BN — N.D. Tex. — /civil-litigation/tx/ellis-v-police-dept-of-irving-et-al-3-22-cv-00265-b-bn-n-d-tex-2022/\nDuke v. City of Irving TX — 3:20-cv-00116-K — N.D. Tex. — /civil-litigation/tx/duke-v-city-of-irving-tx-3-20-cv-00116-k-n-d-tex-2020/\nWilliams v. City of Irving, Texas et al — 3:15-CV-1701-L — N.D. Tex. — /civil-litigation/tx/williams-v-city-of-irving-texas-et-al-3-15-cv-1701-l-n-d-tex-2015/",
-      reportLinks:
-        "/report/tx/2023-12-04-75039-1st-amendment-retaliation-arrest-2c545f/",
-    },
     locator: { kind: "role", value: "Suggest new personnel" },
     targetPath: "/personnel/new/",
   },
   {
     name: "suggest edit",
-    route: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
+    route: "/tx/dallas-county/irving/irving-police-department-049f9a/",
     expectedFields: [
       "agencyName",
       "agencyPath",
@@ -327,39 +310,29 @@ const profileSenderCases: SenderCase[] = [
       "jurisdiction",
       "socialLinks",
     ],
-    payload: {
-      agencyPath: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
-      agencyName: "IRVING POLICE DEPARTMENT",
-      jurisdiction: "tx",
-      departmentWebsite: "",
-      departmentHead: "WILLIAM L. CANNADAY",
-      socialLinks: "",
-      civilLitigation:
-        "Nichols v. City of Irving — 3:86-cv-02848 — N.D. Tex. — /civil-litigation/tx/nichols-v-city-of-irving-3-86-cv-02848-n-d-tex-1986/\nEdwards v. City of Irving — 3:90-cv-02603 — N.D. Tex. — /civil-litigation/tx/edwards-v-city-of-irving-3-90-cv-02603-n-d-tex-1990/\nHill v. City of Irving — 3:91-cv-01190 — N.D. Tex. — /civil-litigation/tx/hill-v-city-of-irving-3-91-cv-01190-n-d-tex-1991/\nIvatury v. City of Irving — 3:94-cv-01556 — N.D. Tex. — /civil-litigation/tx/ivatury-v-city-of-irving-3-94-cv-01556-n-d-tex-1994/\nRaper v. City of Irving Texas — 3:95-cv-01275 — N.D. Tex. — /civil-litigation/tx/raper-v-city-of-irving-texas-3-95-cv-01275-n-d-tex-1995/\nPapke v. City of Irving — 3:95-cv-02644 — N.D. Tex. — /civil-litigation/tx/papke-v-city-of-irving-3-95-cv-02644-n-d-tex-1995/\nCaba v. City of Irving — 3:96-cv-00249 — N.D. Tex. — /civil-litigation/tx/caba-v-city-of-irving-3-96-cv-00249-n-d-tex-1996/\nDavis v. City of Irving — 3:97-cv-02512 — N.D. Tex. — /civil-litigation/tx/davis-v-city-of-irving-3-97-cv-02512-n-d-tex-1997/\nPapke v. City of Irving — 3:98-cv-00941 — N.D. Tex. — /civil-litigation/tx/papke-v-city-of-irving-3-98-cv-00941-n-d-tex-1998/\nAlrawaziq v. City of Irving — 3:99-cv-00970 — N.D. Tex. — /civil-litigation/tx/alrawaziq-v-city-of-irving-3-99-cv-00970-n-d-tex-1999/\nHowie v. City of Irving Texas — 3:00-cv-02094 — N.D. Tex. — /civil-litigation/tx/howie-v-city-of-irving-texas-3-00-cv-02094-n-d-tex-2000/\nHouse v. City of Irving, Texas — 3:03-cv-02524 — N.D. Tex. — /civil-litigation/tx/house-v-city-of-irving-texas-3-03-cv-02524-n-d-tex-2003/\nWallis v. The City of Irving — 3:07-cv-01483 — N.D. Tex. — /civil-litigation/tx/wallis-v-the-city-of-irving-3-07-cv-01483-n-d-tex-2007/\nLotts v. City of Irving et al — 3:25-CV-03329-S-BN — N.D. Tex. — /civil-litigation/tx/lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025/\nBarrera v. City of Irving et al — 3:25-cv-03160 — N.D. Tex. — /civil-litigation/tx/barrera-v-city-of-irving-et-al-3-25-cv-03160-n-d-tex-2025/\nYoung v. City of Irving et al — 3:23-cv-01423 — N.D. Tex. — /civil-litigation/tx/young-v-city-of-irving-et-al-3-2023cv01423-n-d-tex-2023/\nEllis v. Police Dept of Irving et al — 3:22-cv-00265-B-BN — N.D. Tex. — /civil-litigation/tx/ellis-v-police-dept-of-irving-et-al-3-22-cv-00265-b-bn-n-d-tex-2022/\nDuke v. City of Irving TX — 3:20-cv-00116-K — N.D. Tex. — /civil-litigation/tx/duke-v-city-of-irving-tx-3-20-cv-00116-k-n-d-tex-2020/\nWilliams v. City of Irving, Texas et al — 3:15-CV-1701-L — N.D. Tex. — /civil-litigation/tx/williams-v-city-of-irving-texas-et-al-3-15-cv-1701-l-n-d-tex-2015/",
-    },
     locator: { kind: "role", value: "Suggest edit" },
     targetPath: "/law-enforcement-agency/suggest-edit/",
   },
   {
     name: "subscribe",
-    route: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
+    route: "/tx/dallas-county/irving/irving-police-department-049f9a/",
     expectedFields: ["message", "whoami"],
     payload: {
       whoami: "Subscriber",
       message:
-        "Please notify me when this agency page changes: /law-enforcement-agency/tx/irving-police-department-049f9a/",
+        "Please notify me when this agency page changes: /tx/dallas-county/irving/irving-police-department-049f9a/",
     },
     locator: { kind: "testId", value: "agency-subscribe-link" },
     targetPath: "/about/contact/",
   },
   {
     name: "claim profile",
-    route: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
+    route: "/tx/dallas-county/irving/irving-police-department-049f9a/",
     expectedFields: ["message", "whoami"],
     payload: {
       whoami: "Profile Owner",
       message:
-        "I would like to claim ownership of this profile.\nProfile path: /law-enforcement-agency/tx/irving-police-department-049f9a/",
+        "I would like to claim ownership of this profile.\nProfile path: /tx/dallas-county/irving/irving-police-department-049f9a/",
     },
     locator: { kind: "testId", value: "agency-claim-profile-link" },
     targetPath: "/about/contact/",

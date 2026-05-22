@@ -1,10 +1,15 @@
 ---
 import { formatShortDate } from "#src/lib/format.js";
+import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 
 type OfficerRef = {
   slug: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
+  firstName?: string;
+  lastName?: string;
+  licenseType?: string | null;
+  title?: string | null;
 };
 
 type LitigationCase = {
@@ -17,10 +22,43 @@ type LitigationCase = {
   officers?: OfficerRef[] | null;
 };
 
+type PersonnelLinkedLitigationCase = LitigationCase & {
+  links?: {
+    officer: OfficerRef;
+    caseAgency: {
+      name: string;
+      canonicalPath: string;
+    };
+    targetAgencyAssignment: {
+      licenseType?: string | null;
+      startDate?: string | null;
+      endDate?: string | null;
+      relationship: "current" | "former";
+    };
+  }[];
+};
+
+type PersonnelLinkedAssignment = {
+  licenseType?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  relationship: "current" | "former";
+};
+
 type ReportItem = {
   incidentDate?: string | null;
   title?: string | null;
   url: string;
+  officers?: OfficerRef[] | null;
+};
+
+type CoverageLink = {
+  url: string;
+  title: string;
+  source_name?: string | null;
+  published_at?: string | null;
+  notes?: string | null;
+  officers?: OfficerRef[] | null;
 };
 
 type PersonnelEntry = {
@@ -28,6 +66,7 @@ type PersonnelEntry = {
     start_date?: string | null;
     end_date?: string | null;
     badge_number?: string | null;
+    title?: string | null;
   };
   officer?: OfficerRef | null;
   reportCount?: number;
@@ -38,16 +77,29 @@ type PastEmployerEntry = {
   start_date?: string | null;
   end_date?: string | null;
   badge_number?: string | null;
+  title?: string | null;
   reportCount?: number;
   rating?: number | null;
   agency?: {
+    administrativeArea?: string | null;
+    administrativeAreaSlug?: string | null;
     category?: string | null;
+    city?: string | null;
+    location_path?: string | null;
+    locationPath?: string | null;
+    placeSlug?: string | null;
     slug?: string | null;
     name?: string | null;
   } | null;
 };
 
-type TabType = "litigation" | "reports" | "personnel" | "pastEmployers";
+type TabType =
+  | "litigation"
+  | "personnelLinkedLitigation"
+  | "reports"
+  | "coverage"
+  | "personnel"
+  | "pastEmployers";
 type TabDescriptor = {
   id: string;
   label: string;
@@ -64,13 +116,28 @@ type ProfileTabsProps = {
     cases?: LitigationCase[];
     emptyMessage?: string;
   };
+  personnelLinkedLitigation?: {
+    cases?: PersonnelLinkedLitigationCase[];
+    emptyMessage?: string;
+    helperText?: string;
+  };
   reports?: {
     items?: ReportItem[];
     emptyMessage?: string;
     layout?: "table" | "list";
   };
-  personnel?: {
+  coverage?: {
+    links?: CoverageLink[];
+    emptyMessage?: string;
+    helperText?: string;
+  };
+  currentPersonnel?: {
     entries?: PersonnelEntry[];
+    emptyMessage?: string;
+  };
+  formerPersonnel?: {
+    entries?: PersonnelEntry[];
+    emptyMessage?: string;
   };
   pastEmployers?: {
     entries?: PastEmployerEntry[];
@@ -82,8 +149,11 @@ const {
   activeId,
   extraNavClasses = "",
   litigation = null,
+  personnelLinkedLitigation = null,
   reports = null,
-  personnel = null,
+  coverage = null,
+  currentPersonnel = null,
+  formerPersonnel = null,
   pastEmployers = null,
 } = Astro.props as ProfileTabsProps;
 
@@ -95,17 +165,36 @@ const normalizedTabs = tabs.map((tab, index) => ({
 }));
 
 const litigationCases = litigation?.cases || [];
+const personnelLinkedLitigationCases = personnelLinkedLitigation?.cases || [];
 const reportsItems = reports?.items || [];
-const personnelEntries = personnel?.entries || [];
+const coverageLinks = coverage?.links || [];
+const currentPersonnelEntries = currentPersonnel?.entries || [];
+const formerPersonnelEntries = formerPersonnel?.entries || [];
 const pastEmployerEntries = pastEmployers?.entries || [];
 const hasLitigation = litigationCases.length > 0;
+const hasPersonnelLinkedLitigation = personnelLinkedLitigationCases.length > 0;
 const hasReports = reportsItems.length > 0;
-const hasPersonnel = personnelEntries.length > 0;
+const hasCoverage = coverageLinks.length > 0;
+const hasCurrentPersonnel = currentPersonnelEntries.length > 0;
+const hasFormerPersonnel = formerPersonnelEntries.length > 0;
 const hasPastEmployers = pastEmployerEntries.length > 0;
 
 const formatCaseYear = (date?: string | null) =>
   date ? new Date(date).getFullYear() : "—";
 const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
+const getOfficerName = (officer: OfficerRef) =>
+  [
+    officer.first_name || officer.firstName,
+    officer.last_name || officer.lastName,
+  ]
+    .filter(Boolean)
+    .join(" ");
+const getOfficerLicenseType = (officer: OfficerRef) =>
+  officer.licenseType || officer.title || "";
+const formatAssignmentRelationship = (assignment: PersonnelLinkedAssignment) =>
+  assignment.relationship === "current"
+    ? "Current personnel"
+    : "Former personnel";
 ---
 
 <div data-profile-tabs>
@@ -146,53 +235,37 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
         >
           {tab.tabType === "litigation" ? (
             <>
-              <div class="mb-3">
-                <span class="text-uppercase small text-muted mb-0">Cases</span>
-              </div>
               {hasLitigation ? (
-                <div class="table-responsive">
-                  <table class="table table-striped align-middle mb-0">
-                    <thead>
-                      <tr>
-                        <th scope="col">Year</th>
-                        <th scope="col">Cause #</th>
-                        <th scope="col">Case</th>
-                        <th scope="col">Court / notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {litigationCases.map((caseItem) => (
-                        <tr>
-                          <td>{formatCaseYear(caseItem.filed_date)}</td>
-                          <td>
-                            <strong>
-                              {caseItem.cause_number ? (
-                                <a
-                                  class="link-dark"
-                                  href={caseItem.caseUrl}
-                                  data-profile-link-type="case_reference"
-                                >
-                                  {caseItem.cause_number}
-                                </a>
-                              ) : (
-                                "—"
-                              )}
-                            </strong>
-                          </td>
-                          <td>
-                            <strong>
-                              <a
-                                class="link-dark"
-                                href={caseItem.caseUrl}
-                                data-profile-link-type="case_reference"
-                              >
-                                {caseItem.title || "Civil case"}
-                              </a>
-                            </strong>
-                            {caseItem.officers?.length ? (
-                              <>
-                                {" "}
-                                —{" "}
+                <div class="profile-record-list">
+                  {litigationCases.map((caseItem) => (
+                    <article class="profile-record">
+                      <div class="profile-record-meta">
+                        <span>{formatCaseYear(caseItem.filed_date)}</span>
+                        {caseItem.cause_number ? (
+                          <a
+                            href={caseItem.caseUrl}
+                            data-profile-link-type="case_reference"
+                          >
+                            {caseItem.cause_number}
+                          </a>
+                        ) : null}
+                      </div>
+                      <div class="profile-record-body">
+                        <h3 class="profile-record-title">
+                          <a
+                            href={caseItem.caseUrl}
+                            data-profile-link-type="case_reference"
+                          >
+                            {caseItem.title || "Civil case"}
+                          </a>
+                        </h3>
+                        <div class="profile-record-detail">
+                          <span>{caseItem.court || "Court not listed"}</span>
+                          {caseItem.officers?.length ? (
+                            <>
+                              <span aria-hidden="true">/</span>
+                              <span>
+                                Officers:{" "}
                                 {caseItem.officers.map((officer, index) => (
                                   <>
                                     {index > 0 ? ", " : null}
@@ -200,18 +273,20 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
                                       href={`/personnel/${officer.slug}/`}
                                       data-profile-link-type="personnel_profile"
                                     >
-                                      {officer.first_name} {officer.last_name}
+                                      {getOfficerName(officer)}
                                     </a>
+                                    {getOfficerLicenseType(officer)
+                                      ? ` (${getOfficerLicenseType(officer)})`
+                                      : ""}
                                   </>
                                 ))}
-                              </>
-                            ) : null}
-                          </td>
-                          <td>{caseItem.court || "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                              </span>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               ) : (
                 <p class="text-muted">
@@ -220,34 +295,117 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
                 </p>
               )}
             </>
+          ) : tab.tabType === "personnelLinkedLitigation" ? (
+            <>
+              {personnelLinkedLitigation?.helperText ? (
+                <p class="text-muted small mb-3">
+                  {personnelLinkedLitigation.helperText}
+                </p>
+              ) : null}
+              {hasPersonnelLinkedLitigation ? (
+                <div class="profile-record-list">
+                  {personnelLinkedLitigationCases.map((caseItem) => (
+                    <article class="profile-record">
+                      <div class="profile-record-meta">
+                        <span>{formatCaseYear(caseItem.filed_date)}</span>
+                        {caseItem.cause_number ? (
+                          <a
+                            href={caseItem.caseUrl}
+                            data-profile-link-type="case_reference"
+                          >
+                            {caseItem.cause_number}
+                          </a>
+                        ) : null}
+                      </div>
+                      <div class="profile-record-body">
+                        <h3 class="profile-record-title">
+                          <a
+                            href={caseItem.caseUrl}
+                            data-profile-link-type="case_reference"
+                          >
+                            {caseItem.title || "Civil case"}
+                          </a>
+                        </h3>
+                        <div class="profile-record-detail">
+                          <span>{caseItem.court || "Court not listed"}</span>
+                        </div>
+                        {caseItem.links?.length ? (
+                          <div class="profile-record-context">
+                            {caseItem.links.map((link) => (
+                              <p>
+                                <strong>
+                                  {formatAssignmentRelationship(
+                                    link.targetAgencyAssignment,
+                                  )}
+                                  :
+                                </strong>{" "}
+                                <a
+                                  href={`/personnel/${link.officer.slug}/`}
+                                  data-profile-link-type="personnel_profile"
+                                >
+                                  {getOfficerName(link.officer)}
+                                </a>
+                                {getOfficerLicenseType(link.officer)
+                                  ? ` (${getOfficerLicenseType(link.officer)})`
+                                  : ""}{" "}
+                                is linked to this case through{" "}
+                                <a
+                                  href={link.caseAgency.canonicalPath}
+                                  data-profile-link-type="agency_profile"
+                                >
+                                  {link.caseAgency.name}
+                                </a>
+                                .
+                              </p>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p class="text-muted">
+                  {personnelLinkedLitigation?.emptyMessage ??
+                    "No personnel-linked civil litigation listed yet."}
+                </p>
+              )}
+            </>
           ) : tab.tabType === "reports" ? (
             <>
               {hasReports ? (
-                <div class="d-grid gap-3">
+                <div class="profile-record-list">
                   {reportsItems.map((report) => (
-                    <article class="border rounded-2 p-3 mb-3">
-                      <div class="d-flex justify-content-between align-items-baseline mb-2">
-                        <span class="text-uppercase small text-muted">
-                          Date
-                        </span>
-                        <strong>{formatReportDate(report)}</strong>
+                    <article class="profile-record">
+                      <div class="profile-record-meta">
+                        <span>{formatReportDate(report)}</span>
                       </div>
-                      <div class="mb-3">
-                        <a
-                          class="fw-bold text-dark"
-                          href={report.url}
-                          data-profile-link-type="report"
-                        >
-                          {report.title}
-                        </a>
+                      <div class="profile-record-body">
+                        <h3 class="profile-record-title">
+                          <a href={report.url} data-profile-link-type="report">
+                            {report.title}
+                          </a>
+                        </h3>
+                        {report.officers?.length ? (
+                          <div class="profile-record-detail">
+                            Officers:{" "}
+                            {report.officers.map((officer, index) => (
+                              <>
+                                {index > 0 ? ", " : null}
+                                <a
+                                  href={`/personnel/${officer.slug}/`}
+                                  data-profile-link-type="personnel_profile"
+                                >
+                                  {getOfficerName(officer)}
+                                </a>
+                                {getOfficerLicenseType(officer)
+                                  ? ` (${getOfficerLicenseType(officer)})`
+                                  : ""}
+                              </>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
-                      <a
-                        class="btn btn-sm btn-outline-dark"
-                        href={report.url}
-                        data-profile-link-type="report"
-                      >
-                        View report
-                      </a>
                     </article>
                   ))}
                 </div>
@@ -257,141 +415,190 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
                 </p>
               )}
             </>
-          ) : tab.tabType === "personnel" ? (
+          ) : tab.tabType === "coverage" ? (
             <>
-              {hasPersonnel ? (
-                <div class="list-group">
-                  {personnelEntries.map((employee) => (
-                    <div class="list-group-item">
-                      <div class="row g-3 align-items-start">
-                        <div class="col-auto">
-                          <div class="text-uppercase small text-muted">
-                            Start
-                          </div>
-                          <div class="fw-semibold">
-                            {employee.entry.start_date
-                              ? formatShortDate(employee.entry.start_date)
-                              : "Unknown"}
-                          </div>
-                        </div>
-                        <div class="col-auto">
-                          <div class="text-uppercase small text-muted">End</div>
-                          <div>
-                            {employee.entry.end_date
-                              ? formatShortDate(employee.entry.end_date)
-                              : "Current"}
-                          </div>
-                        </div>
-                        <div class="col-12 col-md">
-                          <div class="text-uppercase small text-muted">
-                            Name
-                          </div>
-                          {employee.officer ? (
-                            <a
-                              href={`/personnel/${employee.officer.slug}/`}
-                              data-profile-link-type="personnel_profile"
-                            >
-                              {employee.officer.first_name}{" "}
-                              {employee.officer.last_name}
-                            </a>
-                          ) : (
-                            "Unknown"
-                          )}
-                        </div>
-                        <div class="col-6 col-md-2">
-                          <div class="text-uppercase small text-muted">
-                            Badge #
-                          </div>
-                          <div>{employee.entry.badge_number || "Unknown"}</div>
-                        </div>
-                        <div class="col-6 col-md-2">
-                          <div class="text-uppercase small text-muted">
-                            Reports
-                          </div>
-                          <div>{employee.reportCount}</div>
-                        </div>
-                        <div class="col-12 col-md-2">
-                          <div class="text-uppercase small text-muted">
-                            Rating
-                          </div>
-                          <div>
-                            {employee.rating && employee.rating > 0
-                              ? employee.rating.toFixed(1)
-                              : "Not rated"}
-                          </div>
-                        </div>
+              {coverage?.helperText ? (
+                <p class="text-muted small mb-3">{coverage.helperText}</p>
+              ) : null}
+              {hasCoverage ? (
+                <div class="profile-record-list">
+                  {coverageLinks.map((link) => (
+                    <article class="profile-record">
+                      <div class="profile-record-meta">
+                        <span>
+                          {[
+                            link.source_name,
+                            link.published_at
+                              ? formatShortDate(link.published_at)
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" / ") || "Related link"}
+                        </span>
                       </div>
-                    </div>
+                      <div class="profile-record-body">
+                        <h3 class="profile-record-title">
+                          <a
+                            href={link.url}
+                            data-profile-link-type="coverage"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {link.title}
+                          </a>
+                        </h3>
+                        {link.notes ? (
+                          <p class="profile-record-summary">{link.notes}</p>
+                        ) : null}
+                        {link.officers?.length ? (
+                          <div class="profile-record-detail">
+                            Officers:{" "}
+                            {link.officers.map((officer, index) => (
+                              <>
+                                {index > 0 ? ", " : null}
+                                <a
+                                  href={`/personnel/${officer.slug}/`}
+                                  data-profile-link-type="personnel_profile"
+                                >
+                                  {getOfficerName(officer)}
+                                </a>
+                                {getOfficerLicenseType(officer)
+                                  ? ` (${getOfficerLicenseType(officer)})`
+                                  : ""}
+                              </>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </article>
                   ))}
                 </div>
               ) : (
-                <p class="text-muted">No personnel listed yet.</p>
+                <p class="text-muted">
+                  {coverage?.emptyMessage ?? "No related links listed yet."}
+                </p>
               )}
+            </>
+          ) : tab.tabType === "personnel" ? (
+            <>
+              {(() => {
+                const personnelConfig =
+                  tab.slotName === "formerPersonnel"
+                    ? formerPersonnel
+                    : currentPersonnel;
+                const entries =
+                  tab.slotName === "formerPersonnel"
+                    ? formerPersonnelEntries
+                    : currentPersonnelEntries;
+                const hasEntries =
+                  tab.slotName === "formerPersonnel"
+                    ? hasFormerPersonnel
+                    : hasCurrentPersonnel;
+
+                return hasEntries ? (
+                  <div class="profile-record-list">
+                    {entries.map((employee) => (
+                      <article class="profile-record">
+                        <div class="profile-record-meta">
+                          <span>
+                            {employee.entry.start_date
+                              ? formatShortDate(employee.entry.start_date)
+                              : "Start date unknown"}
+                          </span>
+                          <span>
+                            {employee.entry.end_date
+                              ? formatShortDate(employee.entry.end_date)
+                              : "Current"}
+                          </span>
+                        </div>
+                        <div class="profile-record-body">
+                          <h3 class="profile-record-title">
+                            {employee.officer ? (
+                              <a
+                                href={`/personnel/${employee.officer.slug}/`}
+                                data-profile-link-type="personnel_profile"
+                              >
+                                {getOfficerName(employee.officer)}
+                              </a>
+                            ) : (
+                              "Unknown person"
+                            )}
+                          </h3>
+                          <div class="profile-record-detail">
+                            <span>
+                              Badge: {employee.entry.badge_number || "Unknown"}
+                            </span>
+                            <span aria-hidden="true">/</span>
+                            <span>
+                              License type: {employee.entry.title || ""}
+                            </span>
+                            <span aria-hidden="true">/</span>
+                            <span>{employee.reportCount || 0} reports</span>
+                            <span aria-hidden="true">/</span>
+                            <span>
+                              {employee.rating && employee.rating > 0
+                                ? `Rating ${employee.rating.toFixed(1)}`
+                                : "Not rated"}
+                            </span>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p class="text-muted">
+                    {personnelConfig?.emptyMessage ??
+                      "No personnel listed yet."}
+                  </p>
+                );
+              })()}
             </>
           ) : tab.tabType === "pastEmployers" ? (
             <>
               {hasPastEmployers ? (
-                <div class="list-group">
+                <div class="profile-record-list">
                   {pastEmployerEntries.map((entry) => (
-                    <div class="list-group-item">
-                      <div class="row g-3 align-items-start">
-                        <div class="col-auto">
-                          <div class="text-uppercase small text-muted">
-                            Start
-                          </div>
-                          <div class="fw-semibold">
-                            {entry.start_date
-                              ? formatShortDate(entry.start_date)
-                              : "Unknown"}
-                          </div>
-                        </div>
-                        <div class="col-auto">
-                          <div class="text-uppercase small text-muted">End</div>
-                          <div>
-                            {entry.end_date
-                              ? formatShortDate(entry.end_date)
-                              : "Current"}
-                          </div>
-                        </div>
-                        <div class="col-12 col-md">
-                          <div class="text-uppercase small text-muted">
-                            Name
-                          </div>
+                    <article class="profile-record">
+                      <div class="profile-record-meta">
+                        <span>
+                          {entry.start_date
+                            ? formatShortDate(entry.start_date)
+                            : "Start date unknown"}
+                        </span>
+                        <span>
+                          {entry.end_date
+                            ? formatShortDate(entry.end_date)
+                            : "Current"}
+                        </span>
+                      </div>
+                      <div class="profile-record-body">
+                        <h3 class="profile-record-title">
                           {entry.agency ? (
                             <a
-                              href={`/law-enforcement-agency/${entry.agency.category}/${entry.agency.slug}/`}
+                              href={requireAgencyCanonicalPath(entry.agency)}
                               data-profile-link-type="agency_profile"
                             >
                               {entry.agency.name}
                             </a>
                           ) : (
-                            "Unknown"
+                            "Unknown agency"
                           )}
-                        </div>
-                        <div class="col-6 col-md-2">
-                          <div class="text-uppercase small text-muted">
-                            Badge #
-                          </div>
-                          <div>{entry.badge_number || "Unknown"}</div>
-                        </div>
-                        <div class="col-6 col-md-2">
-                          <div class="text-uppercase small text-muted">
-                            Reports
-                          </div>
-                          <div>{entry.reportCount || 0}</div>
-                        </div>
-                        <div class="col-12 col-md-2">
-                          <div class="text-uppercase small text-muted">
-                            Rating
-                          </div>
-                          <div>
+                        </h3>
+                        <div class="profile-record-detail">
+                          <span>Badge: {entry.badge_number || "Unknown"}</span>
+                          <span aria-hidden="true">/</span>
+                          <span>License type: {entry.title || ""}</span>
+                          <span aria-hidden="true">/</span>
+                          <span>{entry.reportCount || 0} reports</span>
+                          <span aria-hidden="true">/</span>
+                          <span>
                             {entry.rating && entry.rating > 0
-                              ? entry.rating.toFixed(1)
+                              ? `Rating ${entry.rating.toFixed(1)}`
                               : "Not rated"}
-                          </div>
+                          </span>
                         </div>
                       </div>
-                    </div>
+                    </article>
                   ))}
                 </div>
               ) : (
@@ -404,17 +611,206 @@ const formatReportDate = (report: ReportItem) => report.incidentDate || "—";
     }
   </div>
 </div>
-<style is:global>
-  .case-grid {
-    display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
-    gap: 0.25rem 0.75rem;
-    align-items: baseline;
+<style>
+  .profile-record-list {
+    border-top: 1px solid var(--bs-border-color);
   }
-  .case-grid-label {
-    text-transform: uppercase;
-    font-size: 0.625rem;
-    letter-spacing: 0.1em;
-    color: #6c757d;
+
+  .profile-record {
+    border-bottom: 1px solid var(--bs-border-color);
+    display: grid;
+    gap: 0.75rem 1.25rem;
+    grid-template-columns: minmax(7rem, 10rem) minmax(0, 1fr);
+    padding: 1rem 0;
+  }
+
+  .profile-record-media {
+    grid-template-columns: minmax(7rem, 10rem) minmax(7rem, 10rem) minmax(
+        0,
+        1fr
+      );
+  }
+
+  .profile-record-meta {
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-direction: column;
+    font-size: 0.875rem;
+    gap: 0.25rem;
+    line-height: 1.35;
+  }
+
+  .profile-record-meta a,
+  .profile-record-title a,
+  .profile-record-detail a {
+    color: var(--bs-dark);
+  }
+
+  .profile-record-title {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin: 0;
+  }
+
+  .profile-record-summary {
+    color: var(--bs-secondary-color);
+    margin: 0.35rem 0 0;
+  }
+
+  .profile-record-context {
+    color: var(--bs-secondary-color);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-top: 0.65rem;
+  }
+
+  .profile-record-context p {
+    margin: 0.25rem 0 0;
+  }
+
+  .profile-record-detail {
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.875rem;
+    gap: 0.25rem 0.5rem;
+    margin-top: 0.35rem;
+  }
+
+  .profile-record-thumb {
+    aspect-ratio: 16 / 9;
+    background: var(--bs-dark);
+    display: block;
+    overflow: hidden;
+  }
+
+  .profile-record-thumb img {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  @media (max-width: 767.98px) {
+    .profile-record,
+    .profile-record-media {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .profile-record-meta {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    .profile-record-thumb {
+      max-width: 18rem;
+    }
+  }
+
+  .profile-record-list {
+    border-top: 0;
+    display: grid;
+    gap: 0.875rem;
+  }
+
+  .profile-record {
+    align-items: start;
+    background: var(--bs-white);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+    grid-template-columns: minmax(0, 1fr) minmax(9rem, 14rem);
+    padding: 1rem 1.125rem;
+  }
+
+  .profile-record-media {
+    grid-template-columns: clamp(9rem, 16vw, 13rem) minmax(0, 1fr) minmax(
+        9rem,
+        13rem
+      );
+  }
+
+  .profile-record-body {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .profile-record-meta {
+    align-items: flex-end;
+    font-size: 0.8125rem;
+    grid-column: 2;
+    grid-row: 1;
+    text-align: right;
+  }
+
+  .profile-record-media .profile-record-thumb {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .profile-record-media .profile-record-body {
+    grid-column: 2;
+  }
+
+  .profile-record-media .profile-record-meta {
+    grid-column: 3;
+  }
+
+  .profile-record-title {
+    font-size: 1.0625rem;
+  }
+
+  .profile-record-summary {
+    line-height: 1.55;
+    max-width: 62rem;
+  }
+
+  .profile-record-detail {
+    gap: 0.35rem 0.85rem;
+    line-height: 1.5;
+  }
+
+  .profile-record-detail > span[aria-hidden="true"] {
+    display: none;
+  }
+
+  @media (max-width: 991.98px) {
+    .profile-record,
+    .profile-record-media {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .profile-record-body,
+    .profile-record-meta,
+    .profile-record-media .profile-record-body,
+    .profile-record-media .profile-record-meta,
+    .profile-record-media .profile-record-thumb {
+      grid-column: 1;
+    }
+
+    .profile-record-media .profile-record-thumb {
+      grid-row: 1;
+    }
+
+    .profile-record-media .profile-record-body {
+      grid-row: 2;
+    }
+
+    .profile-record-media .profile-record-meta {
+      grid-row: 3;
+    }
+
+    .profile-record-meta {
+      align-items: flex-start;
+      flex-direction: row;
+      flex-wrap: wrap;
+      grid-row: 2;
+      text-align: left;
+    }
+
+    .profile-record-thumb {
+      max-width: 22rem;
+    }
   }
 </style>

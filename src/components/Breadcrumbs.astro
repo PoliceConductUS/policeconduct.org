@@ -7,13 +7,12 @@ type BreadcrumbItem = {
   current?: boolean;
 };
 
-const {
-  items,
-  className = "mb-3",
-}: {
+interface Props {
   items: BreadcrumbItem[];
   className?: string;
-} = Astro.props;
+}
+
+const { items, className = "mb-3" } = Astro.props;
 
 const siteUrl = getSiteUrl(Astro.site);
 const currentPath = Astro.url?.pathname || "/";

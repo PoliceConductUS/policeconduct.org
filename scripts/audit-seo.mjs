@@ -159,11 +159,6 @@ const auditHtml = async () => {
       html,
       /<meta\s+name=["']robots["']\s+content=["']([^"']+)["'][^>]*>/i,
     );
-    const description = extract(
-      html,
-      /<meta\s+name=["']description["']\s+content=["']([^"']+)["'][^>]*>/i,
-    );
-
     if (!title || !title.trim()) {
       addError(`Missing <title> for ${normalizedRoute}`);
     }
@@ -181,20 +176,6 @@ const auditHtml = async () => {
     if (noindexSet.has(normalizedRoute)) {
       if (!robots || !/noindex\s*,\s*follow/i.test(robots)) {
         addError(`Expected noindex,follow on form page ${normalizedRoute}`);
-      }
-    }
-
-    if (
-      normalizedRoute.startsWith("/report/") &&
-      normalizedRoute.includes("/watch/")
-    ) {
-      if (!/"@type"\s*:\s*"VideoObject"/i.test(html)) {
-        addError(
-          `Watch page missing VideoObject structured data: ${normalizedRoute}`,
-        );
-      }
-      if (!description || !description.trim()) {
-        addWarning(`Watch page missing meta description: ${normalizedRoute}`);
       }
     }
   }

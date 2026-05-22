@@ -1,0 +1,125 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import {
+  loadFederalAgencyDetailBySlug,
+  loadFederalAgencySummaries,
+} from "#src/lib/data/federal-agencies.js";
+import type { FederalAgencyBranch } from "#src/lib/data/federal-agencies.js";
+import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+
+export async function getStaticPaths() {
+  const federalAgencies = await loadFederalAgencySummaries();
+
+  return federalAgencies.map((agency) => ({
+    params: { slug: agency.slug },
+    props: { slug: agency.slug },
+  }));
+}
+
+const { slug } = Astro.props as { slug: string };
+const federalAgency = await loadFederalAgencyDetailBySlug(slug);
+if (!federalAgency) {
+  throw new Error(`Federal agency ${slug} was not found`);
+}
+
+const pagePath = federalAgency.path;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const title = `${federalAgency.name} | PoliceConduct.org`;
+const description = `${federalAgency.name} federal agency record and linked locations.`;
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: title,
+  description,
+  type: "ProfilePage",
+});
+---
+
+<SiteLayout
+  title={title}
+  description={description}
+  pagePath={pagePath}
+  structuredData={structuredData}
+>
+  <main>
+    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Federal Agencies", href: "/federal/" },
+            { label: federalAgency.name, href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+        <div class="row g-4 align-items-end">
+          <div class="col-12 col-lg-8">
+            <p class="text-uppercase small text-muted mb-2">Federal agency</p>
+            <h1 class="display-4 fw-bold mb-3">{federalAgency.name}</h1>
+            <p class="lead text-muted mb-0">
+              Federal agency record with linked locations.
+            </p>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label fw-semibold" for="locationSearch">
+              Search locations
+            </label>
+            <input
+              class="form-control rounded-0"
+              id="locationSearch"
+              type="search"
+              placeholder="Place, county, or state"
+              data-branch-filter-input
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="py-vh-2">
+      <div class="container">
+        <h2 class="h4 mb-3">Locations</h2>
+        <div class="profile-record-list">
+          {
+            federalAgency.branches.map((branch: FederalAgencyBranch) => (
+              <article
+                class="profile-record"
+                data-branch-filter-item
+                data-branch-filter-text={`${branch.name} ${branch.address || ""} ${branch.city || ""} ${branch.administrativeArea || ""} ${branch.state || ""}`}
+              >
+                <div class="profile-record-body">
+                  <h3 class="profile-record-title">
+                    <a href={branch.path}>{branch.name}</a>
+                  </h3>
+                  <div class="profile-record-detail">
+                    <span>
+                      {[branch.city, branch.administrativeArea, branch.state]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </span>
+                    {branch.address ? <span>{branch.address}</span> : null}
+                  </div>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+  <script is:inline>
+    document.querySelectorAll("[data-branch-filter-input]").forEach((input) => {
+      input.addEventListener("input", () => {
+        const query = input.value.trim().toLowerCase();
+        document
+          .querySelectorAll("[data-branch-filter-item]")
+          .forEach((item) => {
+            const text =
+              item.getAttribute("data-branch-filter-text")?.toLowerCase() || "";
+            item.hidden = Boolean(query) && !text.includes(query);
+          });
+      });
+    });
+  </script>
+</SiteLayout>

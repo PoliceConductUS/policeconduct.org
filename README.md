@@ -2,15 +2,62 @@
 
 Astro static site with AWS infrastructure managed by Terraform.
 
+## Purpose
+
+PoliceConduct.org helps residents evaluate whether law-enforcement agencies and
+the people working there appear safe, accountable, transparent, and improving.
+The site also aims to identify positive deviance: officers, supervisors, units,
+agencies, policies, and practices that produce unusually good public-trust and
+public-safety outcomes under comparable constraints. Positive examples must be
+evidence-backed and framed as practices to investigate or learn from, not as
+blanket endorsements.
+
 ## Local Development
 
 ```bash
+./scripts/bootstrap-dev.sh
+npm run doctor
+npm run
 npm ci
 npm run dev
 ```
 
 Set `FORMS_API_PROXY_TARGET` to the preview forms API URL in `.env-policeconduct`
 for local UI testing against deployed forms infrastructure.
+
+`npm run` is the project command surface. Common setup and validation commands:
+
+- `npm run setup`: interactive developer bootstrap.
+- `npm run doctor`: read-only readiness check for local tools and agent workflow files.
+- `npm run openspec:status -- <change-name>`: show OpenSpec change status.
+- `npm run openspec:validate`: validate all OpenSpec artifacts.
+- `npm run validate`: run the aggregate validation gate.
+
+## Agent Workflow
+
+This repo uses Codex App, OpenSpec, Superpowers, and the OpenSpec Superpowers
+bridge for behavior-changing work. OpenSpec captures the intended behavior;
+Superpowers supplies the development discipline; the bridge keeps brainstorming,
+plans, verification, and retrospectives in `openspec/changes/<change-name>/`.
+
+Recommended flow:
+
+```bash
+npm run doctor
+npm run openspec:validate
+npx openspec schemas
+npx openspec status --change <change-name>
+```
+
+Then brainstorm the outcome, create or switch to a repo-local worktree under
+`.worktrees/<change-name>`, and ask Codex to turn the brainstorm into an
+OpenSpec change. Use `/opsx:continue <change-name>` until proposal/spec/task/plan
+artifacts are coherent, then `/opsx:apply <change-name>`, `/opsx:verify
+<change-name>`, `/opsx:continue <change-name>` for the retrospective, and
+`/opsx:archive <change-name>`.
+
+Direct PR-sized changes are acceptable for documentation-only edits, formatting,
+tooling tweaks, and internal refactors that preserve specified behavior.
 
 ## Build
 

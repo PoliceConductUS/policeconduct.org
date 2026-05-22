@@ -15,7 +15,6 @@ const {
   ...rest
 } = Astro.props as Props;
 
-const buttonId = `prefill-nav-${Math.random().toString(36).slice(2, 10)}`;
 const payloadJson =
   typeof payload === "string" ? payload : JSON.stringify(payload);
 const storageKey = new URL(to, "https://www.policeconduct.org").pathname;
@@ -23,18 +22,13 @@ const variantClass =
   variant === "link" ? "border-0 bg-transparent p-0 text-start" : "";
 ---
 
-<button
-  id={buttonId}
-  type="button"
-  class:list={[variantClass, className]}
-  {...rest}
->
+<button type="button" class:list={[variantClass, className]} {...rest}>
   <slot />
 </button>
 
-<script is:inline define:vars={{ buttonId, payloadJson, storageKey, to }}>
+<script is:inline define:vars={{ payloadJson, storageKey, to }}>
   (() => {
-    const button = document.getElementById(buttonId);
+    const button = document.currentScript?.previousElementSibling;
     if (!(button instanceof HTMLButtonElement)) {
       return;
     }

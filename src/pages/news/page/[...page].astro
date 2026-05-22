@@ -9,6 +9,15 @@ import {
   type NewsMeta,
 } from "#src/lib/news.js";
 
+type PaginatedNewsPage = {
+  data: NewsMeta[];
+  currentPage: number;
+  url: {
+    prev?: URL;
+    next?: URL;
+  };
+};
+
 export async function getStaticPaths({ paginate }: { paginate: any }) {
   const articles = loadNewsArticles();
   return paginate(articles, {
@@ -24,7 +33,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
   });
 }
 
-const { page } = Astro.props;
+const { page } = Astro.props as { page: PaginatedNewsPage };
 const title = page.currentPage > 1 ? `News – Page ${page.currentPage}` : "News";
 const pagePath = `/news/page/${page.currentPage}/`;
 const prevUrl = page.currentPage === 2 ? "/news/" : page.url.prev?.toString();

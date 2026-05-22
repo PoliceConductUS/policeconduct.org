@@ -1,0 +1,17 @@
+---
+import { loadReportSummaries } from "#src/lib/data/summaries.js";
+
+export async function getStaticPaths() {
+  const reports = await loadReportSummaries();
+  return reports.map((report) => ({
+    params: {
+      slug: report.slug,
+    },
+    props: {
+      canonicalPath: report.canonicalPath,
+    },
+  }));
+}
+
+return Astro.redirect(Astro.props.canonicalPath, 301);
+---

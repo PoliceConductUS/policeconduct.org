@@ -1,0 +1,19 @@
+schema: superpowers-bridge
+
+context: |
+  Repository: policeconduct.org
+  Purpose: PoliceConduct.org helps residents evaluate whether law-enforcement agencies and the people working there appear safe, accountable, transparent, and improving.
+  Stack: Astro static site, TypeScript/JavaScript, PostgreSQL/Supabase data contracts, AWS infrastructure managed with Terraform.
+  Workflow: OpenSpec with superpowers-bridge, Superpowers, Codex App, trunk-based development, and repo-local .worktrees.
+  Data rules: URLs use database-backed slugs; database entity IDs must come from explicit database or seed values; agency location identity comes from public.agency.location_path_id joined to public.location_path.
+  Validation rules: Missing required database tables or fields must fail builds; do not add silent fallbacks for required data; required template fields should be treated as required.
+
+rules:
+  proposal:
+    - Identify affected user-visible behavior, data contracts, validation rules, and downstream consumers.
+    - Call out whether the change intentionally breaks backward compatibility.
+    - Include evidence expectations for any positive-deviance finding or public-trust claim.
+  tasks:
+    - Include validation steps that prove the intended behavior.
+    - Include tests when the change modifies behavior.
+    - Include seed or migration updates when required database fields change.

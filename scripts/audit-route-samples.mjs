@@ -22,12 +22,8 @@ export const FORM_ROUTES = [
 
 const OPTIONAL_SAMPLE_SPECS = [
   {
-    label: "report watch",
-    pattern: /^\/report\/[^/]+\/[^/]+\/watch\/[^/]+\/$/,
-  },
-  {
-    label: "report pagination",
-    pattern: /^\/report\/[^/]+\/page\/\d+\/$/,
+    label: "state report date archive",
+    pattern: /^\/[a-z]{2}\/reports\/\d{4}\/\d{2}\/\d{2}\/$/,
   },
   {
     label: "agency pagination",
@@ -41,17 +37,17 @@ const OPTIONAL_SAMPLE_SPECS = [
     label: "civil litigation pagination",
     pattern: /^\/civil-litigation\/[^/]+\/page\/\d+\/$/,
   },
-  {
-    label: "civil litigation watch",
-    pattern: /^\/civil-litigation\/[^/]+\/[^/]+\/watch\/[^/]+\/$/,
-  },
 ];
 
 const REQUIRED_SAMPLE_SPECS = [
   { label: "home", pattern: /^\/$/ },
   { label: "report index", pattern: /^\/report\/$/ },
-  { label: "report category", pattern: /^\/report\/[a-z]{2,8}\/$/ },
-  { label: "report detail", pattern: /^\/report\/[^/]+\/[^/]+\/$/ },
+  { label: "state report archive", pattern: /^\/[a-z]{2}\/reports\/$/ },
+  {
+    label: "report detail",
+    pattern:
+      /^\/[a-z]{2}\/[^/]+\/[^/]+\/reports\/\d{4}\/\d{2}\/\d{2}\/[^/]+\/$/,
+  },
   {
     label: "agency index",
     pattern: /^\/law-enforcement-agency\/$/,
@@ -63,6 +59,18 @@ const REQUIRED_SAMPLE_SPECS = [
   {
     label: "agency detail",
     pattern: /^\/law-enforcement-agency\/[^/]+\/[^/]+\/$/,
+  },
+  {
+    label: "county-equivalent",
+    pattern: /^\/[a-z]{2}\/[^/]+\/$/,
+  },
+  {
+    label: "place",
+    pattern: /^\/[a-z]{2}\/[^/]+\/[^/]+\/$/,
+  },
+  {
+    label: "location agency detail",
+    pattern: /^\/[a-z]{2}\/[^/]+\/[^/]+\/[^/]+\/$/,
   },
   { label: "personnel index", pattern: /^\/personnel\/$/ },
   {
@@ -84,7 +92,7 @@ const REQUIRED_SAMPLE_SPECS = [
   },
   {
     label: "civil litigation detail",
-    pattern: /^\/civil-litigation\/[^/]+\/[^/]+\/$/,
+    pattern: /^\/civil-cases\/[^/]+\/$/,
   },
 ];
 

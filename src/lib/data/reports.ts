@@ -1,5 +1,11 @@
 import { withDb } from "#src/lib/db.js";
 import { groupBy, mapBy } from "#src/lib/data.js";
+import { requireAgencyCanonicalPath } from "./location-paths.js";
+import {
+  buildReportCanonicalPath,
+  getReportDateParts,
+  normalizeReportDate,
+} from "./report-paths.js";
 import type { ReportSummary } from "./types.js";
 
 const assertValue = <T>(value: T | null | undefined, message: string): T => {
@@ -13,20 +19,6 @@ const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
 
 const compareNullable = (left?: string | null, right?: string | null) =>
   nameCollator.compare(left || "", right || "");
-
-const normalizeIncidentDate = (value?: string | null) => {
-  if (!value) {
-    return "";
-  }
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return value;
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-  return date.toISOString().slice(0, 10);
-};
 
 const parseDate = (value?: string | null) => {
   if (!value) {
@@ -47,13 +39,31 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
       agencies: any[];
       agencyOfficers: any[];
     }> => {
-      const reports = (await client.query("select * from public.reviews")).rows;
+      const reports = (
+        await client.query(
+          `
+            select r.*, lp.state_or_territory_slug, lp.path as location_path
+            from public.reviews r
+            join public.location_path lp
+              on lp.location_path_id = r.location_path_id
+          `,
+        )
+      ).rows;
       const reportOfficers = (
         await client.query("select * from public.review_officers")
       ).rows;
       const officers = (await client.query("select * from public.officers"))
         .rows;
-      const agencies = (await client.query("select * from public.agency")).rows;
+      const agencies = (
+        await client.query(
+          `
+            select a.*, lp.path as location_path
+            from public.agency a
+            join public.location_path lp
+              on lp.location_path_id = a.location_path_id
+          `,
+        )
+      ).rows;
       const agencyOfficers = (
         await client.query("select * from public.agency_officers")
       ).rows;
@@ -84,6 +94,7 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
         `Missing officer ${agencyOfficer.officer_id} for agency_officer ${agencyOfficer.id}`,
       );
       return {
+        licenseType: agencyOfficer.title || null,
         name: `${officer.first_name} ${officer.last_name}${officer.suffix ? ` ${officer.suffix}` : ""}`.trim(),
         slug: officer.slug,
       };
@@ -105,19 +116,15 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
       agenciesById[agencyOfficer.agency_id],
       `Missing agency ${agencyOfficer.agency_id} for agency_officer ${agencyOfficer.id}`,
     );
-    const agencyCategory = assertValue(
-      agency.category,
-      `Missing category for agency ${agency.id}`,
-    );
     const reportState = assertValue(
-      report.category,
-      `Missing category for report ${report.id}`,
+      report.state_or_territory_slug,
+      `Missing location state for report ${report.id}`,
     )
       .toString()
       .trim()
       .toLowerCase();
     if (!reportState) {
-      throw new Error(`Blank category for report ${report.id}`);
+      throw new Error(`Blank location state for report ${report.id}`);
     }
     const agencySlug = assertValue(
       agency.slug,
@@ -128,19 +135,40 @@ export const loadReportSummaries = async (): Promise<ReportSummary[]> => {
       `Missing name for agency ${agency.id}`,
     );
 
-    const incidentDate = normalizeIncidentDate(report.incident_date || "");
+    const incidentDate = normalizeReportDate(report.incident_date || "");
+    const locationPath = assertValue(
+      report.location_path,
+      `Missing location path for report ${report.id}`,
+    );
+    const dateParts = getReportDateParts(incidentDate, String(report.id));
     return {
       id: report.id,
       slug: reportSlug,
       state: reportState,
+      canonicalPath: buildReportCanonicalPath({
+        id: String(report.id),
+        incidentDate,
+        locationPath,
+        slug: reportSlug,
+      }),
+      year: dateParts.year,
+      month: dateParts.month,
+      day: dateParts.day,
       title: report.title,
       incidentDate: incidentDate || report.incident_date || "",
       address: report.address || null,
-      agencySlug: `${agencyCategory}/${agencySlug}`,
+      latitude:
+        report.latitude !== undefined && report.latitude !== null
+          ? Number(report.latitude)
+          : null,
+      longitude:
+        report.longitude !== undefined && report.longitude !== null
+          ? Number(report.longitude)
+          : null,
+      agencySlug,
       agencyName,
-      category: report.category
-        ? report.category.toString().toLowerCase()
-        : null,
+      agencyCanonicalPath: requireAgencyCanonicalPath(agency),
+      locationPath,
       ratingOverall:
         report.rating_overall !== undefined && report.rating_overall !== null
           ? Number(report.rating_overall)

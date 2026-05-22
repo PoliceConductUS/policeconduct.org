@@ -3,10 +3,13 @@ dist/
 
 # generated types
 .astro/
+.cache/
 .git-backup
 
 # dependencies
 node_modules/
+worktrees/
+.worktrees/
 
 # logs
 npm-debug.log*

@@ -3,10 +3,7 @@ import { US_STATE_TILES } from "./geo/states.js";
 
 const PAGE_SIZE = 50;
 
-const CATEGORY_SLUGS = [
-  ...US_STATE_TILES.map((state) => state.code.toLowerCase()),
-  "federal",
-];
+const CATEGORY_SLUGS = US_STATE_TILES.map((state) => state.code.toLowerCase());
 
 const parseDate = (value) => {
   if (!value) {
@@ -54,23 +51,60 @@ const setCategoryLastmod = (map, key, value) => {
   }
 };
 
-const hasEmbeddableVideo = (url) => {
-  try {
-    const parsed = new URL(url);
-    return (
-      parsed.hostname.includes("youtube.com") ||
-      parsed.hostname.includes("youtu.be")
-    );
-  } catch {
-    return false;
-  }
-};
-
 const addPaginatedPaths = (map, basePath, count, lastmod) => {
   setLastmod(map, basePath, lastmod);
   const totalPages = Math.max(1, Math.ceil((count || 0) / PAGE_SIZE));
   for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
     setLastmod(map, `${basePath}page/${pageNumber}/`, lastmod);
+  }
+};
+
+const normalizeReportDate = (value) => {
+  if (!value) return "";
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+  return parsed.toISOString().slice(0, 10);
+};
+
+const buildReportCanonicalPath = (report) => {
+  const date = normalizeReportDate(report.incident_date);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!report.location_path || !report.slug || !match) {
+    return null;
+  }
+  return `${report.location_path}reports/${match[1]}/${match[2]}/${match[3]}/${report.slug}/`;
+};
+
+const setReportArchiveLastmods = (pathLastmods, report, lastmod) => {
+  const date = normalizeReportDate(report.incident_date);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!report.location_path || !report.state || !match) {
+    return;
+  }
+  const parts = report.location_path.split("/").filter(Boolean);
+  if (parts.length !== 3) {
+    return;
+  }
+  const [state, area, place] = parts;
+  const prefixes = [
+    `/${state}/reports/`,
+    `/${state}/${area}/reports/`,
+    `/${state}/${area}/${place}/reports/`,
+  ];
+  for (const prefix of prefixes) {
+    setLastmod(pathLastmods, prefix, lastmod);
+    setLastmod(pathLastmods, `${prefix}${match[1]}/`, lastmod);
+    setLastmod(pathLastmods, `${prefix}${match[1]}/${match[2]}/`, lastmod);
+    setLastmod(
+      pathLastmods,
+      `${prefix}${match[1]}/${match[2]}/${match[3]}/`,
+      lastmod,
+    );
   }
 };
 
@@ -89,66 +123,34 @@ export const buildSitemapLastmodMap = async () => {
     const reportRows = (
       await client.query(
         `
-          select slug, lower(category) as category, created_at, updated_at
-          from public.reviews
-          where slug is not null
+          select
+            r.slug,
+            r.incident_date,
+            lp.path as location_path,
+            lp.state_or_territory_slug as state,
+            r.created_at,
+            r.updated_at
+          from public.reviews r
+          join public.location_path lp
+            on lp.location_path_id = r.location_path_id
+          where r.slug is not null
         `,
       )
     ).rows;
 
     for (const report of reportRows) {
       const lastmod = getLatestDate(report.updated_at, report.created_at);
-      if (!report.category || !report.slug) {
+      if (!report.state || !report.slug) {
         continue;
       }
-      setLastmod(
-        pathLastmods,
-        `/report/${report.category}/${report.slug}/`,
-        lastmod,
-      );
-      incrementCount(reportCountsByCategory, report.category);
-      setCategoryLastmod(reportLastmodsByCategory, report.category, lastmod);
+      const reportPath = buildReportCanonicalPath(report);
+      if (reportPath) {
+        setLastmod(pathLastmods, reportPath, lastmod);
+      }
+      setReportArchiveLastmods(pathLastmods, report, lastmod);
+      incrementCount(reportCountsByCategory, report.state);
+      setCategoryLastmod(reportLastmodsByCategory, report.state, lastmod);
       setLastmod(pathLastmods, "/report/", lastmod);
-    }
-
-    const reportWatchRows = (
-      await client.query(
-        `
-          select
-            lower(r.category) as category,
-            r.slug,
-            rl.id,
-            rl.url,
-            rl.created_at,
-            rl.updated_at,
-            r.created_at as review_created_at,
-            r.updated_at as review_updated_at
-          from public.review_links rl
-          join public.reviews r on r.id = rl.review_id
-          where r.slug is not null
-        `,
-      )
-    ).rows;
-
-    for (const row of reportWatchRows) {
-      if (
-        !row.category ||
-        !row.slug ||
-        !row.id ||
-        !hasEmbeddableVideo(row.url)
-      ) {
-        continue;
-      }
-      setLastmod(
-        pathLastmods,
-        `/report/${row.category}/${row.slug}/watch/${row.id}/`,
-        getLatestDate(
-          row.updated_at,
-          row.created_at,
-          row.review_updated_at,
-          row.review_created_at,
-        ),
-      );
     }
 
     const agencyRows = (
@@ -158,7 +160,10 @@ export const buildSitemapLastmodMap = async () => {
             select
               a.id,
               a.slug,
-              lower(a.category) as category,
+              lower(lp.state_or_territory_slug) as state,
+              lp.administrative_area_slug as location_administrative_area_slug,
+              lp.place_slug as location_place_slug,
+              lp.path as location_path,
               a.created_at,
               a.updated_at,
               count(distinct ao_active.officer_id) as active_personnel_count,
@@ -168,6 +173,8 @@ export const buildSitemapLastmodMap = async () => {
               max(r.updated_at) as max_report_updated_at,
               max(c.updated_at) as max_civil_case_updated_at
             from public.agency a
+            join public.location_path lp
+              on lp.location_path_id = a.location_path_id
             left join public.agency_officers ao on ao.agency_id = a.id
             left join public.agency_officers ao_active
               on ao_active.agency_id = a.id
@@ -178,7 +185,9 @@ export const buildSitemapLastmodMap = async () => {
             left join public.civil_case_officers cco
               on cco.agency_officer_id = ao.id
             left join public.civil_cases c on c.id = cco.civil_case_id
-            group by a.id, a.slug, a.category, a.created_at, a.updated_at
+            group by a.id, a.slug, lp.state_or_territory_slug,
+              lp.administrative_area_slug, lp.place_slug, lp.path,
+              a.created_at, a.updated_at
           )
           select
             *,
@@ -196,19 +205,29 @@ export const buildSitemapLastmodMap = async () => {
     ).rows;
 
     for (const agency of agencyRows) {
-      if (!agency.category || !agency.slug) {
+      if (!agency.state || !agency.slug) {
         continue;
       }
-      setLastmod(
-        pathLastmods,
-        `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
-        agency.lastmod,
-      );
+      if (
+        agency.location_administrative_area_slug &&
+        agency.location_place_slug &&
+        agency.location_path &&
+        agency.slug
+      ) {
+        const canonicalPath = `${agency.location_path}${agency.slug}/`;
+        const statePath = `/${agency.state}/`;
+        const administrativeAreaPath = `${statePath}${agency.location_administrative_area_slug}/`;
+        const placePath = `${administrativeAreaPath}${agency.location_place_slug}/`;
+        setLastmod(pathLastmods, statePath, agency.lastmod);
+        setLastmod(pathLastmods, administrativeAreaPath, agency.lastmod);
+        setLastmod(pathLastmods, placePath, agency.lastmod);
+        setLastmod(pathLastmods, canonicalPath, agency.lastmod);
+      }
 
-      incrementCount(agencyCountsByCategory, agency.category);
+      incrementCount(agencyCountsByCategory, agency.state);
       setCategoryLastmod(
         agencyLastmodsByCategory,
-        agency.category,
+        agency.state,
         agency.lastmod,
       );
       setLastmod(pathLastmods, "/law-enforcement-agency/", agency.lastmod);
@@ -257,7 +276,7 @@ export const buildSitemapLastmodMap = async () => {
               ao.start_date,
               ao.created_at,
               ao.updated_at,
-              lower(a.category) as agency_category,
+              lower(a.state) as agency_state,
               a.updated_at as agency_updated_at,
               count(*) over (partition by ao.agency_id) as active_personnel_count
             from public.agency_officers ao
@@ -301,7 +320,7 @@ export const buildSitemapLastmodMap = async () => {
           )
           select
             o.slug,
-            selected_assignments.agency_category as category,
+            selected_assignments.agency_state as state,
             greatest(
               o.updated_at,
               o.created_at,
@@ -327,13 +346,13 @@ export const buildSitemapLastmodMap = async () => {
     ).rows;
 
     for (const person of personnelCollectionRows) {
-      if (!person.category) {
+      if (!person.state) {
         continue;
       }
-      incrementCount(personnelCountsByCategory, person.category);
+      incrementCount(personnelCountsByCategory, person.state);
       setCategoryLastmod(
         personnelLastmodsByCategory,
-        person.category,
+        person.state,
         person.lastmod,
       );
       setLastmod(pathLastmods, "/personnel/", person.lastmod);
@@ -342,83 +361,30 @@ export const buildSitemapLastmodMap = async () => {
     const civilCaseRows = (
       await client.query(
         `
-          select slug, lower(category) as category, created_at, updated_at
-          from public.civil_cases
-          where slug is not null
+          select
+            c.slug,
+            lp.state_or_territory_slug as state,
+            c.created_at,
+            c.updated_at
+          from public.civil_cases c
+          join public.location_path lp
+            on lp.location_path_id = c.location_path_id
+          where c.slug is not null
         `,
       )
     ).rows;
 
     for (const civilCase of civilCaseRows) {
       const lastmod = getLatestDate(civilCase.updated_at, civilCase.created_at);
-      if (!civilCase.category || !civilCase.slug) {
+      if (!civilCase.state || !civilCase.slug) {
         continue;
       }
-      setLastmod(
-        pathLastmods,
-        `/civil-litigation/${civilCase.category}/${civilCase.slug}/`,
-        lastmod,
-      );
-      incrementCount(civilCaseCountsByCategory, civilCase.category);
-      setCategoryLastmod(
-        civilCaseLastmodsByCategory,
-        civilCase.category,
-        lastmod,
-      );
+      setLastmod(pathLastmods, `/civil-cases/${civilCase.slug}/`, lastmod);
+      incrementCount(civilCaseCountsByCategory, civilCase.state);
+      setCategoryLastmod(civilCaseLastmodsByCategory, civilCase.state, lastmod);
       setLastmod(pathLastmods, "/civil-litigation/", lastmod);
     }
-
-    const civilCaseWatchRows = (
-      await client.query(
-        `
-          select
-            lower(c.category) as category,
-            c.slug,
-            ccl.id,
-            ccl.url,
-            ccl.created_at,
-            ccl.updated_at,
-            c.created_at as civil_case_created_at,
-            c.updated_at as civil_case_updated_at
-          from public.civil_case_links ccl
-          join public.civil_cases c on c.id = ccl.civil_case_id
-          where c.slug is not null
-        `,
-      )
-    ).rows;
-
-    for (const row of civilCaseWatchRows) {
-      if (
-        !row.category ||
-        !row.slug ||
-        !row.id ||
-        !hasEmbeddableVideo(row.url)
-      ) {
-        continue;
-      }
-      setLastmod(
-        pathLastmods,
-        `/civil-litigation/${row.category}/${row.slug}/watch/${row.id}/`,
-        getLatestDate(
-          row.updated_at,
-          row.created_at,
-          row.civil_case_updated_at,
-          row.civil_case_created_at,
-        ),
-      );
-    }
   });
-
-  for (const category of US_STATE_TILES.map((state) =>
-    state.code.toLowerCase(),
-  )) {
-    addPaginatedPaths(
-      pathLastmods,
-      `/report/${category}/`,
-      reportCountsByCategory.get(category) || 0,
-      reportLastmodsByCategory.get(category),
-    );
-  }
 
   for (const category of CATEGORY_SLUGS) {
     addPaginatedPaths(
@@ -426,18 +392,6 @@ export const buildSitemapLastmodMap = async () => {
       `/law-enforcement-agency/${category}/`,
       agencyCountsByCategory.get(category) || 0,
       agencyLastmodsByCategory.get(category),
-    );
-    addPaginatedPaths(
-      pathLastmods,
-      `/personnel/${category}/`,
-      personnelCountsByCategory.get(category) || 0,
-      personnelLastmodsByCategory.get(category),
-    );
-    addPaginatedPaths(
-      pathLastmods,
-      `/civil-litigation/${category}/`,
-      civilCaseCountsByCategory.get(category) || 0,
-      civilCaseLastmodsByCategory.get(category),
     );
 
     setLastmod(
@@ -447,9 +401,7 @@ export const buildSitemapLastmodMap = async () => {
         agencyLastmodsByCategory.get(category),
         personnelLastmodsByCategory.get(category),
         civilCaseLastmodsByCategory.get(category),
-        category === "federal"
-          ? pathLastmods.get("/report/")
-          : reportLastmodsByCategory.get(category),
+        reportLastmodsByCategory.get(category),
       ),
     );
   }

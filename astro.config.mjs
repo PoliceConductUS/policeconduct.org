@@ -46,18 +46,26 @@ const sentryRelease =
 const SITEMAP_EXCLUDED_PATHS = new Set([
   "/404/",
   "/about/contact/",
+  "/civil-litigation/",
   "/civil-litigation/new/",
   "/civil-litigation/suggest-edit/",
+  "/law-enforcement-agency/",
   "/law-enforcement-agency/new/",
   "/law-enforcement-agency/suggest-edit/",
   "/legal-notice/data-subject-access-request/",
   "/personnel/new/",
   "/personnel/suggest-edit/",
+  "/report/",
   "/report/new/",
   "/status/",
   "/volunteer/",
 ]);
-const sitemapLastmodMapPromise = buildSitemapLastmodMap();
+let sitemapLastmodMapPromise;
+
+const getSitemapLastmodMap = () => {
+  sitemapLastmodMapPromise ??= buildSitemapLastmodMap();
+  return sitemapLastmodMapPromise;
+};
 
 // https://astro.build/config
 export default defineConfig({
@@ -99,7 +107,7 @@ export default defineConfig({
         return !SITEMAP_EXCLUDED_PATHS.has(pathname);
       },
       serialize: async (item) => {
-        const lastmodMap = await sitemapLastmodMapPromise;
+        const lastmodMap = await getSitemapLastmodMap();
         const pathname = new URL(item.url).pathname;
         const lastmod = lastmodMap.get(pathname);
         if (!lastmod) {

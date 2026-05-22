@@ -46,6 +46,27 @@ if (missingVars.length > 0) {
 }
 
 const args = process.argv.slice(2);
+
+console.log("Refreshing build projections...");
+const refresh = spawn("node", ["scripts/refresh-build-projections.mjs"], {
+  cwd: repoRoot,
+  env: process.env,
+  stdio: "inherit",
+});
+
+const refreshResult = await new Promise((resolve) => {
+  refresh.on("exit", (code, signal) => resolve({ code, signal }));
+});
+
+if (refreshResult.signal) {
+  process.kill(process.pid, refreshResult.signal);
+}
+
+if (refreshResult.code !== 0) {
+  console.error("Dev startup failed: build projection refresh failed.");
+  process.exit(refreshResult.code ?? 1);
+}
+
 const child = spawn("astro", ["dev", ...args], {
   cwd: repoRoot,
   env: process.env,

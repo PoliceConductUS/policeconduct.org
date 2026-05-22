@@ -627,7 +627,7 @@ const structuredData = buildWebPage({
       });
     };
 
-    const updateClubButtons = (frequency) => {
+    const updateClubButtons = () => {
       clubButtons.forEach((anchorElement) => {
         const link = anchorElement.dataset.link || "";
         setButtonState(anchorElement, link);
@@ -637,7 +637,7 @@ const structuredData = buildWebPage({
     const setFrequency = (frequency) => {
       rootElement.dataset.frequency = frequency;
       updatePresetButtons(frequency);
-      updateClubButtons(frequency);
+      updateClubButtons();
     };
 
     frequencyInputs.forEach((inputElement) => {
