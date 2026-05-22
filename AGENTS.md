@@ -27,7 +27,7 @@ Workflow Standards
 
 OpenSpec Usage
 
-- Run `npm run doctor`, `npm run openspec:validate`, `npx openspec schemas`, and `npx openspec status --change <change-name>` before starting behavior-changing work when practical.
+- Run `npm run doctor`, `npm run validate:openspec`, `npx openspec schemas`, and `npx openspec status --change <change-name>` before starting behavior-changing work when practical.
 - Brainstorm the outcome before implementation, then turn the result into an OpenSpec change.
 - Use `/opsx:continue <change-name>`, `/opsx:apply <change-name>`, `/opsx:verify <change-name>`, and `/opsx:archive <change-name>` for the normal bridge lifecycle.
 - Review generated `proposal.md`, `design.md`, `tasks.md`, `plan.md`, `verify.md`, and retrospective artifacts before relying on them.

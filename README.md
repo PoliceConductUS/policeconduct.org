@@ -30,7 +30,7 @@ for local UI testing against deployed forms infrastructure.
 - `npm run setup`: interactive developer bootstrap.
 - `npm run doctor`: read-only readiness check for local tools and agent workflow files.
 - `npm run openspec:status -- <change-name>`: show OpenSpec change status.
-- `npm run openspec:validate`: validate all OpenSpec artifacts.
+- `npm run validate:openspec`: validate all OpenSpec artifacts.
 - `npm run validate`: run the aggregate validation gate.
 
 ## Agent Workflow
@@ -44,7 +44,7 @@ Recommended flow:
 
 ```bash
 npm run doctor
-npm run openspec:validate
+npm run validate:openspec
 npx openspec schemas
 npx openspec status --change <change-name>
 ```

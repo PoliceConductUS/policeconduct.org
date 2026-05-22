@@ -409,7 +409,7 @@ verify_project_tools() {
 
   info "Verifying OpenSpec"
   mise exec -- npx openspec --version >/dev/null
-  mise exec -- npm run openspec:validate
+  mise exec -- npm run validate:openspec
 
   info "Verifying Supabase CLI"
   mise exec -- npx supabase --version >/dev/null

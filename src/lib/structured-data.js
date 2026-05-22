@@ -10,7 +10,7 @@ export const getSiteUrl = (site) => {
   if (typeof site === "string") {
     try {
       return new URL(site);
-    } catch (error) {
+    } catch {
       return new URL(DEFAULT_SITE_URL);
     }
   }

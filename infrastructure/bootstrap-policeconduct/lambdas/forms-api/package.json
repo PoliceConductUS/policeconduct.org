@@ -3,10 +3,15 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1030.0",
-    "@google-cloud/recaptcha-enterprise": "^6.4.0",
+    "@aws-sdk/client-s3": "^3.1053.0",
+    "@google-cloud/recaptcha-enterprise": "^6.4.1",
     "@paralleldrive/cuid2": "^3.3.0",
-    "@sentry/node": "^10.48.0",
+    "@sentry/node": "^10.53.1",
     "google-auth-library": "^10.6.2"
+  },
+  "overrides": {
+    "protobufjs": "7.6.1",
+    "@protobufjs/utf8": "1.1.1",
+    "brace-expansion": "5.0.6"
   }
 }

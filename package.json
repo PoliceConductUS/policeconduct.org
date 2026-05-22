@@ -16,17 +16,20 @@
     "audit": "npm run audit:seo && npm run audit:a11y",
     "audit:seo": "node scripts/audit-seo.mjs",
     "audit:a11y": "node scripts/audit-a11y.mjs",
-    "lint": "bash -n scripts/bootstrap-dev.sh",
-    "lint:sql": "mise exec -- uvx sqlfluff==4.1.0 lint --dialect postgres --processes 1 --disable-progress-bar .",
-    "format:check": "prettier --check .",
+    "lint": "eslint . && mise exec -- uvx sqlfluff==4.1.0 lint --dialect postgres --processes 1 --disable-progress-bar .",
     "format:sql": "mise exec -- uvx sqlfluff==4.1.0 format --dialect postgres --processes 1 --disable-progress-bar .",
+    "format:check": "prettier --check .",
     "openspec:status": "node scripts/openspec-status.mjs",
-    "openspec:validate": "openspec validate --all",
     "validate:schema": "node scripts/validate-schema-contract.mjs",
-    "validate": "npm run format:check && npm run lint && npm run validate:schema && npm run openspec:validate && npm run test:e2e",
-    "test": "npm run validate",
+    "validate:openspec": "openspec validate --all",
+    "validate:shell": "bash -n scripts/*.sh infrastructure/bootstrap-*/*.sh infrastructure/bootstrap-*/scripts/*.sh",
+    "validate:types": "astro check",
+    "validate": "npm run format:check && npm run lint && npm run validate:types && npm run validate:shell && npm run validate:schema && npm run validate:openspec && npm run test",
+    "test": "npm run test:e2e",
     "test:e2e": "playwright test",
-    "format": "prettier --write .",
+    "update:deps": "node scripts/update-dependencies.mjs --root .",
+    "update:deps:all": "node scripts/update-dependencies.mjs --all",
+    "format": "prettier --write . && npm run format:sql",
     "preview": "astro preview"
   },
   "dependencies": {
@@ -40,16 +43,21 @@
     "pg": "^8.20.0"
   },
   "devDependencies": {
-    "@fission-ai/openspec": "1.3.1",
     "@astrojs/check": "^0.9.9",
     "@axe-core/playwright": "^4.11.1",
+    "@eslint/js": "^10.0.1",
+    "@fission-ai/openspec": "1.3.1",
     "@fullhuman/postcss-purgecss": "^8.0.0",
     "@playwright/test": "^1.59.1",
     "@types/leaflet": "^1.9.21",
     "@types/pg": "^8.20.0",
+    "eslint": "^10.4.0",
+    "eslint-plugin-astro": "^1.7.0",
+    "globals": "^17.6.0",
     "postcss": "^8.5.10",
     "prettier": "^3.8.3",
     "prettier-plugin-astro": "^0.14.1",
-    "supabase": "2.100.1"
+    "supabase": "2.100.1",
+    "typescript-eslint": "^8.59.4"
   }
 }
