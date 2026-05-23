@@ -87,7 +87,9 @@ export type ScopedCoverageRow = {
 
 export const toCount = (value: string | number) => {
   if (value == null) {
-    throw new Error("Expected numeric aggregate count, received nullish value.");
+    throw new Error(
+      "Expected numeric aggregate count, received nullish value.",
+    );
   }
 
   const count = Number(value);
@@ -258,6 +260,7 @@ const getChildCounts = (child: LocationChildPayload) => ({
   agencies: child.childCount,
   civilCases: 0,
   personnel: 0,
+  places: child.childCount,
   reports: 0,
 });
 
@@ -268,3 +271,245 @@ const getAgencyCounts = (agency: LocationAgencyPayload) => ({
   reports: 0,
   address: agency.address || "",
 });
+
+const formatCount = (
+  count: number,
+  singular: string,
+  plural = `${singular}s`,
+) => `${count.toLocaleString("en-US")} ${count === 1 ? singular : plural}`;
+
+const buildChildSearchText = (child: LocationChildPayload) =>
+  [child.label, child.kind, child.path].filter(Boolean).join(" ");
+
+const buildAgencySearchText = (agency: LocationAgencyPayload) =>
+  [
+    agency.name,
+    agency.address,
+    agency.city,
+    agency.administrativeArea,
+    agency.slug,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+const requireChildren = (location: LocationPagePayload) => {
+  if (!location.children) {
+    throw new Error(
+      `Expected children payload array for ${location.level} page at ${location.path}.`,
+    );
+  }
+
+  return location.children;
+};
+
+const requireAgencies = (location: LocationPagePayload) => {
+  if (!location.agencies) {
+    throw new Error(
+      `Expected agencies payload array for ${location.level} page at ${location.path}.`,
+    );
+  }
+
+  return location.agencies;
+};
+
+const requireParentPath = (location: LocationPagePayload) => {
+  if (!location.parentPath) {
+    throw new Error(
+      `Expected parentPath for ${location.level} page at ${location.path}.`,
+    );
+  }
+
+  return location.parentPath;
+};
+
+const buildChildDetail = (child: LocationChildPayload, singular: string) =>
+  formatCount(child.childCount, singular);
+
+const buildChildRows = (
+  children: LocationChildPayload[],
+  countKey: "agencies" | "places",
+  detailSingular: string,
+): CivicIndexRow[] =>
+  children
+    .map((child) => {
+      const counts = getChildCounts(child);
+      return {
+        href: child.path,
+        label: child.label,
+        searchText: buildChildSearchText(child),
+        values: {
+          [countKey]: counts[countKey],
+          civilCases: counts.civilCases,
+          detail: buildChildDetail(child, detailSingular),
+          personnel: counts.personnel,
+          reports: counts.reports,
+        },
+      };
+    })
+    .sort((a, b) => civicIndexCollator.compare(a.label, b.label));
+
+const buildAgencyRows = (agencies: LocationAgencyPayload[]): CivicIndexRow[] =>
+  agencies
+    .map((agency) => {
+      const counts = getAgencyCounts(agency);
+      return {
+        href: agency.path,
+        label: agency.name,
+        searchText: buildAgencySearchText(agency),
+        values: {
+          address: counts.address,
+          agencies: counts.agencies,
+          civilCases: counts.civilCases,
+          personnel: counts.personnel,
+          reports: counts.reports,
+        },
+      };
+    })
+    .sort((a, b) => civicIndexCollator.compare(a.label, b.label));
+
+const buildChildMapPoints = (
+  children: LocationChildPayload[],
+  detailSingular: string,
+): CivicIndexMapPoint[] =>
+  children
+    .filter((child) => child.mapPoint)
+    .map((child) => ({
+      count: child.childCount,
+      href: child.path,
+      label: child.label,
+      lat: child.mapPoint!.lat,
+      lng: child.mapPoint!.lng,
+      meta: buildChildDetail(child, detailSingular),
+    }));
+
+const buildAgencyMapPoints = (
+  agencies: LocationAgencyPayload[],
+): CivicIndexMapPoint[] =>
+  agencies
+    .filter((agency) => agency.mapPoint)
+    .map((agency) => ({
+      href: agency.path,
+      label: agency.name,
+      lat: agency.mapPoint!.lat,
+      lng: agency.mapPoint!.lng,
+      meta: agency.address || "Agency",
+    }));
+
+export const buildStateCivicIndex = async (
+  state: LocationPagePayload,
+): Promise<CivicIndexModel> => {
+  const areaPlural = state.administrativeAreaPlural!;
+  const children = requireChildren(state);
+  const rows = buildChildRows(children, "places", "place");
+  return {
+    actionGroups: getActionGroups(state.path),
+    breadcrumbs: [
+      { label: "Home", href: "/" },
+      { label: "Find Records", href: "/find-records/" },
+      { label: state.stateLabel, href: state.path, current: true },
+    ],
+    columns: [
+      { key: "label", label: "County / Area" },
+      { key: "places", label: "Places", numeric: true },
+      { key: "personnel", label: "Personnel", numeric: true },
+      { key: "reports", label: "Reports", numeric: true },
+      { key: "civilCases", label: "Civil cases", numeric: true },
+    ],
+    coverage: await loadCivicIndexCoverage(state),
+    description: `Browse local agency records, public reports, civil litigation, and personnel profiles currently available for this state.`,
+    futureDatasets,
+    indexLabel: `${areaPlural} and local places with records`,
+    jurisdictionLabel: "State civic index",
+    level: "state",
+    map: {
+      bounds: state.mapBounds,
+      description: `${areaPlural} with available records.`,
+      emptyLabel: `No mapped ${areaPlural.toLowerCase()} records.`,
+      points: buildChildMapPoints(children, "place"),
+      title: `${state.stateLabel} ${areaPlural}`,
+    },
+    pagePath: state.path,
+    rows,
+    title: `${state.stateLabel} Civic Index | PoliceConduct.org`,
+  };
+};
+
+export const buildAdministrativeAreaCivicIndex = async (
+  area: LocationPagePayload,
+): Promise<CivicIndexModel> => {
+  const children = requireChildren(area);
+  const parentPath = requireParentPath(area);
+  const rows = buildChildRows(children, "agencies", "agency");
+  return {
+    actionGroups: getActionGroups(area.path),
+    breadcrumbs: [
+      { label: "Home", href: "/" },
+      { label: "Find Records", href: "/find-records/" },
+      { label: area.stateLabel, href: parentPath },
+      { label: area.administrativeArea!, href: area.path, current: true },
+    ],
+    columns: [
+      { key: "label", label: "Place" },
+      { key: "agencies", label: "Agencies", numeric: true },
+      { key: "personnel", label: "Personnel", numeric: true },
+      { key: "reports", label: "Reports", numeric: true },
+      { key: "civilCases", label: "Civil cases", numeric: true },
+    ],
+    coverage: await loadCivicIndexCoverage(area),
+    description: `Browse local agency records, public reports, civil litigation, and personnel profiles currently available for this ${area.administrativeAreaKind || "administrative area"}.`,
+    futureDatasets,
+    indexLabel: "Places with records",
+    jurisdictionLabel: `${area.administrativeAreaKind || "Administrative area"} civic index`,
+    level: "administrative_area",
+    map: {
+      bounds: area.mapBounds,
+      description: "Places with available records.",
+      emptyLabel: "No mapped places.",
+      points: buildChildMapPoints(children, "agency"),
+      title: `${area.administrativeArea} places`,
+    },
+    pagePath: area.path,
+    rows,
+    title: `${area.administrativeArea}, ${area.stateLabel} Civic Index | PoliceConduct.org`,
+  };
+};
+
+export const buildPlaceCivicIndex = async (
+  place: LocationPagePayload,
+): Promise<CivicIndexModel> => {
+  const agencies = requireAgencies(place);
+  const parentPath = requireParentPath(place);
+  const rows = buildAgencyRows(agencies);
+  return {
+    actionGroups: getActionGroups(place.path),
+    breadcrumbs: [
+      { label: "Home", href: "/" },
+      { label: "Find Records", href: "/find-records/" },
+      { label: place.administrativeArea!, href: parentPath },
+      { label: place.displayName, href: place.path, current: true },
+    ],
+    columns: [
+      { key: "label", label: "Agency" },
+      { key: "address", label: "Address" },
+      { key: "personnel", label: "Personnel", numeric: true },
+      { key: "reports", label: "Reports", numeric: true },
+      { key: "civilCases", label: "Civil cases", numeric: true },
+    ],
+    coverage: await loadCivicIndexCoverage(place),
+    description: `Browse law enforcement agencies, public reports, civil litigation, and personnel profiles currently available for this place.`,
+    futureDatasets,
+    indexLabel: "Agencies with records",
+    jurisdictionLabel: "Place civic index",
+    level: "place",
+    map: {
+      bounds: place.mapBounds,
+      description: "Agencies with available records.",
+      emptyLabel: "No mapped agencies.",
+      points: buildAgencyMapPoints(agencies),
+      title: `${place.displayName} agencies`,
+    },
+    pagePath: place.path,
+    rows,
+    title: `${place.displayName}, ${place.administrativeArea} Civic Index | PoliceConduct.org`,
+  };
+};
