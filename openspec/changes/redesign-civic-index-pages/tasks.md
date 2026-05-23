@@ -10,10 +10,10 @@
 
 ## 2. Shared Page Pattern
 
-- [ ] 2.1 Build shared Civic Index rendering components for the editorial title area, current record coverage panel, action rail, map/index section, and future-data placeholder section.
-- [ ] 2.2 Keep the visual system aligned with the mockup: light-mode first, thin rules, compact tables, restrained deep red and muted teal accents, and no marketing-style decoration.
-- [ ] 2.3 Add no-JavaScript baseline markup for the full index table and links.
-- [ ] 2.4 Add lightweight client-side search and stable sorting for the index table.
+- [x] 2.1 Build shared Civic Index rendering components for the editorial title area, current record coverage panel, action rail, map/index section, and future-data placeholder section.
+- [x] 2.2 Keep the visual system aligned with the mockup: light-mode first, thin rules, compact tables, restrained deep red and muted teal accents, and no marketing-style decoration.
+- [x] 2.3 Add no-JavaScript baseline markup for the full index table and links.
+- [x] 2.4 Add lightweight client-side search and stable sorting for the index table.
 
 ## 3. Route Integration
 
@@ -24,11 +24,11 @@
 
 ## 4. Current and Future Data Presentation
 
-- [ ] 4.1 Populate the current record coverage panel with available scoped counts and omit any optional count that lacks a reliable existing local source.
-- [ ] 4.2 Add resident action links for finding a local agency, sharing an interaction, and getting notified when records change using existing approved routes.
-- [ ] 4.3 Add defense attorney action links for personnel history, civil litigation, and missing source record submission using existing approved routes.
-- [ ] 4.4 Add the "Data not collected yet" section for use-of-force policy checklist, settlement and payout history, complaint outcomes, civil forfeiture indicators, accountability barriers, and positive-deviance practices.
-- [ ] 4.5 Ensure future placeholders do not imply missing records are findings, rankings, praise, or endorsements.
+- [x] 4.1 Populate the current record coverage panel with available scoped counts and omit any optional count that lacks a reliable existing local source.
+- [x] 4.2 Add resident action links for finding a local agency, sharing an interaction, and getting notified when records change using existing approved routes.
+- [x] 4.3 Add defense attorney action links for personnel history, civil litigation, and missing source record submission using existing approved routes.
+- [x] 4.4 Add the "Data not collected yet" section for use-of-force policy checklist, settlement and payout history, complaint outcomes, civil forfeiture indicators, accountability barriers, and positive-deviance practices.
+- [x] 4.5 Ensure future placeholders do not imply missing records are findings, rankings, praise, or endorsements.
 
 ## 5. Verification
 
