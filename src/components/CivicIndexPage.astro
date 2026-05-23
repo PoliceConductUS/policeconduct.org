@@ -1,0 +1,477 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import LocationMap from "#src/components/LocationMap.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
+import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+
+const { model, site } = Astro.props as {
+  model: CivicIndexModel;
+  site: URL | undefined;
+};
+
+const siteUrl = getSiteUrl(site);
+const pageUrl = new URL(model.pagePath, siteUrl).toString();
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: model.title,
+  description: model.description,
+  type: "CollectionPage",
+});
+const heading =
+  model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
+  model.jurisdictionLabel;
+---
+
+<SiteLayout
+  title={model.title}
+  description={model.description}
+  pagePath={model.pagePath}
+  structuredData={structuredData}
+>
+  <main class="civic-index">
+    <section class="civic-index-hero">
+      <div class="container">
+        <div class="civic-index-hero-grid">
+          <div>
+            <Breadcrumbs items={model.breadcrumbs} className="mb-3" />
+            <p class="civic-index-kicker">{model.jurisdictionLabel}</p>
+            <h1>{heading}</h1>
+            <p class="civic-index-lede">{model.description}</p>
+          </div>
+          <aside class="civic-coverage" aria-label="Current record coverage">
+            <h2>Current record coverage</h2>
+            <dl>
+              {
+                model.coverage.map((metric) => (
+                  <div>
+                    <dt>{metric.label}</dt>
+                    <dd>{metric.value.toLocaleString("en-US")}</dd>
+                  </div>
+                ))
+              }
+            </dl>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="civic-index-main">
+      <div class="container civic-index-main-grid">
+        <div class="civic-index-records">
+          <LocationMap
+            title={model.map.title}
+            description={model.map.description}
+            bounds={model.map.bounds}
+            points={model.map.points}
+            emptyLabel={model.map.emptyLabel}
+          />
+          <div class="civic-index-table-wrap">
+            <div class="civic-index-table-header">
+              <h2>{model.indexLabel}</h2>
+              <label>
+                <span class="visually-hidden">Search index</span>
+                <input
+                  data-civic-index-search
+                  type="search"
+                  placeholder="Search this index"
+                />
+              </label>
+            </div>
+            <table class="civic-index-table" data-civic-index-table>
+              <thead>
+                <tr>
+                  {
+                    model.columns.map((column) => (
+                      <th scope="col" aria-sort="none">
+                        <button
+                          type="button"
+                          data-civic-index-sort={column.key}
+                          data-civic-index-numeric={
+                            column.numeric ? "true" : "false"
+                          }
+                        >
+                          {column.label}
+                        </button>
+                      </th>
+                    ))
+                  }
+                  <th scope="col">View</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  model.rows.map((row, index) => (
+                    <tr
+                      data-civic-index-row
+                      data-search-text={row.searchText}
+                      data-original-index={String(index)}
+                    >
+                      {model.columns.map((column) => {
+                        const value =
+                          column.key === "label"
+                            ? row.label
+                            : (row.values[column.key] ?? "");
+                        return (
+                          <td
+                            class:list={[
+                              column.numeric && "civic-index-table-number",
+                            ]}
+                            data-sort-value={String(value)}
+                          >
+                            {column.key === "label" ? (
+                              <a href={row.href}>{row.label}</a>
+                            ) : (
+                              value
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td>
+                        <a href={row.href}>View</a>
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <aside class="civic-actions" aria-label="Start with a question">
+          <h2>Start with a question</h2>
+          {
+            model.actionGroups.map((group) => (
+              <section>
+                <h3>{group.label}</h3>
+                <ul>
+                  {group.actions.map((action) => (
+                    <li>
+                      <a href={action.href}>
+                        <strong>{action.label}</strong>
+                        <span>{action.description}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))
+          }
+        </aside>
+      </div>
+    </section>
+
+    <section class="civic-future">
+      <div class="container">
+        <h2>Data not collected yet</h2>
+        <div class="civic-future-grid">
+          {
+            model.futureDatasets.map((dataset) => (
+              <article>
+                <h3>{dataset.label}</h3>
+                <p>{dataset.description}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<script is:inline>
+  (() => {
+    const collator = new Intl.Collator("en", {
+      numeric: true,
+      sensitivity: "base",
+    });
+
+    document.querySelectorAll("[data-civic-index-table]").forEach((table) => {
+      const rows = Array.from(table.querySelectorAll("[data-civic-index-row]"));
+      let activeSortKey = "";
+      let activeSortDirection = "ascending";
+      const search = table
+        .closest(".civic-index-table-wrap")
+        ?.querySelector("[data-civic-index-search]");
+
+      search?.addEventListener("input", () => {
+        const query = search.value.trim().toLowerCase();
+        rows.forEach((row) => {
+          const text = row.dataset.searchText?.toLowerCase() || "";
+          row.hidden = Boolean(query) && !text.includes(query);
+        });
+      });
+
+      table.querySelectorAll("[data-civic-index-sort]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const headerCell = button.closest("th");
+          const headerRow = headerCell?.parentElement;
+          const body = table.querySelector("tbody");
+          const sortKey = button.dataset.civicIndexSort || "";
+
+          if (!headerCell || !headerRow || !body) {
+            return;
+          }
+
+          activeSortDirection =
+            activeSortKey === sortKey && activeSortDirection === "ascending"
+              ? "descending"
+              : "ascending";
+          activeSortKey = sortKey;
+
+          table.querySelectorAll("[data-civic-index-sort]").forEach((item) => {
+            item.closest("th")?.setAttribute("aria-sort", "none");
+          });
+          headerCell.setAttribute("aria-sort", activeSortDirection);
+
+          const index = Array.from(headerRow.children).indexOf(headerCell);
+          const numeric = button.dataset.civicIndexNumeric === "true";
+          const sorted = [...rows].sort((left, right) => {
+            const leftValue =
+              left.children[index]?.getAttribute("data-sort-value") || "";
+            const rightValue =
+              right.children[index]?.getAttribute("data-sort-value") || "";
+            const comparison = numeric
+              ? Number(leftValue || 0) - Number(rightValue || 0)
+              : collator.compare(leftValue, rightValue);
+            const directedComparison =
+              activeSortDirection === "ascending" ? comparison : -comparison;
+
+            if (directedComparison !== 0) {
+              return directedComparison;
+            }
+
+            return (
+              Number(left.dataset.originalIndex || 0) -
+              Number(right.dataset.originalIndex || 0)
+            );
+          });
+
+          body.replaceChildren(...sorted);
+        });
+      });
+    });
+  })();
+</script>
+
+<style>
+  .civic-index {
+    background: #fbfaf7;
+    color: #14202a;
+  }
+
+  .civic-index-hero,
+  .civic-index-main,
+  .civic-future {
+    border-bottom: 1px solid rgba(20, 32, 42, 0.32);
+    padding: clamp(2rem, 5vw, 4.5rem) 0;
+  }
+
+  .civic-index-hero-grid,
+  .civic-index-main-grid {
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .civic-index-kicker,
+  .civic-actions h3 {
+    color: #9d1f1f;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+
+  .civic-index h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(3rem, 8vw, 5.75rem);
+    line-height: 0.95;
+    margin: 0 0 1.5rem;
+  }
+
+  .civic-index-lede {
+    color: #314252;
+    font-size: clamp(1.1rem, 2vw, 1.35rem);
+    line-height: 1.6;
+    max-width: 42rem;
+  }
+
+  .civic-coverage,
+  .civic-actions {
+    border: 1px solid rgba(20, 32, 42, 0.32);
+    padding: 1.25rem;
+  }
+
+  .civic-coverage h2,
+  .civic-actions h2,
+  .civic-index-table-header h2,
+  .civic-future h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(1.65rem, 3vw, 2.35rem);
+    margin: 0;
+  }
+
+  .civic-coverage dl {
+    margin: 1rem 0 0;
+  }
+
+  .civic-coverage div,
+  .civic-actions li,
+  .civic-index-table th,
+  .civic-index-table td {
+    border-top: 1px solid rgba(20, 32, 42, 0.22);
+  }
+
+  .civic-coverage div {
+    align-items: baseline;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 0.8rem 0;
+  }
+
+  .civic-coverage dt {
+    font-weight: 500;
+    order: 2;
+  }
+
+  .civic-coverage dd {
+    color: #14202a;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.65rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .civic-index-records {
+    min-width: 0;
+  }
+
+  .civic-index-table-wrap {
+    margin-top: 1.25rem;
+  }
+
+  .civic-index-table-header {
+    align-items: end;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  .civic-index-table-header input {
+    background: #fffefa;
+    border: 1px solid rgba(20, 32, 42, 0.52);
+    border-radius: 0;
+    min-height: 2.75rem;
+    padding: 0.65rem 0.85rem;
+    width: 100%;
+  }
+
+  .civic-index-table {
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    width: 100%;
+  }
+
+  .civic-index-table th,
+  .civic-index-table td {
+    padding: 0.75rem 0.45rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .civic-index-table-number {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .civic-index-table th button {
+    background: none;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    padding: 0;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  .civic-index a {
+    color: #005e73;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  .civic-actions ul {
+    list-style: none;
+    margin: 0 0 1.5rem;
+    padding: 0;
+  }
+
+  .civic-actions section:last-child ul {
+    margin-bottom: 0;
+  }
+
+  .civic-actions li a {
+    display: grid;
+    gap: 0.25rem;
+    padding: 1rem 0;
+    text-decoration: none;
+  }
+
+  .civic-actions li strong {
+    color: #005e73;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.1rem;
+  }
+
+  .civic-actions li span,
+  .civic-future p {
+    color: #314252;
+    line-height: 1.45;
+  }
+
+  .civic-future-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    margin-top: 1.25rem;
+  }
+
+  .civic-future article {
+    border: 1px solid rgba(20, 32, 42, 0.26);
+    padding: 1rem;
+  }
+
+  .civic-future h3 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.2rem;
+    margin: 0 0 0.45rem;
+  }
+
+  @media (min-width: 992px) {
+    .civic-index-hero-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(18rem, 27rem);
+    }
+
+    .civic-index-main-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(18rem, 28rem);
+    }
+
+    .civic-index-table-header {
+      grid-template-columns: minmax(0, 1fr) minmax(16rem, 24rem);
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .civic-index-table {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+  }
+</style>
