@@ -77,6 +77,16 @@ export default defineConfig({
     inlineStylesheets: "never",
   },
   vite: {
+    optimizeDeps: {
+      include: [
+        "@sentry/astro",
+        "aos",
+        "bootstrap/js/dist/collapse",
+        "bootstrap/js/dist/scrollspy",
+        "bootstrap/js/dist/tab",
+        "leaflet",
+      ],
+    },
     define: {
       "import.meta.env.RECAPTCHA_SITE_KEY": JSON.stringify(recaptchaSiteKey),
       "import.meta.env.PUBLIC_SENTRY_DSN": JSON.stringify(sentryDsn),
@@ -121,11 +131,15 @@ export default defineConfig({
     }),
     sentry({
       telemetry: false,
+      enabled: {
+        client: true,
+        server: false,
+      },
       ...(sentryOrg ? { org: sentryOrg } : {}),
       ...(sentryProject ? { project: sentryProject } : {}),
       ...(sentryAuthToken ? { authToken: sentryAuthToken } : {}),
       sourcemaps: {
-        assets: ["dist/_astro/**/*", "dist/.prerender/**/*"],
+        assets: ["dist/_astro/**/*"],
       },
     }),
   ],
