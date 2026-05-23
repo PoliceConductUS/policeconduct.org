@@ -34,6 +34,6 @@
 
 - [x] 5.1 Add or update tests for state, administrative-area, and place one-level-down map/index behavior.
 - [x] 5.2 Add or update tests for scoped coverage counts and database-backed canonical links.
-- [ ] 5.3 Run `npm run validate:openspec`.
-- [ ] 5.4 Run `npx openspec status --change redesign-civic-index-pages`.
-- [ ] 5.5 Run relevant site validation, including `npm run validate` before claiming implementation complete.
+- [x] 5.3 Run `npm run validate:openspec`.
+- [x] 5.4 Run `npx openspec status --change redesign-civic-index-pages`.
+- [x] 5.5 Run relevant site validation, including `npm run validate` before claiming implementation complete.
