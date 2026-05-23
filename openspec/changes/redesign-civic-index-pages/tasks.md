@@ -1,8 +1,11 @@
 ## 1. Data Model and Loading
 
-- [ ] 1.1 Inspect existing `build_page_payload`, `location_path`, agency, personnel, report, civil case, and coverage/source-link data sources for the fields needed by Civic Index pages.
+- [x] 1.1 Inspect existing `build_page_payload`, `location_path`, agency, personnel, report, civil case, and coverage/source-link data sources for the fields needed by Civic Index pages.
+
+  Audit note: the required `rg` commands could not inspect `supabase/` because that directory is absent from this worktree. Local schema-contract and data-loader references confirm `coverage_links`, `coverage_link_agency_officers`, `coverage_link_reports`, and `coverage_link_civil_cases` exist, but current local code only loads links for specific agency/officer/report/civil-case profiles. No reliable jurisdiction-scoped source-link count is available for the first Civic Index implementation, so the initial coverage model should omit a `source_links` metric until scoped aggregate loading is deliberately added.
+
 - [ ] 1.2 Define a minimal shared Civic Index presentation type for jurisdiction metadata, breadcrumbs, coverage counts, one-level-down map points, table rows, persona actions, and future placeholders.
-- [ ] 1.3 Implement scoped aggregate loading for agency, personnel, public report, civil case, and available source/coverage-link counts using local database joins through `location_path`.
+- [ ] 1.3 Implement scoped aggregate loading for agency, personnel, public report, and civil case counts using local database joins through `location_path`.
 - [ ] 1.4 Ensure missing required tables or fields continue to fail the build, and do not add silent schema guards for required current-data fields.
 
 ## 2. Shared Page Pattern
