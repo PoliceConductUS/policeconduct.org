@@ -6,22 +6,21 @@ import {
 } from "#src/lib/data/build-payloads.js";
 import { buildPlaceCivicIndex } from "#src/lib/data/civic-index.js";
 
-const getPlaceRouteParams = (place: LocationPagePayload) => {
-  const parts = place.path.split("/").filter(Boolean);
-
-  if (parts.length !== 3) {
-    throw new Error(`Malformed place path for route params: ${place.path}`);
-  }
-
-  return {
-    category: parts[0],
-    administrativeArea: parts[1],
-    place: parts[2],
-  };
-};
-
 export async function getStaticPaths() {
   const locations = await loadLocationBuildPayloads();
+  const getPlaceRouteParams = (place: LocationPagePayload) => {
+    const parts = place.path.split("/").filter(Boolean);
+
+    if (parts.length !== 3) {
+      throw new Error(`Malformed place path for route params: ${place.path}`);
+    }
+
+    return {
+      category: parts[0],
+      administrativeArea: parts[1],
+      place: parts[2],
+    };
+  };
 
   return locations
     .filter((location) => location.level === "place")

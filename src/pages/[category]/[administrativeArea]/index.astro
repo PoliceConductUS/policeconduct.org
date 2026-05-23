@@ -6,23 +6,22 @@ import {
 } from "#src/lib/data/build-payloads.js";
 import { buildAdministrativeAreaCivicIndex } from "#src/lib/data/civic-index.js";
 
-const getAdministrativeAreaRouteParams = (area: LocationPagePayload) => {
-  const parts = area.path.split("/").filter(Boolean);
-
-  if (parts.length !== 2) {
-    throw new Error(
-      `Malformed administrative-area path for route params: ${area.path}`,
-    );
-  }
-
-  return {
-    category: parts[0],
-    administrativeArea: parts[1],
-  };
-};
-
 export async function getStaticPaths() {
   const locations = await loadLocationBuildPayloads();
+  const getAdministrativeAreaRouteParams = (area: LocationPagePayload) => {
+    const parts = area.path.split("/").filter(Boolean);
+
+    if (parts.length !== 2) {
+      throw new Error(
+        `Malformed administrative-area path for route params: ${area.path}`,
+      );
+    }
+
+    return {
+      category: parts[0],
+      administrativeArea: parts[1],
+    };
+  };
 
   return locations
     .filter((location) => location.level === "administrative_area")
