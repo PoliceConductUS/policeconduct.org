@@ -8,6 +8,7 @@ import {
   getStateDecertificationContext,
   type StateDecertificationContext,
 } from "./state-decertification-context.js";
+import { requireAgencyCanonicalPath } from "./location-paths.js";
 
 export const civicIndexCollator = new Intl.Collator("en", {
   numeric: true,
@@ -66,6 +67,23 @@ export type CivicIndexRow = {
   label: string;
   searchText: string;
   values: Record<string, number | string | null>;
+};
+
+export type CivicScopedCivilCaseReference = {
+  href: string;
+  label: string;
+};
+
+export type CivicScopedCivilCaseRow = {
+  agencies: CivicScopedCivilCaseReference[];
+  causeNumber: string | null;
+  court: string | null;
+  filedDate: string;
+  href: string;
+  id: string;
+  officers: CivicScopedCivilCaseReference[];
+  places: CivicScopedCivilCaseReference[];
+  title: string;
 };
 
 export type CivicIndexMapPoint = {
@@ -426,6 +444,125 @@ const loadAgencyRowCounts = async (
       },
     ]),
   );
+};
+
+const compactReferences = (
+  references: CivicScopedCivilCaseReference[],
+): CivicScopedCivilCaseReference[] => {
+  const seen = new Set<string>();
+  return references.filter((reference) => {
+    const key = `${reference.href}\n${reference.label}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+};
+
+const getOfficerDisplayName = (row: {
+  officer_first_name?: string | null;
+  officer_last_name?: string | null;
+  officer_suffix?: string | null;
+}) =>
+  [row.officer_first_name, row.officer_last_name, row.officer_suffix]
+    .filter(Boolean)
+    .join(" ");
+
+export const loadScopedCivilCaseRows = async (
+  location: LocationPagePayload,
+): Promise<CivicScopedCivilCaseRow[]> => {
+  const scope = getScopeWhereClause(location);
+  const rows = await withDb(async (client) => {
+    const result = await client.query(
+      `
+        select distinct
+          c.id,
+          c.slug,
+          c.title,
+          c.cause_number,
+          c.court,
+          c.filed_date,
+          lp.place_name,
+          lp.path as place_path,
+          a.id as agency_id,
+          a.name as agency_name,
+          a.slug as agency_slug,
+          agency_lp.path as agency_location_path,
+          o.id as officer_id,
+          o.slug as officer_slug,
+          o.first_name as officer_first_name,
+          o.last_name as officer_last_name,
+          o.suffix as officer_suffix
+        from public.civil_cases c
+        join public.location_path lp
+          on lp.location_path_id = c.location_path_id
+        left join public.civil_case_officers cco
+          on cco.civil_case_id = c.id
+        left join public.agency_officers ao
+          on ao.id = cco.agency_officer_id
+        left join public.agency a
+          on a.id = ao.agency_id
+        left join public.location_path agency_lp
+          on agency_lp.location_path_id = a.location_path_id
+        left join public.officers o
+          on o.id = ao.officer_id
+        where ${scope.clause}
+        order by c.filed_date desc, c.title asc, c.cause_number asc
+      `,
+      scope.values,
+    );
+
+    return result.rows;
+  });
+
+  const casesById = new Map<string, CivicScopedCivilCaseRow>();
+
+  for (const row of rows) {
+    let civilCase = casesById.get(row.id);
+    if (!civilCase) {
+      civilCase = {
+        agencies: [],
+        causeNumber: row.cause_number || null,
+        court: row.court || null,
+        filedDate: row.filed_date,
+        href: `/civil-cases/${row.slug}/`,
+        id: row.id,
+        officers: [],
+        places: row.place_name
+          ? [{ href: row.place_path, label: row.place_name }]
+          : [],
+        title: row.title,
+      };
+      casesById.set(row.id, civilCase);
+    }
+
+    if (row.agency_id && row.agency_name) {
+      civilCase.agencies.push({
+        href: requireAgencyCanonicalPath({
+          id: row.agency_id,
+          location_path: row.agency_location_path,
+          slug: row.agency_slug,
+        }),
+        label: row.agency_name,
+      });
+    }
+
+    const officerName = getOfficerDisplayName(row);
+    if (row.officer_slug && officerName) {
+      civilCase.officers.push({
+        href: `/personnel/${row.officer_slug}/`,
+        label: officerName,
+      });
+    }
+  }
+
+  return [...casesById.values()].map((civilCase) => ({
+    ...civilCase,
+    agencies: compactReferences(civilCase.agencies),
+    officers: compactReferences(civilCase.officers),
+    places: compactReferences(civilCase.places),
+  }));
 };
 
 const requireRowCounts = (

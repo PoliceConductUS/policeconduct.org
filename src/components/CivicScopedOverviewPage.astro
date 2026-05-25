@@ -1,0 +1,302 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
+
+type ScopedPageKind =
+  | "personnel"
+  | "budget"
+  | "civil-cases"
+  | "liability-costs";
+
+const { model, kind } = Astro.props as {
+  model: CivicIndexModel;
+  kind: ScopedPageKind;
+};
+
+const pageConfig = {
+  personnel: {
+    label: "Personnel",
+    title: "Personnel",
+    description: "Personnel records connected to this geography.",
+    value:
+      model.coverage
+        .find((metric) => metric.key === "personnel")
+        ?.value.toLocaleString("en-US") ?? "0",
+  },
+  budget: {
+    label: "Budget",
+    title: "Budget",
+    description: "Budget, revenue, spending, forfeiture, and overtime signals.",
+    value: "$--",
+  },
+  "civil-cases": {
+    label: "Civil Cases",
+    title: "Civil Cases",
+    description: "Civil cases connected to this geography.",
+    value:
+      model.coverage
+        .find((metric) => metric.key === "civil_cases")
+        ?.value.toLocaleString("en-US") ?? "0",
+  },
+  "liability-costs": {
+    label: "Liability Costs",
+    title: "Liability Costs",
+    description:
+      "Claims, settlements, judgments, defense costs, and related financial exposure.",
+    value: "$--",
+  },
+}[kind];
+
+const heading =
+  model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
+  model.jurisdictionLabel;
+const pagePath = `${model.pagePath}${kind}/`;
+const pageTitle = `${heading} ${pageConfig.title}`;
+const chartTitles =
+  kind === "personnel"
+    ? ["Personnel Over Time", "Personnel by Child Area", "Record Mix"]
+    : kind === "budget"
+      ? ["Budget Over Time", "Revenue Sources Over Time", "Budget Allocation"]
+      : kind === "civil-cases"
+        ? ["Civil Cases Over Time", "Case Types", "Cases by Child Area"]
+        : [
+            "Liability Costs Over Time",
+            "Cost Components Over Time",
+            "Payment Source Breakdown",
+          ];
+---
+
+<SiteLayout
+  title={pageTitle}
+  description={pageConfig.description}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main class="civic-scoped-page">
+    <section class="civic-scoped-overview">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            ...model.breadcrumbs.map((item) => ({ ...item, current: false })),
+            { label: pageConfig.label, href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+        <div class="civic-scoped-heading">
+          <div>
+            <h1>{pageTitle}</h1>
+            <p>{pageConfig.description}</p>
+          </div>
+          <div class="civic-scoped-actions">
+            <button type="button">Share</button>
+            <button type="button" class="civic-scoped-primary">
+              Download Report
+            </button>
+          </div>
+        </div>
+
+        <div class="civic-scoped-metrics">
+          <article>
+            <p>Total</p>
+            <strong>{pageConfig.value}</strong>
+            <span>{pageConfig.description}</span>
+          </article>
+          <article>
+            <p>Agencies Tracked</p>
+            <strong>
+              {
+                model.coverage
+                  .find((metric) => metric.key === "agencies")
+                  ?.value.toLocaleString("en-US") ?? "0"
+              }
+            </strong>
+            <span>Agencies in this geography</span>
+          </article>
+          <article>
+            <p>Personnel</p>
+            <strong>
+              {
+                model.coverage
+                  .find((metric) => metric.key === "personnel")
+                  ?.value.toLocaleString("en-US") ?? "0"
+              }
+            </strong>
+            <span>Tracked personnel records</span>
+          </article>
+          <article>
+            <p>Civil Cases</p>
+            <strong>
+              {
+                model.coverage
+                  .find((metric) => metric.key === "civil_cases")
+                  ?.value.toLocaleString("en-US") ?? "0"
+              }
+            </strong>
+            <span>Connected civil case records</span>
+          </article>
+        </div>
+
+        <div class="civic-scoped-chart-grid">
+          {
+            chartTitles.map((title) => (
+              <article class="civic-scoped-chart-card">
+                <h2>{title}</h2>
+                <div class="civic-scoped-empty-chart" aria-hidden="true" />
+              </article>
+            ))
+          }
+        </div>
+
+        <slot />
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<style>
+  .civic-scoped-page {
+    background: #fbfcff;
+    color: #071842;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+  }
+
+  .civic-scoped-overview {
+    padding: 1.35rem 0 2rem;
+  }
+
+  .civic-scoped-overview > .container {
+    max-width: 1240px;
+  }
+
+  .civic-scoped-heading {
+    align-items: start;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  .civic-scoped-heading h1 {
+    color: #071842;
+    font-size: clamp(2.05rem, 3.4vw, 2.75rem);
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1;
+    margin: 0 0 0.45rem;
+  }
+
+  .civic-scoped-heading p {
+    color: #33456f;
+    margin: 0;
+  }
+
+  .civic-scoped-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: start;
+  }
+
+  .civic-scoped-actions button {
+    background: #fbfcff;
+    border: 1px solid #c9d4e6;
+    border-radius: 0.4rem;
+    color: #071842;
+    font-weight: 800;
+    min-height: 3rem;
+    padding: 0.72rem 1.05rem;
+  }
+
+  .civic-scoped-actions .civic-scoped-primary {
+    background: #071842;
+    border-color: #071842;
+    color: #f8faff;
+  }
+
+  .civic-scoped-metrics,
+  .civic-scoped-chart-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  .civic-scoped-metrics article,
+  .civic-scoped-chart-card {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+  }
+
+  .civic-scoped-metrics article {
+    min-height: 8rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .civic-scoped-metrics p {
+    font-size: 0.84rem;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .civic-scoped-metrics strong {
+    display: block;
+    font-size: 1.65rem;
+    line-height: 1.1;
+    margin: 0.35rem 0;
+  }
+
+  .civic-scoped-metrics span {
+    color: #33456f;
+    font-size: 0.82rem;
+  }
+
+  .civic-scoped-chart-card {
+    min-height: 15.8rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .civic-scoped-chart-card h2 {
+    font-size: 1rem;
+    font-weight: 800;
+    margin: 0 0 1rem;
+  }
+
+  .civic-scoped-empty-chart {
+    background:
+      linear-gradient(#d9e1ee 1px, transparent 1px) 0 0 / 100% 25%,
+      linear-gradient(90deg, #b8c4d8 1px, transparent 1px) 0 0 / 10% 100%;
+    border-bottom: 1px solid #b8c4d8;
+    border-left: 1px solid #b8c4d8;
+    height: 10rem;
+    margin-top: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .civic-scoped-metrics {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .civic-scoped-chart-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .civic-scoped-heading {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .civic-scoped-actions {
+      justify-content: end;
+    }
+  }
+</style>

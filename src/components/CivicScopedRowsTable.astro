@@ -1,0 +1,114 @@
+---
+import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
+
+type ScopedPageKind = "budget" | "civil-cases" | "liability-costs";
+
+const { model, kind } = Astro.props as {
+  model: CivicIndexModel;
+  kind: ScopedPageKind;
+};
+
+const pageConfig = {
+  budget: {
+    title: "Budget",
+    columns: ["Name", "Level", "Budget", "Personnel", "Agencies"],
+  },
+  "civil-cases": {
+    title: "Civil Cases",
+    columns: ["Name", "Level", "Civil Cases", "Personnel", "Reports"],
+  },
+  "liability-costs": {
+    title: "Liability Costs",
+    columns: ["Name", "Level", "Liability Costs", "Civil Cases", "Personnel"],
+  },
+}[kind];
+
+const rows = model.rows.slice(0, 50);
+const rowLevel =
+  model.level === "state"
+    ? "County / Area"
+    : model.level === "administrative_area"
+      ? "Place"
+      : "Agency";
+---
+
+<div class="civic-scoped-table-wrap">
+  <h2>{pageConfig.title} by {rowLevel}</h2>
+  <table>
+    <thead>
+      <tr>
+        {pageConfig.columns.map((column) => <th scope="col">{column}</th>)}
+        <th scope="col">View</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((row) => (
+          <tr>
+            <th scope="row">{row.label}</th>
+            <td>{rowLevel}</td>
+            {kind === "budget" ? (
+              <>
+                <td>$--</td>
+                <td>{row.values.personnel ?? 0}</td>
+                <td>{row.values.agencies ?? ""}</td>
+              </>
+            ) : kind === "liability-costs" ? (
+              <>
+                <td>$--</td>
+                <td>{row.values.civilCases ?? 0}</td>
+                <td>{row.values.personnel ?? 0}</td>
+              </>
+            ) : (
+              <>
+                <td>{row.values.civilCases ?? 0}</td>
+                <td>{row.values.personnel ?? 0}</td>
+                <td>{row.values.reports ?? 0}</td>
+              </>
+            )}
+            <td>
+              <a href={row.href}>View</a>
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .civic-scoped-table-wrap {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+    overflow-x: auto;
+    padding: 1rem 1.1rem;
+  }
+
+  .civic-scoped-table-wrap h2 {
+    font-size: 1rem;
+    font-weight: 800;
+    margin: 0 0 1rem;
+  }
+
+  .civic-scoped-table-wrap table {
+    border-collapse: collapse;
+    min-width: 760px;
+    width: 100%;
+  }
+
+  .civic-scoped-table-wrap th,
+  .civic-scoped-table-wrap td {
+    border-top: 1px solid #d9e1ee;
+    font-size: 0.82rem;
+    padding: 0.55rem 0.45rem;
+    text-align: left;
+  }
+
+  .civic-scoped-table-wrap a {
+    color: #064cfb;
+    font-weight: 800;
+    text-decoration: none;
+  }
+</style>

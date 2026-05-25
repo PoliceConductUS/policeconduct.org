@@ -387,7 +387,7 @@ const loadAgencyRows = async (agencyId: string) =>
     };
   });
 
-export const loadAgencyDetail = async (agencyId: string) => {
+const buildAgencyDetail = async (agencyId: string) => {
   const data = await loadAgencyRows(agencyId);
   const coverageLinks = await loadCoverageLinksForAgency(agencyId);
 
@@ -465,6 +465,7 @@ export const loadAgencyDetail = async (agencyId: string) => {
         officer_id?: string | null;
         start_date?: string | null;
         end_date?: string | null;
+        title?: string | null;
       };
       officer?: { first_name?: string | null; last_name?: string | null };
     },
@@ -473,6 +474,7 @@ export const loadAgencyDetail = async (agencyId: string) => {
         officer_id?: string | null;
         start_date?: string | null;
         end_date?: string | null;
+        title?: string | null;
       };
       officer?: { first_name?: string | null; last_name?: string | null };
     },
@@ -510,6 +512,7 @@ export const loadAgencyDetail = async (agencyId: string) => {
         badge_number?: string | null;
         start_date?: string | null;
         end_date?: string | null;
+        title?: string | null;
       }) => {
         const officer = officersById[entry.officer_id];
         const stats = officerStatsById[entry.officer_id];
@@ -688,4 +691,22 @@ export const loadAgencyDetail = async (agencyId: string) => {
       coverage: coverageLinks.length,
     },
   };
+};
+
+const agencyDetailCache = new Map<
+  string,
+  ReturnType<typeof buildAgencyDetail>
+>();
+
+export const loadAgencyDetail = async (agencyId: string) => {
+  if (process.env.NODE_ENV !== "production") {
+    return buildAgencyDetail(agencyId);
+  }
+
+  let cached = agencyDetailCache.get(agencyId);
+  if (!cached) {
+    cached = buildAgencyDetail(agencyId);
+    agencyDetailCache.set(agencyId, cached);
+  }
+  return cached;
 };

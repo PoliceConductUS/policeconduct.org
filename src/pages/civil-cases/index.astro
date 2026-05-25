@@ -66,11 +66,11 @@ const structuredData = {
   canonicalUrl={pagePath}
   structuredData={structuredData}
 >
-  <main>
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+  <main class="civic-cases-page">
+    <section class="civic-cases-hero">
       <div class="container">
-        <div class="row">
-          <div class="col-12 col-lg-10">
+        <div class="civic-cases-heading">
+          <div>
             <Breadcrumbs
               items={[
                 { label: "Home", href: "/" },
@@ -78,15 +78,18 @@ const structuredData = {
               ]}
               className="mb-2"
             />
-            <h1 class="display-4 fw-bold">Civil cases</h1>
-            <p class="lead text-muted mb-0">{pageDescription}</p>
-            <p class="small text-muted mb-0 mt-3">Page 1 of {totalPages}</p>
+            <h1>Civil cases</h1>
+            <p>{pageDescription}</p>
+          </div>
+          <div class="civic-cases-actions">
+            <a href="/civil-litigation/new/">Submit civil case</a>
+            <span>Page 1 of {totalPages}</span>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="py-vh-2">
+    <section class="civic-cases-list-section">
       <div class="container">
         <div class="profile-record-list">
           {
@@ -121,31 +124,102 @@ const structuredData = {
   </main>
 </SiteLayout>
 <style>
-  .display-4 {
+  .civic-cases-page {
+    background: #fbfcff;
+    color: #071842;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+  }
+
+  .civic-cases-hero,
+  .civic-cases-list-section {
+    padding: 1.35rem 0 2rem;
+  }
+
+  .civic-cases-hero > .container,
+  .civic-cases-list-section > .container {
+    max-width: 1240px;
+  }
+
+  .civic-cases-heading {
+    align-items: start;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  .civic-cases-heading h1 {
+    color: #071842;
+    font-size: clamp(2.05rem, 3.4vw, 2.75rem);
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1;
+    margin: 0 0 0.45rem;
     max-width: 100%;
     overflow-wrap: anywhere;
   }
 
+  .civic-cases-heading p {
+    color: #33456f;
+    margin: 0;
+  }
+
+  .civic-cases-actions {
+    align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: start;
+  }
+
+  .civic-cases-actions a {
+    background: #071842;
+    border: 1px solid #071842;
+    border-radius: 0.4rem;
+    color: #f8faff;
+    font-weight: 800;
+    min-height: 3rem;
+    padding: 0.72rem 1.05rem;
+    text-decoration: none;
+  }
+
+  .civic-cases-actions span {
+    color: #33456f;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 3rem;
+  }
+
   .profile-record-list {
-    border-top: 0;
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
     display: grid;
     gap: 0;
+    overflow: hidden;
   }
 
   .profile-record {
     align-items: start;
-    border-top: 1px solid var(--bs-border-color);
+    border-top: 1px solid #d9e1ee;
     display: grid;
     gap: 0.75rem 1.25rem;
     grid-template-columns: minmax(0, 1fr) minmax(10rem, 18rem);
-    padding: 0.95rem 0;
+    padding: 0.95rem 1.1rem;
     transition:
       background-color 140ms ease,
       border-color 140ms ease;
   }
 
   .profile-record:hover {
-    background: color-mix(in srgb, var(--bs-gray-100) 42%, var(--bs-white));
+    background: #f7f9fc;
   }
 
   .profile-record-body {
@@ -156,7 +230,7 @@ const structuredData = {
 
   .profile-record-meta {
     align-items: flex-end;
-    color: var(--bs-secondary-color);
+    color: #33456f;
     display: flex;
     flex-direction: column;
     font-size: 0.8125rem;
@@ -177,13 +251,13 @@ const structuredData = {
 
   .profile-record-title a,
   .profile-record-detail a {
-    color: var(--bs-dark);
+    color: #071842;
     overflow-wrap: anywhere;
     word-break: break-word;
   }
 
   .profile-record-detail {
-    color: var(--bs-secondary-color);
+    color: #33456f;
     display: flex;
     flex-wrap: wrap;
     font-size: 0.875rem;
@@ -200,11 +274,6 @@ const structuredData = {
   }
 
   @media (max-width: 991.98px) {
-    .display-4 {
-      font-size: clamp(2.25rem, 12vw, 3.5rem);
-      line-height: 1.05;
-    }
-
     .profile-record {
       grid-template-columns: minmax(0, 1fr);
     }
@@ -234,6 +303,16 @@ const structuredData = {
       display: flex;
       flex-direction: column;
       gap: 0.15rem;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .civic-cases-heading {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .civic-cases-actions {
+      justify-content: end;
     }
   }
 </style>

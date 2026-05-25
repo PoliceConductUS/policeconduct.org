@@ -43,6 +43,9 @@ const sentryAuthToken = (env.SENTRY_AUTH_TOKEN || "").trim();
 const recaptchaSiteKey = (env.RECAPTCHA_SITE_KEY || "").trim();
 const sentryRelease =
   (process.env.GIT_COMMIT_SHA || env.GIT_COMMIT_SHA || "").trim() || undefined;
+const shouldUploadSentrySourcemaps = Boolean(
+  process.env.CI && sentryOrg && sentryProject && sentryAuthToken,
+);
 const SITEMAP_EXCLUDED_PATHS = new Set([
   "/404/",
   "/about/contact/",
@@ -138,9 +141,13 @@ export default defineConfig({
       ...(sentryOrg ? { org: sentryOrg } : {}),
       ...(sentryProject ? { project: sentryProject } : {}),
       ...(sentryAuthToken ? { authToken: sentryAuthToken } : {}),
-      sourcemaps: {
-        assets: ["dist/_astro/**/*"],
-      },
+      sourcemaps: shouldUploadSentrySourcemaps
+        ? {
+            assets: ["dist/_astro/**/*"],
+          }
+        : {
+            disable: true,
+          },
     }),
   ],
 });

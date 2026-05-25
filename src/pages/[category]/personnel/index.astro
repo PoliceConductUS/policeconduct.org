@@ -1,5 +1,5 @@
 ---
-import CivicScopedIndexPage from "#src/components/CivicScopedIndexPage.astro";
+import CivicScopedOverviewPage from "#src/components/CivicScopedOverviewPage.astro";
 import { buildStateCivicIndex } from "#src/lib/data/civic-index.js";
 import {
   loadRequiredLocationByPath,
@@ -17,4 +17,4 @@ const location = await loadRequiredLocationByPath(
 const model = await buildStateCivicIndex(location);
 ---
 
-<CivicScopedIndexPage model={model} kind="personnel" />
+<CivicScopedOverviewPage model={model} kind="personnel" />

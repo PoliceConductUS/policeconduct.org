@@ -2,6 +2,7 @@
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import Pagination from "#src/components/Pagination.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { timeBuildStep } from "#src/lib/build-timing.js";
 import {
   loadAgencyDetail,
   loadAgencyLocationStaticPaths,
@@ -9,31 +10,33 @@ import {
 import { PAGE_SIZE } from "#src/lib/pagination.js";
 
 export async function getStaticPaths({ paginate }: { paginate: any }) {
-  const agencyPaths = await loadAgencyLocationStaticPaths();
-  const pages: any[] = [];
+  return timeBuildStep("agency personnel pagination static paths", async () => {
+    const agencyPaths = await loadAgencyLocationStaticPaths();
+    const pages: any[] = [];
 
-  for (const agencyPath of agencyPaths) {
-    const data = await loadAgencyDetail(agencyPath.props.agencyId);
-    paginate(data.employees, {
-      pageSize: PAGE_SIZE,
-      params: agencyPath.params,
-      props: { agencyId: agencyPath.props.agencyId },
-    })
-      .filter((page: any) => {
-        const pageParam = page.params?.page;
-        if (Array.isArray(pageParam)) {
-          return pageParam.length > 0 && pageParam[0] !== "1";
-        }
-        return (
-          typeof pageParam === "string" &&
-          pageParam.length > 0 &&
-          pageParam !== "1"
-        );
+    for (const agencyPath of agencyPaths) {
+      const data = await loadAgencyDetail(agencyPath.props.agencyId);
+      paginate(data.employees, {
+        pageSize: PAGE_SIZE,
+        params: agencyPath.params,
+        props: { agencyId: agencyPath.props.agencyId },
       })
-      .forEach((page: any) => pages.push(page));
-  }
+        .filter((page: any) => {
+          const pageParam = page.params?.page;
+          if (Array.isArray(pageParam)) {
+            return pageParam.length > 0 && pageParam[0] !== "1";
+          }
+          return (
+            typeof pageParam === "string" &&
+            pageParam.length > 0 &&
+            pageParam !== "1"
+          );
+        })
+        .forEach((page: any) => pages.push(page));
+    }
 
-  return pages;
+    return pages;
+  });
 }
 
 const { agencyId, page } = Astro.props;
