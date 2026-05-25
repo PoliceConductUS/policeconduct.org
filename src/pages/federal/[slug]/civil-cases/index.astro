@@ -1,7 +1,7 @@
 ---
 import CivicAgencyHierarchyPage from "#src/components/CivicAgencyHierarchyPage.astro";
 import {
-  buildFederalAgencyDetailIndexModel,
+  buildFederalAgencyDetailTopicIndexModel,
   loadFederalAgencyDetailBySlug,
   loadFederalAgencySummaries,
 } from "#src/lib/data/federal-agencies.js";
@@ -17,7 +17,7 @@ export async function getStaticPaths() {
 const { slug } = Astro.params;
 
 if (!slug) {
-  throw new Error("Federal agency route is missing slug.");
+  throw new Error("Federal civil cases route is missing slug.");
 }
 
 const federalAgency = await loadFederalAgencyDetailBySlug(slug);
@@ -25,7 +25,10 @@ if (!federalAgency) {
   throw new Error(`Federal agency ${slug} was not found`);
 }
 
-const model = buildFederalAgencyDetailIndexModel(federalAgency);
+const model = buildFederalAgencyDetailTopicIndexModel(
+  federalAgency,
+  "civil-cases",
+);
 ---
 
 <CivicAgencyHierarchyPage model={model} site={Astro.site} />

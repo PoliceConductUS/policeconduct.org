@@ -9,6 +9,7 @@ export type CivilCaseListItem = {
   cause_number: string | null;
   court: string | null;
   filed_date: string;
+  date_terminated: string | null;
   claims_summary: string | null;
 };
 
@@ -51,6 +52,13 @@ const toCivilCaseListItem = (
         : null,
     court: typeof row.court === "string" ? row.court : null,
     filed_date: requireDateString(row, "filed_date", id),
+    date_terminated:
+      row.date_terminated instanceof Date &&
+      !Number.isNaN(row.date_terminated.getTime())
+        ? row.date_terminated.toISOString().slice(0, 10)
+        : typeof row.date_terminated === "string" && row.date_terminated.trim()
+          ? row.date_terminated
+          : null,
     claims_summary:
       typeof row.claims_summary === "string" ? row.claims_summary : null,
   };
@@ -67,6 +75,7 @@ export const loadCivilCaseList = async (): Promise<CivilCaseListItem[]> => {
           cause_number,
           court,
           filed_date,
+          date_terminated,
           claims_summary
         from public.civil_cases
         order by filed_date desc, title asc, cause_number asc

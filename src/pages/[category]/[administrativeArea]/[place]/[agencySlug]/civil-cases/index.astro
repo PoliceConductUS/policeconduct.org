@@ -1,5 +1,6 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import Pagination from "#src/components/Pagination.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { buildAgencyCivilCaseRows } from "#src/lib/data/agency-civil-case-rows.js";
@@ -134,7 +135,14 @@ const formatDate = (value?: string | null) =>
                         <td>{formatDate(caseItem.filed_date)}</td>
                         <td>{caseItem.court || ""}</td>
                         <td>{caseItem.cause_number || ""}</td>
-                        <td>{personnelText}</td>
+                        <td>
+                          {caseItem.personnel.map((person, index) => (
+                            <>
+                              {index > 0 ? ", " : null}
+                              <a href={person.href}>{person.name}</a>
+                            </>
+                          ))}
+                        </td>
                       </tr>
                     );
                   })}
@@ -149,6 +157,7 @@ const formatDate = (value?: string | null) =>
         </p>
 
         <Pagination basePath={pagePath} currentPage={1} lastPage={totalPages} />
+        <CivilCaseScopeNote />
       </div>
     </section>
   </main>
@@ -206,10 +215,17 @@ const formatDate = (value?: string | null) =>
 
   .agency-cases-heading h1 {
     color: #071942;
-    font-size: clamp(2rem, 4vw, 3rem);
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    font-size: 2.25rem;
     font-weight: 800;
     letter-spacing: 0;
-    line-height: 1.05;
+    line-height: 1;
     margin: 0;
   }
 
@@ -229,7 +245,8 @@ const formatDate = (value?: string | null) =>
   .agency-cases-count strong {
     color: #071942;
     display: block;
-    font-size: 2rem;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
     line-height: 1;
   }
 
@@ -292,9 +309,9 @@ const formatDate = (value?: string | null) =>
   .agency-cases-table th {
     background: #f7f9fc;
     color: #53627f;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 

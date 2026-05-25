@@ -313,6 +313,7 @@ const loadAgencyRows = async (agencyId: string) =>
                 c.title,
                 c.cause_number,
                 c.filed_date,
+                c.date_terminated,
                 c.court,
                 c.primary_source_url,
                 o.id as officer_id,
@@ -540,6 +541,7 @@ const buildAgencyDetail = async (agencyId: string) => {
       title?: string | null;
       cause_number?: string | null;
       filed_date: string;
+      date_terminated?: string | null;
       court?: string | null;
       primary_source_url?: string | null;
     }) => {
@@ -574,6 +576,7 @@ const buildAgencyDetail = async (agencyId: string) => {
       title: record.title,
       cause_number: record.cause_number,
       filed_date: record.filed_date,
+      date_terminated: record.date_terminated,
       court: record.court,
       primary_source_url: record.primary_source_url,
       caseUrl: `/civil-cases/${record.slug}/`,

@@ -2,6 +2,7 @@ import { withDb } from "#src/lib/db.js";
 
 export type LocationChildPayload = {
   childCount: number;
+  coverage: LocationCoveragePayload;
   directAgency?: LocationAgencyPayload | null;
   kind?: string | null;
   label: string;
@@ -28,11 +29,21 @@ export type LocationAgencyPayload = {
   address?: string | null;
   administrativeArea?: string | null;
   city?: string | null;
+  civilCases: number;
   id: string;
   mapPoint?: LocationMapPoint | null;
   name: string;
   path: string;
+  personnel: number;
+  reports: number;
   slug: string;
+};
+
+export type LocationCoveragePayload = {
+  agencies: number;
+  civilCases: number;
+  personnel: number;
+  reports: number;
 };
 
 export type LocationPagePayload = {
@@ -42,6 +53,7 @@ export type LocationPagePayload = {
   administrativeAreaSlug?: string | null;
   agencies?: LocationAgencyPayload[];
   children?: LocationChildPayload[];
+  coverage: LocationCoveragePayload;
   displayName: string;
   level: "state" | "administrative_area" | "place";
   mapBounds?: LocationMapBounds | null;

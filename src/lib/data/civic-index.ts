@@ -1,14 +1,13 @@
-import { withDb } from "#src/lib/db.js";
 import type {
   LocationAgencyPayload,
   LocationChildPayload,
   LocationPagePayload,
 } from "./build-payloads.js";
+import { metricLabels } from "../metric-vocabulary.js";
 import {
   getStateDecertificationContext,
   type StateDecertificationContext,
 } from "./state-decertification-context.js";
-import { requireAgencyCanonicalPath } from "./location-paths.js";
 
 export const civicIndexCollator = new Intl.Collator("en", {
   numeric: true,
@@ -69,23 +68,6 @@ export type CivicIndexRow = {
   values: Record<string, number | string | null>;
 };
 
-export type CivicScopedCivilCaseReference = {
-  href: string;
-  label: string;
-};
-
-export type CivicScopedCivilCaseRow = {
-  agencies: CivicScopedCivilCaseReference[];
-  causeNumber: string | null;
-  court: string | null;
-  filedDate: string;
-  href: string;
-  id: string;
-  officers: CivicScopedCivilCaseReference[];
-  places: CivicScopedCivilCaseReference[];
-  title: string;
-};
-
 export type CivicIndexMapPoint = {
   count?: number;
   href: string;
@@ -123,43 +105,30 @@ export type CivicIndexModel = {
   volunteerCta: CivicIndexAction;
 };
 
-export type ScopedCoverageRow = {
-  agency_count: string | number;
-  civil_case_count: string | number;
-  personnel_count: string | number;
-  report_count: string | number;
-};
-
-export type CivicIndexCounts = {
-  agencies: number;
-  civilCases: number;
-  personnel: number;
-  reports: number;
-};
-
-type LocationRowCountRow = ScopedCoverageRow & {
-  path: string;
-};
-
-type AgencyRowCountRow = Omit<ScopedCoverageRow, "agency_count"> & {
-  agency_id: string;
-};
-
-export const toCount = (value: string | number) => {
-  if (value == null) {
-    throw new Error(
-      "Expected numeric aggregate count, received nullish value.",
-    );
-  }
-
-  const count = Number(value);
-
-  if (Number.isNaN(count)) {
-    throw new Error(`Expected numeric aggregate count, received ${value}.`);
-  }
-
-  return count;
-};
+const buildCoverageFromPayload = (
+  location: LocationPagePayload,
+): CivicCoverageMetric[] => [
+  {
+    key: "agencies",
+    label: metricLabels.agencies,
+    value: location.coverage.agencies,
+  },
+  {
+    key: "personnel",
+    label: metricLabels.personnel,
+    value: location.coverage.personnel,
+  },
+  {
+    key: "reports",
+    label: metricLabels.reports,
+    value: location.coverage.reports,
+  },
+  {
+    key: "civil_cases",
+    label: metricLabels.civilCases,
+    value: location.coverage.civilCases,
+  },
+];
 
 export const getActionGroups = (pagePath: string): CivicIndexActionGroup[] => [
   {
@@ -257,328 +226,6 @@ const getStateSlug = (location: LocationPagePayload) => {
   return stateSlug;
 };
 
-const getScopeWhereClause = (location: LocationPagePayload) => {
-  const parts = getLocationParts(location);
-
-  if (location.level === "state") {
-    return {
-      clause: "lower(lp.state_or_territory_slug) = $1",
-      values: [parts[0]],
-    };
-  }
-
-  if (location.level === "administrative_area") {
-    return {
-      clause:
-        "lower(lp.state_or_territory_slug) = $1 and lower(lp.administrative_area_slug) = $2",
-      values: [parts[0], parts[1]],
-    };
-  }
-
-  return {
-    clause:
-      "lower(lp.state_or_territory_slug) = $1 and lower(lp.administrative_area_slug) = $2 and lower(lp.place_slug) = $3",
-    values: [parts[0], parts[1], parts[2]],
-  };
-};
-
-export const loadCivicIndexCoverage = async (
-  location: LocationPagePayload,
-): Promise<CivicCoverageMetric[]> => {
-  const scope = getScopeWhereClause(location);
-  const row = await withDb(async (client): Promise<ScopedCoverageRow> => {
-    const result = await client.query(
-      `
-        select
-          count(distinct a.id) as agency_count,
-          count(distinct ao.officer_id) as personnel_count,
-          count(distinct r.id) as report_count,
-          count(distinct c.id) as civil_case_count
-        from public.location_path lp
-        left join public.agency a
-          on a.location_path_id = lp.location_path_id
-        left join public.agency_officers ao
-          on ao.agency_id = a.id
-         and ao.end_date is null
-        left join public.reviews r
-          on r.location_path_id = lp.location_path_id
-        left join public.civil_cases c
-          on c.location_path_id = lp.location_path_id
-        where ${scope.clause}
-      `,
-      scope.values,
-    );
-
-    return result.rows[0] as ScopedCoverageRow;
-  });
-
-  return [
-    { key: "agencies", label: "Agencies", value: toCount(row.agency_count) },
-    {
-      key: "personnel",
-      label: "Personnel",
-      value: toCount(row.personnel_count),
-    },
-    { key: "reports", label: "Reports", value: toCount(row.report_count) },
-    {
-      key: "civil_cases",
-      label: "Civil cases",
-      value: toCount(row.civil_case_count),
-    },
-  ];
-};
-
-const loadLocationRowCounts = async (
-  children: LocationChildPayload[],
-): Promise<Map<string, CivicIndexCounts>> => {
-  if (children.length === 0) {
-    return new Map();
-  }
-
-  const paths = children.map((child) => child.path);
-
-  const rows = await withDb(async (client): Promise<LocationRowCountRow[]> => {
-    const result = await client.query(
-      `
-        with target(path) as (
-          select unnest($1::text[])
-        )
-        select
-          target.path,
-          count(distinct a.id) as agency_count,
-          count(distinct ao.officer_id) as personnel_count,
-          count(distinct r.id) as report_count,
-          count(distinct c.id) as civil_case_count
-        from target
-        join public.location_path lp
-          on lp.path like target.path || '%'
-        left join public.agency a
-          on a.location_path_id = lp.location_path_id
-        left join public.agency_officers ao
-          on ao.agency_id = a.id
-         and ao.end_date is null
-        left join public.reviews r
-          on r.location_path_id = lp.location_path_id
-        left join public.civil_cases c
-          on c.location_path_id = lp.location_path_id
-        group by target.path
-      `,
-      [paths],
-    );
-
-    return result.rows as LocationRowCountRow[];
-  });
-
-  return new Map(
-    rows.map((row) => [
-      row.path,
-      {
-        agencies: toCount(row.agency_count),
-        civilCases: toCount(row.civil_case_count),
-        personnel: toCount(row.personnel_count),
-        reports: toCount(row.report_count),
-      },
-    ]),
-  );
-};
-
-const loadAgencyRowCounts = async (
-  agencies: LocationAgencyPayload[],
-): Promise<Map<string, CivicIndexCounts>> => {
-  if (agencies.length === 0) {
-    return new Map();
-  }
-
-  const agencyIds = agencies.map((agency) => agency.id);
-
-  const rows = await withDb(async (client): Promise<AgencyRowCountRow[]> => {
-    const result = await client.query(
-      `
-        with target(agency_id) as (
-          select unnest($1::text[])
-        )
-        select
-          target.agency_id,
-          count(distinct active_assignment.officer_id) as personnel_count,
-          coalesce(report_counts.report_count, 0) as report_count,
-          coalesce(civil_case_counts.civil_case_count, 0) as civil_case_count
-        from target
-        join public.agency agency
-          on agency.id = target.agency_id
-        left join public.agency_officers active_assignment
-          on active_assignment.agency_id = agency.id
-         and active_assignment.end_date is null
-        left join lateral (
-          select count(distinct review_officer.review_id) as report_count
-          from public.agency_officers report_assignment
-          join public.review_officers review_officer
-            on review_officer.agency_officer_id = report_assignment.id
-          where report_assignment.agency_id = agency.id
-        ) report_counts on true
-        left join lateral (
-          select count(distinct civil_case_officer.civil_case_id) as civil_case_count
-          from public.agency_officers civil_case_assignment
-          join public.civil_case_officers civil_case_officer
-            on civil_case_officer.agency_officer_id = civil_case_assignment.id
-          where civil_case_assignment.agency_id = agency.id
-        ) civil_case_counts on true
-        group by
-          target.agency_id,
-          report_counts.report_count,
-          civil_case_counts.civil_case_count
-      `,
-      [agencyIds],
-    );
-
-    return result.rows as AgencyRowCountRow[];
-  });
-
-  return new Map(
-    rows.map((row) => [
-      row.agency_id,
-      {
-        agencies: 1,
-        civilCases: toCount(row.civil_case_count),
-        personnel: toCount(row.personnel_count),
-        reports: toCount(row.report_count),
-      },
-    ]),
-  );
-};
-
-const compactReferences = (
-  references: CivicScopedCivilCaseReference[],
-): CivicScopedCivilCaseReference[] => {
-  const seen = new Set<string>();
-  return references.filter((reference) => {
-    const key = `${reference.href}\n${reference.label}`;
-    if (seen.has(key)) {
-      return false;
-    }
-    seen.add(key);
-    return true;
-  });
-};
-
-const getOfficerDisplayName = (row: {
-  officer_first_name?: string | null;
-  officer_last_name?: string | null;
-  officer_suffix?: string | null;
-}) =>
-  [row.officer_first_name, row.officer_last_name, row.officer_suffix]
-    .filter(Boolean)
-    .join(" ");
-
-export const loadScopedCivilCaseRows = async (
-  location: LocationPagePayload,
-): Promise<CivicScopedCivilCaseRow[]> => {
-  const scope = getScopeWhereClause(location);
-  const rows = await withDb(async (client) => {
-    const result = await client.query(
-      `
-        select distinct
-          c.id,
-          c.slug,
-          c.title,
-          c.cause_number,
-          c.court,
-          c.filed_date,
-          lp.place_name,
-          lp.path as place_path,
-          a.id as agency_id,
-          a.name as agency_name,
-          a.slug as agency_slug,
-          agency_lp.path as agency_location_path,
-          o.id as officer_id,
-          o.slug as officer_slug,
-          o.first_name as officer_first_name,
-          o.last_name as officer_last_name,
-          o.suffix as officer_suffix
-        from public.civil_cases c
-        join public.location_path lp
-          on lp.location_path_id = c.location_path_id
-        left join public.civil_case_officers cco
-          on cco.civil_case_id = c.id
-        left join public.agency_officers ao
-          on ao.id = cco.agency_officer_id
-        left join public.agency a
-          on a.id = ao.agency_id
-        left join public.location_path agency_lp
-          on agency_lp.location_path_id = a.location_path_id
-        left join public.officers o
-          on o.id = ao.officer_id
-        where ${scope.clause}
-        order by c.filed_date desc, c.title asc, c.cause_number asc
-      `,
-      scope.values,
-    );
-
-    return result.rows;
-  });
-
-  const casesById = new Map<string, CivicScopedCivilCaseRow>();
-
-  for (const row of rows) {
-    let civilCase = casesById.get(row.id);
-    if (!civilCase) {
-      civilCase = {
-        agencies: [],
-        causeNumber: row.cause_number || null,
-        court: row.court || null,
-        filedDate: row.filed_date,
-        href: `/civil-cases/${row.slug}/`,
-        id: row.id,
-        officers: [],
-        places: row.place_name
-          ? [{ href: row.place_path, label: row.place_name }]
-          : [],
-        title: row.title,
-      };
-      casesById.set(row.id, civilCase);
-    }
-
-    if (row.agency_id && row.agency_name) {
-      civilCase.agencies.push({
-        href: requireAgencyCanonicalPath({
-          id: row.agency_id,
-          location_path: row.agency_location_path,
-          slug: row.agency_slug,
-        }),
-        label: row.agency_name,
-      });
-    }
-
-    const officerName = getOfficerDisplayName(row);
-    if (row.officer_slug && officerName) {
-      civilCase.officers.push({
-        href: `/personnel/${row.officer_slug}/`,
-        label: officerName,
-      });
-    }
-  }
-
-  return [...casesById.values()].map((civilCase) => ({
-    ...civilCase,
-    agencies: compactReferences(civilCase.agencies),
-    officers: compactReferences(civilCase.officers),
-    places: compactReferences(civilCase.places),
-  }));
-};
-
-const requireRowCounts = (
-  counts: Map<string, CivicIndexCounts>,
-  key: string,
-  label: string,
-) => {
-  const rowCounts = counts.get(key);
-
-  if (!rowCounts) {
-    throw new Error(`Expected civic index counts for ${label} ${key}.`);
-  }
-
-  return rowCounts;
-};
-
 const formatCount = (
   count: number,
   singular: string,
@@ -640,44 +287,39 @@ const buildChildRows = (
   children: LocationChildPayload[],
   countKey: "agencies" | "places",
   detailSingular: string,
-  rowCounts: Map<string, CivicIndexCounts>,
 ): CivicIndexRow[] =>
   children
     .map((child) => {
-      const counts = requireRowCounts(rowCounts, child.path, "location row");
       return {
         href: child.path,
         label: child.label,
         searchText: buildChildSearchText(child),
         values: {
+          agencies: child.coverage.agencies,
           [countKey]:
-            countKey === "places" ? child.childCount : counts.agencies,
-          civilCases: counts.civilCases,
+            countKey === "places" ? child.childCount : child.coverage.agencies,
+          civilCases: child.coverage.civilCases,
           detail: buildChildDetail(child, detailSingular),
-          personnel: counts.personnel,
-          reports: counts.reports,
+          personnel: child.coverage.personnel,
+          reports: child.coverage.reports,
         },
       };
     })
     .sort((a, b) => civicIndexCollator.compare(a.label, b.label));
 
-const buildAgencyRows = (
-  agencies: LocationAgencyPayload[],
-  rowCounts: Map<string, CivicIndexCounts>,
-): CivicIndexRow[] =>
+const buildAgencyRows = (agencies: LocationAgencyPayload[]): CivicIndexRow[] =>
   agencies
     .map((agency) => {
-      const counts = requireRowCounts(rowCounts, agency.id, "agency row");
       return {
         href: agency.path,
         label: agency.name,
         searchText: buildAgencySearchText(agency),
         values: {
           address: agency.address || "",
-          agencies: counts.agencies,
-          civilCases: counts.civilCases,
-          personnel: counts.personnel,
-          reports: counts.reports,
+          agencies: 1,
+          civilCases: agency.civilCases,
+          personnel: agency.personnel,
+          reports: agency.reports,
         },
       };
     })
@@ -773,19 +415,19 @@ const buildThingsToKnow = (
 
   return [
     {
-      label: "Agencies tracked",
+      label: metricLabels.agencies,
       detail: agencies.toLocaleString("en-US"),
     },
     {
-      label: "Personnel records",
+      label: metricLabels.personnelRecords,
       detail: personnel.toLocaleString("en-US"),
     },
     {
-      label: "Public reports",
+      label: metricLabels.reports,
       detail: reports.toLocaleString("en-US"),
     },
     {
-      label: "Civil cases",
+      label: metricLabels.civilCases,
       detail: civilCases.toLocaleString("en-US"),
     },
     {
@@ -815,11 +457,8 @@ export const buildStateCivicIndex = async (
 ): Promise<CivicIndexModel> => {
   const areaPlural = state.administrativeAreaPlural!;
   const children = requireChildren(state);
-  const [coverage, rowCounts] = await Promise.all([
-    loadCivicIndexCoverage(state),
-    loadLocationRowCounts(children),
-  ]);
-  const rows = buildChildRows(children, "places", "place", rowCounts);
+  const coverage = buildCoverageFromPayload(state);
+  const rows = buildChildRows(children, "places", "place");
   const drilldownLabel = `Explore within ${state.stateLabel}`;
   return {
     actionGroups: getActionGroups(state.path),
@@ -831,9 +470,9 @@ export const buildStateCivicIndex = async (
     columns: [
       { key: "label", label: "County / Area" },
       { key: "places", label: "Places", numeric: true },
-      { key: "personnel", label: "Personnel", numeric: true },
-      { key: "reports", label: "Reports", numeric: true },
-      { key: "civilCases", label: "Civil cases", numeric: true },
+      { key: "personnel", label: metricLabels.personnel, numeric: true },
+      { key: "reports", label: metricLabels.reports, numeric: true },
+      { key: "civilCases", label: metricLabels.civilCases, numeric: true },
     ],
     coverage,
     dataPanels: [
@@ -846,7 +485,7 @@ export const buildStateCivicIndex = async (
     ],
     description: `Browse local agency records, public reports, civil litigation, and personnel profiles currently available for this state.`,
     drilldownLabel,
-    indexLabel: `Counties / Areas within ${state.stateLabel}`,
+    indexLabel: `Counties within ${state.stateLabel}`,
     jurisdictionLabel: "State civic index",
     level: "state",
     map: {
@@ -873,11 +512,8 @@ export const buildAdministrativeAreaCivicIndex = async (
 ): Promise<CivicIndexModel> => {
   const children = requireChildren(area);
   const parentPath = requireParentPath(area);
-  const [coverage, rowCounts] = await Promise.all([
-    loadCivicIndexCoverage(area),
-    loadLocationRowCounts(children),
-  ]);
-  const rows = buildChildRows(children, "agencies", "agency", rowCounts);
+  const coverage = buildCoverageFromPayload(area);
+  const rows = buildChildRows(children, "agencies", "agency");
   const drilldownLabel = `Explore within ${area.administrativeArea}`;
   return {
     actionGroups: getActionGroups(area.path),
@@ -889,10 +525,10 @@ export const buildAdministrativeAreaCivicIndex = async (
     ],
     columns: [
       { key: "label", label: "Place" },
-      { key: "agencies", label: "Agencies", numeric: true },
-      { key: "personnel", label: "Personnel", numeric: true },
-      { key: "reports", label: "Reports", numeric: true },
-      { key: "civilCases", label: "Civil cases", numeric: true },
+      { key: "agencies", label: metricLabels.agencies, numeric: true },
+      { key: "personnel", label: metricLabels.personnel, numeric: true },
+      { key: "reports", label: metricLabels.reports, numeric: true },
+      { key: "civilCases", label: metricLabels.civilCases, numeric: true },
     ],
     coverage,
     dataPanels: [
@@ -932,11 +568,8 @@ export const buildPlaceCivicIndex = async (
 ): Promise<CivicIndexModel> => {
   const agencies = requireAgencies(place);
   const parentPath = requireParentPath(place);
-  const [coverage, rowCounts] = await Promise.all([
-    loadCivicIndexCoverage(place),
-    loadAgencyRowCounts(agencies),
-  ]);
-  const rows = buildAgencyRows(agencies, rowCounts);
+  const coverage = buildCoverageFromPayload(place);
+  const rows = buildAgencyRows(agencies);
   const drilldownLabel = `Explore within ${place.displayName}`;
   return {
     actionGroups: getActionGroups(place.path),
@@ -950,9 +583,9 @@ export const buildPlaceCivicIndex = async (
     columns: [
       { key: "label", label: "Agency" },
       { key: "address", label: "Address" },
-      { key: "personnel", label: "Personnel", numeric: true },
-      { key: "reports", label: "Reports", numeric: true },
-      { key: "civilCases", label: "Civil cases", numeric: true },
+      { key: "personnel", label: metricLabels.personnel, numeric: true },
+      { key: "reports", label: metricLabels.reports, numeric: true },
+      { key: "civilCases", label: metricLabels.civilCases, numeric: true },
     ],
     coverage,
     dataPanels: [

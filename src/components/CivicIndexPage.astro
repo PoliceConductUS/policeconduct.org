@@ -2,6 +2,7 @@
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
+import { metricLabels } from "#src/lib/metric-vocabulary.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const { model, site } = Astro.props as {
@@ -28,11 +29,11 @@ const formatCount = (value: number) => value.toLocaleString("en-US");
 const childMetric =
   model.level === "state"
     ? {
-        actionLabel: "Explore counties / areas",
+        actionLabel: "Explore counties",
         detail: `${model.indexLabel}`,
         href: scopedHref("counties"),
         icon: "shield",
-        label: "Counties / Areas",
+        label: "Counties",
         primaryAction: true,
         value: formatCount(model.rows.length),
       }
@@ -51,23 +52,23 @@ const childMetric =
           detail: "Agencies operating in this place",
           href: scopedHref("agencies"),
           icon: "building",
-          label: "Agencies Tracked",
+          label: metricLabels.agencies,
           primaryAction: true,
           value: formatCount(coverageCount("agencies")),
         };
 const metricCards = [
   {
     accent: "blue",
-    actionLabel: "View details",
     ...childMetric,
   },
   {
     accent: "blue",
     actionLabel: "View details",
-    detail: "Active and total tracked personnel",
+    detail: "Active / total",
     href: scopedHref("personnel"),
     icon: "people",
-    label: "Personnel",
+    label: metricLabels.personnel,
+    primaryAction: false,
     value: formatCount(coverageCount("personnel")),
   },
   {
@@ -76,7 +77,8 @@ const metricCards = [
     detail: "Fiscal year agency budget",
     href: scopedHref("budget"),
     icon: "dollar",
-    label: "Combined Budget",
+    label: metricLabels.budget,
+    primaryAction: false,
     value: "$--",
   },
   {
@@ -85,7 +87,8 @@ const metricCards = [
     detail: "Direct and personnel-linked civil cases",
     href: scopedHref("civil-cases"),
     icon: "scales",
-    label: "Civil Cases",
+    label: metricLabels.civilCases,
+    primaryAction: false,
     value: formatCount(coverageCount("civil_cases")),
   },
   {
@@ -94,17 +97,18 @@ const metricCards = [
     detail: "Claims, settlements, judgments, and related costs",
     href: scopedHref("liability-costs"),
     icon: "dollar",
-    label: "Liability Costs",
+    label: metricLabels.liabilityCosts,
+    primaryAction: false,
     value: "$--",
   },
 ];
 const chartCards = [
   ["Arrests Over Time", "Number of arrests by category"],
-  ["Killings Over Time", "People, dogs, and other pets"],
+  ["Killings Over Time", "People by age group, dogs and other animals"],
   ["Use of Force Over Time", "Number of use of force incidents"],
   [
     "Civil Cases and Liability Costs Over Time",
-    "Active civil cases and documented liability costs",
+    "Civil cases and liability costs",
   ],
 ];
 ---
@@ -188,20 +192,24 @@ const chartCards = [
                     </>
                   )}
                 </svg>
-                <div>
+                <div class="civic-metric-body">
                   <p>{metric.label}</p>
                   <strong>{metric.value}</strong>
                   <span>{metric.detail}</span>
+                  {!metric.primaryAction ? (
+                    <a class="civic-metric-link" href={metric.href}>
+                      {metric.actionLabel}
+                    </a>
+                  ) : null}
+                </div>
+                {metric.primaryAction ? (
                   <a
-                    class:list={[
-                      "civic-metric-link",
-                      metric.primaryAction && "civic-metric-link-primary",
-                    ]}
+                    class="civic-metric-link civic-metric-link-primary"
                     href={metric.href}
                   >
                     {metric.actionLabel}
                   </a>
-                </div>
+                ) : null}
               </article>
             ))
           }
@@ -384,7 +392,7 @@ const chartCards = [
       BlinkMacSystemFont,
       "Segoe UI",
       sans-serif;
-    font-size: clamp(2.05rem, 3.4vw, 2.75rem);
+    font-size: 2.25rem;
     font-weight: 800;
     letter-spacing: 0;
     line-height: 1;
@@ -393,7 +401,9 @@ const chartCards = [
 
   .civic-dashboard-heading p {
     color: #33456f;
+    line-height: 1.55;
     margin: 0;
+    max-width: 72ch;
   }
 
   .civic-dashboard-actions {
@@ -408,7 +418,8 @@ const chartCards = [
     border: 1px solid #c9d4e6;
     border-radius: 0.4rem;
     color: #071842;
-    font-weight: 800;
+    font-size: 0.88rem;
+    font-weight: 700;
     min-height: 3rem;
     padding: 0.72rem 1.05rem;
   }
@@ -457,9 +468,17 @@ const chartCards = [
   }
 
   .civic-metric-icon {
+    grid-column: 1;
+    grid-row: 1;
     height: 2.7rem;
     margin-top: 0.2rem;
     width: 2.7rem;
+  }
+
+  .civic-metric-body {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
   }
 
   .civic-blue {
@@ -477,16 +496,17 @@ const chartCards = [
   .civic-metric-card p,
   .civic-chart-card p {
     color: #071842;
-    font-size: 0.84rem;
-    font-weight: 800;
-    line-height: 1.25;
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.3;
     margin: 0;
   }
 
   .civic-metric-card strong {
     display: block;
-    font-size: clamp(1.25rem, 1.45vw, 1.45rem);
-    line-height: 1.1;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.12;
     margin: 0.25rem 0 0.3rem;
   }
 
@@ -494,20 +514,21 @@ const chartCards = [
   .civic-chart-card p {
     color: #33456f;
     display: block;
-    font-size: 0.78rem;
+    font-size: 0.8125rem;
     font-weight: 500;
+    line-height: 1.45;
   }
 
   .civic-metric-link,
   .civic-about-card a {
     color: #064cfb;
-    font-weight: 800;
+    font-weight: 700;
     text-decoration: none;
   }
 
   .civic-metric-link {
     display: inline-block;
-    font-size: 0.78rem;
+    font-size: 0.8125rem;
     margin-top: 0.55rem;
   }
 
@@ -516,9 +537,15 @@ const chartCards = [
     border: 1px solid #071842;
     border-radius: 0.35rem;
     color: #f8faff;
-    font-size: 0.8rem;
+    display: block;
+    font-size: 0.8125rem;
+    grid-column: 1 / -1;
+    grid-row: 2;
     line-height: 1.1;
+    margin-top: 0.25rem;
     padding: 0.55rem 0.7rem;
+    text-align: center;
+    width: 100%;
   }
 
   .civic-metric-link::after,
@@ -541,9 +568,9 @@ const chartCards = [
       BlinkMacSystemFont,
       "Segoe UI",
       sans-serif;
-    font-size: 1rem;
-    font-weight: 800;
-    line-height: 1.2;
+    font-size: 1.0625rem;
+    font-weight: 750;
+    line-height: 1.25;
     margin: 0 0 0.25rem;
   }
 
@@ -567,7 +594,7 @@ const chartCards = [
   .civic-mini-table td {
     border-top: 1px solid #d9e1ee;
     color: #071842;
-    font-size: 0.78rem;
+    font-size: 0.8125rem;
     padding: 0.5rem 0.4rem;
     text-align: left;
     vertical-align: top;
@@ -586,7 +613,7 @@ const chartCards = [
     border-bottom: 1px solid #b8c4d8;
     color: #33456f;
     display: grid;
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     min-height: 100%;
     place-items: end center;
     text-align: center;
@@ -608,7 +635,7 @@ const chartCards = [
   .civic-horizontal-bars span,
   .civic-horizontal-bars strong {
     color: #071842;
-    font-size: 0.78rem;
+    font-size: 0.8125rem;
     font-weight: 700;
   }
 

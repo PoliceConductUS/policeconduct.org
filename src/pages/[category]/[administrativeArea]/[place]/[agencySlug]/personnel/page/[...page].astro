@@ -204,10 +204,17 @@ const formatDate = (value?: string | null) =>
 
   .agency-personnel-heading h1 {
     color: #071942;
-    font-size: clamp(2rem, 4vw, 3rem);
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    font-size: 2.25rem;
     font-weight: 800;
     letter-spacing: 0;
-    line-height: 1.05;
+    line-height: 1;
     margin: 0;
   }
 
@@ -227,7 +234,8 @@ const formatDate = (value?: string | null) =>
   .agency-personnel-count strong {
     color: #071942;
     display: block;
-    font-size: 2rem;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
     line-height: 1;
   }
 
@@ -267,9 +275,9 @@ const formatDate = (value?: string | null) =>
   .agency-personnel-table th {
     background: #f7f9fc;
     color: #53627f;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 

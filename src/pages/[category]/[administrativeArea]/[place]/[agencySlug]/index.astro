@@ -1,14 +1,12 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
-import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import DisqusComments from "#src/components/DisqusComments.astro";
 import {
   loadAgencyDetail,
   loadAgencyLocationStaticPaths,
 } from "#src/lib/data/agency-detail.js";
-import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
@@ -29,73 +27,8 @@ const {
   placeLabel,
   placePath,
   civilCases,
-  reportedReports,
   counts,
 } = data;
-const agencyLinksSummary = data.agencyLinks
-  .map((link: { url?: string | null; label?: string | null }) =>
-    [link.label || null, link.url || null].filter(Boolean).join(" — "),
-  )
-  .filter(Boolean)
-  .join("\n");
-const primaryWebsite =
-  data.agencyLinks.find((link: { url?: string | null }) =>
-    /^https?:\/\//i.test(link.url || ""),
-  )?.url || "";
-const civilLitigationSummary = civilCases
-  .map((record) => {
-    const segments = [
-      record.title || "Civil case",
-      record.cause_number || null,
-      record.court || null,
-      record.caseUrl,
-    ];
-    return segments.filter(Boolean).join(" — ");
-  })
-  .join("\n");
-const reportLinksSummary = reportedReports
-  .map((report) => report.url)
-  .join("\n");
-const reportNewPrefillPayload = JSON.stringify({
-  officer: {
-    department: agencyName,
-  },
-} satisfies ReportNewPrefill);
-const addCivilCaseHref = "/civil-litigation/new/";
-const addCivilCasePrefillPayload = JSON.stringify({
-  jurisdiction: categorySlug,
-  defendants: agencyName,
-  summary: `${agencyName} agency profile: ${agencyPath}`,
-  links: [
-    agencyPath,
-    ...reportedReports.slice(0, 3).map((report) => report.url),
-  ]
-    .filter(Boolean)
-    .join("\n"),
-});
-const suggestEditHref = "/law-enforcement-agency/suggest-edit/";
-const suggestEditPrefillPayload = JSON.stringify({
-  agencyPath,
-  agencyName,
-  jurisdiction: categorySlug,
-  departmentWebsite: primaryWebsite,
-  departmentHead: data.agency.contact_name || "",
-  socialLinks: agencyLinksSummary,
-  civilLitigation: civilLitigationSummary,
-});
-const suggestPersonnelHref = "/personnel/new/";
-const suggestPersonnelPrefillPayload = JSON.stringify({
-  currentAgency: agencyName,
-  currentAgencyCity: data.agency.city || "",
-  currentAgencyState: agencyState,
-  civilLitigation: civilLitigationSummary,
-  reportLinks: reportLinksSummary,
-});
-const claimProfileHref = "/about/contact/";
-const claimProfilePrefillPayload = JSON.stringify({
-  whoami: "Profile Owner",
-  message: `I would like to claim ownership of this profile.\nProfile path: ${agencyPath}`,
-});
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(agencyPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
@@ -105,6 +38,7 @@ const personnelIndexPath = `${agencyPath}personnel/`;
 const budgetIndexPath = `${agencyPath}budget/`;
 const civilCasesIndexPath = `${agencyPath}civil-cases/`;
 const liabilityCostsIndexPath = `${agencyPath}liability-costs/`;
+const civilCaseTotal = counts.civilCases + counts.personnelLinkedCivilCases;
 const addressAvailable =
   data.agency.address ||
   data.agency.city ||
@@ -334,7 +268,7 @@ const structuredData = {
                 {formatNumber(counts.currentPersonnel)} active /{" "}
                 {formatNumber(counts.personnel)} total
               </strong>
-              <span>Active officers and total tracked personnel history</span>
+              <span>Active / total</span>
               <a href={personnelIndexPath}>View details</a>
             </div>
           </article>
@@ -379,8 +313,8 @@ const structuredData = {
             </svg>
             <div>
               <p>Civil Cases</p>
-              <strong>19 active / 22 total</strong>
-              <span>Active and total direct civil cases</span>
+              <strong>{formatNumber(civilCaseTotal)}</strong>
+              <span>Direct and personnel-linked civil cases</span>
               <a href={civilCasesIndexPath}>View details</a>
             </div>
           </article>
@@ -424,12 +358,14 @@ const structuredData = {
           </article>
           <article class="agency-chart-card">
             <h2>Killings Over Time</h2>
-            <p>People, dogs, and other pets</p>
+            <p>People by age group, dogs and other animals</p>
             <div class="agency-line-chart">
               <div class="agency-chart-legend">
-                <span><i class="agency-dot-blue"></i>People</span>
-                <span><i class="agency-dot-green"></i>Dogs</span>
-                <span><i class="agency-dot-orange"></i>Other pets</span>
+                <span><i class="agency-dot-blue"></i>Under 18</span>
+                <span><i class="agency-dot-green"></i>18+</span>
+                <span><i class="agency-dot-purple"></i>Unknown age</span>
+                <span><i class="agency-dot-orange"></i>Dogs</span>
+                <span><i class="agency-dot-gold"></i>Other animals</span>
               </div>
               <svg viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path class="agency-grid-line" d="M8 14H96"></path>
@@ -455,7 +391,7 @@ const structuredData = {
           </article>
           <article id="agency-liability-costs" class="agency-chart-card">
             <h2>Civil Cases and Liability Costs Over Time</h2>
-            <p>Active civil cases and documented liability costs</p>
+            <p>Civil cases and liability costs</p>
             <div class="agency-line-chart">
               <svg viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path class="agency-grid-line" d="M8 14H96"></path>
@@ -622,7 +558,7 @@ const structuredData = {
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
-      font-size: clamp(2.05rem, 3.4vw, 2.8rem);
+      font-size: 2.25rem;
       font-weight: 800;
       letter-spacing: 0;
       line-height: 1;
@@ -750,7 +686,8 @@ const structuredData = {
     .agency-metric-card strong {
       color: #071842;
       display: block;
-      font-size: clamp(1.25rem, 1.6vw, 1.5rem);
+      font-size: 1.5rem;
+      font-variant-numeric: tabular-nums;
       line-height: 1.1;
       margin: 0.25rem 0 0.35rem;
     }
@@ -785,9 +722,16 @@ const structuredData = {
 
     .agency-chart-card h2 {
       color: #071842;
-      font-size: 1rem;
-      font-weight: 800;
-      line-height: 1.2;
+      font-family:
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      font-size: 1.0625rem;
+      font-weight: 750;
+      line-height: 1.25;
       margin: 0 0 0.25rem;
     }
 
@@ -839,7 +783,7 @@ const structuredData = {
     .agency-chart-labels {
       color: #33456f;
       display: flex;
-      font-size: 0.72rem;
+      font-size: 0.75rem;
       justify-content: space-between;
       min-height: 1rem;
     }
@@ -855,7 +799,7 @@ const structuredData = {
       align-items: center;
       color: #33456f;
       display: inline-flex;
-      font-size: 0.72rem;
+      font-size: 0.75rem;
       font-weight: 700;
       gap: 0.3rem;
     }
@@ -875,8 +819,16 @@ const structuredData = {
       background: #087f3b;
     }
 
+    .agency-dot-purple {
+      background: #5b2df5;
+    }
+
     .agency-dot-orange {
       background: #ffad1f;
+    }
+
+    .agency-dot-gold {
+      background: #a66f00;
     }
 
     .agency-horizontal-bars,
@@ -1046,7 +998,7 @@ const structuredData = {
 
     .agency-stacked-bars span {
       color: #33456f;
-      font-size: 0.72rem;
+      font-size: 0.75rem;
       line-height: 1.15;
     }
 
@@ -1085,13 +1037,13 @@ const structuredData = {
       document.documentElement.dataset.aosInit = "1";
     }
 
-    const setComingSoon = (button, message) => {
+    const setComingSoon = (button: Element, message: string) => {
       const actions = button.closest(".agency-overview-actions");
       const output = actions?.querySelector("[data-agency-coming-soon]");
       if (output) output.textContent = message;
     };
 
-    const trackAgencyInterest = (eventName) => {
+    const trackAgencyInterest = (eventName: string) => {
       window.__IPC_ANALYTICS__?.track?.(eventName, {
         agency_path: window.location.pathname,
         page_path: window.location.pathname,

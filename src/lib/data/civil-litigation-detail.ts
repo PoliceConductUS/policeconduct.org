@@ -40,6 +40,7 @@ export type CivilCaseDetail = {
     cause_number: string;
     court: string | null;
     filed_date: string;
+    date_terminated: string | null;
     claims_summary: string | null;
     outcome: string | null;
     primary_source_url: string | null;

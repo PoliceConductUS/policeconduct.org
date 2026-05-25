@@ -1,10 +1,6 @@
 ---
-import CivicScopedCivilCaseTable from "#src/components/CivicScopedCivilCaseTable.astro";
-import CivicScopedOverviewPage from "#src/components/CivicScopedOverviewPage.astro";
-import {
-  buildStateCivicIndex,
-  loadScopedCivilCaseRows,
-} from "#src/lib/data/civic-index.js";
+import CivicScopedIndexPage from "#src/components/CivicScopedIndexPage.astro";
+import { buildStateCivicIndex } from "#src/lib/data/civic-index.js";
 import {
   loadRequiredLocationByPath,
   loadStateScopedPaths,
@@ -19,9 +15,6 @@ const location = await loadRequiredLocationByPath(
   "state",
 );
 const model = await buildStateCivicIndex(location);
-const civilCaseRows = await loadScopedCivilCaseRows(location);
 ---
 
-<CivicScopedOverviewPage model={model} kind="civil-cases">
-  <CivicScopedCivilCaseTable rows={civilCaseRows} />
-</CivicScopedOverviewPage>
+<CivicScopedIndexPage model={model} kind="civil-cases" />

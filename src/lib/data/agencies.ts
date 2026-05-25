@@ -43,10 +43,22 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
            ) as report_count,
            coalesce(
              (
-               select count(distinct cco.civil_case_id)
-               from public.agency_officers ao3
-               join public.civil_case_officers cco on cco.agency_officer_id = ao3.id
-               where ao3.agency_id = a.id
+               select count(distinct agency_case.civil_case_id)
+               from (
+                 select cco.civil_case_id
+                 from public.agency_officers direct_ao
+                 join public.civil_case_officers cco
+                   on cco.agency_officer_id = direct_ao.id
+                 where direct_ao.agency_id = a.id
+                 union
+                 select cco.civil_case_id
+                 from public.agency_officers target_ao
+                 join public.agency_officers case_ao
+                   on case_ao.officer_id = target_ao.officer_id
+                 join public.civil_case_officers cco
+                   on cco.agency_officer_id = case_ao.id
+                 where target_ao.agency_id = a.id
+               ) agency_case
              ),
              0
            ) as civil_case_count

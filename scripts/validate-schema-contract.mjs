@@ -21,7 +21,6 @@ const requiredTables = {
       "name",
       "slug",
       "state",
-      "administrative_area",
       "city",
       "address",
       "zip_code",

@@ -45,6 +45,8 @@ Data + Routing Conventions
 - Route pages must resolve every URL/path segment from exact database-backed path data. Do not pass route identity through `getStaticPaths()` props, route props, parallel columns, or precomputed convenience fields. `getStaticPaths()` may enumerate valid params from database-backed paths, but the page render must reload the required entity by exact canonical path/slug and fail loudly if it is missing or the wrong entity type.
 - Do not generate IDs for database entities anywhere in the website, build scripts, seed data, or runtime code. Database entity IDs must come from explicit database or seed data values only.
 - Agency location identity must come from `public.agency.location_path_id` joined to `public.location_path`. Do not reconstruct agency location, agency canonical URLs, or agency route parameters from parallel agency columns, derived slugs, `build_page_payload.path`, or generated path logic.
+- Seed data and data-loading code must use one authoritative representation for each fact or relationship. Keep required parent/reference identity in the same seed row whenever the table has that relationship column. Do not create parallel source-of-truth structures, derived relationship lists, split seed maps, or other drift-prone implementations unless the user has explicitly approved the architectural compromise.
+- Civil case geography has two distinct scopes. `public.civil_cases.location_path_id` is the incident-location geography and may be used only for geographic rollups where one case rolls up once by incident location. Agency, personnel, and federal civil-case scopes must use linked records through `public.civil_case_officers -> public.agency_officers -> public.agency -> public.location_path`; these relationship views may show the same case under multiple connected agencies or personnel. Pages must label which civil-case scope they use and must not mix incident-location metrics with agency/personnel-linked rows.
 - Report URLs must use slug: /report/{slug}/.
 - Agency canonical URLs use the joined location path plus the agency slug.
 - Pagination URLs use /page/{number}/; page 1 is the base path with no /page/1/.
@@ -60,6 +62,7 @@ Database Expectations
 
 Templates (Critical Fields)
 
+- Never fabricate missing required fields.
 - Required DB fields are treated as required in templates.
 - Do not use silent fallbacks like "Unknown" or "Not listed" for required fields.
 - Prefer non-null assertions (e.g., agency.name!) when the field is required by schema.

@@ -2,22 +2,22 @@
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
+import type {
+  CivicTopicKind,
+  CivicTopicRecords,
+} from "#src/lib/data/civic-topic-records.js";
+import { metricLabels } from "#src/lib/metric-vocabulary.js";
 
-type ScopedPageKind =
-  | "personnel"
-  | "budget"
-  | "civil-cases"
-  | "liability-costs";
-
-const { model, kind } = Astro.props as {
+const { model, kind, records } = Astro.props as {
   model: CivicIndexModel;
-  kind: ScopedPageKind;
+  kind: CivicTopicKind;
+  records?: CivicTopicRecords;
 };
 
 const pageConfig = {
   personnel: {
-    label: "Personnel",
-    title: "Personnel",
+    label: metricLabels.personnel,
+    title: metricLabels.personnel,
     description: "Personnel records connected to this geography.",
     value:
       model.coverage
@@ -25,46 +25,152 @@ const pageConfig = {
         ?.value.toLocaleString("en-US") ?? "0",
   },
   budget: {
-    label: "Budget",
-    title: "Budget",
+    label: metricLabels.budget,
+    title: metricLabels.budget,
     description: "Budget, revenue, spending, forfeiture, and overtime signals.",
     value: "$--",
   },
   "civil-cases": {
-    label: "Civil Cases",
-    title: "Civil Cases",
+    label: metricLabels.civilCases,
+    title: metricLabels.civilCases,
     description: "Civil cases connected to this geography.",
     value:
-      model.coverage
-        .find((metric) => metric.key === "civil_cases")
-        ?.value.toLocaleString("en-US") ?? "0",
+      records?.kind === "civil-cases"
+        ? records.totalCount.toLocaleString("en-US")
+        : "0",
   },
   "liability-costs": {
-    label: "Liability Costs",
-    title: "Liability Costs",
+    label: metricLabels.liabilityCosts,
+    title: metricLabels.liabilityCosts,
     description:
       "Claims, settlements, judgments, defense costs, and related financial exposure.",
     value: "$--",
   },
 }[kind];
 
+const coverageValue = (key: CivicIndexModel["coverage"][number]["key"]) =>
+  model.coverage
+    .find((metric) => metric.key === key)
+    ?.value.toLocaleString("en-US") ?? "0";
+
 const heading =
   model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
   model.jurisdictionLabel;
 const pagePath = `${model.pagePath}${kind}/`;
 const pageTitle = `${heading} ${pageConfig.title}`;
-const chartTitles =
-  kind === "personnel"
-    ? ["Personnel Over Time", "Personnel by Child Area", "Record Mix"]
-    : kind === "budget"
-      ? ["Budget Over Time", "Revenue Sources Over Time", "Budget Allocation"]
-      : kind === "civil-cases"
-        ? ["Civil Cases Over Time", "Case Types", "Cases by Child Area"]
-        : [
-            "Liability Costs Over Time",
-            "Cost Components Over Time",
-            "Payment Source Breakdown",
-          ];
+const topicConfig = {
+  personnel: {
+    metrics: [
+      {
+        label: metricLabels.personnel,
+        value: coverageValue("personnel"),
+        detail: "Projected personnel connected to this geography",
+      },
+      {
+        label: metricLabels.personnelRecords,
+        value: coverageValue("personnel"),
+        detail: "Current personnel records in scope",
+      },
+      {
+        label: metricLabels.agencyAssignments,
+        value: "$--",
+        detail: "Assignment history coverage is not projected yet",
+      },
+      {
+        label: metricLabels.latestPersonnelUpdate,
+        value: "$--",
+        detail: "Personnel update recency is not projected yet",
+      },
+    ],
+    charts: ["Personnel Over Time", "Personnel by Child Area", "Record Mix"],
+  },
+  budget: {
+    metrics: [
+      {
+        label: metricLabels.budget,
+        value: "$--",
+        detail: "Budget totals are not projected yet",
+      },
+      {
+        label: metricLabels.operatingSpend,
+        value: "$--",
+        detail: "Operating spend is not projected yet",
+      },
+      {
+        label: metricLabels.overtime,
+        value: "$--",
+        detail: "Overtime spending is not projected yet",
+      },
+      {
+        label: metricLabels.latestFiscalYear,
+        value: "$--",
+        detail: "Fiscal-year coverage is not projected yet",
+      },
+    ],
+    charts: [
+      "Budget Over Time",
+      "Revenue Sources Over Time",
+      "Budget Allocation",
+    ],
+  },
+  "civil-cases": {
+    metrics: [
+      {
+        label: metricLabels.civilCases,
+        value:
+          records?.kind === "civil-cases"
+            ? records.totalCount.toLocaleString("en-US")
+            : "0",
+        detail: "Civil cases connected through agencies and personnel",
+      },
+      {
+        label: metricLabels.caseTypes,
+        value: "$--",
+        detail: "Case type coverage is not projected yet",
+      },
+      {
+        label: metricLabels.caseOutcomes,
+        value: "$--",
+        detail: "Outcome coverage is not projected yet",
+      },
+      {
+        label: metricLabels.latestCaseActivity,
+        value: "$--",
+        detail: "Case activity recency is not projected yet",
+      },
+    ],
+    charts: ["Civil Cases Over Time", "Case Types", "Cases by Child Area"],
+  },
+  "liability-costs": {
+    metrics: [
+      {
+        label: metricLabels.liabilityCosts,
+        value: "$--",
+        detail: "Liability cost totals are not projected yet",
+      },
+      {
+        label: metricLabels.settlements,
+        value: "$--",
+        detail: "Settlement totals are not projected yet",
+      },
+      {
+        label: metricLabels.judgments,
+        value: "$--",
+        detail: "Judgment totals are not projected yet",
+      },
+      {
+        label: metricLabels.latestRecordedYear,
+        value: "$--",
+        detail: "Liability-cost recency is not projected yet",
+      },
+    ],
+    charts: [
+      "Liability Costs Over Time",
+      "Cost Components Over Time",
+      "Payment Source Breakdown",
+    ],
+  },
+}[kind];
 ---
 
 <SiteLayout
@@ -97,49 +203,20 @@ const chartTitles =
         </div>
 
         <div class="civic-scoped-metrics">
-          <article>
-            <p>Total</p>
-            <strong>{pageConfig.value}</strong>
-            <span>{pageConfig.description}</span>
-          </article>
-          <article>
-            <p>Agencies Tracked</p>
-            <strong>
-              {
-                model.coverage
-                  .find((metric) => metric.key === "agencies")
-                  ?.value.toLocaleString("en-US") ?? "0"
-              }
-            </strong>
-            <span>Agencies in this geography</span>
-          </article>
-          <article>
-            <p>Personnel</p>
-            <strong>
-              {
-                model.coverage
-                  .find((metric) => metric.key === "personnel")
-                  ?.value.toLocaleString("en-US") ?? "0"
-              }
-            </strong>
-            <span>Tracked personnel records</span>
-          </article>
-          <article>
-            <p>Civil Cases</p>
-            <strong>
-              {
-                model.coverage
-                  .find((metric) => metric.key === "civil_cases")
-                  ?.value.toLocaleString("en-US") ?? "0"
-              }
-            </strong>
-            <span>Connected civil case records</span>
-          </article>
+          {
+            topicConfig.metrics.map((metric) => (
+              <article>
+                <p>{metric.label}</p>
+                <strong>{metric.value}</strong>
+                <span>{metric.detail}</span>
+              </article>
+            ))
+          }
         </div>
 
         <div class="civic-scoped-chart-grid">
           {
-            chartTitles.map((title) => (
+            topicConfig.charts.map((title) => (
               <article class="civic-scoped-chart-card">
                 <h2>{title}</h2>
                 <div class="civic-scoped-empty-chart" aria-hidden="true" />
@@ -185,7 +262,14 @@ const chartTitles =
 
   .civic-scoped-heading h1 {
     color: #071842;
-    font-size: clamp(2.05rem, 3.4vw, 2.75rem);
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    font-size: 2.25rem;
     font-weight: 800;
     letter-spacing: 0;
     line-height: 1;
@@ -194,7 +278,9 @@ const chartTitles =
 
   .civic-scoped-heading p {
     color: #33456f;
+    line-height: 1.55;
     margin: 0;
+    max-width: 72ch;
   }
 
   .civic-scoped-actions {
@@ -209,7 +295,8 @@ const chartTitles =
     border: 1px solid #c9d4e6;
     border-radius: 0.4rem;
     color: #071842;
-    font-weight: 800;
+    font-size: 0.88rem;
+    font-weight: 700;
     min-height: 3rem;
     padding: 0.72rem 1.05rem;
   }
@@ -242,21 +329,24 @@ const chartTitles =
   }
 
   .civic-scoped-metrics p {
-    font-size: 0.84rem;
-    font-weight: 800;
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.3;
     margin: 0;
   }
 
   .civic-scoped-metrics strong {
     display: block;
-    font-size: 1.65rem;
-    line-height: 1.1;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.12;
     margin: 0.35rem 0;
   }
 
   .civic-scoped-metrics span {
     color: #33456f;
-    font-size: 0.82rem;
+    font-size: 0.8125rem;
+    line-height: 1.45;
   }
 
   .civic-scoped-chart-card {
@@ -265,8 +355,16 @@ const chartTitles =
   }
 
   .civic-scoped-chart-card h2 {
-    font-size: 1rem;
-    font-weight: 800;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    font-size: 1.0625rem;
+    font-weight: 750;
+    line-height: 1.25;
     margin: 0 0 1rem;
   }
 

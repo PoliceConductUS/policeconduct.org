@@ -1,9 +1,9 @@
-import { withDb } from "#src/lib/db.js";
 import {
   loadAgencySummaries,
   loadPersonnelSummaries,
   loadReportSummaries,
 } from "#src/lib/data/summaries.js";
+import { loadCivilCaseCountsByAgencyState } from "#src/lib/data/civil-case-scopes.js";
 
 export type CategoryCollectionCounts = {
   agencyCount: number;
@@ -27,23 +27,7 @@ export const loadCategoryCollectionCounts = async (): Promise<
     loadAgencySummaries(),
     loadPersonnelSummaries(),
     loadReportSummaries(),
-    withDb(async (client) => {
-      const result = await client.query(
-        `
-          select upper(lp.state_or_territory_slug) as category, count(distinct c.id) as case_count
-          from public.civil_cases c
-          join public.location_path lp
-            on lp.location_path_id = c.location_path_id
-          group by upper(lp.state_or_territory_slug)
-        `,
-      );
-      return result.rows.map(
-        (row: { category: string; case_count: string | number }) => ({
-          category: String(row.category || "").toLowerCase(),
-          count: Number(row.case_count || 0),
-        }),
-      );
-    }),
+    loadCivilCaseCountsByAgencyState(),
   ]);
 
   const agencyCounts = new Map<string, number>();

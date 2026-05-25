@@ -1,5 +1,5 @@
 ---
-import CivicScopedOverviewPage from "#src/components/CivicScopedOverviewPage.astro";
+import CivicScopedIndexPage from "#src/components/CivicScopedIndexPage.astro";
 import { buildAdministrativeAreaCivicIndex } from "#src/lib/data/civic-index.js";
 import {
   loadAdministrativeAreaScopedPaths,
@@ -17,4 +17,4 @@ const location = await loadRequiredLocationByPath(
 const model = await buildAdministrativeAreaCivicIndex(location);
 ---
 
-<CivicScopedOverviewPage model={model} kind="personnel" />
+<CivicScopedIndexPage model={model} kind="personnel" />

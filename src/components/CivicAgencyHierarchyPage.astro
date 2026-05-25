@@ -1,0 +1,532 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import type { FederalAgencyIndexModel } from "#src/lib/data/federal-agencies.js";
+import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+
+const { model, site } = Astro.props as {
+  model: FederalAgencyIndexModel;
+  site: URL | undefined;
+};
+
+const siteUrl = getSiteUrl(site);
+const pageUrl = new URL(model.pagePath, siteUrl).toString();
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: model.title,
+  description: model.description,
+  type: "CollectionPage",
+});
+const showCivilCaseScopeNote = model.pagePath.includes("/civil-cases/");
+---
+
+<SiteLayout
+  title={model.title}
+  description={model.description}
+  pagePath={model.pagePath}
+  structuredData={structuredData}
+>
+  <main class="civic-dashboard">
+    <section class="civic-dashboard-main">
+      <div class="container">
+        <Breadcrumbs items={model.breadcrumbs} className="mb-2" />
+        <div class="civic-dashboard-heading">
+          <div>
+            <h1>{model.heading}</h1>
+            <p>{model.description}</p>
+          </div>
+          <label class="civic-dashboard-jump">
+            <span>{model.searchLabel}</span>
+            <input
+              type="search"
+              placeholder={model.searchPlaceholder}
+              data-civic-hierarchy-filter-input
+            />
+          </label>
+        </div>
+
+        <div class="civic-metric-grid">
+          {
+            model.metrics.map((metric) => (
+              <article
+                class:list={[
+                  "civic-metric-card",
+                  metric.primary && "civic-metric-card-primary",
+                ]}
+              >
+                <svg
+                  aria-hidden="true"
+                  class={`civic-metric-icon civic-${metric.accent}`}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  {metric.key === "personnel" ? (
+                    <>
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </>
+                  ) : metric.key === "civilCases" ? (
+                    <>
+                      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                      <path d="M7 21h10" />
+                      <path d="M12 3v18" />
+                      <path d="M3 7h2c2 0 5-1 7-4 2 3 5 4 7 4h2" />
+                    </>
+                  ) : metric.key === "liabilityCosts" ? (
+                    <>
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+                      <path d="M12 6v12" />
+                    </>
+                  ) : metric.key === "parents" ? (
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+                  ) : (
+                    <>
+                      <path d="M3 21V7l9-4 9 4v14" />
+                      <path d="M9 21v-8h6v8" />
+                      <path d="M9 9h.01" />
+                      <path d="M15 9h.01" />
+                    </>
+                  )}
+                </svg>
+                <div class="civic-metric-body">
+                  <p>{metric.label}</p>
+                  <strong>{metric.value}</strong>
+                  <span>{metric.detail}</span>
+                  {metric.href && metric.actionLabel && !metric.primary ? (
+                    <a class="civic-metric-link" href={metric.href}>
+                      {metric.actionLabel}
+                    </a>
+                  ) : null}
+                </div>
+                {metric.href && metric.actionLabel && metric.primary ? (
+                  <a
+                    class="civic-metric-link civic-metric-link-primary"
+                    href={metric.href}
+                  >
+                    {metric.actionLabel}
+                  </a>
+                ) : null}
+              </article>
+            ))
+          }
+        </div>
+
+        <div class="civic-chart-grid">
+          {
+            model.charts.map((chartTitle) => (
+              <article class="civic-chart-card">
+                <h2>{chartTitle}</h2>
+                <p>Projected federal records for this view</p>
+                <div class="civic-empty-line-chart" aria-hidden="true" />
+              </article>
+            ))
+          }
+          <aside class="civic-chart-card civic-about-card">
+            <h2>About the Data</h2>
+            <p>
+              Federal pages use federal grouping records plus linked agency
+              records. Missing required agency fields are not fabricated.
+            </p>
+            <a href="/about/">Learn more about our data and methods</a>
+          </aside>
+        </div>
+
+        <section class="civic-row-section" aria-labelledby="civicRowsHeading">
+          <h2 id="civicRowsHeading">{model.rowsLabel}</h2>
+          <div class="civic-row-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  {
+                    model.columns.map((column) => (
+                      <th scope="col">{column.label}</th>
+                    ))
+                  }
+                  <th scope="col">View</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  model.rows.map((row) => (
+                    <tr
+                      data-civic-hierarchy-filter-item
+                      data-civic-hierarchy-filter-text={row.searchText}
+                    >
+                      {model.columns.map((column) => {
+                        const value =
+                          column.key === "label"
+                            ? row.label
+                            : (row.values[column.key] ?? "");
+                        return (
+                          <td>
+                            {column.key === "label" ? (
+                              <a href={row.href}>{row.label}</a>
+                            ) : (
+                              value
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td>
+                        <a href={row.href}>View</a>
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+          {showCivilCaseScopeNote ? <CivilCaseScopeNote /> : null}
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script is:inline>
+    document
+      .querySelectorAll("[data-civic-hierarchy-filter-input]")
+      .forEach((input) => {
+        input.addEventListener("input", () => {
+          const query = input.value.trim().toLowerCase();
+          document
+            .querySelectorAll("[data-civic-hierarchy-filter-item]")
+            .forEach((item) => {
+              const text =
+                item
+                  .getAttribute("data-civic-hierarchy-filter-text")
+                  ?.toLowerCase() || "";
+              item.hidden = Boolean(query) && !text.includes(query);
+            });
+        });
+      });
+  </script>
+</SiteLayout>
+
+<style>
+  .civic-dashboard {
+    background: #fbfcff;
+    color: #071842;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+  }
+
+  .civic-dashboard-main {
+    padding: 1.35rem 0 2rem;
+  }
+
+  .civic-dashboard-main > .container {
+    max-width: 1240px;
+  }
+
+  .civic-dashboard-heading {
+    align-items: start;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  .civic-dashboard-heading h1 {
+    color: #071842;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1;
+    margin: 0 0 0.45rem;
+  }
+
+  .civic-dashboard-heading p {
+    color: #33456f;
+    line-height: 1.55;
+    margin: 0;
+    max-width: 72ch;
+  }
+
+  .civic-dashboard-jump {
+    display: grid;
+    gap: 0.35rem;
+    justify-self: start;
+    min-width: min(100%, 18rem);
+  }
+
+  .civic-dashboard-jump span {
+    color: #53627f;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .civic-dashboard-jump input {
+    background: #fbfcff;
+    border: 1px solid #c9d4e6;
+    border-radius: 0.35rem;
+    color: #071842;
+    font: inherit;
+    font-weight: 600;
+    min-height: 2.6rem;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .civic-metric-grid,
+  .civic-chart-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  .civic-metric-card,
+  .civic-chart-card,
+  .civic-row-table-wrap {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+  }
+
+  .civic-metric-card {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: 2.8rem minmax(0, 1fr);
+    min-height: 8rem;
+    padding: 1rem;
+  }
+
+  .civic-metric-card-primary {
+    background: #f4f7fb;
+  }
+
+  .civic-metric-icon {
+    grid-column: 1;
+    grid-row: 1;
+    height: 2.7rem;
+    margin-top: 0.2rem;
+    width: 2.7rem;
+  }
+
+  .civic-metric-body {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .civic-blue {
+    color: #174bff;
+  }
+
+  .civic-green {
+    color: #087f3b;
+  }
+
+  .civic-purple {
+    color: #5b2df5;
+  }
+
+  .civic-metric-card p,
+  .civic-chart-card p {
+    color: #071842;
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 0;
+  }
+
+  .civic-metric-card strong {
+    display: block;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.12;
+    margin: 0.25rem 0 0.3rem;
+  }
+
+  .civic-metric-card span,
+  .civic-chart-card p {
+    color: #33456f;
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  .civic-metric-link,
+  .civic-about-card a,
+  .civic-row-table-wrap a {
+    color: #064cfb;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .civic-metric-link {
+    display: inline-block;
+    font-size: 0.8125rem;
+    margin-top: 0.55rem;
+  }
+
+  .civic-metric-link-primary {
+    background: #071842;
+    border: 1px solid #071842;
+    border-radius: 0.35rem;
+    color: #f8faff;
+    display: block;
+    font-size: 0.8125rem;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    line-height: 1.1;
+    margin-top: 0.25rem;
+    padding: 0.55rem 0.7rem;
+    text-align: center;
+    width: 100%;
+  }
+
+  .civic-metric-link::after,
+  .civic-about-card a::after {
+    content: "  ->";
+  }
+
+  .civic-chart-card {
+    min-height: 15.8rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .civic-chart-card h2,
+  .civic-row-section h2 {
+    color: #071842;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    font-size: 1.0625rem;
+    font-weight: 750;
+    line-height: 1.25;
+    margin: 0 0 0.25rem;
+  }
+
+  .civic-empty-line-chart {
+    background:
+      linear-gradient(#d9e1ee 1px, transparent 1px) 0 0 / 100% 25%,
+      linear-gradient(90deg, #b8c4d8 1px, transparent 1px) 0 0 / 10% 100%;
+    border-bottom: 1px solid #b8c4d8;
+    border-left: 1px solid #b8c4d8;
+    height: 9.5rem;
+    margin-top: 1rem;
+  }
+
+  .civic-empty-bars {
+    align-items: end;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    height: 10rem;
+    margin-top: 1rem;
+  }
+
+  .civic-empty-bars span {
+    border-bottom: 1px solid #b8c4d8;
+    color: #33456f;
+    display: grid;
+    font-size: 0.75rem;
+    min-height: 100%;
+    place-items: end center;
+    text-align: center;
+  }
+
+  .civic-row-section {
+    margin-top: 1rem;
+  }
+
+  .civic-row-section h2 {
+    margin-bottom: 1rem;
+  }
+
+  .civic-row-table-wrap {
+    overflow-x: auto;
+  }
+
+  .civic-row-table-wrap table {
+    border-collapse: collapse;
+    min-width: 760px;
+    width: 100%;
+  }
+
+  .civic-row-table-wrap th,
+  .civic-row-table-wrap td {
+    border-top: 1px solid #d9e1ee;
+    color: #071842;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    padding: 0.78rem 0.75rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .civic-row-table-wrap thead th {
+    background: #f7f9fc;
+    color: #53627f;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  @media (min-width: 768px) {
+    .civic-metric-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .civic-chart-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .civic-dashboard-heading {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .civic-dashboard-jump {
+      justify-self: end;
+    }
+
+    .civic-metric-grid {
+      grid-template-columns: repeat(5, minmax(10rem, 1fr));
+    }
+
+    .civic-chart-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .civic-chart-card {
+      grid-column: span 3;
+    }
+
+    .civic-about-card {
+      grid-column: span 3;
+    }
+  }
+</style>

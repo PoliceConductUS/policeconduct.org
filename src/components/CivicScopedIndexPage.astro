@@ -2,15 +2,19 @@
 import CivicScopedOverviewPage from "#src/components/CivicScopedOverviewPage.astro";
 import CivicScopedRowsTable from "#src/components/CivicScopedRowsTable.astro";
 import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
-
-type ScopedPageKind = "budget" | "civil-cases" | "liability-costs";
+import {
+  loadCivicTopicRecords,
+  type CivicTopicKind,
+} from "#src/lib/data/civic-topic-records.js";
 
 const { model, kind } = Astro.props as {
   model: CivicIndexModel;
-  kind: ScopedPageKind;
+  kind: CivicTopicKind;
 };
+
+const records = await loadCivicTopicRecords(model, kind);
 ---
 
-<CivicScopedOverviewPage model={model} kind={kind}>
-  <CivicScopedRowsTable model={model} kind={kind} />
+<CivicScopedOverviewPage model={model} kind={kind} records={records}>
+  <CivicScopedRowsTable records={records} />
 </CivicScopedOverviewPage>

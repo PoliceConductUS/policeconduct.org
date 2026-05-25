@@ -174,12 +174,54 @@ const directAgencyFor = (agencies) => {
     address: agency.address,
     administrativeArea: agency.administrativeArea,
     city: agency.city,
+    personnel: agency.personnelCount,
+    reports: agency.reportCount,
+    civilCases: agency.civilCaseCount,
     mapPoint: agency.mapPoint || null,
   };
 };
 
 const countLabel = (count, singular, plural) =>
   `${count} ${count === 1 ? singular : plural}`;
+
+const emptyCoverage = () => ({
+  agencies: 0,
+  personnel: 0,
+  reports: 0,
+  civilCases: 0,
+});
+
+const agencyCoverageFor = (agencies) =>
+  agencies.reduce(
+    (coverage, agency) => ({
+      agencies: coverage.agencies + 1,
+      personnel: coverage.personnel + agency.personnelCount,
+      reports: coverage.reports,
+      civilCases: coverage.civilCases,
+    }),
+    emptyCoverage(),
+  );
+
+const addReportCoverage = (coverage, records) => ({
+  agencies: coverage.agencies,
+  personnel: coverage.personnel,
+  reports: coverage.reports + records.reports,
+  civilCases: records.civilCases,
+});
+
+const sumCoverage = (items) =>
+  items.reduce(
+    (coverage, item) => ({
+      agencies: coverage.agencies + item.coverage.agencies,
+      personnel: coverage.personnel + item.coverage.personnel,
+      reports: coverage.reports + item.coverage.reports,
+      civilCases: coverage.civilCases + item.coverage.civilCases,
+    }),
+    emptyCoverage(),
+  );
+
+const recordCoverageFor = (recordsByLocationId, locationId) =>
+  recordsByLocationId.get(locationId) || { civilCases: 0, reports: 0 };
 
 const stateAreaChildPayload = (area) => {
   const directAgency = directAgencyFor(area.agencies);
@@ -189,6 +231,7 @@ const stateAreaChildPayload = (area) => {
     label: area.administrativeArea,
     kind: area.administrativeAreaKind,
     path: area.path,
+    coverage: area.coverage,
     childCount: area.places.size,
     directAgency,
     nextPath: directAgency?.path || directPlace?.path || area.path,
@@ -208,6 +251,7 @@ const areaPlaceChildPayload = (place) => {
   return {
     label: place.place,
     path: place.path,
+    coverage: place.coverage,
     childCount: place.agencies.length,
     directAgency,
     nextPath: directAgency?.path || place.path,
@@ -295,6 +339,69 @@ const fetchLocationRowsByPath = async (client, paths) => {
   return new Map(result.rows.map((row) => [row.path, row]));
 };
 
+const fetchLocationRecordCounts = async (client, locations) => {
+  if (!locations.length) return new Map();
+
+  const rows = (
+    await client.query(
+      `
+        with target(location_path_id, path) as (
+          select *
+          from unnest($1::text[], $2::text[])
+        ),
+        report_counts as (
+          select
+            location_path_id,
+            count(distinct id) as report_count
+          from public.reviews
+          where location_path_id = any($1)
+          group by location_path_id
+        ),
+        civil_case_counts as (
+          select
+            target.location_path_id,
+            count(distinct cco.civil_case_id) as civil_case_count
+          from target
+          join public.location_path agency_location
+            on agency_location.path like target.path || '%'
+          join public.agency scoped_agency
+            on scoped_agency.location_path_id = agency_location.location_path_id
+          join public.agency_officers target_assignment
+            on target_assignment.agency_id = scoped_agency.id
+          join public.agency_officers case_assignment
+            on case_assignment.officer_id = target_assignment.officer_id
+          join public.civil_case_officers cco
+            on cco.agency_officer_id = case_assignment.id
+          group by target.location_path_id
+        )
+        select
+          target.location_path_id,
+          coalesce(report_counts.report_count, 0) as report_count,
+          coalesce(civil_case_counts.civil_case_count, 0) as civil_case_count
+        from target
+        left join report_counts
+          on report_counts.location_path_id = target.location_path_id
+        left join civil_case_counts
+          on civil_case_counts.location_path_id = target.location_path_id
+      `,
+      [
+        locations.map((location) => location.id),
+        locations.map((location) => location.path),
+      ],
+    )
+  ).rows;
+
+  return new Map(
+    rows.map((row) => [
+      row.location_path_id,
+      {
+        civilCases: Number(row.civil_case_count || 0),
+        reports: Number(row.report_count || 0),
+      },
+    ]),
+  );
+};
+
 const requireLocationRow = (locationsByPath, path) => {
   const row = locationsByPath.get(path);
   if (!row) {
@@ -368,6 +475,108 @@ await withDb(async (client) => {
     const agencies = (
       await client.query(
         `
+          with eligible_agencies as (
+            select
+              a.id,
+              a.name,
+              a.slug,
+              a.location_path_id,
+              a.address,
+              a.zip_code,
+              a.latitude,
+              a.longitude,
+              a.created_at,
+              a.updated_at,
+              a.state,
+              a.city
+            from public.agency a
+            where exists (
+              select 1
+              from public.agency_officers ao
+              where ao.agency_id = a.id
+                and ao.end_date is null
+            )
+            or exists (
+              select 1
+              from public.agency_officers ao
+              join public.review_officers ro
+                on ro.agency_officer_id = ao.id
+              where ao.agency_id = a.id
+            )
+            or exists (
+              select 1
+              from public.agency_officers ao
+              join public.civil_case_officers cco
+                on cco.agency_officer_id = ao.id
+              where ao.agency_id = a.id
+            )
+            or exists (
+              select 1
+              from public.agency_links al
+              where al.agency_id = a.id
+            )
+            or exists (
+              select 1
+              from public.federal_agency_branch fab
+              where fab.agency_id = a.id
+            )
+            or exists (
+              select 1
+              from public.agency_officers ao
+              join public.coverage_link_agency_officers coverage_officer
+                on coverage_officer.agency_officer_id = ao.id
+              where ao.agency_id = a.id
+            )
+          ),
+          active_counts as (
+            select
+              ao.agency_id,
+              count(distinct ao.officer_id) as personnel_count
+            from public.agency_officers ao
+            join eligible_agencies ea
+              on ea.id = ao.agency_id
+            where ao.end_date is null
+            group by ao.agency_id
+          ),
+          report_counts as (
+            select
+              ao.agency_id,
+              count(distinct ro.review_id) as report_count
+            from public.agency_officers ao
+            join eligible_agencies ea
+              on ea.id = ao.agency_id
+            join public.review_officers ro
+              on ro.agency_officer_id = ao.id
+            group by ao.agency_id
+          ),
+          civil_case_links as (
+            select
+              ao.agency_id,
+              cco.civil_case_id
+            from public.agency_officers ao
+            join eligible_agencies ea
+              on ea.id = ao.agency_id
+            join public.civil_case_officers cco
+              on cco.agency_officer_id = ao.id
+            union
+            select
+              target_ao.agency_id,
+              cco.civil_case_id
+            from public.agency_officers target_ao
+            join eligible_agencies ea
+              on ea.id = target_ao.agency_id
+            join public.agency_officers case_ao
+              on case_ao.officer_id = target_ao.officer_id
+            join public.civil_case_officers cco
+              on cco.agency_officer_id = case_ao.id
+          ),
+          civil_case_counts as (
+            select
+              agency_id,
+              count(distinct civil_case_id) as civil_case_count
+            from civil_case_links
+            group by agency_id
+          )
           select
             a.id,
             a.name,
@@ -384,49 +593,22 @@ await withDb(async (client) => {
             a.latitude,
             a.longitude,
             a.created_at,
-            a.updated_at
-          from public.agency a
+            a.updated_at,
+            coalesce(active_counts.personnel_count, 0) as personnel_count,
+            coalesce(report_counts.report_count, 0) as report_count,
+            coalesce(civil_case_counts.civil_case_count, 0) as civil_case_count
+          from eligible_agencies a
           join public.location_path lp
             on lp.location_path_id = a.location_path_id
-          where exists (
-            select 1
-            from public.agency_officers ao
-            where ao.agency_id = a.id
-              and ao.end_date is null
-          )
-          or exists (
-            select 1
-            from public.agency_officers ao
-            join public.review_officers ro
-              on ro.agency_officer_id = ao.id
-            where ao.agency_id = a.id
-          )
-          or exists (
-            select 1
-            from public.agency_officers ao
-            join public.civil_case_officers cco
-              on cco.agency_officer_id = ao.id
-            where ao.agency_id = a.id
-          )
-          or exists (
-            select 1
-            from public.agency_links al
-            where al.agency_id = a.id
-          )
-          or exists (
-            select 1
-            from public.federal_agency_branch fab
-            where fab.agency_id = a.id
-          )
-          or exists (
-            select 1
-            from public.agency_officers ao
-            join public.coverage_link_agency_officers coverage_officer
-              on coverage_officer.agency_officer_id = ao.id
-            where ao.agency_id = a.id
-          )
-          order by lower(a.state), lower(a.administrative_area),
-            lower(a.city), lower(a.name), a.id
+          left join active_counts
+            on active_counts.agency_id = a.id
+          left join report_counts
+            on report_counts.agency_id = a.id
+          left join civil_case_counts
+            on civil_case_counts.agency_id = a.id
+          order by lower(lp.state_or_territory_slug),
+            lower(lp.administrative_area_name), lower(lp.place_name),
+            lower(a.name), a.id
         `,
       )
     ).rows.map((agency) => {
@@ -473,6 +655,9 @@ await withDb(async (client) => {
         zipCode: trimText(agency.zip_code).slice(0, 5) || null,
         latitude: parseCoordinate(agency.latitude),
         longitude: parseCoordinate(agency.longitude),
+        personnelCount: Number(agency.personnel_count || 0),
+        reportCount: Number(agency.report_count || 0),
+        civilCaseCount: Number(agency.civil_case_count || 0),
         createdAt: agency.created_at,
         updatedAt: agency.updated_at,
       };
@@ -659,6 +844,33 @@ await withDb(async (client) => {
       }
     }
 
+    const recordsByLocationId = await fetchLocationRecordCounts(
+      client,
+      locations,
+    );
+
+    for (const state of states.values()) {
+      for (const area of state.areas.values()) {
+        const places = [...area.places.values()];
+        for (const place of places) {
+          place.coverage = addReportCoverage(
+            agencyCoverageFor(place.agencies),
+            recordCoverageFor(recordsByLocationId, place.id),
+          );
+        }
+
+        area.coverage = addReportCoverage(
+          sumCoverage(places),
+          recordCoverageFor(recordsByLocationId, area.id),
+        );
+      }
+
+      state.coverage = addReportCoverage(
+        sumCoverage([...state.areas.values()]),
+        recordCoverageFor(recordsByLocationId, state.id),
+      );
+    }
+
     for (const agency of agencies) {
       if (
         agency.zipCode &&
@@ -698,6 +910,7 @@ await withDb(async (client) => {
             state: state.state,
             stateLabel: state.stateLabel,
             administrativeAreaPlural: state.administrativeAreaPlural,
+            coverage: state.coverage,
             mapBounds: state.mapBounds,
             mapPositionSource: state.mapPositionSource,
             children: areas.map(stateAreaChildPayload),
@@ -724,6 +937,7 @@ await withDb(async (client) => {
               administrativeArea: area.administrativeArea,
               administrativeAreaKind: area.administrativeAreaKind,
               parentPath: state.path,
+              coverage: area.coverage,
               mapBounds: area.mapBounds,
               mapPositionSource: area.mapPositionSource,
               children: places.map(areaPlaceChildPayload),
@@ -748,6 +962,7 @@ await withDb(async (client) => {
                 administrativeAreaKind: place.administrativeAreaKind,
                 administrativeAreaSlug: place.administrativeAreaSlug,
                 parentPath: area.path,
+                coverage: place.coverage,
                 mapBounds: place.mapBounds,
                 mapPositionSource: place.mapPositionSource,
                 agencies: place.agencies.map((agency) => ({
@@ -756,6 +971,9 @@ await withDb(async (client) => {
                   slug: agency.agencySlug,
                   path: agency.canonicalPath,
                   address: agency.address,
+                  personnel: agency.personnelCount,
+                  reports: agency.reportCount,
+                  civilCases: agency.civilCaseCount,
                   mapPoint: agency.mapPoint,
                 })),
               },

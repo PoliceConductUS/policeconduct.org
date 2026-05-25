@@ -15,7 +15,7 @@ const location = await loadRequiredLocationByPath(
   `/${Astro.params.category}/`,
   "state",
 );
-const label = "Counties / Areas";
+const label = "Counties";
 const model = await buildStateCivicIndex(location);
 const pagePath = `${model.pagePath}counties/`;
 const page = {

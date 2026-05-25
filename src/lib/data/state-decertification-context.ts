@@ -1,6 +1,5 @@
 export type StateDecertificationIndicator = {
   label: string;
-  status: "documented";
 };
 
 export type StateDecertificationContext = {
@@ -21,33 +20,15 @@ const reportCredit =
 const sourceHref = "https://www.mayerssolutions.com/licenserevoked";
 
 const catIndicators: StateDecertificationIndicator[] = [
-  { label: "Public access to POST/TCOLE meetings", status: "documented" },
-  { label: "POST/TCOLE meetings occur regularly", status: "documented" },
-  { label: "Civilian complaint pathway", status: "documented" },
-  {
-    label: "Civilian involvement in decertification decision-making",
-    status: "documented",
-  },
-  {
-    label: "Independent complaint-investigation authority",
-    status: "documented",
-  },
-  {
-    label: "Public information on ongoing decertification investigations",
-    status: "documented",
-  },
-  {
-    label: "Public information on determinations or adverse actions",
-    status: "documented",
-  },
-  {
-    label: "National Decertification Index checking or reporting",
-    status: "documented",
-  },
-  {
-    label: "Automatic and discretionary decertification mechanisms",
-    status: "documented",
-  },
+  { label: "Public access to POST/TCOLE meetings" },
+  { label: "POST/TCOLE meetings occur regularly" },
+  { label: "Civilian complaint pathway" },
+  { label: "Civilian involvement in decertification decision-making" },
+  { label: "Independent complaint-investigation authority" },
+  { label: "Public information on ongoing decertification investigations" },
+  { label: "Public information on determinations or adverse actions" },
+  { label: "National Decertification Index checking or reporting" },
+  { label: "Automatic and discretionary decertification mechanisms" },
 ];
 
 export const stateDecertificationContexts = new Map<

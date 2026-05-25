@@ -6,19 +6,59 @@ export type CivilCaseRow = {
   title?: string | null;
   cause_number?: string | null;
   filed_date?: string | null;
+  date_terminated?: string | null;
   court?: string | null;
   caseUrl: string;
   type: "Direct" | "Personnel-linked" | "Direct + personnel-linked";
+  personnel: CivilCasePersonnelRef[];
   personnelNames: string[];
 };
 
-type CivilCaseOfficerName = {
-  first_name?: string | null;
-  last_name?: string | null;
+export type CivilCasePersonnelRef = {
+  href: string;
+  id: string;
+  name: string;
 };
 
-const getOfficerName = (officer: CivilCaseOfficerName) =>
+type CivilCaseOfficer = {
+  first_name?: string | null;
+  id?: string | null;
+  last_name?: string | null;
+  slug?: string | null;
+};
+
+type CivilCaseOfficerLink = {
+  officer: CivilCaseOfficer;
+};
+
+const getOfficerName = (officer: CivilCaseOfficer) =>
   [officer.first_name, officer.last_name].filter(Boolean).join(" ");
+
+const getPersonnelRef = (officer: CivilCaseOfficer) => {
+  const id = String(officer.id || "").trim();
+  const slug = String(officer.slug || "").trim();
+  const name = getOfficerName(officer);
+  if (!id || !slug || !name) {
+    return null;
+  }
+  return {
+    href: `/personnel/${slug}/`,
+    id,
+    name,
+  };
+};
+
+const uniquePersonnel = (personnel: CivilCasePersonnelRef[]) => {
+  const byId = new Map<string, CivilCasePersonnelRef>();
+  for (const person of personnel) {
+    byId.set(person.id, person);
+  }
+  return [...byId.values()];
+};
+
+const isPersonnelRef = (
+  person: CivilCasePersonnelRef | null,
+): person is CivilCasePersonnelRef => Boolean(person);
 
 export const buildAgencyCivilCaseRows = (
   data: Awaited<ReturnType<typeof loadAgencyDetail>>,
@@ -26,32 +66,41 @@ export const buildAgencyCivilCaseRows = (
   const casesById = new Map<string, CivilCaseRow>();
 
   for (const caseItem of data.civilCases) {
+    const personnel = uniquePersonnel(
+      (caseItem.officers || [])
+        .map((officer: CivilCaseOfficer) => getPersonnelRef(officer))
+        .filter(isPersonnelRef),
+    );
     casesById.set(caseItem.id, {
       id: caseItem.id,
       slug: caseItem.slug,
       title: caseItem.title,
       cause_number: caseItem.cause_number,
       filed_date: caseItem.filed_date,
+      date_terminated: caseItem.date_terminated,
       court: caseItem.court,
       caseUrl: caseItem.caseUrl,
       type: "Direct",
-      personnelNames: (caseItem.officers || [])
-        .map((officer: CivilCaseOfficerName) => getOfficerName(officer))
-        .filter(Boolean),
+      personnel,
+      personnelNames: personnel.map((person) => person.name),
     });
   }
 
   for (const caseItem of data.personnelLinkedCivilCases) {
     const existing = casesById.get(caseItem.id);
-    const personnelNames = (caseItem.links || [])
-      .map((link) => getOfficerName(link.officer))
-      .filter(Boolean);
+    const personnel = uniquePersonnel(
+      (caseItem.links || [])
+        .map((link: CivilCaseOfficerLink) => getPersonnelRef(link.officer))
+        .filter(isPersonnelRef),
+    );
 
     if (existing) {
       existing.type = "Direct + personnel-linked";
-      existing.personnelNames = [
-        ...new Set([...existing.personnelNames, ...personnelNames]),
-      ];
+      existing.personnel = uniquePersonnel([
+        ...existing.personnel,
+        ...personnel,
+      ]);
+      existing.personnelNames = existing.personnel.map((person) => person.name);
       continue;
     }
 
@@ -61,10 +110,12 @@ export const buildAgencyCivilCaseRows = (
       title: caseItem.title,
       cause_number: caseItem.cause_number,
       filed_date: caseItem.filed_date,
+      date_terminated: caseItem.date_terminated,
       court: caseItem.court,
       caseUrl: caseItem.caseUrl,
       type: "Personnel-linked",
-      personnelNames,
+      personnel,
+      personnelNames: personnel.map((person) => person.name),
     });
   }
 
