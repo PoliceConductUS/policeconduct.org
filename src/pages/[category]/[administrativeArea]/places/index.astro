@@ -1,0 +1,33 @@
+---
+import CivicChildIndexPage from "#src/components/CivicChildIndexPage.astro";
+import { buildAdministrativeAreaCivicIndex } from "#src/lib/data/civic-index.js";
+import {
+  loadAdministrativeAreaScopedPaths,
+  loadRequiredLocationByPath,
+} from "#src/lib/data/civic-scoped-routes.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
+
+export async function getStaticPaths() {
+  return loadAdministrativeAreaScopedPaths();
+}
+
+const location = await loadRequiredLocationByPath(
+  `/${Astro.params.category}/${Astro.params.administrativeArea}/`,
+  "administrative_area",
+);
+const label = "Places";
+const model = await buildAdministrativeAreaCivicIndex(location);
+const pagePath = `${model.pagePath}places/`;
+const page = {
+  currentPage: 1,
+  data: model.rows.slice(0, PAGE_SIZE),
+  lastPage: Math.max(1, Math.ceil(model.rows.length / PAGE_SIZE)),
+};
+---
+
+<CivicChildIndexPage
+  label={label}
+  model={model}
+  page={page}
+  pagePath={pagePath}
+/>

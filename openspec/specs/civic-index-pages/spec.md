@@ -1,8 +1,11 @@
 # civic-index-pages Specification
 
 ## Purpose
+
 Define the shared Civic Index landing-page pattern for state, administrative-area, and place pages so jurisdiction pages present current record coverage, one-level-down navigation, persona action paths, and clearly labeled future datasets while preserving database-backed routing conventions.
+
 ## Requirements
+
 ### Requirement: Shared Civic Index pattern
 
 The system SHALL render state, administrative-area, and place landing pages with a shared Civic Index page pattern.

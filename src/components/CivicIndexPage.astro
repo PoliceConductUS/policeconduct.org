@@ -1,6 +1,5 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
-import LocationMap from "#src/components/LocationMap.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
@@ -22,6 +21,92 @@ const structuredData = buildWebPage({
 const heading =
   model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
   model.jurisdictionLabel;
+const scopedHref = (slug: string) => `${model.pagePath}${slug}/`;
+const coverageCount = (key: string) =>
+  model.coverage.find((metric) => metric.key === key)?.value ?? 0;
+const formatCount = (value: number) => value.toLocaleString("en-US");
+const childMetric =
+  model.level === "state"
+    ? {
+        actionLabel: "Explore counties / areas",
+        detail: `${model.indexLabel}`,
+        href: scopedHref("counties"),
+        icon: "shield",
+        label: "Counties / Areas",
+        primaryAction: true,
+        value: formatCount(model.rows.length),
+      }
+    : model.level === "administrative_area"
+      ? {
+          actionLabel: "Explore places",
+          detail: `${model.indexLabel}`,
+          href: scopedHref("places"),
+          icon: "building",
+          label: "Places",
+          primaryAction: true,
+          value: formatCount(model.rows.length),
+        }
+      : {
+          actionLabel: "Explore agencies",
+          detail: "Agencies operating in this place",
+          href: scopedHref("agencies"),
+          icon: "building",
+          label: "Agencies Tracked",
+          primaryAction: true,
+          value: formatCount(coverageCount("agencies")),
+        };
+const metricCards = [
+  {
+    accent: "blue",
+    actionLabel: "View details",
+    ...childMetric,
+  },
+  {
+    accent: "blue",
+    actionLabel: "View details",
+    detail: "Active and total tracked personnel",
+    href: scopedHref("personnel"),
+    icon: "people",
+    label: "Personnel",
+    value: formatCount(coverageCount("personnel")),
+  },
+  {
+    accent: "green",
+    actionLabel: "View details",
+    detail: "Fiscal year agency budget",
+    href: scopedHref("budget"),
+    icon: "dollar",
+    label: "Combined Budget",
+    value: "$--",
+  },
+  {
+    accent: "purple",
+    actionLabel: "View details",
+    detail: "Direct and personnel-linked civil cases",
+    href: scopedHref("civil-cases"),
+    icon: "scales",
+    label: "Civil Cases",
+    value: formatCount(coverageCount("civil_cases")),
+  },
+  {
+    accent: "green",
+    actionLabel: "View details",
+    detail: "Claims, settlements, judgments, and related costs",
+    href: scopedHref("liability-costs"),
+    icon: "dollar",
+    label: "Liability Costs",
+    value: "$--",
+  },
+];
+const chartCards = [
+  ["Arrests Over Time", "Number of arrests by category"],
+  ["Killings Over Time", "People, dogs, and other pets"],
+  ["Use of Force Over Time", "Number of use of force incidents"],
+  [
+    "Civil Cases and Liability Costs Over Time",
+    "Active civil cases and documented liability costs",
+  ],
+];
 ---
 
 <SiteLayout
@@ -30,448 +115,566 @@ const heading =
   pagePath={model.pagePath}
   structuredData={structuredData}
 >
-  <main class="civic-index">
-    <section class="civic-index-hero">
+  <main class="civic-dashboard">
+    <section class="civic-dashboard-main">
       <div class="container">
-        <div class="civic-index-hero-grid">
+        <Breadcrumbs items={model.breadcrumbs} className="mb-2" />
+        <div class="civic-dashboard-heading">
           <div>
-            <Breadcrumbs items={model.breadcrumbs} className="mb-3" />
-            <p class="civic-index-kicker">{model.jurisdictionLabel}</p>
             <h1>{heading}</h1>
-            <p class="civic-index-lede">{model.description}</p>
+            <p>{model.description}</p>
           </div>
-          <aside class="civic-coverage" aria-label="Current record coverage">
-            <h2>Current record coverage</h2>
-            <dl>
-              {
-                model.coverage.map((metric) => (
-                  <div>
-                    <dt>{metric.label}</dt>
-                    <dd>{metric.value.toLocaleString("en-US")}</dd>
-                  </div>
-                ))
-              }
-            </dl>
-          </aside>
+          <div class="civic-dashboard-actions">
+            <button type="button" data-civic-share>Share</button>
+            <button
+              type="button"
+              class="civic-dashboard-primary"
+              data-civic-download
+            >
+              Download Report
+            </button>
+            <span data-civic-coming-soon></span>
+          </div>
         </div>
-      </div>
-    </section>
 
-    <section class="civic-index-main">
-      <div class="container civic-index-main-grid">
-        <div class="civic-index-records">
-          <LocationMap
-            title={model.map.title}
-            description={model.map.description}
-            bounds={model.map.bounds}
-            points={model.map.points}
-            emptyLabel={model.map.emptyLabel}
-          />
-          <div class="civic-index-table-wrap">
-            <div class="civic-index-table-header">
-              <h2>{model.indexLabel}</h2>
-              <label>
-                <span class="visually-hidden">Search index</span>
-                <input
-                  data-civic-index-search
-                  type="search"
-                  placeholder="Search this index"
-                />
-              </label>
-            </div>
-            <table class="civic-index-table" data-civic-index-table>
+        <div class="civic-metric-grid">
+          {
+            metricCards.map((metric) => (
+              <article
+                class:list={[
+                  "civic-metric-card",
+                  metric.primaryAction && "civic-metric-card-primary",
+                ]}
+              >
+                <svg
+                  aria-hidden="true"
+                  class={`civic-metric-icon civic-${metric.accent}`}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  {metric.icon === "people" ? (
+                    <>
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </>
+                  ) : metric.icon === "dollar" ? (
+                    <>
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+                      <path d="M12 6v12" />
+                    </>
+                  ) : metric.icon === "scales" ? (
+                    <>
+                      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                      <path d="M7 21h10" />
+                      <path d="M12 3v18" />
+                      <path d="M3 7h2c2 0 5-1 7-4 2 3 5 4 7 4h2" />
+                    </>
+                  ) : metric.icon === "shield" ? (
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+                  ) : (
+                    <>
+                      <path d="M3 21V7l9-4 9 4v14" />
+                      <path d="M9 21v-8h6v8" />
+                      <path d="M9 9h.01" />
+                      <path d="M15 9h.01" />
+                    </>
+                  )}
+                </svg>
+                <div>
+                  <p>{metric.label}</p>
+                  <strong>{metric.value}</strong>
+                  <span>{metric.detail}</span>
+                  <a
+                    class:list={[
+                      "civic-metric-link",
+                      metric.primaryAction && "civic-metric-link-primary",
+                    ]}
+                    href={metric.href}
+                  >
+                    {metric.actionLabel}
+                  </a>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+
+        <div class="civic-chart-grid">
+          {
+            chartCards.map(([title, description]) => (
+              <article class="civic-chart-card">
+                <h2>{title}</h2>
+                <p>{description}</p>
+                <div class="civic-empty-line-chart" aria-hidden="true" />
+              </article>
+            ))
+          }
+
+          <article class="civic-chart-card civic-half-card">
+            <h2>Racial Breakdown of Stops or Arrests</h2>
+            <p>Who is most affected in the current dataset</p>
+            <table class="civic-mini-table">
               <thead>
                 <tr>
-                  {
-                    model.columns.map((column) => (
-                      <th scope="col" aria-sort="none">
-                        <button
-                          type="button"
-                          data-civic-index-sort={column.key}
-                          data-civic-index-numeric={
-                            column.numeric ? "true" : "false"
-                          }
-                        >
-                          {column.label}
-                        </button>
-                      </th>
-                    ))
-                  }
-                  <th scope="col">View</th>
+                  <th scope="col">Race / Ethnicity</th>
+                  <th scope="col">Stops %</th>
+                  <th scope="col">Arrests %</th>
                 </tr>
               </thead>
               <tbody>
                 {
-                  model.rows.map((row, index) => (
-                    <tr
-                      data-civic-index-row
-                      data-search-text={row.searchText}
-                      data-original-index={String(index)}
-                    >
-                      {model.columns.map((column) => {
-                        const value =
-                          column.key === "label"
-                            ? row.label
-                            : (row.values[column.key] ?? "");
-                        return (
-                          <td
-                            class:list={[
-                              column.numeric && "civic-index-table-number",
-                            ]}
-                            data-sort-value={String(value)}
-                          >
-                            {column.key === "label" ? (
-                              <a href={row.href}>{row.label}</a>
-                            ) : (
-                              value
-                            )}
-                          </td>
-                        );
-                      })}
-                      <td>
-                        <a href={row.href}>View</a>
-                      </td>
+                  [
+                    "White",
+                    "Black or African American",
+                    "Hispanic or Latino",
+                    "Asian",
+                    "Other / Unknown",
+                  ].map((label) => (
+                    <tr>
+                      <th scope="row">{label}</th>
+                      <td />
+                      <td />
                     </tr>
                   ))
                 }
               </tbody>
             </table>
-          </div>
+          </article>
+
+          <article class="civic-chart-card">
+            <h2>Daylight vs Nighttime Stops</h2>
+            <p>Comparison of stops by time of day and race</p>
+            <div class="civic-empty-bars" aria-hidden="true">
+              {
+                [
+                  "White",
+                  "Black or African American",
+                  "Hispanic or Latino",
+                  "Other / Unknown",
+                ].map((label) => <span>{label}</span>)
+              }
+            </div>
+          </article>
+
+          <article class="civic-chart-card civic-half-card">
+            <h2>Top Charge Categories</h2>
+            <p>Most common reasons for arrest</p>
+            <div class="civic-horizontal-bars">
+              {
+                [
+                  "Traffic Offenses",
+                  "Theft",
+                  "Assault",
+                  "Possession",
+                  "DWI",
+                ].map((label) => (
+                  <div>
+                    <span>{label}</span>
+                    <i>
+                      <b style="width: 0%" />
+                    </i>
+                    <strong />
+                  </div>
+                ))
+              }
+            </div>
+          </article>
+
+          <article class="civic-chart-card civic-wide-card">
+            <h2>Budget and Overtime Trend</h2>
+            <p>Total budget and overtime spending</p>
+            <div class="civic-empty-line-chart" aria-hidden="true"></div>
+          </article>
+
+          <aside class="civic-chart-card civic-about-card">
+            <h2>About the Data</h2>
+            <p>
+              IPC compiles publicly available records and agency-provided data
+              to help the community understand policing in {heading}.
+            </p>
+            <a href="/about/">Learn more about our data and methods</a>
+          </aside>
         </div>
-        <aside class="civic-actions" aria-label="Start with a question">
-          <h2>Start with a question</h2>
-          {
-            model.actionGroups.map((group) => (
-              <section>
-                <h3>{group.label}</h3>
-                <ul>
-                  {group.actions.map((action) => (
-                    <li>
-                      <a href={action.href}>
-                        <strong>{action.label}</strong>
-                        <span>{action.description}</span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))
-          }
-        </aside>
       </div>
     </section>
 
-    <section class="civic-future">
-      <div class="container">
-        <h2>Data not collected yet</h2>
-        <div class="civic-future-grid">
-          {
-            model.futureDatasets.map((dataset) => (
-              <article>
-                <h3>{dataset.label}</h3>
-                <p>{dataset.description}</p>
-              </article>
-            ))
-          }
-        </div>
-      </div>
-    </section>
+    {
+      model.stateDecertificationContext ? (
+        <section class="civic-policy-context">
+          <div class="container">
+            <h2>{model.stateDecertificationContext.title}</h2>
+            <p>{model.stateDecertificationContext.summary}</p>
+            <a href={model.stateDecertificationContext.sourceHref}>
+              {model.stateDecertificationContext.sourceLabel}
+            </a>
+          </div>
+        </section>
+      ) : null
+    }
   </main>
 </SiteLayout>
 
 <script is:inline>
   (() => {
-    const collator = new Intl.Collator("en", {
-      numeric: true,
-      sensitivity: "base",
+    const setSoon = (button, message) => {
+      const output = button
+        .closest(".civic-dashboard-actions")
+        ?.querySelector("[data-civic-coming-soon]");
+      if (output) output.textContent = message;
+    };
+
+    document.querySelectorAll("[data-civic-share]").forEach((button) => {
+      button.addEventListener("click", () =>
+        setSoon(button, "Sharing tools are coming soon."),
+      );
     });
 
-    document.querySelectorAll("[data-civic-index-table]").forEach((table) => {
-      const rows = Array.from(table.querySelectorAll("[data-civic-index-row]"));
-      let activeSortKey = "";
-      let activeSortDirection = "ascending";
-      const search = table
-        .closest(".civic-index-table-wrap")
-        ?.querySelector("[data-civic-index-search]");
-
-      search?.addEventListener("input", () => {
-        const query = search.value.trim().toLowerCase();
-        rows.forEach((row) => {
-          const text = row.dataset.searchText?.toLowerCase() || "";
-          row.hidden = Boolean(query) && !text.includes(query);
-        });
-      });
-
-      table.querySelectorAll("[data-civic-index-sort]").forEach((button) => {
-        button.addEventListener("click", () => {
-          const headerCell = button.closest("th");
-          const headerRow = headerCell?.parentElement;
-          const body = table.querySelector("tbody");
-          const sortKey = button.dataset.civicIndexSort || "";
-
-          if (!headerCell || !headerRow || !body) {
-            return;
-          }
-
-          activeSortDirection =
-            activeSortKey === sortKey && activeSortDirection === "ascending"
-              ? "descending"
-              : "ascending";
-          activeSortKey = sortKey;
-
-          table.querySelectorAll("[data-civic-index-sort]").forEach((item) => {
-            item.closest("th")?.setAttribute("aria-sort", "none");
-          });
-          headerCell.setAttribute("aria-sort", activeSortDirection);
-
-          const index = Array.from(headerRow.children).indexOf(headerCell);
-          const numeric = button.dataset.civicIndexNumeric === "true";
-          const sorted = [...rows].sort((left, right) => {
-            const leftValue =
-              left.children[index]?.getAttribute("data-sort-value") || "";
-            const rightValue =
-              right.children[index]?.getAttribute("data-sort-value") || "";
-            const comparison = numeric
-              ? Number(leftValue || 0) - Number(rightValue || 0)
-              : collator.compare(leftValue, rightValue);
-            const directedComparison =
-              activeSortDirection === "ascending" ? comparison : -comparison;
-
-            if (directedComparison !== 0) {
-              return directedComparison;
-            }
-
-            return (
-              Number(left.dataset.originalIndex || 0) -
-              Number(right.dataset.originalIndex || 0)
-            );
-          });
-
-          body.replaceChildren(...sorted);
-        });
-      });
+    document.querySelectorAll("[data-civic-download]").forEach((button) => {
+      button.addEventListener("click", () =>
+        setSoon(button, "Downloadable reports are coming soon."),
+      );
     });
   })();
 </script>
 
 <style>
-  .civic-index {
-    background: #fbfaf7;
-    color: #14202a;
+  .civic-dashboard {
+    background: #fbfcff;
+    color: #071842;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
   }
 
-  .civic-index-hero,
-  .civic-index-main,
-  .civic-future {
-    border-bottom: 1px solid rgba(20, 32, 42, 0.32);
-    padding: clamp(2rem, 5vw, 4.5rem) 0;
+  .civic-dashboard-main {
+    padding: 1.35rem 0 2rem;
   }
 
-  .civic-index-hero-grid,
-  .civic-index-main-grid {
+  .civic-dashboard-main > .container,
+  .civic-policy-context > .container {
+    max-width: 1240px;
+  }
+
+  .civic-dashboard-heading {
+    align-items: start;
     display: grid;
-    gap: clamp(1.5rem, 4vw, 3rem);
+    gap: 1.5rem;
     grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
   }
 
-  .civic-index-kicker,
-  .civic-actions h3 {
-    color: #9d1f1f;
-    font-size: 0.78rem;
+  .civic-dashboard-heading h1 {
+    color: #071842;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    font-size: clamp(2.05rem, 3.4vw, 2.75rem);
     font-weight: 800;
-    letter-spacing: 0.12em;
-    margin-bottom: 1rem;
-    text-transform: uppercase;
+    letter-spacing: 0;
+    line-height: 1;
+    margin: 0 0 0.45rem;
   }
 
-  .civic-index h1 {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(3rem, 8vw, 5.75rem);
-    line-height: 0.95;
-    margin: 0 0 1.5rem;
-  }
-
-  .civic-index-lede {
-    color: #314252;
-    font-size: clamp(1.1rem, 2vw, 1.35rem);
-    line-height: 1.6;
-    max-width: 42rem;
-  }
-
-  .civic-coverage,
-  .civic-actions {
-    border: 1px solid rgba(20, 32, 42, 0.32);
-    padding: 1.25rem;
-  }
-
-  .civic-coverage h2,
-  .civic-actions h2,
-  .civic-index-table-header h2,
-  .civic-future h2 {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(1.65rem, 3vw, 2.35rem);
+  .civic-dashboard-heading p {
+    color: #33456f;
     margin: 0;
   }
 
-  .civic-coverage dl {
-    margin: 1rem 0 0;
-  }
-
-  .civic-coverage div,
-  .civic-actions li,
-  .civic-index-table th,
-  .civic-index-table td {
-    border-top: 1px solid rgba(20, 32, 42, 0.22);
-  }
-
-  .civic-coverage div {
-    align-items: baseline;
+  .civic-dashboard-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
-    justify-content: space-between;
-    padding: 0.8rem 0;
+    justify-content: start;
   }
 
-  .civic-coverage dt {
-    font-weight: 500;
-    order: 2;
+  .civic-dashboard-actions button {
+    background: #fbfcff;
+    border: 1px solid #c9d4e6;
+    border-radius: 0.4rem;
+    color: #071842;
+    font-weight: 800;
+    min-height: 3rem;
+    padding: 0.72rem 1.05rem;
   }
 
-  .civic-coverage dd {
-    color: #14202a;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 1.65rem;
+  .civic-dashboard-actions .civic-dashboard-primary {
+    background: #071842;
+    border-color: #071842;
+    color: #f8faff;
+  }
+
+  .civic-dashboard-actions span {
+    color: #33456f;
+    flex-basis: 100%;
+    font-size: 0.82rem;
     font-weight: 700;
-    margin: 0;
+    min-height: 1.15rem;
+    text-align: right;
   }
 
-  .civic-index-records {
-    min-width: 0;
-  }
-
-  .civic-index-table-wrap {
-    margin-top: 1.25rem;
-  }
-
-  .civic-index-table-header {
-    align-items: end;
+  .civic-metric-grid,
+  .civic-chart-grid {
     display: grid;
     gap: 1rem;
     grid-template-columns: minmax(0, 1fr);
     margin-bottom: 1rem;
   }
 
-  .civic-index-table-header input {
-    background: #fffefa;
-    border: 1px solid rgba(20, 32, 42, 0.52);
-    border-radius: 0;
-    min-height: 2.75rem;
-    padding: 0.65rem 0.85rem;
-    width: 100%;
+  .civic-metric-card,
+  .civic-chart-card {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
   }
 
-  .civic-index-table {
+  .civic-metric-card {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: 2.8rem minmax(0, 1fr);
+    min-height: 8rem;
+    padding: 1rem;
+  }
+
+  .civic-metric-card-primary {
+    background: #f4f7fb;
+  }
+
+  .civic-metric-icon {
+    height: 2.7rem;
+    margin-top: 0.2rem;
+    width: 2.7rem;
+  }
+
+  .civic-blue {
+    color: #174bff;
+  }
+
+  .civic-green {
+    color: #087f3b;
+  }
+
+  .civic-purple {
+    color: #5b2df5;
+  }
+
+  .civic-metric-card p,
+  .civic-chart-card p {
+    color: #071842;
+    font-size: 0.84rem;
+    font-weight: 800;
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  .civic-metric-card strong {
+    display: block;
+    font-size: clamp(1.25rem, 1.45vw, 1.45rem);
+    line-height: 1.1;
+    margin: 0.25rem 0 0.3rem;
+  }
+
+  .civic-metric-card span,
+  .civic-chart-card p {
+    color: #33456f;
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+
+  .civic-metric-link,
+  .civic-about-card a {
+    color: #064cfb;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .civic-metric-link {
+    display: inline-block;
+    font-size: 0.78rem;
+    margin-top: 0.55rem;
+  }
+
+  .civic-metric-link-primary {
+    background: #071842;
+    border: 1px solid #071842;
+    border-radius: 0.35rem;
+    color: #f8faff;
+    font-size: 0.8rem;
+    line-height: 1.1;
+    padding: 0.55rem 0.7rem;
+  }
+
+  .civic-metric-link::after,
+  .civic-about-card a::after {
+    content: "  ->";
+  }
+
+  .civic-chart-card {
+    min-height: 15.8rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .civic-chart-card h2,
+  .civic-policy-context h2 {
+    color: #071842;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin: 0 0 0.25rem;
+  }
+
+  .civic-empty-line-chart {
+    background:
+      linear-gradient(#d9e1ee 1px, transparent 1px) 0 0 / 100% 25%,
+      linear-gradient(90deg, #b8c4d8 1px, transparent 1px) 0 0 / 10% 100%;
+    border-bottom: 1px solid #b8c4d8;
+    border-left: 1px solid #b8c4d8;
+    height: 9.5rem;
+    margin-top: 1rem;
+  }
+
+  .civic-mini-table {
     border-collapse: collapse;
-    font-size: 0.95rem;
+    margin-top: 0.85rem;
     width: 100%;
   }
 
-  .civic-index-table th,
-  .civic-index-table td {
-    padding: 0.75rem 0.45rem;
+  .civic-mini-table th,
+  .civic-mini-table td {
+    border-top: 1px solid #d9e1ee;
+    color: #071842;
+    font-size: 0.78rem;
+    padding: 0.5rem 0.4rem;
     text-align: left;
     vertical-align: top;
   }
 
-  .civic-index-table-number {
-    font-variant-numeric: tabular-nums;
-  }
-
-  .civic-index-table th button {
-    background: none;
-    border: 0;
-    color: inherit;
-    font: inherit;
-    font-weight: 700;
-    padding: 0;
-    text-align: left;
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.18em;
-  }
-
-  .civic-index a {
-    color: #005e73;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.18em;
-  }
-
-  .civic-actions ul {
-    list-style: none;
-    margin: 0 0 1.5rem;
-    padding: 0;
-  }
-
-  .civic-actions section:last-child ul {
-    margin-bottom: 0;
-  }
-
-  .civic-actions li a {
-    display: grid;
-    gap: 0.25rem;
-    padding: 1rem 0;
-    text-decoration: none;
-  }
-
-  .civic-actions li strong {
-    color: #005e73;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 1.1rem;
-  }
-
-  .civic-actions li span,
-  .civic-future p {
-    color: #314252;
-    line-height: 1.45;
-  }
-
-  .civic-future-grid {
+  .civic-empty-bars {
+    align-items: end;
     display: grid;
     gap: 0.75rem;
-    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-    margin-top: 1.25rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    height: 10rem;
+    margin-top: 1rem;
   }
 
-  .civic-future article {
-    border: 1px solid rgba(20, 32, 42, 0.26);
-    padding: 1rem;
+  .civic-empty-bars span {
+    border-bottom: 1px solid #b8c4d8;
+    color: #33456f;
+    display: grid;
+    font-size: 0.68rem;
+    min-height: 100%;
+    place-items: end center;
+    text-align: center;
   }
 
-  .civic-future h3 {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 1.2rem;
-    margin: 0 0 0.45rem;
+  .civic-horizontal-bars {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1rem;
   }
 
-  @media (min-width: 992px) {
-    .civic-index-hero-grid {
-      grid-template-columns: minmax(0, 1fr) minmax(18rem, 27rem);
+  .civic-horizontal-bars div {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(6rem, 0.8fr) minmax(7rem, 2fr) auto;
+  }
+
+  .civic-horizontal-bars span,
+  .civic-horizontal-bars strong {
+    color: #071842;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .civic-horizontal-bars i {
+    background: #e7edf7;
+    display: block;
+    height: 0.78rem;
+  }
+
+  .civic-horizontal-bars b {
+    background: #174bff;
+    display: block;
+    height: 100%;
+  }
+
+  .civic-policy-context {
+    border-top: 1px solid #d5deeb;
+    padding: 2rem 0;
+  }
+
+  .civic-policy-context p {
+    color: #33456f;
+    margin: 0.35rem 0 0;
+  }
+
+  @media (min-width: 768px) {
+    .civic-metric-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .civic-index-main-grid {
-      grid-template-columns: minmax(0, 1fr) minmax(18rem, 28rem);
-    }
-
-    .civic-index-table-header {
-      grid-template-columns: minmax(0, 1fr) minmax(16rem, 24rem);
+    .civic-chart-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  @media (max-width: 767.98px) {
-    .civic-index-table {
-      display: block;
-      overflow-x: auto;
-      white-space: nowrap;
+  @media (min-width: 1200px) {
+    .civic-dashboard-heading {
+      grid-template-columns: minmax(0, 1fr) auto;
     }
+
+    .civic-dashboard-actions {
+      justify-content: end;
+    }
+
+    .civic-metric-grid {
+      grid-template-columns: repeat(5, minmax(10rem, 1fr));
+    }
+
+    .civic-chart-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .civic-chart-card {
+      grid-column: span 3;
+    }
+
+    .civic-half-card,
+    .civic-about-card {
+      grid-column: span 4;
+    }
+
+    .civic-wide-card {
+      grid-column: span 6;
+    }
+  }
+
+  @media (max-width: 991.98px) {
   }
 </style>

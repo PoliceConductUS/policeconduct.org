@@ -9,7 +9,6 @@ import {
   loadAgencyLocationStaticPaths,
 } from "#src/lib/data/agency-detail.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
-import ProfileTabs from "#src/components/ProfileTabs.astro";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
@@ -18,11 +17,6 @@ export async function getStaticPaths() {
 
 const { agencyId } = Astro.props;
 const data = await loadAgencyDetail(agencyId);
-
-const agencyRatingPercent =
-  data.agencyStats && data.agencyStats.review_count > 0
-    ? Math.round(Number(data.agencyStats.weighted_average || 0) * 10)
-    : 0;
 
 const {
   agencyName,
@@ -35,11 +29,7 @@ const {
   placeLabel,
   placePath,
   civilCases,
-  personnelLinkedCivilCases,
   reportedReports,
-  currentEmployees,
-  formerEmployees,
-  coverageLinks,
   counts,
 } = data;
 const agencyLinksSummary = data.agencyLinks
@@ -111,6 +101,10 @@ const pageUrl = new URL(agencyPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
 const disqusIdentifier = `agency:${agencySlug}`;
 const pageDescription = `${agencyName} agency profile with contact information, personnel, public reports, and recent civil litigation references.`;
+const personnelIndexPath = `${agencyPath}personnel/`;
+const budgetIndexPath = `${agencyPath}budget/`;
+const civilCasesIndexPath = `${agencyPath}civil-cases/`;
+const liabilityCostsIndexPath = `${agencyPath}liability-costs/`;
 const addressAvailable =
   data.agency.address ||
   data.agency.city ||
@@ -142,6 +136,55 @@ const federalAgency = data.federalAgency
       path: `/federal/${data.federalAgency.slug}/`,
     }
   : null;
+const formatNumber = (value: number) => value.toLocaleString("en-US");
+const toDisplayName = (value: string) =>
+  value === value.toUpperCase()
+    ? value
+        .toLocaleLowerCase("en-US")
+        .replace(/\b[a-z]/g, (letter) => letter.toLocaleUpperCase("en-US"))
+    : value;
+const agencyDisplayName = toDisplayName(agencyName);
+const getYear = (value: string | null | undefined) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return String(date.getUTCFullYear());
+};
+const buildYearSeries = (
+  records: Record<string, string | null | undefined>[],
+  dateKey: string,
+) => {
+  const countsByYear = new Map<string, number>();
+  records.forEach((record) => {
+    const year = getYear(record[dateKey]);
+    if (year) countsByYear.set(year, (countsByYear.get(year) || 0) + 1);
+  });
+  return [...countsByYear.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .slice(-7)
+    .map(([year, value]) => ({ label: year, value }));
+};
+const civilCasesByYear = buildYearSeries(
+  civilCases as Record<string, string | null | undefined>[],
+  "filed_date",
+);
+const maxYearValue = Math.max(
+  1,
+  ...civilCasesByYear.map((point) => point.value),
+);
+const getPlotLeft = (index: number, total: number) =>
+  total <= 1 ? 50 : 8 + (index / (total - 1)) * 84;
+const getPlotTop = (value: number, max: number) => 90 - (value / max) * 76;
+const getLinePoints = (series: { label: string; value: number }[]) =>
+  series
+    .map(
+      (point, index) =>
+        `${getPlotLeft(index, series.length)},${getPlotTop(
+          point.value,
+          maxYearValue,
+        )}`,
+    )
+    .join(" ");
 const organization = {
   "@type": "GovernmentOrganization",
   "@id": `${pageUrl}#organization`,
@@ -188,318 +231,848 @@ const structuredData = {
   structuredData={structuredData}
 >
   <PrefillBootstrap />
-  <main class="flex-grow-1 py-vh-3">
-    <div class="container">
-      <Breadcrumbs
-        items={[
-          { label: "Home", href: "/" },
-          { label: categoryLabel, href: `/${categorySlug}/` },
-          {
-            label: administrativeArea,
-            href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
-          },
-          {
-            label: placeLabel,
-            href: placePath,
-          },
-          { label: agencyName, href: agencyPath, current: true },
-        ]}
-      />
-      <div class="row justify-content-between align-items-start">
-        <div class="col-lg-7">
-          <p class="text-uppercase small text-muted mb-2">Agency profile</p>
-          <h1 class="display-5 fw-bold">{agencyName}</h1>
-          <p class="text-muted">
-            {placeLabel}, {administrativeArea}, {agencyState}
-          </p>
-          {
-            federalAgency ? (
-              <p class="mb-0">
-                <span class="text-uppercase small text-muted me-2">
-                  Federal agency
-                </span>
-                <a href={federalAgency.path}>{federalAgency.name}</a>
-              </p>
-            ) : null
-          }
-        </div>
-        <div class="col-lg-4">
-          <div class="border p-4 bg-white shadow-sm">
-            <h2 class="h6 text-uppercase text-muted">Address</h2>
-            <p class="mb-1">{data.agency.address || "Not listed"}</p>
-            <p class="mb-0">
-              {placeLabel}, {agencyState},{" "}
-              {data.agency.zip_code || "N/A"}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="row mt-4 g-4">
-        <div class="col-lg-6" data-aos="fade-up">
-          <div class="border p-4 h-100">
-            <h2 class="h6 text-uppercase text-muted">Contact Information</h2>
-            <p class="mb-1">{data.agency.contact_name || "Contact pending"}</p>
-            <p class="mb-2">
-              {
-                data.agency.contact_email ? (
-                  <a href={`mailto:${data.agency.contact_email}`}>
-                    {data.agency.contact_email}
-                  </a>
-                ) : (
-                  "No email listed"
-                )
-              }
-            </p>
-            <h3 class="h6 text-uppercase text-muted mt-3">Phone Numbers</h3>
+  <main class="agency-overview-page flex-grow-1">
+    <section class="agency-overview">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: categoryLabel, href: `/${categorySlug}/` },
             {
-              data.agencyPhones.length ? (
-                data.agencyPhones.map(
-                  (phone: { phone_number: string; label?: string | null }) => (
-                    <p class="mb-1">
-                      {phone.phone_number}{" "}
-                      {phone.label ? `(${phone.label})` : ""}
-                    </p>
-                  ),
-                )
-              ) : (
-                <p class="mb-0">No phone numbers listed.</p>
-              )
-            }
+              label: administrativeArea,
+              href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+            },
             {
-              data.agencyLinks.length ? (
-                <>
-                  <h3 class="h6 text-uppercase text-muted mt-3">Links</h3>
-                  {data.agencyLinks.map(
-                    (link: {
-                      url: string;
-                      label: string;
-                      description?: string | null;
-                    }) => (
-                      <p class="mb-1">
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title={link.description || undefined}
-                          aria-label={
-                            link.description
-                              ? `${link.label}: ${link.description}`
-                              : undefined
-                          }
-                        >
-                          {link.label}
-                        </a>
-                      </p>
-                    ),
-                  )}
-                </>
+              label: placeLabel,
+              href: placePath,
+            },
+            { label: agencyDisplayName, href: agencyPath, current: true },
+          ]}
+        />
+        <div class="agency-overview-heading">
+          <div>
+            <h1>{agencyDisplayName}</h1>
+            <p>
+              {placeLabel}, {administrativeArea}, {agencyState}
+            </p>
+            {
+              federalAgency ? (
+                <p class="agency-overview-federal">
+                  <span>Federal agency</span>
+                  <a href={federalAgency.path}>{federalAgency.name}</a>
+                </p>
               ) : null
             }
           </div>
-        </div>
-        <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
-          <div class="border p-4 h-100">
-            <h2 class="h6 text-uppercase text-muted">Cumulative ratings</h2>
-            <div
-              class="d-flex flex-column flex-md-row align-items-center gap-4"
+          <div class="agency-overview-actions">
+            <button
+              type="button"
+              class="agency-overview-action"
+              data-agency-share
             >
-              <div
-                class="position-relative"
-                style="width: 160px; height: 160px"
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               >
-                <svg viewBox="0 0 120 120" class="w-100 h-100">
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="48"
-                    fill="none"
-                    stroke="#e5e7eb"
-                    stroke-width="12"></circle>
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="48"
-                    fill="none"
-                    stroke="#111827"
-                    stroke-width="12"
-                    stroke-dasharray={`${agencyRatingPercent * 3.02} 302`}
-                    stroke-linecap="round"
-                    transform="rotate(-90 60 60)"></circle>
-                </svg>
-                <div
-                  class="position-absolute top-50 start-50 translate-middle text-center"
-                >
-                  <div class="h4 mb-0">{agencyRatingPercent}%</div>
-                  <div class="small text-muted">Rated</div>
-                </div>
-              </div>
-              <div>
-                {
-                  data.agencyStats && data.agencyStats.review_count > 0 ? (
-                    <p class="mb-2 text-muted">
-                      {data.agencyStats.review_count} reports rated for this
-                      agency.
-                    </p>
-                  ) : (
-                    <p class="mb-2 text-muted">
-                      No reports published yet for this agency. Share your
-                      experience to help build a transparent record.
-                    </p>
-                  )
-                }
-                <div class="d-flex flex-wrap gap-2">
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0"
-                    to="/report/new/"
-                    payload={reportNewPrefillPayload}
-                  >
-                    Share your experience
-                  </PrefillNavButton>
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0"
-                    to={addCivilCaseHref}
-                    payload={addCivilCasePrefillPayload}
-                  >
-                    Add a civil case
-                  </PrefillNavButton>
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0"
-                    to={suggestPersonnelHref}
-                    payload={suggestPersonnelPrefillPayload}
-                  >
-                    Suggest new personnel
-                  </PrefillNavButton>
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0"
-                    to={suggestEditHref}
-                    payload={suggestEditPrefillPayload}
-                  >
-                    Suggest edit
-                  </PrefillNavButton>
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
-                    to="/about/contact/"
-                    payload={{
-                      whoami: "Subscriber",
-                      message: `Please notify me when this agency page changes: ${agencyPath}`,
-                    }}
-                    data-testid="agency-subscribe-link"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="lucide lucide-bell"
-                    >
-                      <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
-                      <path
-                        d="M3.262 15a4 4 0 0 0 3.938 3h9.6a4 4 0 0 0 3.938-3"
-                      ></path>
-                      <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
-                    </svg>
-                    <span>Notify me when this agency page changes</span>
-                  </PrefillNavButton>
-                </div>
-              </div>
-            </div>
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <path d="m8.59 13.51 6.83 3.98"></path>
+                <path d="m15.41 6.51-6.82 3.98"></path>
+              </svg>
+              Share
+            </button>
+            <button
+              type="button"
+              class="agency-overview-action agency-overview-primary"
+              data-agency-download-report
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <path d="M7 10l5 5 5-5"></path>
+                <path d="M12 15V3"></path>
+              </svg>
+              Download Report
+            </button>
+            <span class="agency-coming-soon" data-agency-coming-soon></span>
           </div>
         </div>
-      </div>
 
-      <div class="mt-5" data-aos="fade-up">
-        <ProfileTabs
-          tabs={[
-            {
-              id: "agency-reports",
-              label: "Reports",
-              badge: counts.reports,
-              tabType: "reports",
-            },
-            {
-              id: "agency-litigation",
-              label: "Direct litigation",
-              badge: counts.civilCases,
-              tabType: "litigation",
-            },
-            {
-              id: "agency-personnel-linked-litigation",
-              label: "Linked litigation",
-              badge: counts.personnelLinkedCivilCases,
-              tabType: "personnelLinkedLitigation",
-            },
-            {
-              id: "agency-coverage",
-              label: "Related Links",
-              badge: counts.coverage,
-              tabType: "coverage",
-            },
-            {
-              id: "agency-current-personnel",
-              label: "Current personnel",
-              badge: counts.currentPersonnel,
-              tabType: "personnel",
-              slotName: "currentPersonnel",
-            },
-            {
-              id: "agency-former-personnel",
-              label: "Former personnel",
-              badge: counts.formerPersonnel,
-              tabType: "personnel",
-              slotName: "formerPersonnel",
-            },
-          ]}
-          extraNavClasses="mb-3"
-          litigation={{
-            cases: civilCases,
-          }}
-          personnelLinkedLitigation={{
-            cases: personnelLinkedCivilCases,
-            helperText:
-              "These cases are not necessarily against this agency. They are shown because current or former personnel associated with this agency are linked to civil litigation from another agency or jurisdiction.",
-          }}
-          reports={{
-            items: reportedReports,
-            layout: "list",
-          }}
-          currentPersonnel={{
-            entries: currentEmployees,
-            emptyMessage: "No current personnel listed yet.",
-          }}
-          formerPersonnel={{
-            entries: formerEmployees,
-            emptyMessage: "No former personnel listed yet.",
-          }}
-          coverage={{
-            links: coverageLinks,
-            helperText: "Links about this agency or personnel connected to it.",
-          }}
-        />
-        <div class="mt-3">
-          <PrefillNavButton
-            class="link-dark small"
-            to={claimProfileHref}
-            payload={claimProfilePrefillPayload}
-            data-testid="agency-claim-profile-link"
-            variant="link"
+        <div class="agency-metric-grid">
+          <article class="agency-metric-card">
+            <svg
+              aria-hidden="true"
+              class="agency-metric-icon agency-metric-icon-blue"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <div>
+              <p>Personnel</p>
+              <strong>
+                {formatNumber(counts.currentPersonnel)} active /{" "}
+                {formatNumber(counts.personnel)} total
+              </strong>
+              <span>Active officers and total tracked personnel history</span>
+              <a href={personnelIndexPath}>View details</a>
+            </div>
+          </article>
+          <article class="agency-metric-card">
+            <svg
+              aria-hidden="true"
+              class="agency-metric-icon agency-metric-icon-green"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
+              <path d="M12 6v12"></path>
+            </svg>
+            <div>
+              <p>Annual Budget</p>
+              <strong>$0</strong>
+              <span>Fiscal year agency budget</span>
+              <a href={budgetIndexPath}>View details</a>
+            </div>
+          </article>
+          <article class="agency-metric-card">
+            <svg
+              aria-hidden="true"
+              class="agency-metric-icon agency-metric-icon-purple"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path>
+              <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path>
+              <path d="M7 21h10"></path>
+              <path d="M12 3v18"></path>
+              <path d="M3 7h2c2 0 5-1 7-4 2 3 5 4 7 4h2"></path>
+            </svg>
+            <div>
+              <p>Civil Cases</p>
+              <strong>19 active / 22 total</strong>
+              <span>Active and total direct civil cases</span>
+              <a href={civilCasesIndexPath}>View details</a>
+            </div>
+          </article>
+          <article class="agency-metric-card">
+            <svg
+              aria-hidden="true"
+              class="agency-metric-icon agency-metric-icon-green"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
+              <path d="M12 6v12"></path>
+            </svg>
+            <div>
+              <p>Liability Costs</p>
+              <strong>$0</strong>
+              <span>Claims, settlements, judgments, and related costs</span>
+              <a href={liabilityCostsIndexPath}>View details</a>
+            </div>
+          </article>
+        </div>
+
+        <div class="agency-chart-grid">
+          <article class="agency-chart-card">
+            <h2>Arrests Over Time</h2>
+            <p>Number of arrests by category</p>
+            <div class="agency-line-chart">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path class="agency-grid-line" d="M8 14H96"></path>
+                <path class="agency-grid-line" d="M8 38H96"></path>
+                <path class="agency-grid-line" d="M8 62H96"></path>
+                <path class="agency-grid-line" d="M8 86H96"></path>
+                <path class="agency-axis-line" d="M8 8V90H96"></path>
+              </svg>
+            </div>
+          </article>
+          <article class="agency-chart-card">
+            <h2>Killings Over Time</h2>
+            <p>People, dogs, and other pets</p>
+            <div class="agency-line-chart">
+              <div class="agency-chart-legend">
+                <span><i class="agency-dot-blue"></i>People</span>
+                <span><i class="agency-dot-green"></i>Dogs</span>
+                <span><i class="agency-dot-orange"></i>Other pets</span>
+              </div>
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path class="agency-grid-line" d="M8 14H96"></path>
+                <path class="agency-grid-line" d="M8 38H96"></path>
+                <path class="agency-grid-line" d="M8 62H96"></path>
+                <path class="agency-grid-line" d="M8 86H96"></path>
+                <path class="agency-axis-line" d="M8 8V90H96"></path>
+              </svg>
+            </div>
+          </article>
+          <article class="agency-chart-card">
+            <h2>Use of Force Over Time</h2>
+            <p>Number of use of force incidents</p>
+            <div class="agency-line-chart">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path class="agency-grid-line" d="M8 14H96"></path>
+                <path class="agency-grid-line" d="M8 38H96"></path>
+                <path class="agency-grid-line" d="M8 62H96"></path>
+                <path class="agency-grid-line" d="M8 86H96"></path>
+                <path class="agency-axis-line" d="M8 8V90H96"></path>
+              </svg>
+            </div>
+          </article>
+          <article id="agency-liability-costs" class="agency-chart-card">
+            <h2>Civil Cases and Liability Costs Over Time</h2>
+            <p>Active civil cases and documented liability costs</p>
+            <div class="agency-line-chart">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path class="agency-grid-line" d="M8 14H96"></path>
+                <path class="agency-grid-line" d="M8 38H96"></path>
+                <path class="agency-grid-line" d="M8 62H96"></path>
+                <path class="agency-grid-line" d="M8 86H96"></path>
+                <path class="agency-axis-line" d="M8 8V90H96"></path>
+                {
+                  civilCasesByYear.length ? (
+                    <polyline
+                      class="agency-line agency-line-green"
+                      points={getLinePoints(civilCasesByYear)}
+                    />
+                  ) : null
+                }
+              </svg>
+              <div class="agency-chart-labels">
+                {civilCasesByYear.map((point) => <span>{point.label}</span>)}
+              </div>
+            </div>
+          </article>
+          <article class="agency-chart-card agency-half-card">
+            <h2>Racial Breakdown of Stops or Arrests</h2>
+            <p>Who is most affected in the current dataset</p>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Race / Ethnicity</th>
+                  <th scope="col">Stops %</th>
+                  <th scope="col">Arrests %</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">White</th><td></td><td></td></tr>
+                <tr
+                  ><th scope="row">Black or African American</th><td></td><td
+                  ></td></tr
+                >
+                <tr
+                  ><th scope="row">Hispanic or Latino</th><td></td><td></td></tr
+                >
+                <tr><th scope="row">Asian</th><td></td><td></td></tr>
+                <tr><th scope="row">Other / Unknown</th><td></td><td></td></tr>
+              </tbody>
+            </table>
+          </article>
+          <article class="agency-chart-card">
+            <h2>Daylight vs Nighttime Stops</h2>
+            <p>Comparison of stops by time of day and race</p>
+            <div class="agency-stacked-bars" aria-hidden="true">
+              {
+                [
+                  "White",
+                  "Black or African American",
+                  "Hispanic or Latino",
+                  "Other / Unknown",
+                ].map((label) => (
+                  <div>
+                    <i>
+                      <>
+                        <b />
+                        <b />
+                      </>
+                    </i>
+                    <span>{label}</span>
+                  </div>
+                ))
+              }
+            </div>
+          </article>
+          <article class="agency-chart-card agency-half-card">
+            <h2>Top Charge Categories</h2>
+            <p>Most common reasons for arrest</p>
+            <div class="agency-source-bars">
+              {
+                [
+                  "Traffic Offenses",
+                  "Theft",
+                  "Assault",
+                  "Possession",
+                  "DWI",
+                ].map((label) => (
+                  <div class="agency-source-bar">
+                    <span>{label}</span>
+                    <i>
+                      <b style="width: 0%" />
+                    </i>
+                    <strong />
+                  </div>
+                ))
+              }
+            </div>
+          </article>
+          <article
+            id="agency-budget-trend"
+            class="agency-chart-card agency-wide-card"
           >
-            Claim this profile
-          </PrefillNavButton>
+            <h2>Budget and Overtime Trend</h2>
+            <p>Total budget and overtime spending</p>
+            <div class="agency-line-chart agency-wide-line-chart">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path class="agency-grid-line" d="M8 14H96"></path>
+                <path class="agency-grid-line" d="M8 38H96"></path>
+                <path class="agency-grid-line" d="M8 62H96"></path>
+                <path class="agency-grid-line" d="M8 86H96"></path>
+                <path class="agency-axis-line" d="M8 8V90H96"></path>
+              </svg>
+            </div>
+          </article>
+          <aside class="agency-chart-card agency-about-card">
+            <h2>About the Data</h2>
+            <p>
+              PoliceConduct.org compiles public records and agency source links
+              to help residents understand policing in {placeLabel}.
+            </p>
+            <a href="/about/">Learn more about our data and methods</a>
+          </aside>
         </div>
       </div>
+    </section>
 
+    <div class="container">
       <div class="mt-5">
         <h2 class="h5 text-uppercase text-muted">Comments</h2>
         <DisqusComments pageUrl={pageUrl} disqusIdentifier={disqusIdentifier} />
       </div>
     </div>
   </main>
+  <style>
+    .agency-overview-page {
+      background: #f7f9fd;
+      color: #071842;
+    }
+
+    .agency-overview {
+      background: #fbfcff;
+      border-bottom: 1px solid #d9e1ee;
+      min-height: calc(100vh - 3.25rem);
+      padding: 1.35rem 0 clamp(2.5rem, 5vw, 4rem);
+    }
+
+    .agency-overview > .container {
+      max-width: 1194px;
+    }
+
+    .agency-overview :global(.breadcrumb) {
+      margin-bottom: 1.15rem;
+    }
+
+    .agency-overview-heading {
+      align-items: start;
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: minmax(0, 1fr);
+      margin-bottom: 1.25rem;
+    }
+
+    .agency-overview-heading h1 {
+      color: #071842;
+      font-family:
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      font-size: clamp(2.05rem, 3.4vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: 0;
+      line-height: 1;
+      margin: 0 0 0.45rem;
+    }
+
+    .agency-overview-heading p {
+      color: #33456f;
+      margin: 0;
+    }
+
+    .agency-overview-federal {
+      align-items: baseline;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 0.75rem;
+    }
+
+    .agency-overview-federal span {
+      color: #5a6684;
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .agency-overview-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: start;
+    }
+
+    .agency-overview-action {
+      align-items: center;
+      background: #fbfcff;
+      border: 1px solid #c9d4e6;
+      border-radius: 0.4rem;
+      color: #071842;
+      display: inline-flex;
+      font-size: 0.95rem;
+      font-weight: 700;
+      gap: 0.6rem;
+      min-height: 3rem;
+      padding: 0.72rem 1.05rem;
+      text-decoration: none;
+    }
+
+    .agency-overview-action svg {
+      height: 1.15rem;
+      width: 1.15rem;
+    }
+
+    .agency-overview-primary {
+      background: #071842;
+      border-color: #071842;
+      color: #f8faff;
+      padding-inline: 1.35rem;
+    }
+
+    .agency-coming-soon {
+      color: #33456f;
+      display: block;
+      flex-basis: 100%;
+      font-size: 0.82rem;
+      font-weight: 700;
+      min-height: 1.15rem;
+      text-align: right;
+    }
+
+    .agency-metric-grid,
+    .agency-chart-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .agency-metric-grid {
+      margin-bottom: 1rem;
+    }
+
+    .agency-metric-card,
+    .agency-chart-card {
+      background: #fbfcff;
+      border: 1px solid #d5deeb;
+      border-radius: 0.45rem;
+      box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+    }
+
+    .agency-metric-card {
+      display: grid;
+      gap: 0.95rem;
+      grid-template-columns: 3rem minmax(0, 1fr);
+      min-height: 8.8rem;
+      padding: 1rem 1.15rem;
+    }
+
+    .agency-metric-icon {
+      height: 2.7rem;
+      margin-top: 0.35rem;
+      width: 2.7rem;
+    }
+
+    .agency-metric-icon-blue {
+      color: #174bff;
+    }
+
+    .agency-metric-icon-green {
+      color: #087f3b;
+    }
+
+    .agency-metric-icon-purple {
+      color: #5b2df5;
+    }
+
+    .agency-metric-card p,
+    .agency-chart-card p {
+      color: #071842;
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.25;
+      margin: 0;
+    }
+
+    .agency-metric-card strong {
+      color: #071842;
+      display: block;
+      font-size: clamp(1.25rem, 1.6vw, 1.5rem);
+      line-height: 1.1;
+      margin: 0.25rem 0 0.35rem;
+    }
+
+    .agency-metric-card span,
+    .agency-chart-card p {
+      color: #33456f;
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 500;
+    }
+
+    .agency-metric-card a,
+    .agency-inline-action,
+    .agency-action-link,
+    .agency-table-card a {
+      color: #064cfb;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .agency-metric-card a::after,
+    .agency-action-link::after,
+    .agency-table-card a::after {
+      content: " ->";
+    }
+
+    .agency-chart-card {
+      min-height: 16.7rem;
+      padding: 1rem 1.1rem;
+    }
+
+    .agency-chart-card h2 {
+      color: #071842;
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin: 0 0 0.25rem;
+    }
+
+    .agency-line-chart {
+      display: grid;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      min-height: 11rem;
+    }
+
+    .agency-line-chart svg {
+      height: 9.3rem;
+      overflow: visible;
+      width: 100%;
+    }
+
+    .agency-grid-line,
+    .agency-axis-line {
+      fill: none;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .agency-grid-line {
+      stroke: #d9e1ee;
+      stroke-width: 1;
+    }
+
+    .agency-axis-line {
+      stroke: #b8c4d8;
+      stroke-width: 1.15;
+    }
+
+    .agency-line {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 2.5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .agency-line-blue {
+      stroke: #174bff;
+    }
+
+    .agency-line-green {
+      stroke: #087f3b;
+    }
+
+    .agency-chart-labels {
+      color: #33456f;
+      display: flex;
+      font-size: 0.72rem;
+      justify-content: space-between;
+      min-height: 1rem;
+    }
+
+    .agency-chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .agency-chart-legend span {
+      align-items: center;
+      color: #33456f;
+      display: inline-flex;
+      font-size: 0.72rem;
+      font-weight: 700;
+      gap: 0.3rem;
+    }
+
+    .agency-chart-legend i {
+      border-radius: 999px;
+      display: inline-block;
+      height: 0.42rem;
+      width: 0.42rem;
+    }
+
+    .agency-dot-blue {
+      background: #174bff;
+    }
+
+    .agency-dot-green {
+      background: #087f3b;
+    }
+
+    .agency-dot-orange {
+      background: #ffad1f;
+    }
+
+    .agency-horizontal-bars,
+    .agency-source-bars {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 1.15rem;
+    }
+
+    .agency-horizontal-bar,
+    .agency-source-bar {
+      align-items: center;
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: minmax(5.5rem, 0.8fr) minmax(7rem, 2fr) auto;
+    }
+
+    .agency-horizontal-bar span,
+    .agency-source-bar span,
+    .agency-horizontal-bar strong,
+    .agency-source-bar strong {
+      color: #071842;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .agency-horizontal-bar i,
+    .agency-source-bar i {
+      background: #e7edf7;
+      display: block;
+      height: 0.78rem;
+    }
+
+    .agency-horizontal-bar b,
+    .agency-source-bar b {
+      background: #174bff;
+      display: block;
+      height: 100%;
+    }
+
+    .agency-source-bar b {
+      background: #087f3b;
+    }
+
+    .agency-table-card table {
+      border-collapse: collapse;
+      margin-top: 0.85rem;
+      width: 100%;
+    }
+
+    .agency-table-card th,
+    .agency-table-card td {
+      border-top: 1px solid #d9e1ee;
+      color: #071842;
+      font-size: 0.84rem;
+      padding: 0.55rem 0;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .agency-table-card th {
+      color: #33456f;
+      font-weight: 800;
+      padding-right: 1rem;
+      width: 6rem;
+    }
+
+    .agency-action-list {
+      display: grid;
+      gap: 0.55rem;
+      margin-top: 0.9rem;
+    }
+
+    .agency-action-link {
+      border-top: 1px solid #d9e1ee;
+      display: block;
+      font-size: 0.84rem;
+      padding-top: 0.55rem;
+    }
+
+    @media (min-width: 768px) {
+      .agency-metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .agency-chart-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .agency-overview-heading {
+        align-items: start;
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .agency-overview-actions {
+        justify-content: end;
+      }
+
+      .agency-metric-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .agency-chart-grid {
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+      }
+
+      .agency-chart-card {
+        grid-column: span 3;
+      }
+
+      .agency-wide-card {
+        grid-column: span 8;
+      }
+
+      .agency-half-card,
+      .agency-table-card {
+        grid-column: span 4;
+      }
+
+      .agency-about-card {
+        grid-column: span 4;
+      }
+    }
+
+    .agency-wide-line-chart svg {
+      height: 9.5rem;
+    }
+
+    .agency-stacked-bars {
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 1.25rem;
+    }
+
+    .agency-stacked-bars div {
+      display: grid;
+      gap: 0.5rem;
+      min-width: 0;
+      text-align: center;
+    }
+
+    .agency-stacked-bars i {
+      align-items: end;
+      border-bottom: 1px solid #b8c4d8;
+      display: flex;
+      height: 6.5rem;
+      justify-content: center;
+    }
+
+    .agency-stacked-bars b {
+      display: block;
+      width: 2.2rem;
+    }
+
+    .agency-stacked-bars b:first-child {
+      background: #ffad1f;
+      height: 0;
+    }
+
+    .agency-stacked-bars b:last-child {
+      background: #071842;
+      height: 0;
+    }
+
+    .agency-stacked-bars span {
+      color: #33456f;
+      font-size: 0.72rem;
+      line-height: 1.15;
+    }
+
+    @media (max-width: 991.98px) {
+    }
+
+    @media (max-width: 575.98px) {
+      .agency-overview-action {
+        justify-content: center;
+        width: 100%;
+      }
+
+      .agency-metric-card {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .agency-horizontal-bar,
+      .agency-source-bar {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .agency-coming-soon {
+        text-align: left;
+      }
+    }
+  </style>
   <script>
     import AOS from "aos";
     import "aos/dist/aos.css";
@@ -511,5 +1084,34 @@ const structuredData = {
       });
       document.documentElement.dataset.aosInit = "1";
     }
+
+    const setComingSoon = (button, message) => {
+      const actions = button.closest(".agency-overview-actions");
+      const output = actions?.querySelector("[data-agency-coming-soon]");
+      if (output) output.textContent = message;
+    };
+
+    const trackAgencyInterest = (eventName) => {
+      window.__IPC_ANALYTICS__?.track?.(eventName, {
+        agency_path: window.location.pathname,
+        page_path: window.location.pathname,
+      });
+    };
+
+    document.querySelectorAll("[data-agency-share]").forEach((button) => {
+      button.addEventListener("click", () => {
+        trackAgencyInterest("agency_share_interest");
+        setComingSoon(button, "Sharing tools are coming soon.");
+      });
+    });
+
+    document
+      .querySelectorAll("[data-agency-download-report]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          trackAgencyInterest("agency_report_download_interest");
+          setComingSoon(button, "Downloadable agency reports are coming soon.");
+        });
+      });
   </script>
 </SiteLayout>

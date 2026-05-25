@@ -1,5 +1,5 @@
 ---
-import CivicIndexPage from "#src/components/CivicIndexPage.astro";
+import CivicScopedIndexPage from "#src/components/CivicScopedIndexPage.astro";
 import { buildPlaceCivicIndex } from "#src/lib/data/civic-index.js";
 import {
   loadPlaceScopedPaths,
@@ -10,11 +10,11 @@ export async function getStaticPaths() {
   return loadPlaceScopedPaths();
 }
 
-const place = await loadRequiredLocationByPath(
+const location = await loadRequiredLocationByPath(
   `/${Astro.params.category}/${Astro.params.administrativeArea}/${Astro.params.place}/`,
   "place",
 );
-const model = await buildPlaceCivicIndex(place);
+const model = await buildPlaceCivicIndex(location);
 ---
 
-<CivicIndexPage model={model} site={Astro.site} />
+<CivicScopedIndexPage model={model} kind="personnel" />

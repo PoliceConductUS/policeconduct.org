@@ -1,0 +1,258 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import LocationMap from "#src/components/LocationMap.astro";
+import Pagination from "#src/components/Pagination.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
+
+const { model, page, pagePath, label } = Astro.props as {
+  label: string;
+  model: CivicIndexModel;
+  page: {
+    currentPage: number;
+    data: CivicIndexModel["rows"];
+    lastPage: number;
+  };
+  pagePath: string;
+};
+const heading =
+  model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
+  model.jurisdictionLabel;
+const childLabel =
+  model.level === "state"
+    ? "county / area"
+    : model.level === "administrative_area"
+      ? "place"
+      : "agency";
+---
+
+<SiteLayout
+  title={`${heading} ${label}`}
+  description={`${label} within ${heading}.`}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main class="civic-child-index">
+    <section class="civic-child-hero">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            ...model.breadcrumbs.map((item) => ({ ...item, current: false })),
+            { label, href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+        <div class="civic-child-heading">
+          <div>
+            <h1>{label} within {heading}</h1>
+            <p>{model.indexLabel}</p>
+          </div>
+          <label class="civic-child-jump">
+            <span>Jump to</span>
+            <select data-civic-child-jump>
+              <option value="">Select {childLabel}</option>
+              {
+                model.rows.map((row) => (
+                  <option value={row.href}>{row.label}</option>
+                ))
+              }
+            </select>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="civic-child-list">
+      <div class="container">
+        <div class="civic-child-map">
+          <LocationMap
+            title={`${label} within ${heading}`}
+            description={model.map.description}
+            bounds={model.map.bounds}
+            points={model.map.points}
+            emptyLabel={model.map.emptyLabel}
+            showOnMobile
+          />
+        </div>
+
+        <div class="civic-child-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                {
+                  model.columns.map((column) => (
+                    <th scope="col">{column.label}</th>
+                  ))
+                }
+                <th scope="col">View</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                page.data.map((row) => (
+                  <tr>
+                    {model.columns.map((column) => {
+                      const value =
+                        column.key === "label"
+                          ? row.label
+                          : (row.values[column.key] ?? "");
+                      return (
+                        <td>
+                          {column.key === "label" ? (
+                            <a href={row.href}>{row.label}</a>
+                          ) : (
+                            value
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td>
+                      <a href={row.href}>View</a>
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+        <Pagination
+          basePath={pagePath}
+          currentPage={page.currentPage}
+          lastPage={page.lastPage}
+        />
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<script>
+  document
+    .querySelector<HTMLSelectElement>("[data-civic-child-jump]")
+    ?.addEventListener("change", (event) => {
+      const select = event.currentTarget;
+      if (select.value) {
+        window.location.href = select.value;
+      }
+    });
+</script>
+
+<style>
+  .civic-child-index {
+    background: #fbfcff;
+    color: #071842;
+  }
+
+  .civic-child-hero,
+  .civic-child-list {
+    padding: 1.5rem 0;
+  }
+
+  .civic-child-hero > .container,
+  .civic-child-list > .container {
+    max-width: 1240px;
+  }
+
+  .civic-child-heading {
+    align-items: end;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .civic-child-hero h1 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1.05;
+    margin: 0;
+  }
+
+  .civic-child-hero p {
+    color: #33456f;
+    margin: 0.5rem 0 0;
+  }
+
+  .civic-child-jump {
+    display: grid;
+    gap: 0.35rem;
+    justify-self: start;
+    min-width: min(100%, 16rem);
+  }
+
+  .civic-child-jump span {
+    color: #53627f;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .civic-child-jump select {
+    appearance: none;
+    background:
+      linear-gradient(45deg, transparent 50%, #071842 50%) right 0.95rem
+        center / 0.45rem 0.45rem no-repeat,
+      linear-gradient(135deg, #071842 50%, transparent 50%) right 0.65rem
+        center / 0.45rem 0.45rem no-repeat,
+      #fbfcff;
+    border: 1px solid #c9d4e6;
+    border-radius: 0.35rem;
+    color: #071842;
+    font: inherit;
+    font-weight: 700;
+    min-height: 2.6rem;
+    padding: 0.55rem 2rem 0.55rem 0.75rem;
+  }
+
+  .civic-child-table-wrap {
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    margin-top: 1rem;
+    overflow-x: auto;
+  }
+
+  .civic-child-map :global(.location-map) {
+    min-height: 22rem;
+  }
+
+  .civic-child-table-wrap table {
+    border-collapse: collapse;
+    min-width: 760px;
+    width: 100%;
+  }
+
+  .civic-child-table-wrap th,
+  .civic-child-table-wrap td {
+    border-bottom: 1px solid #e4e8f0;
+    color: #071842;
+    font-size: 0.88rem;
+    padding: 0.75rem 0.8rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .civic-child-table-wrap th {
+    background: #f7f9fc;
+    color: #53627f;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .civic-child-table-wrap a {
+    color: #064cfb;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  @media (min-width: 768px) {
+    .civic-child-heading {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .civic-child-jump {
+      justify-self: end;
+    }
+  }
+</style>

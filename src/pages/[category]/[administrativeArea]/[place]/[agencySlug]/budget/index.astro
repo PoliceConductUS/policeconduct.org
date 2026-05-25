@@ -1,0 +1,830 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import {
+  loadAgencyDetail,
+  loadAgencyLocationStaticPaths,
+} from "#src/lib/data/agency-detail.js";
+
+export async function getStaticPaths() {
+  return loadAgencyLocationStaticPaths();
+}
+
+const { agencyId } = Astro.props;
+const data = await loadAgencyDetail(agencyId);
+const {
+  agencyName,
+  agencyPath,
+  categoryLabel,
+  categorySlug,
+  administrativeArea,
+  placeLabel,
+  placePath,
+} = data;
+
+const pagePath = `${agencyPath}budget/`;
+const pageTitle = `${agencyName} Budget`;
+const pageDescription = `Revenue sources, spending trends, forfeiture activity, and budget details for ${agencyName}.`;
+
+const metricCards = [
+  {
+    label: "Total Budget",
+    value: "$0",
+    detail: "FY 2024-2025",
+    icon: "pie",
+    accent: "blue",
+  },
+  {
+    label: "Local Taxes",
+    value: "$0",
+    detail: "0.0% of budget",
+    icon: "bank",
+    accent: "green",
+  },
+  {
+    label: "Federal & State Grants",
+    value: "$0",
+    detail: "0.0% of budget",
+    icon: "bank",
+    accent: "purple",
+  },
+  {
+    label: "Asset Forfeiture",
+    value: "$0",
+    detail: "0.0% of budget",
+    note: "Civil asset forfeiture tracked separately",
+    icon: "scales",
+    accent: "orange",
+  },
+  {
+    label: "Fees & Contracts",
+    value: "$0",
+    detail: "0.0% of budget",
+    icon: "document",
+    accent: "teal",
+  },
+  {
+    label: "Private & Non-profit Grants",
+    value: "$0",
+    detail: "0.0% of budget",
+    icon: "heart",
+    accent: "pink",
+  },
+];
+
+const revenueRows = [
+  "Local Taxes",
+  "Federal & State Grants",
+  "Asset Forfeiture (Civil)",
+  "Asset Forfeiture (Other)",
+  "Fees & Contracts",
+  "Private & Non-profit Grants",
+];
+const allocationRows = [
+  "Personnel",
+  "Overtime",
+  "Equipment",
+  "Vehicles",
+  "Training",
+  "Technology",
+  "Facilities",
+];
+const grantRows = [
+  "Federal grant",
+  "State grant",
+  "Contract",
+  "Partnership",
+  "Equipment grant",
+];
+const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
+---
+
+<SiteLayout
+  title={pageTitle}
+  description={pageDescription}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main class="agency-budget-page">
+    <section class="budget-overview">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: categoryLabel, href: `/${categorySlug}/` },
+            {
+              label: administrativeArea,
+              href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+            },
+            { label: placeLabel, href: placePath },
+            { label: agencyName, href: agencyPath },
+            { label: "Budget", href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+
+        <div class="budget-heading">
+          <div>
+            <h1>{pageTitle}</h1>
+            <p>{pageDescription}</p>
+          </div>
+          <div class="budget-actions">
+            <button type="button" class="budget-action" data-agency-share>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <path d="m8.59 13.51 6.83 3.98"></path>
+                <path d="m15.41 6.51-6.82 3.98"></path>
+              </svg>
+              Share
+            </button>
+            <button
+              type="button"
+              class="budget-action budget-action-primary"
+              data-agency-download-report
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <path d="M7 10l5 5 5-5"></path>
+                <path d="M12 15V3"></path>
+              </svg>
+              Download Report
+            </button>
+            <span class="budget-coming-soon" data-agency-coming-soon></span>
+          </div>
+        </div>
+
+        <div class="budget-metric-grid">
+          {
+            metricCards.map((card) => (
+              <article class="budget-metric-card">
+                <div class={`budget-metric-icon budget-${card.accent}`}>
+                  {card.icon === "pie" ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 2v10h10" />
+                      <path d="M20.49 15A9 9 0 1 1 9 3.51" />
+                      <path d="M14 2.2A10 10 0 0 1 21.8 10H14Z" />
+                    </svg>
+                  ) : card.icon === "bank" ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="m3 10 9-6 9 6" />
+                      <path d="M5 10v9" />
+                      <path d="M9 10v9" />
+                      <path d="M15 10v9" />
+                      <path d="M19 10v9" />
+                      <path d="M3 19h18" />
+                    </svg>
+                  ) : card.icon === "scales" ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 3v18" />
+                      <path d="M3 7h18" />
+                      <path d="m6 7-3 7h6Z" />
+                      <path d="m18 7-3 7h6Z" />
+                    </svg>
+                  ) : card.icon === "document" ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                      <path d="M14 2v6h6" />
+                      <path d="M8 13h8" />
+                      <path d="M8 17h8" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 21s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 5.65-7 10-7 10Z" />
+                      <path d="M6 14h4l2-3 2 5 2-2h2" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <p>{card.label}</p>
+                  <strong>{card.value}</strong>
+                  <span>{card.detail}</span>
+                  {card.note ? <small>{card.note}</small> : null}
+                  <a href="#budget-details">View details</a>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+
+        <div class="budget-chart-grid">
+          <article class="budget-chart-card">
+            <h2>Budget Over Time</h2>
+            <p>Total budget (millions)</p>
+            <div class="budget-line-chart">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path class="budget-grid-line" d="M8 14H96"></path>
+                <path class="budget-grid-line" d="M8 38H96"></path>
+                <path class="budget-grid-line" d="M8 62H96"></path>
+                <path class="budget-grid-line" d="M8 86H96"></path>
+                <path class="budget-axis-line" d="M8 8V90H96"></path>
+              </svg>
+              <div class="budget-chart-labels">
+                {years.map((year) => <span>{year}</span>)}
+              </div>
+            </div>
+          </article>
+
+          <article class="budget-chart-card">
+            <h2>Revenue Sources Over Time</h2>
+            <p>Revenue by source (millions)</p>
+            <div class="budget-bar-chart">
+              {
+                years.map((year) => (
+                  <i aria-label={year}>
+                    <b />
+                  </i>
+                ))
+              }
+            </div>
+            <div class="budget-chart-labels">
+              {years.map((year) => <span>{year}</span>)}
+            </div>
+          </article>
+
+          <article class="budget-chart-card">
+            <h2>Asset Forfeiture Over Time</h2>
+            <p>Forfeiture revenue (millions)</p>
+            <div class="budget-bar-chart budget-forfeiture-chart">
+              {
+                years.map((year) => (
+                  <i aria-label={year}>
+                    <>
+                      <b />
+                      <b />
+                    </>
+                  </i>
+                ))
+              }
+            </div>
+            <div class="budget-chart-labels">
+              {years.map((year) => <span>{year}</span>)}
+            </div>
+          </article>
+
+          <article class="budget-chart-card">
+            <h2>Budget Allocation</h2>
+            <p>FY 2024-2025 (millions)</p>
+            <div class="budget-horizontal-bars">
+              {
+                allocationRows.map((label) => (
+                  <div>
+                    <span>{label}</span>
+                    <i>
+                      <b style="width: 0%" />
+                    </i>
+                    <strong>$0</strong>
+                  </div>
+                ))
+              }
+            </div>
+          </article>
+
+          <article class="budget-chart-card">
+            <h2>Overtime and Personnel Cost Trend</h2>
+            <p>Costs (millions)</p>
+            <div class="budget-line-chart">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path class="budget-grid-line" d="M8 14H96"></path>
+                <path class="budget-grid-line" d="M8 38H96"></path>
+                <path class="budget-grid-line" d="M8 62H96"></path>
+                <path class="budget-grid-line" d="M8 86H96"></path>
+                <path class="budget-axis-line" d="M8 8V90H96"></path>
+              </svg>
+              <div class="budget-chart-labels">
+                {years.map((year) => <span>{year}</span>)}
+              </div>
+            </div>
+          </article>
+
+          <aside class="budget-chart-card budget-info-card">
+            <h2>What This Page Shows</h2>
+            <ul>
+              <li>Where {agencyName} gets its funding.</li>
+              <li>How revenue sources change over time.</li>
+              <li>How forfeiture revenue compares to other revenue.</li>
+              <li>How spending is allocated across key areas.</li>
+              <li>How overtime and personnel costs compare over time.</li>
+            </ul>
+          </aside>
+
+          <article
+            id="budget-details"
+            class="budget-chart-card budget-table-card"
+          >
+            <h2>Revenue Source Details</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Source</th>
+                  <th scope="col">FY 2024-2025 Amount</th>
+                  <th scope="col">Share of Budget</th>
+                  <th scope="col">Change vs Prior Year</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  revenueRows.map((label) => (
+                    <tr>
+                      <th scope="row">{label}</th>
+                      <td>$0</td>
+                      <td>0.0%</td>
+                      <td>0.0%</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </article>
+
+          <article class="budget-chart-card budget-table-card">
+            <h2>Grant and Contract Highlights</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Year</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  grantRows.map((label) => (
+                    <tr>
+                      <th scope="row" />
+                      <td>{label}</td>
+                      <td>$0</td>
+                      <td>2024-2025</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </article>
+
+          <aside class="budget-chart-card budget-about-card">
+            <h2>About the Budget Data</h2>
+            <p>
+              Budget data is compiled from adopted budgets, annual financial
+              reports, and asset forfeiture records. Amounts reflect the fiscal
+              year when available.
+            </p>
+            <a href="/about/">Learn more about our data and methods</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<script>
+  const setComingSoon = (button: Element, message: string) => {
+    const actions = button.closest(".budget-actions");
+    const output = actions?.querySelector("[data-agency-coming-soon]");
+    if (output) output.textContent = message;
+  };
+
+  const trackAgencyInterest = (eventName: string) => {
+    window.__IPC_ANALYTICS__?.track?.(eventName, {
+      agency_path: window.location.pathname,
+      page_path: window.location.pathname,
+    });
+  };
+
+  document.querySelectorAll("[data-agency-share]").forEach((button) => {
+    button.addEventListener("click", () => {
+      trackAgencyInterest("agency_budget_share_interest");
+      setComingSoon(button, "Sharing tools are coming soon.");
+    });
+  });
+
+  document
+    .querySelectorAll("[data-agency-download-report]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        trackAgencyInterest("agency_budget_report_download_interest");
+        setComingSoon(button, "Downloadable agency reports are coming soon.");
+      });
+    });
+</script>
+
+<style>
+  .agency-budget-page {
+    background: #fbfcff;
+    color: #071842;
+  }
+
+  .budget-overview {
+    padding: 1.35rem 0 2rem;
+  }
+
+  .budget-overview > .container {
+    max-width: 1240px;
+  }
+
+  .budget-heading {
+    align-items: start;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  .budget-heading h1 {
+    color: #071842;
+    font-size: clamp(2.05rem, 3.4vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1;
+    margin: 0 0 0.45rem;
+  }
+
+  .budget-heading p {
+    color: #33456f;
+    margin: 0;
+  }
+
+  .budget-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: start;
+  }
+
+  .budget-action {
+    align-items: center;
+    background: #fbfcff;
+    border: 1px solid #c9d4e6;
+    border-radius: 0.4rem;
+    color: #071842;
+    display: inline-flex;
+    font-size: 0.95rem;
+    font-weight: 700;
+    gap: 0.6rem;
+    min-height: 3rem;
+    padding: 0.72rem 1.05rem;
+  }
+
+  .budget-action svg {
+    height: 1.15rem;
+    width: 1.15rem;
+  }
+
+  .budget-action-primary {
+    background: #071842;
+    border-color: #071842;
+    color: #f8faff;
+    padding-inline: 1.35rem;
+  }
+
+  .budget-coming-soon {
+    color: #33456f;
+    flex-basis: 100%;
+    font-size: 0.82rem;
+    font-weight: 700;
+    min-height: 1.15rem;
+    text-align: right;
+  }
+
+  .budget-metric-grid,
+  .budget-chart-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .budget-metric-grid {
+    margin-bottom: 1rem;
+  }
+
+  .budget-metric-card,
+  .budget-chart-card {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+  }
+
+  .budget-metric-card {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: 2.35rem minmax(0, 1fr);
+    min-height: 8rem;
+    padding: 1rem 0.85rem;
+  }
+
+  .budget-metric-icon {
+    margin-top: 0.2rem;
+  }
+
+  .budget-metric-icon svg {
+    fill: none;
+    height: 2.15rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+    width: 2.15rem;
+  }
+
+  .budget-blue {
+    color: #174bff;
+  }
+
+  .budget-green {
+    color: #087f3b;
+  }
+
+  .budget-purple {
+    color: #5b2df5;
+  }
+
+  .budget-orange {
+    color: #f97316;
+  }
+
+  .budget-teal {
+    color: #0b8aa0;
+  }
+
+  .budget-pink {
+    color: #db2777;
+  }
+
+  .budget-metric-card p,
+  .budget-chart-card p {
+    color: #071842;
+    font-size: 0.84rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  .budget-metric-card strong {
+    color: #071842;
+    display: block;
+    font-size: clamp(1.25rem, 1.45vw, 1.45rem);
+    line-height: 1.1;
+    margin: 0.25rem 0 0.3rem;
+  }
+
+  .budget-metric-card span,
+  .budget-metric-card small,
+  .budget-chart-card p {
+    color: #33456f;
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+
+  .budget-metric-card a,
+  .budget-about-card a {
+    color: #064cfb;
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-top: 0.5rem;
+    text-decoration: none;
+  }
+
+  .budget-metric-card a::after,
+  .budget-about-card a::after {
+    content: "  ->";
+  }
+
+  .budget-chart-card {
+    min-height: 15.8rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .budget-chart-card h2 {
+    color: #071842;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin: 0 0 0.25rem;
+  }
+
+  .budget-line-chart,
+  .budget-bar-chart {
+    margin-top: 1rem;
+  }
+
+  .budget-line-chart svg {
+    height: 9.5rem;
+    width: 100%;
+  }
+
+  .budget-grid-line,
+  .budget-axis-line {
+    fill: none;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .budget-grid-line {
+    stroke: #d9e1ee;
+    stroke-width: 1;
+  }
+
+  .budget-axis-line {
+    stroke: #b8c4d8;
+    stroke-width: 1.15;
+  }
+
+  .budget-chart-labels {
+    color: #33456f;
+    display: flex;
+    font-size: 0.68rem;
+    justify-content: space-between;
+    min-height: 1rem;
+  }
+
+  .budget-bar-chart {
+    align-items: end;
+    border-bottom: 1px solid #b8c4d8;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    height: 9.5rem;
+  }
+
+  .budget-bar-chart i {
+    align-items: end;
+    display: flex;
+    height: 100%;
+    justify-content: center;
+  }
+
+  .budget-bar-chart b {
+    background: #d9e1ee;
+    display: block;
+    height: 0;
+    width: 1.85rem;
+  }
+
+  .budget-forfeiture-chart b:first-child {
+    background: #f97316;
+  }
+
+  .budget-forfeiture-chart b:last-child {
+    background: #64748b;
+  }
+
+  .budget-horizontal-bars {
+    display: grid;
+    gap: 0.6rem;
+    margin-top: 1rem;
+  }
+
+  .budget-horizontal-bars div {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(5.5rem, 0.8fr) minmax(7rem, 2fr) auto;
+  }
+
+  .budget-horizontal-bars span,
+  .budget-horizontal-bars strong {
+    color: #071842;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .budget-horizontal-bars i {
+    background: #e7edf7;
+    display: block;
+    height: 0.78rem;
+  }
+
+  .budget-horizontal-bars b {
+    background: #174bff;
+    display: block;
+    height: 100%;
+  }
+
+  .budget-info-card ul {
+    color: #071842;
+    display: grid;
+    gap: 0.45rem;
+    margin: 1rem 0 0;
+    padding-left: 1.2rem;
+  }
+
+  .budget-info-card li {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  .budget-table-card {
+    min-height: 0;
+    overflow-x: auto;
+  }
+
+  .budget-table-card table {
+    border-collapse: collapse;
+    margin-top: 0.85rem;
+    min-width: 560px;
+    width: 100%;
+  }
+
+  .budget-table-card th,
+  .budget-table-card td {
+    border-top: 1px solid #d9e1ee;
+    color: #071842;
+    font-size: 0.78rem;
+    padding: 0.5rem 0.4rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .budget-table-card th {
+    color: #33456f;
+    font-weight: 800;
+  }
+
+  .budget-about-card {
+    min-height: 0;
+  }
+
+  .budget-about-card p {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    margin-top: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .budget-metric-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .budget-chart-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .budget-heading {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .budget-actions {
+      justify-content: end;
+    }
+
+    .budget-metric-grid {
+      grid-template-columns: repeat(6, minmax(10rem, 1fr));
+    }
+
+    .budget-chart-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .budget-chart-card {
+      grid-column: span 4;
+    }
+
+    .budget-table-card {
+      grid-column: span 5;
+    }
+
+    .budget-about-card {
+      grid-column: span 4;
+    }
+  }
+
+  @media (max-width: 991.98px) {
+  }
+
+  @media (max-width: 575.98px) {
+    .budget-action {
+      justify-content: center;
+      width: 100%;
+    }
+
+    .budget-metric-card {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .budget-coming-soon {
+      text-align: left;
+    }
+  }
+</style>

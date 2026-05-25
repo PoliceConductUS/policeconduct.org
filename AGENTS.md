@@ -42,6 +42,7 @@ Change Approval Workflow
 Data + Routing Conventions
 
 - URLs use database-backed slugs. Do not compute slugs during build/runtime.
+- Route pages must resolve every URL/path segment from exact database-backed path data. Do not pass route identity through `getStaticPaths()` props, route props, parallel columns, or precomputed convenience fields. `getStaticPaths()` may enumerate valid params from database-backed paths, but the page render must reload the required entity by exact canonical path/slug and fail loudly if it is missing or the wrong entity type.
 - Do not generate IDs for database entities anywhere in the website, build scripts, seed data, or runtime code. Database entity IDs must come from explicit database or seed data values only.
 - Agency location identity must come from `public.agency.location_path_id` joined to `public.location_path`. Do not reconstruct agency location, agency canonical URLs, or agency route parameters from parallel agency columns, derived slugs, `build_page_payload.path`, or generated path logic.
 - Report URLs must use slug: /report/{slug}/.

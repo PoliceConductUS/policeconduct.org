@@ -1,0 +1,358 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Pagination from "#src/components/Pagination.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import {
+  loadAgencyDetail,
+  loadAgencyLocationStaticPaths,
+} from "#src/lib/data/agency-detail.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
+
+export async function getStaticPaths() {
+  return loadAgencyLocationStaticPaths();
+}
+
+const { agencyId } = Astro.props;
+const data = await loadAgencyDetail(agencyId);
+const {
+  agencyName,
+  agencyPath,
+  categoryLabel,
+  categorySlug,
+  administrativeArea,
+  placeLabel,
+  placePath,
+  employees,
+} = data;
+
+const pageEmployees = employees.slice(0, PAGE_SIZE);
+const totalPages = Math.max(1, Math.ceil(employees.length / PAGE_SIZE));
+const pagePath = `${agencyPath}personnel/`;
+const pageTitle = `${agencyName} Personnel`;
+const pageDescription = `Personnel listed for ${agencyName}.`;
+
+const getEmployeeName = (employee: (typeof employees)[number]) => {
+  const officer = employee.officer;
+  return officer
+    ? [officer.first_name, officer.last_name].filter(Boolean).join(" ")
+    : "Unknown person";
+};
+
+const formatDate = (value?: string | null) =>
+  value
+    ? new Intl.DateTimeFormat("en", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(new Date(value))
+    : null;
+---
+
+<SiteLayout
+  title={pageTitle}
+  description={pageDescription}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main>
+    <section class="agency-personnel-hero">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: categoryLabel, href: `/${categorySlug}/` },
+            {
+              label: administrativeArea,
+              href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+            },
+            { label: placeLabel, href: placePath },
+            { label: agencyName, href: agencyPath },
+            { label: "Personnel", href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+        <div class="agency-personnel-heading">
+          <div>
+            <p class="agency-personnel-kicker">{placeLabel}</p>
+            <h1>{pageTitle}</h1>
+            <p>Personnel records for {agencyName}, sorted by name.</p>
+          </div>
+          <div class="agency-personnel-count">
+            <strong>{employees.length.toLocaleString("en")}</strong>
+            <span>total personnel</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="agency-personnel-section">
+      <div class="container">
+        <div class="agency-personnel-toolbar">
+          <label for="agency-personnel-search">Search personnel</label>
+          <input
+            id="agency-personnel-search"
+            type="search"
+            placeholder="Search by name, status, badge, or license type"
+            autocomplete="off"
+            data-agency-personnel-search
+          />
+        </div>
+
+        {
+          pageEmployees.length === 0 ? (
+            <p class="agency-personnel-empty">No personnel listed.</p>
+          ) : (
+            <div class="agency-personnel-table-wrap">
+              <table class="agency-personnel-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Badge</th>
+                    <th scope="col">License type</th>
+                    <th scope="col">Start date</th>
+                    <th scope="col">End date</th>
+                    <th scope="col">Reports</th>
+                    <th scope="col">Rating</th>
+                  </tr>
+                </thead>
+                <tbody data-agency-personnel-rows>
+                  {pageEmployees.map((employee) => {
+                    const name = getEmployeeName(employee);
+                    const status = employee.entry.end_date
+                      ? "Former"
+                      : "Current";
+                    const endDate = formatDate(employee.entry.end_date) || "";
+                    const searchText = [
+                      name,
+                      status,
+                      employee.entry.badge_number,
+                      employee.entry.title,
+                      formatDate(employee.entry.start_date),
+                      endDate,
+                    ]
+                      .filter(Boolean)
+                      .join(" ")
+                      .toLowerCase();
+
+                    return (
+                      <tr
+                        data-agency-personnel-row
+                        data-search-text={searchText}
+                      >
+                        <td>
+                          {employee.officer?.slug ? (
+                            <a href={`/personnel/${employee.officer.slug}/`}>
+                              {name}
+                            </a>
+                          ) : (
+                            name
+                          )}
+                        </td>
+                        <td>{status}</td>
+                        <td>{employee.entry.badge_number || ""}</td>
+                        <td>{employee.entry.title || ""}</td>
+                        <td>{formatDate(employee.entry.start_date) || ""}</td>
+                        <td>{endDate}</td>
+                        <td>{employee.reportCount || 0}</td>
+                        <td>
+                          {employee.rating && employee.rating > 0
+                            ? employee.rating.toFixed(1)
+                            : ""}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
+        }
+
+        <p
+          class="agency-personnel-empty"
+          data-agency-personnel-no-results
+          hidden
+        >
+          No personnel match that search.
+        </p>
+
+        <Pagination basePath={pagePath} currentPage={1} lastPage={totalPages} />
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<script>
+  const searchInput = document.querySelector<HTMLInputElement>(
+    "[data-agency-personnel-search]",
+  );
+  const rows = Array.from(
+    document.querySelectorAll<HTMLTableRowElement>(
+      "[data-agency-personnel-row]",
+    ),
+  );
+  const noResults = document.querySelector<HTMLElement>(
+    "[data-agency-personnel-no-results]",
+  );
+
+  searchInput?.addEventListener("input", () => {
+    const query = searchInput.value.trim().toLowerCase();
+    let visibleCount = 0;
+
+    for (const row of rows) {
+      const isVisible = !query || row.dataset.searchText?.includes(query);
+      row.hidden = !isVisible;
+      if (isVisible) visibleCount += 1;
+    }
+
+    if (noResults) {
+      noResults.hidden = visibleCount > 0;
+    }
+  });
+</script>
+
+<style>
+  .agency-personnel-hero {
+    background: #f7f9fc;
+    border-bottom: 1px solid #d7dde8;
+    padding: 2rem 0 1.75rem;
+  }
+
+  .agency-personnel-heading {
+    align-items: end;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+  }
+
+  .agency-personnel-kicker {
+    color: #315f63;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    margin: 0 0 0.25rem;
+    text-transform: uppercase;
+  }
+
+  .agency-personnel-heading h1 {
+    color: #071942;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1.05;
+    margin: 0;
+  }
+
+  .agency-personnel-heading p {
+    color: #33446b;
+    margin: 0.5rem 0 0;
+  }
+
+  .agency-personnel-count {
+    border: 1px solid #d7dde8;
+    border-radius: 8px;
+    min-width: 11rem;
+    padding: 0.9rem 1rem;
+    text-align: right;
+  }
+
+  .agency-personnel-count strong {
+    color: #071942;
+    display: block;
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .agency-personnel-count span {
+    color: #53627f;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .agency-personnel-section {
+    padding: 1.5rem 0 2.5rem;
+  }
+
+  .agency-personnel-toolbar {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .agency-personnel-toolbar label {
+    color: #071942;
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  .agency-personnel-toolbar input {
+    border: 1px solid #cdd5e3;
+    border-radius: 6px;
+    color: #071942;
+    max-width: 24rem;
+    padding: 0.65rem 0.75rem;
+    width: 100%;
+  }
+
+  .agency-personnel-table-wrap {
+    border: 1px solid #d7dde8;
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+
+  .agency-personnel-table {
+    border-collapse: collapse;
+    color: #071942;
+    font-size: 0.9rem;
+    min-width: 920px;
+    width: 100%;
+  }
+
+  .agency-personnel-table th,
+  .agency-personnel-table td {
+    border-bottom: 1px solid #e4e8f0;
+    padding: 0.75rem 0.8rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .agency-personnel-table th {
+    background: #f7f9fc;
+    color: #53627f;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .agency-personnel-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .agency-personnel-table a {
+    color: #003bff;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .agency-personnel-empty {
+    color: #53627f;
+    margin: 1rem 0 0;
+  }
+
+  @media (max-width: 720px) {
+    .agency-personnel-heading,
+    .agency-personnel-toolbar {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .agency-personnel-count {
+      text-align: left;
+    }
+  }
+</style>

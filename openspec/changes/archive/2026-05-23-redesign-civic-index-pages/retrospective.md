@@ -52,23 +52,23 @@ c60405c chore: complete civic index validation
 
 ## 3. Plan deviations
 
-| Plan task | What changed | Why |
-|-----------|--------------|-----|
-| 1.3 / 4.1 | Source-link counts were removed from the initial coverage metric scope. | The audit found no reliable jurisdiction-scoped source-link aggregate in current local loaders. |
-| 3 | Model builders were tightened beyond the first draft: immediate child paths only, state children use `places`, and missing payload arrays fail fast. | Spec/code review found the first draft could skip levels and hide malformed payloads. |
-| 5 | Route helpers were changed from top-level helpers to closures inside `getStaticPaths`. | Playwright showed Astro runtime could not resolve the top-level helper in generated `getStaticPaths` code. |
-| 7 | E2E selectors were scoped to tables to avoid matching Leaflet tooltip `role=link` elements. | Leaflet exposes interactive map labels as links, which is correct for the map but ambiguous for broad selectors. |
+| Plan task | What changed                                                                                                                                         | Why                                                                                                              |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 1.3 / 4.1 | Source-link counts were removed from the initial coverage metric scope.                                                                              | The audit found no reliable jurisdiction-scoped source-link aggregate in current local loaders.                  |
+| 3         | Model builders were tightened beyond the first draft: immediate child paths only, state children use `places`, and missing payload arrays fail fast. | Spec/code review found the first draft could skip levels and hide malformed payloads.                            |
+| 5         | Route helpers were changed from top-level helpers to closures inside `getStaticPaths`.                                                               | Playwright showed Astro runtime could not resolve the top-level helper in generated `getStaticPaths` code.       |
+| 7         | E2E selectors were scoped to tables to avoid matching Leaflet tooltip `role=link` elements.                                                          | Leaflet exposes interactive map labels as links, which is correct for the map but ambiguous for broad selectors. |
 
 ## 4. Skill / workflow compliance
 
-| Skill                                            | Used |
-|--------------------------------------------------|------|
-| superpowers:brainstorming                        | ✓ |
-| superpowers:writing-plans                        | ✓ |
-| superpowers:using-git-worktrees                  | ✓ |
-| superpowers:subagent-driven-development          | ✓ |
-| (transitive) superpowers:test-driven-development | △ partial |
-| (transitive) superpowers:requesting-code-review  | ✓ |
+| Skill                                            | Used                    |
+| ------------------------------------------------ | ----------------------- |
+| superpowers:brainstorming                        | ✓                       |
+| superpowers:writing-plans                        | ✓                       |
+| superpowers:using-git-worktrees                  | ✓                       |
+| superpowers:subagent-driven-development          | ✓                       |
+| (transitive) superpowers:test-driven-development | △ partial               |
+| (transitive) superpowers:requesting-code-review  | ✓                       |
 | superpowers:finishing-a-development-branch       | pending by schema order |
 
 ### Deliberately Skipped Skills
@@ -92,10 +92,12 @@ c60405c chore: complete civic index validation
 ## 6. Promote candidates -> long-term learning
 
 - [ ] 🟡 **Plans for behavior changes should put one failing user-visible test before implementation slices** -> **Promote to schema**
+
   > **Why**: The Civic Index e2e test was added after implementation and caught runtime route-helper bugs that typecheck missed.
   > **How to apply**: When writing `plan.md` for an OpenSpec behavior change, include an early failing Playwright/model test before route/component implementation unless the plan records a concrete reason no red-first test is possible.
 
 - [ ] 🟡 **After creating a worktree, patch with absolute worktree paths** -> **Promote to project AGENTS.md**
+
   > **Why**: A Task 6 checkbox patch briefly landed in the original checkout because `apply_patch` used the conversation cwd instead of the worktree.
   > **How to apply**: Once `.worktrees/<change>` exists, all manual `apply_patch` file paths should be absolute paths under that worktree.
 

@@ -22,8 +22,8 @@ failed: 0
 ```
 
 | Item | Type | Issues |
-|---|---|---|
-| — | — | — |
+| ---- | ---- | ------ |
+| —    | —    | —      |
 
 ---
 
@@ -34,28 +34,28 @@ failed: 0
 **Incomplete tasks**:
 
 | Task | Incomplete reason | Blocks archive |
-|---|---|---|
-| — | — | — |
+| ---- | ----------------- | -------------- |
+| —    | —                 | —              |
 
 ---
 
 ## 3. Delta Spec Sync State
 
-| Capability | Sync status | Notes |
-|---|---|---|
+| Capability          | Sync status  | Notes                                                                                                                                                                           |
+| ------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `civic-index-pages` | ✗ Needs sync | New delta spec exists at `openspec/changes/redesign-civic-index-pages/specs/civic-index-pages/spec.md`; archive should sync it into `openspec/specs/civic-index-pages/spec.md`. |
 
 ---
 
 ## 4. Design / Specs Coherence Spot Check
 
-| Sample | design.md description | specs correspondence | Drift |
-|---|---|---|---|
-| Shared Civic Index pattern | One shared model/component for state, administrative-area, and place pages. | `Requirement: Shared Civic Index pattern` | None |
-| Database-backed routing | Preserve route params, slugs, and location paths; avoid runtime slug generation. | `Requirement: Route and location identity preservation` | None |
-| Current record coverage | Scoped counts for agencies, personnel, reports, civil cases; omit unreliable source-link count. | `Requirement: Current record coverage` | None |
-| One-level-down maps/indexes | State -> administrative areas, administrative area -> places, place -> agencies. | `Requirement: One-level-down map` and `Requirement: Searchable and sortable index table` | None |
-| Future placeholders | Separate "Data not collected yet" section for uncollected datasets, including positive-deviance practices. | `Requirement: Future data placeholders` | None |
+| Sample                      | design.md description                                                                                      | specs correspondence                                                                     | Drift |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----- |
+| Shared Civic Index pattern  | One shared model/component for state, administrative-area, and place pages.                                | `Requirement: Shared Civic Index pattern`                                                | None  |
+| Database-backed routing     | Preserve route params, slugs, and location paths; avoid runtime slug generation.                           | `Requirement: Route and location identity preservation`                                  | None  |
+| Current record coverage     | Scoped counts for agencies, personnel, reports, civil cases; omit unreliable source-link count.            | `Requirement: Current record coverage`                                                   | None  |
+| One-level-down maps/indexes | State -> administrative areas, administrative area -> places, place -> agencies.                           | `Requirement: One-level-down map` and `Requirement: Searchable and sortable index table` | None  |
+| Future placeholders         | Separate "Data not collected yet" section for uncollected datasets, including positive-deviance practices. | `Requirement: Future data placeholders`                                                  | None  |
 
 **Drift warnings**:
 
@@ -107,8 +107,8 @@ find docs/superpowers/specs -maxdepth 1 -name '*.md' -print 2>/dev/null || true
 **Leak list**:
 
 | File | Captured in change | Recommended action |
-|---|---|---|
-| — | — | — |
+| ---- | ------------------ | ------------------ |
+| —    | —                  | —                  |
 
 ---
 
@@ -117,8 +117,8 @@ find docs/superpowers/specs -maxdepth 1 -name '*.md' -print 2>/dev/null || true
 No `[~]` deferred manual dogfood rows exist in `plan.md`.
 
 | Deferred dogfood (plan section) | Equivalent automated test | Coverage assessment | Real gap? |
-|---|---|---|---|
-| — | — | — | — |
+| ------------------------------- | ------------------------- | ------------------- | --------- |
+| —                               | —                         | —                   | —         |
 
 ---
 

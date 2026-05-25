@@ -1,0 +1,33 @@
+---
+import CivicChildIndexPage from "#src/components/CivicChildIndexPage.astro";
+import { buildStateCivicIndex } from "#src/lib/data/civic-index.js";
+import {
+  loadRequiredLocationByPath,
+  loadStateScopedPaths,
+} from "#src/lib/data/civic-scoped-routes.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
+
+export async function getStaticPaths() {
+  return loadStateScopedPaths();
+}
+
+const location = await loadRequiredLocationByPath(
+  `/${Astro.params.category}/`,
+  "state",
+);
+const label = "Counties / Areas";
+const model = await buildStateCivicIndex(location);
+const pagePath = `${model.pagePath}counties/`;
+const page = {
+  currentPage: 1,
+  data: model.rows.slice(0, PAGE_SIZE),
+  lastPage: Math.max(1, Math.ceil(model.rows.length / PAGE_SIZE)),
+};
+---
+
+<CivicChildIndexPage
+  label={label}
+  model={model}
+  page={page}
+  pagePath={pagePath}
+/>
