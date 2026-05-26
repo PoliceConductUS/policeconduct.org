@@ -115,7 +115,7 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
           class="d-flex flex-column flex-lg-row gap-3 justify-content-between"
         >
           <div>
-            <h2 class="h4 mb-1">
+            <h2 class="ipc-section-title mb-1">
               {title === "States" ? "Browse by state" : title}
             </h2>
             {subtitle ? <p class="text-muted mb-0">{subtitle}</p> : null}
@@ -279,7 +279,7 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
                     {federalPanel.eyebrow}
                   </p>
                 ) : null}
-                <h2 class="h5 mb-0">{federalPanel.title}</h2>
+                <h2 class="ipc-section-title mb-0">{federalPanel.title}</h2>
               </div>
               {federalPanel.value !== undefined ? (
                 <span class="badge bg-dark rounded-pill">

@@ -62,7 +62,7 @@ const { variant = "default" } = Astro.props as {
                     class:list={[
                       variant === "compact"
                         ? "collection-stat-value"
-                        : "display-6 fw-bold",
+                        : "collection-stat-value",
                     ]}
                   >
                     {item.value}
@@ -154,7 +154,6 @@ const { variant = "default" } = Astro.props as {
 
   .collection-stat-value {
     color: var(--bs-dark);
-    font-family: var(--pc-heading-font, inherit);
     font-size: 1.35rem;
     font-weight: 700;
     line-height: 1;

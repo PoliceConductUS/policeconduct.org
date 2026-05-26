@@ -1,12 +1,17 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityActionButton from "#src/components/EntityActionButton.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
+import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
 import type {
   CivicTopicKind,
   CivicTopicRecords,
 } from "#src/lib/data/civic-topic-records.js";
-import { metricLabels } from "#src/lib/metric-vocabulary.js";
+import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
 
 const { model, kind, records } = Astro.props as {
   model: CivicIndexModel;
@@ -46,6 +51,12 @@ const pageConfig = {
       "Claims, settlements, judgments, defense costs, and related financial exposure.",
     value: "$--",
   },
+  "outcomes-by-income": {
+    label: metricLabels.outcomesByIncome,
+    title: metricLabels.outcomesByIncome,
+    description: "Case outcomes by income band.",
+    value: "$--",
+  },
 }[kind];
 
 const coverageValue = (key: CivicIndexModel["coverage"][number]["key"]) =>
@@ -62,22 +73,32 @@ const topicConfig = {
   personnel: {
     metrics: [
       {
-        label: metricLabels.personnel,
+        ...metricVisuals.personnel,
         value: coverageValue("personnel"),
         detail: "Projected personnel connected to this geography",
       },
       {
-        label: metricLabels.personnelRecords,
+        ...metricVisuals.personnelRecords,
         value: coverageValue("personnel"),
         detail: "Current personnel records in scope",
       },
       {
-        label: metricLabels.agencyAssignments,
+        ...metricVisuals.reports,
+        action: {
+          href: `${model.pagePath}reports/`,
+          kind: "link",
+          label: "View details",
+        },
+        value: coverageValue("reports"),
+        detail: "Published public reports",
+      },
+      {
+        ...metricVisuals.agencies,
         value: "$--",
         detail: "Assignment history coverage is not projected yet",
       },
       {
-        label: metricLabels.latestPersonnelUpdate,
+        ...metricVisuals.latestPersonnelUpdate,
         value: "$--",
         detail: "Personnel update recency is not projected yet",
       },
@@ -87,22 +108,32 @@ const topicConfig = {
   budget: {
     metrics: [
       {
-        label: metricLabels.budget,
+        ...metricVisuals.budget,
         value: "$--",
         detail: "Budget totals are not projected yet",
       },
       {
-        label: metricLabels.operatingSpend,
+        ...metricVisuals.operatingSpend,
         value: "$--",
         detail: "Operating spend is not projected yet",
       },
       {
-        label: metricLabels.overtime,
+        ...metricVisuals.reports,
+        action: {
+          href: `${model.pagePath}reports/`,
+          kind: "link",
+          label: "View details",
+        },
+        value: coverageValue("reports"),
+        detail: "Published public reports",
+      },
+      {
+        ...metricVisuals.overtime,
         value: "$--",
         detail: "Overtime spending is not projected yet",
       },
       {
-        label: metricLabels.latestFiscalYear,
+        ...metricVisuals.latestFiscalYear,
         value: "$--",
         detail: "Fiscal-year coverage is not projected yet",
       },
@@ -116,7 +147,7 @@ const topicConfig = {
   "civil-cases": {
     metrics: [
       {
-        label: metricLabels.civilCases,
+        ...metricVisuals.civilCases,
         value:
           records?.kind === "civil-cases"
             ? records.totalCount.toLocaleString("en-US")
@@ -124,17 +155,27 @@ const topicConfig = {
         detail: "Civil cases connected through agencies and personnel",
       },
       {
-        label: metricLabels.caseTypes,
+        ...metricVisuals.caseTypes,
         value: "$--",
         detail: "Case type coverage is not projected yet",
       },
       {
-        label: metricLabels.caseOutcomes,
+        ...metricVisuals.caseOutcomes,
         value: "$--",
         detail: "Outcome coverage is not projected yet",
       },
       {
-        label: metricLabels.latestCaseActivity,
+        ...metricVisuals.reports,
+        action: {
+          href: `${model.pagePath}reports/`,
+          kind: "link",
+          label: "View details",
+        },
+        value: coverageValue("reports"),
+        detail: "Published public reports",
+      },
+      {
+        ...metricVisuals.latestCaseActivity,
         value: "$--",
         detail: "Case activity recency is not projected yet",
       },
@@ -144,22 +185,32 @@ const topicConfig = {
   "liability-costs": {
     metrics: [
       {
-        label: metricLabels.liabilityCosts,
+        ...metricVisuals.liabilityCosts,
         value: "$--",
         detail: "Liability cost totals are not projected yet",
       },
       {
-        label: metricLabels.settlements,
+        ...metricVisuals.settlements,
         value: "$--",
         detail: "Settlement totals are not projected yet",
       },
       {
-        label: metricLabels.judgments,
+        ...metricVisuals.judgments,
         value: "$--",
         detail: "Judgment totals are not projected yet",
       },
       {
-        label: metricLabels.latestRecordedYear,
+        ...metricVisuals.reports,
+        action: {
+          href: `${model.pagePath}reports/`,
+          kind: "link",
+          label: "View details",
+        },
+        value: coverageValue("reports"),
+        detail: "Published public reports",
+      },
+      {
+        ...metricVisuals.latestRecordedYear,
         value: "$--",
         detail: "Liability-cost recency is not projected yet",
       },
@@ -169,6 +220,10 @@ const topicConfig = {
       "Cost Components Over Time",
       "Payment Source Breakdown",
     ],
+  },
+  "outcomes-by-income": {
+    metrics: [],
+    charts: [],
   },
 }[kind];
 ---
@@ -189,41 +244,36 @@ const topicConfig = {
           ]}
           className="mb-2"
         />
-        <div class="civic-scoped-heading">
-          <div>
-            <h1>{pageTitle}</h1>
-            <p>{pageConfig.description}</p>
-          </div>
-          <div class="civic-scoped-actions">
-            <button type="button">Share</button>
-            <button type="button" class="civic-scoped-primary">
+        <EntityPageHeader title={pageTitle} description={pageConfig.description}>
+          <Fragment slot="actions">
+            <EntityActionButton>Share</EntityActionButton>
+            <EntityActionButton className="entity-action-primary">
               Download Report
-            </button>
-          </div>
-        </div>
+            </EntityActionButton>
+          </Fragment>
+        </EntityPageHeader>
 
-        <div class="civic-scoped-metrics">
-          {
-            topicConfig.metrics.map((metric) => (
-              <article>
-                <p>{metric.label}</p>
-                <strong>{metric.value}</strong>
-                <span>{metric.detail}</span>
-              </article>
-            ))
-          }
-        </div>
+        {
+          topicConfig.metrics.length ? (
+            <MetricGrid metrics={topicConfig.metrics} columns="auto" />
+          ) : null
+        }
 
-        <div class="civic-scoped-chart-grid">
-          {
-            topicConfig.charts.map((title) => (
-              <article class="civic-scoped-chart-card">
-                <h2>{title}</h2>
-                <div class="civic-scoped-empty-chart" aria-hidden="true" />
-              </article>
-            ))
-          }
-        </div>
+        {
+          kind === "outcomes-by-income" ? (
+            <div class="entity-chart-grid">
+              <OutcomesByIncomePanel />
+            </div>
+          ) : (
+            <div class="entity-chart-grid">
+              {topicConfig.charts.map((title) => (
+                <DataPanel title={title}>
+                  <div class="entity-empty-line-chart" aria-hidden="true" />
+                </DataPanel>
+              ))}
+            </div>
+          )
+        }
 
         <slot />
       </div>
@@ -235,13 +285,6 @@ const topicConfig = {
   .civic-scoped-page {
     background: #fbfcff;
     color: #071842;
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
   }
 
   .civic-scoped-overview {
@@ -262,17 +305,6 @@ const topicConfig = {
 
   .civic-scoped-heading h1 {
     color: #071842;
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-    font-size: 2.25rem;
-    font-weight: 800;
-    letter-spacing: 0;
-    line-height: 1;
     margin: 0 0 0.45rem;
   }
 
@@ -307,85 +339,7 @@ const topicConfig = {
     color: #f8faff;
   }
 
-  .civic-scoped-metrics,
-  .civic-scoped-chart-grid {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: minmax(0, 1fr);
-    margin-bottom: 1rem;
-  }
-
-  .civic-scoped-metrics article,
-  .civic-scoped-chart-card {
-    background: #fbfcff;
-    border: 1px solid #d5deeb;
-    border-radius: 0.45rem;
-    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
-  }
-
-  .civic-scoped-metrics article {
-    min-height: 8rem;
-    padding: 1rem 1.1rem;
-  }
-
-  .civic-scoped-metrics p {
-    font-size: 0.875rem;
-    font-weight: 700;
-    line-height: 1.3;
-    margin: 0;
-  }
-
-  .civic-scoped-metrics strong {
-    display: block;
-    font-size: 1.5rem;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.12;
-    margin: 0.35rem 0;
-  }
-
-  .civic-scoped-metrics span {
-    color: #33456f;
-    font-size: 0.8125rem;
-    line-height: 1.45;
-  }
-
-  .civic-scoped-chart-card {
-    min-height: 15.8rem;
-    padding: 1rem 1.1rem;
-  }
-
-  .civic-scoped-chart-card h2 {
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-    font-size: 1.0625rem;
-    font-weight: 750;
-    line-height: 1.25;
-    margin: 0 0 1rem;
-  }
-
-  .civic-scoped-empty-chart {
-    background:
-      linear-gradient(#d9e1ee 1px, transparent 1px) 0 0 / 100% 25%,
-      linear-gradient(90deg, #b8c4d8 1px, transparent 1px) 0 0 / 10% 100%;
-    border-bottom: 1px solid #b8c4d8;
-    border-left: 1px solid #b8c4d8;
-    height: 10rem;
-    margin-top: 1rem;
-  }
-
   @media (min-width: 768px) {
-    .civic-scoped-metrics {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .civic-scoped-chart-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
   }
 
   @media (min-width: 1200px) {

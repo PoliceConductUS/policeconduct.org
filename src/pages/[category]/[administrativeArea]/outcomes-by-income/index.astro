@@ -1,0 +1,20 @@
+---
+import CivicScopedIndexPage from "#src/components/CivicScopedIndexPage.astro";
+import { buildAdministrativeAreaCivicIndex } from "#src/lib/data/civic-index.js";
+import {
+  loadAdministrativeAreaScopedPaths,
+  loadRequiredLocationByPath,
+} from "#src/lib/data/civic-scoped-routes.js";
+
+export async function getStaticPaths() {
+  return loadAdministrativeAreaScopedPaths();
+}
+
+const location = await loadRequiredLocationByPath(
+  `/${Astro.params.category}/${Astro.params.administrativeArea}/`,
+  "administrative_area",
+);
+const model = await buildAdministrativeAreaCivicIndex(location);
+---
+
+<CivicScopedIndexPage model={model} kind="outcomes-by-income" />

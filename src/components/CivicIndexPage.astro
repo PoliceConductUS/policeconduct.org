@@ -1,8 +1,13 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityActionButton from "#src/components/EntityActionButton.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
+import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
-import { metricLabels } from "#src/lib/metric-vocabulary.js";
+import { metricVisuals } from "#src/lib/metric-vocabulary.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const { model, site } = Astro.props as {
@@ -29,31 +34,37 @@ const formatCount = (value: number) => value.toLocaleString("en-US");
 const childMetric =
   model.level === "state"
     ? {
-        actionLabel: "Explore counties",
+        action: {
+          href: scopedHref("counties"),
+          kind: "button",
+          label: "Explore counties",
+        },
         detail: `${model.indexLabel}`,
-        href: scopedHref("counties"),
-        icon: "shield",
+        icon: "building",
         label: "Counties",
-        primaryAction: true,
         value: formatCount(model.rows.length),
       }
     : model.level === "administrative_area"
       ? {
-          actionLabel: "Explore places",
+          action: {
+            href: scopedHref("places"),
+            kind: "button",
+            label: "Explore places",
+          },
           detail: `${model.indexLabel}`,
-          href: scopedHref("places"),
           icon: "building",
           label: "Places",
-          primaryAction: true,
           value: formatCount(model.rows.length),
         }
       : {
-          actionLabel: "Explore agencies",
+          action: {
+            href: scopedHref("agencies"),
+            kind: "button",
+            label: "Explore agencies",
+          },
           detail: "Agencies operating in this place",
-          href: scopedHref("agencies"),
-          icon: "building",
-          label: metricLabels.agencies,
-          primaryAction: true,
+          icon: metricVisuals.agencies.icon,
+          label: metricVisuals.agencies.label,
           value: formatCount(coverageCount("agencies")),
         };
 const metricCards = [
@@ -62,43 +73,63 @@ const metricCards = [
     ...childMetric,
   },
   {
-    accent: "blue",
-    actionLabel: "View details",
+    accent: metricVisuals.personnel.accent,
+    action: {
+      href: scopedHref("personnel"),
+      kind: "link",
+      label: "View details",
+    },
     detail: "Active / total",
-    href: scopedHref("personnel"),
-    icon: "people",
-    label: metricLabels.personnel,
-    primaryAction: false,
+    icon: metricVisuals.personnel.icon,
+    label: metricVisuals.personnel.label,
     value: formatCount(coverageCount("personnel")),
   },
   {
-    accent: "green",
-    actionLabel: "View details",
+    accent: metricVisuals.reports.accent,
+    action: {
+      href: scopedHref("reports"),
+      kind: "link",
+      label: "View details",
+    },
+    detail: "Published public reports",
+    icon: metricVisuals.reports.icon,
+    label: metricVisuals.reports.label,
+    value: formatCount(coverageCount("reports")),
+  },
+  {
+    accent: metricVisuals.budget.accent,
+    action: {
+      href: scopedHref("budget"),
+      kind: "link",
+      label: "View details",
+    },
     detail: "Fiscal year agency budget",
-    href: scopedHref("budget"),
-    icon: "dollar",
-    label: metricLabels.budget,
-    primaryAction: false,
+    icon: metricVisuals.budget.icon,
+    label: metricVisuals.budget.label,
     value: "$--",
   },
   {
-    accent: "purple",
-    actionLabel: "View details",
+    accent: metricVisuals.civilCases.accent,
+    action: {
+      href: scopedHref("civil-cases"),
+      kind: "link",
+      label: "View details",
+    },
     detail: "Direct and personnel-linked civil cases",
-    href: scopedHref("civil-cases"),
-    icon: "scales",
-    label: metricLabels.civilCases,
-    primaryAction: false,
+    icon: metricVisuals.civilCases.icon,
+    label: metricVisuals.civilCases.label,
     value: formatCount(coverageCount("civil_cases")),
   },
   {
-    accent: "green",
-    actionLabel: "View details",
+    accent: metricVisuals.liabilityCosts.accent,
+    action: {
+      href: scopedHref("liability-costs"),
+      kind: "link",
+      label: "View details",
+    },
     detail: "Claims, settlements, judgments, and related costs",
-    href: scopedHref("liability-costs"),
-    icon: "dollar",
-    label: metricLabels.liabilityCosts,
-    primaryAction: false,
+    icon: metricVisuals.liabilityCosts.icon,
+    label: metricVisuals.liabilityCosts.label,
     value: "$--",
   },
 ];
@@ -111,6 +142,149 @@ const chartCards = [
     "Civil cases and liability costs",
   ],
 ];
+
+type DecertificationColumn = {
+  key: string;
+  label: string;
+  sourceKeys?: string[];
+  status: "missing" | "present" | "unknown";
+};
+
+type DecertificationPayload = {
+  columns: DecertificationColumn[];
+  methodology?: string;
+  note?: string;
+  tier?: string;
+};
+
+const assertString = (value: unknown, field: string, reportId: string) => {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`Location report ${reportId} has invalid ${field}.`);
+  }
+  return value;
+};
+
+const assertSourceUrl = (value: string, sourceId: string, reportId: string) => {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(
+      `Location report ${reportId} source ${sourceId} has invalid url.`,
+    );
+  }
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    throw new Error(
+      `Location report ${reportId} source ${sourceId} url must be http or https.`,
+    );
+  }
+};
+
+const assertDecertificationPayload = (
+  report: CivicIndexModel["locationReports"][number],
+): DecertificationPayload => {
+  if (report.reportType !== "decertification_report_card") {
+    throw new Error(`Unsupported location report type: ${report.reportType}`);
+  }
+  if (!report.sources.length) {
+    throw new Error(`Location report ${report.id} must include sources.`);
+  }
+  for (const source of report.sources) {
+    assertString(source.id, "source.id", report.id);
+    assertString(source.sourceKey, `source ${source.id} sourceKey`, report.id);
+    assertString(source.label, `source ${source.id} label`, report.id);
+    assertString(source.url, `source ${source.id} url`, report.id);
+    assertSourceUrl(source.url, source.id, report.id);
+    if (!["law", "methodology", "pdf", "web"].includes(source.sourceType)) {
+      throw new Error(
+        `Location report ${report.id} source ${source.id} has invalid sourceType ${source.sourceType}.`,
+      );
+    }
+  }
+
+  const payload = report.payload as Record<string, unknown>;
+  const methodology = assertString(payload.methodology, "methodology", report.id);
+  const tier = assertString(payload.tier, "tier", report.id);
+  const note = assertString(payload.note, "note", report.id);
+  const columns = payload.columns;
+  if (!Array.isArray(columns) || !columns.length) {
+    throw new Error(`Location report ${report.id} is missing columns.`);
+  }
+
+  const sourceKeys = new Set(report.sources.map((source) => source.sourceKey));
+  const validatedColumns = columns.map((rawColumn, index) => {
+    if (!rawColumn || typeof rawColumn !== "object") {
+      throw new Error(
+        `Location report ${report.id} column ${index + 1} must be an object.`,
+      );
+    }
+    const column = rawColumn as Record<string, unknown>;
+    const key = assertString(column.key, `columns[${index}].key`, report.id);
+    const label = assertString(
+      column.label,
+      `columns[${index}].label`,
+      report.id,
+    );
+    const status = assertString(
+      column.status,
+      `columns[${index}].status`,
+      report.id,
+    );
+    if (!["present", "missing", "unknown"].includes(status)) {
+      throw new Error(
+        `Location report ${report.id} column ${key} has invalid status ${status}.`,
+      );
+    }
+    if (!Array.isArray(column.sourceKeys) || !column.sourceKeys.length) {
+      throw new Error(
+        `Location report ${report.id} column ${key} must include sourceKeys.`,
+      );
+    }
+    const columnSourceKeys = column.sourceKeys.map((sourceKey, sourceIndex) =>
+      assertString(
+        sourceKey,
+        `columns[${index}].sourceKeys[${sourceIndex}]`,
+        report.id,
+      ),
+    );
+    for (const sourceKey of columnSourceKeys) {
+      if (!sourceKeys.has(sourceKey)) {
+        throw new Error(
+          `Location report ${report.id} column ${key} references missing source ${sourceKey}.`,
+        );
+      }
+    }
+    return {
+      key,
+      label,
+      sourceKeys: columnSourceKeys,
+      status: status as DecertificationColumn["status"],
+    };
+  });
+
+  return {
+    columns: validatedColumns,
+    methodology,
+    note,
+    tier,
+  };
+};
+
+const statusLabel = (status: DecertificationColumn["status"]) =>
+  status === "present" ? "Check" : status === "missing" ? "X" : "?";
+
+const statusSymbol = (status: DecertificationColumn["status"]) =>
+  status === "present" ? "✓" : status === "missing" ? "X" : "?";
+
+const sourceForColumn = (
+  report: CivicIndexModel["locationReports"][number],
+  column: DecertificationColumn,
+) => {
+  const sourceKey = column.sourceKeys?.[0];
+  return sourceKey
+    ? report.sources.find((source) => source.sourceKey === sourceKey) || null
+    : null;
+};
 ---
 
 <SiteLayout
@@ -123,112 +297,37 @@ const chartCards = [
     <section class="civic-dashboard-main">
       <div class="container">
         <Breadcrumbs items={model.breadcrumbs} className="mb-2" />
-        <div class="civic-dashboard-heading">
-          <div>
-            <h1>{heading}</h1>
-            <p>{model.description}</p>
-          </div>
-          <div class="civic-dashboard-actions">
-            <button type="button" data-civic-share>Share</button>
-            <button
-              type="button"
-              class="civic-dashboard-primary"
+        <EntityPageHeader title={heading} description={model.description}>
+          <Fragment slot="actions">
+            <EntityActionButton data-civic-share>Share</EntityActionButton>
+            <EntityActionButton
+              className="entity-action-primary"
               data-civic-download
             >
               Download Report
-            </button>
+            </EntityActionButton>
             <span data-civic-coming-soon></span>
-          </div>
-        </div>
+          </Fragment>
+        </EntityPageHeader>
 
-        <div class="civic-metric-grid">
-          {
-            metricCards.map((metric) => (
-              <article
-                class:list={[
-                  "civic-metric-card",
-                  metric.primaryAction && "civic-metric-card-primary",
-                ]}
-              >
-                <svg
-                  aria-hidden="true"
-                  class={`civic-metric-icon civic-${metric.accent}`}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  {metric.icon === "people" ? (
-                    <>
-                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </>
-                  ) : metric.icon === "dollar" ? (
-                    <>
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
-                      <path d="M12 6v12" />
-                    </>
-                  ) : metric.icon === "scales" ? (
-                    <>
-                      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-                      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-                      <path d="M7 21h10" />
-                      <path d="M12 3v18" />
-                      <path d="M3 7h2c2 0 5-1 7-4 2 3 5 4 7 4h2" />
-                    </>
-                  ) : metric.icon === "shield" ? (
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
-                  ) : (
-                    <>
-                      <path d="M3 21V7l9-4 9 4v14" />
-                      <path d="M9 21v-8h6v8" />
-                      <path d="M9 9h.01" />
-                      <path d="M15 9h.01" />
-                    </>
-                  )}
-                </svg>
-                <div class="civic-metric-body">
-                  <p>{metric.label}</p>
-                  <strong>{metric.value}</strong>
-                  <span>{metric.detail}</span>
-                  {!metric.primaryAction ? (
-                    <a class="civic-metric-link" href={metric.href}>
-                      {metric.actionLabel}
-                    </a>
-                  ) : null}
-                </div>
-                {metric.primaryAction ? (
-                  <a
-                    class="civic-metric-link civic-metric-link-primary"
-                    href={metric.href}
-                  >
-                    {metric.actionLabel}
-                  </a>
-                ) : null}
-              </article>
-            ))
-          }
-        </div>
+        <MetricGrid metrics={metricCards} columns="auto" />
 
-        <div class="civic-chart-grid">
+        <div class="entity-chart-grid">
+          <OutcomesByIncomePanel
+            href={scopedHref("outcomes-by-income")}
+          />
           {
             chartCards.map(([title, description]) => (
-              <article class="civic-chart-card">
-                <h2>{title}</h2>
-                <p>{description}</p>
-                <div class="civic-empty-line-chart" aria-hidden="true" />
-              </article>
+              <DataPanel title={title} description={description}>
+                <div class="entity-empty-line-chart" aria-hidden="true" />
+              </DataPanel>
             ))
           }
 
-          <article class="civic-chart-card civic-half-card">
-            <h2>Racial Breakdown of Stops or Arrests</h2>
-            <p>Who is most affected in the current dataset</p>
+          <DataPanel
+            title="Racial Breakdown of Stops or Arrests"
+            description="Who is most affected in the current dataset"
+          >
             <table class="civic-mini-table">
               <thead>
                 <tr>
@@ -255,11 +354,12 @@ const chartCards = [
                 }
               </tbody>
             </table>
-          </article>
+          </DataPanel>
 
-          <article class="civic-chart-card">
-            <h2>Daylight vs Nighttime Stops</h2>
-            <p>Comparison of stops by time of day and race</p>
+          <DataPanel
+            title="Daylight vs Nighttime Stops"
+            description="Comparison of stops by time of day and race"
+          >
             <div class="civic-empty-bars" aria-hidden="true">
               {
                 [
@@ -270,11 +370,12 @@ const chartCards = [
                 ].map((label) => <span>{label}</span>)
               }
             </div>
-          </article>
+          </DataPanel>
 
-          <article class="civic-chart-card civic-half-card">
-            <h2>Top Charge Categories</h2>
-            <p>Most common reasons for arrest</p>
+          <DataPanel
+            title="Top Charge Categories"
+            description="Most common reasons for arrest"
+          >
             <div class="civic-horizontal-bars">
               {
                 [
@@ -294,35 +395,89 @@ const chartCards = [
                 ))
               }
             </div>
-          </article>
+          </DataPanel>
 
-          <article class="civic-chart-card civic-wide-card">
-            <h2>Budget and Overtime Trend</h2>
-            <p>Total budget and overtime spending</p>
-            <div class="civic-empty-line-chart" aria-hidden="true"></div>
-          </article>
+          <DataPanel
+            title="Budget and Overtime Trend"
+            description="Total budget and overtime spending"
+          >
+            <div class="entity-empty-line-chart" aria-hidden="true"></div>
+          </DataPanel>
 
-          <aside class="civic-chart-card civic-about-card">
-            <h2>About the Data</h2>
-            <p>
-              IPC compiles publicly available records and agency-provided data
-              to help the community understand policing in {heading}.
-            </p>
-            <a href="/about/">Learn more about our data and methods</a>
-          </aside>
         </div>
       </div>
     </section>
 
     {
-      model.stateDecertificationContext ? (
+      model.locationReports.length ? (
         <section class="civic-policy-context">
           <div class="container">
-            <h2>{model.stateDecertificationContext.title}</h2>
-            <p>{model.stateDecertificationContext.summary}</p>
-            <a href={model.stateDecertificationContext.sourceHref}>
-              {model.stateDecertificationContext.sourceLabel}
-            </a>
+            {model.locationReports.map((report) => {
+              const payload = assertDecertificationPayload(report);
+              return (
+                <article class="civic-location-report">
+                  <h2>{report.title}</h2>
+                  <p>{report.summary}</p>
+                  {payload.tier ? (
+                    <p class="civic-policy-context-note">{payload.tier}</p>
+                  ) : null}
+                  <div class="civic-report-card-table-wrap">
+                    <table class="civic-report-card-table">
+                      <thead>
+                        <tr>
+                          {payload.columns.map((column) => (
+                            <th scope="col">{column.label}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          {payload.columns.map((column) => {
+                            const source = sourceForColumn(report, column);
+                            const result = (
+                              <span
+                                class:list={[
+                                  "civic-report-status",
+                                  `civic-report-status-${column.status}`,
+                                ]}
+                                aria-label={statusLabel(column.status)}
+                              >
+                                {statusSymbol(column.status)}
+                              </span>
+                            );
+                            return (
+                              <td>
+                                {source ? (
+                                  <a href={source.url} title={source.label}>
+                                    {result}
+                                  </a>
+                                ) : (
+                                  result
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  {payload.note ? (
+                    <p class="civic-policy-context-note">{payload.note}</p>
+                  ) : null}
+                  {report.sources.length ? (
+                    <p class="civic-policy-sources">
+                      Sources:{" "}
+                      {report.sources.map((source, index) => (
+                        <>
+                          {index > 0 ? ", " : ""}
+                          <a href={source.url}>{source.label}</a>
+                        </>
+                      ))}
+                    </p>
+                  ) : null}
+                </article>
+              );
+            })}
           </div>
         </section>
       ) : null
@@ -357,13 +512,6 @@ const chartCards = [
   .civic-dashboard {
     background: #fbfcff;
     color: #071842;
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
   }
 
   .civic-dashboard-main {
@@ -385,17 +533,6 @@ const chartCards = [
 
   .civic-dashboard-heading h1 {
     color: #071842;
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-    font-size: 2.25rem;
-    font-weight: 800;
-    letter-spacing: 0;
-    line-height: 1;
     margin: 0 0 0.45rem;
   }
 
@@ -439,149 +576,100 @@ const chartCards = [
     text-align: right;
   }
 
-  .civic-metric-grid,
-  .civic-chart-grid {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: minmax(0, 1fr);
-    margin-bottom: 1rem;
-  }
-
-  .civic-metric-card,
-  .civic-chart-card {
-    background: #fbfcff;
-    border: 1px solid #d5deeb;
-    border-radius: 0.45rem;
-    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
-  }
-
-  .civic-metric-card {
-    display: grid;
-    gap: 0.8rem;
-    grid-template-columns: 2.8rem minmax(0, 1fr);
-    min-height: 8rem;
-    padding: 1rem;
-  }
-
-  .civic-metric-card-primary {
-    background: #f4f7fb;
-  }
-
-  .civic-metric-icon {
-    grid-column: 1;
-    grid-row: 1;
-    height: 2.7rem;
-    margin-top: 0.2rem;
-    width: 2.7rem;
-  }
-
-  .civic-metric-body {
-    grid-column: 2;
-    grid-row: 1;
-    min-width: 0;
-  }
-
-  .civic-blue {
-    color: #174bff;
-  }
-
-  .civic-green {
-    color: #087f3b;
-  }
-
-  .civic-purple {
-    color: #5b2df5;
-  }
-
-  .civic-metric-card p,
-  .civic-chart-card p {
-    color: #071842;
-    font-size: 0.875rem;
-    font-weight: 700;
-    line-height: 1.3;
-    margin: 0;
-  }
-
-  .civic-metric-card strong {
-    display: block;
-    font-size: 1.5rem;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.12;
-    margin: 0.25rem 0 0.3rem;
-  }
-
-  .civic-metric-card span,
-  .civic-chart-card p {
-    color: #33456f;
-    display: block;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    line-height: 1.45;
-  }
-
-  .civic-metric-link,
-  .civic-about-card a {
-    color: #064cfb;
-    font-weight: 700;
-    text-decoration: none;
-  }
-
-  .civic-metric-link {
-    display: inline-block;
-    font-size: 0.8125rem;
-    margin-top: 0.55rem;
-  }
-
-  .civic-metric-link-primary {
-    background: #071842;
-    border: 1px solid #071842;
-    border-radius: 0.35rem;
-    color: #f8faff;
-    display: block;
-    font-size: 0.8125rem;
-    grid-column: 1 / -1;
-    grid-row: 2;
-    line-height: 1.1;
-    margin-top: 0.25rem;
-    padding: 0.55rem 0.7rem;
-    text-align: center;
-    width: 100%;
-  }
-
-  .civic-metric-link::after,
-  .civic-about-card a::after {
-    content: "  ->";
-  }
-
-  .civic-chart-card {
-    min-height: 15.8rem;
-    padding: 1rem 1.1rem;
-  }
-
-  .civic-chart-card h2,
   .civic-policy-context h2 {
     color: #071842;
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-    font-size: 1.0625rem;
-    font-weight: 750;
-    line-height: 1.25;
     margin: 0 0 0.25rem;
   }
 
-  .civic-empty-line-chart {
-    background:
-      linear-gradient(#d9e1ee 1px, transparent 1px) 0 0 / 100% 25%,
-      linear-gradient(90deg, #b8c4d8 1px, transparent 1px) 0 0 / 10% 100%;
-    border-bottom: 1px solid #b8c4d8;
-    border-left: 1px solid #b8c4d8;
-    height: 9.5rem;
+  .civic-policy-context h3 {
+    color: #071842;
+    font-size: 0.95rem;
+    margin: 0 0 0.65rem;
+  }
+
+  .civic-location-report + .civic-location-report {
+    border-top: 1px solid #d9e1ee;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+  }
+
+  .civic-report-card-table-wrap {
     margin-top: 1rem;
+    overflow-x: auto;
+  }
+
+  .civic-report-card-table {
+    border-collapse: collapse;
+    min-width: 58rem;
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .civic-report-card-table th,
+  .civic-report-card-table td {
+    border: 1px solid #d9e1ee;
+    color: #071842;
+    font-size: 0.75rem;
+    line-height: 1.18;
+    padding: 0.65rem 0.5rem;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .civic-report-card-table th {
+    background: #f4f7fb;
+    font-weight: 800;
+  }
+
+  .civic-report-card-table a {
+    color: inherit;
+    display: inline-flex;
+    text-decoration: none;
+  }
+
+  .civic-report-status {
+    align-items: center;
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 1.35rem;
+    font-weight: 900;
+    height: 2rem;
+    justify-content: center;
+    line-height: 1;
+    width: 2rem;
+  }
+
+  .civic-report-status-present {
+    color: #087f3b;
+  }
+
+  .civic-report-status-missing {
+    color: #b0352b;
+  }
+
+  .civic-report-status-unknown {
+    color: #6d7890;
+  }
+
+  .civic-policy-context-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 1rem;
+  }
+
+  .civic-policy-context-grid > div {
+    border: 1px solid #d9e1ee;
+    border-radius: 0.4rem;
+    padding: 1rem;
+  }
+
+  .civic-policy-context ul {
+    color: #33456f;
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+    padding-left: 1.1rem;
   }
 
   .civic-mini-table {
@@ -661,12 +749,24 @@ const chartCards = [
     margin: 0.35rem 0 0;
   }
 
-  @media (min-width: 768px) {
-    .civic-metric-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+  .civic-policy-context .civic-policy-context-note {
+    font-weight: 700;
+    margin-top: 1rem;
+  }
 
-    .civic-chart-grid {
+  .civic-policy-sources {
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
+
+  .civic-policy-sources a {
+    color: #064cfb;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  @media (min-width: 768px) {
+    .civic-policy-context-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
@@ -680,26 +780,6 @@ const chartCards = [
       justify-content: end;
     }
 
-    .civic-metric-grid {
-      grid-template-columns: repeat(5, minmax(10rem, 1fr));
-    }
-
-    .civic-chart-grid {
-      grid-template-columns: repeat(12, minmax(0, 1fr));
-    }
-
-    .civic-chart-card {
-      grid-column: span 3;
-    }
-
-    .civic-half-card,
-    .civic-about-card {
-      grid-column: span 4;
-    }
-
-    .civic-wide-card {
-      grid-column: span 6;
-    }
   }
 
   @media (max-width: 991.98px) {

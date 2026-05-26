@@ -1,0 +1,125 @@
+---
+const {
+  id,
+  title,
+  description,
+  className,
+} = Astro.props as {
+  id?: string;
+  title: string;
+  description?: string;
+  className?: string;
+};
+---
+
+<article id={id} class:list={["entity-data-panel", className]}>
+  <div class="entity-data-panel-heading">
+    <h2>{title}</h2>
+    {description ? <p>{description}</p> : null}
+  </div>
+  <slot />
+</article>
+
+<style>
+  .entity-data-panel {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+    min-height: 15.8rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .entity-data-panel-heading h2 {
+    color: #071842;
+    margin: 0 0 0.25rem;
+  }
+
+  .entity-data-panel-heading p {
+    color: #33456f;
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  :global(.entity-chart-grid) {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  :global(.entity-table-panel) {
+    grid-column: 1 / -1;
+    min-height: 0;
+    overflow-x: auto;
+  }
+  }
+
+  :global(.entity-data-panel table) {
+    border-collapse: collapse;
+    margin-top: 0.85rem;
+    width: 100%;
+  }
+
+  :global(.entity-table-panel table) {
+    min-width: 560px;
+  }
+
+  :global(.entity-data-panel th),
+  :global(.entity-data-panel td) {
+    border-top: 1px solid #d9e1ee;
+    color: #071842;
+    font-size: 0.84rem;
+    padding: 0.55rem 0;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  :global(.entity-data-panel th) {
+    color: #33456f;
+    font-weight: 800;
+    padding-right: 1rem;
+  }
+
+  :global(.entity-data-panel ul) {
+    color: #071842;
+    display: grid;
+    gap: 0.45rem;
+    margin: 1rem 0 0;
+    padding-left: 1.2rem;
+  }
+
+  :global(.entity-data-panel li) {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  :global(.entity-table-panel a) {
+    color: #064cfb;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  :global(.entity-table-panel a::after) {
+    content: " ->";
+  }
+
+  :global(.entity-empty-line-chart) {
+    background:
+      linear-gradient(#d9e1ee 1px, transparent 1px) 0 0 / 100% 25%,
+      linear-gradient(90deg, #b8c4d8 1px, transparent 1px) 0 0 / 10% 100%;
+    border-bottom: 1px solid #b8c4d8;
+    border-left: 1px solid #b8c4d8;
+    height: 9.5rem;
+    margin-top: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    :global(.entity-chart-grid) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

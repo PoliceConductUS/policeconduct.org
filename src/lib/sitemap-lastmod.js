@@ -161,9 +161,10 @@ export const buildSitemapLastmodMap = async () => {
               a.id,
               a.slug,
               lower(lp.state_or_territory_slug) as state,
-              lp.administrative_area_slug as location_administrative_area_slug,
-              lp.place_slug as location_place_slug,
-              lp.path as location_path,
+              state_lp.path as state_path,
+              area_lp.path as administrative_area_path,
+              lp.path as place_path,
+              bpp.path as canonical_path,
               a.created_at,
               a.updated_at,
               count(distinct ao_active.officer_id) as active_personnel_count,
@@ -175,6 +176,15 @@ export const buildSitemapLastmodMap = async () => {
             from public.agency a
             join public.location_path lp
               on lp.location_path_id = a.location_path_id
+            join public.location_path area_lp
+              on area_lp.location_path_id = lp.parent_location_path_id
+             and area_lp.level = 'administrative_area'
+            join public.location_path state_lp
+              on state_lp.location_path_id = area_lp.parent_location_path_id
+             and state_lp.level = 'state'
+            join public.build_page_payload bpp
+              on bpp.page_type = 'agency'
+             and bpp.entity_id = a.id
             left join public.agency_officers ao on ao.agency_id = a.id
             left join public.agency_officers ao_active
               on ao_active.agency_id = a.id
@@ -186,8 +196,8 @@ export const buildSitemapLastmodMap = async () => {
               on cco.agency_officer_id = ao.id
             left join public.civil_cases c on c.id = cco.civil_case_id
             group by a.id, a.slug, lp.state_or_territory_slug,
-              lp.administrative_area_slug, lp.place_slug, lp.path,
-              a.created_at, a.updated_at
+              state_lp.path, area_lp.path, lp.path, bpp.path, a.created_at,
+              a.updated_at
           )
           select
             *,
@@ -209,19 +219,16 @@ export const buildSitemapLastmodMap = async () => {
         continue;
       }
       if (
-        agency.location_administrative_area_slug &&
-        agency.location_place_slug &&
-        agency.location_path &&
+        agency.state_path &&
+        agency.administrative_area_path &&
+        agency.place_path &&
+        agency.canonical_path &&
         agency.slug
       ) {
-        const canonicalPath = `${agency.location_path}${agency.slug}/`;
-        const statePath = `/${agency.state}/`;
-        const administrativeAreaPath = `${statePath}${agency.location_administrative_area_slug}/`;
-        const placePath = `${administrativeAreaPath}${agency.location_place_slug}/`;
-        setLastmod(pathLastmods, statePath, agency.lastmod);
-        setLastmod(pathLastmods, administrativeAreaPath, agency.lastmod);
-        setLastmod(pathLastmods, placePath, agency.lastmod);
-        setLastmod(pathLastmods, canonicalPath, agency.lastmod);
+        setLastmod(pathLastmods, agency.state_path, agency.lastmod);
+        setLastmod(pathLastmods, agency.administrative_area_path, agency.lastmod);
+        setLastmod(pathLastmods, agency.place_path, agency.lastmod);
+        setLastmod(pathLastmods, agency.canonical_path, agency.lastmod);
       }
 
       incrementCount(agencyCountsByCategory, agency.state);

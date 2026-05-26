@@ -41,7 +41,7 @@ export type CivilCaseDetail = {
     court: string | null;
     filed_date: string;
     date_terminated: string | null;
-    claims_summary: string | null;
+    claims_summary: string;
     outcome: string | null;
     primary_source_url: string | null;
     created_at: string;
@@ -70,6 +70,14 @@ export const loadCivilCaseDetail = async (
     ).rows[0];
     if (!civilCase) {
       return null;
+    }
+    if (
+      typeof civilCase.claims_summary !== "string" ||
+      !civilCase.claims_summary.trim()
+    ) {
+      throw new Error(
+        `Civil case ${civilCase.id || slug} is missing required claims_summary.`,
+      );
     }
 
     const civilCaseLinks = (
@@ -118,7 +126,8 @@ export const loadCivilCaseDetail = async (
             lp.place_name as city,
             lp.state_or_territory_slug as state,
             lp.administrative_area_name as administrative_area,
-            lp.path as location_path
+            lp.path as location_path,
+            bpp.path as canonical_path
           from public.civil_case_officers civil_case_officer
           join public.agency_officers agency_officer
             on agency_officer.id = civil_case_officer.agency_officer_id
@@ -126,6 +135,9 @@ export const loadCivilCaseDetail = async (
             on agency.id = agency_officer.agency_id
           join public.location_path lp
             on lp.location_path_id = agency.location_path_id
+          join public.build_page_payload bpp
+            on bpp.page_type = 'agency'
+           and bpp.entity_id = agency.id
           where civil_case_officer.civil_case_id = $1
           order by agency.name
         `,

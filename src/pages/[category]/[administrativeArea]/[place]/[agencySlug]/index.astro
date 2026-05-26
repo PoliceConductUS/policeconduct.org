@@ -1,25 +1,28 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityActionButton from "#src/components/EntityActionButton.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
+import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import DisqusComments from "#src/components/DisqusComments.astro";
 import {
-  loadAgencyDetail,
+  loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPaths,
 } from "#src/lib/data/agency-detail.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
+import { metricVisuals } from "#src/lib/metric-vocabulary.js";
 
 export async function getStaticPaths() {
   return loadAgencyLocationStaticPaths();
 }
 
-const { agencyId } = Astro.props;
-const data = await loadAgencyDetail(agencyId);
+const data = await loadAgencyDetailByRouteParams(Astro.params);
 
 const {
   agencyName,
   agencyState,
-  agencySlug,
   categorySlug,
   categoryLabel,
   agencyPath,
@@ -32,12 +35,13 @@ const {
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(agencyPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
-const disqusIdentifier = `agency:${agencySlug}`;
 const pageDescription = `${agencyName} agency profile with contact information, personnel, public reports, and recent civil litigation references.`;
 const personnelIndexPath = `${agencyPath}personnel/`;
+const reportsIndexPath = `${agencyPath}reports/`;
 const budgetIndexPath = `${agencyPath}budget/`;
 const civilCasesIndexPath = `${agencyPath}civil-cases/`;
 const liabilityCostsIndexPath = `${agencyPath}liability-costs/`;
+const outcomesByIncomePath = `${agencyPath}outcomes-by-income/`;
 const civilCaseTotal = counts.civilCases + counts.personnelLinkedCivilCases;
 const addressAvailable =
   data.agency.address ||
@@ -156,6 +160,70 @@ const structuredData = {
     organization,
   ],
 };
+const agencyMetrics = [
+  {
+    accent: metricVisuals.personnel.accent,
+    action: {
+      href: personnelIndexPath,
+      kind: "link",
+      label: "View details",
+    },
+    detail: "Active / total",
+    icon: metricVisuals.personnel.icon,
+    label: metricVisuals.personnel.label,
+    value: `${formatNumber(counts.currentPersonnel)} active / ${formatNumber(
+      counts.personnel,
+    )} total`,
+  },
+  {
+    accent: metricVisuals.budget.accent,
+    action: {
+      href: budgetIndexPath,
+      kind: "link",
+      label: "View details",
+    },
+    detail: "Fiscal year agency budget",
+    icon: metricVisuals.budget.icon,
+    label: metricVisuals.budget.label,
+    value: "$--",
+  },
+  {
+    accent: metricVisuals.reports.accent,
+    action: {
+      href: reportsIndexPath,
+      kind: "link",
+      label: "View details",
+    },
+    detail: "Published public reports",
+    icon: metricVisuals.reports.icon,
+    label: metricVisuals.reports.label,
+    value: formatNumber(counts.reports),
+  },
+  {
+    accent: metricVisuals.civilCases.accent,
+    action: {
+      href: civilCasesIndexPath,
+      kind: "link",
+      label: "View details",
+    },
+    detail: "Direct and personnel-linked civil cases",
+    icon: metricVisuals.civilCases.icon,
+    label: metricVisuals.civilCases.label,
+    value: formatNumber(civilCaseTotal),
+  },
+  {
+    accent: metricVisuals.liabilityCosts.accent,
+    action: {
+      href: liabilityCostsIndexPath,
+      kind: "link",
+      label: "View details",
+    },
+    detail: "Claims, settlements, judgments, and related costs",
+    icon: metricVisuals.liabilityCosts.icon,
+    label: metricVisuals.liabilityCosts.label,
+    value: "$--",
+  },
+] as const;
 ---
 
 <SiteLayout
@@ -183,12 +251,10 @@ const structuredData = {
             { label: agencyDisplayName, href: agencyPath, current: true },
           ]}
         />
-        <div class="agency-overview-heading">
-          <div>
-            <h1>{agencyDisplayName}</h1>
-            <p>
-              {placeLabel}, {administrativeArea}, {agencyState}
-            </p>
+        <EntityPageHeader
+          title={agencyDisplayName}
+          description={`${placeLabel}, ${administrativeArea}, ${agencyState}`}
+        >
             {
               federalAgency ? (
                 <p class="agency-overview-federal">
@@ -197,13 +263,8 @@ const structuredData = {
                 </p>
               ) : null
             }
-          </div>
-          <div class="agency-overview-actions">
-            <button
-              type="button"
-              class="agency-overview-action"
-              data-agency-share
-            >
+          <Fragment slot="actions">
+            <EntityActionButton data-agency-share>
               <svg
                 aria-hidden="true"
                 viewBox="0 0 24 24"
@@ -220,10 +281,9 @@ const structuredData = {
                 <path d="m15.41 6.51-6.82 3.98"></path>
               </svg>
               Share
-            </button>
-            <button
-              type="button"
-              class="agency-overview-action agency-overview-primary"
+            </EntityActionButton>
+            <EntityActionButton
+              className="entity-action-primary"
               data-agency-download-report
             >
               <svg
@@ -240,112 +300,19 @@ const structuredData = {
                 <path d="M12 15V3"></path>
               </svg>
               Download Report
-            </button>
+            </EntityActionButton>
             <span class="agency-coming-soon" data-agency-coming-soon></span>
-          </div>
-        </div>
+          </Fragment>
+        </EntityPageHeader>
 
-        <div class="agency-metric-grid">
-          <article class="agency-metric-card">
-            <svg
-              aria-hidden="true"
-              class="agency-metric-icon agency-metric-icon-blue"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-            <div>
-              <p>Personnel</p>
-              <strong>
-                {formatNumber(counts.currentPersonnel)} active /{" "}
-                {formatNumber(counts.personnel)} total
-              </strong>
-              <span>Active / total</span>
-              <a href={personnelIndexPath}>View details</a>
-            </div>
-          </article>
-          <article class="agency-metric-card">
-            <svg
-              aria-hidden="true"
-              class="agency-metric-icon agency-metric-icon-green"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
-              <path d="M12 6v12"></path>
-            </svg>
-            <div>
-              <p>Annual Budget</p>
-              <strong>$0</strong>
-              <span>Fiscal year agency budget</span>
-              <a href={budgetIndexPath}>View details</a>
-            </div>
-          </article>
-          <article class="agency-metric-card">
-            <svg
-              aria-hidden="true"
-              class="agency-metric-icon agency-metric-icon-purple"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path>
-              <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path>
-              <path d="M7 21h10"></path>
-              <path d="M12 3v18"></path>
-              <path d="M3 7h2c2 0 5-1 7-4 2 3 5 4 7 4h2"></path>
-            </svg>
-            <div>
-              <p>Civil Cases</p>
-              <strong>{formatNumber(civilCaseTotal)}</strong>
-              <span>Direct and personnel-linked civil cases</span>
-              <a href={civilCasesIndexPath}>View details</a>
-            </div>
-          </article>
-          <article class="agency-metric-card">
-            <svg
-              aria-hidden="true"
-              class="agency-metric-icon agency-metric-icon-green"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
-              <path d="M12 6v12"></path>
-            </svg>
-            <div>
-              <p>Liability Costs</p>
-              <strong>$0</strong>
-              <span>Claims, settlements, judgments, and related costs</span>
-              <a href={liabilityCostsIndexPath}>View details</a>
-            </div>
-          </article>
-        </div>
+        <MetricGrid metrics={agencyMetrics} columns="auto" />
 
-        <div class="agency-chart-grid">
-          <article class="agency-chart-card">
-            <h2>Arrests Over Time</h2>
-            <p>Number of arrests by category</p>
+        <div class="entity-chart-grid">
+          <OutcomesByIncomePanel href={outcomesByIncomePath} />
+          <DataPanel
+            title="Arrests Over Time"
+            description="Number of arrests by category"
+          >
             <div class="agency-line-chart">
               <svg viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path class="agency-grid-line" d="M8 14H96"></path>
@@ -355,10 +322,11 @@ const structuredData = {
                 <path class="agency-axis-line" d="M8 8V90H96"></path>
               </svg>
             </div>
-          </article>
-          <article class="agency-chart-card">
-            <h2>Killings Over Time</h2>
-            <p>People by age group, dogs and other animals</p>
+          </DataPanel>
+          <DataPanel
+            title="Killings Over Time"
+            description="People by age group, dogs and other animals"
+          >
             <div class="agency-line-chart">
               <div class="agency-chart-legend">
                 <span><i class="agency-dot-blue"></i>Under 18</span>
@@ -375,10 +343,11 @@ const structuredData = {
                 <path class="agency-axis-line" d="M8 8V90H96"></path>
               </svg>
             </div>
-          </article>
-          <article class="agency-chart-card">
-            <h2>Use of Force Over Time</h2>
-            <p>Number of use of force incidents</p>
+          </DataPanel>
+          <DataPanel
+            title="Use of Force Over Time"
+            description="Number of use of force incidents"
+          >
             <div class="agency-line-chart">
               <svg viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path class="agency-grid-line" d="M8 14H96"></path>
@@ -388,10 +357,12 @@ const structuredData = {
                 <path class="agency-axis-line" d="M8 8V90H96"></path>
               </svg>
             </div>
-          </article>
-          <article id="agency-liability-costs" class="agency-chart-card">
-            <h2>Civil Cases and Liability Costs Over Time</h2>
-            <p>Civil cases and liability costs</p>
+          </DataPanel>
+          <DataPanel
+            id="agency-liability-costs"
+            title="Civil Cases and Liability Costs Over Time"
+            description="Civil cases and liability costs"
+          >
             <div class="agency-line-chart">
               <svg viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path class="agency-grid-line" d="M8 14H96"></path>
@@ -412,10 +383,11 @@ const structuredData = {
                 {civilCasesByYear.map((point) => <span>{point.label}</span>)}
               </div>
             </div>
-          </article>
-          <article class="agency-chart-card agency-half-card">
-            <h2>Racial Breakdown of Stops or Arrests</h2>
-            <p>Who is most affected in the current dataset</p>
+          </DataPanel>
+          <DataPanel
+            title="Racial Breakdown of Stops or Arrests"
+            description="Who is most affected in the current dataset"
+          >
             <table>
               <thead>
                 <tr>
@@ -437,10 +409,11 @@ const structuredData = {
                 <tr><th scope="row">Other / Unknown</th><td></td><td></td></tr>
               </tbody>
             </table>
-          </article>
-          <article class="agency-chart-card">
-            <h2>Daylight vs Nighttime Stops</h2>
-            <p>Comparison of stops by time of day and race</p>
+          </DataPanel>
+          <DataPanel
+            title="Daylight vs Nighttime Stops"
+            description="Comparison of stops by time of day and race"
+          >
             <div class="agency-stacked-bars" aria-hidden="true">
               {
                 [
@@ -461,10 +434,11 @@ const structuredData = {
                 ))
               }
             </div>
-          </article>
-          <article class="agency-chart-card agency-half-card">
-            <h2>Top Charge Categories</h2>
-            <p>Most common reasons for arrest</p>
+          </DataPanel>
+          <DataPanel
+            title="Top Charge Categories"
+            description="Most common reasons for arrest"
+          >
             <div class="agency-source-bars">
               {
                 [
@@ -484,14 +458,13 @@ const structuredData = {
                 ))
               }
             </div>
-          </article>
-          <article
+          </DataPanel>
+          <DataPanel
             id="agency-budget-trend"
-            class="agency-chart-card agency-wide-card"
+            title="Budget and Overtime Trend"
+            description="Total budget and overtime spending"
           >
-            <h2>Budget and Overtime Trend</h2>
-            <p>Total budget and overtime spending</p>
-            <div class="agency-line-chart agency-wide-line-chart">
+            <div class="agency-line-chart">
               <svg viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path class="agency-grid-line" d="M8 14H96"></path>
                 <path class="agency-grid-line" d="M8 38H96"></path>
@@ -500,25 +473,10 @@ const structuredData = {
                 <path class="agency-axis-line" d="M8 8V90H96"></path>
               </svg>
             </div>
-          </article>
-          <aside class="agency-chart-card agency-about-card">
-            <h2>About the Data</h2>
-            <p>
-              PoliceConduct.org compiles public records and agency source links
-              to help residents understand policing in {placeLabel}.
-            </p>
-            <a href="/about/">Learn more about our data and methods</a>
-          </aside>
+          </DataPanel>
         </div>
       </div>
     </section>
-
-    <div class="container">
-      <div class="mt-5">
-        <h2 class="h5 text-uppercase text-muted">Comments</h2>
-        <DisqusComments pageUrl={pageUrl} disqusIdentifier={disqusIdentifier} />
-      </div>
-    </div>
   </main>
   <style>
     .agency-overview-page {
@@ -534,7 +492,7 @@ const structuredData = {
     }
 
     .agency-overview > .container {
-      max-width: 1194px;
+      max-width: 1240px;
     }
 
     .agency-overview :global(.breadcrumb) {
@@ -551,17 +509,6 @@ const structuredData = {
 
     .agency-overview-heading h1 {
       color: #071842;
-      font-family:
-        ui-sans-serif,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-      font-size: 2.25rem;
-      font-weight: 800;
-      letter-spacing: 0;
-      line-height: 1;
       margin: 0 0 0.45rem;
     }
 
@@ -629,8 +576,7 @@ const structuredData = {
       text-align: right;
     }
 
-    .agency-metric-grid,
-    .agency-chart-grid {
+    .agency-metric-grid {
       display: grid;
       gap: 1rem;
       grid-template-columns: minmax(0, 1fr);
@@ -640,8 +586,7 @@ const structuredData = {
       margin-bottom: 1rem;
     }
 
-    .agency-metric-card,
-    .agency-chart-card {
+    .agency-metric-card {
       background: #fbfcff;
       border: 1px solid #d5deeb;
       border-radius: 0.45rem;
@@ -674,8 +619,7 @@ const structuredData = {
       color: #5b2df5;
     }
 
-    .agency-metric-card p,
-    .agency-chart-card p {
+    .agency-metric-card p {
       color: #071842;
       font-size: 0.95rem;
       font-weight: 700;
@@ -692,8 +636,7 @@ const structuredData = {
       margin: 0.25rem 0 0.35rem;
     }
 
-    .agency-metric-card span,
-    .agency-chart-card p {
+    .agency-metric-card span {
       color: #33456f;
       display: block;
       font-size: 0.88rem;
@@ -702,37 +645,15 @@ const structuredData = {
 
     .agency-metric-card a,
     .agency-inline-action,
-    .agency-action-link,
-    .agency-table-card a {
+    .agency-action-link {
       color: #064cfb;
       font-weight: 700;
       text-decoration: none;
     }
 
     .agency-metric-card a::after,
-    .agency-action-link::after,
-    .agency-table-card a::after {
+    .agency-action-link::after {
       content: " ->";
-    }
-
-    .agency-chart-card {
-      min-height: 16.7rem;
-      padding: 1rem 1.1rem;
-    }
-
-    .agency-chart-card h2 {
-      color: #071842;
-      font-family:
-        ui-sans-serif,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-      font-size: 1.0625rem;
-      font-weight: 750;
-      line-height: 1.25;
-      margin: 0 0 0.25rem;
     }
 
     .agency-line-chart {
@@ -873,29 +794,6 @@ const structuredData = {
       background: #087f3b;
     }
 
-    .agency-table-card table {
-      border-collapse: collapse;
-      margin-top: 0.85rem;
-      width: 100%;
-    }
-
-    .agency-table-card th,
-    .agency-table-card td {
-      border-top: 1px solid #d9e1ee;
-      color: #071842;
-      font-size: 0.84rem;
-      padding: 0.55rem 0;
-      text-align: left;
-      vertical-align: top;
-    }
-
-    .agency-table-card th {
-      color: #33456f;
-      font-weight: 800;
-      padding-right: 1rem;
-      width: 6rem;
-    }
-
     .agency-action-list {
       display: grid;
       gap: 0.55rem;
@@ -914,9 +812,6 @@ const structuredData = {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .agency-chart-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
     }
 
     @media (min-width: 1200px) {
@@ -933,30 +828,6 @@ const structuredData = {
         grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
-      .agency-chart-grid {
-        grid-template-columns: repeat(12, minmax(0, 1fr));
-      }
-
-      .agency-chart-card {
-        grid-column: span 3;
-      }
-
-      .agency-wide-card {
-        grid-column: span 8;
-      }
-
-      .agency-half-card,
-      .agency-table-card {
-        grid-column: span 4;
-      }
-
-      .agency-about-card {
-        grid-column: span 4;
-      }
-    }
-
-    .agency-wide-line-chart svg {
-      height: 9.5rem;
     }
 
     .agency-stacked-bars {

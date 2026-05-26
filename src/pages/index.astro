@@ -1,15 +1,8 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
-import {
-  loadAgencySummaries,
-  loadPersonnelSummaries,
-  loadReportSummaries,
-} from "#src/lib/data/summaries.js";
 import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import { loadLocationBuildPayloads } from "#src/lib/data/build-payloads.js";
-import { loadCivilCaseCountsByAgencyState } from "#src/lib/data/civil-case-scopes.js";
-import { withDb } from "#src/lib/db.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
@@ -18,65 +11,10 @@ const pageDescription =
   "A civic record for documenting how policing is experienced in real life, from harm and concern to professionalism, help, trust, and accountability.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const [
-  agencies,
-  personnel,
-  reports,
-  civilCasesData,
-  federalAgencies,
-  locationPayloads,
-] = await Promise.all([
-  loadAgencySummaries(),
-  loadPersonnelSummaries(),
-  loadReportSummaries(),
-  Promise.all([
-    loadCivilCaseCountsByAgencyState(),
-    withDb(async (client) => {
-      const result = await client.query(
-        "select count(*) as count from public.civil_cases",
-      );
-      return Number(result.rows[0]?.count ?? 0);
-    }),
-  ]).then(([stateCounts, totalCount]) => ({ stateCounts, totalCount })),
+const [federalAgencies, locationPayloads] = await Promise.all([
   loadFederalAgencySummaries(),
   loadLocationBuildPayloads(),
 ]);
-const civilCasesByCategory = new Map(
-  civilCasesData.stateCounts.map((entry) => [entry.category, entry.count]),
-);
-const reportCountsByCategory = reports.reduce(
-  (acc: Map<string, number>, report) => {
-    const key = String(report.state || "").toLowerCase();
-    if (!key) {
-      return acc;
-    }
-    acc.set(key, (acc.get(key) ?? 0) + 1);
-    return acc;
-  },
-  new Map<string, number>(),
-);
-const personnelCountsByCategory = personnel.reduce(
-  (acc: Map<string, number>, entry) => {
-    const key = String(entry.agencyState || "").toLowerCase();
-    if (!key) {
-      return acc;
-    }
-    acc.set(key, (acc.get(key) ?? 0) + 1);
-    return acc;
-  },
-  new Map<string, number>(),
-);
-const agencyCountsByCategory = agencies.reduce(
-  (acc: Map<string, number>, agency) => {
-    const key = String(agency.state || "").toLowerCase();
-    if (!key) {
-      return acc;
-    }
-    acc.set(key, (acc.get(key) ?? 0) + 1);
-    return acc;
-  },
-  new Map<string, number>(),
-);
 const stateLocationPayloadsByCategory = new Map(
   locationPayloads
     .filter((location) => location.level === "state")
@@ -84,13 +22,13 @@ const stateLocationPayloadsByCategory = new Map(
 );
 const categoryCoverageStats = US_STATE_TILES.map((state) => {
   const category = state.code.toLowerCase();
-  const reportCount = reportCountsByCategory.get(category) ?? 0;
-  const personnelCount = personnelCountsByCategory.get(category) ?? 0;
-  const agencyCount = agencyCountsByCategory.get(category) ?? 0;
-  const civilCaseCount = civilCasesByCategory.get(category) ?? 0;
+  const stateLocation = stateLocationPayloadsByCategory.get(category);
+  const reportCount = stateLocation?.coverage.reports ?? 0;
+  const personnelCount = stateLocation?.coverage.personnel ?? 0;
+  const agencyCount = stateLocation?.coverage.agencies ?? 0;
+  const civilCaseCount = stateLocation?.coverage.civilCases ?? 0;
   const totalCount =
     reportCount + personnelCount + agencyCount + civilCaseCount;
-  const stateLocation = stateLocationPayloadsByCategory.get(category);
   const onlyChild =
     stateLocation?.children?.length === 1 ? stateLocation.children[0] : null;
   const href =
@@ -180,7 +118,7 @@ structuredData.mainEntity = organization;
         </div>
         <div class="row">
           <div class="col-lg-7 py-vh-2 position-relative" data-aos="fade-right">
-            <h1 class="display-1 fw-bold mt-5">
+            <h1 class="ipc-page-title mt-5">
               A civic record for the whole community.
             </h1>
             <p class="lead">
@@ -207,7 +145,7 @@ structuredData.mainEntity = organization;
       <div class="container">
         <div class="row justify-content-end mb-4">
           <div class="col-lg-8">
-            <h2 class="display-6 mb-2">National overview</h2>
+            <h2 class="ipc-section-title mb-2">National overview</h2>
             <p class="lead mb-0">
               Start with your state or federal agencies and follow the record
               from there.
@@ -247,7 +185,7 @@ structuredData.mainEntity = organization;
       <div class="container">
         <div class="row mb-4">
           <div class="col-lg-8">
-            <h2 class="h3 mb-2">Use the record</h2>
+            <h2 class="ipc-section-title mb-2">Use the record</h2>
             <p class="mb-0 text-light">
               Use the site to document an interaction, research a local agency,
               or work with others on public-interest reporting and oversight.
@@ -316,7 +254,7 @@ structuredData.mainEntity = organization;
           <div class="col-lg-8">
             <div class="row">
               <div class="col-12">
-                <h2 class="display-6 mb-4" data-aos="fade-down">
+                <h2 class="ipc-section-title mb-4" data-aos="fade-down">
                   What the record can reveal
                 </h2>
                 <h3>
@@ -333,21 +271,21 @@ structuredData.mainEntity = organization;
                 </p>
               </div>
               <div class="col-md-4" data-aos="fade-up">
-                <h4 class="h5 my-3">Patterns over time</h4>
+                <h4 class="ipc-type-h4 my-3">Patterns over time</h4>
                 <p class="text-black-50 mb-0">
                   A single interaction may look different alongside earlier
                   reports, public records, outcomes, and community accounts.
                 </p>
               </div>
               <div class="col-md-4" data-aos="fade-up">
-                <h4 class="h5 my-3">Harm and trust</h4>
+                <h4 class="ipc-type-h4 my-3">Harm and trust</h4>
                 <p class="text-black-50 mb-0">
                   Serious harm should not be softened or buried. Good conduct,
                   restraint, and professionalism should be visible too.
                 </p>
               </div>
               <div class="col-md-4" data-aos="fade-up">
-                <h4 class="h5 my-3">Context for everyone</h4>
+                <h4 class="ipc-type-h4 my-3">Context for everyone</h4>
                 <p class="text-black-50 mb-0">
                   Communities, officers, agencies, journalists, and researchers
                   need enough context to understand what happened and what it
@@ -367,7 +305,7 @@ structuredData.mainEntity = organization;
       <div class="container">
         <div class="row justify-content-end mb-4">
           <div class="col-lg-8" data-aos="fade-down">
-            <h2 class="display-6 mb-2">Our mission</h2>
+            <h2 class="ipc-section-title mb-2">Our mission</h2>
             <p class="lead mb-0">
               Make police conduct easier to document, understand, and review.
             </p>
@@ -410,7 +348,7 @@ structuredData.mainEntity = organization;
     <div class="py-vh-5 bg-gray-900 text-light w-100 overflow-hidden">
       <div class="container text-center">
         <p class="text-light lead">Need help reaching the team?</p>
-        <h2 class="h3 mb-3">Contact the Institute for Police Conduct</h2>
+        <h2 class="ipc-section-title mb-3">Contact the Institute for Police Conduct</h2>
         <p class="text-light mb-4">
           Use the contact form for partnerships, questions, corrections, or
           support.

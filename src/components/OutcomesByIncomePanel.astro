@@ -1,0 +1,224 @@
+---
+import { metricLabels } from "#src/lib/metric-vocabulary.js";
+
+const {
+  href,
+  className = "",
+  variant = "summary",
+} = Astro.props as {
+  href?: string;
+  className?: string;
+  variant?: "summary" | "detail";
+};
+
+const outcomes =
+  variant === "detail"
+    ? [
+        "Released",
+        "Filed",
+        "Dismissed",
+        "Reduced",
+        "Plea",
+        "Convicted",
+        "Jail",
+        "License",
+      ]
+    : ["Dismissed", "Reduced", "Plea", "Convicted", "Jail"];
+const incomeBands = ["Lower", "Middle", "Higher"];
+---
+
+<article
+  class:list={[
+    "outcomes-income-card",
+    variant === "detail" && "outcomes-income-card-detail",
+    className,
+  ]}
+>
+  <div class="outcomes-income-heading">
+    <div>
+      <h2>{metricLabels.outcomesByIncome}</h2>
+      <p>Case outcomes by income band</p>
+    </div>
+    {href ? <a href={href}>View details</a> : null}
+  </div>
+  <div class="outcomes-income-plot" aria-hidden="true">
+    <div class="outcomes-income-grid"></div>
+    <div class="outcomes-income-bars">
+      {
+        outcomes.map((outcome) => (
+          <div class="outcomes-income-group">
+            <div class="outcomes-income-empty-bars">
+              {incomeBands.map((band) => <i class={`outcomes-income-${band.toLowerCase()}`} />)}
+            </div>
+            <span>{outcome}</span>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+  <div class="outcomes-income-legend" aria-hidden="true">
+    {incomeBands.map((band) => <span><i class={`outcomes-income-${band.toLowerCase()}`} />{band}</span>)}
+  </div>
+</article>
+
+<style>
+  .outcomes-income-card {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+    min-height: 15.8rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .outcomes-income-card-detail {
+    min-height: 22rem;
+  }
+
+  .outcomes-income-heading {
+    align-items: start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+  }
+
+  .outcomes-income-heading h2 {
+    color: #071842;
+    margin: 0 0 0.25rem;
+  }
+
+  .outcomes-income-heading p {
+    color: #33456f;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  .outcomes-income-heading a {
+    color: #064cfb;
+    flex: 0 0 auto;
+    font-size: 0.8125rem;
+    font-weight: 750;
+    line-height: 1.3;
+    text-decoration: none;
+  }
+
+  .outcomes-income-heading a::after {
+    content: " ->";
+  }
+
+  .outcomes-income-plot {
+    border-bottom: 1px solid #b8c4d8;
+    border-left: 1px solid #b8c4d8;
+    height: 9.5rem;
+    margin-top: 1rem;
+    position: relative;
+  }
+
+  .outcomes-income-card-detail .outcomes-income-plot {
+    height: 14rem;
+  }
+
+  .outcomes-income-grid {
+    background: linear-gradient(#d9e1ee 1px, transparent 1px) 0 0 / 100% 25%;
+    inset: 0;
+    position: absolute;
+  }
+
+  .outcomes-income-bars {
+    align-items: end;
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    inset: 0.6rem 0.5rem 0;
+    position: absolute;
+  }
+
+  .outcomes-income-group {
+    display: grid;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+
+  .outcomes-income-empty-bars {
+    align-items: end;
+    display: grid;
+    gap: 0.18rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    height: 6.8rem;
+  }
+
+  .outcomes-income-card-detail .outcomes-income-bars {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+
+  .outcomes-income-card-detail .outcomes-income-empty-bars {
+    height: 11rem;
+  }
+
+  .outcomes-income-empty-bars i {
+    border-radius: 0.15rem 0.15rem 0 0;
+    display: block;
+    height: 0;
+  }
+
+  .outcomes-income-group span {
+    color: #33456f;
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.15;
+    min-height: 1.6rem;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+
+  .outcomes-income-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .outcomes-income-legend span {
+    align-items: center;
+    color: #33456f;
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 700;
+    gap: 0.35rem;
+  }
+
+  .outcomes-income-legend i {
+    border-radius: 999px;
+    display: inline-block;
+    height: 0.55rem;
+    width: 0.55rem;
+  }
+
+  .outcomes-income-lower {
+    background: #b42318;
+  }
+
+  .outcomes-income-middle {
+    background: #c47f00;
+  }
+
+  .outcomes-income-higher {
+    background: #087f3b;
+  }
+
+  @media (min-width: 992px) {
+    :global(.entity-chart-grid) .outcomes-income-card,
+    :global(.personnel-section-grid) .outcomes-income-card {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    :global(.outcomes-income-page-grid) .outcomes-income-card {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

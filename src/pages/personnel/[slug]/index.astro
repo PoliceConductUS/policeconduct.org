@@ -1,14 +1,20 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
+import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import DisqusComments from "#src/components/DisqusComments.astro";
 import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
-import { metricLabels } from "#src/lib/metric-vocabulary.js";
+import {
+  metricLabels,
+  metricVisuals,
+  type MetricAccent,
+  type MetricIcon,
+} from "#src/lib/metric-vocabulary.js";
 import { getPersonnelImageById } from "#src/lib/personnel-images.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
@@ -60,10 +66,13 @@ const data = await withDb(async (client) => {
     ? (
         await client.query(
           `
-            select a.*, lp.path as location_path
+            select a.*, lp.path as location_path, bpp.path as canonical_path
             from public.agency a
             join public.location_path lp
               on lp.location_path_id = a.location_path_id
+            join public.build_page_payload bpp
+              on bpp.page_type = 'agency'
+             and bpp.entity_id = a.id
             where a.id = any($1)
           `,
           [agencyIds],
@@ -118,25 +127,6 @@ const data = await withDb(async (client) => {
         )
       ).rows
     : [];
-  const sameNameOfficers = (
-    await client.query(
-      `select
-         o.id,
-         o.slug,
-         concat_ws(' ', o.first_name, o.middle_name, o.last_name, o.suffix) as name,
-         array_remove(array_agg(distinct a.name order by a.name), null) as agency_names
-       from public.officers o
-       join public.agency_officers ao on ao.officer_id = o.id
-       join public.agency a on a.id = ao.agency_id
-       where lower(o.first_name) = lower($1)
-         and lower(o.last_name) = lower($2)
-         and o.id <> $3
-       group by o.id, o.slug, o.first_name, o.middle_name, o.last_name, o.suffix
-       order by o.last_name asc, o.first_name asc, o.middle_name asc nulls last`,
-      [officer.first_name, officer.last_name, officerId],
-    )
-  ).rows;
-
   return {
     officer,
     officerStats,
@@ -144,7 +134,6 @@ const data = await withDb(async (client) => {
     agencies,
     reports,
     civilCases,
-    sameNameOfficers,
   };
 });
 const agenciesById = mapBy(data.agencies, "id");
@@ -218,6 +207,7 @@ const reportItems = data.reports.map(
 );
 
 const officerPath = `/personnel/${data.officer.slug}/`;
+const outcomesByIncomePath = `${officerPath}outcomes-by-income/`;
 const officerName =
   `${data.officer.first_name} ${data.officer.last_name}`.trim();
 const deceasedOnValue = data.officer.deceased_on;
@@ -318,9 +308,9 @@ const claimProfilePrefillPayload = JSON.stringify({
   message: `I would like to claim ownership of this profile.\nProfile path: ${officerPath}`,
 });
 
-const defaultPersonnelImagePath = "/img/personnel/default.webp";
 const personnelImageSrc =
-  getPersonnelImageById(data.officer.id) || defaultPersonnelImagePath;
+  getPersonnelImageById(data.officer.id) || "/img/personnel/default.webp";
+const hasMappedPersonnelImage = Boolean(getPersonnelImageById(data.officer.id));
 const civilCaseCount = data.civilCases.length;
 const activeCivilCaseCount = civilCasesWithPaths.filter(
   (caseItem) => !caseItem.date_terminated,
@@ -385,61 +375,48 @@ const civilCaseYears = Object.entries(
   .map(([year, count]) => ({ count, year }))
   .sort((left, right) => left.year.localeCompare(right.year));
 type PersonnelMetricCard = {
-  accent: string;
+  accent: MetricAccent;
   detail?: string;
-  icon: string;
+  icon: MetricIcon;
   label: string;
   value: string;
 };
 const personnelMetricCards: PersonnelMetricCard[] = [
   {
-    accent: "blue",
-    icon: "calendar",
-    label: metricLabels.totalTimeAsOfficer,
-    value: totalTimeAsOfficer,
-  },
-  {
-    accent: "blue",
-    icon: "building",
-    label: metricLabels.agencyAssignments,
+    accent: metricVisuals.agencies.accent,
+    icon: metricVisuals.agencies.icon,
+    label: metricVisuals.agencies.label,
     value: formatCount(assignmentHistoryCount),
   },
   {
-    accent: "blue",
-    icon: "dollar",
-    label: metricLabels.currentSalary,
+    accent: metricVisuals.currentSalary.accent,
+    icon: metricVisuals.currentSalary.icon,
+    label: metricVisuals.currentSalary.label,
     value: unavailableValue,
   },
   {
-    accent: "blue",
-    detail: "active / total",
-    icon: "scales",
-    label: metricLabels.civilCases,
+    accent: metricVisuals.civilCases.accent,
+    detail: metricLabels.activeTotal,
+    icon: metricVisuals.civilCases.icon,
+    label: metricVisuals.civilCases.label,
     value: `${formatCount(activeCivilCaseCount)} / ${formatCount(civilCaseCount)}`,
   },
   {
-    accent: "blue",
-    icon: "shield",
-    label: metricLabels.liabilityCosts,
+    accent: metricVisuals.liabilityCosts.accent,
+    icon: metricVisuals.liabilityCosts.icon,
+    label: metricVisuals.liabilityCosts.label,
     value: unavailableValue,
   },
   {
-    accent: "blue",
-    icon: "link",
-    label: metricLabels.arrests,
-    value: unavailableValue,
-  },
-  {
-    accent: "blue",
-    icon: "person",
-    label: metricLabels.killings,
+    accent: metricVisuals.arrests.accent,
+    icon: metricVisuals.arrests.icon,
+    label: metricVisuals.arrests.label,
     value: unavailableValue,
   },
 ];
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(officerPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
-const disqusIdentifier = `personnel:${data.officer.slug}`;
 const agencyUrl = currentAgency
   ? new URL(requireAgencyCanonicalPath(currentAgency), siteUrl).toString()
   : null;
@@ -457,7 +434,9 @@ const person = {
   "@id": `${pageUrl}#person`,
   name: officerName,
   url: pageUrl,
-  image: new URL(personnelImageSrc, siteUrl).toString(),
+  ...(hasMappedPersonnelImage
+    ? { image: new URL(personnelImageSrc, siteUrl).toString() }
+    : {}),
   mainEntityOfPage: { "@id": profilePageId },
   ...(isDeceased ? { deathDate: String(deceasedOnValue) } : {}),
   ...(organization ? { worksFor: { "@id": organization["@id"] } } : {}),
@@ -525,7 +504,7 @@ const structuredData = {
 
         <div class="personnel-profile-hero">
           <div class="personnel-profile-title">
-            <h1>{officerName}</h1>
+            <h1 class="ipc-page-title">{officerName}</h1>
             <p class="personnel-current-line">
               Current agency: <a href={currentAgencyPath}
                 >{currentAgency!.name}</a
@@ -551,13 +530,6 @@ const structuredData = {
               src={personnelImageSrc}
               alt={`Portrait of ${data.officer.first_name} ${data.officer.last_name}`}
             />
-            {
-              personnelImageSrc === defaultPersonnelImagePath ? (
-                <figcaption>
-                  Official portrait not yet available. Placeholder image shown.
-                </figcaption>
-              ) : null
-            }
           </figure>
 
           <aside class="personnel-profile-aside" aria-label="Personnel summary">
@@ -573,9 +545,17 @@ const structuredData = {
                 </dd>
               </div>
               <div>
-                <dt>Badge Number</dt>
-                <dd>{currentBadge || "Not publicly listed"}</dd>
+                <dt>{metricLabels.totalTimeAsOfficer}</dt>
+                <dd>{totalTimeAsOfficer}</dd>
               </div>
+              {
+                currentBadge ? (
+                  <div>
+                    <dt>Badge Number</dt>
+                    <dd>{currentBadge}</dd>
+                  </div>
+                ) : null
+              }
               <div>
                 <dt>{assignmentStatusLabel}</dt>
                 <dd><a href={currentAgencyPath}>{currentAgency!.name}</a></dd>
@@ -588,110 +568,10 @@ const structuredData = {
           </aside>
         </div>
 
-        {
-          data.sameNameOfficers.length ? (
-            <aside class="personnel-similar" aria-label="Similar names">
-              <h2>Similar names in the database</h2>
-              <ul>
-                {data.sameNameOfficers.map(
-                  (person: {
-                    slug: string;
-                    name: string;
-                    agency_names?: string[] | null;
-                  }) => (
-                    <li>
-                      <a href={`/personnel/${person.slug}/`}>{person.name}</a>
-                      {person.agency_names?.length
-                        ? ` (${person.agency_names.join(", ")})`
-                        : ""}
-                    </li>
-                  ),
-                )}
-              </ul>
-            </aside>
-          ) : null
-        }
-
-        <div class="personnel-metric-grid">
-          {
-            personnelMetricCards.map((metric) => (
-              <article class="personnel-metric-card">
-                <svg
-                  aria-hidden="true"
-                  class={`personnel-metric-icon personnel-${metric.accent}`}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  {metric.icon === "shield" ? (
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
-                  ) : metric.icon === "building" ? (
-                    <>
-                      <path d="M3 21V7l9-4 9 4v14" />
-                      <path d="M9 21v-8h6v8" />
-                      <path d="M9 9h.01" />
-                      <path d="M15 9h.01" />
-                    </>
-                  ) : metric.icon === "dollar" ? (
-                    <>
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
-                      <path d="M12 6v12" />
-                    </>
-                  ) : metric.icon === "scales" ? (
-                    <>
-                      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-                      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-                      <path d="M7 21h10" />
-                      <path d="M12 3v18" />
-                      <path d="M3 7h2c2 0 5-1 7-4 2 3 5 4 7 4h2" />
-                    </>
-                  ) : metric.icon === "document" ? (
-                    <>
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                      <path d="M14 2v6h6" />
-                      <path d="M16 13H8" />
-                      <path d="M16 17H8" />
-                    </>
-                  ) : metric.icon === "link" ? (
-                    <>
-                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                    </>
-                  ) : metric.icon === "target" ? (
-                    <>
-                      <circle cx="12" cy="12" r="10" />
-                      <circle cx="12" cy="12" r="6" />
-                      <circle cx="12" cy="12" r="2" />
-                    </>
-                  ) : metric.icon === "person" ? (
-                    <>
-                      <path d="M20 21a8 8 0 0 0-16 0" />
-                      <circle cx="12" cy="7" r="4" />
-                    </>
-                  ) : (
-                    <>
-                      <path d="M8 2v4" />
-                      <path d="M16 2v4" />
-                      <rect x="3" y="4" width="18" height="18" rx="2" />
-                      <path d="M3 10h18" />
-                    </>
-                  )}
-                </svg>
-                <div>
-                  <p>{metric.label}</p>
-                  <strong>{metric.value}</strong>
-                  {metric.detail ? <span>{metric.detail}</span> : null}
-                </div>
-              </article>
-            ))
-          }
-        </div>
+        <MetricGrid metrics={personnelMetricCards} />
 
         <div class="personnel-section-grid">
+          <OutcomesByIncomePanel href={outcomesByIncomePath} />
           <section class="personnel-panel">
             <div class="personnel-panel-heading">
               <h2>1. Salary History</h2>
@@ -699,7 +579,7 @@ const structuredData = {
             </div>
             <div
               class="personnel-empty-chart"
-              aria-label="No salary history data"
+              aria-hidden="true"
             >
             </div>
           </section>
@@ -711,7 +591,7 @@ const structuredData = {
             </div>
             <div
               class="personnel-empty-chart"
-              aria-label="No arrest history data"
+              aria-hidden="true"
             >
             </div>
           </section>
@@ -723,7 +603,7 @@ const structuredData = {
             </div>
             <div
               class="personnel-empty-chart"
-              aria-label="No liability cost data"
+              aria-hidden="true"
             >
             </div>
           </section>
@@ -749,7 +629,7 @@ const structuredData = {
               ) : (
                 <div
                   class="personnel-empty-chart"
-                  aria-label="No dated civil case data"
+                  aria-hidden="true"
                 />
               )
             }
@@ -762,7 +642,7 @@ const structuredData = {
             </div>
             <div
               class="personnel-empty-chart"
-              aria-label="No stops or arrests by race data"
+              aria-hidden="true"
             >
             </div>
           </section>
@@ -774,7 +654,7 @@ const structuredData = {
             </div>
             <div
               class="personnel-empty-chart"
-              aria-label="No day versus night stop data"
+              aria-hidden="true"
             >
             </div>
           </section>
@@ -786,7 +666,7 @@ const structuredData = {
             </div>
             <div
               class="personnel-empty-chart"
-              aria-label="No charge category data"
+              aria-hidden="true"
             >
             </div>
           </section>
@@ -798,7 +678,7 @@ const structuredData = {
             </div>
             <div
               class="personnel-empty-chart"
-              aria-label="No critical incident data"
+              aria-hidden="true"
             >
             </div>
           </section>
@@ -840,15 +720,13 @@ const structuredData = {
                     </tbody>
                   </table>
                 </div>
-              ) : (
-                <p class="personnel-empty">No civil cases listed yet.</p>
-              )
+              ) : null
             }
           </section>
 
           <section class="personnel-panel personnel-panel-wide">
             <div class="personnel-panel-heading">
-              <h2>10. {metricLabels.agencyAssignments}</h2>
+              <h2>10. {metricLabels.agencies}</h2>
               <p>Known agency assignments linked to this profile.</p>
             </div>
             {
@@ -868,15 +746,9 @@ const structuredData = {
                       {assignmentHistory.map((entry) => (
                         <tr>
                           <th scope="row">
-                            {entry.agency ? (
-                              <a
-                                href={requireAgencyCanonicalPath(entry.agency)}
-                              >
-                                {entry.agency.name}
-                              </a>
-                            ) : (
-                              "Agency not listed"
-                            )}
+                            <a href={requireAgencyCanonicalPath(entry.agency)}>
+                              {entry.agency.name}
+                            </a>
                           </th>
                           <td>{entry.title || currentLicenseType}</td>
                           <td>
@@ -899,9 +771,7 @@ const structuredData = {
                     </tbody>
                   </table>
                 </div>
-              ) : (
-                <p class="personnel-empty">No agency assignments listed yet.</p>
-              )
+              ) : null
             }
           </section>
         </div>
@@ -942,13 +812,6 @@ const structuredData = {
           </PrefillNavButton>
         </div>
 
-        <section class="personnel-comments">
-          <h2>Comments</h2>
-          <DisqusComments
-            pageUrl={pageUrl}
-            disqusIdentifier={disqusIdentifier}
-          />
-        </section>
       </div>
     </section>
   </main>
@@ -958,12 +821,6 @@ const structuredData = {
   .personnel-dashboard {
     background: #f7f9fd;
     color: #071842;
-    font-family:
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
   }
 
   .personnel-dashboard-main {
@@ -971,7 +828,7 @@ const structuredData = {
   }
 
   .personnel-dashboard-main > .container {
-    max-width: 1160px;
+    max-width: 1240px;
   }
 
   .personnel-heading {
@@ -994,16 +851,6 @@ const structuredData = {
 
   .personnel-heading h1 {
     color: #071842;
-    font-family:
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-    font-size: 2.25rem;
-    font-weight: 800;
-    letter-spacing: 0;
-    line-height: 1;
     margin: 0;
   }
 
@@ -1016,8 +863,7 @@ const structuredData = {
 
   .personnel-heading a,
   .personnel-panel a,
-  .personnel-detail-card a,
-  .personnel-similar a {
+  .personnel-detail-card a {
     color: #064cfb;
     font-weight: 750;
     text-decoration: none;
@@ -1053,8 +899,7 @@ const structuredData = {
     color: #f8faff;
   }
 
-  .personnel-status-note,
-  .personnel-similar {
+  .personnel-status-note {
     background: #fbfcff;
     border: 1px solid #d5deeb;
     border-radius: 0.45rem;
@@ -1068,23 +913,6 @@ const structuredData = {
   .personnel-status-note strong,
   .personnel-status-note span {
     display: block;
-  }
-
-  .personnel-similar {
-    margin: 0 0 1rem;
-  }
-
-  .personnel-similar h2 {
-    color: #071842;
-    font-size: 1.0625rem;
-    font-weight: 750;
-    line-height: 1.25;
-    margin: 0 0 0.4rem;
-  }
-
-  .personnel-similar ul {
-    margin: 0;
-    padding-left: 1.1rem;
   }
 
   .personnel-overview {
@@ -1119,8 +947,7 @@ const structuredData = {
 
   .personnel-detail-card,
   .personnel-metric-card,
-  .personnel-panel,
-  .personnel-comments {
+  .personnel-panel {
     background: #fbfcff;
     border: 1px solid #d5deeb;
     border-radius: 0.45rem;
@@ -1256,18 +1083,8 @@ const structuredData = {
     margin-bottom: 0.85rem;
   }
 
-  .personnel-panel h2,
-  .personnel-comments h2 {
+  .personnel-panel h2 {
     color: #071842;
-    font-family:
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-    font-size: 1.0625rem;
-    font-weight: 750;
-    line-height: 1.25;
     margin: 0 0 0.25rem;
   }
 
@@ -1540,9 +1357,6 @@ const structuredData = {
 
   .personnel-record h3,
   .personnel-history-row h3 {
-    font-size: 0.9375rem;
-    font-weight: 750;
-    line-height: 1.3;
     margin: 0;
   }
 
@@ -1571,11 +1385,6 @@ const structuredData = {
   .personnel-secondary-actions {
     justify-content: flex-start;
     margin: 1.25rem 0;
-  }
-
-  .personnel-comments {
-    margin-top: 1rem;
-    padding: 1rem 1.1rem;
   }
 
   @media (min-width: 768px) {
@@ -1626,7 +1435,6 @@ const structuredData = {
 
   @media (max-width: 575.98px) {
     .personnel-heading h1 {
-      font-size: 2rem;
     }
 
     .personnel-detail-card div,
@@ -1652,7 +1460,7 @@ const structuredData = {
   }
 
   .personnel-profile-container {
-    max-width: 1160px;
+    max-width: 1240px;
   }
 
   .personnel-breadcrumbs {
@@ -1687,15 +1495,6 @@ const structuredData = {
 
   .personnel-profile-title h1 {
     color: #071842;
-    font-family:
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-    font-size: 2.25rem;
-    font-weight: 800;
-    line-height: 1;
     margin: 0;
   }
 
@@ -1792,7 +1591,6 @@ const structuredData = {
 
   @media (max-width: 575.98px) {
     .personnel-profile-title h1 {
-      font-size: 2rem;
     }
 
     .personnel-profile-aside dl div {

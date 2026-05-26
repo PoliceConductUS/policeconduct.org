@@ -7,7 +7,12 @@ export async function getStaticPaths() {
   return buildReportArchiveStaticPaths(await loadReportSummaries(), "county");
 }
 
-const { pagePath, reports, title } = Astro.props;
+const { breadcrumbs, pagePath, reports, title } = Astro.props;
 ---
 
-<ReportArchivePage pagePath={pagePath} reports={reports} title={title} />
+<ReportArchivePage
+  breadcrumbs={breadcrumbs}
+  pagePath={pagePath}
+  reports={reports}
+  title={title}
+/>

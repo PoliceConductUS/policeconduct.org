@@ -44,7 +44,6 @@ if (!primaryAgencySlug) {
   throw new Error(`Report ${slug} primary agency is missing slug.`);
 }
 const pagePath = data.canonicalPath;
-const locationPath = String(data.report.location_path || "");
 const tags = data.tags;
 const officers = data.officers;
 const civilCases = data.civilCases;
@@ -187,7 +186,7 @@ const structuredData = {
       "@type": "WebPage",
       "@id": webpageId,
       url: pageUrl,
-      name: `Report: ${reportTitle} | PoliceConduct.org`,
+      name: `${reportTitle} | PoliceConduct.org`,
       description: reportDescription,
       isPartOf: { "@id": websiteId },
       mainEntity: { "@id": reportEntity["@id"] },
@@ -200,7 +199,7 @@ const structuredData = {
 ---
 
 <SiteLayout
-  title={`Report: ${reportTitle} | PoliceConduct.org`}
+  title={`${reportTitle} | PoliceConduct.org`}
   description={reportDescription}
   pagePath={pagePath}
   canonicalUrl={pagePath}
@@ -214,14 +213,16 @@ const structuredData = {
           <div class="col-12 col-lg-10 col-xl-8">
             <Breadcrumbs
               items={[
-                ...(locationPath
-                  ? [{ label: "Place", href: locationPath }]
-                  : []),
+                { label: "Home", href: "/" },
+                data.locationBreadcrumbs.state,
+                data.locationBreadcrumbs.administrativeArea,
+                data.locationBreadcrumbs.place,
+                data.locationBreadcrumbs.reports,
                 { label: reportTitle, href: pagePath, current: true },
               ]}
             />
             <p class="text-uppercase small text-muted mb-2">Published report</p>
-            <h1 class="display-4 fw-bold">{data.report.title}</h1>
+            <h1 class="ipc-page-title">{data.report.title}</h1>
             <p class="lead">
               Submitted by anonymous user on{" "}
               {formatLongDate(data.report.created_at)}.
@@ -264,7 +265,7 @@ const structuredData = {
       <div class="container">
         <div class="row justify-content-center">
           <article class="col-12 col-lg-10 col-xl-8">
-            <h2 class="h4 text-uppercase text-muted mt-4">Incident basics</h2>
+            <h2 class="ipc-section-title text-uppercase text-muted mt-4">Incident basics</h2>
             <dl class="row">
               <dt class="col-sm-4">Incident date</dt>
               <dd class="col-sm-8">
@@ -280,7 +281,7 @@ const structuredData = {
             {
               tags.length ? (
                 <div class="mt-4">
-                  <h3 class="h6 text-uppercase text-muted mb-2">Tags</h3>
+                  <h3 class="ipc-subsection-title text-uppercase text-muted mb-2">Tags</h3>
                   <div class="d-flex flex-wrap gap-2">
                     {tags.map((tag) => (
                       <span class="badge bg-dark rounded-1 px-3 py-2">
@@ -294,7 +295,7 @@ const structuredData = {
 
             <hr class="my-5" />
 
-            <h2 class="h4 text-uppercase text-muted">Personnel involved</h2>
+            <h2 class="ipc-section-title text-uppercase text-muted">Personnel involved</h2>
 
             {
               officers.map((entry) =>
@@ -387,12 +388,12 @@ const structuredData = {
 
             <hr class="my-5" />
 
-            <h2 class="h4 text-uppercase text-muted">Narrative</h2>
+            <h2 class="ipc-section-title text-uppercase text-muted">Narrative</h2>
             <div class="fs-5" set:html={data.report.description!} />
 
             <hr class="my-5" />
 
-            <h2 class="h4 text-uppercase text-muted">
+            <h2 class="ipc-section-title text-uppercase text-muted">
               Related civil litigation
             </h2>
             {
@@ -404,7 +405,7 @@ const structuredData = {
                       href={civilCase.path}
                     >
                       <div class="d-flex w-100 justify-content-between gap-3">
-                        <h3 class="h6 mb-1">{civilCase.title}</h3>
+                        <h3 class="ipc-subsection-title mb-1">{civilCase.title}</h3>
                         {civilCase.filedDate ? (
                           <small class="text-muted">
                             {formatLongDate(civilCase.filedDate)}
@@ -425,12 +426,12 @@ const structuredData = {
 
             <hr class="my-5" />
 
-            <h2 class="h4 text-uppercase text-muted">Desired outcome</h2>
+            <h2 class="ipc-section-title text-uppercase text-muted">Desired outcome</h2>
             <p>{data.report.desired_outcome!}</p>
 
             <hr class="my-5" />
 
-            <h2 class="h4 text-uppercase text-muted">Witnesses</h2>
+            <h2 class="ipc-section-title text-uppercase text-muted">Witnesses</h2>
             {
               data.reportWitnesses.length ? (
                 <ul class="list-unstyled mb-0">
@@ -445,7 +446,7 @@ const structuredData = {
 
             <hr class="my-5" />
 
-            <h2 class="h4 text-uppercase text-muted">Evidence links</h2>
+            <h2 class="ipc-section-title text-uppercase text-muted">Evidence links</h2>
             {
               evidenceLinks.length ? (
                 <>
@@ -468,7 +469,7 @@ const structuredData = {
               data.reportAttachments.length ? (
                 <>
                   <hr class="my-5" />
-                  <h2 class="h4 text-uppercase text-muted">Attachments</h2>
+                  <h2 class="ipc-section-title text-uppercase text-muted">Attachments</h2>
                   <ul class="list-unstyled mb-0">
                     {data.reportAttachments.map((attachment) => (
                       <li class="mb-2">
@@ -487,7 +488,7 @@ const structuredData = {
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-12 col-lg-10 col-xl-8">
-            <h2 class="h5 text-uppercase text-muted">Comments</h2>
+            <h2 class="ipc-section-title text-uppercase text-muted">Comments</h2>
             <DisqusComments
               pageUrl={pageUrl}
               disqusIdentifier={disqusIdentifier}

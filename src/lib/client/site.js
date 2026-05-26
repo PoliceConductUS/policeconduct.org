@@ -167,44 +167,6 @@ const initAnalyticsClicks = () => {
   }
 };
 
-const initProfileTabsAnalytics = () => {
-  document.addEventListener("click", (event) => {
-    const target = event.target;
-    if (!(target instanceof Element)) {
-      return;
-    }
-
-    const tabButton = target.closest("[data-profile-tab]");
-    if (tabButton instanceof HTMLButtonElement) {
-      trackAnalytics("profile_tab_selected", {
-        page_path: window.location.pathname,
-        tab_id: tabButton.dataset.tabId || "",
-        tab_label: tabButton.dataset.tabLabel || "",
-      });
-      return;
-    }
-
-    const link = target.closest("a[data-profile-link-type]");
-    if (!(link instanceof HTMLAnchorElement)) {
-      return;
-    }
-
-    const tabRoot = link.closest("[data-profile-tabs]");
-    if (!tabRoot) {
-      return;
-    }
-
-    const tabPanel = link.closest('[role="tabpanel"]');
-    trackAnalytics("profile_tab_link_clicked", {
-      destination_url: link.href,
-      link_text: normalizeText(link.textContent),
-      link_type: link.dataset.profileLinkType || "",
-      page_path: window.location.pathname,
-      tab_id: tabPanel?.id || "",
-    });
-  });
-};
-
 const initMapAnalyticsClicks = () => {
   document.addEventListener("click", (event) => {
     const target = event.target;
@@ -253,5 +215,4 @@ const initMapAnalyticsClicks = () => {
 initBetaBanner();
 initHeaderScroll();
 initAnalyticsClicks();
-initProfileTabsAnalytics();
 initMapAnalyticsClicks();

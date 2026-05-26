@@ -143,6 +143,49 @@ const boundsFor = (items) => {
 const contentHashFor = (payload) =>
   crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex");
 
+const assertValue = (value, message) => {
+  if (value === null || value === undefined || value === "") {
+    throw new Error(message);
+  }
+  return value;
+};
+
+const normalizeReportDate = (value) => {
+  if (!value) return "";
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toISOString().slice(0, 10);
+};
+
+const getReportDateParts = (value, reportId) => {
+  const date = normalizeReportDate(value);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) {
+    throw new Error(`Report ${reportId} is missing a complete incident date.`);
+  }
+  return {
+    year: match[1],
+    month: match[2],
+    day: match[3],
+  };
+};
+
+const buildReportCanonicalPath = ({ id, incidentDate, locationPath, slug }) => {
+  const reportLocationPath = assertValue(
+    locationPath,
+    `Report ${id} is missing location_path.path.`,
+  );
+  if (!reportLocationPath.endsWith("/")) {
+    throw new Error(`Report ${id} location path must end with "/".`);
+  }
+  const reportSlug = assertValue(slug, `Report ${id} is missing slug.`);
+  const { year, month, day } = getReportDateParts(incidentDate, id);
+  return `${reportLocationPath}reports/${year}/${month}/${day}/${reportSlug}/`;
+};
+
 const compareLabel = new Intl.Collator("en", {
   numeric: true,
   sensitivity: "base",
@@ -288,6 +331,56 @@ const agencyPayload = ({ path, agency, locationPath }) => {
     content_updated_at: agency.updatedAt || agency.createdAt,
   };
 };
+
+const reportPayload = ({ report }) => {
+  const payload = {
+    pageType: "reportSummary",
+    id: report.id,
+    slug: report.slug,
+    state: report.state,
+    administrativeAreaSlug: report.administrativeAreaSlug,
+    placeSlug: report.placeSlug,
+    stateName: report.stateName,
+    administrativeAreaName: report.administrativeAreaName,
+    placeName: report.placeName,
+    locationPath: report.locationPath,
+    canonicalPath: report.canonicalPath,
+    year: report.year,
+    month: report.month,
+    day: report.day,
+    title: report.title,
+    incidentDate: report.incidentDate,
+    address: report.address,
+    latitude: report.latitude,
+    longitude: report.longitude,
+    agencySlug: report.agencySlug,
+    agencyName: report.agencyName,
+    agencyCanonicalPath: report.agencyCanonicalPath,
+    ratingOverall: report.ratingOverall,
+    personnel: report.personnel,
+    personnelSlugs: report.personnelSlugs,
+  };
+  return {
+    path: report.canonicalPath,
+    page_type: "report_summary",
+    entity_id: report.id,
+    payload,
+    content_hash: contentHashFor(payload),
+    content_updated_at:
+      report.updatedAt || report.createdAt || report.incidentDate,
+  };
+};
+
+const locationReportPayload = (report) => ({
+  id: report.id,
+  reportType: report.reportType,
+  reportKey: report.reportKey,
+  title: report.title,
+  summary: report.summary,
+  payload: report.payload,
+  sortOrder: report.sortOrder,
+  sources: report.sources,
+});
 
 const insertJsonRow = async (client, row) => {
   await client.query(
@@ -581,11 +674,16 @@ await withDb(async (client) => {
             a.id,
             a.name,
             a.slug,
-            a.location_path_id,
+            lp.location_path_id,
             lp.path as location_path,
             lp.state_or_territory_slug as state,
-            lp.administrative_area_name as administrative_area,
-            lp.administrative_area_slug as location_administrative_area_slug,
+            state_lp.location_path_id as state_location_path_id,
+            state_lp.path as state_path,
+            state_lp.state_or_territory_name as state_name,
+            area_lp.location_path_id as administrative_area_location_path_id,
+            area_lp.path as administrative_area_path,
+            area_lp.administrative_area_name as administrative_area,
+            area_lp.administrative_area_slug as location_administrative_area_slug,
             lp.place_name as city,
             lp.place_slug as location_place_slug,
             a.address,
@@ -600,6 +698,12 @@ await withDb(async (client) => {
           from eligible_agencies a
           join public.location_path lp
             on lp.location_path_id = a.location_path_id
+          join public.location_path area_lp
+            on area_lp.location_path_id = lp.parent_location_path_id
+           and area_lp.level = 'administrative_area'
+          join public.location_path state_lp
+            on state_lp.location_path_id = area_lp.parent_location_path_id
+           and state_lp.level = 'state'
           left join active_counts
             on active_counts.agency_id = a.id
           left join report_counts
@@ -618,12 +722,29 @@ await withDb(async (client) => {
         "location_path_id",
         id,
       );
+      const stateLocationPathId = requireText(
+        agency.state_location_path_id,
+        "state_location_path_id",
+        id,
+      );
+      const administrativeAreaLocationPathId = requireText(
+        agency.administrative_area_location_path_id,
+        "administrative_area_location_path_id",
+        id,
+      );
       const locationPath = requireText(
         agency.location_path,
         "location_path",
         id,
       );
+      const statePath = requireText(agency.state_path, "state_path", id);
+      const administrativeAreaPath = requireText(
+        agency.administrative_area_path,
+        "administrative_area_path",
+        id,
+      );
       const stateSlug = requireText(agency.state, "state", id).toLowerCase();
+      const stateName = requireText(agency.state_name, "state_name", id);
       const administrativeArea = requireText(
         agency.administrative_area,
         "administrative_area",
@@ -633,11 +754,16 @@ await withDb(async (client) => {
       return {
         id,
         locationPathId,
+        stateLocationPathId,
+        administrativeAreaLocationPathId,
         locationPath,
+        statePath,
+        administrativeAreaPath,
         name: requireText(agency.name, "name", id),
         agencySlug: requireText(agency.slug, "slug", id),
         state: requireText(agency.state, "state", id),
         stateSlug,
+        stateName,
         administrativeArea,
         administrativeAreaKind: administrativeAreaKindFor(administrativeArea),
         administrativeAreaSlug: requireText(
@@ -671,8 +797,9 @@ await withDb(async (client) => {
         state = {
           level: "state",
           state: agency.stateSlug,
-          stateLabel: stateNameFor(agency.stateSlug),
-          path: `/${agency.stateSlug}/`,
+          stateLabel: agency.stateName || stateNameFor(agency.stateSlug),
+          path: agency.statePath,
+          id: agency.stateLocationPathId,
           areas: new Map(),
           agencies: [],
           updatedAt: agency.updatedAt || agency.createdAt,
@@ -685,7 +812,6 @@ await withDb(async (client) => {
 
       let area = state.areas.get(agency.administrativeAreaSlug);
       if (!area) {
-        const path = `/${agency.stateSlug}/${agency.administrativeAreaSlug}/`;
         area = {
           level: "administrative_area",
           state: agency.stateSlug,
@@ -693,7 +819,8 @@ await withDb(async (client) => {
           administrativeArea: agency.administrativeArea,
           administrativeAreaKind: agency.administrativeAreaKind,
           administrativeAreaSlug: agency.administrativeAreaSlug,
-          path,
+          path: agency.administrativeAreaPath,
+          id: agency.administrativeAreaLocationPathId,
           parentPath: state.path,
           places: new Map(),
           agencies: [],
@@ -706,7 +833,6 @@ await withDb(async (client) => {
 
       let place = area.places.get(agency.placeSlug);
       if (!place) {
-        const path = `${area.path}${agency.placeSlug}/`;
         place = {
           level: "place",
           state: agency.stateSlug,
@@ -716,7 +842,8 @@ await withDb(async (client) => {
           administrativeAreaSlug: agency.administrativeAreaSlug,
           place: agency.city,
           placeSlug: agency.placeSlug,
-          path,
+          path: agency.locationPath,
+          id: agency.locationPathId,
           parentPath: area.path,
           agencies: [],
           updatedAt: agency.updatedAt || agency.createdAt,
@@ -729,6 +856,246 @@ await withDb(async (client) => {
       agency.canonicalPath = `${agency.locationPath}${agency.agencySlug}/`;
       if (agency.updatedAt > place.updatedAt)
         place.updatedAt = agency.updatedAt;
+    }
+
+    const agenciesById = new Map(agencies.map((agency) => [agency.id, agency]));
+    const reportRows = (
+      await client.query(
+        `
+          select
+            r.id,
+            r.slug,
+            r.title,
+            r.incident_date,
+            r.address,
+            r.latitude,
+            r.longitude,
+            r.created_at,
+            r.updated_at,
+            report_location.state_or_territory_slug as state,
+            report_location.administrative_area_slug,
+            report_location.place_slug,
+            report_location.state_or_territory_name,
+            report_location.administrative_area_name,
+            report_location.place_name,
+            report_location.path as location_path,
+            ro.id as review_officer_id,
+            ao.agency_id,
+            ao.title as license_type,
+            o.first_name,
+            o.last_name,
+            o.suffix,
+            o.slug as officer_slug
+          from public.reviews r
+          join public.location_path report_location
+            on report_location.location_path_id = r.location_path_id
+          left join public.review_officers ro
+            on ro.review_id = r.id
+          left join public.agency_officers ao
+            on ao.id = ro.agency_officer_id
+          left join public.officers o
+            on o.id = ao.officer_id
+          order by r.incident_date desc, r.id, ro.id
+        `,
+      )
+    ).rows;
+
+    const reportRowsById = new Map();
+    for (const row of reportRows) {
+      const reportId = assertValue(row.id, "Report row is missing id");
+      const entries = reportRowsById.get(reportId) || [];
+      entries.push(row);
+      reportRowsById.set(reportId, entries);
+    }
+
+    const reports = [...reportRowsById.values()].map((entries) => {
+      const row = entries[0];
+      const reportId = assertValue(row.id, "Report row is missing id");
+      const reportSlug = assertValue(
+        row.slug,
+        `Report ${reportId} is missing slug.`,
+      );
+      const locationPath = assertValue(
+        row.location_path,
+        `Report ${reportId} is missing location_path.path.`,
+      );
+      const incidentDate = normalizeReportDate(row.incident_date);
+      const dateParts = getReportDateParts(incidentDate, reportId);
+      const primaryAgency = assertValue(
+        agenciesById.get(row.agency_id),
+        `Report ${reportId} references agency ${row.agency_id}, but that agency has no build projection.`,
+      );
+      const personnelBySlug = new Map();
+      for (const entry of entries) {
+        const slug = assertValue(
+          entry.officer_slug,
+          `Report ${reportId} has a linked officer without a slug.`,
+        );
+        if (!personnelBySlug.has(slug)) {
+          personnelBySlug.set(slug, {
+            licenseType: entry.license_type || null,
+            name: `${entry.first_name || ""} ${entry.last_name || ""}${entry.suffix ? ` ${entry.suffix}` : ""}`.trim(),
+            slug,
+          });
+        }
+      }
+      const personnel = [...personnelBySlug.values()];
+      if (!personnel.length) {
+        throw new Error(`Report ${reportId} has no linked personnel.`);
+      }
+
+      return {
+        id: reportId,
+        slug: reportSlug,
+        state: assertValue(
+          row.state,
+          `Report ${reportId} is missing location state.`,
+        )
+          .toString()
+          .trim()
+          .toLowerCase(),
+        administrativeAreaSlug: assertValue(
+          row.administrative_area_slug,
+          `Report ${reportId} is missing administrative_area_slug.`,
+        ),
+        placeSlug: assertValue(
+          row.place_slug,
+          `Report ${reportId} is missing place_slug.`,
+        ),
+        stateName: assertValue(
+          row.state_or_territory_name,
+          `Report ${reportId} is missing state_or_territory_name.`,
+        ),
+        administrativeAreaName: assertValue(
+          row.administrative_area_name,
+          `Report ${reportId} is missing administrative_area_name.`,
+        ),
+        placeName: assertValue(
+          row.place_name,
+          `Report ${reportId} is missing place_name.`,
+        ),
+        locationPath,
+        canonicalPath: buildReportCanonicalPath({
+          id: reportId,
+          incidentDate,
+          locationPath,
+          slug: reportSlug,
+        }),
+        year: dateParts.year,
+        month: dateParts.month,
+        day: dateParts.day,
+        title: assertValue(row.title, `Report ${reportId} is missing title.`),
+        incidentDate,
+        address: trimText(row.address) || null,
+        latitude: parseCoordinate(row.latitude),
+        longitude: parseCoordinate(row.longitude),
+        agencySlug: primaryAgency.agencySlug,
+        agencyName: primaryAgency.name,
+        agencyCanonicalPath: primaryAgency.canonicalPath,
+        ratingOverall: null,
+        personnel,
+        personnelSlugs: personnel.map((person) => person.slug),
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      };
+    });
+
+    const locationReportRows = (
+      await client.query(
+        `
+          select
+            lr.id,
+            lr.location_path_id,
+            lr.report_type,
+            lr.report_key,
+            lr.title,
+            lr.summary,
+            lr.payload,
+            lr.sort_order,
+            lr.updated_at,
+            lrs.id as source_id,
+            lrs.source_key,
+            lrs.label as source_label,
+            lrs.url as source_url,
+            lrs.source_type,
+            lrs.sort_order as source_sort_order
+          from public.location_reports lr
+          left join public.location_report_sources lrs
+            on lrs.location_report_id = lr.id
+          where lr.status = 'published'
+          order by lr.location_path_id, lr.sort_order, lower(lr.title), lr.id,
+            lrs.sort_order, lower(lrs.label), lrs.id
+        `,
+      )
+    ).rows;
+
+    const locationReportsById = new Map();
+    for (const row of locationReportRows) {
+      const reportId = assertValue(row.id, "Location report row is missing id");
+      let report = locationReportsById.get(reportId);
+      if (!report) {
+        report = {
+          id: reportId,
+          locationPathId: assertValue(
+            row.location_path_id,
+            `Location report ${reportId} is missing location_path_id.`,
+          ),
+          reportType: assertValue(
+            row.report_type,
+            `Location report ${reportId} is missing report_type.`,
+          ),
+          reportKey: assertValue(
+            row.report_key,
+            `Location report ${reportId} is missing report_key.`,
+          ),
+          title: assertValue(
+            row.title,
+            `Location report ${reportId} is missing title.`,
+          ),
+          summary: assertValue(
+            row.summary,
+            `Location report ${reportId} is missing summary.`,
+          ),
+          payload: row.payload || {},
+          sortOrder: Number(row.sort_order || 0),
+          sources: [],
+          updatedAt: row.updated_at,
+        };
+        locationReportsById.set(reportId, report);
+      }
+      if (row.source_id) {
+        report.sources.push({
+          id: row.source_id,
+          sourceKey: assertValue(
+            row.source_key,
+            `Location report source ${row.source_id} is missing source_key.`,
+          ),
+          label: assertValue(
+            row.source_label,
+            `Location report source ${row.source_id} is missing label.`,
+          ),
+          url: assertValue(
+            row.source_url,
+            `Location report source ${row.source_id} is missing url.`,
+          ),
+          sourceType: assertValue(
+            row.source_type,
+            `Location report source ${row.source_id} is missing source_type.`,
+          ),
+          sortOrder: Number(row.source_sort_order || 0),
+        });
+      }
+    }
+
+    const locationReportsByLocationId = new Map();
+    for (const report of locationReportsById.values()) {
+      const reportsForLocation =
+        locationReportsByLocationId.get(report.locationPathId) || [];
+      reportsForLocation.push(locationReportPayload(report));
+      locationReportsByLocationId.set(
+        report.locationPathId,
+        reportsForLocation,
+      );
     }
 
     await client.query("delete from public.build_page_payload");
@@ -911,6 +1278,7 @@ await withDb(async (client) => {
             stateLabel: state.stateLabel,
             administrativeAreaPlural: state.administrativeAreaPlural,
             coverage: state.coverage,
+            locationReports: locationReportsByLocationId.get(state.id) || [],
             mapBounds: state.mapBounds,
             mapPositionSource: state.mapPositionSource,
             children: areas.map(stateAreaChildPayload),
@@ -938,6 +1306,7 @@ await withDb(async (client) => {
               administrativeAreaKind: area.administrativeAreaKind,
               parentPath: state.path,
               coverage: area.coverage,
+              locationReports: locationReportsByLocationId.get(area.id) || [],
               mapBounds: area.mapBounds,
               mapPositionSource: area.mapPositionSource,
               children: places.map(areaPlaceChildPayload),
@@ -963,6 +1332,8 @@ await withDb(async (client) => {
                 administrativeAreaSlug: place.administrativeAreaSlug,
                 parentPath: area.path,
                 coverage: place.coverage,
+                locationReports:
+                  locationReportsByLocationId.get(place.id) || [],
                 mapBounds: place.mapBounds,
                 mapPositionSource: place.mapPositionSource,
                 agencies: place.agencies.map((agency) => ({
@@ -993,6 +1364,10 @@ await withDb(async (client) => {
       );
     }
 
+    for (const report of reports) {
+      payloadRows.push(reportPayload({ report }));
+    }
+
     for (const row of payloadRows) {
       await insertJsonRow(client, row);
     }
@@ -1003,6 +1378,8 @@ await withDb(async (client) => {
         {
           locations: locations.length,
           agencies: agencies.length,
+          reports: reports.length,
+          locationReports: locationReportsById.size,
           excludedAgencies: totalAgencyCount - agencies.length,
           payloads: payloadRows.length,
           durationMs: Date.now() - startedAt,

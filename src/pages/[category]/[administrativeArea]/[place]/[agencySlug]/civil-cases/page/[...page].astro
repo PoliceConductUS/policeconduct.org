@@ -9,7 +9,7 @@ import {
 } from "#src/lib/data/agency-civil-case-rows.js";
 import { timeBuildStep } from "#src/lib/build-timing.js";
 import {
-  loadAgencyDetail,
+  loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPaths,
 } from "#src/lib/data/agency-detail.js";
 import { PAGE_SIZE } from "#src/lib/pagination.js";
@@ -22,11 +22,10 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
       const pages: any[] = [];
 
       for (const agencyPath of agencyPaths) {
-        const data = await loadAgencyDetail(agencyPath.props.agencyId);
+        const data = await loadAgencyDetailByRouteParams(agencyPath.params);
         paginate(buildAgencyCivilCaseRows(data), {
           pageSize: PAGE_SIZE,
           params: agencyPath.params,
-          props: { agencyId: agencyPath.props.agencyId },
         })
           .filter((page: any) => {
             const pageParam = page.params?.page;
@@ -47,8 +46,8 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
   );
 }
 
-const { agencyId, page } = Astro.props;
-const data = await loadAgencyDetail(agencyId);
+const { page } = Astro.props;
+const data = await loadAgencyDetailByRouteParams(Astro.params);
 const {
   agencyName,
   agencyPath,
@@ -106,7 +105,7 @@ const formatDate = (value?: string | null) =>
         <div class="agency-cases-heading">
           <div>
             <p class="agency-cases-kicker">{placeLabel}</p>
-            <h1>{agencyName} Civil Cases</h1>
+            <h1 class="ipc-page-title">{agencyName} Civil Cases</h1>
             <p>{pageDescription}</p>
           </div>
           <div class="agency-cases-count">
@@ -195,17 +194,6 @@ const formatDate = (value?: string | null) =>
 
   .agency-cases-heading h1 {
     color: #071942;
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-    font-size: 2.25rem;
-    font-weight: 800;
-    letter-spacing: 0;
-    line-height: 1;
     margin: 0;
   }
 

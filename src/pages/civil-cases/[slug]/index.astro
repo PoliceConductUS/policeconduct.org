@@ -31,8 +31,7 @@ const data = await loadCivilCaseDetailBySlug(String(slug || ""));
 if (!data) {
   throw new Error(`Civil case ${slug} not found.`);
 }
-const caseTitle =
-  data.civilCase.title || data.civilCase.cause_number || "Civil case";
+const caseTitle = data.civilCase.title;
 const casePath = `/civil-cases/${data.civilCase.slug}/`;
 if (!data.civilCase.filed_date) {
   throw new Error(`Civil case ${data.civilCase.id} is missing filed_date.`);
@@ -173,7 +172,7 @@ const structuredData = {
               className="mb-2"
             />
             <p class="text-uppercase small text-muted mb-2">Civil case</p>
-            <h1 class="display-5 fw-bold mb-3">{caseTitle}</h1>
+            <h1 class="ipc-page-title mb-3">{caseTitle}</h1>
             <div class="d-flex flex-wrap gap-4 text-muted">
               <div>
                 <span class="text-uppercase small d-block">Cause number</span>
@@ -202,15 +201,13 @@ const structuredData = {
         <div class="row g-4 justify-content-center">
           <div class="col-12 col-xl-7">
             <article class="border p-4 bg-white h-100">
-              <h2 class="h5 mb-3">Claims</h2>
-              <p class="mb-0">
-                {data.civilCase.claims_summary || "Not listed."}
-              </p>
+              <h2 class="ipc-section-title mb-3">Claims</h2>
+              <p class="mb-0">{data.civilCase.claims_summary}</p>
             </article>
           </div>
           <div class="col-12 col-xl-3">
             <aside class="border p-4 bg-white h-100">
-              <h2 class="h6 text-uppercase text-muted">Primary source</h2>
+              <h2 class="ipc-section-title text-uppercase text-muted">Primary source</h2>
               {
                 data.civilCase.primary_source_url ? (
                   <a
@@ -225,8 +222,14 @@ const structuredData = {
                 )
               }
 
-              <h2 class="h6 text-uppercase text-muted mt-4">Outcome</h2>
-              <p class="mb-0">{data.civilCase.outcome || "Not listed."}</p>
+              {
+                data.civilCase.outcome ? (
+                  <>
+                    <h2 class="ipc-section-title text-uppercase text-muted mt-4">Outcome</h2>
+                    <p class="mb-0">{data.civilCase.outcome}</p>
+                  </>
+                ) : null
+              }
             </aside>
           </div>
         </div>
@@ -234,7 +237,7 @@ const structuredData = {
         <div class="row g-4 justify-content-center mt-1">
           <div class="col-12 col-xl-5">
             <section class="border p-4 bg-white h-100">
-              <h2 class="h5 mb-3">Officers</h2>
+              <h2 class="ipc-section-title mb-3">Officers</h2>
               {
                 data.officers.length ? (
                   <ul class="list-unstyled mb-0 d-grid gap-2">
@@ -257,7 +260,7 @@ const structuredData = {
           </div>
           <div class="col-12 col-xl-5">
             <section class="border p-4 bg-white h-100">
-              <h2 class="h5 mb-3">Agencies</h2>
+              <h2 class="ipc-section-title mb-3">Agencies</h2>
               {
                 data.agencies.length ? (
                   <ul class="list-unstyled mb-0 d-grid gap-2">
@@ -287,7 +290,7 @@ const structuredData = {
         <div class="row justify-content-center mt-1">
           <div class="col-12 col-xl-10">
             <section class="border p-4 bg-white">
-              <h2 class="h5 mb-2">Related Links</h2>
+              <h2 class="ipc-section-title mb-2">Related Links</h2>
               <p class="text-muted small mb-3">
                 Links connected to this civil case.
               </p>
@@ -298,7 +301,7 @@ const structuredData = {
                       <article class="border p-3">
                         <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
                           <div>
-                            <h3 class="h6 mb-1">{link.title}</h3>
+                            <h3 class="ipc-subsection-title mb-1">{link.title}</h3>
                             <a
                               class="small"
                               href={link.url}

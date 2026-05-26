@@ -31,6 +31,17 @@ export type AgencySummary = {
   civilCaseCount: number;
 };
 
+export type AgencyFinderResult = {
+  id: string;
+  name: string;
+  city?: string | null;
+  administrativeArea?: string | null;
+  administrativeAreaSlug?: string | null;
+  state: string;
+  zipCode?: string | null;
+  canonicalPath: string;
+};
+
 export type ReportSummary = {
   id: string;
   slug: string;
@@ -40,6 +51,11 @@ export type ReportSummary = {
   year: string;
   month: string;
   day: string;
+  administrativeAreaName: string;
+  administrativeAreaSlug: string;
+  placeName: string;
+  placeSlug: string;
+  stateName: string;
   title: string;
   incidentDate: string;
   address?: string | null;

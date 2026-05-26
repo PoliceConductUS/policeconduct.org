@@ -1,0 +1,45 @@
+---
+import MetricCard from "#src/components/MetricCard.astro";
+import type { MetricCardItem } from "#src/components/metric-card-types.js";
+
+const {
+  metrics,
+  columns = "auto",
+} = Astro.props as {
+  metrics: MetricCardItem[];
+  columns?: "auto" | "four" | "five";
+};
+---
+
+<div class:list={["entity-metric-grid", `entity-metric-grid-${columns}`]}>
+  {metrics.map((metric) => <MetricCard metric={metric} />)}
+</div>
+
+<style>
+  .entity-metric-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .entity-metric-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .entity-metric-grid-auto {
+      grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    }
+
+    .entity-metric-grid-four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .entity-metric-grid-five {
+      grid-template-columns: repeat(5, minmax(10rem, 1fr));
+    }
+  }
+</style>

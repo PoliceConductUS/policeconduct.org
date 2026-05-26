@@ -1,5 +1,10 @@
 import { withDb } from "#src/lib/db.js";
-import { metricLabels } from "#src/lib/metric-vocabulary.js";
+import {
+  metricLabels,
+  metricVisuals,
+  type MetricAccent,
+  type MetricIcon,
+} from "#src/lib/metric-vocabulary.js";
 
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
 
@@ -39,12 +44,13 @@ export type FederalAgencyIndexColumn = {
 
 export type FederalAgencyIndexMetric = {
   actionLabel?: string;
-  accent: "blue" | "green" | "purple";
+  actionKind?: "link" | "button";
+  accent: MetricAccent;
   detail: string;
   href?: string;
+  icon: MetricIcon;
   key: string;
   label: string;
-  primary?: boolean;
   value: string;
 };
 
@@ -73,9 +79,11 @@ export type FederalAgencyIndexModel = {
 const federalAgencyPath = (slug: string) => `/federal/${slug}/`;
 export type FederalAgencyTopicKind =
   | "personnel"
+  | "reports"
   | "budget"
   | "civil-cases"
-  | "liability-costs";
+  | "liability-costs"
+  | "outcomes-by-income";
 
 const formatCount = (value: number) => value.toLocaleString("en-US");
 
@@ -93,6 +101,12 @@ const federalTopicConfig = {
     description:
       "Personnel records connected through federal child agencies currently available.",
     charts: ["Personnel Over Time", "Personnel by Child Agency", "Record Mix"],
+  },
+  reports: {
+    label: metricLabels.reports,
+    description:
+      "Published public reports connected through federal child agencies currently available.",
+    charts: ["Reports Over Time", "Reports by Child Agency", "Record Mix"],
   },
   budget: {
     label: metricLabels.budget,
@@ -120,6 +134,11 @@ const federalTopicConfig = {
       "Payment Source Breakdown",
     ],
   },
+  "outcomes-by-income": {
+    label: metricLabels.outcomesByIncome,
+    description: "Case outcomes by income band.",
+    charts: [],
+  },
 } satisfies Record<
   FederalAgencyTopicKind,
   { charts: string[]; description: string; label: string }
@@ -143,32 +162,64 @@ const topicMetricsFor = (
   if (kind === "personnel") {
     return [
       {
-        accent: "blue",
+        ...metricVisuals.personnel,
         detail: "Active linked personnel",
         key: "personnel",
-        label: metricLabels.personnel,
-        primary: true,
+        actionKind: "button",
         value: formatCount(totals.personnel),
       },
       {
-        accent: "blue",
+        ...metricVisuals.personnelRecords,
         detail: "Current personnel records in scope",
         key: "personnelRecords",
-        label: metricLabels.personnelRecords,
         value: formatCount(totals.personnel),
       },
       {
-        accent: "green",
+        ...metricVisuals.agencies,
         detail: "Assignment history coverage is not projected yet",
         key: "assignments",
-        label: metricLabels.agencyAssignments,
         value: "$--",
       },
       {
-        accent: "green",
+        ...metricVisuals.reports,
+        detail: "Public reports connected through linked agencies",
+        key: "reports",
+        value: formatCount(totals.reports),
+      },
+      {
+        ...metricVisuals.latestPersonnelUpdate,
         detail: "Personnel update recency is not projected yet",
         key: "latestPersonnelUpdate",
-        label: metricLabels.latestPersonnelUpdate,
+        value: "$--",
+      },
+    ];
+  }
+
+  if (kind === "reports") {
+    return [
+      {
+        ...metricVisuals.reports,
+        detail: "Public reports connected through linked agencies",
+        key: "reports",
+        actionKind: "button",
+        value: formatCount(totals.reports),
+      },
+      {
+        ...metricVisuals.childAgencies,
+        detail: "Linked agency records",
+        key: "leafAgencies",
+        value: formatCount(totals.leafAgencies),
+      },
+      {
+        ...metricVisuals.personnel,
+        detail: "Active linked personnel",
+        key: "personnel",
+        value: formatCount(totals.personnel),
+      },
+      {
+        ...metricVisuals.latestRecordedYear,
+        detail: "Report recency is not projected yet",
+        key: "latestRecordedYear",
         value: "$--",
       },
     ];
@@ -177,32 +228,34 @@ const topicMetricsFor = (
   if (kind === "civil-cases") {
     return [
       {
-        accent: "purple",
+        ...metricVisuals.civilCases,
         detail: "Civil cases connected through linked agencies",
         key: "civilCases",
-        label: metricLabels.civilCases,
-        primary: true,
+        actionKind: "button",
         value: formatCount(totals.civilCases),
       },
       {
-        accent: "purple",
+        ...metricVisuals.caseTypes,
         detail: "Case type coverage is not projected yet",
         key: "caseTypes",
-        label: metricLabels.caseTypes,
         value: "$--",
       },
       {
-        accent: "purple",
+        ...metricVisuals.caseOutcomes,
         detail: "Outcome coverage is not projected yet",
         key: "caseOutcomes",
-        label: metricLabels.caseOutcomes,
         value: "$--",
       },
       {
-        accent: "green",
+        ...metricVisuals.reports,
+        detail: "Public reports connected through linked agencies",
+        key: "reports",
+        value: formatCount(totals.reports),
+      },
+      {
+        ...metricVisuals.latestCaseActivity,
         detail: "Case activity recency is not projected yet",
         key: "latestCaseActivity",
-        label: metricLabels.latestCaseActivity,
         value: "$--",
       },
     ];
@@ -211,69 +264,77 @@ const topicMetricsFor = (
   if (kind === "budget") {
     return [
       {
-        accent: "green",
+        ...metricVisuals.budget,
         detail:
           "Direct federal-agency budget totals are not projected yet; child-location totals are excluded",
         key: "budget",
-        label: metricLabels.budget,
-        primary: true,
+        actionKind: "button",
         value: "$--",
       },
       {
-        accent: "green",
+        ...metricVisuals.operatingSpend,
         detail: "Direct federal-agency operating spend is not projected yet",
         key: "operatingSpend",
-        label: metricLabels.operatingSpend,
         value: "$--",
       },
       {
-        accent: "green",
+        ...metricVisuals.overtime,
         detail: "Direct federal-agency overtime spending is not projected yet",
         key: "overtime",
-        label: metricLabels.overtime,
         value: "$--",
       },
       {
-        accent: "blue",
+        ...metricVisuals.reports,
+        detail: "Public reports connected through linked agencies",
+        key: "reports",
+        value: formatCount(totals.reports),
+      },
+      {
+        ...metricVisuals.latestFiscalYear,
         detail:
           "Direct federal-agency fiscal-year coverage is not projected yet",
         key: "latestFiscalYear",
-        label: metricLabels.latestFiscalYear,
         value: "$--",
       },
     ];
   }
 
+  if (kind === "outcomes-by-income") {
+    return [];
+  }
+
   return [
     {
-      accent: "green",
+      ...metricVisuals.liabilityCosts,
       detail:
         "Direct federal-agency liability cost totals are not projected yet; child-location totals are excluded",
       key: "liabilityCosts",
-      label: metricLabels.liabilityCosts,
-      primary: true,
+      actionKind: "button",
       value: "$--",
     },
     {
-      accent: "green",
+      ...metricVisuals.settlements,
       detail: "Direct federal-agency settlement totals are not projected yet",
       key: "settlements",
-      label: metricLabels.settlements,
       value: "$--",
     },
     {
-      accent: "green",
+      ...metricVisuals.judgments,
       detail: "Direct federal-agency judgment totals are not projected yet",
       key: "judgments",
-      label: metricLabels.judgments,
       value: "$--",
     },
     {
-      accent: "blue",
+      ...metricVisuals.reports,
+      detail: "Public reports connected through linked agencies",
+      key: "reports",
+      value: formatCount(totals.reports),
+    },
+    {
+      ...metricVisuals.latestRecordedYear,
       detail:
         "Direct federal-agency liability-cost recency is not projected yet",
       key: "latestRecordedYear",
-      label: "Latest Recorded Year",
       value: "$--",
     },
   ];
@@ -354,7 +415,7 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
                 jsonb_build_object(
                   'id', a.id,
                   'name', a.name,
-                  'path', lp.path || a.slug || '/',
+                  'path', bpp.path,
                   'address', a.address,
                   'city', lp.place_name,
                   'state', lp.state_or_territory_slug,
@@ -374,6 +435,9 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
             on a.id = fab.agency_id
           left join public.location_path lp
             on lp.location_path_id = a.location_path_id
+          left join public.build_page_payload bpp
+            on bpp.page_type = 'agency'
+           and bpp.entity_id = a.id
           left join lateral (
             select
               count(distinct active_assignment.officer_id) as personnel_count,
@@ -492,7 +556,7 @@ export const buildFederalAgencyIndexModel = (
     charts: generalFederalCharts,
     columns: [
       { key: "label", label: "Federal agency" },
-      { key: "leafAgencies", label: "Child agencies", numeric: true },
+      { key: "leafAgencies", label: metricLabels.childAgencies, numeric: true },
       { key: "personnel", label: metricLabels.personnel, numeric: true },
       { key: "reports", label: metricLabels.reports, numeric: true },
       { key: "civilCases", label: metricLabels.civilCases, numeric: true },
@@ -502,39 +566,40 @@ export const buildFederalAgencyIndexModel = (
     heading: "Federal",
     metrics: [
       {
-        accent: "blue",
+        ...metricVisuals.federalAgencies,
         detail: "Federal grouping records",
         key: "parents",
-        label: metricLabels.federalAgencies,
-        primary: true,
+        actionKind: "button",
         value: formatCount(federalAgencies.length),
       },
       {
-        accent: "blue",
+        ...metricVisuals.childAgencies,
         detail: "Linked agency records",
         key: "leafAgencies",
-        label: "Child agencies",
         value: formatCount(totals.leafAgencies),
       },
       {
-        accent: "blue",
+        ...metricVisuals.personnel,
         detail: "Active linked personnel",
+        href: `${pagePath}personnel/`,
+        actionLabel: "View details",
         key: "personnel",
-        label: metricLabels.personnel,
         value: formatCount(totals.personnel),
       },
       {
-        accent: "purple",
+        ...metricVisuals.civilCases,
         detail: "Civil cases connected through linked agencies",
+        href: `${pagePath}civil-cases/`,
+        actionLabel: "View details",
         key: "civilCases",
-        label: metricLabels.civilCases,
         value: formatCount(totals.civilCases),
       },
       {
-        accent: "green",
+        ...metricVisuals.reports,
         detail: "Public reports connected through linked agencies",
+        href: `${pagePath}reports/`,
+        actionLabel: "View details",
         key: "reports",
-        label: metricLabels.reports,
         value: formatCount(totals.reports),
       },
     ],
@@ -567,39 +632,40 @@ export const buildFederalAgencyDetailIndexModel = (
   heading: federalAgency.name,
   metrics: [
     {
-      accent: "blue",
+      ...metricVisuals.childAgencies,
       detail: "Linked agency records",
       key: "leafAgencies",
-      label: "Child agencies",
-      primary: true,
+      actionKind: "button",
       value: formatCount(federalAgency.branchCount),
     },
+      {
+        ...metricVisuals.personnel,
+        detail: "Active linked personnel",
+        href: `${federalAgency.path}personnel/`,
+        actionLabel: "View details",
+        key: "personnel",
+        value: formatCount(federalAgency.personnelCount),
+      },
+      {
+        ...metricVisuals.civilCases,
+        detail: "Civil cases connected through linked agencies",
+        href: `${federalAgency.path}civil-cases/`,
+        actionLabel: "View details",
+        key: "civilCases",
+        value: formatCount(federalAgency.civilCaseCount),
+      },
+      {
+        ...metricVisuals.reports,
+        detail: "Public reports connected through linked agencies",
+        href: `${federalAgency.path}reports/`,
+        actionLabel: "View details",
+        key: "reports",
+        value: formatCount(federalAgency.reportCount),
+      },
     {
-      accent: "blue",
-      detail: "Active linked personnel",
-      key: "personnel",
-      label: metricLabels.personnel,
-      value: formatCount(federalAgency.personnelCount),
-    },
-    {
-      accent: "purple",
-      detail: "Civil cases connected through linked agencies",
-      key: "civilCases",
-      label: metricLabels.civilCases,
-      value: formatCount(federalAgency.civilCaseCount),
-    },
-    {
-      accent: "green",
-      detail: "Public reports connected through linked agencies",
-      key: "reports",
-      label: metricLabels.reports,
-      value: formatCount(federalAgency.reportCount),
-    },
-    {
-      accent: "green",
+      ...metricVisuals.liabilityCosts,
       detail: "Claims, settlements, judgments, and related costs",
       key: "liabilityCosts",
-      label: metricLabels.liabilityCosts,
       value: "$--",
     },
   ],
@@ -644,12 +710,14 @@ export const buildFederalAgencyTopicIndexModel = (
       leafAgencies: agency.branchCount,
       personnel: agency.personnelCount,
       reports: agency.reportCount,
-      topicValue:
-        kind === "personnel"
-          ? agency.personnelCount
-          : kind === "civil-cases"
-            ? agency.civilCaseCount
-            : "$--",
+        topicValue:
+          kind === "personnel"
+            ? agency.personnelCount
+            : kind === "reports"
+              ? agency.reportCount
+              : kind === "civil-cases"
+                ? agency.civilCaseCount
+                : "$--",
     },
   }));
   const totals = federalAgencies.reduce(
@@ -677,7 +745,11 @@ export const buildFederalAgencyTopicIndexModel = (
       : [
           { key: "label", label: "Federal agency" },
           { key: "topicValue", label: topic.label, numeric: true },
-          { key: "leafAgencies", label: "Child agencies", numeric: true },
+          {
+            key: "leafAgencies",
+            label: metricLabels.childAgencies,
+            numeric: true,
+          },
           { key: "personnel", label: metricLabels.personnel, numeric: true },
           { key: "reports", label: metricLabels.reports, numeric: true },
           { key: "civilCases", label: metricLabels.civilCases, numeric: true },
@@ -756,9 +828,11 @@ export const buildFederalAgencyDetailTopicIndexModel = (
         topicValue:
           kind === "personnel"
             ? branch.personnelCount
-            : kind === "civil-cases"
-              ? branch.civilCaseCount
-              : "$--",
+            : kind === "reports"
+              ? branch.reportCount
+              : kind === "civil-cases"
+                ? branch.civilCaseCount
+                : "$--",
       },
     })),
     rowsLabel: `${topic.label} by Child Agency`,

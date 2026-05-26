@@ -1,16 +1,42 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportSummary } from "#src/lib/data/types.js";
+import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
 
 type Props = {
+  breadcrumbs: { label: string; href: string }[];
   pagePath: string;
   reports: ReportSummary[];
   title: string;
 };
 
-const { pagePath, reports, title } = Astro.props as Props;
+const { breadcrumbs, pagePath, reports, title } = Astro.props as Props;
+const formatCount = (value: number) => value.toLocaleString("en-US");
+const personnelCount = new Set(
+  reports.flatMap((report) => report.personnelSlugs || []),
+).size;
+const metricCards = [
+  {
+    ...metricVisuals.reports,
+    detail: "Published public reports",
+    value: formatCount(reports.length),
+  },
+  {
+    ...metricVisuals.personnel,
+    detail: "Personnel named in reports",
+    value: formatCount(personnelCount),
+  },
+  {
+    ...metricVisuals.latestRecordedYear,
+    detail: "Latest report year",
+    value: reports[0]?.year || "--",
+  },
+];
 ---
 
 <SiteLayout
@@ -19,43 +45,132 @@ const { pagePath, reports, title } = Astro.props as Props;
   pagePath={pagePath}
   canonicalUrl={pagePath}
 >
-  <main>
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+  <main class="report-archive-page">
+    <section class="report-archive-main">
       <div class="container">
         <Breadcrumbs
           items={[
-            { label: "Home", href: "/" },
+            ...breadcrumbs,
             { label: title, href: pagePath, current: true },
           ]}
           className="mb-2"
         />
-        <h1 class="display-4 fw-bold">{title}</h1>
-        <p class="lead text-muted mb-0">{reports.length} reports</p>
-      </div>
-    </section>
-    <section class="py-vh-2">
-      <div class="container">
-        <div class="list-group">
-          {
-            reports.map((report) => (
-              <a
-                class="list-group-item list-group-item-action py-3"
-                href={report.canonicalPath}
-              >
-                <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
-                  <h2 class="h5 mb-1">{report.title}</h2>
-                  <span class="text-muted small">
-                    {formatShortDate(report.incidentDate)}
-                  </span>
+        <EntityPageHeader
+          title={title}
+          description={`Published reports for ${title}.`}
+        />
+
+        <MetricGrid metrics={metricCards} columns="four" />
+
+        <div class="entity-chart-grid">
+          <DataPanel title="Reports Over Time" description="Published reports by incident year">
+            <div class="entity-empty-line-chart" aria-hidden="true"></div>
+          </DataPanel>
+
+          <DataPanel title="Reports by Agency" description="Published reports grouped by agency">
+            <div class="report-archive-bars">
+              {reports.slice(0, 5).map((report) => (
+                <div>
+                  <span>{report.agencyName}</span>
+                  <i><b style="width: 0%" /></i>
+                  <strong />
                 </div>
-                {report.address ? (
-                  <p class="text-muted mb-0">{report.address}</p>
-                ) : null}
-              </a>
-            ))
-          }
+              ))}
+            </div>
+          </DataPanel>
+
+          <DataPanel
+            className="entity-table-panel"
+            title={metricLabels.reports}
+            description="Published public reports in this scope"
+          >
+            <div class="report-archive-list">
+              {
+                reports.map((report) => (
+                  <a href={report.canonicalPath}>
+                    <span>{report.title}</span>
+                    <small>{formatShortDate(report.incidentDate)}</small>
+                    {report.address ? <em>{report.address}</em> : null}
+                  </a>
+                ))
+              }
+            </div>
+          </DataPanel>
         </div>
       </div>
     </section>
   </main>
 </SiteLayout>
+
+<style>
+  .report-archive-page {
+    background: #fbfcff;
+    color: #071842;
+  }
+
+  .report-archive-main {
+    padding: 1rem 0 2.5rem;
+  }
+
+  .report-archive-main > .container {
+    max-width: 1240px;
+  }
+
+  .report-archive-bars {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1rem;
+  }
+
+  .report-archive-bars div {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(8rem, 0.9fr) minmax(7rem, 2fr) auto;
+  }
+
+  .report-archive-bars span,
+  .report-archive-bars strong {
+    color: #071842;
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .report-archive-bars i {
+    background: #e7edf7;
+    display: block;
+    height: 0.78rem;
+  }
+
+  .report-archive-bars b {
+    background: #087f3b;
+    display: block;
+    height: 100%;
+  }
+
+  .report-archive-list {
+    display: grid;
+  }
+
+  .report-archive-list a {
+    border-top: 1px solid #d9e1ee;
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.85rem 0;
+    text-decoration: none;
+  }
+
+  .report-archive-list span {
+    color: #071842;
+    font-size: 0.95rem;
+    font-weight: 800;
+  }
+
+  .report-archive-list small,
+  .report-archive-list em {
+    color: #33456f;
+    font-size: 0.8125rem;
+    font-style: normal;
+    font-weight: 600;
+  }
+</style>

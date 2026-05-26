@@ -8,6 +8,7 @@ type ArchiveEntry = {
   pagePath: string;
   params: Record<string, string | undefined>;
   title: string;
+  breadcrumbs: { label: string; href: string }[];
 };
 
 const keyFor = (params: Record<string, string | undefined>) =>
@@ -18,28 +19,53 @@ const keyFor = (params: Record<string, string | undefined>) =>
     params.parts || "",
   ].join("|");
 
-const formatSlugLabel = (value: string) =>
-  value
-    .split("-")
-    .filter(Boolean)
-    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
-    .join(" ");
-
 const titleFor = (
   report: ReportSummary,
   scope: ReportArchiveScope,
   parts: string[],
 ) => {
-  const location = parseLocationPathParts(report.locationPath, report.id);
   const locationLabel =
     scope === "state"
-      ? location.state.toUpperCase()
+      ? report.stateName
       : scope === "county"
-        ? formatSlugLabel(location.administrativeArea)
-        : formatSlugLabel(location.place);
+        ? report.administrativeAreaName
+        : report.placeName;
   return parts.length
-    ? `${locationLabel} reports for ${parts.join("-")}`
-    : `${locationLabel} reports`;
+    ? `Reports for ${locationLabel}, ${parts.join("-")}`
+    : `Reports for ${locationLabel}`;
+};
+
+const breadcrumbsFor = (
+  report: ReportSummary,
+  scope: ReportArchiveScope,
+  parts: string[],
+) => {
+  const items = [
+    { label: "Home", href: "/" },
+    { label: report.stateName, href: `/${report.state}/` },
+  ];
+  if (scope === "county" || scope === "place") {
+    items.push({
+      label: report.administrativeAreaName,
+      href: `/${report.state}/${report.administrativeAreaSlug}/`,
+    });
+  }
+  if (scope === "place") {
+    items.push({
+      label: report.placeName,
+      href: `${report.locationPath}`,
+    });
+  }
+  const reportsPath =
+    scope === "state"
+      ? `/${report.state}/reports/`
+      : scope === "county"
+        ? `/${report.state}/${report.administrativeAreaSlug}/reports/`
+        : `${report.locationPath}reports/`;
+  if (parts.length) {
+    items.push({ label: "Reports", href: reportsPath });
+  }
+  return items;
 };
 
 const pathFor = (
@@ -123,6 +149,7 @@ export const buildReportArchiveStaticPaths = (
           pagePath: pathFor(report, scope, parts),
           params,
           title: titleFor(report, scope, parts),
+          breadcrumbs: breadcrumbsFor(report, scope, parts),
         });
       }
     }
@@ -140,6 +167,7 @@ export const buildReportArchiveStaticPaths = (
       params: archive.params,
       props: {
         pagePath: archive.pagePath,
+        breadcrumbs: archive.breadcrumbs,
         reports: archive.reports,
         title: archive.title,
       },

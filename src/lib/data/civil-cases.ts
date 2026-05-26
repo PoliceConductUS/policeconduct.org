@@ -10,7 +10,7 @@ export type CivilCaseListItem = {
   court: string | null;
   filed_date: string;
   date_terminated: string | null;
-  claims_summary: string | null;
+  claims_summary: string;
 };
 
 const requireString = (
@@ -59,8 +59,7 @@ const toCivilCaseListItem = (
         : typeof row.date_terminated === "string" && row.date_terminated.trim()
           ? row.date_terminated
           : null,
-    claims_summary:
-      typeof row.claims_summary === "string" ? row.claims_summary : null,
+    claims_summary: requireString(row, "claims_summary", id),
   };
 };
 

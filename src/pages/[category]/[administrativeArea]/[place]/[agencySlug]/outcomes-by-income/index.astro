@@ -1,0 +1,44 @@
+---
+import OutcomesByIncomePage from "#src/components/OutcomesByIncomePage.astro";
+import {
+  loadAgencyDetailByRouteParams,
+  loadAgencyLocationStaticPaths,
+} from "#src/lib/data/agency-detail.js";
+import { metricLabels } from "#src/lib/metric-vocabulary.js";
+
+export async function getStaticPaths() {
+  return loadAgencyLocationStaticPaths();
+}
+
+const data = await loadAgencyDetailByRouteParams(Astro.params);
+const {
+  agencyName,
+  agencyPath,
+  categoryLabel,
+  categorySlug,
+  administrativeArea,
+  placeLabel,
+  placePath,
+} = data;
+
+const pagePath = `${agencyPath}outcomes-by-income/`;
+const title = `${agencyName} ${metricLabels.outcomesByIncome}`;
+const description = `Case outcomes by income band for ${agencyName}.`;
+---
+
+<OutcomesByIncomePage
+  title={title}
+  description={description}
+  pagePath={pagePath}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: categoryLabel, href: `/${categorySlug}/` },
+    {
+      label: administrativeArea,
+      href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+    },
+    { label: placeLabel, href: placePath },
+    { label: agencyName, href: agencyPath },
+    { label: metricLabels.outcomesByIncome, href: pagePath, current: true },
+  ]}
+/>

@@ -1,0 +1,230 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
+import Pagination from "#src/components/Pagination.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { formatShortDate } from "#src/lib/format.js";
+import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
+
+type AgencyReportSummary = {
+  canonicalPath?: string;
+  incidentDate?: string | null;
+  personnel?: { name?: string | null; slug?: string | null }[];
+  personnelSlugs?: string[];
+  title: string;
+  url?: string;
+  year?: string;
+  address?: string | null;
+};
+
+const {
+  currentPage,
+  data,
+  lastPage,
+  pageReports,
+} = Astro.props as {
+  currentPage: number;
+  data: any;
+  lastPage: number;
+  pageReports: AgencyReportSummary[];
+};
+
+const {
+  agencyName,
+  agencyPath,
+  categoryLabel,
+  categorySlug,
+  administrativeArea,
+  placeLabel,
+  placePath,
+  reportedReports,
+} = data;
+
+const reportsIndexPath = `${agencyPath}reports/`;
+const pagePath =
+  currentPage <= 1 ? reportsIndexPath : `${reportsIndexPath}page/${currentPage}/`;
+const pageTitle =
+  currentPage <= 1
+    ? `${agencyName} Reports`
+    : `${agencyName} Reports - Page ${currentPage}`;
+const pageDescription = `Published reports connected to ${agencyName}.`;
+const personnelCount = new Set(
+  reportedReports.flatMap((report: AgencyReportSummary) => report.personnelSlugs || []),
+).size;
+const getReportHref = (report: AgencyReportSummary) => {
+  const href = report.canonicalPath || report.url;
+  if (!href) {
+    throw new Error(`Report ${report.title} is missing a canonical path.`);
+  }
+  return href;
+};
+const getReportDate = (report: AgencyReportSummary) =>
+  report.incidentDate ? formatShortDate(report.incidentDate) : "";
+const latestReportYear = reportedReports[0]?.year || "--";
+const formatCount = (value: number) => value.toLocaleString("en-US");
+const metricCards = [
+  {
+    ...metricVisuals.reports,
+    detail: "Published public reports",
+    value: formatCount(reportedReports.length),
+  },
+  {
+    ...metricVisuals.personnel,
+    detail: "Personnel named in reports",
+    value: formatCount(personnelCount),
+  },
+  {
+    ...metricVisuals.latestRecordedYear,
+    detail: "Latest report year",
+    value: latestReportYear,
+  },
+];
+---
+
+<SiteLayout
+  title={pageTitle}
+  description={pageDescription}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main class="agency-reports-page">
+    <section class="agency-reports-main">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: categoryLabel, href: `/${categorySlug}/` },
+            {
+              label: administrativeArea,
+              href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+            },
+            { label: placeLabel, href: placePath },
+            { label: agencyName, href: agencyPath },
+            { label: "Reports", href: reportsIndexPath, current: currentPage <= 1 },
+            ...(currentPage > 1
+              ? [{ label: `Page ${currentPage}`, href: pagePath, current: true }]
+              : []),
+          ]}
+          className="mb-2"
+        />
+        <EntityPageHeader title={pageTitle} description={pageDescription} />
+
+        <MetricGrid metrics={metricCards} columns="four" />
+
+        <div class="entity-chart-grid">
+          <DataPanel title="Reports Over Time" description="Published reports by incident year">
+            <div class="entity-empty-line-chart" aria-hidden="true"></div>
+          </DataPanel>
+
+          <DataPanel title="Reports by Personnel" description="Published reports grouped by personnel">
+            <div class="agency-reports-bars">
+              {pageReports.slice(0, 5).map((report) => (
+                <div>
+                  <span>{report.personnel?.[0]?.name || "Unassigned"}</span>
+                  <i><b style="width: 0%" /></i>
+                  <strong />
+                </div>
+              ))}
+            </div>
+          </DataPanel>
+
+          <DataPanel
+            className="entity-table-panel"
+            title={metricLabels.reports}
+            description="Published public reports connected to this agency"
+          >
+            <div class="agency-reports-list">
+              {pageReports.map((report) => (
+                <a href={getReportHref(report)}>
+                  <span>{report.title}</span>
+                  <small>{getReportDate(report)}</small>
+                  {report.address ? <em>{report.address}</em> : null}
+                </a>
+              ))}
+            </div>
+            <Pagination
+              basePath={reportsIndexPath}
+              currentPage={currentPage}
+              lastPage={lastPage}
+            />
+          </DataPanel>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<style>
+  .agency-reports-page {
+    background: #fbfcff;
+    color: #071842;
+  }
+
+  .agency-reports-main {
+    padding: 1rem 0 2.5rem;
+  }
+
+  .agency-reports-main > .container {
+    max-width: 1240px;
+  }
+
+  .agency-reports-bars {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1rem;
+  }
+
+  .agency-reports-bars div {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(8rem, 0.9fr) minmax(7rem, 2fr) auto;
+  }
+
+  .agency-reports-bars span,
+  .agency-reports-bars strong {
+    color: #071842;
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .agency-reports-bars i {
+    background: #e7edf7;
+    display: block;
+    height: 0.78rem;
+  }
+
+  .agency-reports-bars b {
+    background: #087f3b;
+    display: block;
+    height: 100%;
+  }
+
+  .agency-reports-list {
+    display: grid;
+  }
+
+  .agency-reports-list a {
+    border-top: 1px solid #d9e1ee;
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.85rem 0;
+    text-decoration: none;
+  }
+
+  .agency-reports-list span {
+    color: #071842;
+    font-size: 0.95rem;
+    font-weight: 800;
+  }
+
+  .agency-reports-list small,
+  .agency-reports-list em {
+    color: #33456f;
+    font-size: 0.8125rem;
+    font-style: normal;
+    font-weight: 600;
+  }
+</style>

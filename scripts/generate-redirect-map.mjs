@@ -70,15 +70,12 @@ const redirects = await withDb(async (client) => {
     await client.query(
       `
         select
-          lower(lp.state_or_territory_slug) as state,
-          a.slug,
-          lp.path || a.slug || '/' as canonical_path
-        from public.agency a
-        join public.location_path lp
-          on lp.location_path_id = a.location_path_id
-        where lp.state_or_territory_slug is not null
-          and a.slug is not null
-        order by lower(lp.state_or_territory_slug), a.slug
+          payload->'agency'->>'state' as state,
+          payload->'agency'->>'slug' as slug,
+          path as canonical_path
+        from public.build_page_payload
+        where page_type = 'agency'
+        order by payload->'agency'->>'state', payload->'agency'->>'slug'
       `,
     )
   ).rows;
@@ -86,13 +83,14 @@ const redirects = await withDb(async (client) => {
   const federalBranchRows = (
     await client.query(
       `
-        select a.slug, lp.path || a.slug || '/' as canonical_path
+        select
+          bpp.payload->'agency'->>'slug' as slug,
+          bpp.path as canonical_path
         from public.federal_agency_branch fab
-        join public.agency a on a.id = fab.agency_id
-        join public.location_path lp
-          on lp.location_path_id = a.location_path_id
-        where a.slug is not null
-        order by a.slug
+        join public.build_page_payload bpp
+          on bpp.page_type = 'agency'
+         and bpp.entity_id = fab.agency_id
+        order by bpp.payload->'agency'->>'slug'
       `,
     )
   ).rows;

@@ -1,0 +1,48 @@
+---
+import AgencyReportsPage from "#src/components/AgencyReportsPage.astro";
+import { timeBuildStep } from "#src/lib/build-timing.js";
+import {
+  loadAgencyDetailByRouteParams,
+  loadAgencyLocationStaticPaths,
+} from "#src/lib/data/agency-detail.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
+
+export async function getStaticPaths({ paginate }: { paginate: any }) {
+  return timeBuildStep("agency reports pagination static paths", async () => {
+    const agencyPaths = await loadAgencyLocationStaticPaths();
+    const pages: any[] = [];
+
+    for (const agencyPath of agencyPaths) {
+      const data = await loadAgencyDetailByRouteParams(agencyPath.params);
+      paginate(data.reportedReports, {
+        pageSize: PAGE_SIZE,
+        params: agencyPath.params,
+      })
+        .filter((page: any) => {
+          const pageParam = page.params?.page;
+          if (Array.isArray(pageParam)) {
+            return pageParam.length > 0 && pageParam[0] !== "1";
+          }
+          return (
+            typeof pageParam === "string" &&
+            pageParam.length > 0 &&
+            pageParam !== "1"
+          );
+        })
+        .forEach((page: any) => pages.push(page));
+    }
+
+    return pages;
+  });
+}
+
+const { page } = Astro.props;
+const data = await loadAgencyDetailByRouteParams(Astro.params);
+---
+
+<AgencyReportsPage
+  currentPage={page.currentPage}
+  data={data}
+  lastPage={page.lastPage}
+  pageReports={page.data}
+/>

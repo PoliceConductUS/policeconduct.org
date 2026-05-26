@@ -1,13 +1,10 @@
 import type {
   LocationAgencyPayload,
   LocationChildPayload,
+  LocationReportPayload,
   LocationPagePayload,
 } from "./build-payloads.js";
 import { metricLabels } from "../metric-vocabulary.js";
-import {
-  getStateDecertificationContext,
-  type StateDecertificationContext,
-} from "./state-decertification-context.js";
 
 export const civicIndexCollator = new Intl.Collator("en", {
   numeric: true,
@@ -97,8 +94,8 @@ export type CivicIndexModel = {
     title: string;
   };
   pagePath: string;
+  locationReports: LocationReportPayload[];
   rows: CivicIndexRow[];
-  stateDecertificationContext: StateDecertificationContext | null;
   thingsToKnow: CivicIndexGuidanceItem[];
   title: string;
   trendPanels: CivicIndexTrendPanel[];
@@ -496,10 +493,8 @@ export const buildStateCivicIndex = async (
       title: `${state.stateLabel} ${areaPlural}`,
     },
     pagePath: state.path,
+    locationReports: state.locationReports || [],
     rows,
-    stateDecertificationContext: getStateDecertificationContext(
-      getStateSlug(state),
-    ),
     thingsToKnow: buildThingsToKnow(coverage),
     title: `${state.stateLabel} Civic Index | PoliceConduct.org`,
     trendPanels,
@@ -552,10 +547,8 @@ export const buildAdministrativeAreaCivicIndex = async (
       title: `${area.administrativeArea} places`,
     },
     pagePath: area.path,
+    locationReports: area.locationReports || [],
     rows,
-    stateDecertificationContext: getStateDecertificationContext(
-      getStateSlug(area),
-    ),
     thingsToKnow: buildThingsToKnow(coverage),
     title: `${area.administrativeArea}, ${area.stateLabel} Civic Index | PoliceConduct.org`,
     trendPanels,
@@ -609,10 +602,8 @@ export const buildPlaceCivicIndex = async (
       title: `${place.displayName} agencies`,
     },
     pagePath: place.path,
+    locationReports: place.locationReports || [],
     rows,
-    stateDecertificationContext: getStateDecertificationContext(
-      getStateSlug(place),
-    ),
     thingsToKnow: buildThingsToKnow(coverage),
     title: `${place.displayName}, ${place.administrativeArea} Civic Index | PoliceConduct.org`,
     trendPanels,

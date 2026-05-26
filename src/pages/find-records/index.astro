@@ -1,15 +1,15 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { loadAgencyFinderResults } from "#src/lib/data/agencies.js";
 import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import { loadLocationBuildPayloads } from "#src/lib/data/build-payloads.js";
-import { loadAgencySummaries } from "#src/lib/data/summaries.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const [locations, federalAgencies, agencies] = await Promise.all([
   loadLocationBuildPayloads(),
   loadFederalAgencySummaries(),
-  loadAgencySummaries(),
+  loadAgencyFinderResults(),
 ]);
 
 const places = locations
@@ -43,9 +43,9 @@ const agencyResults = agencies.map((agency) => ({
     agency.name,
     agency.city,
     agency.administrativeArea,
-    agency.administrativeAreaSlug,
     agency.state,
     agency.zipCode,
+    agency.canonicalPath,
   ]
     .filter(Boolean)
     .join(" "),
@@ -90,7 +90,7 @@ const structuredData = buildWebPage({
           ]}
           className="mb-2"
         />
-        <h1 class="display-4 fw-bold mb-3">Find records by place or agency</h1>
+        <h1 class="ipc-page-title mb-3">Find records by place or agency</h1>
         <p class="lead text-muted mb-0">
           Enter a place or law enforcement agency to see what PoliceConduct.org
           has in the record.
@@ -116,7 +116,7 @@ const structuredData = buildWebPage({
           </div>
 
           <div class="finder-empty-state" data-finder-start>
-            <h2 class="h4">Start with a place or agency.</h2>
+            <h2 class="ipc-section-title">Start with a place or agency.</h2>
             <p class="text-muted mb-0">
               Search results will focus on places, law enforcement agencies, and
               federal agencies. Open a result to see connected personnel,
@@ -125,7 +125,7 @@ const structuredData = buildWebPage({
           </div>
 
           <div class="finder-empty-state d-none" data-finder-no-results>
-            <h2 class="h4">We do not have records for that search yet.</h2>
+            <h2 class="ipc-section-title">We do not have records for that search yet.</h2>
             <p class="text-muted mb-0">
               We use searches with no results to understand which places and
               agencies people are looking for.
@@ -134,7 +134,7 @@ const structuredData = buildWebPage({
 
           <div class="finder-result-groups d-none" data-finder-results>
             <section class="finder-result-group" data-result-group>
-              <h2 class="h4">Places</h2>
+              <h2 class="ipc-section-title">Places</h2>
               <div class="finder-result-list">
                 {
                   places.map((place) => (
@@ -154,7 +154,7 @@ const structuredData = buildWebPage({
             </section>
 
             <section class="finder-result-group" data-result-group>
-              <h2 class="h4">Agencies</h2>
+              <h2 class="ipc-section-title">Agencies</h2>
               <div class="finder-result-list">
                 {
                   agencyResults.map((agency) => (
@@ -174,7 +174,7 @@ const structuredData = buildWebPage({
             </section>
 
             <section class="finder-result-group" data-result-group>
-              <h2 class="h4">Federal agencies</h2>
+              <h2 class="ipc-section-title">Federal agencies</h2>
               <div class="finder-result-list">
                 {
                   federalAgencyResults.map((agency) => (

@@ -1,18 +1,18 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
-  loadAgencyDetail,
+  loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPaths,
 } from "#src/lib/data/agency-detail.js";
-import { metricLabels } from "#src/lib/metric-vocabulary.js";
+import { metricVisuals } from "#src/lib/metric-vocabulary.js";
 
 export async function getStaticPaths() {
   return loadAgencyLocationStaticPaths();
 }
 
-const { agencyId } = Astro.props;
-const data = await loadAgencyDetail(agencyId);
+const data = await loadAgencyDetailByRouteParams(Astro.params);
 const {
   agencyName,
   agencyPath,
@@ -23,9 +23,11 @@ const {
   placePath,
   civilCases,
   personnelLinkedCivilCases,
+  reportedReports,
 } = data;
 
 const pagePath = `${agencyPath}liability-costs/`;
+const reportsIndexPath = `${agencyPath}reports/`;
 const pageTitle = `${agencyName} Liability Costs`;
 const pageDescription = `Claims, settlements, judgments, defense costs, and related financial exposure for ${agencyName}.`;
 const allCaseCount = new Set([
@@ -35,11 +37,11 @@ const allCaseCount = new Set([
 
 const metricCards = [
   {
-    label: metricLabels.liabilityCosts,
+    label: metricVisuals.liabilityCosts.label,
     value: "$0",
     detail: "Settlements, judgments, defense costs",
-    icon: "shield",
-    accent: "blue",
+    icon: metricVisuals.liabilityCosts.icon,
+    accent: metricVisuals.liabilityCosts.accent,
   },
   {
     label: "Settlements & Judgments",
@@ -68,6 +70,14 @@ const metricCards = [
     detail: "Known insurer or pool payments",
     icon: "shield-check",
     accent: "teal",
+  },
+  {
+    label: metricVisuals.reports.label,
+    value: reportedReports.length.toLocaleString("en-US"),
+    detail: "Published public reports",
+    icon: metricVisuals.reports.icon,
+    accent: metricVisuals.reports.accent,
+    href: reportsIndexPath,
   },
   {
     label: "Direct Public Payments",
@@ -145,7 +155,7 @@ const formatDate = (value?: string | null) =>
 
         <div class="liability-heading">
           <div>
-            <h1>{pageTitle}</h1>
+            <h1 class="ipc-page-title">{pageTitle}</h1>
             <p>{pageDescription}</p>
           </div>
           <div class="liability-actions">
@@ -196,7 +206,13 @@ const formatDate = (value?: string | null) =>
             metricCards.map((card) => (
               <article class="liability-metric-card">
                 <div class={`liability-metric-icon liability-${card.accent}`}>
-                  {card.icon === "shield" ? (
+                  {card.icon === "weight" ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M8 7a4 4 0 0 1 8 0" />
+                      <path d="M6.5 7h11l2 13H4.5Z" />
+                      <path d="M10 12h4" />
+                    </svg>
+                  ) : card.icon === "shield" ? (
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
                     </svg>
@@ -226,6 +242,13 @@ const formatDate = (value?: string | null) =>
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
                       <path d="m9 12 2 2 4-5" />
                     </svg>
+                  ) : card.icon === "file" ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                      <path d="M14 2v6h6" />
+                      <path d="M8 13h8" />
+                      <path d="M8 17h5" />
+                    </svg>
                   ) : (
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -238,17 +261,15 @@ const formatDate = (value?: string | null) =>
                   <p>{card.label}</p>
                   <strong>{card.value}</strong>
                   <span>{card.detail}</span>
-                  <a href="#liability-details">View details</a>
+                  <a href={card.href || "#liability-details"}>View details</a>
                 </div>
               </article>
             ))
           }
         </div>
 
-        <div class="liability-chart-grid">
-          <article class="liability-chart-card">
-            <h2>Liability Costs Over Time</h2>
-            <p>Total liability costs (millions)</p>
+        <div class="entity-chart-grid">
+          <DataPanel title="Liability Costs Over Time" description="Total liability costs (millions)">
             <div class="liability-line-chart">
               <svg viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path class="liability-grid-line" d="M8 14H96"></path>
@@ -261,11 +282,9 @@ const formatDate = (value?: string | null) =>
                 {years.map((year) => <span>{year}</span>)}
               </div>
             </div>
-          </article>
+          </DataPanel>
 
-          <article class="liability-chart-card">
-            <h2>Cost Components Over Time</h2>
-            <p>Costs by component (millions)</p>
+          <DataPanel title="Cost Components Over Time" description="Costs by component (millions)">
             <div class="liability-bar-chart">
               {
                 years.map((year) => (
@@ -278,11 +297,9 @@ const formatDate = (value?: string | null) =>
             <div class="liability-chart-labels">
               {years.map((year) => <span>{year}</span>)}
             </div>
-          </article>
+          </DataPanel>
 
-          <article class="liability-chart-card">
-            <h2>Claims and Cases Over Time</h2>
-            <p>Number of claims/cases</p>
+          <DataPanel title="Claims and Cases Over Time" description="Number of claims/cases">
             <div class="liability-line-chart">
               <svg viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path class="liability-grid-line" d="M8 14H96"></path>
@@ -295,11 +312,9 @@ const formatDate = (value?: string | null) =>
                 {years.map((year) => <span>{year}</span>)}
               </div>
             </div>
-          </article>
+          </DataPanel>
 
-          <article class="liability-chart-card">
-            <h2>Liability by Allegation Type</h2>
-            <p>Costs by allegation type</p>
+          <DataPanel title="Liability by Allegation Type" description="Costs by allegation type">
             <div class="liability-horizontal-bars">
               {
                 allegationRows.map((label) => (
@@ -313,11 +328,13 @@ const formatDate = (value?: string | null) =>
                 ))
               }
             </div>
-          </article>
+          </DataPanel>
 
-          <article class="liability-chart-card liability-donut-card">
-            <h2>Payment Source Breakdown</h2>
-            <p>Costs by source</p>
+          <DataPanel
+            className="liability-donut-card"
+            title="Payment Source Breakdown"
+            description="Costs by source"
+          >
             <div class="liability-donut" aria-hidden="true">
               <div><strong>$0</strong><span>Total</span></div>
             </div>
@@ -328,10 +345,9 @@ const formatDate = (value?: string | null) =>
                 <i class="liability-gray-bg"></i>Unknown / Not Yet Determined
               </li>
             </ul>
-          </article>
+          </DataPanel>
 
-          <aside class="liability-chart-card liability-info-card">
-            <h2>What This Page Shows</h2>
+          <DataPanel title="What This Page Shows">
             <ul>
               <li>Liability-related costs over time.</li>
               <li>
@@ -341,10 +357,9 @@ const formatDate = (value?: string | null) =>
               <li>Active exposure from open matters.</li>
               <li>Public agency records connected to liability costs.</li>
             </ul>
-          </aside>
+          </DataPanel>
 
-          <article class="liability-chart-card liability-table-card">
-            <h2>Recent Liability Matters</h2>
+          <DataPanel className="entity-table-panel" title="Recent Liability Matters">
             <table>
               <thead>
                 <tr>
@@ -382,13 +397,13 @@ const formatDate = (value?: string | null) =>
                 }
               </tbody>
             </table>
-          </article>
+          </DataPanel>
 
-          <article
+          <DataPanel
             id="liability-details"
-            class="liability-chart-card liability-table-card"
+            className="entity-table-panel"
+            title="Cost Category Details"
           >
-            <h2>Cost Category Details</h2>
             <table>
               <thead>
                 <tr>
@@ -411,17 +426,8 @@ const formatDate = (value?: string | null) =>
                 }
               </tbody>
             </table>
-          </article>
+          </DataPanel>
 
-          <aside class="liability-chart-card liability-about-card">
-            <h2>About the Liability Data</h2>
-            <p>
-              Data is compiled from claims records, court records, settlement
-              records, insurance information when available, budgets, and other
-              relevant public documents.
-            </p>
-            <a href="/about/">Learn more about our data and methods</a>
-          </aside>
         </div>
       </div>
     </section>
@@ -483,17 +489,6 @@ const formatDate = (value?: string | null) =>
 
   .liability-heading h1 {
     color: #071842;
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-    font-size: 2.25rem;
-    font-weight: 800;
-    letter-spacing: 0;
-    line-height: 1;
     margin: 0 0 0.45rem;
   }
 
@@ -544,8 +539,7 @@ const formatDate = (value?: string | null) =>
     text-align: right;
   }
 
-  .liability-metric-grid,
-  .liability-chart-grid {
+  .liability-metric-grid {
     display: grid;
     gap: 1rem;
     grid-template-columns: minmax(0, 1fr);
@@ -555,8 +549,7 @@ const formatDate = (value?: string | null) =>
     margin-bottom: 1rem;
   }
 
-  .liability-metric-card,
-  .liability-chart-card {
+  .liability-metric-card {
     background: #fbfcff;
     border: 1px solid #d5deeb;
     border-radius: 0.45rem;
@@ -593,6 +586,10 @@ const formatDate = (value?: string | null) =>
     color: #5b2df5;
   }
 
+  .liability-red {
+    color: #b42318;
+  }
+
   .liability-orange {
     color: #f97316;
   }
@@ -605,8 +602,7 @@ const formatDate = (value?: string | null) =>
     color: #db2777;
   }
 
-  .liability-metric-card p,
-  .liability-chart-card p {
+  .liability-metric-card p {
     color: #071842;
     font-size: 0.84rem;
     font-weight: 700;
@@ -623,17 +619,14 @@ const formatDate = (value?: string | null) =>
     margin: 0.25rem 0 0.3rem;
   }
 
-  .liability-metric-card span,
-  .liability-chart-card p {
+  .liability-metric-card span {
     color: #33456f;
     display: block;
     font-size: 0.8125rem;
     font-weight: 500;
   }
 
-  .liability-metric-card a,
-  .liability-about-card a,
-  .liability-table-card a {
+  .liability-metric-card a {
     color: #064cfb;
     display: inline-block;
     font-size: 0.8125rem;
@@ -642,29 +635,8 @@ const formatDate = (value?: string | null) =>
     text-decoration: none;
   }
 
-  .liability-metric-card a::after,
-  .liability-about-card a::after {
+  .liability-metric-card a::after {
     content: "  ->";
-  }
-
-  .liability-chart-card {
-    min-height: 15.8rem;
-    padding: 1rem 1.1rem;
-  }
-
-  .liability-chart-card h2 {
-    color: #071842;
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-    font-size: 1.0625rem;
-    font-weight: 750;
-    line-height: 1.25;
-    margin: 0 0 0.25rem;
   }
 
   .liability-line-chart,
@@ -787,8 +759,7 @@ const formatDate = (value?: string | null) =>
     line-height: 1.1;
   }
 
-  .liability-legend,
-  .liability-info-card ul {
+  .liability-legend {
     color: #071842;
     display: grid;
     gap: 0.45rem;
@@ -801,8 +772,7 @@ const formatDate = (value?: string | null) =>
     padding-left: 0;
   }
 
-  .liability-legend li,
-  .liability-info-card li {
+  .liability-legend li {
     font-size: 0.88rem;
     line-height: 1.35;
   }
@@ -827,49 +797,8 @@ const formatDate = (value?: string | null) =>
     background: #94a3b8;
   }
 
-  .liability-table-card {
-    min-height: 0;
-    overflow-x: auto;
-  }
-
-  .liability-table-card table {
-    border-collapse: collapse;
-    margin-top: 0.85rem;
-    min-width: 680px;
-    width: 100%;
-  }
-
-  .liability-table-card th,
-  .liability-table-card td {
-    border-top: 1px solid #d9e1ee;
-    color: #071842;
-    font-size: 0.8125rem;
-    padding: 0.5rem 0.4rem;
-    text-align: left;
-    vertical-align: top;
-  }
-
-  .liability-table-card th {
-    color: #33456f;
-    font-weight: 800;
-  }
-
-  .liability-about-card {
-    min-height: 0;
-  }
-
-  .liability-about-card p {
-    font-size: 0.9rem;
-    line-height: 1.55;
-    margin-top: 1rem;
-  }
-
   @media (min-width: 768px) {
     .liability-metric-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .liability-chart-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
@@ -887,21 +816,6 @@ const formatDate = (value?: string | null) =>
       grid-template-columns: repeat(6, minmax(10rem, 1fr));
     }
 
-    .liability-chart-grid {
-      grid-template-columns: repeat(12, minmax(0, 1fr));
-    }
-
-    .liability-chart-card {
-      grid-column: span 4;
-    }
-
-    .liability-table-card {
-      grid-column: span 5;
-    }
-
-    .liability-about-card {
-      grid-column: span 4;
-    }
   }
 
   @media (max-width: 991.98px) {

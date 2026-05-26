@@ -1,19 +1,23 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
 import Pagination from "#src/components/Pagination.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { buildAgencyCivilCaseRows } from "#src/lib/data/agency-civil-case-rows.js";
 import {
-  loadAgencyDetail,
+  loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPaths,
 } from "#src/lib/data/agency-detail.js";
+import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
 import { PAGE_SIZE } from "#src/lib/pagination.js";
 
 export async function getStaticPaths() {
   return loadAgencyLocationStaticPaths();
 }
 
-const { agencyId } = Astro.props;
-const data = await loadAgencyDetail(agencyId);
+const data = await loadAgencyDetailByRouteParams(Astro.params);
 const {
   agencyName,
   agencyPath,
@@ -28,8 +32,55 @@ const {
 const pageEmployees = employees.slice(0, PAGE_SIZE);
 const totalPages = Math.max(1, Math.ceil(employees.length / PAGE_SIZE));
 const pagePath = `${agencyPath}personnel/`;
+const reportsIndexPath = `${agencyPath}reports/`;
 const pageTitle = `${agencyName} Personnel`;
 const pageDescription = `Personnel listed for ${agencyName}.`;
+const currentPersonnelCount = employees.filter(
+  (employee) => !employee.entry.end_date,
+).length;
+const formerPersonnelCount = employees.length - currentPersonnelCount;
+const reportCount = employees.reduce(
+  (total, employee) => total + (employee.reportCount || 0),
+  0,
+);
+const civilCaseCount = buildAgencyCivilCaseRows(data).length;
+const formatCount = (value: number) => value.toLocaleString("en-US");
+const metricCards = [
+  {
+    ...metricVisuals.personnel,
+    detail: "Total personnel",
+    value: formatCount(employees.length),
+  },
+  {
+    accent: "blue",
+    detail: "No end date listed",
+    icon: "person",
+    label: metricLabels.currentPersonnel,
+    value: formatCount(currentPersonnelCount),
+  },
+  {
+    accent: "blue",
+    detail: "End date listed",
+    icon: "people",
+    label: metricLabels.formerPersonnel,
+    value: formatCount(formerPersonnelCount),
+  },
+  {
+    ...metricVisuals.reports,
+    action: {
+      href: reportsIndexPath,
+      kind: "link",
+      label: "View details",
+    },
+    detail: "Personnel-linked reports",
+    value: formatCount(reportCount),
+  },
+  {
+    ...metricVisuals.civilCases,
+    detail: "Direct and personnel-linked civil cases",
+    value: formatCount(civilCaseCount),
+  },
+];
 
 const getEmployeeName = (employee: (typeof employees)[number]) => {
   const officer = employee.officer;
@@ -54,8 +105,8 @@ const formatDate = (value?: string | null) =>
   pagePath={pagePath}
   canonicalUrl={pagePath}
 >
-  <main>
-    <section class="agency-personnel-hero">
+  <main class="agency-topic-page">
+    <section class="agency-topic-main">
       <div class="container">
         <Breadcrumbs
           items={[
@@ -71,32 +122,78 @@ const formatDate = (value?: string | null) =>
           ]}
           className="mb-2"
         />
-        <div class="agency-personnel-heading">
-          <div>
-            <p class="agency-personnel-kicker">{placeLabel}</p>
-            <h1>{pageTitle}</h1>
-            <p>Personnel records for {agencyName}, sorted by name.</p>
-          </div>
-          <div class="agency-personnel-count">
-            <strong>{employees.length.toLocaleString("en")}</strong>
-            <span>total personnel</span>
-          </div>
-        </div>
-      </div>
-    </section>
+        <EntityPageHeader
+          title={pageTitle}
+          description={`Personnel records for ${agencyName}, sorted by name.`}
+        />
 
-    <section class="agency-personnel-section">
-      <div class="container">
-        <div class="agency-personnel-toolbar">
-          <label for="agency-personnel-search">Search personnel</label>
-          <input
-            id="agency-personnel-search"
-            type="search"
-            placeholder="Search by name, status, badge, or license type"
-            autocomplete="off"
-            data-agency-personnel-search
-          />
-        </div>
+        <MetricGrid metrics={metricCards} columns="five" />
+
+        <div class="entity-chart-grid">
+          <DataPanel
+            title="Agency Assignments Over Time"
+            description="Personnel assignment records by year"
+          >
+            <div class="entity-empty-line-chart" aria-hidden="true"></div>
+          </DataPanel>
+
+          <DataPanel
+            title="Reports Over Time"
+            description="Personnel-linked report records by year"
+          >
+            <div class="entity-empty-line-chart" aria-hidden="true"></div>
+          </DataPanel>
+
+          <DataPanel
+            title="Civil Cases Over Time"
+            description="Personnel-linked civil cases by year"
+          >
+            <div class="entity-empty-line-chart" aria-hidden="true"></div>
+          </DataPanel>
+
+          <DataPanel title="License Types" description="Personnel by license type">
+            <div class="agency-topic-bars">
+              {
+                ["Peace Officer", "Jailer", "Telecommunicator", "Other"].map(
+                  (label) => (
+                    <div>
+                      <span>{label}</span>
+                      <i><b style="width: 0%" /></i>
+                      <strong />
+                    </div>
+                  ),
+                )
+              }
+            </div>
+          </DataPanel>
+
+          <DataPanel title="Status Breakdown" description="Current and former personnel">
+            <div class="agency-topic-bars">
+              {["Current", "Former"].map((label) => (
+                <div>
+                  <span>{label}</span>
+                  <i><b style="width: 0%" /></i>
+                  <strong />
+                </div>
+              ))}
+            </div>
+          </DataPanel>
+
+          <DataPanel
+            className="entity-table-panel"
+            title={metricLabels.personnelRecords}
+            description="Search and browse personnel listed for this agency"
+          >
+            <div class="agency-topic-toolbar">
+              <label for="agency-personnel-search">Search personnel</label>
+              <input
+                id="agency-personnel-search"
+                type="search"
+                placeholder="Search by name, status, badge, or license type"
+                autocomplete="off"
+                data-agency-personnel-search
+              />
+            </div>
 
         {
           pageEmployees.length === 0 ? (
@@ -178,6 +275,8 @@ const formatDate = (value?: string | null) =>
         </p>
 
         <Pagination basePath={pagePath} currentPage={1} lastPage={totalPages} />
+          </DataPanel>
+        </div>
       </div>
     </section>
   </main>
@@ -213,77 +312,20 @@ const formatDate = (value?: string | null) =>
 </script>
 
 <style>
-  .agency-personnel-hero {
-    background: #f7f9fc;
-    border-bottom: 1px solid #d7dde8;
-    padding: 2rem 0 1.75rem;
+  .agency-topic-page {
+    background: #fbfcff;
+    color: #071842;
   }
 
-  .agency-personnel-heading {
-    align-items: end;
-    display: flex;
-    gap: 1rem;
-    justify-content: space-between;
+  .agency-topic-main {
+    padding: 1rem 0 2.5rem;
   }
 
-  .agency-personnel-kicker {
-    color: #315f63;
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    margin: 0 0 0.25rem;
-    text-transform: uppercase;
+  .agency-topic-main > .container {
+    max-width: 1240px;
   }
 
-  .agency-personnel-heading h1 {
-    color: #071942;
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-    font-size: 2.25rem;
-    font-weight: 800;
-    letter-spacing: 0;
-    line-height: 1;
-    margin: 0;
-  }
-
-  .agency-personnel-heading p {
-    color: #33446b;
-    margin: 0.5rem 0 0;
-  }
-
-  .agency-personnel-count {
-    border: 1px solid #d7dde8;
-    border-radius: 8px;
-    min-width: 11rem;
-    padding: 0.9rem 1rem;
-    text-align: right;
-  }
-
-  .agency-personnel-count strong {
-    color: #071942;
-    display: block;
-    font-size: 1.5rem;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-  }
-
-  .agency-personnel-count span {
-    color: #53627f;
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-
-  .agency-personnel-section {
-    padding: 1.5rem 0 2.5rem;
-  }
-
-  .agency-personnel-toolbar {
+  .agency-topic-toolbar {
     align-items: center;
     display: flex;
     gap: 0.75rem;
@@ -291,13 +333,13 @@ const formatDate = (value?: string | null) =>
     margin-bottom: 1rem;
   }
 
-  .agency-personnel-toolbar label {
+  .agency-topic-toolbar label {
     color: #071942;
     font-size: 0.85rem;
     font-weight: 800;
   }
 
-  .agency-personnel-toolbar input {
+  .agency-topic-toolbar input {
     border: 1px solid #cdd5e3;
     border-radius: 6px;
     color: #071942;
@@ -307,8 +349,6 @@ const formatDate = (value?: string | null) =>
   }
 
   .agency-personnel-table-wrap {
-    border: 1px solid #d7dde8;
-    border-radius: 8px;
     overflow-x: auto;
   }
 
@@ -352,15 +392,42 @@ const formatDate = (value?: string | null) =>
     margin: 1rem 0 0;
   }
 
+  .agency-topic-bars {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1rem;
+  }
+
+  .agency-topic-bars div {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(7rem, 0.8fr) minmax(7rem, 2fr) auto;
+  }
+
+  .agency-topic-bars span,
+  .agency-topic-bars strong {
+    color: #071842;
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .agency-topic-bars i {
+    background: #e7edf7;
+    display: block;
+    height: 0.78rem;
+  }
+
+  .agency-topic-bars b {
+    background: #174bff;
+    display: block;
+    height: 100%;
+  }
+
   @media (max-width: 720px) {
-    .agency-personnel-heading,
-    .agency-personnel-toolbar {
+    .agency-topic-toolbar {
       align-items: stretch;
       flex-direction: column;
-    }
-
-    .agency-personnel-count {
-      text-align: left;
     }
   }
 </style>

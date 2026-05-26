@@ -1,0 +1,23 @@
+---
+import AgencyReportsPage from "#src/components/AgencyReportsPage.astro";
+import {
+  loadAgencyDetailByRouteParams,
+  loadAgencyLocationStaticPaths,
+} from "#src/lib/data/agency-detail.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
+
+export async function getStaticPaths() {
+  return loadAgencyLocationStaticPaths();
+}
+
+const data = await loadAgencyDetailByRouteParams(Astro.params);
+const pageReports = data.reportedReports.slice(0, PAGE_SIZE);
+const lastPage = Math.max(1, Math.ceil(data.reportedReports.length / PAGE_SIZE));
+---
+
+<AgencyReportsPage
+  currentPage={1}
+  data={data}
+  lastPage={lastPage}
+  pageReports={pageReports}
+/>

@@ -1,0 +1,228 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+
+const {
+  breadcrumbs,
+  description,
+  pagePath,
+  title,
+} = Astro.props as {
+  breadcrumbs: { current?: boolean; href: string; label: string }[];
+  description: string;
+  pagePath: string;
+  title: string;
+};
+
+const chargeCategories = [
+  "All charges",
+  "DWI",
+  "Drug",
+  "Traffic",
+  "Assault",
+  "Theft",
+  "Public order",
+  "Warrants",
+  "Other",
+];
+const outcomeSets = [
+  "Case outcomes",
+  "Release",
+  "Financial",
+  "License",
+  "Custody",
+];
+const measures = ["%", "Count"];
+const incomeSources = ["Person-linked", "Incident location", "Court resource"];
+const timePeriods = ["All years"];
+const tableRows = ["All charges", "DWI", "Drug", "Traffic", "Public order"];
+const tableOutcomes = ["Dismissed", "Reduced", "Plea", "Convicted", "Jail"];
+---
+
+<SiteLayout
+  title={`${title} | PoliceConduct.org`}
+  description={description}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main class="outcomes-income-page">
+    <section class="outcomes-income-main">
+      <div class="container">
+        <Breadcrumbs items={breadcrumbs} className="mb-2" />
+        <EntityPageHeader title={title} description={description} />
+        <div class="entity-chart-grid outcomes-income-page-grid">
+          <form class="outcomes-income-filters" aria-label="Outcomes by income filters">
+            <label>
+              <span>Charge category</span>
+              <select name="charge">
+                {chargeCategories.map((option) => <option>{option}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Outcome set</span>
+              <select name="outcome">
+                {outcomeSets.map((option) => <option>{option}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Measure</span>
+              <select name="measure">
+                {measures.map((option) => <option>{option}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Income source</span>
+              <select name="income-source">
+                {incomeSources.map((option) => <option>{option}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Time period</span>
+              <select name="time-period">
+                {timePeriods.map((option) => <option>{option}</option>)}
+              </select>
+            </label>
+          </form>
+
+          <OutcomesByIncomePanel variant="detail" />
+
+          <DataPanel
+            className="entity-table-panel"
+            title="Outcome Values"
+            description="Exact values for the selected view"
+          >
+            <div class="outcomes-income-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Charge</th>
+                    <th scope="col">Outcome</th>
+                    <th scope="col">Lower income</th>
+                    <th scope="col">Middle income</th>
+                    <th scope="col">Higher income</th>
+                    <th scope="col">Records</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {
+                    tableRows.map((charge, index) => (
+                      <tr>
+                        <th scope="row">{charge}</th>
+                        <td>{tableOutcomes[index]}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                      </tr>
+                    ))
+                  }
+                </tbody>
+              </table>
+            </div>
+          </DataPanel>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<style>
+  .outcomes-income-page {
+    background: #f7f9fd;
+    color: #071842;
+  }
+
+  .outcomes-income-main {
+    padding: 1rem 0 2.5rem;
+  }
+
+  .outcomes-income-main > .container {
+    max-width: 1240px;
+  }
+
+  .outcomes-income-filters {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+    display: grid;
+    gap: 0.85rem;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1rem 1.1rem;
+  }
+
+  .outcomes-income-filters label {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .outcomes-income-filters span {
+    color: #33456f;
+    font-size: 0.75rem;
+    font-weight: 800;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .outcomes-income-filters select {
+    appearance: none;
+    background:
+      linear-gradient(45deg, transparent 50%, #33456f 50%) right 0.95rem top
+        50% / 0.38rem 0.38rem no-repeat,
+      linear-gradient(135deg, #33456f 50%, transparent 50%) right 0.7rem top
+        50% / 0.38rem 0.38rem no-repeat,
+      #fff;
+    border: 1px solid #c7d2e5;
+    border-radius: 0.35rem;
+    color: #071842;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 650;
+    min-height: 2.55rem;
+    padding: 0.55rem 2rem 0.55rem 0.75rem;
+  }
+
+  .outcomes-income-table-wrap {
+    overflow-x: auto;
+  }
+
+  .outcomes-income-table-wrap table {
+    border-collapse: collapse;
+    min-width: 760px;
+    width: 100%;
+  }
+
+  .outcomes-income-table-wrap th,
+  .outcomes-income-table-wrap td {
+    border-top: 1px solid #d9e1ee;
+    color: #071842;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    min-height: 2.75rem;
+    padding: 0.7rem 0.85rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .outcomes-income-table-wrap thead th {
+    color: #33456f;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .outcomes-income-table-wrap tbody th {
+    font-weight: 750;
+  }
+
+  @media (min-width: 1200px) {
+    .outcomes-income-filters {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+</style>

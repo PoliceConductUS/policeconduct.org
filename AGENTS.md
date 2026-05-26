@@ -25,6 +25,13 @@ Workflow Standards
 - Documentation-only edits, formatting, tooling tweaks, and internal refactors that preserve specified behavior may stay lightweight.
 - Use Conventional Commit messages.
 
+Design Standards
+
+- Before frontend, visual, layout, typography, component, or copy changes, read `.impeccable.md` and `DESIGN.md`.
+- `DESIGN.md` is the canonical design system standard. Do not invent page-local typography, heading, spacing, color, or component rules when a shared rule exists.
+- H1/H2/H3 styling must come from shared typography tokens/classes. Do not use Bootstrap `display-*` classes or page-local heading CSS to change semantic heading size or font family.
+- One heading level means one visual role across pages. If a compact panel cannot visually support an H2, use a non-heading label or the correct lower heading level rather than styling H2 differently.
+
 OpenSpec Usage
 
 - Run `npm run doctor`, `npm run validate:openspec`, `npx openspec schemas`, and `npx openspec status --change <change-name>` before starting behavior-changing work when practical.
@@ -34,7 +41,8 @@ OpenSpec Usage
 
 Change Approval Workflow
 
-- Before making any edits, summarize the exact files and changes you intend to make and wait for explicit user approval. Do not proceed without that approval.
+- When the user directly requests a fix or implementation, that request is approval to make the necessary scoped edits. Do not stop for a second approval round unless the change introduces an architectural compromise, weakens an invariant, changes data semantics, touches unrelated behavior, or has materially risky/ambiguous scope.
+- When proposing optional work, broad cleanup, or a change the user has not directly requested, summarize the exact files and changes you intend to make and wait for explicit user approval before editing.
 - Do not ask for approval to inspect code, search the repo, or read files. Inspect first, then ask for approval only before making edits.
 - Do not preserve backward compatibility unless the user explicitly requests it.
 - All architectural compromises must be explicitly explained and approved before implementation. If an implementation weakens, bypasses, or temporarily works around a stated data model, routing invariant, source-of-truth rule, or project convention, stop and get user approval before coding it.
@@ -46,10 +54,20 @@ Data + Routing Conventions
 - Do not generate IDs for database entities anywhere in the website, build scripts, seed data, or runtime code. Database entity IDs must come from explicit database or seed data values only.
 - Agency location identity must come from `public.agency.location_path_id` joined to `public.location_path`. Do not reconstruct agency location, agency canonical URLs, or agency route parameters from parallel agency columns, derived slugs, `build_page_payload.path`, or generated path logic.
 - Seed data and data-loading code must use one authoritative representation for each fact or relationship. Keep required parent/reference identity in the same seed row whenever the table has that relationship column. Do not create parallel source-of-truth structures, derived relationship lists, split seed maps, or other drift-prone implementations unless the user has explicitly approved the architectural compromise.
+- Location-scoped reports and policy context must render only for the exact `location_path_id` they are attached to. Do not inherit, roll up, or cascade `location_reports` or similar location-scoped report records to child or parent locations unless inheritance is explicitly modeled in the database and approved for that report type.
 - Civil case geography has two distinct scopes. `public.civil_cases.location_path_id` is the incident-location geography and may be used only for geographic rollups where one case rolls up once by incident location. Agency, personnel, and federal civil-case scopes must use linked records through `public.civil_case_officers -> public.agency_officers -> public.agency -> public.location_path`; these relationship views may show the same case under multiple connected agencies or personnel. Pages must label which civil-case scope they use and must not mix incident-location metrics with agency/personnel-linked rows.
 - Report URLs must use slug: /report/{slug}/.
+- Public report titles must be clean reader-facing titles. Do not include workflow, provenance, or processing prefixes such as "Processed submitted report:" or "Third-party AI review:" in `reviews.title`; put provenance/disclosure text in the report narrative or a dedicated disclosure field.
 - Agency canonical URLs use the joined location path plus the agency slug.
 - Pagination URLs use /page/{number}/; page 1 is the base path with no /page/1/.
+- `supabase/seed.sql` must insert complete rows directly. Do not add repair, backfill, enrichment, or fix-up blocks that mutate seeded rows after insertion when those values belong in the original `INSERT`. Prohibited seed patterns include `WITH *_seed (...) AS (...) UPDATE public...`, end-of-seed schema enforcement, post-insert required-field population, and split source-of-truth maps for columns already present on the target table. Put required values in the row being inserted and put schema constraints in migrations.
+
+Data Interpretation Standards
+
+- Never draw conclusions from data unless the data directly supports that exact statement.
+- Do not present causal claims, intent, motive, targeting, discrimination, safety, accountability, or other interpretive conclusions from descriptive records.
+- Prefer descriptive labels, counts, rates, comparisons, cohorts, and methodology notes.
+- Any inference must be explicitly labeled as an inference and must identify the direct supporting data and limitations.
 
 Database Expectations
 
@@ -65,8 +83,9 @@ Templates (Critical Fields)
 - Never fabricate missing required fields.
 - Required DB fields are treated as required in templates.
 - Do not use silent fallbacks like "Unknown" or "Not listed" for required fields.
+- Templates must not fabricate, explain, or render fallback values for missing data. Required missing data must fail loudly. Optional missing data should be omitted unless the page design explicitly uses an approved neutral empty value such as `--`. Approved visual placeholders are allowed only when they do not claim missing data exists.
 - Prefer non-null assertions (e.g., agency.name!) when the field is required by schema.
-- Personnel profile images use a static mapping by id in src/lib/personnel-images.ts and fall back to /img/personnel/default.webp.
+- Personnel profile images use a static mapping by id in src/lib/personnel-images.ts. The visual default portrait may render when no mapped image exists, but templates must not add explanatory placeholder copy or include the default image as structured data.
 
 Astro + Data Loading
 
@@ -82,6 +101,7 @@ General Code Standards
 - Never add speculative complexity. Implement only the simplest solution that satisfies the current known requirements, and nothing more.
 - Do not add optional abstractions, future-proofing, configurability, or extensibility unless they are required by the current task or explicitly requested by the user.
 - Prefer the simplest implementation that could possibly work.
+- Do not add boolean behavior flags to components or data models. Prefer explicit component composition, discriminated unions, or separate named components for distinct behavior.
 
 Validation Expectations
 

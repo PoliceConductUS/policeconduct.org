@@ -7,7 +7,8 @@ export type CivicTopicKind =
   | "personnel"
   | "budget"
   | "civil-cases"
-  | "liability-costs";
+  | "liability-costs"
+  | "outcomes-by-income";
 
 export type CivicTopicAgencyRef = {
   href: string;
@@ -50,7 +51,7 @@ export type CivicTopicRecords =
     }
   | {
       emptyLabel: string;
-      kind: "budget" | "liability-costs";
+      kind: "budget" | "liability-costs" | "outcomes-by-income";
       rows: [];
       title: string;
       totalCount: null;
@@ -143,7 +144,8 @@ const loadCivilCaseRecords = async (
             a.id,
             a.name,
             a.slug,
-            lp.path as location_path
+            lp.path as location_path,
+            bpp.path as canonical_path
           from public.civil_case_officers cco
           join public.agency_officers ao
             on ao.id = cco.agency_officer_id
@@ -151,6 +153,9 @@ const loadCivilCaseRecords = async (
             on a.id = ao.agency_id
           join public.location_path lp
             on lp.location_path_id = a.location_path_id
+          join public.build_page_payload bpp
+            on bpp.page_type = 'agency'
+           and bpp.entity_id = a.id
           where cco.civil_case_id = any($1)
           order by a.name, a.id
         `,
@@ -265,10 +270,17 @@ export const loadCivicTopicRecords = async (
     emptyLabel:
       kind === "budget"
         ? "Budget records are not projected for this scope yet."
-        : "Liability cost records are not projected for this scope yet.",
+        : kind === "liability-costs"
+          ? "Liability cost records are not projected for this scope yet."
+          : "Outcome records by income are not projected for this scope yet.",
     kind,
     rows: [],
-    title: kind === "budget" ? "Budget" : "Liability Costs",
+    title:
+      kind === "budget"
+        ? "Budget"
+        : kind === "liability-costs"
+          ? "Liability Costs"
+          : "Outcomes by Income",
     totalCount: null,
   };
 };
