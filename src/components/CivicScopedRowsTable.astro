@@ -33,6 +33,7 @@ const formatDate = (value: string) =>
           <thead>
             <tr>
               <th scope="col">Case</th>
+              <th scope="col">Connection</th>
               <th scope="col">Filed</th>
               <th scope="col">Court</th>
               <th scope="col">Agencies</th>
@@ -46,6 +47,7 @@ const formatDate = (value: string) =>
                 <th scope="row">
                   <a href={row.href}>{row.title}</a>
                 </th>
+                <td>{row.connectionType}</td>
                 <td>{formatDate(row.filedDate)}</td>
                 <td>{row.court || ""}</td>
                 <td>

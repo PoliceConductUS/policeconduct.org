@@ -12,6 +12,7 @@ export const metricLabels = {
   courts: "Courts",
   currentSalary: "Current Salary",
   currentPersonnel: "Current Personnel",
+  counties: "Counties",
   daylightNighttimeStops: "Daylight vs Nighttime Stops",
   federalAgencies: "Federal Agencies",
   formerPersonnel: "Former Personnel",
@@ -27,6 +28,7 @@ export const metricLabels = {
   personnel: "Personnel",
   personnelLinked: "Personnel Linked",
   personnelRecords: "Personnel Records",
+  places: "Places",
   racialBreakdownStopsArrests: "Racial Breakdown of Stops or Arrests",
   reports: "Reports",
   settlements: "Settlements",
@@ -41,8 +43,10 @@ export type MetricIcon =
   | "dollar"
   | "file"
   | "link"
+  | "map"
   | "people"
   | "person"
+  | "pin"
   | "scales"
   | "shield"
   | "weight";
@@ -84,6 +88,11 @@ export const metricVisuals = {
     accent: "blue",
     icon: "building",
     label: metricLabels.childAgencies,
+  },
+  counties: {
+    accent: "green",
+    icon: "map",
+    label: metricLabels.counties,
   },
   civilCases: {
     accent: "purple",
@@ -149,6 +158,11 @@ export const metricVisuals = {
     accent: "blue",
     icon: "people",
     label: metricLabels.personnelRecords,
+  },
+  places: {
+    accent: "purple",
+    icon: "pin",
+    label: metricLabels.places,
   },
   reports: {
     accent: "green",

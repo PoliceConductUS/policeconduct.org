@@ -2,10 +2,7 @@
 import MetricCard from "#src/components/MetricCard.astro";
 import type { MetricCardItem } from "#src/components/metric-card-types.js";
 
-const {
-  metrics,
-  columns = "auto",
-} = Astro.props as {
+const { metrics, columns = "auto" } = Astro.props as {
   metrics: MetricCardItem[];
   columns?: "auto" | "four" | "five";
 };

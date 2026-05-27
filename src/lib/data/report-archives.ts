@@ -62,8 +62,15 @@ const breadcrumbsFor = (
       : scope === "county"
         ? `/${report.state}/${report.administrativeAreaSlug}/reports/`
         : `${report.locationPath}reports/`;
-  if (parts.length) {
-    items.push({ label: "Reports", href: reportsPath });
+  items.push({ label: "Reports", href: reportsPath });
+  if (parts.length > 1) {
+    items.push({ label: parts[0], href: `${reportsPath}${parts[0]}/` });
+  }
+  if (parts.length > 2) {
+    items.push({
+      label: parts[1],
+      href: `${reportsPath}${parts[0]}/${parts[1]}/`,
+    });
   }
   return items;
 };

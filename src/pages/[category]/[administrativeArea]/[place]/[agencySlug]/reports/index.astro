@@ -12,7 +12,10 @@ export async function getStaticPaths() {
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
 const pageReports = data.reportedReports.slice(0, PAGE_SIZE);
-const lastPage = Math.max(1, Math.ceil(data.reportedReports.length / PAGE_SIZE));
+const lastPage = Math.max(
+  1,
+  Math.ceil(data.reportedReports.length / PAGE_SIZE),
+);
 ---
 
 <AgencyReportsPage

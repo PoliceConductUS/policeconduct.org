@@ -638,30 +638,30 @@ export const buildFederalAgencyDetailIndexModel = (
       actionKind: "button",
       value: formatCount(federalAgency.branchCount),
     },
-      {
-        ...metricVisuals.personnel,
-        detail: "Active linked personnel",
-        href: `${federalAgency.path}personnel/`,
-        actionLabel: "View details",
-        key: "personnel",
-        value: formatCount(federalAgency.personnelCount),
-      },
-      {
-        ...metricVisuals.civilCases,
-        detail: "Civil cases connected through linked agencies",
-        href: `${federalAgency.path}civil-cases/`,
-        actionLabel: "View details",
-        key: "civilCases",
-        value: formatCount(federalAgency.civilCaseCount),
-      },
-      {
-        ...metricVisuals.reports,
-        detail: "Public reports connected through linked agencies",
-        href: `${federalAgency.path}reports/`,
-        actionLabel: "View details",
-        key: "reports",
-        value: formatCount(federalAgency.reportCount),
-      },
+    {
+      ...metricVisuals.personnel,
+      detail: "Active linked personnel",
+      href: `${federalAgency.path}personnel/`,
+      actionLabel: "View details",
+      key: "personnel",
+      value: formatCount(federalAgency.personnelCount),
+    },
+    {
+      ...metricVisuals.civilCases,
+      detail: "Civil cases connected through linked agencies",
+      href: `${federalAgency.path}civil-cases/`,
+      actionLabel: "View details",
+      key: "civilCases",
+      value: formatCount(federalAgency.civilCaseCount),
+    },
+    {
+      ...metricVisuals.reports,
+      detail: "Public reports connected through linked agencies",
+      href: `${federalAgency.path}reports/`,
+      actionLabel: "View details",
+      key: "reports",
+      value: formatCount(federalAgency.reportCount),
+    },
     {
       ...metricVisuals.liabilityCosts,
       detail: "Claims, settlements, judgments, and related costs",
@@ -710,14 +710,14 @@ export const buildFederalAgencyTopicIndexModel = (
       leafAgencies: agency.branchCount,
       personnel: agency.personnelCount,
       reports: agency.reportCount,
-        topicValue:
-          kind === "personnel"
-            ? agency.personnelCount
-            : kind === "reports"
-              ? agency.reportCount
-              : kind === "civil-cases"
-                ? agency.civilCaseCount
-                : "$--",
+      topicValue:
+        kind === "personnel"
+          ? agency.personnelCount
+          : kind === "reports"
+            ? agency.reportCount
+            : kind === "civil-cases"
+              ? agency.civilCaseCount
+              : "$--",
     },
   }));
   const totals = federalAgencies.reduce(

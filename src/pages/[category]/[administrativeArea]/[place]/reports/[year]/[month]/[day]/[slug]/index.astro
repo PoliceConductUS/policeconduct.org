@@ -1,15 +1,15 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DisqusComments from "#src/components/DisqusComments.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
+import RatingBadge from "#src/components/RatingBadge.astro";
 import ReportDisclaimer from "#src/components/ReportDisclaimer.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import DisqusComments from "#src/components/DisqusComments.astro";
-import { formatLongDate } from "#src/lib/format.js";
-import { loadReportDetail } from "#src/lib/report-detail.js";
 import { loadReportSummaries } from "#src/lib/data/summaries.js";
 import { parseLocationPathParts } from "#src/lib/data/report-paths.js";
-import RatingBadge from "#src/components/RatingBadge.astro";
+import { formatLongDate } from "#src/lib/format.js";
+import { loadReportDetail } from "#src/lib/report-detail.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
@@ -30,7 +30,7 @@ export async function getStaticPaths() {
   });
 }
 
-const { slug } = Astro.params;
+const { day, month, slug, year } = Astro.params;
 const data = await loadReportDetail(slug);
 if (!data) {
   throw new Error(`Report ${slug} not found.`);
@@ -51,6 +51,10 @@ const evidenceLinks = data.evidenceLinks;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const disqusIdentifier = `report:${slug}`;
+const reportsBasePath = data.locationBreadcrumbs.reports.href;
+const yearPath = `${reportsBasePath}${year}/`;
+const monthPath = `${yearPath}${month}/`;
+const dayPath = `${monthPath}${day}/`;
 const normalizeIsoDate = (value?: string | Date | null) => {
   if (!value) {
     return null;
@@ -65,8 +69,10 @@ const stripHtml = (value?: string | null) =>
         .replace(/\s+/g, " ")
         .trim()
     : "";
-const reportTitle =
-  typeof data.report.title === "string" ? data.report.title : "Report";
+if (typeof data.report.title !== "string" || !data.report.title.trim()) {
+  throw new Error(`Report ${slug} is missing required title.`);
+}
+const reportTitle = data.report.title;
 const reportDescriptionSource =
   typeof data.report.description === "string" ? data.report.description : "";
 const reportDescription = reportDescriptionSource
@@ -206,7 +212,7 @@ const structuredData = {
   structuredData={structuredData}
 >
   <PrefillBootstrap />
-  <main class="">
+  <main>
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
         <div class="row justify-content-center">
@@ -218,6 +224,9 @@ const structuredData = {
                 data.locationBreadcrumbs.administrativeArea,
                 data.locationBreadcrumbs.place,
                 data.locationBreadcrumbs.reports,
+                { label: String(year), href: yearPath },
+                { label: String(month), href: monthPath },
+                { label: String(day), href: dayPath },
                 { label: reportTitle, href: pagePath, current: true },
               ]}
             />
@@ -265,23 +274,37 @@ const structuredData = {
       <div class="container">
         <div class="row justify-content-center">
           <article class="col-12 col-lg-10 col-xl-8">
-            <h2 class="ipc-section-title text-uppercase text-muted mt-4">Incident basics</h2>
+            <h2 class="ipc-section-title text-uppercase text-muted mt-4">
+              Incident basics
+            </h2>
             <dl class="row">
               <dt class="col-sm-4">Incident date</dt>
               <dd class="col-sm-8">
                 {formatLongDate(data.report.incident_date)}
               </dd>
-              <dt class="col-sm-4">Location</dt>
-              <dd class="col-sm-8">{reportAddress}</dd>
-              <dt class="col-sm-4">Charges or allegations</dt>
-              <dd class="col-sm-8">
-                {data.report.charges}
-              </dd>
+              {
+                reportAddress ? (
+                  <>
+                    <dt class="col-sm-4">Location</dt>
+                    <dd class="col-sm-8">{reportAddress}</dd>
+                  </>
+                ) : null
+              }
+              {
+                data.report.charges ? (
+                  <>
+                    <dt class="col-sm-4">Charges or allegations</dt>
+                    <dd class="col-sm-8">{data.report.charges}</dd>
+                  </>
+                ) : null
+              }
             </dl>
             {
               tags.length ? (
                 <div class="mt-4">
-                  <h3 class="ipc-subsection-title text-uppercase text-muted mb-2">Tags</h3>
+                  <h3 class="ipc-subsection-title text-uppercase text-muted mb-2">
+                    Tags
+                  </h3>
                   <div class="d-flex flex-wrap gap-2">
                     {tags.map((tag) => (
                       <span class="badge bg-dark rounded-1 px-3 py-2">
@@ -295,7 +318,9 @@ const structuredData = {
 
             <hr class="my-5" />
 
-            <h2 class="ipc-section-title text-uppercase text-muted">Personnel involved</h2>
+            <h2 class="ipc-section-title text-uppercase text-muted">
+              Personnel involved
+            </h2>
 
             {
               officers.map((entry) =>
@@ -388,68 +413,75 @@ const structuredData = {
 
             <hr class="my-5" />
 
-            <h2 class="ipc-section-title text-uppercase text-muted">Narrative</h2>
+            <h2 class="ipc-section-title text-uppercase text-muted">
+              Narrative
+            </h2>
             <div class="fs-5" set:html={data.report.description!} />
+
+            {
+              civilCases.length ? (
+                <>
+                  <hr class="my-5" />
+                  <h2 class="ipc-section-title text-uppercase text-muted">
+                    Related civil litigation
+                  </h2>
+                  <div class="list-group">
+                    {civilCases.map((civilCase) => (
+                      <a
+                        class="list-group-item list-group-item-action"
+                        href={civilCase.path}
+                      >
+                        <div class="d-flex w-100 justify-content-between gap-3">
+                          <h3 class="ipc-subsection-title mb-1">
+                            {civilCase.title}
+                          </h3>
+                          {civilCase.filedDate ? (
+                            <small class="text-muted">
+                              {formatLongDate(civilCase.filedDate)}
+                            </small>
+                          ) : null}
+                        </div>
+                        <p class="mb-1">{civilCase.causeNumber}</p>
+                        {civilCase.court ? (
+                          <small class="text-muted">{civilCase.court}</small>
+                        ) : null}
+                      </a>
+                    ))}
+                  </div>
+                </>
+              ) : null
+            }
 
             <hr class="my-5" />
 
             <h2 class="ipc-section-title text-uppercase text-muted">
-              Related civil litigation
+              Desired outcome
             </h2>
-            {
-              civilCases.length ? (
-                <div class="list-group">
-                  {civilCases.map((civilCase) => (
-                    <a
-                      class="list-group-item list-group-item-action"
-                      href={civilCase.path}
-                    >
-                      <div class="d-flex w-100 justify-content-between gap-3">
-                        <h3 class="ipc-subsection-title mb-1">{civilCase.title}</h3>
-                        {civilCase.filedDate ? (
-                          <small class="text-muted">
-                            {formatLongDate(civilCase.filedDate)}
-                          </small>
-                        ) : null}
-                      </div>
-                      <p class="mb-1">{civilCase.causeNumber}</p>
-                      {civilCase.court ? (
-                        <small class="text-muted">{civilCase.court}</small>
-                      ) : null}
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p class="text-muted">No related civil litigation listed.</p>
-              )
-            }
-
-            <hr class="my-5" />
-
-            <h2 class="ipc-section-title text-uppercase text-muted">Desired outcome</h2>
             <p>{data.report.desired_outcome!}</p>
 
-            <hr class="my-5" />
-
-            <h2 class="ipc-section-title text-uppercase text-muted">Witnesses</h2>
             {
               data.reportWitnesses.length ? (
-                <ul class="list-unstyled mb-0">
-                  {data.reportWitnesses.map((witness) => (
-                    <li class="mb-2">{witness.statement}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p class="text-muted">No witnesses listed.</p>
-              )
+                <>
+                  <hr class="my-5" />
+                  <h2 class="ipc-section-title text-uppercase text-muted">
+                    Witnesses
+                  </h2>
+                  <ul class="list-unstyled mb-0">
+                    {data.reportWitnesses.map((witness) => (
+                      <li class="mb-2">{witness.statement}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : null
             }
 
-            <hr class="my-5" />
-
-            <h2 class="ipc-section-title text-uppercase text-muted">Evidence links</h2>
             {
               evidenceLinks.length ? (
                 <>
+                  <hr class="my-5" />
+                  <h2 class="ipc-section-title text-uppercase text-muted">
+                    Evidence links
+                  </h2>
                   {evidenceLinks.map((link) => (
                     <div class="mb-4">
                       <p class="fs-5 mb-2">
@@ -460,16 +492,16 @@ const structuredData = {
                     </div>
                   ))}
                 </>
-              ) : (
-                <p class="text-muted">No evidence links listed.</p>
-              )
+              ) : null
             }
 
             {
               data.reportAttachments.length ? (
                 <>
                   <hr class="my-5" />
-                  <h2 class="ipc-section-title text-uppercase text-muted">Attachments</h2>
+                  <h2 class="ipc-section-title text-uppercase text-muted">
+                    Attachments
+                  </h2>
                   <ul class="list-unstyled mb-0">
                     {data.reportAttachments.map((attachment) => (
                       <li class="mb-2">
@@ -488,7 +520,9 @@ const structuredData = {
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-12 col-lg-10 col-xl-8">
-            <h2 class="ipc-section-title text-uppercase text-muted">Comments</h2>
+            <h2 class="ipc-section-title text-uppercase text-muted">
+              Comments
+            </h2>
             <DisqusComments
               pageUrl={pageUrl}
               disqusIdentifier={disqusIdentifier}

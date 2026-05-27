@@ -19,12 +19,7 @@ type AgencyReportSummary = {
   address?: string | null;
 };
 
-const {
-  currentPage,
-  data,
-  lastPage,
-  pageReports,
-} = Astro.props as {
+const { currentPage, data, lastPage, pageReports } = Astro.props as {
   currentPage: number;
   data: any;
   lastPage: number;
@@ -44,14 +39,18 @@ const {
 
 const reportsIndexPath = `${agencyPath}reports/`;
 const pagePath =
-  currentPage <= 1 ? reportsIndexPath : `${reportsIndexPath}page/${currentPage}/`;
+  currentPage <= 1
+    ? reportsIndexPath
+    : `${reportsIndexPath}page/${currentPage}/`;
 const pageTitle =
   currentPage <= 1
     ? `${agencyName} Reports`
     : `${agencyName} Reports - Page ${currentPage}`;
 const pageDescription = `Published reports connected to ${agencyName}.`;
 const personnelCount = new Set(
-  reportedReports.flatMap((report: AgencyReportSummary) => report.personnelSlugs || []),
+  reportedReports.flatMap(
+    (report: AgencyReportSummary) => report.personnelSlugs || [],
+  ),
 ).size;
 const getReportHref = (report: AgencyReportSummary) => {
   const href = report.canonicalPath || report.url;
@@ -102,9 +101,19 @@ const metricCards = [
             },
             { label: placeLabel, href: placePath },
             { label: agencyName, href: agencyPath },
-            { label: "Reports", href: reportsIndexPath, current: currentPage <= 1 },
+            {
+              label: "Reports",
+              href: reportsIndexPath,
+              current: currentPage <= 1,
+            },
             ...(currentPage > 1
-              ? [{ label: `Page ${currentPage}`, href: pagePath, current: true }]
+              ? [
+                  {
+                    label: `Page ${currentPage}`,
+                    href: pagePath,
+                    current: true,
+                  },
+                ]
               : []),
           ]}
           className="mb-2"
@@ -114,19 +123,29 @@ const metricCards = [
         <MetricGrid metrics={metricCards} columns="four" />
 
         <div class="entity-chart-grid">
-          <DataPanel title="Reports Over Time" description="Published reports by incident year">
+          <DataPanel
+            title="Reports Over Time"
+            description="Published reports by incident year"
+          >
             <div class="entity-empty-line-chart" aria-hidden="true"></div>
           </DataPanel>
 
-          <DataPanel title="Reports by Personnel" description="Published reports grouped by personnel">
+          <DataPanel
+            title="Reports by Personnel"
+            description="Published reports grouped by personnel"
+          >
             <div class="agency-reports-bars">
-              {pageReports.slice(0, 5).map((report) => (
-                <div>
-                  <span>{report.personnel?.[0]?.name || "Unassigned"}</span>
-                  <i><b style="width: 0%" /></i>
-                  <strong />
-                </div>
-              ))}
+              {
+                pageReports.slice(0, 5).map((report) => (
+                  <div>
+                    <span>{report.personnel?.[0]?.name || "Unassigned"}</span>
+                    <i>
+                      <b style="width: 0%" />
+                    </i>
+                    <strong />
+                  </div>
+                ))
+              }
             </div>
           </DataPanel>
 
@@ -136,13 +155,15 @@ const metricCards = [
             description="Published public reports connected to this agency"
           >
             <div class="agency-reports-list">
-              {pageReports.map((report) => (
-                <a href={getReportHref(report)}>
-                  <span>{report.title}</span>
-                  <small>{getReportDate(report)}</small>
-                  {report.address ? <em>{report.address}</em> : null}
-                </a>
-              ))}
+              {
+                pageReports.map((report) => (
+                  <a href={getReportHref(report)}>
+                    <span>{report.title}</span>
+                    <small>{getReportDate(report)}</small>
+                    {report.address ? <em>{report.address}</em> : null}
+                  </a>
+                ))
+              }
             </div>
             <Pagination
               basePath={reportsIndexPath}

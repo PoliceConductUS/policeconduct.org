@@ -240,7 +240,10 @@ const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
         </div>
 
         <div class="entity-chart-grid">
-          <DataPanel title="Budget Over Time" description="Total budget (millions)">
+          <DataPanel
+            title="Budget Over Time"
+            description="Total budget (millions)"
+          >
             <div class="budget-line-chart">
               <svg viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path class="budget-grid-line" d="M8 14H96"></path>
@@ -255,7 +258,10 @@ const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
             </div>
           </DataPanel>
 
-          <DataPanel title="Revenue Sources Over Time" description="Revenue by source (millions)">
+          <DataPanel
+            title="Revenue Sources Over Time"
+            description="Revenue by source (millions)"
+          >
             <div class="budget-bar-chart">
               {
                 years.map((year) => (
@@ -270,7 +276,10 @@ const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
             </div>
           </DataPanel>
 
-          <DataPanel title="Asset Forfeiture Over Time" description="Forfeiture revenue (millions)">
+          <DataPanel
+            title="Asset Forfeiture Over Time"
+            description="Forfeiture revenue (millions)"
+          >
             <div class="budget-bar-chart budget-forfeiture-chart">
               {
                 years.map((year) => (
@@ -288,7 +297,10 @@ const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
             </div>
           </DataPanel>
 
-          <DataPanel title="Budget Allocation" description="FY 2024-2025 (millions)">
+          <DataPanel
+            title="Budget Allocation"
+            description="FY 2024-2025 (millions)"
+          >
             <div class="budget-horizontal-bars">
               {
                 allocationRows.map((label) => (
@@ -304,7 +316,10 @@ const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
             </div>
           </DataPanel>
 
-          <DataPanel title="Overtime and Personnel Cost Trend" description="Costs (millions)">
+          <DataPanel
+            title="Overtime and Personnel Cost Trend"
+            description="Costs (millions)"
+          >
             <div class="budget-line-chart">
               <svg viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path class="budget-grid-line" d="M8 14H96"></path>
@@ -358,7 +373,10 @@ const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
             </table>
           </DataPanel>
 
-          <DataPanel className="entity-table-panel" title="Grant and Contract Highlights">
+          <DataPanel
+            className="entity-table-panel"
+            title="Grant and Contract Highlights"
+          >
             <table>
               <thead>
                 <tr>
@@ -382,7 +400,6 @@ const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
               </tbody>
             </table>
           </DataPanel>
-
         </div>
       </div>
     </section>
@@ -591,10 +608,6 @@ const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
     text-decoration: none;
   }
 
-  .budget-metric-card a::after {
-    content: "  ->";
-  }
-
   .budget-line-chart,
   .budget-bar-chart {
     margin-top: 1rem;
@@ -710,7 +723,6 @@ const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
     .budget-metric-grid {
       grid-template-columns: repeat(6, minmax(10rem, 1fr));
     }
-
   }
 
   @media (max-width: 991.98px) {

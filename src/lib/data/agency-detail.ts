@@ -92,7 +92,11 @@ type AgencyRouteParams = {
 };
 
 const agencyRoutePathFor = (params: AgencyRouteParams) => {
-  const category = requireAgencyText(params.category, "route category", "route");
+  const category = requireAgencyText(
+    params.category,
+    "route category",
+    "route",
+  );
   const administrativeArea = requireAgencyText(
     params.administrativeArea,
     "route administrativeArea",
@@ -598,7 +602,10 @@ const buildAgencyDetail = async (agencyId: string) => {
     };
   });
 
-  const reportSummariesById = mapBy(await loadReportSummaryBuildPayloads(), "id");
+  const reportSummariesById = mapBy(
+    await loadReportSummaryBuildPayloads(),
+    "id",
+  );
   const reportedReports = data.reportIds
     .map((reportId: string) => {
       const report = reportSummariesById[reportId];

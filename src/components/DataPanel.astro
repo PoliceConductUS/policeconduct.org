@@ -1,10 +1,5 @@
 ---
-const {
-  id,
-  title,
-  description,
-  className,
-} = Astro.props as {
+const { id, title, description, className } = Astro.props as {
   id?: string;
   title: string;
   description?: string;
@@ -56,7 +51,6 @@ const {
     min-height: 0;
     overflow-x: auto;
   }
-  }
 
   :global(.entity-data-panel table) {
     border-collapse: collapse;
@@ -101,10 +95,6 @@ const {
     color: #064cfb;
     font-weight: 700;
     text-decoration: none;
-  }
-
-  :global(.entity-table-panel a::after) {
-    content: " ->";
   }
 
   :global(.entity-empty-line-chart) {

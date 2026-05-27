@@ -255,14 +255,14 @@ const agencyMetrics = [
           title={agencyDisplayName}
           description={`${placeLabel}, ${administrativeArea}, ${agencyState}`}
         >
-            {
-              federalAgency ? (
-                <p class="agency-overview-federal">
-                  <span>Federal agency</span>
-                  <a href={federalAgency.path}>{federalAgency.name}</a>
-                </p>
-              ) : null
-            }
+          {
+            federalAgency ? (
+              <p class="agency-overview-federal">
+                <span>Federal agency</span>
+                <a href={federalAgency.path}>{federalAgency.name}</a>
+              </p>
+            ) : null
+          }
           <Fragment slot="actions">
             <EntityActionButton data-agency-share>
               <svg
@@ -651,11 +651,6 @@ const agencyMetrics = [
       text-decoration: none;
     }
 
-    .agency-metric-card a::after,
-    .agency-action-link::after {
-      content: " ->";
-    }
-
     .agency-line-chart {
       display: grid;
       gap: 0.5rem;
@@ -811,7 +806,6 @@ const agencyMetrics = [
       .agency-metric-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
-
     }
 
     @media (min-width: 1200px) {
@@ -827,7 +821,6 @@ const agencyMetrics = [
       .agency-metric-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
       }
-
     }
 
     .agency-stacked-bars {

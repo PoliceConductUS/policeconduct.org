@@ -40,7 +40,7 @@ const childMetric =
           label: "Explore counties",
         },
         detail: `${model.indexLabel}`,
-        icon: "building",
+        icon: metricVisuals.counties.icon,
         label: "Counties",
         value: formatCount(model.rows.length),
       }
@@ -52,7 +52,7 @@ const childMetric =
             label: "Explore places",
           },
           detail: `${model.indexLabel}`,
-          icon: "building",
+          icon: metricVisuals.places.icon,
           label: "Places",
           value: formatCount(model.rows.length),
         }
@@ -69,20 +69,13 @@ const childMetric =
         };
 const metricCards = [
   {
-    accent: "blue",
+    accent:
+      model.level === "state"
+        ? metricVisuals.counties.accent
+        : model.level === "administrative_area"
+          ? metricVisuals.places.accent
+          : metricVisuals.agencies.accent,
     ...childMetric,
-  },
-  {
-    accent: metricVisuals.personnel.accent,
-    action: {
-      href: scopedHref("personnel"),
-      kind: "link",
-      label: "View details",
-    },
-    detail: "Active / total",
-    icon: metricVisuals.personnel.icon,
-    label: metricVisuals.personnel.label,
-    value: formatCount(coverageCount("personnel")),
   },
   {
     accent: metricVisuals.reports.accent,
@@ -203,7 +196,11 @@ const assertDecertificationPayload = (
   }
 
   const payload = report.payload as Record<string, unknown>;
-  const methodology = assertString(payload.methodology, "methodology", report.id);
+  const methodology = assertString(
+    payload.methodology,
+    "methodology",
+    report.id,
+  );
   const tier = assertString(payload.tier, "tier", report.id);
   const note = assertString(payload.note, "note", report.id);
   const columns = payload.columns;
@@ -313,9 +310,7 @@ const sourceForColumn = (
         <MetricGrid metrics={metricCards} columns="auto" />
 
         <div class="entity-chart-grid">
-          <OutcomesByIncomePanel
-            href={scopedHref("outcomes-by-income")}
-          />
+          <OutcomesByIncomePanel href={scopedHref("outcomes-by-income")} />
           {
             chartCards.map(([title, description]) => (
               <DataPanel title={title} description={description}>
@@ -403,7 +398,6 @@ const sourceForColumn = (
           >
             <div class="entity-empty-line-chart" aria-hidden="true"></div>
           </DataPanel>
-
         </div>
       </div>
     </section>
@@ -779,7 +773,6 @@ const sourceForColumn = (
     .civic-dashboard-actions {
       justify-content: end;
     }
-
   }
 
   @media (max-width: 991.98px) {

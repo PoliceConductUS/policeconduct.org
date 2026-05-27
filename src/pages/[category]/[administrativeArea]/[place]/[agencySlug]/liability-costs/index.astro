@@ -269,7 +269,10 @@ const formatDate = (value?: string | null) =>
         </div>
 
         <div class="entity-chart-grid">
-          <DataPanel title="Liability Costs Over Time" description="Total liability costs (millions)">
+          <DataPanel
+            title="Liability Costs Over Time"
+            description="Total liability costs (millions)"
+          >
             <div class="liability-line-chart">
               <svg viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path class="liability-grid-line" d="M8 14H96"></path>
@@ -284,7 +287,10 @@ const formatDate = (value?: string | null) =>
             </div>
           </DataPanel>
 
-          <DataPanel title="Cost Components Over Time" description="Costs by component (millions)">
+          <DataPanel
+            title="Cost Components Over Time"
+            description="Costs by component (millions)"
+          >
             <div class="liability-bar-chart">
               {
                 years.map((year) => (
@@ -299,7 +305,10 @@ const formatDate = (value?: string | null) =>
             </div>
           </DataPanel>
 
-          <DataPanel title="Claims and Cases Over Time" description="Number of claims/cases">
+          <DataPanel
+            title="Claims and Cases Over Time"
+            description="Number of claims/cases"
+          >
             <div class="liability-line-chart">
               <svg viewBox="0 0 100 100" preserveAspectRatio="none">
                 <path class="liability-grid-line" d="M8 14H96"></path>
@@ -314,7 +323,10 @@ const formatDate = (value?: string | null) =>
             </div>
           </DataPanel>
 
-          <DataPanel title="Liability by Allegation Type" description="Costs by allegation type">
+          <DataPanel
+            title="Liability by Allegation Type"
+            description="Costs by allegation type"
+          >
             <div class="liability-horizontal-bars">
               {
                 allegationRows.map((label) => (
@@ -359,7 +371,10 @@ const formatDate = (value?: string | null) =>
             </ul>
           </DataPanel>
 
-          <DataPanel className="entity-table-panel" title="Recent Liability Matters">
+          <DataPanel
+            className="entity-table-panel"
+            title="Recent Liability Matters"
+          >
             <table>
               <thead>
                 <tr>
@@ -427,7 +442,6 @@ const formatDate = (value?: string | null) =>
               </tbody>
             </table>
           </DataPanel>
-
         </div>
       </div>
     </section>
@@ -635,10 +649,6 @@ const formatDate = (value?: string | null) =>
     text-decoration: none;
   }
 
-  .liability-metric-card a::after {
-    content: "  ->";
-  }
-
   .liability-line-chart,
   .liability-bar-chart {
     margin-top: 1rem;
@@ -815,7 +825,6 @@ const formatDate = (value?: string | null) =>
     .liability-metric-grid {
       grid-template-columns: repeat(6, minmax(10rem, 1fr));
     }
-
   }
 
   @media (max-width: 991.98px) {

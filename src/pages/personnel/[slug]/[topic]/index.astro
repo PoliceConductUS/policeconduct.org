@@ -1,0 +1,281 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { withDb } from "#src/lib/db.js";
+import { formatShortDate } from "#src/lib/format.js";
+import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
+import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
+import {
+  personnelTopics,
+  type PersonnelTopic,
+} from "#src/lib/data/personnel-topic-config.js";
+
+export async function getStaticPaths() {
+  if ((process.env.NO_PERSONNEL || "").trim() !== "") {
+    return [];
+  }
+  const officers = await withDb(async (client) => {
+    return (
+      await client.query(
+        `select distinct o.slug
+         from public.officers o
+         join public.agency_officers ao on ao.officer_id = o.id
+         order by o.slug`,
+      )
+    ).rows;
+  });
+  return officers.flatMap((officer: { slug: string }) =>
+    (Object.keys(personnelTopics) as PersonnelTopic[]).map((topic) => ({
+      params: { slug: officer.slug, topic },
+    })),
+  );
+}
+
+const { slug, topic } = Astro.params;
+if (!slug || !topic || !(topic in personnelTopics)) {
+  throw new Error(`Invalid personnel topic route ${slug || ""}/${topic || ""}`);
+}
+const topicKey = topic as PersonnelTopic;
+const topicConfig = personnelTopics[topicKey];
+const data = await withDb(async (client) => {
+  const officer = (
+    await client.query("select * from public.officers where slug = $1", [slug])
+  ).rows[0];
+  if (!officer) {
+    throw new Error(`Personnel ${slug} not found.`);
+  }
+  const assignments = (
+    await client.query(
+      `
+        select
+          ao.*,
+          a.name as agency_name,
+          a.slug as agency_slug,
+          lp.place_name,
+          lp.state_or_territory_slug,
+          bpp.path as canonical_path
+        from public.agency_officers ao
+        join public.agency a on a.id = ao.agency_id
+        join public.location_path lp on lp.location_path_id = a.location_path_id
+        join public.build_page_payload bpp
+          on bpp.page_type = 'agency'
+         and bpp.entity_id = a.id
+        where ao.officer_id = $1
+        order by ao.start_date desc nulls last, a.name asc
+      `,
+      [officer.id],
+    )
+  ).rows;
+  const assignmentIds = assignments.map(
+    (assignment: { id: string }) => assignment.id,
+  );
+  const reports = assignmentIds.length
+    ? (
+        await client.query(
+          `
+            select distinct r.*, lp.path as location_path
+            from public.reviews r
+            join public.review_officers ro on ro.review_id = r.id
+            join public.location_path lp on lp.location_path_id = r.location_path_id
+            where ro.agency_officer_id = any($1)
+            order by r.incident_date desc, r.title asc
+          `,
+          [assignmentIds],
+        )
+      ).rows
+    : [];
+  const civilCases = assignmentIds.length
+    ? (
+        await client.query(
+          `
+            select distinct c.*
+            from public.civil_cases c
+            join public.civil_case_officers cco on cco.civil_case_id = c.id
+            where cco.agency_officer_id = any($1)
+            order by c.filed_date desc, c.title asc
+          `,
+          [assignmentIds],
+        )
+      ).rows
+    : [];
+  return { assignments, civilCases, officer, reports };
+});
+
+const officerName =
+  `${data.officer.first_name} ${data.officer.last_name}`.trim();
+const pagePath = `/personnel/${slug}/${topicKey}/`;
+const pageTitle = `${officerName} ${topicConfig.label}`;
+const countValue =
+  topicKey === "agencies"
+    ? data.assignments.length
+    : topicKey === "civil-cases"
+      ? data.civilCases.length
+      : topicKey === "reports"
+        ? data.reports.length
+        : 0;
+const metricCards = [
+  {
+    ...topicConfig.metric,
+    detail: topicConfig.description,
+    value: countValue ? countValue.toLocaleString("en-US") : "--",
+  },
+];
+---
+
+<SiteLayout
+  title={`${pageTitle} | PoliceConduct.org`}
+  description={topicConfig.description}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main class="personnel-topic-page">
+    <section class="personnel-topic-main">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Personnel", href: "/personnel/" },
+            { label: officerName, href: `/personnel/${slug}/` },
+            { label: topicConfig.label, href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+        <EntityPageHeader
+          title={pageTitle}
+          description={topicConfig.description}
+        />
+        <MetricGrid metrics={metricCards} columns="four" />
+
+        <div class="entity-chart-grid">
+          {
+            topicKey === "agencies" ? (
+              <DataPanel
+                title={topicConfig.label}
+                className="entity-table-panel"
+              >
+                <table>
+                  <thead>
+                    <tr>
+                      <th scope="col">Agency</th>
+                      <th scope="col">License Type</th>
+                      <th scope="col">Start Date</th>
+                      <th scope="col">End Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.assignments.map((assignment) => (
+                      <tr>
+                        <th scope="row">
+                          <a
+                            href={requireAgencyCanonicalPath({
+                              canonicalPath: assignment.canonical_path,
+                            })}
+                          >
+                            {assignment.agency_name}
+                          </a>
+                        </th>
+                        <td>{assignment.title}</td>
+                        <td>
+                          {assignment.start_date
+                            ? formatShortDate(assignment.start_date)
+                            : ""}
+                        </td>
+                        <td>
+                          {assignment.end_date
+                            ? formatShortDate(assignment.end_date)
+                            : ""}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </DataPanel>
+            ) : topicKey === "reports" ? (
+              <DataPanel
+                title={topicConfig.label}
+                className="entity-table-panel"
+              >
+                <table>
+                  <thead>
+                    <tr>
+                      <th scope="col">Report</th>
+                      <th scope="col">Incident Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.reports.map((report) => (
+                      <tr>
+                        <th scope="row">
+                          <a
+                            href={buildReportCanonicalPath({
+                              id: report.id,
+                              incidentDate: report.incident_date,
+                              locationPath: report.location_path,
+                              slug: report.slug,
+                            })}
+                          >
+                            {report.title}
+                          </a>
+                        </th>
+                        <td>{formatShortDate(report.incident_date)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </DataPanel>
+            ) : topicKey === "civil-cases" ? (
+              <DataPanel
+                title={topicConfig.label}
+                className="entity-table-panel"
+              >
+                <table>
+                  <thead>
+                    <tr>
+                      <th scope="col">Case</th>
+                      <th scope="col">Filed</th>
+                      <th scope="col">Court</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.civilCases.map((civilCase) => (
+                      <tr>
+                        <th scope="row">
+                          <a href={`/civil-cases/${civilCase.slug}/`}>
+                            {civilCase.title}
+                          </a>
+                        </th>
+                        <td>{formatShortDate(civilCase.filed_date)}</td>
+                        <td>{civilCase.court || ""}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </DataPanel>
+            ) : (
+              <DataPanel title={`${topicConfig.label} Over Time`}>
+                <div class="entity-empty-line-chart" aria-hidden="true" />
+              </DataPanel>
+            )
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<style>
+  .personnel-topic-page {
+    background: #fbfcff;
+    color: #071842;
+  }
+
+  .personnel-topic-main {
+    padding: 1rem 0 2.5rem;
+  }
+
+  .personnel-topic-main > .container {
+    max-width: 1240px;
+  }
+</style>

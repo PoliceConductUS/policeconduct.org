@@ -138,27 +138,41 @@ const formatDate = (value?: string | null) =>
             <div class="entity-empty-line-chart" aria-hidden="true"></div>
           </DataPanel>
 
-          <DataPanel title="Active vs Closed" description="Civil cases by termination status">
+          <DataPanel
+            title="Active vs Closed"
+            description="Civil cases by termination status"
+          >
             <div class="agency-topic-bars">
-              {["Active", "Closed"].map((label) => (
-                <div>
-                  <span>{label}</span>
-                  <i><b style="width: 0%" /></i>
-                  <strong />
-                </div>
-              ))}
+              {
+                ["Active", "Closed"].map((label) => (
+                  <div>
+                    <span>{label}</span>
+                    <i>
+                      <b style="width: 0%" />
+                    </i>
+                    <strong />
+                  </div>
+                ))
+              }
             </div>
           </DataPanel>
 
-          <DataPanel title="Cases by Court" description="Civil cases grouped by court">
+          <DataPanel
+            title="Cases by Court"
+            description="Civil cases grouped by court"
+          >
             <div class="agency-topic-bars">
-              {["Federal", "State", "Other / Unknown"].map((label) => (
-                <div>
-                  <span>{label}</span>
-                  <i><b style="width: 0%" /></i>
-                  <strong />
-                </div>
-              ))}
+              {
+                ["Federal", "State", "Other / Unknown"].map((label) => (
+                  <div>
+                    <span>{label}</span>
+                    <i>
+                      <b style="width: 0%" />
+                    </i>
+                    <strong />
+                  </div>
+                ))
+              }
             </div>
           </DataPanel>
 
@@ -167,13 +181,19 @@ const formatDate = (value?: string | null) =>
             description="Direct agency cases and personnel-linked cases"
           >
             <div class="agency-topic-bars">
-              {["Direct", "Personnel-linked", "Direct + personnel-linked"].map((label) => (
-                <div>
-                  <span>{label}</span>
-                  <i><b style="width: 0%" /></i>
-                  <strong />
-                </div>
-              ))}
+              {
+                ["Direct", "Personnel-linked", "Direct + personnel-linked"].map(
+                  (label) => (
+                    <div>
+                      <span>{label}</span>
+                      <i>
+                        <b style="width: 0%" />
+                      </i>
+                      <strong />
+                    </div>
+                  ),
+                )
+              }
             </div>
           </DataPanel>
 
@@ -200,71 +220,79 @@ const formatDate = (value?: string | null) =>
               />
             </div>
 
-        {
-          pageCases.length === 0 ? (
-            <p class="agency-cases-empty">No civil cases listed.</p>
-          ) : (
-            <div class="agency-cases-table-wrap">
-              <table class="agency-cases-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Case</th>
-                    <th scope="col">Type</th>
-                    <th scope="col">Filed</th>
-                    <th scope="col">Court</th>
-                    <th scope="col">Cause</th>
-                    <th scope="col">Personnel</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageCases.map((caseItem) => {
-                    const personnelText = caseItem.personnelNames.join(", ");
-                    const searchText = [
-                      caseItem.title,
-                      caseItem.type,
-                      caseItem.filed_date,
-                      caseItem.court,
-                      caseItem.cause_number,
-                      personnelText,
-                    ]
-                      .filter(Boolean)
-                      .join(" ")
-                      .toLowerCase();
-
-                    return (
-                      <tr data-agency-cases-row data-search-text={searchText}>
-                        <td>
-                          <a href={caseItem.caseUrl}>
-                            {caseItem.title || "Civil case"}
-                          </a>
-                        </td>
-                        <td>{caseItem.type}</td>
-                        <td>{formatDate(caseItem.filed_date)}</td>
-                        <td>{caseItem.court || ""}</td>
-                        <td>{caseItem.cause_number || ""}</td>
-                        <td>
-                          {caseItem.personnel.map((person, index) => (
-                            <>
-                              {index > 0 ? ", " : null}
-                              <a href={person.href}>{person.name}</a>
-                            </>
-                          ))}
-                        </td>
+            {
+              pageCases.length === 0 ? (
+                <p class="agency-cases-empty">No civil cases listed.</p>
+              ) : (
+                <div class="agency-cases-table-wrap">
+                  <table class="agency-cases-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Case</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Filed</th>
+                        <th scope="col">Court</th>
+                        <th scope="col">Cause</th>
+                        <th scope="col">Personnel</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )
-        }
+                    </thead>
+                    <tbody>
+                      {pageCases.map((caseItem) => {
+                        const personnelText =
+                          caseItem.personnelNames.join(", ");
+                        const searchText = [
+                          caseItem.title,
+                          caseItem.type,
+                          caseItem.filed_date,
+                          caseItem.court,
+                          caseItem.cause_number,
+                          personnelText,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
+                          .toLowerCase();
 
-        <p class="agency-cases-empty" data-agency-cases-no-results hidden>
-          No civil cases match that search.
-        </p>
+                        return (
+                          <tr
+                            data-agency-cases-row
+                            data-search-text={searchText}
+                          >
+                            <td>
+                              <a href={caseItem.caseUrl}>
+                                {caseItem.title || "Civil case"}
+                              </a>
+                            </td>
+                            <td>{caseItem.type}</td>
+                            <td>{formatDate(caseItem.filed_date)}</td>
+                            <td>{caseItem.court || ""}</td>
+                            <td>{caseItem.cause_number || ""}</td>
+                            <td>
+                              {caseItem.personnel.map((person, index) => (
+                                <>
+                                  {index > 0 ? ", " : null}
+                                  <a href={person.href}>{person.name}</a>
+                                </>
+                              ))}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            }
 
-        <Pagination basePath={pagePath} currentPage={1} lastPage={totalPages} />
-        <CivilCaseScopeNote />
+            <p class="agency-cases-empty" data-agency-cases-no-results hidden>
+              No civil cases match that search.
+            </p>
+
+            <Pagination
+              basePath={pagePath}
+              currentPage={1}
+              lastPage={totalPages}
+            />
+            <CivilCaseScopeNote />
           </DataPanel>
         </div>
       </div>

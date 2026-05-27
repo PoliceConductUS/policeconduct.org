@@ -24,9 +24,10 @@ const structuredData = buildWebPage({
   type: "CollectionPage",
 });
 const showCivilCaseScopeNote = model.pagePath.includes("/civil-cases/");
-const isFederalTopicPage = /\/(personnel|reports|budget|civil-cases|liability-costs|outcomes-by-income)\/$/.test(
-  model.pagePath,
-);
+const isFederalTopicPage =
+  /\/(personnel|reports|budget|civil-cases|liability-costs|outcomes-by-income)\/$/.test(
+    model.pagePath,
+  );
 const isOutcomesByIncomePage = model.pagePath.includes("/outcomes-by-income/");
 const outcomesByIncomeHref = `${model.pagePath}outcomes-by-income/`;
 ---
@@ -78,9 +79,7 @@ const outcomesByIncomeHref = `${model.pagePath}outcomes-by-income/`;
         <div class="entity-chart-grid">
           {
             !isFederalTopicPage ? (
-              <OutcomesByIncomePanel
-                href={outcomesByIncomeHref}
-              />
+              <OutcomesByIncomePanel href={outcomesByIncomeHref} />
             ) : null
           }
           {
@@ -297,6 +296,5 @@ const outcomesByIncomeHref = `${model.pagePath}outcomes-by-income/`;
     .civic-dashboard-jump {
       justify-self: end;
     }
-
   }
 </style>

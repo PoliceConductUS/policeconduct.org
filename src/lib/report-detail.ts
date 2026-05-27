@@ -330,12 +330,12 @@ export const loadReportDetail = async (
             civil_case.court,
             civil_case.filed_date,
             civil_case.slug
-          from public.civil_cases civil_case
-          join public.civil_case_officers civil_case_officer
-            on civil_case_officer.civil_case_id = civil_case.id
-          join public.review_officers review_officer
-            on review_officer.agency_officer_id = civil_case_officer.agency_officer_id
-          where review_officer.review_id = $1
+          from public.coverage_link_reports report_link
+          join public.coverage_link_civil_cases civil_case_link
+            on civil_case_link.coverage_link_id = report_link.coverage_link_id
+          join public.civil_cases civil_case
+            on civil_case.id = civil_case_link.civil_case_id
+          where report_link.review_id = $1
           order by civil_case.filed_date desc, civil_case.title
         `,
         [reportId],

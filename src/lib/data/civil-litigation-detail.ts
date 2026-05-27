@@ -1,6 +1,7 @@
 import { withDb } from "#src/lib/db.js";
 import { loadCoverageLinksForCivilCase } from "./coverage.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
+import { buildReportCanonicalPath } from "./report-paths.js";
 
 export type CivilCaseCoverageLink = {
   id: string;
@@ -50,6 +51,13 @@ export type CivilCaseDetail = {
   officers: CivilCaseDetailOfficer[];
   agencies: CivilCaseDetailAgency[];
   coverageLinks: CivilCaseCoverageLink[];
+  reports: {
+    id: string;
+    title: string;
+    incident_date: string | null;
+    slug: string;
+    path: string;
+  }[];
 };
 
 export const loadCivilCaseDetail = async (
@@ -148,11 +156,54 @@ export const loadCivilCaseDetail = async (
       canonicalPath: requireAgencyCanonicalPath(agency),
     }));
 
+    const reports = (
+      await client.query(
+        `
+          select distinct
+            review.id,
+            review.title,
+            review.incident_date,
+            review.slug,
+            location_path.path as location_path
+          from public.coverage_link_civil_cases civil_case_link
+          join public.coverage_link_reports report_link
+            on report_link.coverage_link_id = civil_case_link.coverage_link_id
+          join public.reviews review
+            on review.id = report_link.review_id
+          join public.location_path location_path
+            on location_path.location_path_id = review.location_path_id
+          where civil_case_link.civil_case_id = $1
+          order by review.incident_date desc, review.title
+        `,
+        [civilCase.id],
+      )
+    ).rows.map(
+      (report: {
+        id: string;
+        title: string;
+        incident_date: string | null;
+        slug: string;
+        location_path: string;
+      }) => ({
+        id: report.id,
+        title: report.title,
+        incident_date: report.incident_date,
+        slug: report.slug,
+        path: buildReportCanonicalPath({
+          id: report.id,
+          incidentDate: report.incident_date,
+          locationPath: report.location_path,
+          slug: report.slug,
+        }),
+      }),
+    );
+
     return {
       civilCase,
       officers,
       agencies,
       coverageLinks: [...civilCaseLinks, ...coverageLinks],
+      reports,
     };
   });
 };

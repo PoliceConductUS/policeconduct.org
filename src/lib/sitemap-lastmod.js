@@ -226,7 +226,11 @@ export const buildSitemapLastmodMap = async () => {
         agency.slug
       ) {
         setLastmod(pathLastmods, agency.state_path, agency.lastmod);
-        setLastmod(pathLastmods, agency.administrative_area_path, agency.lastmod);
+        setLastmod(
+          pathLastmods,
+          agency.administrative_area_path,
+          agency.lastmod,
+        );
         setLastmod(pathLastmods, agency.place_path, agency.lastmod);
         setLastmod(pathLastmods, agency.canonical_path, agency.lastmod);
       }

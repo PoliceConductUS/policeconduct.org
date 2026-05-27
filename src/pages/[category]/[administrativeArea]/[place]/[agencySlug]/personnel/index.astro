@@ -151,14 +151,19 @@ const formatDate = (value?: string | null) =>
             <div class="entity-empty-line-chart" aria-hidden="true"></div>
           </DataPanel>
 
-          <DataPanel title="License Types" description="Personnel by license type">
+          <DataPanel
+            title="License Types"
+            description="Personnel by license type"
+          >
             <div class="agency-topic-bars">
               {
                 ["Peace Officer", "Jailer", "Telecommunicator", "Other"].map(
                   (label) => (
                     <div>
                       <span>{label}</span>
-                      <i><b style="width: 0%" /></i>
+                      <i>
+                        <b style="width: 0%" />
+                      </i>
                       <strong />
                     </div>
                   ),
@@ -167,15 +172,22 @@ const formatDate = (value?: string | null) =>
             </div>
           </DataPanel>
 
-          <DataPanel title="Status Breakdown" description="Current and former personnel">
+          <DataPanel
+            title="Status Breakdown"
+            description="Current and former personnel"
+          >
             <div class="agency-topic-bars">
-              {["Current", "Former"].map((label) => (
-                <div>
-                  <span>{label}</span>
-                  <i><b style="width: 0%" /></i>
-                  <strong />
-                </div>
-              ))}
+              {
+                ["Current", "Former"].map((label) => (
+                  <div>
+                    <span>{label}</span>
+                    <i>
+                      <b style="width: 0%" />
+                    </i>
+                    <strong />
+                  </div>
+                ))
+              }
             </div>
           </DataPanel>
 
@@ -195,86 +207,95 @@ const formatDate = (value?: string | null) =>
               />
             </div>
 
-        {
-          pageEmployees.length === 0 ? (
-            <p class="agency-personnel-empty">No personnel listed.</p>
-          ) : (
-            <div class="agency-personnel-table-wrap">
-              <table class="agency-personnel-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Badge</th>
-                    <th scope="col">License type</th>
-                    <th scope="col">Start date</th>
-                    <th scope="col">End date</th>
-                    <th scope="col">Reports</th>
-                    <th scope="col">Rating</th>
-                  </tr>
-                </thead>
-                <tbody data-agency-personnel-rows>
-                  {pageEmployees.map((employee) => {
-                    const name = getEmployeeName(employee);
-                    const status = employee.entry.end_date
-                      ? "Former"
-                      : "Current";
-                    const endDate = formatDate(employee.entry.end_date) || "";
-                    const searchText = [
-                      name,
-                      status,
-                      employee.entry.badge_number,
-                      employee.entry.title,
-                      formatDate(employee.entry.start_date),
-                      endDate,
-                    ]
-                      .filter(Boolean)
-                      .join(" ")
-                      .toLowerCase();
-
-                    return (
-                      <tr
-                        data-agency-personnel-row
-                        data-search-text={searchText}
-                      >
-                        <td>
-                          {employee.officer?.slug ? (
-                            <a href={`/personnel/${employee.officer.slug}/`}>
-                              {name}
-                            </a>
-                          ) : (
-                            name
-                          )}
-                        </td>
-                        <td>{status}</td>
-                        <td>{employee.entry.badge_number || ""}</td>
-                        <td>{employee.entry.title || ""}</td>
-                        <td>{formatDate(employee.entry.start_date) || ""}</td>
-                        <td>{endDate}</td>
-                        <td>{employee.reportCount || 0}</td>
-                        <td>
-                          {employee.rating && employee.rating > 0
-                            ? employee.rating.toFixed(1)
-                            : ""}
-                        </td>
+            {
+              pageEmployees.length === 0 ? (
+                <p class="agency-personnel-empty">No personnel listed.</p>
+              ) : (
+                <div class="agency-personnel-table-wrap">
+                  <table class="agency-personnel-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Badge</th>
+                        <th scope="col">License type</th>
+                        <th scope="col">Start date</th>
+                        <th scope="col">End date</th>
+                        <th scope="col">Reports</th>
+                        <th scope="col">Rating</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )
-        }
+                    </thead>
+                    <tbody data-agency-personnel-rows>
+                      {pageEmployees.map((employee) => {
+                        const name = getEmployeeName(employee);
+                        const status = employee.entry.end_date
+                          ? "Former"
+                          : "Current";
+                        const endDate =
+                          formatDate(employee.entry.end_date) || "";
+                        const searchText = [
+                          name,
+                          status,
+                          employee.entry.badge_number,
+                          employee.entry.title,
+                          formatDate(employee.entry.start_date),
+                          endDate,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
+                          .toLowerCase();
 
-        <p
-          class="agency-personnel-empty"
-          data-agency-personnel-no-results
-          hidden
-        >
-          No personnel match that search.
-        </p>
+                        return (
+                          <tr
+                            data-agency-personnel-row
+                            data-search-text={searchText}
+                          >
+                            <td>
+                              {employee.officer?.slug ? (
+                                <a
+                                  href={`/personnel/${employee.officer.slug}/`}
+                                >
+                                  {name}
+                                </a>
+                              ) : (
+                                name
+                              )}
+                            </td>
+                            <td>{status}</td>
+                            <td>{employee.entry.badge_number || ""}</td>
+                            <td>{employee.entry.title || ""}</td>
+                            <td>
+                              {formatDate(employee.entry.start_date) || ""}
+                            </td>
+                            <td>{endDate}</td>
+                            <td>{employee.reportCount || 0}</td>
+                            <td>
+                              {employee.rating && employee.rating > 0
+                                ? employee.rating.toFixed(1)
+                                : ""}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            }
 
-        <Pagination basePath={pagePath} currentPage={1} lastPage={totalPages} />
+            <p
+              class="agency-personnel-empty"
+              data-agency-personnel-no-results
+              hidden
+            >
+              No personnel match that search.
+            </p>
+
+            <Pagination
+              basePath={pagePath}
+              currentPage={1}
+              lastPage={totalPages}
+            />
           </DataPanel>
         </div>
       </div>

@@ -9,16 +9,12 @@ import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
-import {
-  metricLabels,
-  metricVisuals,
-  type MetricAccent,
-  type MetricIcon,
-} from "#src/lib/metric-vocabulary.js";
+import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
 import { getPersonnelImageById } from "#src/lib/personnel-images.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
+import type { MetricCardItem } from "#src/components/metric-card-types.js";
 
 export async function getStaticPaths() {
   if ((process.env.NO_PERSONNEL || "").trim() !== "") {
@@ -374,27 +370,35 @@ const civilCaseYears = Object.entries(
 )
   .map(([year, count]) => ({ count, year }))
   .sort((left, right) => left.year.localeCompare(right.year));
-type PersonnelMetricCard = {
-  accent: MetricAccent;
-  detail?: string;
-  icon: MetricIcon;
-  label: string;
-  value: string;
-};
-const personnelMetricCards: PersonnelMetricCard[] = [
+const personnelMetricCards: MetricCardItem[] = [
   {
+    action: {
+      href: `${officerPath}agencies/`,
+      kind: "link",
+      label: "View details",
+    },
     accent: metricVisuals.agencies.accent,
     icon: metricVisuals.agencies.icon,
     label: metricVisuals.agencies.label,
     value: formatCount(assignmentHistoryCount),
   },
   {
+    action: {
+      href: `${officerPath}salary/`,
+      kind: "link",
+      label: "View details",
+    },
     accent: metricVisuals.currentSalary.accent,
     icon: metricVisuals.currentSalary.icon,
     label: metricVisuals.currentSalary.label,
     value: unavailableValue,
   },
   {
+    action: {
+      href: `${officerPath}civil-cases/`,
+      kind: "link",
+      label: "View details",
+    },
     accent: metricVisuals.civilCases.accent,
     detail: metricLabels.activeTotal,
     icon: metricVisuals.civilCases.icon,
@@ -402,16 +406,37 @@ const personnelMetricCards: PersonnelMetricCard[] = [
     value: `${formatCount(activeCivilCaseCount)} / ${formatCount(civilCaseCount)}`,
   },
   {
+    action: {
+      href: `${officerPath}liability-costs/`,
+      kind: "link",
+      label: "View details",
+    },
     accent: metricVisuals.liabilityCosts.accent,
     icon: metricVisuals.liabilityCosts.icon,
     label: metricVisuals.liabilityCosts.label,
     value: unavailableValue,
   },
   {
+    action: {
+      href: `${officerPath}arrests/`,
+      kind: "link",
+      label: "View details",
+    },
     accent: metricVisuals.arrests.accent,
     icon: metricVisuals.arrests.icon,
     label: metricVisuals.arrests.label,
     value: unavailableValue,
+  },
+  {
+    action: {
+      href: `${officerPath}reports/`,
+      kind: "link",
+      label: "View details",
+    },
+    accent: metricVisuals.reports.accent,
+    icon: metricVisuals.reports.icon,
+    label: metricVisuals.reports.label,
+    value: formatCount(reportItems.length),
   },
 ];
 const siteUrl = getSiteUrl(Astro.site);
@@ -577,11 +602,7 @@ const structuredData = {
               <h2>1. Salary History</h2>
               <p>Annual base salary</p>
             </div>
-            <div
-              class="personnel-empty-chart"
-              aria-hidden="true"
-            >
-            </div>
+            <div class="personnel-empty-chart" aria-hidden="true"></div>
           </section>
 
           <section class="personnel-panel">
@@ -589,11 +610,7 @@ const structuredData = {
               <h2>2. Arrests Over Time</h2>
               <p>Low-level arrests and other arrests</p>
             </div>
-            <div
-              class="personnel-empty-chart"
-              aria-hidden="true"
-            >
-            </div>
+            <div class="personnel-empty-chart" aria-hidden="true"></div>
           </section>
 
           <section class="personnel-panel">
@@ -601,11 +618,7 @@ const structuredData = {
               <h2>3. Liability Costs Over Time</h2>
               <p>Total liability costs</p>
             </div>
-            <div
-              class="personnel-empty-chart"
-              aria-hidden="true"
-            >
-            </div>
+            <div class="personnel-empty-chart" aria-hidden="true"></div>
           </section>
 
           <section class="personnel-panel">
@@ -627,10 +640,7 @@ const structuredData = {
                   ))}
                 </div>
               ) : (
-                <div
-                  class="personnel-empty-chart"
-                  aria-hidden="true"
-                />
+                <div class="personnel-empty-chart" aria-hidden="true" />
               )
             }
           </section>
@@ -640,11 +650,7 @@ const structuredData = {
               <h2>5. {metricLabels.racialBreakdownStopsArrests}</h2>
               <p>Who is most affected in the current dataset</p>
             </div>
-            <div
-              class="personnel-empty-chart"
-              aria-hidden="true"
-            >
-            </div>
+            <div class="personnel-empty-chart" aria-hidden="true"></div>
           </section>
 
           <section class="personnel-panel">
@@ -652,11 +658,7 @@ const structuredData = {
               <h2>6. {metricLabels.daylightNighttimeStops}</h2>
               <p>Comparison of stops by time of day and race</p>
             </div>
-            <div
-              class="personnel-empty-chart"
-              aria-hidden="true"
-            >
-            </div>
+            <div class="personnel-empty-chart" aria-hidden="true"></div>
           </section>
 
           <section class="personnel-panel">
@@ -664,11 +666,7 @@ const structuredData = {
               <h2>7. {metricLabels.topChargeCategories}</h2>
               <p>By arrests</p>
             </div>
-            <div
-              class="personnel-empty-chart"
-              aria-hidden="true"
-            >
-            </div>
+            <div class="personnel-empty-chart" aria-hidden="true"></div>
           </section>
 
           <section class="personnel-panel">
@@ -676,11 +674,7 @@ const structuredData = {
               <h2>8. Killings Over Time</h2>
               <p>People by age group, dogs and other animals</p>
             </div>
-            <div
-              class="personnel-empty-chart"
-              aria-hidden="true"
-            >
-            </div>
+            <div class="personnel-empty-chart" aria-hidden="true"></div>
           </section>
 
           <section class="personnel-panel personnel-panel-wide">
@@ -811,7 +805,6 @@ const structuredData = {
             Claim Profile
           </PrefillNavButton>
         </div>
-
       </div>
     </section>
   </main>

@@ -5,12 +5,7 @@ import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 
-const {
-  breadcrumbs,
-  description,
-  pagePath,
-  title,
-} = Astro.props as {
+const { breadcrumbs, description, pagePath, title } = Astro.props as {
   breadcrumbs: { current?: boolean; href: string; label: string }[];
   description: string;
   pagePath: string;
@@ -54,7 +49,10 @@ const tableOutcomes = ["Dismissed", "Reduced", "Plea", "Convicted", "Jail"];
         <Breadcrumbs items={breadcrumbs} className="mb-2" />
         <EntityPageHeader title={title} description={description} />
         <div class="entity-chart-grid outcomes-income-page-grid">
-          <form class="outcomes-income-filters" aria-label="Outcomes by income filters">
+          <form
+            class="outcomes-income-filters"
+            aria-label="Outcomes by income filters"
+          >
             <label>
               <span>Charge category</span>
               <select name="charge">
@@ -112,10 +110,10 @@ const tableOutcomes = ["Dismissed", "Reduced", "Plea", "Convicted", "Jail"];
                       <tr>
                         <th scope="row">{charge}</th>
                         <td>{tableOutcomes[index]}</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                        <td />
+                        <td />
+                        <td />
+                        <td />
                       </tr>
                     ))
                   }
