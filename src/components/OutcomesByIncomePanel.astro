@@ -1,4 +1,5 @@
 ---
+import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import { metricLabels } from "#src/lib/metric-vocabulary.js";
 
 const {
@@ -10,21 +11,6 @@ const {
   className?: string;
   variant?: "summary" | "detail";
 };
-
-const outcomes =
-  variant === "detail"
-    ? [
-        "Released",
-        "Filed",
-        "Dismissed",
-        "Reduced",
-        "Plea",
-        "Convicted",
-        "Jail",
-        "License",
-      ]
-    : ["Dismissed", "Reduced", "Plea", "Convicted", "Jail"];
-const incomeBands = ["Lower", "Middle", "Higher"];
 ---
 
 <article
@@ -41,33 +27,9 @@ const incomeBands = ["Lower", "Middle", "Higher"];
     </div>
     {href ? <a href={href}>View details</a> : null}
   </div>
-  <div class="outcomes-income-plot" aria-hidden="true">
-    <div class="outcomes-income-grid"></div>
-    <div class="outcomes-income-bars">
-      {
-        outcomes.map((outcome) => (
-          <div class="outcomes-income-group">
-            <div class="outcomes-income-empty-bars">
-              {incomeBands.map((band) => (
-                <i class={`outcomes-income-${band.toLowerCase()}`} />
-              ))}
-            </div>
-            <span>{outcome}</span>
-          </div>
-        ))
-      }
-    </div>
-  </div>
-  <div class="outcomes-income-legend" aria-hidden="true">
-    {
-      incomeBands.map((band) => (
-        <span>
-          <i class={`outcomes-income-${band.toLowerCase()}`} />
-          {band}
-        </span>
-      ))
-    }
-  </div>
+  <EmptyMeasurementState
+    detail="Income-band outcome measurements will appear here when verified values are available."
+  />
 </article>
 
 <style>
@@ -111,107 +73,6 @@ const incomeBands = ["Lower", "Middle", "Higher"];
     font-weight: 750;
     line-height: 1.3;
     text-decoration: none;
-  }
-
-  .outcomes-income-plot {
-    border-bottom: 1px solid #b8c4d8;
-    border-left: 1px solid #b8c4d8;
-    height: 9.5rem;
-    margin-top: 1rem;
-    position: relative;
-  }
-
-  .outcomes-income-card-detail .outcomes-income-plot {
-    height: 14rem;
-  }
-
-  .outcomes-income-grid {
-    background: linear-gradient(#d9e1ee 1px, transparent 1px) 0 0 / 100% 25%;
-    inset: 0;
-    position: absolute;
-  }
-
-  .outcomes-income-bars {
-    align-items: end;
-    display: grid;
-    gap: 0.55rem;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    inset: 0.6rem 0.5rem 0;
-    position: absolute;
-  }
-
-  .outcomes-income-group {
-    display: grid;
-    gap: 0.4rem;
-    min-width: 0;
-  }
-
-  .outcomes-income-empty-bars {
-    align-items: end;
-    display: grid;
-    gap: 0.18rem;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    height: 6.8rem;
-  }
-
-  .outcomes-income-card-detail .outcomes-income-bars {
-    grid-template-columns: repeat(8, minmax(0, 1fr));
-  }
-
-  .outcomes-income-card-detail .outcomes-income-empty-bars {
-    height: 11rem;
-  }
-
-  .outcomes-income-empty-bars i {
-    border-radius: 0.15rem 0.15rem 0 0;
-    display: block;
-    height: 0;
-  }
-
-  .outcomes-income-group span {
-    color: #33456f;
-    display: block;
-    font-size: 0.68rem;
-    font-weight: 700;
-    line-height: 1.15;
-    min-height: 1.6rem;
-    overflow-wrap: anywhere;
-    text-align: center;
-  }
-
-  .outcomes-income-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 0.75rem;
-  }
-
-  .outcomes-income-legend span {
-    align-items: center;
-    color: #33456f;
-    display: inline-flex;
-    font-size: 0.75rem;
-    font-weight: 700;
-    gap: 0.35rem;
-  }
-
-  .outcomes-income-legend i {
-    border-radius: 999px;
-    display: inline-block;
-    height: 0.55rem;
-    width: 0.55rem;
-  }
-
-  .outcomes-income-lower {
-    background: #b42318;
-  }
-
-  .outcomes-income-middle {
-    background: #c47f00;
-  }
-
-  .outcomes-income-higher {
-    background: #087f3b;
   }
 
   @media (min-width: 992px) {

@@ -1,6 +1,7 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
+import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import Pagination from "#src/components/Pagination.astro";
@@ -127,26 +128,18 @@ const metricCards = [
             title="Reports Over Time"
             description="Published reports by incident year"
           >
-            <div class="entity-empty-line-chart" aria-hidden="true"></div>
+            <EmptyMeasurementState
+              detail="Report timeline measurements will appear here when verified values are available."
+            />
           </DataPanel>
 
           <DataPanel
             title="Reports by Personnel"
             description="Published reports grouped by personnel"
           >
-            <div class="agency-reports-bars">
-              {
-                pageReports.slice(0, 5).map((report) => (
-                  <div>
-                    <span>{report.personnel?.[0]?.name || "Unassigned"}</span>
-                    <i>
-                      <b style="width: 0%" />
-                    </i>
-                    <strong />
-                  </div>
-                ))
-              }
-            </div>
+            <EmptyMeasurementState
+              detail="Personnel grouping measurements will appear here when verified values are available."
+            />
           </DataPanel>
 
           <DataPanel
@@ -189,38 +182,6 @@ const metricCards = [
 
   .agency-reports-main > .container {
     max-width: 1240px;
-  }
-
-  .agency-reports-bars {
-    display: grid;
-    gap: 0.65rem;
-    margin-top: 1rem;
-  }
-
-  .agency-reports-bars div {
-    align-items: center;
-    display: grid;
-    gap: 0.75rem;
-    grid-template-columns: minmax(8rem, 0.9fr) minmax(7rem, 2fr) auto;
-  }
-
-  .agency-reports-bars span,
-  .agency-reports-bars strong {
-    color: #071842;
-    font-size: 0.8125rem;
-    font-weight: 700;
-  }
-
-  .agency-reports-bars i {
-    background: #e7edf7;
-    display: block;
-    height: 0.78rem;
-  }
-
-  .agency-reports-bars b {
-    background: #087f3b;
-    display: block;
-    height: 100%;
   }
 
   .agency-reports-list {

@@ -1,6 +1,7 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
+import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityActionButton from "#src/components/EntityActionButton.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
@@ -271,7 +272,7 @@ const topicConfig = {
             <div class="entity-chart-grid">
               {topicConfig.charts.map((title) => (
                 <DataPanel title={title}>
-                  <div class="entity-empty-line-chart" aria-hidden="true" />
+                  <EmptyMeasurementState />
                 </DataPanel>
               ))}
             </div>

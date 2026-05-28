@@ -1,5 +1,6 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
@@ -134,6 +135,14 @@ const data = await withDb(async (client) => {
 });
 const agenciesById = mapBy(data.agencies, "id");
 const history = normalizeAgencyHistory(data.agencyOfficers);
+const missingAgencyAssignment = history.find(
+  (entry) => !agenciesById[entry.agency_id],
+);
+if (missingAgencyAssignment) {
+  throw new Error(
+    `Personnel ${data.officer.slug} assignment ${missingAgencyAssignment.id} references agency ${missingAgencyAssignment.agency_id} without a required canonical path.`,
+  );
+}
 const assignmentHistory = history
   .map((entry) => ({
     ...entry,
@@ -143,6 +152,11 @@ const assignmentHistory = history
 const activeAssignment =
   [...history].reverse().find((entry) => !entry.end_date) || null;
 const currentAssignment = activeAssignment || history[history.length - 1];
+if (!currentAssignment) {
+  throw new Error(
+    `Personnel ${data.officer.slug} is missing required agency assignment history.`,
+  );
+}
 const hasCurrentAssignment = Boolean(activeAssignment);
 const currentBadge = currentAssignment?.badge_number || null;
 const currentLicenseType =
@@ -152,6 +166,12 @@ const currentLicenseType =
 const currentAgency = currentAssignment
   ? agenciesById[currentAssignment.agency_id]
   : null;
+if (!currentAgency) {
+  throw new Error(
+    `Personnel ${data.officer.slug} assignment ${currentAssignment.id} is missing required agency ${currentAssignment.agency_id}.`,
+  );
+}
+const currentAgencyPrefillName = currentAgency.name.toLocaleUpperCase("en-US");
 const isPlaceholderPersonnel =
   data.officer.slug === "unknown-personnel-935d1d" ||
   (data.officer.first_name === "Unknown" &&
@@ -261,17 +281,17 @@ const civilLitigationSummary = civilCasesWithPaths
 const reportLinksSummary = reportItems.map((report) => report.url).join("\n");
 const reportNewPrefillPayload = JSON.stringify({
   officer: {
-    department: currentAgency!.name,
+    department: currentAgencyPrefillName,
     name: `${data.officer.first_name} ${data.officer.last_name}`,
   },
 } satisfies ReportNewPrefill);
 const addCivilCaseHref = "/civil-litigation/new/";
 const addCivilCasePrefillPayload = JSON.stringify({
   jurisdiction: String(currentAgency?.state || "").toLowerCase(),
-  defendants: [officerName, currentAgency?.name || ""]
+  defendants: [officerName, currentAgencyPrefillName]
     .filter(Boolean)
     .join("\n"),
-  summary: `${officerName} profile: ${officerPath}${currentAgency?.name ? `\nCurrent agency: ${currentAgency.name}` : ""}`,
+  summary: `${officerName} profile: ${officerPath}\nCurrent agency: ${currentAgencyPrefillName}`,
   links: [officerPath, ...reportItems.slice(0, 3).map((report) => report.url)]
     .filter(Boolean)
     .join("\n"),
@@ -282,7 +302,7 @@ const pastEmployerPrefillPayload = JSON.stringify({
   lastName: data.officer.last_name || "",
   suffix: data.officer.suffix || "",
   badgeNumber: currentBadge || "",
-  currentAgency: currentAgency?.name || "",
+  currentAgency: currentAgencyPrefillName,
   currentAgencyCity: currentAgency?.city || "",
   currentAgencyState: currentAgency?.state || "",
   pastEmployers: pastEmployerSummary,
@@ -294,7 +314,7 @@ const suggestEditPrefillPayload = JSON.stringify({
   officerPath,
   officerName,
   badgeNumber: currentBadge || "",
-  currentEmployer: currentAgency?.name || "",
+  currentEmployer: currentAgencyPrefillName,
   pastEmployers: pastEmployerSummary,
   civilLitigation: civilLitigationSummary,
 });
@@ -515,14 +535,14 @@ const structuredData = {
               payload={suggestEditPrefillPayload}
               class="personnel-action"
             >
-              Share
+              Suggest edit
             </PrefillNavButton>
             <PrefillNavButton
               to="/report/new/"
               payload={reportNewPrefillPayload}
               class="personnel-action personnel-action-primary"
             >
-              Download Report
+              Share your experience
             </PrefillNavButton>
           </div>
         </div>
@@ -602,7 +622,9 @@ const structuredData = {
               <h2>1. Salary History</h2>
               <p>Annual base salary</p>
             </div>
-            <div class="personnel-empty-chart" aria-hidden="true"></div>
+            <EmptyMeasurementState
+              detail="Salary measurements will appear here when verified values are available."
+            />
           </section>
 
           <section class="personnel-panel">
@@ -610,7 +632,9 @@ const structuredData = {
               <h2>2. Arrests Over Time</h2>
               <p>Low-level arrests and other arrests</p>
             </div>
-            <div class="personnel-empty-chart" aria-hidden="true"></div>
+            <EmptyMeasurementState
+              detail="Arrest measurements will appear here when verified values are available."
+            />
           </section>
 
           <section class="personnel-panel">
@@ -618,7 +642,9 @@ const structuredData = {
               <h2>3. Liability Costs Over Time</h2>
               <p>Total liability costs</p>
             </div>
-            <div class="personnel-empty-chart" aria-hidden="true"></div>
+            <EmptyMeasurementState
+              detail="Liability-cost measurements will appear here when verified values are available."
+            />
           </section>
 
           <section class="personnel-panel">
@@ -640,7 +666,7 @@ const structuredData = {
                   ))}
                 </div>
               ) : (
-                <div class="personnel-empty-chart" aria-hidden="true" />
+                <EmptyMeasurementState detail="Civil-case measurements will appear here when verified values are available." />
               )
             }
           </section>
@@ -650,7 +676,9 @@ const structuredData = {
               <h2>5. {metricLabels.racialBreakdownStopsArrests}</h2>
               <p>Who is most affected in the current dataset</p>
             </div>
-            <div class="personnel-empty-chart" aria-hidden="true"></div>
+            <EmptyMeasurementState
+              detail="Race and ethnicity measurements will appear here when verified values are available."
+            />
           </section>
 
           <section class="personnel-panel">
@@ -658,7 +686,9 @@ const structuredData = {
               <h2>6. {metricLabels.daylightNighttimeStops}</h2>
               <p>Comparison of stops by time of day and race</p>
             </div>
-            <div class="personnel-empty-chart" aria-hidden="true"></div>
+            <EmptyMeasurementState
+              detail="Time-of-day stop measurements will appear here when verified values are available."
+            />
           </section>
 
           <section class="personnel-panel">
@@ -666,7 +696,9 @@ const structuredData = {
               <h2>7. {metricLabels.topChargeCategories}</h2>
               <p>By arrests</p>
             </div>
-            <div class="personnel-empty-chart" aria-hidden="true"></div>
+            <EmptyMeasurementState
+              detail="Charge-category measurements will appear here when verified values are available."
+            />
           </section>
 
           <section class="personnel-panel">
@@ -674,7 +706,7 @@ const structuredData = {
               <h2>8. Killings Over Time</h2>
               <p>People by age group, dogs and other animals</p>
             </div>
-            <div class="personnel-empty-chart" aria-hidden="true"></div>
+            <EmptyMeasurementState />
           </section>
 
           <section class="personnel-panel personnel-panel-wide">
@@ -776,14 +808,14 @@ const structuredData = {
             payload={addCivilCasePrefillPayload}
             class="personnel-action"
           >
-            Add Civil Case
+            Add a civil case
           </PrefillNavButton>
           <PrefillNavButton
             to={pastEmployerHref}
             payload={pastEmployerPrefillPayload}
             class="personnel-action"
           >
-            Submit Past Employer
+            Submit past employer
           </PrefillNavButton>
           <PrefillNavButton
             to="/about/contact/"
@@ -1551,16 +1583,6 @@ const structuredData = {
 
   .personnel-profile-aside dd {
     font-weight: 650;
-  }
-
-  .personnel-empty-chart {
-    background:
-      linear-gradient(#d9e1ee 1px, transparent 1px) 0 0 / 100% 25%,
-      linear-gradient(90deg, #eef3fa 1px, transparent 1px) 0 0 / 12.5% 100%;
-    border-bottom: 1px solid #b8c4d8;
-    border-left: 1px solid #b8c4d8;
-    margin-top: 0.7rem;
-    min-height: 7.7rem;
   }
 
   @media (max-width: 991.98px) {

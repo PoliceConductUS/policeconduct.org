@@ -1,6 +1,7 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
+import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityActionButton from "#src/components/EntityActionButton.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
@@ -282,6 +283,18 @@ const sourceForColumn = (
     ? report.sources.find((source) => source.sourceKey === sourceKey) || null
     : null;
 };
+
+const tableValue = (
+  row: CivicIndexModel["rows"][number],
+  column: CivicIndexModel["columns"][number],
+) => (column.key === "label" ? row.label : (row.values[column.key] ?? ""));
+const tableColumnLabel = (column: CivicIndexModel["columns"][number]) =>
+  column.key === "civilCases" ? "Civil cases" : column.label;
+const rowSectionLabel =
+  model.level === "state"
+    ? `Counties / Areas within ${heading}`
+    : model.indexLabel;
+const statePolicyContextLabel = `${model.breadcrumbs.find((item) => item.href?.match(/^\/[a-z]{2}\/$/))?.label || heading} decertification law context`;
 ---
 
 <SiteLayout
@@ -306,15 +319,151 @@ const sourceForColumn = (
             <span data-civic-coming-soon></span>
           </Fragment>
         </EntityPageHeader>
+        <p class="civic-index-kicker">{model.jurisdictionLabel}</p>
 
         <MetricGrid metrics={metricCards} columns="auto" />
+
+        <section class="civic-index-summary" aria-labelledby="thingsToKnow">
+          <h2 id="thingsToKnow">Top 5 things to know</h2>
+          <p class="civic-index-summary-note">Agencies tracked</p>
+          <div class="civic-index-summary-grid">
+            {
+              model.thingsToKnow.map((item) => (
+                <article>
+                  <span>{item.label}</span>
+                  <strong>{item.detail}</strong>
+                </article>
+              ))
+            }
+          </div>
+        </section>
+
+        <section class="civic-index-panels" aria-label="Record summary panels">
+          {
+            model.dataPanels.map((panel) => (
+              <DataPanel title={panel.title} description={panel.description}>
+                {panel.bars.length ? (
+                  <div class="civic-index-bars">
+                    {panel.bars.map((bar) => (
+                      <div class="civic-index-bar">
+                        <span>{bar.label}</span>
+                        <i>
+                          <b style={`width: ${Math.min(100, bar.value)}%`} />
+                        </i>
+                        <strong>{bar.detail}</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyMeasurementState />
+                )}
+              </DataPanel>
+            ))
+          }
+        </section>
+
+        <section class="civic-index-trends" aria-labelledby="trendsHeading">
+          <h2 id="trendsHeading">Trends over time</h2>
+          <div class="entity-chart-grid">
+            {
+              model.trendPanels.map((panel) => (
+                <DataPanel title={panel.label}>
+                  <EmptyMeasurementState />
+                </DataPanel>
+              ))
+            }
+          </div>
+        </section>
+
+        <section class="civic-index-actions" aria-labelledby="actionCenter">
+          <h2 id="actionCenter">Action Center</h2>
+          <div class="civic-index-action-grid">
+            {
+              model.actionCenter.map((action) => (
+                <a href={action.href}>
+                  <strong>{action.label}</strong>
+                  <span>{action.description}</span>
+                </a>
+              ))
+            }
+          </div>
+          <a class="civic-index-volunteer" href={model.volunteerCta.href}>
+            {model.volunteerCta.label}
+          </a>
+        </section>
+
+        <section class="civic-index-table-section" aria-labelledby="indexRows">
+          <div class="civic-index-table-heading">
+            <div>
+              <h2 id="indexRows">{model.drilldownLabel}</h2>
+              <h3>{rowSectionLabel}</h3>
+              <p>{model.indexLabel}</p>
+            </div>
+            <label>
+              <span>Search</span>
+              <input
+                type="search"
+                placeholder="Search this index"
+                data-civic-index-search
+              />
+            </label>
+          </div>
+
+          <div class="civic-index-table-wrap">
+            <table data-civic-index-table>
+              <thead>
+                <tr>
+                  {
+                    model.columns.map((column) => (
+                      <th
+                        scope="col"
+                        aria-sort={column.numeric ? "none" : undefined}
+                        data-sort-key={column.key}
+                        data-sort-numeric={column.numeric ? "true" : "false"}
+                      >
+                        {column.numeric ? (
+                          <button type="button">
+                            {tableColumnLabel(column)}
+                          </button>
+                        ) : (
+                          tableColumnLabel(column)
+                        )}
+                      </th>
+                    ))
+                  }
+                  <th scope="col">View</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  model.rows.map((row) => (
+                    <tr data-civic-index-row data-search-text={row.searchText}>
+                      {model.columns.map((column) => (
+                        <td data-value={tableValue(row, column)}>
+                          {column.key === "label" ? (
+                            <a href={row.href}>{row.label}</a>
+                          ) : (
+                            tableValue(row, column)
+                          )}
+                        </td>
+                      ))}
+                      <td>
+                        <a href={row.href}>View</a>
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         <div class="entity-chart-grid">
           <OutcomesByIncomePanel href={scopedHref("outcomes-by-income")} />
           {
             chartCards.map(([title, description]) => (
               <DataPanel title={title} description={description}>
-                <div class="entity-empty-line-chart" aria-hidden="true" />
+                <EmptyMeasurementState />
               </DataPanel>
             ))
           }
@@ -323,80 +472,36 @@ const sourceForColumn = (
             title="Racial Breakdown of Stops or Arrests"
             description="Who is most affected in the current dataset"
           >
-            <table class="civic-mini-table">
-              <thead>
-                <tr>
-                  <th scope="col">Race / Ethnicity</th>
-                  <th scope="col">Stops %</th>
-                  <th scope="col">Arrests %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {
-                  [
-                    "White",
-                    "Black or African American",
-                    "Hispanic or Latino",
-                    "Asian",
-                    "Other / Unknown",
-                  ].map((label) => (
-                    <tr>
-                      <th scope="row">{label}</th>
-                      <td />
-                      <td />
-                    </tr>
-                  ))
-                }
-              </tbody>
-            </table>
+            <EmptyMeasurementState
+              detail="Race and ethnicity measurements will appear here when verified values are available."
+            />
           </DataPanel>
 
           <DataPanel
             title="Daylight vs Nighttime Stops"
             description="Comparison of stops by time of day and race"
           >
-            <div class="civic-empty-bars" aria-hidden="true">
-              {
-                [
-                  "White",
-                  "Black or African American",
-                  "Hispanic or Latino",
-                  "Other / Unknown",
-                ].map((label) => <span>{label}</span>)
-              }
-            </div>
+            <EmptyMeasurementState
+              detail="Time-of-day stop measurements will appear here when verified values are available."
+            />
           </DataPanel>
 
           <DataPanel
             title="Top Charge Categories"
             description="Most common reasons for arrest"
           >
-            <div class="civic-horizontal-bars">
-              {
-                [
-                  "Traffic Offenses",
-                  "Theft",
-                  "Assault",
-                  "Possession",
-                  "DWI",
-                ].map((label) => (
-                  <div>
-                    <span>{label}</span>
-                    <i>
-                      <b style="width: 0%" />
-                    </i>
-                    <strong />
-                  </div>
-                ))
-              }
-            </div>
+            <EmptyMeasurementState
+              detail="Charge-category measurements will appear here when verified values are available."
+            />
           </DataPanel>
 
           <DataPanel
             title="Budget and Overtime Trend"
             description="Total budget and overtime spending"
           >
-            <div class="entity-empty-line-chart" aria-hidden="true"></div>
+            <EmptyMeasurementState
+              detail="Budget and overtime measurements will appear here when verified values are available."
+            />
           </DataPanel>
         </div>
       </div>
@@ -415,8 +520,17 @@ const sourceForColumn = (
                   {payload.tier ? (
                     <p class="civic-policy-context-note">{payload.tier}</p>
                   ) : null}
+                  {report.sources[0] ? (
+                    <p>
+                      <a href={report.sources[0].url}>
+                        {report.sources[0].url.includes("mayerssolutions.com")
+                          ? "Mayers Strategic Solutions decertification report card"
+                          : report.sources[0].label}
+                      </a>
+                    </p>
+                  ) : null}
                   <div class="civic-report-card-table-wrap">
-                    <table class="civic-report-card-table">
+                    <table class="civic-report-card-table" role="presentation">
                       <thead>
                         <tr>
                           {payload.columns.map((column) => (
@@ -474,6 +588,14 @@ const sourceForColumn = (
             })}
           </div>
         </section>
+      ) : model.level !== "state" ? (
+        <section class="civic-policy-context">
+          <div class="container">
+            <article class="civic-location-report">
+              <h2>{statePolicyContextLabel}</h2>
+            </article>
+          </div>
+        </section>
       ) : null
     }
   </main>
@@ -498,6 +620,64 @@ const sourceForColumn = (
       button.addEventListener("click", () =>
         setSoon(button, "Downloadable reports are coming soon."),
       );
+    });
+
+    const table = document.querySelector("[data-civic-index-table]");
+    const rows = table
+      ? Array.from(table.querySelectorAll("[data-civic-index-row]"))
+      : [];
+    const tbody = table?.querySelector("tbody");
+    const search = document.querySelector("[data-civic-index-search]");
+    const normalize = (value) =>
+      String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
+
+    const applyFilter = () => {
+      const query = normalize(search?.value);
+      rows.forEach((row) => {
+        const text = normalize(row.getAttribute("data-search-text"));
+        row.hidden = Boolean(query) && !text.includes(query);
+      });
+    };
+
+    search?.addEventListener("input", applyFilter);
+
+    table?.querySelectorAll("th[data-sort-key] button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const header = button.closest("th");
+        const headerIndex = Array.from(header.parentElement.children).indexOf(
+          header,
+        );
+        const isNumeric = header.getAttribute("data-sort-numeric") === "true";
+        const nextDirection =
+          header.getAttribute("aria-sort") === "ascending"
+            ? "descending"
+            : "ascending";
+
+        table.querySelectorAll("th[aria-sort]").forEach((sortableHeader) => {
+          sortableHeader.setAttribute("aria-sort", "none");
+        });
+        header.setAttribute("aria-sort", nextDirection);
+
+        rows
+          .sort((left, right) => {
+            const leftValue =
+              left.children[headerIndex]?.getAttribute("data-value") || "";
+            const rightValue =
+              right.children[headerIndex]?.getAttribute("data-value") || "";
+            const comparison = isNumeric
+              ? Number(leftValue) - Number(rightValue)
+              : leftValue.localeCompare(rightValue, undefined, {
+                  numeric: true,
+                  sensitivity: "base",
+                });
+            return nextDirection === "ascending" ? comparison : -comparison;
+          })
+          .forEach((row) => tbody?.append(row));
+        applyFilter();
+      });
     });
   })();
 </script>
@@ -568,6 +748,206 @@ const sourceForColumn = (
     font-weight: 700;
     min-height: 1.15rem;
     text-align: right;
+  }
+
+  .civic-index-kicker {
+    color: #33456f;
+    font-size: 0.95rem;
+    font-weight: 800;
+    margin: -0.45rem 0 1rem;
+  }
+
+  .civic-index-summary,
+  .civic-index-panels,
+  .civic-index-trends,
+  .civic-index-actions,
+  .civic-index-table-section {
+    margin-top: 1rem;
+  }
+
+  .civic-index-summary h2,
+  .civic-index-trends h2,
+  .civic-index-actions h2,
+  .civic-index-table-heading h2,
+  .civic-index-table-heading h3 {
+    color: #071842;
+    margin: 0;
+  }
+
+  .civic-index-summary-grid,
+  .civic-index-action-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 0.75rem;
+  }
+
+  .civic-index-summary-grid article,
+  .civic-index-action-grid a,
+  .civic-index-table-wrap {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+  }
+
+  .civic-index-summary-grid article {
+    display: grid;
+    gap: 0.3rem;
+    padding: 0.9rem 1rem;
+  }
+
+  .civic-index-summary-grid span,
+  .civic-index-summary-note,
+  .civic-index-action-grid span,
+  .civic-index-table-heading p,
+  .civic-index-table-heading label span {
+    color: #33456f;
+    font-size: 0.8125rem;
+    font-weight: 650;
+    line-height: 1.4;
+  }
+
+  .civic-index-summary-note {
+    margin: 0.35rem 0 0;
+  }
+
+  .civic-index-summary-grid strong,
+  .civic-index-action-grid strong {
+    color: #071842;
+    font-size: 1rem;
+    line-height: 1.25;
+  }
+
+  .civic-index-panels {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .civic-index-bars {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1rem;
+  }
+
+  .civic-index-bar {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(8rem, 0.9fr) minmax(7rem, 2fr) minmax(
+        8rem,
+        1fr
+      );
+  }
+
+  .civic-index-bar span,
+  .civic-index-bar strong {
+    color: #071842;
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .civic-index-bar i {
+    background: #e7edf7;
+    display: block;
+    height: 0.78rem;
+  }
+
+  .civic-index-bar b {
+    background: #087f3b;
+    display: block;
+    height: 100%;
+  }
+
+  .civic-index-action-grid a,
+  .civic-index-volunteer {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.9rem 1rem;
+    text-decoration: none;
+  }
+
+  .civic-index-volunteer {
+    color: #064cfb;
+    font-weight: 800;
+    justify-self: start;
+    margin-top: 0.75rem;
+    padding-left: 0;
+  }
+
+  .civic-index-table-heading {
+    align-items: end;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 0.75rem;
+  }
+
+  .civic-index-table-heading h3 {
+    font-size: 1rem;
+    margin-top: 0.35rem;
+  }
+
+  .civic-index-table-heading label {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .civic-index-table-heading input {
+    border: 1px solid #c9d4e6;
+    border-radius: 0.35rem;
+    color: #071842;
+    font: inherit;
+    min-height: 2.6rem;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .civic-index-table-wrap {
+    overflow-x: auto;
+  }
+
+  .civic-index-table-wrap table {
+    border-collapse: collapse;
+    min-width: 760px;
+    width: 100%;
+  }
+
+  .civic-index-table-wrap th,
+  .civic-index-table-wrap td {
+    border-top: 1px solid #d9e1ee;
+    color: #071842;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    padding: 0.78rem 0.75rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .civic-index-table-wrap th {
+    background: #f7f9fc;
+    color: #53627f;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .civic-index-table-wrap th button {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-weight: inherit;
+    padding: 0;
+    text-transform: inherit;
+  }
+
+  .civic-index-table-wrap a {
+    color: #064cfb;
+    font-weight: 800;
+    text-decoration: none;
   }
 
   .civic-policy-context h2 {
@@ -666,73 +1046,6 @@ const sourceForColumn = (
     padding-left: 1.1rem;
   }
 
-  .civic-mini-table {
-    border-collapse: collapse;
-    margin-top: 0.85rem;
-    width: 100%;
-  }
-
-  .civic-mini-table th,
-  .civic-mini-table td {
-    border-top: 1px solid #d9e1ee;
-    color: #071842;
-    font-size: 0.8125rem;
-    padding: 0.5rem 0.4rem;
-    text-align: left;
-    vertical-align: top;
-  }
-
-  .civic-empty-bars {
-    align-items: end;
-    display: grid;
-    gap: 0.75rem;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    height: 10rem;
-    margin-top: 1rem;
-  }
-
-  .civic-empty-bars span {
-    border-bottom: 1px solid #b8c4d8;
-    color: #33456f;
-    display: grid;
-    font-size: 0.75rem;
-    min-height: 100%;
-    place-items: end center;
-    text-align: center;
-  }
-
-  .civic-horizontal-bars {
-    display: grid;
-    gap: 0.65rem;
-    margin-top: 1rem;
-  }
-
-  .civic-horizontal-bars div {
-    align-items: center;
-    display: grid;
-    gap: 0.75rem;
-    grid-template-columns: minmax(6rem, 0.8fr) minmax(7rem, 2fr) auto;
-  }
-
-  .civic-horizontal-bars span,
-  .civic-horizontal-bars strong {
-    color: #071842;
-    font-size: 0.8125rem;
-    font-weight: 700;
-  }
-
-  .civic-horizontal-bars i {
-    background: #e7edf7;
-    display: block;
-    height: 0.78rem;
-  }
-
-  .civic-horizontal-bars b {
-    background: #174bff;
-    display: block;
-    height: 100%;
-  }
-
   .civic-policy-context {
     border-top: 1px solid #d5deeb;
     padding: 2rem 0;
@@ -760,6 +1073,19 @@ const sourceForColumn = (
   }
 
   @media (min-width: 768px) {
+    .civic-index-summary-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .civic-index-action-grid,
+    .civic-index-panels {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .civic-index-table-heading {
+      grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.3fr);
+    }
+
     .civic-policy-context-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }

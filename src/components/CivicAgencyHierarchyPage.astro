@@ -2,6 +2,7 @@
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import DataPanel from "#src/components/DataPanel.astro";
+import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
@@ -91,7 +92,7 @@ const outcomesByIncomeHref = `${model.pagePath}outcomes-by-income/`;
                   title={chartTitle}
                   description="Projected federal records for this view"
                 >
-                  <div class="entity-empty-line-chart" aria-hidden="true" />
+                  <EmptyMeasurementState />
                 </DataPanel>
               ))
             )

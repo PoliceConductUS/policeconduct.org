@@ -1,6 +1,7 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
+import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import Pagination from "#src/components/Pagination.astro";
@@ -134,21 +135,27 @@ const formatDate = (value?: string | null) =>
             title="Agency Assignments Over Time"
             description="Personnel assignment records by year"
           >
-            <div class="entity-empty-line-chart" aria-hidden="true"></div>
+            <EmptyMeasurementState
+              detail="Assignment timeline measurements will appear here when verified values are available."
+            />
           </DataPanel>
 
           <DataPanel
             title="Reports Over Time"
             description="Personnel-linked report records by year"
           >
-            <div class="entity-empty-line-chart" aria-hidden="true"></div>
+            <EmptyMeasurementState
+              detail="Report timeline measurements will appear here when verified values are available."
+            />
           </DataPanel>
 
           <DataPanel
             title="Civil Cases Over Time"
             description="Personnel-linked civil cases by year"
           >
-            <div class="entity-empty-line-chart" aria-hidden="true"></div>
+            <EmptyMeasurementState
+              detail="Civil-case timeline measurements will appear here when verified values are available."
+            />
           </DataPanel>
 
           <DataPanel

@@ -48,11 +48,15 @@ if (missingVars.length > 0) {
 const args = process.argv.slice(2);
 
 console.log("Refreshing build projections...");
-const refresh = spawn("node", ["scripts/refresh-build-projections.mjs"], {
-  cwd: repoRoot,
-  env: process.env,
-  stdio: "inherit",
-});
+const refresh = spawn(
+  process.execPath,
+  ["scripts/refresh-build-projections.mjs"],
+  {
+    cwd: repoRoot,
+    env: process.env,
+    stdio: "inherit",
+  },
+);
 
 const refreshResult = await new Promise((resolve) => {
   refresh.on("exit", (code, signal) => resolve({ code, signal }));
@@ -67,15 +71,34 @@ if (refreshResult.code !== 0) {
   process.exit(refreshResult.code ?? 1);
 }
 
-const child = spawn("astro", ["dev", ...args], {
+const astroBin = path.join(
+  repoRoot,
+  "node_modules",
+  "astro",
+  "bin",
+  "astro.mjs",
+);
+
+const child = spawn(process.execPath, [astroBin, "dev", ...args], {
   cwd: repoRoot,
   env: process.env,
   stdio: "inherit",
-  shell: true,
 });
+
+let shuttingDown = false;
+
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.once(signal, () => {
+    shuttingDown = true;
+    child.kill(signal);
+  });
+}
 
 child.on("exit", (code, signal) => {
   if (signal) {
+    if (shuttingDown) {
+      process.exit(0);
+    }
     process.kill(process.pid, signal);
     return;
   }

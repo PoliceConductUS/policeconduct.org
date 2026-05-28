@@ -97,16 +97,6 @@ const { id, title, description, className } = Astro.props as {
     text-decoration: none;
   }
 
-  :global(.entity-empty-line-chart) {
-    background:
-      linear-gradient(#d9e1ee 1px, transparent 1px) 0 0 / 100% 25%,
-      linear-gradient(90deg, #b8c4d8 1px, transparent 1px) 0 0 / 10% 100%;
-    border-bottom: 1px solid #b8c4d8;
-    border-left: 1px solid #b8c4d8;
-    height: 9.5rem;
-    margin-top: 1rem;
-  }
-
   @media (min-width: 768px) {
     :global(.entity-chart-grid) {
       grid-template-columns: repeat(2, minmax(0, 1fr));

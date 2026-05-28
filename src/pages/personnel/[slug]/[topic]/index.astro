@@ -1,6 +1,7 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
+import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
@@ -255,7 +256,7 @@ const metricCards = [
               </DataPanel>
             ) : (
               <DataPanel title={`${topicConfig.label} Over Time`}>
-                <div class="entity-empty-line-chart" aria-hidden="true" />
+                <EmptyMeasurementState />
               </DataPanel>
             )
           }

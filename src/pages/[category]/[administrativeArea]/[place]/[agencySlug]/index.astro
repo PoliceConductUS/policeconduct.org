@@ -1,11 +1,12 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import EntityActionButton from "#src/components/EntityActionButton.astro";
+import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
   loadAgencyDetailByRouteParams,
@@ -13,6 +14,7 @@ import {
 } from "#src/lib/data/agency-detail.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 import { metricVisuals } from "#src/lib/metric-vocabulary.js";
+import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 
 export async function getStaticPaths() {
   return loadAgencyLocationStaticPaths();
@@ -68,6 +70,82 @@ const contactPoints = data.agencyPhones.map(
 const sameAs = data.agencyLinks
   .map((link: { url?: string | null }) => link.url)
   .filter(Boolean);
+const agencyPrefillName = agencyName.toLocaleUpperCase("en-US");
+const primaryWebsite =
+  data.agencyLinks.find((link: { url?: string | null }) =>
+    /^https?:\/\//i.test(link.url || ""),
+  )?.url || "";
+const agencyLinksSummary = data.agencyLinks
+  .map((link: { label?: string | null; url?: string | null }) =>
+    [link.label, link.url].filter(Boolean).join(": "),
+  )
+  .filter(Boolean)
+  .join("\n");
+const civilLitigationSummary = [
+  ...civilCases.map((record: any) => ({
+    ...record,
+    caseUrl: `/civil-cases/${record.slug}/`,
+  })),
+  ...data.personnelLinkedCivilCases.map((record: any) => ({
+    ...record,
+    caseUrl: `/civil-cases/${record.slug}/`,
+  })),
+]
+  .map((record) => {
+    const segments = [
+      record.title || "Civil case",
+      record.cause_number || null,
+      record.court || null,
+      record.caseUrl,
+    ];
+    return segments.filter(Boolean).join(" — ");
+  })
+  .join("\n");
+const reportLinksSummary = data.reportedReports
+  .map((report: { url: string }) => report.url)
+  .join("\n");
+const reportNewPrefillPayload = JSON.stringify({
+  officer: {
+    department: agencyPrefillName,
+  },
+} satisfies ReportNewPrefill);
+const addCivilCasePrefillPayload = JSON.stringify({
+  jurisdiction: categorySlug,
+  defendants: agencyPrefillName,
+  summary: `${agencyPrefillName} agency profile: ${agencyPath}`,
+  links: [
+    agencyPath,
+    ...data.reportedReports
+      .slice(0, 3)
+      .map((report: { url: string }) => report.url),
+  ]
+    .filter(Boolean)
+    .join("\n"),
+});
+const suggestEditPrefillPayload = JSON.stringify({
+  agencyPath,
+  agencyName: agencyPrefillName,
+  jurisdiction: categorySlug,
+  departmentWebsite: primaryWebsite,
+  departmentHead: data.agency.contact_name || "",
+  socialLinks: agencyLinksSummary,
+  civilLitigation: civilLitigationSummary,
+});
+const suggestPersonnelPrefillPayload = JSON.stringify({
+  currentAgency: agencyPrefillName,
+  currentAgencyCity: data.agency.city || "",
+  currentAgencyState: agencyState,
+  civilLitigation: civilLitigationSummary,
+  reportLinks: reportLinksSummary,
+});
+const subscribePrefillPayload = JSON.stringify({
+  whoami: "Subscriber",
+  message: `Please notify me when this agency page changes: ${agencyPath}`,
+});
+const claimProfilePrefillPayload = JSON.stringify({
+  whoami: "Profile Owner",
+  message: `I would like to claim ownership of this profile.\nProfile path: ${agencyPath}`,
+});
 const federalAgency = data.federalAgency
   ? {
       name: data.federalAgency.name,
@@ -264,43 +342,50 @@ const agencyMetrics = [
             ) : null
           }
           <Fragment slot="actions">
-            <EntityActionButton data-agency-share>
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <circle cx="18" cy="5" r="3"></circle>
-                <circle cx="6" cy="12" r="3"></circle>
-                <circle cx="18" cy="19" r="3"></circle>
-                <path d="m8.59 13.51 6.83 3.98"></path>
-                <path d="m15.41 6.51-6.82 3.98"></path>
-              </svg>
-              Share
-            </EntityActionButton>
-            <EntityActionButton
-              className="entity-action-primary"
-              data-agency-download-report
+            <PrefillNavButton
+              to="/law-enforcement-agency/suggest-edit/"
+              payload={suggestEditPrefillPayload}
+              class="entity-action-button"
             >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <path d="M7 10l5 5 5-5"></path>
-                <path d="M12 15V3"></path>
-              </svg>
-              Download Report
-            </EntityActionButton>
+              Suggest edit
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/report/new/"
+              payload={reportNewPrefillPayload}
+              class="entity-action-button entity-action-primary"
+            >
+              Share your experience
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/civil-litigation/new/"
+              payload={addCivilCasePrefillPayload}
+              class="entity-action-button"
+            >
+              Add a civil case
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/personnel/new/"
+              payload={suggestPersonnelPrefillPayload}
+              class="entity-action-button"
+            >
+              Suggest new personnel
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/about/contact/"
+              payload={subscribePrefillPayload}
+              data-testid="agency-subscribe-link"
+              class="entity-action-button"
+            >
+              Notify Me
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/about/contact/"
+              payload={claimProfilePrefillPayload}
+              data-testid="agency-claim-profile-link"
+              class="entity-action-button"
+            >
+              Claim Profile
+            </PrefillNavButton>
             <span class="agency-coming-soon" data-agency-coming-soon></span>
           </Fragment>
         </EntityPageHeader>
@@ -313,166 +398,86 @@ const agencyMetrics = [
             title="Arrests Over Time"
             description="Number of arrests by category"
           >
-            <div class="agency-line-chart">
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-                <path class="agency-grid-line" d="M8 14H96"></path>
-                <path class="agency-grid-line" d="M8 38H96"></path>
-                <path class="agency-grid-line" d="M8 62H96"></path>
-                <path class="agency-grid-line" d="M8 86H96"></path>
-                <path class="agency-axis-line" d="M8 8V90H96"></path>
-              </svg>
-            </div>
+            <EmptyMeasurementState
+              detail="Arrest measurements will appear here when verified values are available."
+            />
           </DataPanel>
           <DataPanel
             title="Killings Over Time"
             description="People by age group, dogs and other animals"
           >
-            <div class="agency-line-chart">
-              <div class="agency-chart-legend">
-                <span><i class="agency-dot-blue"></i>Under 18</span>
-                <span><i class="agency-dot-green"></i>18+</span>
-                <span><i class="agency-dot-purple"></i>Unknown age</span>
-                <span><i class="agency-dot-orange"></i>Dogs</span>
-                <span><i class="agency-dot-gold"></i>Other animals</span>
-              </div>
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-                <path class="agency-grid-line" d="M8 14H96"></path>
-                <path class="agency-grid-line" d="M8 38H96"></path>
-                <path class="agency-grid-line" d="M8 62H96"></path>
-                <path class="agency-grid-line" d="M8 86H96"></path>
-                <path class="agency-axis-line" d="M8 8V90H96"></path>
-              </svg>
-            </div>
+            <EmptyMeasurementState />
           </DataPanel>
           <DataPanel
             title="Use of Force Over Time"
             description="Number of use of force incidents"
           >
-            <div class="agency-line-chart">
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-                <path class="agency-grid-line" d="M8 14H96"></path>
-                <path class="agency-grid-line" d="M8 38H96"></path>
-                <path class="agency-grid-line" d="M8 62H96"></path>
-                <path class="agency-grid-line" d="M8 86H96"></path>
-                <path class="agency-axis-line" d="M8 8V90H96"></path>
-              </svg>
-            </div>
+            <EmptyMeasurementState
+              detail="Use-of-force measurements will appear here when verified values are available."
+            />
           </DataPanel>
           <DataPanel
             id="agency-liability-costs"
             title="Civil Cases and Liability Costs Over Time"
             description="Civil cases and liability costs"
           >
-            <div class="agency-line-chart">
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-                <path class="agency-grid-line" d="M8 14H96"></path>
-                <path class="agency-grid-line" d="M8 38H96"></path>
-                <path class="agency-grid-line" d="M8 62H96"></path>
-                <path class="agency-grid-line" d="M8 86H96"></path>
-                <path class="agency-axis-line" d="M8 8V90H96"></path>
-                {
-                  civilCasesByYear.length ? (
+            {
+              civilCasesByYear.length ? (
+                <div class="agency-line-chart">
+                  <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path class="agency-grid-line" d="M8 14H96" />
+                    <path class="agency-grid-line" d="M8 38H96" />
+                    <path class="agency-grid-line" d="M8 62H96" />
+                    <path class="agency-grid-line" d="M8 86H96" />
+                    <path class="agency-axis-line" d="M8 8V90H96" />
                     <polyline
                       class="agency-line agency-line-green"
                       points={getLinePoints(civilCasesByYear)}
                     />
-                  ) : null
-                }
-              </svg>
-              <div class="agency-chart-labels">
-                {civilCasesByYear.map((point) => <span>{point.label}</span>)}
-              </div>
-            </div>
+                  </svg>
+                  <div class="agency-chart-labels">
+                    {civilCasesByYear.map((point) => (
+                      <span>{point.label}</span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <EmptyMeasurementState detail="Civil-case and liability-cost measurements will appear here when verified values are available." />
+              )
+            }
           </DataPanel>
           <DataPanel
             title="Racial Breakdown of Stops or Arrests"
             description="Who is most affected in the current dataset"
           >
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Race / Ethnicity</th>
-                  <th scope="col">Stops %</th>
-                  <th scope="col">Arrests %</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><th scope="row">White</th><td></td><td></td></tr>
-                <tr
-                  ><th scope="row">Black or African American</th><td></td><td
-                  ></td></tr
-                >
-                <tr
-                  ><th scope="row">Hispanic or Latino</th><td></td><td></td></tr
-                >
-                <tr><th scope="row">Asian</th><td></td><td></td></tr>
-                <tr><th scope="row">Other / Unknown</th><td></td><td></td></tr>
-              </tbody>
-            </table>
+            <EmptyMeasurementState
+              detail="Race and ethnicity measurements will appear here when verified values are available."
+            />
           </DataPanel>
           <DataPanel
             title="Daylight vs Nighttime Stops"
             description="Comparison of stops by time of day and race"
           >
-            <div class="agency-stacked-bars" aria-hidden="true">
-              {
-                [
-                  "White",
-                  "Black or African American",
-                  "Hispanic or Latino",
-                  "Other / Unknown",
-                ].map((label) => (
-                  <div>
-                    <i>
-                      <>
-                        <b />
-                        <b />
-                      </>
-                    </i>
-                    <span>{label}</span>
-                  </div>
-                ))
-              }
-            </div>
+            <EmptyMeasurementState
+              detail="Time-of-day stop measurements will appear here when verified values are available."
+            />
           </DataPanel>
           <DataPanel
             title="Top Charge Categories"
             description="Most common reasons for arrest"
           >
-            <div class="agency-source-bars">
-              {
-                [
-                  "Traffic Offenses",
-                  "Theft",
-                  "Assault",
-                  "Possession",
-                  "DWI",
-                ].map((label) => (
-                  <div class="agency-source-bar">
-                    <span>{label}</span>
-                    <i>
-                      <b style="width: 0%" />
-                    </i>
-                    <strong />
-                  </div>
-                ))
-              }
-            </div>
+            <EmptyMeasurementState
+              detail="Charge-category measurements will appear here when verified values are available."
+            />
           </DataPanel>
           <DataPanel
             id="agency-budget-trend"
             title="Budget and Overtime Trend"
             description="Total budget and overtime spending"
           >
-            <div class="agency-line-chart">
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-                <path class="agency-grid-line" d="M8 14H96"></path>
-                <path class="agency-grid-line" d="M8 38H96"></path>
-                <path class="agency-grid-line" d="M8 62H96"></path>
-                <path class="agency-grid-line" d="M8 86H96"></path>
-                <path class="agency-axis-line" d="M8 8V90H96"></path>
-              </svg>
-            </div>
+            <EmptyMeasurementState
+              detail="Budget and overtime measurements will appear here when verified values are available."
+            />
           </DataPanel>
         </div>
       </div>
@@ -688,10 +693,6 @@ const agencyMetrics = [
       vector-effect: non-scaling-stroke;
     }
 
-    .agency-line-blue {
-      stroke: #174bff;
-    }
-
     .agency-line-green {
       stroke: #087f3b;
     }
@@ -702,91 +703,6 @@ const agencyMetrics = [
       font-size: 0.75rem;
       justify-content: space-between;
       min-height: 1rem;
-    }
-
-    .agency-chart-legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.8rem;
-      margin-bottom: 0.35rem;
-    }
-
-    .agency-chart-legend span {
-      align-items: center;
-      color: #33456f;
-      display: inline-flex;
-      font-size: 0.75rem;
-      font-weight: 700;
-      gap: 0.3rem;
-    }
-
-    .agency-chart-legend i {
-      border-radius: 999px;
-      display: inline-block;
-      height: 0.42rem;
-      width: 0.42rem;
-    }
-
-    .agency-dot-blue {
-      background: #174bff;
-    }
-
-    .agency-dot-green {
-      background: #087f3b;
-    }
-
-    .agency-dot-purple {
-      background: #5b2df5;
-    }
-
-    .agency-dot-orange {
-      background: #ffad1f;
-    }
-
-    .agency-dot-gold {
-      background: #a66f00;
-    }
-
-    .agency-horizontal-bars,
-    .agency-source-bars {
-      display: grid;
-      gap: 0.75rem;
-      margin-top: 1.15rem;
-    }
-
-    .agency-horizontal-bar,
-    .agency-source-bar {
-      align-items: center;
-      display: grid;
-      gap: 0.75rem;
-      grid-template-columns: minmax(5.5rem, 0.8fr) minmax(7rem, 2fr) auto;
-    }
-
-    .agency-horizontal-bar span,
-    .agency-source-bar span,
-    .agency-horizontal-bar strong,
-    .agency-source-bar strong {
-      color: #071842;
-      font-size: 0.82rem;
-      font-weight: 700;
-    }
-
-    .agency-horizontal-bar i,
-    .agency-source-bar i {
-      background: #e7edf7;
-      display: block;
-      height: 0.78rem;
-    }
-
-    .agency-horizontal-bar b,
-    .agency-source-bar b {
-      background: #174bff;
-      display: block;
-      height: 100%;
-    }
-
-    .agency-source-bar b {
-      background: #087f3b;
     }
 
     .agency-action-list {
@@ -823,49 +739,6 @@ const agencyMetrics = [
       }
     }
 
-    .agency-stacked-bars {
-      display: grid;
-      gap: 0.75rem;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      margin-top: 1.25rem;
-    }
-
-    .agency-stacked-bars div {
-      display: grid;
-      gap: 0.5rem;
-      min-width: 0;
-      text-align: center;
-    }
-
-    .agency-stacked-bars i {
-      align-items: end;
-      border-bottom: 1px solid #b8c4d8;
-      display: flex;
-      height: 6.5rem;
-      justify-content: center;
-    }
-
-    .agency-stacked-bars b {
-      display: block;
-      width: 2.2rem;
-    }
-
-    .agency-stacked-bars b:first-child {
-      background: #ffad1f;
-      height: 0;
-    }
-
-    .agency-stacked-bars b:last-child {
-      background: #071842;
-      height: 0;
-    }
-
-    .agency-stacked-bars span {
-      color: #33456f;
-      font-size: 0.75rem;
-      line-height: 1.15;
-    }
-
     @media (max-width: 991.98px) {
     }
 
@@ -876,11 +749,6 @@ const agencyMetrics = [
       }
 
       .agency-metric-card {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .agency-horizontal-bar,
-      .agency-source-bar {
         grid-template-columns: minmax(0, 1fr);
       }
 
