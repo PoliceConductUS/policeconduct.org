@@ -378,37 +378,56 @@ const buildRecordSignalPanel = (
   rows: CivicIndexRow[],
   title: string,
   description: string,
-): CivicIndexDataPanel => ({
-  title,
-  description,
-  bars: rows
-    .map((row) => {
-      const personnel = getNumericRowValue(row, "personnel");
-      const reports = getNumericRowValue(row, "reports");
-      const civilCases = getNumericRowValue(row, "civilCases");
-      return {
-        label: row.label,
-        value: personnel + reports + civilCases,
-        detail: `${personnel.toLocaleString("en-US")} personnel, ${reports.toLocaleString("en-US")} reports, ${civilCases.toLocaleString("en-US")} civil cases`,
-      };
-    })
-    .filter((bar) => bar.value > 0)
-    .sort((left, right) => right.value - left.value)
-    .slice(0, 8),
-});
+): CivicIndexDataPanel => {
+  const bars: CivicIndexDataBar[] = [];
 
-const getCoverageValue = (
-  coverage: CivicCoverageMetric[],
-  key: CivicCoverageMetric["key"],
-) => coverage.find((metric) => metric.key === key)?.value || 0;
+  for (const row of rows) {
+    const personnel = getNumericRowValue(row, "personnel");
+    const reports = getNumericRowValue(row, "reports");
+    const civilCases = getNumericRowValue(row, "civilCases");
+    const value = personnel + reports + civilCases;
+
+    if (value <= 0) {
+      continue;
+    }
+
+    const bar = {
+      label: row.label,
+      value,
+      detail: `${personnel.toLocaleString("en-US")} personnel, ${reports.toLocaleString("en-US")} reports, ${civilCases.toLocaleString("en-US")} civil cases`,
+    };
+    const insertAt = bars.findIndex((existing) => value > existing.value);
+
+    if (insertAt === -1) {
+      if (bars.length < 8) {
+        bars.push(bar);
+      }
+      continue;
+    }
+
+    bars.splice(insertAt, 0, bar);
+    if (bars.length > 8) {
+      bars.pop();
+    }
+  }
+
+  return {
+    title,
+    description,
+    bars,
+  };
+};
 
 const buildThingsToKnow = (
   coverage: CivicCoverageMetric[],
 ): CivicIndexGuidanceItem[] => {
-  const agencies = getCoverageValue(coverage, "agencies");
-  const reports = getCoverageValue(coverage, "reports");
-  const civilCases = getCoverageValue(coverage, "civil_cases");
-  const personnel = getCoverageValue(coverage, "personnel");
+  const coverageByKey = new Map(
+    coverage.map((metric) => [metric.key, metric.value]),
+  );
+  const agencies = coverageByKey.get("agencies") || 0;
+  const reports = coverageByKey.get("reports") || 0;
+  const civilCases = coverageByKey.get("civil_cases") || 0;
+  const personnel = coverageByKey.get("personnel") || 0;
 
   return [
     {
