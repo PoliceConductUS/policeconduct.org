@@ -65,6 +65,17 @@ Color
   - Neutral metadata: muted ink.
 - Do not use decorative gradients, glassmorphism, neon palettes, or purple-blue gradient themes.
 
+Copy
+
+- Public-facing copy must target an 8th-grade reading level.
+- Use a 10th-grade reading level only when precision requires it.
+- Labels, headings, buttons, captions, and empty states must use familiar words instead of technical, legal, or data-analysis terms.
+- Replace technical or legal public labels with familiar wording.
+- A tooltip, definition, or detail-page explanation may show the original source/legal term when needed, but the visible label must remain familiar.
+- Prefer short sentences, direct labels, and concrete counts or time windows.
+- Avoid jargon such as `denominator`, `cohort`, `methodology`, `scope`, `source basis`, `disposition`, `adjudication`, `impeachment`, and `exculpatory` in public copy. If the original term is needed, place it in a tooltip, definition, or detail page.
+- Use `Updated {date}` as the standard public label for known update dates. If no update date exists, omit the field; do not show `--`, "pending", "unknown", "not available", or similar placeholder text for update metadata.
+
 Components
 
 - Reuse shared components for entity headers, metric grids, data panels, action buttons, breadcrumbs, and topic pages.

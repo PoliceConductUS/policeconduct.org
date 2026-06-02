@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Civic Index Page Shape Mockups</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #071842;
+        --muted: #405172;
+        --line: #d6deea;
+        --soft: #f4f7fb;
+        --paper: #fbfcff;
+        --blue: #174bff;
+        --green: #087f3b;
+        --red: #b42318;
+        --purple: #5b2df5;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #eef3f9;
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 28px;
+      }
+
+      main {
+        margin: 0 auto;
+        max-width: 1440px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 28px;
+        line-height: 1.15;
+      }
+
+      .intro {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 22px;
+      }
+
+      .intro p {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.55;
+        max-width: 940px;
+      }
+
+      .options {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .option {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 12px 28px rgba(7, 24, 66, 0.08);
+        display: grid;
+        gap: 14px;
+        overflow: hidden;
+      }
+
+      .option-label {
+        align-items: start;
+        display: flex;
+        gap: 12px;
+        padding: 18px 18px 0;
+      }
+
+      .badge {
+        align-items: center;
+        background: var(--ink);
+        border-radius: 999px;
+        color: white;
+        display: inline-flex;
+        flex: 0 0 auto;
+        font-size: 13px;
+        font-weight: 800;
+        height: 28px;
+        justify-content: center;
+        width: 28px;
+      }
+
+      .option-label h2 {
+        font-size: 18px;
+        line-height: 1.25;
+      }
+
+      .option-label p {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+        margin-top: 4px;
+      }
+
+      .browser {
+        background: #f8fbff;
+        border-top: 1px solid var(--line);
+        padding: 14px;
+      }
+
+      .page {
+        background: var(--paper);
+        border: 1px solid #cfd8e6;
+        border-radius: 6px;
+        display: grid;
+        gap: 14px;
+        min-height: 680px;
+        padding: 16px;
+      }
+
+      .crumbs {
+        color: #6a7891;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .hero {
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        gap: 8px;
+        padding-bottom: 12px;
+      }
+
+      .hero-title {
+        background: var(--ink);
+        border-radius: 4px;
+        height: 24px;
+        width: 46%;
+      }
+
+      .hero-copy {
+        background: #a9b6c9;
+        border-radius: 4px;
+        height: 10px;
+        width: 78%;
+      }
+
+      .metrics {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .metric {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        min-height: 82px;
+        padding: 10px;
+      }
+
+      .metric::before {
+        border-radius: 999px;
+        content: "";
+        display: block;
+        height: 22px;
+        margin-bottom: 10px;
+        width: 22px;
+      }
+
+      .metric:nth-child(1)::before {
+        background: var(--green);
+      }
+
+      .metric:nth-child(2)::before {
+        background: var(--blue);
+      }
+
+      .metric:nth-child(3)::before {
+        background: var(--green);
+      }
+
+      .metric:nth-child(4)::before {
+        background: var(--purple);
+      }
+
+      .metric:nth-child(5)::before {
+        background: var(--red);
+      }
+
+      .metric b,
+      .metric span,
+      .mini-card b,
+      .mini-card span {
+        background: #dce5f2;
+        border-radius: 3px;
+        display: block;
+      }
+
+      .metric b {
+        height: 16px;
+        width: 54%;
+      }
+
+      .metric span {
+        height: 9px;
+        margin-top: 8px;
+        width: 86%;
+      }
+
+      .band {
+        display: grid;
+        gap: 10px;
+      }
+
+      .band-header {
+        align-items: center;
+        background: #edf3fa;
+        border-left: 4px solid var(--blue);
+        border-radius: 5px;
+        display: flex;
+        justify-content: space-between;
+        min-height: 40px;
+        padding: 9px 12px;
+      }
+
+      .band-header.green {
+        border-left-color: var(--green);
+      }
+
+      .band-header.red {
+        border-left-color: var(--red);
+      }
+
+      .band-title {
+        background: var(--ink);
+        border-radius: 3px;
+        height: 13px;
+        width: 38%;
+      }
+
+      .band-note {
+        background: #a9b6c9;
+        border-radius: 3px;
+        height: 9px;
+        width: 24%;
+      }
+
+      .chart-grid {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .chart-grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .chart {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        display: grid;
+        gap: 10px;
+        min-height: 150px;
+        padding: 12px;
+      }
+
+      .chart-title {
+        background: var(--ink);
+        border-radius: 3px;
+        height: 13px;
+        width: 58%;
+      }
+
+      .chart-caption {
+        background: #a9b6c9;
+        border-radius: 3px;
+        height: 9px;
+        width: 76%;
+      }
+
+      .plot {
+        align-items: end;
+        border-bottom: 1px solid #b8c4d8;
+        border-left: 1px solid #b8c4d8;
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        height: 76px;
+        padding: 0 8px;
+      }
+
+      .plot i {
+        background: #c9d5e7;
+        display: block;
+      }
+
+      .plot i:nth-child(1) {
+        height: 34%;
+      }
+
+      .plot i:nth-child(2) {
+        height: 58%;
+      }
+
+      .plot i:nth-child(3) {
+        height: 46%;
+      }
+
+      .plot i:nth-child(4) {
+        height: 72%;
+      }
+
+      .plot i:nth-child(5) {
+        height: 52%;
+      }
+
+      .focus-layout {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: minmax(0, 1fr) 160px;
+      }
+
+      .rail {
+        display: grid;
+        gap: 10px;
+      }
+
+      .mini-card {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        min-height: 94px;
+        padding: 10px;
+      }
+
+      .mini-card b {
+        height: 12px;
+        width: 80%;
+      }
+
+      .mini-card span {
+        height: 9px;
+        margin-top: 9px;
+        width: 64%;
+      }
+
+      .notes {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+        margin-top: 18px;
+        padding: 16px 18px;
+      }
+
+      .notes strong {
+        color: var(--ink);
+      }
+
+      @media (max-width: 1120px) {
+        .options {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="intro">
+        <h1>Civic Index Landing Page Mockups</h1>
+        <p>
+          Rough page-shape options for discussion. These keep the top metric cards,
+          do not require exact question headings, and use chart context only where it
+          helps the visitor orient.
+        </p>
+      </section>
+
+      <section class="options">
+        <article class="option">
+          <div class="option-label">
+            <span class="badge">A</span>
+            <div>
+              <h2>Metrics-first overview</h2>
+              <p>Closest to current direction. Top metrics remain the anchor; grouped chart previews follow.</p>
+            </div>
+          </div>
+          <div class="browser">
+            <div class="page">
+              <div class="crumbs">Home / Texas</div>
+              <div class="hero">
+                <div class="hero-title"></div>
+                <div class="hero-copy"></div>
+              </div>
+              <div class="metrics">
+                <div class="metric"><b></b><span></span></div>
+                <div class="metric"><b></b><span></span></div>
+                <div class="metric"><b></b><span></span></div>
+                <div class="metric"><b></b><span></span></div>
+                <div class="metric"><b></b><span></span></div>
+              </div>
+              <div class="band">
+                <div class="band-header"><div class="band-title"></div><div class="band-note"></div></div>
+                <div class="chart-grid">
+                  <div class="chart"><div class="chart-title"></div><div class="plot"><i></i><i></i><i></i><i></i><i></i></div><div class="chart-caption"></div></div>
+                  <div class="chart"><div class="chart-title"></div><div class="plot"><i></i><i></i><i></i><i></i><i></i></div></div>
+                </div>
+              </div>
+              <div class="chart-grid three">
+                <div class="chart"><div class="chart-title"></div><div class="plot"><i></i><i></i><i></i><i></i><i></i></div></div>
+                <div class="chart"><div class="chart-title"></div><div class="plot"><i></i><i></i><i></i><i></i><i></i></div></div>
+                <div class="chart"><div class="chart-title"></div><div class="plot"><i></i><i></i><i></i><i></i><i></i></div></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="option">
+          <div class="option-label">
+            <span class="badge">B</span>
+            <div>
+              <h2>Guided overview bands</h2>
+              <p>Top metrics stay, then broad bands like Activity, Costs, Accountability, Outcomes.</p>
+            </div>
+          </div>
+          <div class="browser">
+            <div class="page">
+              <div class="crumbs">Home / Texas</div>
+              <div class="hero">
+                <div class="hero-title"></div>
+                <div class="hero-copy"></div>
+              </div>
+              <div class="metrics">
+                <div class="metric"><b></b><span></span></div>
+                <div class="metric"><b></b><span></span></div>
+                <div class="metric"><b></b><span></span></div>
+                <div class="metric"><b></b><span></span></div>
+                <div class="metric"><b></b><span></span></div>
+              </div>
+              <div class="band">
+                <div class="band-header"><div class="band-title"></div><div class="band-note"></div></div>
+                <div class="chart-grid">
+                  <div class="chart"><div class="chart-title"></div><div class="plot"><i></i><i></i><i></i><i></i><i></i></div></div>
+                  <div class="chart"><div class="chart-title"></div><div class="plot"><i></i><i></i><i></i><i></i><i></i></div></div>
+                </div>
+              </div>
+              <div class="band">
+                <div class="band-header green"><div class="band-title"></div><div class="band-note"></div></div>
+                <div class="chart-grid">
+                  <div class="chart"><div class="chart-title"></div><div class="plot"><i></i><i></i><i></i><i></i><i></i></div><div class="chart-caption"></div></div>
+                  <div class="chart"><div class="chart-title"></div><div class="plot"><i></i><i></i><i></i><i></i><i></i></div></div>
+                </div>
+              </div>
+              <div class="band">
+                <div class="band-header red"><div class="band-title"></div><div class="band-note"></div></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="option">
+          <div class="option-label">
+            <span class="badge">C</span>
+            <div>
+              <h2>Snapshot plus focus cards</h2>
+              <p>Uses a right rail for next-step prompts. More editorial, but risks feeling like dashboard furniture.</p>
+            </div>
+          </div>
+          <div class="browser">
+            <div class="page">
+              <div class="crumbs">Home / Texas</div>
+              <div class="hero">
+                <div class="hero-title"></div>
+                <div class="hero-copy"></div>
+              </div>
+              <div class="focus-layout">
+                <div style="display:grid;gap:12px">
+                  <div class="metrics" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+                    <div class="metric"><b></b><span></span></div>
+                    <div class="metric"><b></b><span></span></div>
+                    <div class="metric"><b></b><span></span></div>
+                  </div>
+                  <div class="chart"><div class="chart-title"></div><div class="plot"><i></i><i></i><i></i><i></i><i></i></div><div class="chart-caption"></div></div>
+                  <div class="chart-grid">
+                    <div class="chart"><div class="chart-title"></div><div class="plot"><i></i><i></i><i></i><i></i><i></i></div></div>
+                    <div class="chart"><div class="chart-title"></div><div class="plot"><i></i><i></i><i></i><i></i><i></i></div></div>
+                  </div>
+                </div>
+                <aside class="rail">
+                  <div class="mini-card"><b></b><span></span></div>
+                  <div class="mini-card"><b></b><span></span></div>
+                  <div class="mini-card"><b></b><span></span></div>
+                </aside>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="notes">
+        <strong>Shared constraints:</strong> no landing-page child lists, maps, browse tables, or row-level drill-down sections; no new subpages; top metrics stay; chart captions are selective and concise rather than mandatory explanations on every graph.
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Texas Civic Index Content Mockups</title>
+    <style>
+      :root {
+        --ink: #071842;
+        --muted: #3d4f71;
+        --faint: #6a7891;
+        --line: #d6deea;
+        --soft: #f4f7fb;
+        --paper: #fbfcff;
+        --blue: #174bff;
+        --green: #087f3b;
+        --red: #b42318;
+        --purple: #5b2df5;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        background: #eaf0f7;
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 26px;
+      }
+
+      main {
+        display: grid;
+        gap: 24px;
+        margin: 0 auto;
+        max-width: 1500px;
+      }
+
+      h1, h2, h3, h4, p, dl, dd { margin: 0; }
+
+      .intro {
+        display: grid;
+        gap: 8px;
+      }
+
+      .intro h1 {
+        font-size: 30px;
+        line-height: 1.15;
+      }
+
+      .intro p {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.55;
+        max-width: 960px;
+      }
+
+      .split {
+        display: grid;
+        gap: 22px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+
+      .direction {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 12px 32px rgba(7, 24, 66, 0.08);
+        overflow: hidden;
+      }
+
+      .direction-header {
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        gap: 4px;
+        padding: 18px 20px;
+      }
+
+      .direction-header h2 {
+        font-size: 20px;
+        line-height: 1.25;
+      }
+
+      .direction-header p {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .page {
+        background: var(--paper);
+        display: grid;
+        gap: 18px;
+        padding: 20px;
+      }
+
+      .breadcrumbs {
+        color: var(--faint);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .hero {
+        align-items: end;
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        gap: 20px;
+        grid-template-columns: minmax(0, 1fr) auto;
+        padding-bottom: 16px;
+      }
+
+      .kicker {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 800;
+        margin-bottom: 7px;
+      }
+
+      .hero h3 {
+        font-size: 30px;
+        line-height: 1.08;
+      }
+
+      .hero p {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+        margin-top: 8px;
+        max-width: 70ch;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .button {
+        background: white;
+        border: 1px solid #c4cedf;
+        border-radius: 5px;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 800;
+        padding: 9px 11px;
+        text-decoration: none;
+      }
+
+      .button.primary {
+        background: var(--ink);
+        color: white;
+      }
+
+      .metrics {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .metric {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        display: grid;
+        gap: 8px;
+        min-height: 112px;
+        padding: 13px;
+      }
+
+      .metric svg {
+        height: 24px;
+        width: 24px;
+      }
+
+      .metric:nth-child(1) svg { color: var(--green); }
+      .metric:nth-child(2) svg { color: var(--blue); }
+      .metric:nth-child(3) svg { color: var(--green); }
+      .metric:nth-child(4) svg { color: var(--purple); }
+      .metric:nth-child(5) svg { color: var(--red); }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+        line-height: 1.25;
+      }
+
+      .metric strong {
+        font-size: 25px;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+      }
+
+      .metric small {
+        color: var(--faint);
+        font-size: 11px;
+        line-height: 1.35;
+      }
+
+      .section {
+        display: grid;
+        gap: 12px;
+      }
+
+      .section-title {
+        align-items: center;
+        border-top: 1px solid var(--line);
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
+        padding-top: 16px;
+      }
+
+      .section-title h3 {
+        font-size: 18px;
+        line-height: 1.2;
+      }
+
+      .section-title p {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.4;
+        max-width: 46ch;
+      }
+
+      .view-link {
+        color: var(--blue);
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .chart-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .chart-grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .chart {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        display: grid;
+        gap: 10px;
+        min-height: 210px;
+        padding: 14px;
+      }
+
+      .chart header {
+        display: grid;
+        gap: 4px;
+      }
+
+      .chart h4 {
+        font-size: 15px;
+        line-height: 1.25;
+      }
+
+      .chart p {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .plot {
+        align-items: end;
+        border-bottom: 1px solid #b8c4d8;
+        border-left: 1px solid #b8c4d8;
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        height: 92px;
+        padding: 0 9px;
+      }
+
+      .plot i {
+        background: #c8d6ea;
+        display: block;
+        position: relative;
+      }
+
+      .plot.blue i { background: #bdd0ff; }
+      .plot.green i { background: #b9dec9; }
+      .plot.red i { background: #efc2bd; }
+      .plot.purple i { background: #d8cdfd; }
+
+      .plot i:nth-child(1) { height: 42%; }
+      .plot i:nth-child(2) { height: 56%; }
+      .plot i:nth-child(3) { height: 48%; }
+      .plot i:nth-child(4) { height: 70%; }
+      .plot i:nth-child(5) { height: 64%; }
+      .plot i:nth-child(6) { height: 78%; }
+
+      .chart-meta {
+        color: var(--faint);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .chip {
+        background: var(--soft);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 7px;
+      }
+
+      .policy {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        display: grid;
+        gap: 12px;
+        padding: 15px;
+      }
+
+      .policy h4 {
+        font-size: 16px;
+      }
+
+      .policy p {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .status-row {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .status {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        display: grid;
+        gap: 7px;
+        justify-items: center;
+        padding: 10px 6px;
+        text-align: center;
+      }
+
+      .status b {
+        align-items: center;
+        border-radius: 999px;
+        display: inline-flex;
+        font-size: 18px;
+        height: 28px;
+        justify-content: center;
+        width: 28px;
+      }
+
+      .status.yes b { color: var(--green); }
+      .status.no b { color: var(--red); }
+      .status span {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.25;
+      }
+
+      .compact-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 1.1fr .9fr;
+      }
+
+      .callout {
+        background: #f8fbff;
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--blue);
+        border-radius: 7px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+        padding: 13px 14px;
+      }
+
+      .notes {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+        padding: 16px 18px;
+      }
+
+      .notes strong { color: var(--ink); }
+
+      @media (max-width: 1200px) {
+        .split { grid-template-columns: minmax(0, 1fr); }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="intro">
+        <h1>Texas Civic Index content mockups</h1>
+        <p>
+          These are still mockups, but they use concrete page text, metric labels, existing detail destinations,
+          and example chart values. Top metrics remain. The difference is how much the page relies on broad
+          section labels versus short visitor-question framing.
+        </p>
+      </section>
+
+      <section class="split">
+        <article class="direction">
+          <div class="direction-header">
+            <h2>A. Current-page evolution</h2>
+            <p>Keep the existing Civic Index feel, add real chart previews below the metric cards, and use concise section labels.</p>
+          </div>
+          <div class="page">
+            <div class="breadcrumbs">Home / Texas</div>
+            <section class="hero">
+              <div>
+                <p class="kicker">State civic index</p>
+                <h3>Texas</h3>
+                <p>Browse local agency records, public reports, civil litigation, and accountability context currently available for this state.</p>
+              </div>
+              <div class="actions">
+                <a class="button" href="#">Share</a>
+                <a class="button primary" href="#">Download report</a>
+              </div>
+            </section>
+
+            <section class="metrics" aria-label="Top Texas metrics">
+              <article class="metric">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.5 5.5 9.5 3 3 5.5v15l6.5-2.5 5 2.5 6.5-2.5v-15Z"/><path d="M9.5 3v15"/><path d="M14.5 5.5v15"/></svg>
+                <span>Counties</span><strong>254</strong><small>County records within Texas</small>
+              </article>
+              <article class="metric">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
+                <span>Reports</span><strong>5</strong><small>Published public reports</small>
+              </article>
+              <article class="metric">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v12"/></svg>
+                <span>Budget</span><strong>$--</strong><small>Fiscal-year agency budget records</small>
+              </article>
+              <article class="metric">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/></svg>
+                <span>Civil cases</span><strong>3</strong><small>Incident-location civil case records</small>
+              </article>
+              <article class="metric">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 7a4 4 0 0 1 8 0"/><path d="M6.5 7h11l2 13H4.5Z"/><path d="M10 12h4"/></svg>
+                <span>Liability costs</span><strong>$--</strong><small>Claims, settlements, judgments, and related costs</small>
+              </article>
+            </section>
+
+            <section class="section">
+              <div class="section-title">
+                <div>
+                  <h3>Record activity</h3>
+                  <p>Preview of enforcement-contact and public-report measurements for Texas.</p>
+                </div>
+                <a class="view-link" href="/tx/reports/">View reports</a>
+              </div>
+              <div class="chart-grid">
+                <article class="chart">
+                  <header><h4>Public reports by month</h4><p>Published reports attached to Texas location records.</p></header>
+                  <div class="plot blue"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <div class="chart-meta"><span class="chip">Texas</span><span class="chip">Previous 12 months</span></div>
+                </article>
+                <article class="chart">
+                  <header><h4>Arrests and citations over time</h4><p>Intended comparison for monthly enforcement-contact records.</p></header>
+                  <div class="plot"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <div class="chart-meta"><span class="chip">Texas</span><span class="chip">Source records needed</span></div>
+                </article>
+              </div>
+            </section>
+
+            <section class="section">
+              <div class="section-title">
+                <div>
+                  <h3>Public cost and litigation</h3>
+                  <p>Civil cases, budget records, and public-cost surfaces stay together.</p>
+                </div>
+                <a class="view-link" href="/tx/civil-cases/">View civil cases</a>
+              </div>
+              <div class="chart-grid three">
+                <article class="chart">
+                  <header><h4>Civil cases over time</h4><p>Incident-location civil case records for Texas.</p></header>
+                  <div class="plot purple"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <div class="chart-meta"><span class="chip">Texas</span><span class="chip">Previous 12 months</span></div>
+                </article>
+                <article class="chart">
+                  <header><h4>Liability costs over time</h4><p>Claims, settlements, judgments, and related payment records.</p></header>
+                  <div class="plot red"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <div class="chart-meta"><span class="chip">View details when scoped data exists</span></div>
+                </article>
+                <article class="chart">
+                  <header><h4>Budget and overtime trend</h4><p>Fiscal-year public finance records.</p></header>
+                  <div class="plot green"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <div class="chart-meta"><span class="chip">Help collect this data</span></div>
+                </article>
+              </div>
+            </section>
+
+            <section class="policy">
+              <h4>Texas decertification law context</h4>
+              <p>Top tier of most empowering mechanisms and processes. Source: Mayers Strategic Solutions decertification report card.</p>
+              <div class="status-row">
+                <div class="status yes"><b>✓</b><span>Public search</span></div>
+                <div class="status yes"><b>✓</b><span>Revocation process</span></div>
+                <div class="status yes"><b>✓</b><span>Agency reporting</span></div>
+                <div class="status no"><b>X</b><span>Central Brady list</span></div>
+                <div class="status yes"><b>✓</b><span>Appeal records</span></div>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        <article class="direction">
+          <div class="direction-header">
+            <h2>B. Visitor-intent bands</h2>
+            <p>Same top metrics, but the chart areas are organized around plain visitor needs without locking the exact wording into the spec.</p>
+          </div>
+          <div class="page">
+            <div class="breadcrumbs">Home / Texas</div>
+            <section class="hero">
+              <div>
+                <p class="kicker">State civic index</p>
+                <h3>Texas</h3>
+                <p>Public-record previews for activity, costs, accountability context, and outcome patterns in Texas.</p>
+              </div>
+              <div class="actions">
+                <a class="button" href="#">Share</a>
+                <a class="button primary" href="#">Download report</a>
+              </div>
+            </section>
+
+            <section class="metrics" aria-label="Top Texas metrics">
+              <article class="metric"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.5 5.5 9.5 3 3 5.5v15l6.5-2.5 5 2.5 6.5-2.5v-15Z"/><path d="M9.5 3v15"/><path d="M14.5 5.5v15"/></svg><span>Counties</span><strong>254</strong><small>County records within Texas</small></article>
+              <article class="metric"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg><span>Reports</span><strong>5</strong><small>Published public reports</small></article>
+              <article class="metric"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v12"/></svg><span>Budget</span><strong>$--</strong><small>Fiscal-year agency budget records</small></article>
+              <article class="metric"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/></svg><span>Civil cases</span><strong>3</strong><small>Incident-location civil case records</small></article>
+              <article class="metric"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 7a4 4 0 0 1 8 0"/><path d="M6.5 7h11l2 13H4.5Z"/><path d="M10 12h4"/></svg><span>Liability costs</span><strong>$--</strong><small>Claims, settlements, judgments, and related costs</small></article>
+            </section>
+
+            <section class="section">
+              <div class="section-title">
+                <div>
+                  <h3>Police contact and enforcement activity</h3>
+                  <p>Contacts, arrests, citations, charges, and time-of-day patterns when source records support them.</p>
+                </div>
+              </div>
+              <div class="compact-grid">
+                <article class="chart">
+                  <header><h4>Arrests, citations, and stops</h4><p>Monthly record volume, grouped by contact type.</p></header>
+                  <div class="plot blue"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <div class="chart-meta"><span class="chip">Texas</span><span class="chip">Previous 12 months</span></div>
+                </article>
+                <div class="callout">
+                  Keep this section useful without requiring every chart to explain itself. One short section note can orient the visitor; individual charts only need labels, scope, and date window when useful.
+                </div>
+              </div>
+            </section>
+
+            <section class="section">
+              <div class="section-title">
+                <div>
+                  <h3>Disparities and community outcomes</h3>
+                  <p>Race, income, local/nonlocal, day/night, and outcome comparisons where the denominator is available.</p>
+                </div>
+                <a class="view-link" href="/tx/outcomes-by-income/">View outcomes by income</a>
+              </div>
+              <div class="chart-grid">
+                <article class="chart">
+                  <header><h4>Outcomes by income band</h4><p>Case outcomes grouped by income band.</p></header>
+                  <div class="plot green"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <div class="chart-meta"><span class="chip">Texas</span><span class="chip">Comparison denominator required</span></div>
+                </article>
+                <article class="chart">
+                  <header><h4>Stops or arrests by race and ethnicity</h4><p>Contact-share comparison when source records include race or ethnicity.</p></header>
+                  <div class="plot purple"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <div class="chart-meta"><span class="chip">Help collect this data</span></div>
+                </article>
+              </div>
+            </section>
+
+            <section class="section">
+              <div class="section-title">
+                <div>
+                  <h3>Costs, complaints, and accountability context</h3>
+                  <p>Litigation, public finance, complaint outcomes, discipline records, and policy safeguards in one scan path.</p>
+                </div>
+              </div>
+              <div class="chart-grid">
+                <article class="chart">
+                  <header><h4>Civil cases and liability costs</h4><p>Cases and payment records, shown only as descriptive public records.</p></header>
+                  <div class="plot red"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <div class="chart-meta"><span class="chip">View civil cases</span><span class="chip">View liability costs</span></div>
+                </article>
+                <article class="chart">
+                  <header><h4>Complaint outcomes over time</h4><p>Filed, sustained, disciplined, and closed categories where records are available.</p></header>
+                  <div class="plot"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <div class="chart-meta"><span class="chip">Geography pages omit officer-level metrics</span></div>
+                </article>
+              </div>
+            </section>
+
+            <section class="policy">
+              <h4>Texas decertification law context</h4>
+              <p>Top tier of most empowering mechanisms and processes. Source: Mayers Strategic Solutions decertification report card.</p>
+              <div class="status-row">
+                <div class="status yes"><b>✓</b><span>Public search</span></div>
+                <div class="status yes"><b>✓</b><span>Revocation process</span></div>
+                <div class="status yes"><b>✓</b><span>Agency reporting</span></div>
+                <div class="status no"><b>X</b><span>Central Brady list</span></div>
+                <div class="status yes"><b>✓</b><span>Appeal records</span></div>
+              </div>
+            </section>
+          </div>
+        </article>
+      </section>
+
+      <section class="notes">
+        <strong>Question to answer:</strong> Should the spec describe this as broad visitor-intent bands with flexible labels,
+        or should it require a fixed set of seven sections? My read from your feedback: keep the intent, drop the fixed wording,
+        keep top metrics, and require chart scope/window only where the chart would otherwise be ambiguous.
+      </section>
+    </main>
+  </body>
+</html>

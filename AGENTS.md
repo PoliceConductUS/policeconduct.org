@@ -29,6 +29,8 @@ Design Standards
 
 - Before frontend, visual, layout, typography, component, or copy changes, read `.impeccable.md` and `DESIGN.md`.
 - `DESIGN.md` is the canonical design system standard. Do not invent page-local typography, heading, spacing, color, or component rules when a shared rule exists.
+- Public-facing copy must target an 8th-grade reading level. A 10th-grade reading level is acceptable only when precision requires it.
+- Replace technical, legal, and data-analysis terms in public labels with familiar wording. A tooltip, definition, or detail-page explanation may show the original source/legal term when needed, but the visible label must remain familiar.
 - H1/H2/H3 styling must come from shared typography tokens/classes. Do not use Bootstrap `display-*` classes or page-local heading CSS to change semantic heading size or font family.
 - One heading level means one visual role across pages. If a compact panel cannot visually support an H2, use a non-heading label or the correct lower heading level rather than styling H2 differently.
 
