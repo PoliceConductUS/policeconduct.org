@@ -1,0 +1,34 @@
+---
+import FatalForceIncidentsPage from "#src/components/FatalForceIncidentsPage.astro";
+import {
+  loadAgencyDetailByRouteParams,
+  loadAgencyLocationStaticPaths,
+} from "#src/lib/data/agency-detail.js";
+import { metricLabels } from "#src/lib/metric-vocabulary.js";
+
+export async function getStaticPaths() {
+  return loadAgencyLocationStaticPaths();
+}
+
+const data = await loadAgencyDetailByRouteParams(Astro.params);
+const pagePath = `${data.agencyPath}fatal-force-incidents/`;
+const title = `${data.agencyName} ${metricLabels.fatalForceIncidents}`;
+const description = `Fatal force incidents from the past 5 years for ${data.agencyName}.`;
+---
+
+<FatalForceIncidentsPage
+  title={title}
+  description={description}
+  pagePath={pagePath}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: data.categoryLabel, href: `/${data.categorySlug}/` },
+    {
+      label: data.administrativeArea,
+      href: `/${data.categorySlug}/${data.administrativeAreaSlug}/`,
+    },
+    { label: data.placeLabel, href: data.placePath },
+    { label: data.agencyName, href: data.agencyPath },
+    { label: metricLabels.fatalForceIncidents, href: pagePath, current: true },
+  ]}
+/>

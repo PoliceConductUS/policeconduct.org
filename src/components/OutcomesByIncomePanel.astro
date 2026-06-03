@@ -1,16 +1,25 @@
 ---
 import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import { metricLabels } from "#src/lib/metric-vocabulary.js";
 
 const {
   href,
   className = "",
   variant = "summary",
+  showSampleChart = false,
 } = Astro.props as {
   href?: string;
   className?: string;
   variant?: "summary" | "detail";
+  showSampleChart?: boolean;
 };
+
+const outcomeRows = [
+  { label: "Lower income", segments: [18, 26, 56], value: "--" },
+  { label: "Middle income", segments: [30, 24, 46], value: "--" },
+  { label: "Higher income", segments: [44, 18, 38], value: "--" },
+];
 ---
 
 <article
@@ -27,9 +36,17 @@ const {
     </div>
     {href ? <a href={href}>View details</a> : null}
   </div>
-  <EmptyMeasurementState
-    detail="Income-band outcome measurements will appear here when verified values are available."
-  />
+  {
+    showSampleChart ? (
+      <SampleMeasurementChart
+        ariaLabel="Sample outcomes by income chart"
+        rows={outcomeRows}
+        legend={["Dismissed", "Plea deal", "Other outcomes"]}
+      />
+    ) : (
+      <EmptyMeasurementState />
+    )
+  }
 </article>
 
 <style>

@@ -1,8 +1,8 @@
 ## Context
 
-Civic Index pages already have a shared specification for neutral jurisdiction landing pages, metric availability states, detail links, scoped volunteer actions, and database-backed route identity. This change refines that pattern so the landing page previews the intended future data experience around fixed visitor-intent bands rather than implementation categories.
+Civic Index pages already have a shared specification for neutral jurisdiction landing pages, metric availability states, detail links, scoped volunteer actions on detail surfaces, and database-backed route identity. This change refines that pattern so the landing page previews the intended future data experience around fixed visitor-intent bands rather than implementation categories.
 
-The attached prompt is constrained: keep the top metric cards, keep graphs, do not group content under a generic "Graphs" heading, do not add child entity lists, maps, browse tables, direct drill-down sections, "Top 5 things to know," or standalone "Who is most affected" editorial content to landing pages. Child lists, maps, browse tables, and drill-down browse surfaces may exist only on scoped sub-pages, if they exist at all. The prompt also asks to avoid defensive missing-data copy while still giving users a small way to help collect missing source records.
+The attached prompt is constrained: keep the top metric cards, keep graphs, do not group content under a generic "Graphs" heading, do not add child entity lists, maps, browse tables, direct drill-down sections, "Top 5 things to know," or standalone "Who is most affected" editorial content to landing pages. Child lists, maps, browse tables, collection CTAs, and drill-down browse surfaces may exist only on scoped sub-pages or the volunteer flow, if they exist at all. The prompt also asks to avoid defensive missing-data copy.
 
 ## Goals / Non-Goals
 
@@ -15,7 +15,7 @@ The attached prompt is constrained: keep the top metric cards, keep graphs, do n
 - Make metric and graph scope, denominator, grouping, comparison, source-basis, or time-window context visible where needed to avoid ambiguity or unsupported interpretation.
 - Include "View details" only when an applicable scoped detail sub-page already exists.
 - Include default top-metric CTAs to existing child, region, place, agency, or related scoped browse sub-pages where useful.
-- Include small non-primary "Help collect this data" actions when source data is absent.
+- Do not include collection CTAs on Civic Index landing pages.
 - Keep visible metric icons distinct within the same page.
 - Keep personnel records and officer-level indicators at agency/personnel scope only.
 - Frame positive indicators as evidence-backed comparative signals, not praise or endorsement.
@@ -34,7 +34,7 @@ The attached prompt is constrained: keep the top metric cards, keep graphs, do n
 
 ### Use a fixed visitor-intent band content model
 
-Represent the landing page as ordered visitor-intent bands. Each band should have a concise label or short question-like heading, a scoped set of metric previews, graph previews, detail links, and source-record collection actions. The seven bands are fixed for this change so the page can communicate future intent for release, grants, and funding; exact heading text remains a design choice and should not be treated as a spec requirement.
+Represent the landing page as ordered visitor-intent bands. Each band should have a concise label or short question-like heading, a scoped set of metric previews, graph previews, and detail links. The seven bands are fixed for this change so the page can communicate future intent for release, grants, and funding; exact heading text remains a design choice and should not be treated as a spec requirement.
 
 The bands are:
 
@@ -54,25 +54,25 @@ Charts and metric cards should show a visible time period near the label, value,
 
 When a metric, graph, report-card item, policy item, or source-backed summary has a known update date, use the same public label everywhere: `Updated {date}`. Place it near the related item. If an update date does not exist, omit the update-date field entirely; do not show `--`, "pending", "unknown", "not available", or another placeholder for update metadata.
 
-Empty graph surfaces may render as muted or disabled sample charts with scope, explicit time window where relevant, and neutral empty values such as `--`. Copy should present the measurement directly and avoid phrases such as "future source-record surface," "measurement preview," "will appear when verified," or "not collected yet." Collection CTAs should be consolidated and secondary rather than repeated on every missing graph card.
+Empty graph surfaces may render as muted or disabled sample charts with scope, explicit time window where relevant, and neutral empty values such as `--`. Copy should present the measurement directly and avoid phrases such as "future source-record surface," "measurement preview," "will appear when verified," or "not collected yet." Do not show collection CTAs on Civic Index landing pages.
 
-### Keep detail, browse, and collection actions scoped
+### Keep detail and browse actions scoped
 
 Landing-page top metric cards should show "View details" when an applicable scoped detail sub-page already exists. Most top metric cards should also have a useful default CTA to an existing scoped browse sub-page, such as counties on a state page, places on an administrative-area page, agencies on a place page, or personnel/reports/civil cases on an agency page. These CTAs are links out to scoped sub-pages; they must not render child lists, maps, browse tables, row-level links, search, sorting, or pagination on the landing page itself.
 
-Graph previews should show "View details" only when an applicable scoped detail sub-page already exists. When source data is absent, the landing page may show one small non-primary contribution action that preserves the current scope and dataset context. Collection actions should not become the primary landing-page CTA or repeat across every graph. Contribution links must pass enough query context for the volunteer page to prefill the related geography, agency, or personnel record, including the source page path and the applicable scope type.
+Graph previews should show "View details" only when an applicable scoped detail sub-page already exists. Civic Index landing pages must not show collection CTAs or record-needed labels. When collection exists on scoped detail pages or in the volunteer flow, links must pass enough query context for the volunteer page to prefill the related geography, agency, or personnel record, including the source page path and the applicable scope type.
 
 Budget and overtime should not be combined into one graph unless the graph is explicitly comparing them for a clear reason. Treat budget as its own metric. Treat overtime as its own metric when shown. Civil-case summary cards may show both cases filed in the selected time window and total cases found. Outcomes-by-income charts must name familiar outcome categories such as dismissed, convicted, plea deal, jail, probation, and deferred prosecution rather than using a generic "outcome" bucket.
 
 Complaint outcome charts should separate investigation findings from actions taken. Use familiar public labels such as sustained, exonerated, unfounded, not proven, closed or withdrawn, discipline, training, coaching, mediation, and rapid resolution. Use "not proven" as the public label for formal terms such as "not sustained" or "insufficient facts." Coaching is a corrective action, not an investigation finding.
 
-Use of force and fatal incidents should appear as distinct accountability measurements. Use "Fatal Force Incidents" for overview cards and chart labels. Use "Police-involved deaths" for a broader detail-page title that can include fatal force, custody deaths, pursuit deaths, and other deaths involving police contact. Fatal force incident charts may break down people under 18, people 18 and older, dogs, and other animals. These records may be geography-scoped, agency-scoped, or personnel-linked depending on source relationships; geography landing pages show aggregate geography-scope metrics, while personnel-linked fatal/death records remain available at personnel scope.
+Use of force and fatal incidents should appear as distinct accountability measurements. Use "Fatal Force Incidents" for overview cards, chart labels, detail-page titles, and route slugs. The detail page may include fatal force, custody deaths, pursuit deaths, and other deaths involving police contact. Fatal force incident charts may break down people under 18, people 18 and older, dogs, and other animals. These records may be geography-scoped, agency-scoped, or personnel-linked depending on source relationships; geography landing pages show aggregate geography-scope metrics, while personnel-linked fatal/death records remain available at personnel scope.
 
 ### Filter metrics by page level
 
 State, county, and place landing pages must not show personnel records or officer-level complaint, force, discipline, credibility, and positive-conduct indicators as top-level metrics. Agency pages may show personnel records and agency-level personnel indicators. Officer/personnel detail pages may show officer/personnel-level indicators, but those are outside Civic Index landing-page scope unless already present.
 
-Existing personnel detail pages should keep their content model. This change may align their labels, graph styles, icons, time-window wording, and neutral availability states with the shared Civic Index presentation system, but it should not reorganize personnel pages into visitor-intent landing-page bands or add new personnel metrics without separate approval. Existing personnel-linked use-of-force, fatal-force, and police-involved death records remain eligible for personnel-page display.
+Existing personnel detail pages should keep their content model. This change may align their labels, graph styles, icons, time-window wording, and neutral availability states with the shared Civic Index presentation system, but it should not reorganize personnel pages into visitor-intent landing-page bands or add new personnel metrics without separate approval. Existing personnel-linked use-of-force and fatal-force records remain eligible for personnel-page display.
 
 State top-level metrics should stay limited to county count, report count, budget, civil cases, liability costs, fatal force incidents, and decertification law context. Use "Liability costs" for the public-facing overview label when the measurement concerns claims, settlements, judgments, defense costs, and related payments. Avoid "taxpayer cost" unless the source records establish direct taxpayer payment.
 
@@ -92,7 +92,7 @@ Each positive signal should state the comparison group or time period, who the o
 
 - [Risk] The indicator catalog is large enough to create a long page. -> Mitigation: group content into scannable visitor-intent bands and keep previews compact.
 - [Risk] Graphs could still read as unexplained dashboard widgets. -> Mitigation: use fixed visitor-intent bands plus concise chart titles, summaries, captions, or metadata where needed; do not require explanatory copy on every chart.
-- [Risk] Missing-data copy could sound like a defensive disclaimer. -> Mitigation: use direct metric labels, neutral empty measurement surfaces, and small collection actions instead of explanatory caveats.
+- [Risk] Missing-data copy could sound like a defensive disclaimer. -> Mitigation: use direct metric labels and neutral empty measurement surfaces instead of explanatory caveats or landing-page collection CTAs.
 - [Risk] Personnel-level indicators could leak into geography pages. -> Mitigation: encode page-level eligibility in the content model and add implementation tasks to verify it.
 - [Risk] Icon uniqueness can regress as metrics are added. -> Mitigation: inspect the existing icon set during implementation and assign distinct visible icons per page.
 - [Risk] Positive indicators can read as endorsement. -> Mitigation: require comparative scope, evidence basis, limitations, and neutral language for every positive signal.

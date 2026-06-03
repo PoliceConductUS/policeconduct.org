@@ -8,7 +8,7 @@ The system SHALL organize Civic Index landing-page preview content around a fixe
 
 - **WHEN** a Civic Index landing page is rendered
 - **THEN** the page keeps the top metric cards as the primary orientation surface
-- **AND** the page groups preview metrics, graphs, detail links, and collection actions under seven visitor-intent bands
+- **AND** the page groups preview metrics, graphs, and detail links under seven visitor-intent bands
 - **AND** the bands cover police contacts, disparate impact, public cost, complaint and discipline outcomes, officer credibility records, policy safeguards, and better outcome signals where level-appropriate
 - **AND** the implementation may use concise section labels or short question-like headings for those bands, but the exact heading text is not prescribed by this spec
 - **AND** the page does not group content under a generic "Graphs", "Metrics", or "Datasets" heading
@@ -58,7 +58,7 @@ The system SHALL render graph previews as central Civic Index measurement surfac
 - **AND** the page does not render a numeric zero unless source data directly establishes zero
 - **AND** the graph preview does not imply that sample values are verified findings
 - **AND** the graph includes a "View details" link when an applicable scoped detail subpage already exists for the measurement
-- **AND** collection actions, when shown, are consolidated and secondary rather than repeated on every missing graph card
+- **AND** the page does not show collection CTAs or record-needed labels on Civic Index landing pages
 - **AND** the page does not use public-facing implementation or defensive missing-data copy such as "future source-record surface", "measurement preview", "will appear when verified", "not collected yet", or "source needed"
 
 ---
@@ -97,7 +97,8 @@ The system SHALL map Civic Index indicators and graphs to the visitor intent the
 - **AND** "not proven" is the public label for formal terms such as "not sustained" or "insufficient facts" unless a source requires the formal term in supporting context
 - **AND** coaching is treated as a corrective action or action taken, not as an investigation finding
 - **AND** fatal force incidents may break down people under 18, people 18 and older, dogs, and other animals
-- **AND** the detail-page label for fatal-force and death records may be "Police-involved deaths" and may include fatal force, custody deaths, pursuit deaths, and other deaths involving police contact
+- **AND** the detail-page label and route slug for fatal-force and death records use "Fatal Force Incidents" / `fatal-force-incidents`
+- **AND** the detail page may include fatal force, custody deaths, pursuit deaths, and other deaths involving police contact
 - **AND** fatal force incidents and police-involved deaths may be geography-scoped, agency-scoped, or personnel-linked depending on the source record relationships
 - **AND** geography landing pages show only aggregate geography-scope fatal/death metrics, while personnel-linked fatal/death records remain available at personnel scope
 - **AND** the group may include graphs for complaint outcome funnel, complaints filed versus sustained versus disciplined, findings and actions taken by explicit time window, complaints by allegation by explicit time window, use of force by explicit time window, fatal force incidents by explicit time window, discipline timeline, discipline reversals by explicit time window, suspension days by allegation type, resignation patterns, repeat complaints per officer distribution, repeat force incidents per officer distribution, body-camera noncompliance by incident type, and force-to-complaint mismatch

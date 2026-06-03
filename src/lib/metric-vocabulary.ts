@@ -15,6 +15,7 @@ export const metricLabels = {
   counties: "Counties",
   daylightNighttimeStops: "Daylight vs Nighttime Stops",
   federalAgencies: "Federal Agencies",
+  fatalForceIncidents: "Fatal Force Incidents",
   formerPersonnel: "Former Personnel",
   judgments: "Judgments",
   latestCaseActivity: "Latest Case Activity",
@@ -40,6 +41,7 @@ export type MetricAccent = "blue" | "green" | "purple" | "red";
 export type MetricIcon =
   | "building"
   | "calendar"
+  | "cross"
   | "dollar"
   | "file"
   | "link"
@@ -108,6 +110,11 @@ export const metricVisuals = {
     accent: "blue",
     icon: "shield",
     label: metricLabels.federalAgencies,
+  },
+  fatalForceIncidents: {
+    accent: "red",
+    icon: "cross",
+    label: metricLabels.fatalForceIncidents,
   },
   judgments: {
     accent: "red",

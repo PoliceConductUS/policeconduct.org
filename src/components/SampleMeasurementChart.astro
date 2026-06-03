@@ -1,0 +1,138 @@
+---
+type ChartRow = {
+  label: string;
+  value: string;
+  width?: number;
+  segments?: number[];
+};
+
+const {
+  ariaLabel,
+  rows,
+  legend = [],
+} = Astro.props as {
+  ariaLabel: string;
+  rows: ChartRow[];
+  legend?: string[];
+};
+---
+
+<div class="sample-measurement-chart disabled" aria-label={ariaLabel}>
+  {
+    rows.map((row) => (
+      <div class="sample-measurement-row">
+        <b>{row.label}</b>
+        <span>
+          {row.segments?.length ? (
+            row.segments.map((segment) => (
+              <i style={`--segment-width: ${segment}%`} />
+            ))
+          ) : (
+            <i style={`--segment-width: ${row.width ?? 0}%`} />
+          )}
+        </span>
+        <em>{row.value}</em>
+      </div>
+    ))
+  }
+</div>
+
+{
+  legend.length ? (
+    <div class="sample-measurement-legend" aria-label="Chart legend">
+      {legend.map((item) => (
+        <span>
+          <i />
+          {item}
+        </span>
+      ))}
+    </div>
+  ) : null
+}
+
+<style>
+  .sample-measurement-chart {
+    background: rgba(7, 24, 66, 0.025);
+    border: 1px solid #d9e1ee;
+    display: grid;
+    gap: 0.68rem;
+    margin-top: 1rem;
+    min-height: 10.1rem;
+    padding: 0.9rem;
+  }
+
+  .sample-measurement-chart.disabled {
+    opacity: 0.72;
+  }
+
+  .sample-measurement-row {
+    align-items: center;
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: minmax(6.5rem, 0.72fr) minmax(0, 1.5fr) 2.6rem;
+  }
+
+  .sample-measurement-row b,
+  .sample-measurement-row em,
+  .sample-measurement-legend span {
+    color: #33456f;
+    font-size: 0.75rem;
+    font-style: normal;
+    font-weight: 750;
+    line-height: 1.2;
+  }
+
+  .sample-measurement-row span {
+    background: #e7edf6;
+    display: flex;
+    height: 1.05rem;
+    overflow: hidden;
+  }
+
+  .sample-measurement-row i {
+    background: #bac7d8;
+    display: block;
+    height: 100%;
+    width: var(--segment-width);
+  }
+
+  .sample-measurement-row i:nth-child(1),
+  .sample-measurement-legend span:nth-child(1) i {
+    background: #9fb4ff;
+  }
+
+  .sample-measurement-row i:nth-child(2),
+  .sample-measurement-legend span:nth-child(2) i {
+    background: #8ed0a8;
+  }
+
+  .sample-measurement-row i:nth-child(3),
+  .sample-measurement-legend span:nth-child(3) i {
+    background: #c2ccd9;
+  }
+
+  .sample-measurement-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.75rem;
+    margin-top: 0.72rem;
+  }
+
+  .sample-measurement-legend span {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.35rem;
+  }
+
+  .sample-measurement-legend i {
+    display: inline-block;
+    height: 0.58rem;
+    width: 0.58rem;
+  }
+
+  @media (max-width: 575.98px) {
+    .sample-measurement-row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

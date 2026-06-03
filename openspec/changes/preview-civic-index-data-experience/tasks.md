@@ -1,7 +1,7 @@
 ## 1. Data Model and Content Catalog
 
 - [x] 1.1 Inspect `src/lib/data/civic-index.ts`, `src/components/CivicIndexPage.astro`, `src/lib/metric-vocabulary.ts`, and existing scoped detail routes to confirm current Civic Index model fields, available icons, and detail-page destinations.
-- [ ] 1.2 Replace the current `thingsToKnow`, `trendPanels`, and generic `dataPanels` Civic Index model fields with a visitor-intent band preview model for metrics, graph previews, existing detail links, scoped browse CTAs, and scoped collection actions.
+- [ ] 1.2 Replace the current `thingsToKnow`, `trendPanels`, and generic `dataPanels` Civic Index model fields with a visitor-intent band preview model for metrics, graph previews, existing detail links, and scoped browse CTAs.
 - [ ] 1.3 Define the seven fixed visitor-intent bands from the spec in the Civic Index data module with level eligibility for state, administrative-area, place, agency, and personnel-oriented content.
 - [x] 1.3a Inspect the agency landing page route and component to confirm whether it uses `CivicIndexPage` or a separate implementation path.
 - [x] 1.4 Add page-level filtering so personnel records and officer-level complaint, force, discipline, credibility, and positive-conduct indicators do not appear as top-level state, county, or place metrics.
@@ -14,7 +14,7 @@
 - [ ] 2.1a If agency landing pages use a separate route or component, update that landing-page UI to follow the same approved visitor-intent pattern without adding new routes.
 - [ ] 2.2 Render graph previews inside their relevant visitor-intent bands with enough title, band summary, caption, scope, comparison, denominator, grouping, or time-window context to make the future measurement intent clear without requiring every chart to include a "how to read this" explanation.
 - [ ] 2.3 Render top metric "View details" links only when an applicable scoped detail sub-page already exists, and render default top-metric CTAs to existing child, region, place, agency, or related scoped browse sub-pages where useful; do not create new sub-pages or routes.
-- [x] 2.4 Render small non-primary "Help collect this data" actions for applicable absent source data without using defensive missing-data copy.
+- [ ] 2.4 Keep collection CTAs and record-needed labels off Civic Index landing pages.
 - [ ] 2.5 Keep Civic Index landing pages free of child entity lists, maps, browse tables, direct drill-down sections, child browse sections, and explore-child sections; landing pages may link to existing scoped browse sub-pages through metric CTAs, but those browse surfaces render only on scoped sub-pages if they exist at all.
 
 ## 3. Copy, Scope, and Neutrality

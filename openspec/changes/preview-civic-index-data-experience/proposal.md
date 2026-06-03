@@ -18,10 +18,10 @@ Civic Index pages should show what residents, journalists, researchers, organize
 - Reason: Graphs should communicate the intended data product without turning the landing page into a dense dashboard manual.
 - Impact: User-visible content and layout change.
 
-**Metric scope, time windows, details, browse CTAs, and collection actions**
+**Metric scope, time windows, details, and browse CTAs**
 
 - From: Existing requirements cover scope and availability states, including "not collected yet" labels.
-- To: Metrics and graphs provide scope, denominator, grouping, comparison, source-basis, or time-window context when needed to avoid ambiguity; top metric cards include "View details" when an applicable scoped detail sub-page already exists; top metric cards may also include a default CTA to an existing child/region/place/agency or related scoped browse subpage; missing data may get a small non-primary "Help collect this data" action without defensive missing-data copy.
+- To: Metrics and graphs provide scope, denominator, grouping, comparison, source-basis, or time-window context when needed to avoid ambiguity; top metric cards include "View details" when an applicable scoped detail sub-page already exists; top metric cards may also include a default CTA to an existing child/region/place/agency or related scoped browse subpage; missing data uses muted sample charts or neutral values without defensive missing-data copy or collection CTAs on landing pages.
 - Reason: The page should preview the intended data product directly while preserving neutral, evidence-backed interpretation.
 - Impact: User-visible copy and component behavior change.
 

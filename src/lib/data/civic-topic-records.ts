@@ -7,6 +7,7 @@ export type CivicTopicKind =
   | "personnel"
   | "budget"
   | "civil-cases"
+  | "fatal-force-incidents"
   | "liability-costs"
   | "outcomes-by-income";
 
@@ -52,7 +53,11 @@ export type CivicTopicRecords =
     }
   | {
       emptyLabel: string;
-      kind: "budget" | "liability-costs" | "outcomes-by-income";
+      kind:
+        | "budget"
+        | "fatal-force-incidents"
+        | "liability-costs"
+        | "outcomes-by-income";
       rows: [];
       title: string;
       totalCount: null;
@@ -289,17 +294,21 @@ export const loadCivicTopicRecords = async (
     emptyLabel:
       kind === "budget"
         ? "Budget records are not projected for this scope yet."
-        : kind === "liability-costs"
-          ? "Liability cost records are not projected for this scope yet."
-          : "Outcome records by income are not projected for this scope yet.",
+        : kind === "fatal-force-incidents"
+          ? "Fatal force incident records are not projected for this scope yet."
+          : kind === "liability-costs"
+            ? "Liability cost records are not projected for this scope yet."
+            : "Outcome records by income are not projected for this scope yet.",
     kind,
     rows: [],
     title:
       kind === "budget"
         ? "Budget"
-        : kind === "liability-costs"
-          ? "Liability Costs"
-          : "Outcomes by Income",
+        : kind === "fatal-force-incidents"
+          ? "Fatal Force Incidents"
+          : kind === "liability-costs"
+            ? "Liability Costs"
+            : "Outcomes by Income",
     totalCount: null,
   };
 };

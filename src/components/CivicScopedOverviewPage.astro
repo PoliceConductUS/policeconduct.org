@@ -45,6 +45,13 @@ const pageConfig = {
         ? records.totalCount.toLocaleString("en-US")
         : "0",
   },
+  "fatal-force-incidents": {
+    label: metricLabels.fatalForceIncidents,
+    title: metricLabels.fatalForceIncidents,
+    description:
+      "Fatal force incidents from the past 5 years, including people under 18, people 18 and older, dogs, and other animals.",
+    value: "0",
+  },
   "liability-costs": {
     label: metricLabels.liabilityCosts,
     title: metricLabels.liabilityCosts,
@@ -182,6 +189,40 @@ const topicConfig = {
       },
     ],
     charts: ["Civil Cases Over Time", "Case Types", "Cases by Child Area"],
+  },
+  "fatal-force-incidents": {
+    metrics: [
+      {
+        ...metricVisuals.fatalForceIncidents,
+        value: "0",
+        detail: "Fatal force incidents from the past 5 years",
+      },
+      {
+        ...metricVisuals.fatalForceIncidents,
+        value: "--",
+        detail: "People under 18",
+      },
+      {
+        ...metricVisuals.fatalForceIncidents,
+        value: "--",
+        detail: "People 18 and older",
+      },
+      {
+        ...metricVisuals.fatalForceIncidents,
+        value: "--",
+        detail: "Dogs",
+      },
+      {
+        ...metricVisuals.fatalForceIncidents,
+        value: "--",
+        detail: "Other animals",
+      },
+    ],
+    charts: [
+      "Fatal Force Incidents, 5 Years",
+      "Fatal Force Incidents by Age",
+      "Fatal Force Incidents Involving Animals",
+    ],
   },
   "liability-costs": {
     metrics: [

@@ -1,12 +1,12 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
   loadAgencyDetailByRouteParams,
@@ -184,6 +184,56 @@ const civilCasesByYear = buildYearSeries(
   civilCases as Record<string, string | null | undefined>[],
   "filed_date",
 );
+const disabledChartRows = {
+  arrests: [
+    { label: "Low-level", value: "--", width: 54 },
+    { label: "Violent", value: "--", width: 22 },
+    { label: "Drug", value: "--", width: 34 },
+    { label: "Other", value: "--", width: 42 },
+  ],
+  fatalForce: [
+    { label: "Under 18", value: "--", width: 12 },
+    { label: "18 and older", value: "--", width: 58 },
+    { label: "Dogs", value: "--", width: 34 },
+    { label: "Other animals", value: "--", width: 14 },
+  ],
+  useOfForce: [
+    { label: "Hands or holds", value: "--", width: 52 },
+    { label: "Taser", value: "--", width: 28 },
+    { label: "Chemical spray", value: "--", width: 18 },
+    { label: "Firearm", value: "--", width: 8 },
+  ],
+  civilCosts: [
+    { label: "Civil cases", value: "--", width: 46 },
+    { label: "Claims", value: "$--", width: 58 },
+    { label: "Defense costs", value: "$--", width: 42 },
+    { label: "Settlements", value: "$--", width: 72 },
+  ],
+  stopsEthnicity: [
+    { label: "Hispanic", value: "--", width: 44 },
+    { label: "Black", value: "--", width: 24 },
+    { label: "White", value: "--", width: 30 },
+    { label: "Other", value: "--", width: 10 },
+  ],
+  dayNight: [
+    { label: "Day stops", value: "--", width: 46 },
+    { label: "Night stops", value: "--", width: 62 },
+    { label: "Day searches", value: "--", width: 22 },
+    { label: "Night searches", value: "--", width: 34 },
+  ],
+  charges: [
+    { label: "Traffic", value: "--", width: 58 },
+    { label: "Drug", value: "--", width: 36 },
+    { label: "Warrant", value: "--", width: 28 },
+    { label: "Other", value: "--", width: 44 },
+  ],
+  budget: [
+    { label: "2021", value: "$--", width: 48 },
+    { label: "2022", value: "$--", width: 54 },
+    { label: "2023", value: "$--", width: 62 },
+    { label: "2024", value: "$--", width: 70 },
+  ],
+};
 const maxYearValue = Math.max(
   1,
   ...civilCasesByYear.map((point) => point.value),
@@ -393,32 +443,37 @@ const agencyMetrics = [
         <MetricGrid metrics={agencyMetrics} columns="auto" />
 
         <div class="entity-chart-grid">
-          <OutcomesByIncomePanel href={outcomesByIncomePath} />
+          <OutcomesByIncomePanel href={outcomesByIncomePath} showSampleChart />
           <DataPanel
-            title="Arrests Over Time"
+            title="Arrests, 5 Years"
             description="Number of arrests by category"
           >
-            <EmptyMeasurementState
-              detail="Arrest measurements will appear here when verified values are available."
+            <SampleMeasurementChart
+              ariaLabel="Sample arrests chart"
+              rows={disabledChartRows.arrests}
             />
           </DataPanel>
           <DataPanel
-            title="Killings Over Time"
+            title="Fatal Force Incidents, 5 Years"
             description="People by age group, dogs and other animals"
           >
-            <EmptyMeasurementState />
+            <SampleMeasurementChart
+              ariaLabel="Sample fatal force incidents chart"
+              rows={disabledChartRows.fatalForce}
+            />
           </DataPanel>
           <DataPanel
-            title="Use of Force Over Time"
+            title="Use of Force, 5 Years"
             description="Number of use of force incidents"
           >
-            <EmptyMeasurementState
-              detail="Use-of-force measurements will appear here when verified values are available."
+            <SampleMeasurementChart
+              ariaLabel="Sample use of force chart"
+              rows={disabledChartRows.useOfForce}
             />
           </DataPanel>
           <DataPanel
             id="agency-liability-costs"
-            title="Civil Cases and Liability Costs Over Time"
+            title="Civil Cases and Liability Costs, 5 Years"
             description="Civil cases and liability costs"
           >
             {
@@ -442,41 +497,48 @@ const agencyMetrics = [
                   </div>
                 </div>
               ) : (
-                <EmptyMeasurementState detail="Civil-case and liability-cost measurements will appear here when verified values are available." />
+                <SampleMeasurementChart
+                  ariaLabel="Sample civil cases and liability costs chart"
+                  rows={disabledChartRows.civilCosts}
+                />
               )
             }
           </DataPanel>
           <DataPanel
-            title="Racial Breakdown of Stops or Arrests"
-            description="Who is most affected in the current dataset"
+            title="Stops by Ethnicity, 12 Months"
+            description="Stop share by recorded ethnicity"
           >
-            <EmptyMeasurementState
-              detail="Race and ethnicity measurements will appear here when verified values are available."
+            <SampleMeasurementChart
+              ariaLabel="Sample stops by ethnicity chart"
+              rows={disabledChartRows.stopsEthnicity}
             />
           </DataPanel>
           <DataPanel
-            title="Daylight vs Nighttime Stops"
-            description="Comparison of stops by time of day and race"
+            title="Stops by Ethnicity and Day/Night, 12 Months"
+            description="Stops split by daylight and nighttime incidents"
           >
-            <EmptyMeasurementState
-              detail="Time-of-day stop measurements will appear here when verified values are available."
+            <SampleMeasurementChart
+              ariaLabel="Sample stops by ethnicity and day or night chart"
+              rows={disabledChartRows.dayNight}
             />
           </DataPanel>
           <DataPanel
-            title="Top Charge Categories"
+            title="Top Charge Categories, 12 Months"
             description="Most common reasons for arrest"
           >
-            <EmptyMeasurementState
-              detail="Charge-category measurements will appear here when verified values are available."
+            <SampleMeasurementChart
+              ariaLabel="Sample top charge categories chart"
+              rows={disabledChartRows.charges}
             />
           </DataPanel>
           <DataPanel
             id="agency-budget-trend"
-            title="Budget and Overtime Trend"
-            description="Total budget and overtime spending"
+            title="Budget, 5 Years"
+            description="Fiscal-year budget records"
           >
-            <EmptyMeasurementState
-              detail="Budget and overtime measurements will appear here when verified values are available."
+            <SampleMeasurementChart
+              ariaLabel="Sample budget chart"
+              rows={disabledChartRows.budget}
             />
           </DataPanel>
         </div>

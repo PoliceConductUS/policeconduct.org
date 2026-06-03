@@ -1,16 +1,13 @@
 ---
-const {
-  label = "No measured values",
-  detail = "This measurement is reserved for verified data when available.",
-} = Astro.props as {
+const { label = "--", detail = "" } = Astro.props as {
   label?: string;
   detail?: string;
 };
 ---
 
 <div class="empty-measurement-state" role="note">
-  <strong>{label}</strong>
-  <span>{detail}</span>
+  {label ? <strong>{label}</strong> : null}
+  {detail ? <span>{detail}</span> : null}
 </div>
 
 <style>

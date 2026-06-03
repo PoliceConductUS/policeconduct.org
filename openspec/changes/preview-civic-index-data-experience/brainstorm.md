@@ -2,7 +2,7 @@
 
 Update Civic Index landing pages so they preview the future data product around fixed visitor-intent bands. The pages should help residents, journalists, researchers, organizers, defense attorneys, funders, and grant reviewers understand what the jurisdiction page will eventually show as more source records are collected.
 
-The page structure should move away from implementation categories such as "graphs," "metrics," and "datasets." Top metric cards should remain as the primary page orientation surface. Below that, the page should organize metrics, graphs, existing detail links, browse CTAs to scoped sub-pages, and small collection CTAs under seven visitor-intent bands:
+The page structure should move away from implementation categories such as "graphs," "metrics," and "datasets." Top metric cards should remain as the primary page orientation surface. Below that, the page should organize metrics, graphs, existing detail links, and browse CTAs to scoped sub-pages under seven visitor-intent bands:
 
 - What brings police into contact with people here?
 - Do policing contacts, fines, charges, searches, force, and outcomes disproportionately affect certain groups compared with the general population?
@@ -12,7 +12,7 @@ The page structure should move away from implementation categories such as "grap
 - Are policies, safeguards, and accountability systems producing better outcomes?
 - Where are outcomes improving, and who appears to be getting better results?
 
-Graphs remain central to the experience, but they should appear inside the relevant visitor-intent bands rather than under a generic "Graphs" heading. Charts should include enough title, band summary, caption, scope, denominator, grouping, comparison, or time-window context to make the future measurement intent clear without explaining every chart. Top metric cards should generally include "View details" when an applicable scoped detail sub-page exists and a default CTA to an existing child, region, place, agency, or related scoped browse sub-page where useful. If data is unavailable, the landing page should still show the intended measurement surface and may include a small non-primary "Help collect this data" CTA without defensive missing-data copy.
+Graphs remain central to the experience, but they should appear inside the relevant visitor-intent bands rather than under a generic "Graphs" heading. Charts should include enough title, band summary, caption, scope, denominator, grouping, comparison, or time-window context to make the future measurement intent clear without explaining every chart. Top metric cards should generally include "View details" when an applicable scoped detail sub-page exists and a default CTA to an existing child, region, place, agency, or related scoped browse sub-page where useful. If data is unavailable, the landing page should still show the intended measurement surface without defensive missing-data copy. Civic Index landing pages must not render collection CTAs.
 
 The design must keep Civic Index landing pages focused on overview and preview behavior. It must not add child entity lists, maps, browse tables, direct drill-down sections, "Top 5 things to know," or standalone "Who is most affected" editorial sections. Landing pages may link to scoped browse sub-pages through metric CTAs, but child lists, maps, browse tables, and direct drill-down surfaces may exist only on scoped sub-pages, if they exist at all.
 
@@ -20,7 +20,7 @@ The design must keep Civic Index landing pages focused on overview and preview b
 
 ### Approach A: Visitor-intent data preview
 
-- **Approach**: Keep top metric cards, then organize the page into seven visitor-intent bands. Put metric cards, graph previews, existing detail links, scoped browse CTAs, and small collection CTAs inside each visitor-intent band.
+- **Approach**: Keep top metric cards, then organize the page into seven visitor-intent bands. Put metric cards, graph previews, existing detail links, and scoped browse CTAs inside each visitor-intent band.
 - **Pros**:
   - Matches the attached prompt directly.
   - Keeps graphs visible without creating a generic graph bucket.
@@ -33,7 +33,7 @@ The design must keep Civic Index landing pages focused on overview and preview b
 
 ### Approach B: Metric-family dashboard
 
-- **Approach**: Keep the current metric-catalog model but expand each metric family with graph previews and future collection CTAs.
+- **Approach**: Keep the current metric-catalog model but expand each metric family with graph previews.
 - **Pros**:
   - Easier to map to existing implementation concepts.
   - Lower risk of very long pages.

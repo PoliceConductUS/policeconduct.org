@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Update Civic Index landing pages so they preview the future data experience through visitor-visitor-intent bands with scoped metrics, graph previews, existing detail links, and collection actions.
+**Goal:** Update Civic Index landing pages so they preview the future data experience through visitor-intent bands with scoped metrics, graph previews, and existing detail links.
 
 **Architecture:** Keep the existing route ownership and database-backed path loading. Refactor the shared Civic Index presentation model in `src/lib/data/civic-index.ts` and rendering in `src/components/CivicIndexPage.astro` so landing pages render visitor-intent bands instead of browse-oriented or generic dashboard sections.
 
@@ -15,7 +15,7 @@
 - Modify: `src/lib/data/civic-index.ts`
   - Owns the Civic Index model types, question-group catalog, level filtering, detail-link destinations, graph-preview definitions, and icon assignments.
 - Modify: `src/components/CivicIndexPage.astro`
-  - Renders the visitor-intent landing-page UI, scoped metric cards, graph previews, existing "View details" links, scoped collection CTAs, and neutral empty measurement surfaces.
+  - Renders the visitor-intent landing-page UI, scoped metric cards, graph previews, existing "View details" links, and neutral empty measurement surfaces.
 - Modify: agency landing route/component if inspection shows agency pages do not use `CivicIndexPage`
   - Keeps agency-level Civic Index landing pages aligned with the approved visitor-intent pattern without creating new routes.
 - Modify: `src/lib/metric-vocabulary.ts`
@@ -31,6 +31,7 @@
 ## Task 1: Data Model and Content Catalog
 
 **Files:**
+
 - Modify: `src/lib/data/civic-index.ts`
 - Modify: `src/lib/metric-vocabulary.ts`
 - Modify: `openspec/changes/preview-civic-index-data-experience/tasks.md`
@@ -142,6 +143,7 @@ git commit -m "feat: define civic index visitor-intent bands"
 ## Task 2: Civic Index Page Rendering
 
 **Files:**
+
 - Modify: `src/components/CivicIndexPage.astro`
 - Modify: agency landing route/component identified in Task 1, only if it is separate from `CivicIndexPage`
 - Modify: `src/components/MetricCard.astro` or `src/components/metric-card-types.ts` only if needed
@@ -213,6 +215,7 @@ git commit -m "feat: render civic index question previews"
 ## Task 3: Copy, Scope, and Neutrality
 
 **Files:**
+
 - Modify: `src/lib/data/civic-index.ts`
 - Modify: `src/components/CivicIndexPage.astro`
 - Modify: `openspec/changes/preview-civic-index-data-experience/tasks.md`
@@ -229,9 +232,9 @@ For every graph or metric label containing "over time", "rate", "trend", "curren
 
 For better-outcome preview items, include comparison detail such as "Compared with available peer median" or "Current 12 months compared with previous 12 months" only when the preview is framed as a comparison. Keep copy descriptive and avoid praise or endorsements.
 
-- [ ] **Step 4: Add landing-page collection CTAs**
+- [ ] **Step 4: Keep collection CTAs off landing pages**
 
-For absent source data, render a small non-primary "Help collect this data" action that preserves current scope and dataset context. Do not create a new sub-page to host that CTA.
+For absent source data, render muted sample charts or neutral values on landing pages. Do not render collection CTAs or record-needed labels on Civic Index landing pages.
 
 - [ ] **Step 5: Re-run prohibited-copy search**
 
@@ -257,6 +260,7 @@ git commit -m "feat: scope civic index preview copy"
 ## Task 4: Tests and Verification
 
 **Files:**
+
 - Modify: `tests/e2e/civic-index.spec.ts`
 - Modify: `openspec/changes/preview-civic-index-data-experience/tasks.md`
 
