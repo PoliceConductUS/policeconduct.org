@@ -72,7 +72,7 @@ Positive indicators must be framed as evidence-backed comparative signals. They 
 - Do not update implementation tests until the revised pages are approved; this OpenSpec change only prepares the specification and plan.
 - Keep graphs on the landing pages and place them under user-visitor-intent bands.
 - Do not add child entity lists, maps, browse tables, direct drill-down sections, "Top 5 things to know," or standalone "Who is most affected" sections to landing pages; those browse surfaces belong only on scoped sub-pages if they exist at all.
-- Avoid hedging or defensive missing-data copy such as "will appear when verified," "not collected yet," or "source needed." Present the intended data product directly.
+- Avoid hedging or defensive missing-data copy. Present the intended data product directly.
 - Show missing data as an opportunity to help collect records through small non-primary CTAs.
 - Give every visible metric card a distinct icon within the same page.
 - Make metric and graph scope, denominator, grouping, comparison, source-basis, or time-window context visible where needed to avoid ambiguity.

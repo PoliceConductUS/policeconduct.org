@@ -59,7 +59,7 @@ The system SHALL render graph previews as central Civic Index measurement surfac
 - **AND** the graph preview does not imply that sample values are verified findings
 - **AND** the graph includes a "View details" link when an applicable scoped detail subpage already exists for the measurement
 - **AND** the page does not show collection CTAs or record-needed labels on Civic Index landing pages
-- **AND** the page does not use public-facing implementation or defensive missing-data copy such as "future source-record surface", "measurement preview", "will appear when verified", "not collected yet", or "source needed"
+- **AND** the page does not use public-facing implementation or defensive missing-data copy
 
 ---
 
@@ -265,7 +265,7 @@ The system MUST make every displayed civic indicator and graph explicit and neut
 - **AND** if a required source field, legal concept, or data label contains a technical or legal term, the page uses a familiar public label
 - **AND** a tooltip, definition, or detail-page explanation may show the original source/legal term when needed, but the visible label remains familiar
 - **AND** the copy does not imply quality, danger, intent, causation, accountability, safety, misconduct, or improvement unless an approved methodology directly supports that statement
-- **AND** the copy does not use hedging or defensive missing-data phrases such as "will appear when verified", "not collected yet", or "source needed"
+- **AND** the copy does not use hedging or defensive missing-data phrases
 
 ---
 
@@ -295,7 +295,7 @@ The system SHALL show desired Civic Index metrics and graphs with explicit avail
 - **AND** the page may show a consolidated non-primary contribution CTA scoped to the current area and dataset
 - **AND** the contribution link includes enough query context for the volunteer page to prefill the related geography, agency, or personnel record
 - **AND** the contribution link includes the source page path and the applicable scope type such as state, county, place, agency, or personnel
-- **AND** the page does not use public-facing implementation or defensive missing-data copy such as "future source-record surface", "measurement preview", "will appear when verified", "not collected yet", or "source needed"
+- **AND** the page does not use public-facing implementation or defensive missing-data copy
 
 #### Scenario: Metric or graph is unavailable for the current scope
 

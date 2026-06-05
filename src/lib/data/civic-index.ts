@@ -5,6 +5,7 @@ import type {
   LocationPagePayload,
 } from "./build-payloads.js";
 import { metricLabels } from "../metric-vocabulary.js";
+import type { MetricIcon } from "../metric-vocabulary.js";
 
 export const civicIndexCollator = new Intl.Collator("en", {
   numeric: true,
@@ -12,6 +13,12 @@ export const civicIndexCollator = new Intl.Collator("en", {
 });
 
 export type CivicIndexLevel = "state" | "administrative_area" | "place";
+
+export type CivicIndexScope =
+  | "state"
+  | "administrative_area"
+  | "place"
+  | "agency";
 
 export type CivicCoverageMetric = {
   key: "agencies" | "personnel" | "reports" | "civil_cases";
@@ -30,25 +37,34 @@ export type CivicIndexActionGroup = {
   label: string;
 };
 
-export type CivicIndexGuidanceItem = {
+export type CivicIndexPreviewMetric = {
+  defaultAction?: {
+    href: string;
+    label: string;
+  };
   detail: string;
+  detailHref?: string;
+  icon: MetricIcon;
   label: string;
+  scope: string;
+  value: string;
+  window?: string;
 };
 
-export type CivicIndexTrendPanel = {
+export type CivicIndexGraphPreview = {
+  caption?: string;
+  detailHref?: string;
   label: string;
-  points: number[];
+  metadata?: string[];
+  scope: string;
+  seriesLabel: string;
+  window?: string;
 };
 
-export type CivicIndexDataBar = {
-  detail: string;
-  label: string;
-  value: number;
-};
-
-export type CivicIndexDataPanel = {
-  bars: CivicIndexDataBar[];
-  description: string;
+export type CivicIndexVisitorIntentBand = {
+  graphs: CivicIndexGraphPreview[];
+  metrics: CivicIndexPreviewMetric[];
+  summary?: string;
   title: string;
 };
 
@@ -80,7 +96,6 @@ export type CivicIndexModel = {
   breadcrumbs: { current?: boolean; href: string; label: string }[];
   columns: CivicIndexColumn[];
   coverage: CivicCoverageMetric[];
-  dataPanels: CivicIndexDataPanel[];
   description: string;
   drilldownLabel: string;
   indexLabel: string;
@@ -96,11 +111,23 @@ export type CivicIndexModel = {
   pagePath: string;
   locationReports: LocationReportPayload[];
   rows: CivicIndexRow[];
-  thingsToKnow: CivicIndexGuidanceItem[];
   title: string;
-  trendPanels: CivicIndexTrendPanel[];
+  topMetricCards: CivicIndexPreviewMetric[];
+  visitorIntentBands: CivicIndexVisitorIntentBand[];
   volunteerCta: CivicIndexAction;
 };
+
+export const civicIndexVisitorIntentBandCatalog = {
+  contacts: "Police contact and enforcement activity",
+  disparateImpact: "Disparate impact and community outcomes",
+  publicCost: "Public cost and litigation",
+  accountability:
+    "Complaints, discipline, force, lawsuits, and accountability outcomes",
+  credibility:
+    "Officer credibility, search validity, force justification, and impeachment records",
+  safeguards: "Policy safeguards and accountability systems",
+  betterOutcomes: "Better outcomes and positive-deviance signals",
+} as const;
 
 const buildCoverageFromPayload = (
   location: LocationPagePayload,
@@ -350,123 +377,486 @@ const buildAgencyMapPoints = (
       meta: agency.address || "Agency",
     }));
 
-const getNumericRowValue = (row: CivicIndexRow, key: string) => {
-  const value = row.values[key];
-
-  if (typeof value === "number") {
-    return value;
-  }
-
-  return 0;
-};
-
-const buildRecordCoveragePanel = (
+const getCoverageCount = (
   coverage: CivicCoverageMetric[],
-): CivicIndexDataPanel => ({
-  title: "Current record picture",
-  description: "Database-backed records currently connected to this geography.",
-  bars: coverage
-    .filter((metric) => metric.value > 0)
-    .map((metric) => ({
-      label: metric.label,
-      value: metric.value,
-      detail: `${metric.value.toLocaleString("en-US")} ${metric.label.toLowerCase()}`,
-    })),
-});
-
-const buildRecordSignalPanel = (
-  rows: CivicIndexRow[],
-  title: string,
-  description: string,
-): CivicIndexDataPanel => {
-  const bars: CivicIndexDataBar[] = [];
-
-  for (const row of rows) {
-    const personnel = getNumericRowValue(row, "personnel");
-    const reports = getNumericRowValue(row, "reports");
-    const civilCases = getNumericRowValue(row, "civilCases");
-    const value = personnel + reports + civilCases;
-
-    if (value <= 0) {
-      continue;
-    }
-
-    const bar = {
-      label: row.label,
-      value,
-      detail: `${personnel.toLocaleString("en-US")} personnel, ${reports.toLocaleString("en-US")} reports, ${civilCases.toLocaleString("en-US")} civil cases`,
-    };
-    const insertAt = bars.findIndex((existing) => value > existing.value);
-
-    if (insertAt === -1) {
-      if (bars.length < 8) {
-        bars.push(bar);
-      }
-      continue;
-    }
-
-    bars.splice(insertAt, 0, bar);
-    if (bars.length > 8) {
-      bars.pop();
-    }
-  }
-
-  return {
-    title,
-    description,
-    bars,
-  };
-};
-
-const buildThingsToKnow = (
-  coverage: CivicCoverageMetric[],
-): CivicIndexGuidanceItem[] => {
+  key: CivicCoverageMetric["key"],
+) => {
   const coverageByKey = new Map(
     coverage.map((metric) => [metric.key, metric.value]),
   );
-  const agencies = coverageByKey.get("agencies") || 0;
-  const reports = coverageByKey.get("reports") || 0;
-  const civilCases = coverageByKey.get("civil_cases") || 0;
-  const personnel = coverageByKey.get("personnel") || 0;
+
+  return coverageByKey.get(key) || 0;
+};
+
+const scopedDetailHref = (pagePath: string, slug: string) =>
+  `${pagePath}${slug}/`;
+
+const formatMetricValue = (value: number) => value.toLocaleString("en-US");
+
+type VisitorIntentBandInput = {
+  coverage: CivicCoverageMetric[];
+  jurisdictionLabel: string;
+  pagePath: string;
+  rowCount: number;
+  scope: CivicIndexScope;
+};
+
+export const buildTopMetricCards = ({
+  coverage,
+  jurisdictionLabel,
+  pagePath,
+  rowCount,
+  scope,
+}: VisitorIntentBandInput): CivicIndexPreviewMetric[] => {
+  const reports = getCoverageCount(coverage, "reports");
+  const civilCases = getCoverageCount(coverage, "civil_cases");
+  const agencies = getCoverageCount(coverage, "agencies");
+  const personnel = getCoverageCount(coverage, "personnel");
+  const reportsHref =
+    reports > 0 ? scopedDetailHref(pagePath, "reports") : undefined;
+  const childMetric =
+    scope === "state"
+      ? {
+          defaultAction: {
+            href: scopedDetailHref(pagePath, "counties"),
+            label: "Explore counties",
+          },
+          detail: `County and regional pages under ${jurisdictionLabel}.`,
+          icon: "map" as const,
+          label: "Counties",
+          scope: jurisdictionLabel,
+          value: formatMetricValue(rowCount),
+        }
+      : scope === "administrative_area"
+        ? {
+            defaultAction: {
+              href: scopedDetailHref(pagePath, "places"),
+              label: "Explore places",
+            },
+            detail: `Place pages under ${jurisdictionLabel}.`,
+            icon: "pin" as const,
+            label: "Places",
+            scope: jurisdictionLabel,
+            value: formatMetricValue(rowCount),
+          }
+        : scope === "place"
+          ? {
+              defaultAction: {
+                href: scopedDetailHref(pagePath, "agencies"),
+                label: "Explore agencies",
+              },
+              detail: `Agency pages under ${jurisdictionLabel}.`,
+              icon: "building" as const,
+              label: metricLabels.agencies,
+              scope: jurisdictionLabel,
+              value: formatMetricValue(agencies),
+            }
+          : null;
+  const agencyPersonnelMetric: CivicIndexPreviewMetric | null =
+    scope === "agency"
+      ? {
+          detail: "Current and former personnel records connected to this agency.",
+          detailHref: scopedDetailHref(pagePath, "personnel"),
+          icon: "people",
+          label: metricLabels.personnelRecords,
+          scope: jurisdictionLabel,
+          value: formatMetricValue(personnel),
+        }
+      : null;
+  const reportsMetric: CivicIndexPreviewMetric = {
+    detail: `Published public reports connected to ${jurisdictionLabel}.`,
+    detailHref: reportsHref,
+    icon: "file",
+    label: metricLabels.reports,
+    scope: jurisdictionLabel,
+    value: formatMetricValue(reports),
+    window: "Previous 12 months",
+  };
+  const budgetMetric: CivicIndexPreviewMetric = {
+    detail: "Current fiscal-year budget, revenue, overtime, and related finance records.",
+    detailHref: scopedDetailHref(pagePath, "budget"),
+    icon: "dollar",
+    label: metricLabels.budget,
+    scope: jurisdictionLabel,
+    value: "$--",
+  };
+  const civilCasesMetric: CivicIndexPreviewMetric = {
+    detail:
+      scope === "state"
+        ? `Incident-location civil case records connected to ${jurisdictionLabel}.`
+        : `Civil case records connected to ${jurisdictionLabel}.`,
+    detailHref: scopedDetailHref(pagePath, "civil-cases"),
+    icon: "scales",
+    label: metricLabels.civilCases,
+    scope: jurisdictionLabel,
+    value: formatMetricValue(civilCases),
+    window: "Previous 5 years",
+  };
+  const liabilityMetric: CivicIndexPreviewMetric = {
+    detail:
+      "Claims, settlements, judgments, defense costs, and related documented payments.",
+    detailHref: scopedDetailHref(pagePath, "liability-costs"),
+    icon: "weight",
+    label: metricLabels.liabilityCosts,
+    scope: jurisdictionLabel,
+    value: "$--",
+    window: "Previous 5 years",
+  };
+  const fatalForceMetric: CivicIndexPreviewMetric = {
+    detail:
+      "Fatal force, custody deaths, pursuit deaths, and other deaths involving police contact.",
+    detailHref: scopedDetailHref(pagePath, "fatal-force-incidents"),
+    icon: "cross",
+    label: metricLabels.fatalForceIncidents,
+    scope: jurisdictionLabel,
+    value: "--",
+    window: "Previous 5 years",
+  };
 
   return [
-    {
-      label: metricLabels.agencies,
-      detail: agencies.toLocaleString("en-US"),
-    },
-    {
-      label: metricLabels.personnelRecords,
-      detail: personnel.toLocaleString("en-US"),
-    },
-    {
-      label: metricLabels.reports,
-      detail: reports.toLocaleString("en-US"),
-    },
-    {
-      label: metricLabels.civilCases,
-      detail: civilCases.toLocaleString("en-US"),
-    },
-    {
-      label: "Policy and accountability data",
-      detail: "Use-of-force, complaints, payouts, forfeiture",
-    },
+    ...(childMetric ? [childMetric] : []),
+    ...(agencyPersonnelMetric ? [agencyPersonnelMetric] : []),
+    reportsMetric,
+    budgetMetric,
+    civilCasesMetric,
+    liabilityMetric,
+    ...(scope === "agency" ? [] : [fatalForceMetric]),
   ];
 };
 
-export const trendPanels: CivicIndexTrendPanel[] = [
-  {
-    label: "Use-of-force incidents over time",
-    points: [],
-  },
-  {
-    label: "Complaint outcomes over time",
-    points: [],
-  },
-  {
-    label: "Settlement and payout history",
-    points: [],
-  },
-];
+export const buildVisitorIntentBands = ({
+  coverage,
+  jurisdictionLabel,
+  pagePath,
+  scope,
+}: VisitorIntentBandInput): CivicIndexVisitorIntentBand[] => {
+  const reports = getCoverageCount(coverage, "reports");
+  const civilCases = getCoverageCount(coverage, "civil_cases");
+  const personnel = getCoverageCount(coverage, "personnel");
+  const reportsHref =
+    reports > 0 ? scopedDetailHref(pagePath, "reports") : undefined;
+  const isAgency = scope === "agency";
+  const agencyPersonnelMetric: CivicIndexPreviewMetric | null = isAgency
+    ? {
+        detail:
+          "Current and former personnel records connected to this agency.",
+        detailHref: scopedDetailHref(pagePath, "personnel"),
+        icon: "people",
+        label: metricLabels.personnelRecords,
+        scope: jurisdictionLabel,
+        value: formatMetricValue(personnel),
+      }
+    : null;
+
+  return [
+    {
+      title: civicIndexVisitorIntentBandCatalog.contacts,
+      summary:
+        "Calls, reports, stops, citations, arrests, charges, and other documented contact activity.",
+      metrics: [
+        {
+          detail: `Published public reports connected to ${jurisdictionLabel}.`,
+          detailHref: reportsHref,
+          icon: "file",
+          label: metricLabels.reports,
+          scope: jurisdictionLabel,
+          value: formatMetricValue(reports),
+          window: "Previous 12 months",
+        },
+      ],
+      graphs: [
+        {
+          caption:
+            "Counts show published reports only; contact records use source-specific categories when available.",
+          detailHref: reportsHref,
+          label: "Public reports by month",
+          metadata: ["Published reports"],
+          scope: jurisdictionLabel,
+          seriesLabel: "Report count",
+          window: "Previous 12 months",
+        },
+        {
+          caption:
+            "Sample surface for stops, arrests, citations, calls, and charges by stated source category.",
+          label: "Contact activity by type",
+          metadata: ["Muted sample values"],
+          scope: jurisdictionLabel,
+          seriesLabel: "Stops, arrests, citations, and calls",
+          window: "Previous 12 months",
+        },
+      ],
+    },
+    {
+      title: civicIndexVisitorIntentBandCatalog.disparateImpact,
+      summary:
+        "Contact, search, fine, fee, and case outcome measures by documented demographic, income, time, and location groups.",
+      metrics: [
+        {
+          detail:
+            "Dismissed, convicted, plea deal, jail, probation, and deferred-prosecution outcomes grouped by income when source data supports it.",
+          detailHref: scopedDetailHref(pagePath, "outcomes-by-income"),
+          icon: "link",
+          label: metricLabels.outcomesByIncome,
+          scope: jurisdictionLabel,
+          value: "--",
+          window: "Previous 5 years",
+        },
+      ],
+      graphs: [
+        {
+          caption:
+            "Percentages require a stated population, contact, search, or case denominator before they can be compared.",
+          label: "Population share and contact share",
+          metadata: ["Comparison denominator required"],
+          scope: jurisdictionLabel,
+          seriesLabel: "Population share vs. contact share",
+          window: "Previous 12 months",
+        },
+        {
+          caption:
+            "Case outcomes use familiar public labels and preserve the source basis on detail pages.",
+          detailHref: scopedDetailHref(pagePath, "outcomes-by-income"),
+          label: "Case outcomes by income",
+          metadata: ["Dismissed, plea, conviction, jail, probation"],
+          scope: jurisdictionLabel,
+          seriesLabel: "Outcome share",
+          window: "Previous 5 years",
+        },
+      ],
+    },
+    {
+      title: civicIndexVisitorIntentBandCatalog.publicCost,
+      summary:
+        "Budget, revenue, civil litigation, settlements, judgments, defense costs, claims, overtime, and related cost records.",
+      metrics: [
+        {
+          detail:
+            "Current fiscal-year budget, revenue, overtime, and related finance records.",
+          detailHref: scopedDetailHref(pagePath, "budget"),
+          icon: "dollar",
+          label: metricLabels.budget,
+          scope: jurisdictionLabel,
+          value: "$--",
+        },
+        {
+          detail:
+            scope === "state"
+              ? `Incident-location civil case records connected to ${jurisdictionLabel}.`
+              : `Civil case records connected to ${jurisdictionLabel}.`,
+          detailHref: scopedDetailHref(pagePath, "civil-cases"),
+          icon: "scales",
+          label: metricLabels.civilCases,
+          scope: jurisdictionLabel,
+          value: formatMetricValue(civilCases),
+          window: "Previous 5 years",
+        },
+        {
+          detail:
+            "Claims, settlements, judgments, defense costs, and related documented payments.",
+          detailHref: scopedDetailHref(pagePath, "liability-costs"),
+          icon: "weight",
+          label: metricLabels.liabilityCosts,
+          scope: jurisdictionLabel,
+          value: "$--",
+          window: "Previous 5 years",
+        },
+      ],
+      graphs: [
+        {
+          caption:
+            scope === "state"
+              ? "State geography uses incident-location civil case scope."
+              : "Civil case scope follows the page's geography or agency relationship.",
+          detailHref: scopedDetailHref(pagePath, "civil-cases"),
+          label: "Civil cases filed and total cases found",
+          metadata: ["Filed cases plus total found"],
+          scope: jurisdictionLabel,
+          seriesLabel: "Civil case count",
+          window: "Previous 5 years",
+        },
+        {
+          caption:
+            "Liability costs include documented claims, litigation, settlements, judgments, defense, and related conduct events.",
+          detailHref: scopedDetailHref(pagePath, "liability-costs"),
+          label: "Liability costs by type",
+          metadata: ["Claims, defense, settlements, judgments"],
+          scope: jurisdictionLabel,
+          seriesLabel: "Documented cost",
+          window: "Previous 5 years",
+        },
+        {
+          caption:
+            "Budget and overtime remain separate measures unless a chart explicitly compares them.",
+          detailHref: scopedDetailHref(pagePath, "budget"),
+          label: "Budget by fiscal year",
+          metadata: ["Fiscal-year records"],
+          scope: jurisdictionLabel,
+          seriesLabel: "Budget amount",
+          window: "Previous 5 fiscal years",
+        },
+      ],
+    },
+    {
+      title: civicIndexVisitorIntentBandCatalog.accountability,
+      summary:
+        "Complaint findings, discipline actions, force reports, fatal force, body-camera records, lawsuit outcomes, and report-quality records.",
+      metrics: [
+        {
+          detail:
+            "Fatal force, custody deaths, pursuit deaths, and other deaths involving police contact.",
+          detailHref: scopedDetailHref(pagePath, "fatal-force-incidents"),
+          icon: "cross",
+          label: metricLabels.fatalForceIncidents,
+          scope: jurisdictionLabel,
+          value: "--",
+          window: "Previous 5 years",
+        },
+        ...(isAgency
+          ? [
+              {
+                detail:
+                  "Agency-level complaint, force, discipline, and body-camera records when official source data supports the measure.",
+                icon: "shield" as const,
+                label: "Complaint and force outcome records",
+                scope: jurisdictionLabel,
+                value: "--",
+                window: "Previous 12 months",
+              },
+            ]
+          : []),
+      ],
+      graphs: [
+        {
+          caption:
+            "Complaint outcome labels use familiar terms such as sustained, not proven, unfounded, exonerated, and closed or withdrawn.",
+          label: "Complaint outcomes and actions taken",
+          metadata: ["Findings and actions"],
+          scope: isAgency
+            ? jurisdictionLabel
+            : `${jurisdictionLabel} geography-level records`,
+          seriesLabel: "Complaint outcome count",
+          window: "Previous 5 years",
+        },
+        {
+          caption:
+            "Force records require a documented source category and scope before counts are shown.",
+          label: "Use-of-force records by type",
+          metadata: ["Source category required"],
+          scope: isAgency
+            ? jurisdictionLabel
+            : `${jurisdictionLabel} geography-level records`,
+          seriesLabel: "Force record count",
+          window: "Previous 12 months",
+        },
+      ],
+    },
+    {
+      title: civicIndexVisitorIntentBandCatalog.credibility,
+      summary:
+        "Brady, Giglio, suppression, evidence-exclusion, search-validity, force-justification, and report-integrity records.",
+      metrics: [
+        ...(agencyPersonnelMetric ? [agencyPersonnelMetric] : []),
+        ...(isAgency
+          ? [
+              {
+                detail:
+                  "Officer-level credibility indicators are shown only for agency or personnel scope when source records support them.",
+                icon: "person" as const,
+                label: "Officer credibility records",
+                scope: jurisdictionLabel,
+                value: "--",
+                window: "Previous 5 years",
+              },
+            ]
+          : []),
+      ],
+      graphs: [
+        {
+          caption:
+            isAgency
+              ? "Agency/personnel-scope records may include Brady, Giglio, suppression, evidence exclusion, search, and force-justification records."
+              : "Geography landing pages do not expose officer-level credibility indicators as top-level metrics.",
+          label: "Credibility and impeachment record categories",
+          metadata: ["Agency/personnel scope where applicable"],
+          scope: isAgency
+            ? jurisdictionLabel
+            : `${jurisdictionLabel} related agency/personnel records`,
+          seriesLabel: "Record category count",
+          window: "Previous 5 years",
+        },
+      ],
+    },
+    {
+      title: civicIndexVisitorIntentBandCatalog.safeguards,
+      summary:
+        "Policy safeguards, complaint access, transparency records, public-records barriers, decertification context, and accountability-system barriers.",
+      metrics: [
+        {
+          detail:
+            scope === "state"
+              ? "Decertification law context from cited report-card source records."
+              : "Policy safeguards and accountability-system records when source data is available.",
+          icon: "calendar",
+          label:
+            scope === "state"
+              ? "Decertification law context"
+              : "Policy safeguard records",
+          scope: jurisdictionLabel,
+          value: "--",
+        },
+      ],
+      graphs: [
+        {
+          caption:
+            "Safeguard comparisons require source-backed policy dates and outcome measures before any relationship is described.",
+          label: "Policy safeguards and outcome measures",
+          metadata: ["No causal claim without approved method"],
+          scope: jurisdictionLabel,
+          seriesLabel: "Safeguard status and measured outcome",
+          window: "Current policy context",
+        },
+      ],
+    },
+    {
+      title: civicIndexVisitorIntentBandCatalog.betterOutcomes,
+      summary:
+        "Comparative indicators that track lower rates, documented outcome changes, stronger safeguards, or positive conduct signals under stated comparison limits.",
+      metrics: [
+        {
+          detail:
+            isAgency
+              ? "Positive-conduct and better-outcome indicators require source type, comparison group, and limitations before they are shown."
+              : "Better-outcome indicators use geography-level comparison groups and do not expose officer-level positive-conduct records.",
+          icon: isAgency ? "map" : "shield",
+          label: "Comparable-outcome signals",
+          scope: jurisdictionLabel,
+          value: "--",
+          window: "Previous 12 months",
+        },
+      ],
+      graphs: [
+        {
+          caption:
+            "Comparison context may be peer median, previous 12 months, similar population, similar call volume, or another documented group.",
+          label: "Outcome rate compared with peer median",
+          metadata: ["Comparison group required"],
+          scope: jurisdictionLabel,
+          seriesLabel: "Rate compared with peer median",
+          window: "Previous 12 months",
+        },
+        {
+          caption:
+            "Positive-deviance signals are descriptive unless a reviewed method supports a stronger conclusion.",
+          label: "Policy safeguards and measured outcomes",
+          metadata: ["Methodology and limits required"],
+          scope: jurisdictionLabel,
+          seriesLabel: "Safeguard score and outcome measure",
+          window: "Previous 12 months",
+        },
+      ],
+    },
+  ];
+};
 
 export const buildStateCivicIndex = async (
   state: LocationPagePayload,
@@ -475,7 +865,7 @@ export const buildStateCivicIndex = async (
   const children = requireChildren(state);
   const coverage = buildCoverageFromPayload(state);
   const rows = buildChildRows(children, "places", "place");
-  const drilldownLabel = `Explore within ${state.stateLabel}`;
+  const drilldownLabel = `${state.stateLabel} records`;
   return {
     actionGroups: getActionGroups(state.path),
     actionCenter: getActionCenter(state.path),
@@ -491,14 +881,6 @@ export const buildStateCivicIndex = async (
       { key: "civilCases", label: metricLabels.civilCases, numeric: true },
     ],
     coverage,
-    dataPanels: [
-      buildRecordCoveragePanel(coverage),
-      buildRecordSignalPanel(
-        rows,
-        `Where records concentrate within ${state.stateLabel}`,
-        `Largest ${areaPlural.toLowerCase()} by currently collected personnel, report, and civil case signals.`,
-      ),
-    ],
     description: `Browse local agency records, public reports, civil litigation, and personnel profiles currently available for this state.`,
     drilldownLabel,
     indexLabel: `Counties within ${state.stateLabel}`,
@@ -514,9 +896,21 @@ export const buildStateCivicIndex = async (
     pagePath: state.path,
     locationReports: state.locationReports || [],
     rows,
-    thingsToKnow: buildThingsToKnow(coverage),
     title: `${state.stateLabel} Civic Index | PoliceConduct.org`,
-    trendPanels,
+    topMetricCards: buildTopMetricCards({
+      coverage,
+      jurisdictionLabel: state.stateLabel,
+      pagePath: state.path,
+      rowCount: rows.length,
+      scope: "state",
+    }),
+    visitorIntentBands: buildVisitorIntentBands({
+      coverage,
+      jurisdictionLabel: state.stateLabel,
+      pagePath: state.path,
+      rowCount: rows.length,
+      scope: "state",
+    }),
     volunteerCta: getVolunteerCta(state.path),
   };
 };
@@ -528,7 +922,7 @@ export const buildAdministrativeAreaCivicIndex = async (
   const parentPath = requireParentPath(area);
   const coverage = buildCoverageFromPayload(area);
   const rows = buildChildRows(children, "agencies", "agency");
-  const drilldownLabel = `Explore within ${area.administrativeArea}`;
+  const drilldownLabel = `${area.administrativeArea} records`;
   return {
     actionGroups: getActionGroups(area.path),
     actionCenter: getActionCenter(area.path),
@@ -545,14 +939,6 @@ export const buildAdministrativeAreaCivicIndex = async (
       { key: "civilCases", label: metricLabels.civilCases, numeric: true },
     ],
     coverage,
-    dataPanels: [
-      buildRecordCoveragePanel(coverage),
-      buildRecordSignalPanel(
-        rows,
-        `Where records concentrate within ${area.administrativeArea}`,
-        "Largest places by currently collected personnel, report, and civil case signals.",
-      ),
-    ],
     description: `Browse local agency records, public reports, civil litigation, and personnel profiles currently available for this ${area.administrativeAreaKind || "administrative area"}.`,
     drilldownLabel,
     indexLabel: `Places within ${area.administrativeArea}`,
@@ -568,9 +954,21 @@ export const buildAdministrativeAreaCivicIndex = async (
     pagePath: area.path,
     locationReports: area.locationReports || [],
     rows,
-    thingsToKnow: buildThingsToKnow(coverage),
     title: `${area.administrativeArea}, ${area.stateLabel} Civic Index | PoliceConduct.org`,
-    trendPanels,
+    topMetricCards: buildTopMetricCards({
+      coverage,
+      jurisdictionLabel: area.administrativeArea!,
+      pagePath: area.path,
+      rowCount: rows.length,
+      scope: "administrative_area",
+    }),
+    visitorIntentBands: buildVisitorIntentBands({
+      coverage,
+      jurisdictionLabel: area.administrativeArea!,
+      pagePath: area.path,
+      rowCount: rows.length,
+      scope: "administrative_area",
+    }),
     volunteerCta: getVolunteerCta(area.path),
   };
 };
@@ -582,7 +980,7 @@ export const buildPlaceCivicIndex = async (
   const parentPath = requireParentPath(place);
   const coverage = buildCoverageFromPayload(place);
   const rows = buildAgencyRows(agencies);
-  const drilldownLabel = `Explore within ${place.displayName}`;
+  const drilldownLabel = `${place.displayName} records`;
   return {
     actionGroups: getActionGroups(place.path),
     actionCenter: getActionCenter(place.path),
@@ -600,14 +998,6 @@ export const buildPlaceCivicIndex = async (
       { key: "civilCases", label: metricLabels.civilCases, numeric: true },
     ],
     coverage,
-    dataPanels: [
-      buildRecordCoveragePanel(coverage),
-      buildRecordSignalPanel(
-        rows,
-        `Agency record signals within ${place.displayName}`,
-        "Agencies by currently collected personnel, report, and civil case signals.",
-      ),
-    ],
     description: `Browse law enforcement agencies, public reports, civil litigation, and personnel profiles currently available for this place.`,
     drilldownLabel,
     indexLabel: `Agencies within ${place.displayName}`,
@@ -623,9 +1013,21 @@ export const buildPlaceCivicIndex = async (
     pagePath: place.path,
     locationReports: place.locationReports || [],
     rows,
-    thingsToKnow: buildThingsToKnow(coverage),
     title: `${place.displayName}, ${place.administrativeArea} Civic Index | PoliceConduct.org`,
-    trendPanels,
+    topMetricCards: buildTopMetricCards({
+      coverage,
+      jurisdictionLabel: place.displayName,
+      pagePath: place.path,
+      rowCount: rows.length,
+      scope: "place",
+    }),
+    visitorIntentBands: buildVisitorIntentBands({
+      coverage,
+      jurisdictionLabel: place.displayName,
+      pagePath: place.path,
+      rowCount: rows.length,
+      scope: "place",
+    }),
     volunteerCta: getVolunteerCta(place.path),
   };
 };

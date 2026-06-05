@@ -1,9 +1,10 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportSummary } from "#src/lib/data/types.js";
@@ -30,6 +31,18 @@ const metricCards = [
     value: reports[0]!.year,
   },
 ];
+const reportTimeRows = [
+  { label: "2021", value: "--", width: 34 },
+  { label: "2022", value: "--", width: 48 },
+  { label: "2023", value: "--", width: 62 },
+  { label: "2024", value: "--", width: 54 },
+];
+const reportAgencyRows = [
+  { label: "Agency reports", value: "--", width: 58 },
+  { label: "Personnel reports", value: "--", width: 36 },
+  { label: "Civil-case reports", value: "--", width: 26 },
+  { label: "Other reports", value: "--", width: 44 },
+];
 ---
 
 <SiteLayout
@@ -51,7 +64,15 @@ const metricCards = [
         <EntityPageHeader
           title={title}
           description={`Published reports for ${title}.`}
-        />
+        >
+          <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={title}
+              sourcePage={pagePath}
+              topic="Reports"
+            />
+          </Fragment>
+        </EntityPageHeader>
 
         <MetricGrid metrics={metricCards} columns="four" />
 
@@ -60,7 +81,9 @@ const metricCards = [
             title="Reports Over Time"
             description="Published reports by incident year"
           >
-            <EmptyMeasurementState
+            <SampleMeasurementChart
+              ariaLabel="Sample reports over time chart"
+              rows={reportTimeRows}
             />
           </DataPanel>
 
@@ -68,7 +91,9 @@ const metricCards = [
             title="Reports by Agency"
             description="Published reports grouped by agency"
           >
-            <EmptyMeasurementState
+            <SampleMeasurementChart
+              ariaLabel="Sample reports by agency chart"
+              rows={reportAgencyRows}
             />
           </DataPanel>
 

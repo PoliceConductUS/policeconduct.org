@@ -1,10 +1,11 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import Pagination from "#src/components/Pagination.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { buildAgencyCivilCaseRows } from "#src/lib/data/agency-civil-case-rows.js";
 import {
@@ -82,6 +83,34 @@ const metricCards = [
     value: formatCount(civilCaseCount),
   },
 ];
+const assignmentRows = [
+  { label: "2021", value: "--", width: 38 },
+  { label: "2022", value: "--", width: 46 },
+  { label: "2023", value: "--", width: 58 },
+  { label: "2024", value: "--", width: 64 },
+];
+const reportRows = [
+  { label: "Reports", value: "--", width: 52 },
+  { label: "Personnel named", value: "--", width: 36 },
+  { label: "Multiple personnel", value: "--", width: 24 },
+  { label: "Unlisted personnel", value: "--", width: 42 },
+];
+const civilCaseRows = [
+  { label: "Filed", value: "--", width: 46 },
+  { label: "Active", value: "--", width: 34 },
+  { label: "Closed", value: "--", width: 58 },
+  { label: "Linked personnel", value: "--", width: 28 },
+];
+const licenseRows = [
+  { label: "Peace Officer", value: "--", width: 64 },
+  { label: "Jailer", value: "--", width: 32 },
+  { label: "Telecommunicator", value: "--", width: 18 },
+  { label: "Other", value: "--", width: 24 },
+];
+const statusRows = [
+  { label: "Current", value: "--", width: 62 },
+  { label: "Former", value: "--", width: 38 },
+];
 
 const getEmployeeName = (employee: (typeof employees)[number]) => {
   const officer = employee.officer;
@@ -126,7 +155,15 @@ const formatDate = (value?: string | null) =>
         <EntityPageHeader
           title={pageTitle}
           description={`Personnel records for ${agencyName}, sorted by name.`}
-        />
+        >
+          <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={agencyName}
+              sourcePage={pagePath}
+              topic="Personnel"
+            />
+          </Fragment>
+        </EntityPageHeader>
 
         <MetricGrid metrics={metricCards} columns="five" />
 
@@ -135,7 +172,9 @@ const formatDate = (value?: string | null) =>
             title="Agency Assignments Over Time"
             description="Personnel assignment records by year"
           >
-            <EmptyMeasurementState
+            <SampleMeasurementChart
+              ariaLabel="Sample agency assignments over time chart"
+              rows={assignmentRows}
             />
           </DataPanel>
 
@@ -143,7 +182,9 @@ const formatDate = (value?: string | null) =>
             title="Reports Over Time"
             description="Personnel-linked report records by year"
           >
-            <EmptyMeasurementState
+            <SampleMeasurementChart
+              ariaLabel="Sample reports over time chart"
+              rows={reportRows}
             />
           </DataPanel>
 
@@ -151,7 +192,9 @@ const formatDate = (value?: string | null) =>
             title="Civil Cases Over Time"
             description="Personnel-linked civil cases by year"
           >
-            <EmptyMeasurementState
+            <SampleMeasurementChart
+              ariaLabel="Sample civil cases over time chart"
+              rows={civilCaseRows}
             />
           </DataPanel>
 
@@ -159,40 +202,20 @@ const formatDate = (value?: string | null) =>
             title="License Types"
             description="Personnel by license type"
           >
-            <div class="agency-topic-bars">
-              {
-                ["Peace Officer", "Jailer", "Telecommunicator", "Other"].map(
-                  (label) => (
-                    <div>
-                      <span>{label}</span>
-                      <i>
-                        <b style="width: 0%" />
-                      </i>
-                      <strong />
-                    </div>
-                  ),
-                )
-              }
-            </div>
+            <SampleMeasurementChart
+              ariaLabel="Sample license types chart"
+              rows={licenseRows}
+            />
           </DataPanel>
 
           <DataPanel
             title="Status Breakdown"
             description="Current and former personnel"
           >
-            <div class="agency-topic-bars">
-              {
-                ["Current", "Former"].map((label) => (
-                  <div>
-                    <span>{label}</span>
-                    <i>
-                      <b style="width: 0%" />
-                    </i>
-                    <strong />
-                  </div>
-                ))
-              }
-            </div>
+            <SampleMeasurementChart
+              ariaLabel="Sample status breakdown chart"
+              rows={statusRows}
+            />
           </DataPanel>
 
           <DataPanel

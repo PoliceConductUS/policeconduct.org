@@ -2,10 +2,11 @@
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import type { FederalAgencyIndexModel } from "#src/lib/data/federal-agencies.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
@@ -31,6 +32,12 @@ const isFederalTopicPage =
   );
 const isOutcomesByIncomePage = model.pagePath.includes("/outcomes-by-income/");
 const outcomesByIncomeHref = `${model.pagePath}outcomes-by-income/`;
+const sampleRows = [
+  { label: "Current", value: "--", width: 62 },
+  { label: "Previous", value: "--", width: 46 },
+  { label: "Reports", value: "--", width: 34 },
+  { label: "Records", value: "--", width: 52 },
+];
 ---
 
 <SiteLayout
@@ -44,14 +51,20 @@ const outcomesByIncomeHref = `${model.pagePath}outcomes-by-income/`;
       <div class="container">
         <Breadcrumbs items={model.breadcrumbs} className="mb-2" />
         <EntityPageHeader title={model.heading} description={model.description}>
-          <label class="civic-dashboard-jump">
-            <span>{model.searchLabel}</span>
-            <input
-              type="search"
-              placeholder={model.searchPlaceholder}
-              data-civic-hierarchy-filter-input
+          <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={model.heading}
+              sourcePage={model.pagePath}
             />
-          </label>
+            <label class="civic-dashboard-jump">
+              <span>{model.searchLabel}</span>
+              <input
+                type="search"
+                placeholder={model.searchPlaceholder}
+                data-civic-hierarchy-filter-input
+              />
+            </label>
+          </Fragment>
         </EntityPageHeader>
 
         {
@@ -90,9 +103,12 @@ const outcomesByIncomeHref = `${model.pagePath}outcomes-by-income/`;
               model.charts.map((chartTitle) => (
                 <DataPanel
                   title={chartTitle}
-                  description="Projected federal records for this view"
+                  description="Records for this view"
                 >
-                  <EmptyMeasurementState />
+                  <SampleMeasurementChart
+                    ariaLabel={`Sample ${chartTitle} chart`}
+                    rows={sampleRows}
+                  />
                 </DataPanel>
               ))
             )

@@ -1,5 +1,4 @@
 ---
-import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import { metricLabels } from "#src/lib/metric-vocabulary.js";
 
@@ -7,12 +6,10 @@ const {
   href,
   className = "",
   variant = "summary",
-  showSampleChart = false,
 } = Astro.props as {
   href?: string;
   className?: string;
   variant?: "summary" | "detail";
-  showSampleChart?: boolean;
 };
 
 const outcomeRows = [
@@ -36,17 +33,11 @@ const outcomeRows = [
     </div>
     {href ? <a href={href}>View details</a> : null}
   </div>
-  {
-    showSampleChart ? (
-      <SampleMeasurementChart
-        ariaLabel="Sample outcomes by income chart"
-        rows={outcomeRows}
-        legend={["Dismissed", "Plea deal", "Other outcomes"]}
-      />
-    ) : (
-      <EmptyMeasurementState />
-    )
-  }
+  <SampleMeasurementChart
+    ariaLabel="Sample outcomes by income chart"
+    rows={outcomeRows}
+    legend={["Dismissed", "Plea deal", "Other outcomes"]}
+  />
 </article>
 
 <style>

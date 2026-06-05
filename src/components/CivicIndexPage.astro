@@ -24,499 +24,54 @@ const structuredData = buildWebPage({
 const heading =
   model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
   model.jurisdictionLabel;
-const scopedHref = (slug: string) => `${model.pagePath}${slug}/`;
-const formatCount = (value: number) => value.toLocaleString("en-US");
-const coverageCount = (key: string) =>
-  model.coverage.find((metric) => metric.key === key)?.value ?? 0;
-const updatedLabel = "Updated May 2026";
-
-const childMetric =
-  model.level === "state"
-    ? {
-        className: "counties",
-        detail: `County and regional pages available under the ${heading} index.`,
-        href: scopedHref("counties"),
-        icon: "map",
-        label: "Counties",
-        value: formatCount(model.rows.length),
-        action: "Explore counties",
-      }
-    : model.level === "administrative_area"
-      ? {
-          className: "places",
-          detail: `Place pages available under the ${heading} index.`,
-          href: scopedHref("places"),
-          icon: "pin",
-          label: "Places",
-          value: formatCount(model.rows.length),
-          action: "Explore places",
-        }
-      : {
-          className: "agencies",
-          detail: `Agency pages available under the ${heading} index.`,
-          href: scopedHref("agencies"),
-          icon: "building",
-          label: "Agencies",
-          value: formatCount(coverageCount("agencies")),
-          action: "Explore agencies",
-        };
-
-const linkIfExists = (slug: string) => {
-  const available = new Set([
-    "budget",
-    "civil-cases",
-    "fatal-force-incidents",
-    "liability-costs",
-    "outcomes-by-income",
-    "reports",
-  ]);
-  return available.has(slug) ? scopedHref(slug) : null;
-};
-
-type TopMetric = {
-  action?: string;
-  className: string;
-  defaultAction?: boolean;
-  detail: string;
-  href: string | null;
-  icon: string;
-  label: string;
-  updated?: string;
-  value: string;
-};
-
-const topMetrics: TopMetric[] = [
-  {
-    ...childMetric,
-    defaultAction: true,
-  },
-  {
-    className: "reports",
-    detail: `Published public reports connected to ${heading} records in the past 12 months.`,
-    href: linkIfExists("reports"),
-    icon: "file",
-    label: "Reports",
-    updated: updatedLabel,
-    value: formatCount(coverageCount("reports")),
-  },
-  {
-    className: "budget",
-    detail:
-      "Current fiscal-year budget, revenue, overtime, and related finance records.",
-    href: linkIfExists("budget"),
-    icon: "dollar",
-    label: "Budget",
-    value: "$--",
-  },
-  {
-    className: "cases",
-    detail:
-      model.level === "state"
-        ? `Total incident-location civil case records connected to ${heading}.`
-        : `Total civil case records connected to ${heading}.`,
-    href: linkIfExists("civil-cases"),
-    icon: "scales",
-    label: "Civil cases",
-    updated: updatedLabel,
-    value: formatCount(coverageCount("civil_cases")),
-  },
-  {
-    className: "liability",
-    detail:
-      "Claims, settlements, judgments, defense costs, and related payments from the past 5 years.",
-    href: linkIfExists("liability-costs"),
-    icon: "weight",
-    label: "Liability costs",
-    value: "$--",
-  },
-  {
-    className: "fatal",
-    detail:
-      "Fatal force, custody deaths, pursuit deaths, and other police-contact deaths from the past 5 years.",
-    href: linkIfExists("fatal-force-incidents"),
-    icon: "fatal",
-    label: "Fatal Force Incidents",
-    updated: updatedLabel,
-    value: "0",
-  },
-];
-
-type BarRow = {
+const intentBands = model.visitorIntentBands.map((band, index) => ({
+  ...band,
+  id: `intent-${index + 1}`,
+}));
+const topMetricCards = model.topMetricCards;
+type SampleRow = {
   label: string;
   value: string;
   width: number;
 };
-
-type Chart =
-  | { kind: "bars"; color?: "blue" | "green" | "purple" | "red" }
-  | {
-      kind: "stacked";
-      legend: string[];
-      rows: { label: string; a: number; b: number; c: number }[];
-    }
-  | { kind: "barRows"; rows: BarRow[] }
-  | {
-      kind: "grouped";
-      legend: string[];
-      groups: { label: string; day: number; night: number }[];
-    }
-  | {
-      kind: "countSummary";
-      items: { label: string; value: string }[];
-    };
-
-type Panel = {
-  aria: string;
-  chart: Chart;
-  description: string;
-  href?: string | null;
-  meta?: string[];
-  title: string;
-};
-
-type IntentBand = {
-  description: string;
-  id: string;
-  nav: string;
-  panels?: Panel[];
-  policy?: {
-    description: string;
-    title: string;
-  };
-  title: string;
-};
-
-const intentBands: IntentBand[] = [
-  {
-    id: "contacts",
-    nav: "Contact and enforcement",
-    title: "Police contact and enforcement activity",
-    description:
-      "Calls, stops, arrests, citations, charges, and other recorded police-contact activity.",
-    panels: [
-      {
-        aria: "Public reports chart",
-        chart: { kind: "bars", color: "blue" },
-        description: `Published reports attached to ${heading} location records.`,
-        href: linkIfExists("reports"),
-        meta: ["Previous 12 months", updatedLabel],
-        title: "Public reports, 12 months",
-      },
-      {
-        aria: "Disabled sample contact activity chart",
-        chart: {
-          kind: "stacked",
-          legend: ["Stops", "Arrests", "Citations"],
-          rows: [
-            { label: "Jan", a: 46, b: 28, c: 26 },
-            { label: "Apr", a: 52, b: 22, c: 26 },
-            { label: "Jul", a: 58, b: 18, c: 24 },
-            { label: "Oct", a: 49, b: 30, c: 21 },
-          ],
-        },
-        description: "Stops, arrests, citations, and calls grouped by month.",
-        title: "Contact activity, 12 months",
-      },
-    ],
-  },
-  {
-    id: "disparities",
-    nav: "Disparities and outcomes",
-    title: "Disparities and community outcomes",
-    description:
-      "Contacts, fines, charges, searches, force, and outcomes by race, ethnicity, income, location, and time of day.",
-    panels: [
-      {
-        aria: "Disabled sample outcomes by income chart",
-        chart: {
-          kind: "stacked",
-          legend: ["Dismissed", "Plea deal", "Other outcomes"],
-          rows: [
-            { label: "Lower income", a: 18, b: 26, c: 56 },
-            { label: "Middle income", a: 30, b: 24, c: 46 },
-            { label: "Higher income", a: 44, b: 18, c: 38 },
-          ],
-        },
-        description:
-          "Dismissed cases, convictions, plea deals, jail, probation, and deferred prosecution by income level.",
-        href: linkIfExists("outcomes-by-income"),
-        title: "Outcomes by income, 5 years",
-      },
-      {
-        aria: "Disabled sample stops by ethnicity chart",
-        chart: {
-          kind: "barRows",
-          rows: [
-            { label: "Hispanic", width: 44, value: "44%" },
-            { label: "Black", width: 22, value: "22%" },
-            { label: "White", width: 26, value: "26%" },
-            { label: "Other", width: 8, value: "8%" },
-          ],
-        },
-        description:
-          "Stop share by recorded ethnicity. The detail page explains what the percentages compare against.",
-        title: "Stops by ethnicity, 12 months",
-      },
-      {
-        aria: "Disabled sample stops by ethnicity and day or night chart",
-        chart: {
-          kind: "grouped",
-          legend: ["Day", "Night"],
-          groups: [
-            { label: "Hispanic", day: 54, night: 68 },
-            { label: "Black", day: 32, night: 45 },
-            { label: "White", day: 48, night: 36 },
-            { label: "Other", day: 18, night: 22 },
-          ],
-        },
-        description:
-          "Stop share by recorded ethnicity split by daylight and nighttime incidents.",
-        title: "Stops by ethnicity and day/night, 12 months",
-      },
-    ],
-  },
-  {
-    id: "costs",
-    nav: "Public cost",
-    title: "Public costs and litigation",
-    description:
-      "Budget, revenue, civil litigation, settlements, judgments, defense costs, and related public costs.",
-    panels: [
-      {
-        aria: "Civil case counts",
-        chart: {
-          kind: "countSummary",
-          items: [
-            {
-              label: "Filed in the past 5 years",
-              value: formatCount(coverageCount("civil_cases")),
-            },
-            {
-              label: "Total civil cases found",
-              value: formatCount(coverageCount("civil_cases")),
-            },
-          ],
-        },
-        description:
-          model.level === "state"
-            ? `Cases connected to ${heading} by incident location.`
-            : `Cases connected to ${heading}.`,
-        href: linkIfExists("civil-cases"),
-        meta:
-          model.level === "state"
-            ? ["Incident-location records", updatedLabel]
-            : [updatedLabel],
-        title: "Civil cases filed",
-      },
-      {
-        aria: "Disabled sample liability costs chart",
-        chart: {
-          kind: "barRows",
-          rows: [
-            { label: "Claims", width: 58, value: "$--" },
-            { label: "Defense", width: 42, value: "$--" },
-            { label: "Settlements", width: 75, value: "$--" },
-            { label: "Records disputes", width: 18, value: "$--" },
-          ],
-        },
-        description:
-          "Claims, settlements, judgments, defense costs, and related payments.",
-        href: linkIfExists("liability-costs"),
-        title: "Liability costs, 5 years",
-      },
-      {
-        aria: "Disabled sample revenue by income chart",
-        chart: {
-          kind: "barRows",
-          rows: [
-            { label: "Lower income", width: 64, value: "$--" },
-            { label: "Middle income", width: 38, value: "$--" },
-            { label: "Higher income", width: 19, value: "$--" },
-          ],
-        },
-        description:
-          "Fine, fee, forfeiture, and court-cost revenue by neighborhood income level.",
-        title: "Revenue by income, 5 years",
-      },
-      {
-        aria: "Disabled sample budget chart",
-        chart: {
-          kind: "barRows",
-          rows: [
-            { label: "2021", width: 52, value: "$--" },
-            { label: "2022", width: 58, value: "$--" },
-            { label: "2023", width: 64, value: "$--" },
-            { label: "2024", width: 70, value: "$--" },
-          ],
-        },
-        description: "Fiscal-year budget records by year.",
-        href: linkIfExists("budget"),
-        title: "Budget, 5 years",
-      },
-    ],
-  },
-  {
-    id: "accountability",
-    nav: "Accountability outcomes",
-    title:
-      "Complaints, discipline, force, lawsuits, and accountability outcomes",
-    description:
-      "Complaints, force incidents, lawsuits, body-camera issues, discipline decisions, and public-record barriers.",
-    panels: [
-      {
-        aria: "Disabled sample complaint outcomes chart",
-        chart: {
-          kind: "barRows",
-          rows: [
-            { label: "Sustained", width: 22, value: "--" },
-            { label: "Not proven", width: 42, value: "--" },
-            { label: "Unfounded", width: 18, value: "--" },
-            { label: "Exonerated", width: 30, value: "--" },
-            { label: "Closed or withdrawn", width: 24, value: "--" },
-          ],
-        },
-        description:
-          "Findings and actions taken after complaints are reviewed.",
-        meta: ["Geography-level summary"],
-        title: "Complaint outcomes, 5 years",
-      },
-      {
-        aria: "Disabled sample body-camera and report-quality records chart",
-        chart: {
-          kind: "barRows",
-          rows: [
-            { label: "Missing video", width: 48, value: "--" },
-            { label: "Late upload", width: 34, value: "--" },
-            { label: "Report correction", width: 28, value: "--" },
-            { label: "Amended report", width: 20, value: "--" },
-          ],
-        },
-        description:
-          "Activation failures, missing video, late uploads, report corrections, and amended reports.",
-        title: "Body-camera and report-quality records, 12 months",
-      },
-      {
-        aria: "Disabled sample use of force chart",
-        chart: {
-          kind: "barRows",
-          rows: [
-            { label: "Hands or holds", width: 52, value: "--" },
-            { label: "Taser", width: 26, value: "--" },
-            { label: "Chemical spray", width: 18, value: "--" },
-            { label: "Firearm", width: 8, value: "--" },
-          ],
-        },
-        description:
-          "Force reports by type, with the source record named on the detail page.",
-        title: "Use of force, 12 months",
-      },
-      {
-        aria: "Disabled sample fatal force incidents chart",
-        chart: {
-          kind: "barRows",
-          rows: [
-            { label: "Under 18", width: 10, value: "--" },
-            { label: "18 and older", width: 58, value: "--" },
-            { label: "Dogs", width: 34, value: "--" },
-            { label: "Other animals", width: 12, value: "--" },
-          ],
-        },
-        description: "Fatal force and other deaths involving police contact.",
-        meta: [updatedLabel],
-        title: "Fatal force incidents, 5 years",
-      },
-    ],
-  },
-  {
-    id: "credibility",
-    nav: "Officer credibility",
-    title:
-      "Officer credibility, search validity, force justification, and impeachment records",
-    description:
-      "Brady, Giglio, suppression, evidence-exclusion, search-validity, and force-justification records.",
-    panels: [
-      {
-        aria: "Disabled sample credibility records chart",
-        chart: {
-          kind: "barRows",
-          rows: [
-            { label: "Brady/Giglio", width: 26, value: "--" },
-            { label: "Suppression", width: 34, value: "--" },
-            { label: "Evidence excluded", width: 18, value: "--" },
-          ],
-        },
-        description:
-          "Agency/personnel-scope records that may affect credibility or criminal-case review.",
-        title: "Credibility records, 5 years",
-      },
-      {
-        aria: "Disabled sample search and force record chart",
-        chart: {
-          kind: "barRows",
-          rows: [
-            { label: "Searches", width: 56, value: "--" },
-            { label: "Hits", width: 18, value: "--" },
-            { label: "Force reports", width: 31, value: "--" },
-          ],
-        },
-        description:
-          "Compare search, force, and evidence records only when the record source and comparison group are documented.",
-        title: "Search hit rate and force records, 12 months",
-      },
-    ],
-  },
-  {
-    id: "safeguards",
-    nav: "Policy safeguards",
-    title: "Policy safeguards and accountability systems",
-    description:
-      "Policy safeguards, transparency mechanisms, decertification law context, and accountability-system barriers.",
-    policy: {
-      title: "Policy and transparency records, current",
-      description:
-        "De-escalation, duty to intervene, force reporting, complaint access, body-camera rules, public reporting, and related safeguards.",
-    },
-  },
-  {
-    id: "better",
-    nav: "Better outcomes",
-    title: "Better outcomes and positive-deviance signals",
-    description:
-      "Comparative signals such as lower complaint rates, lower force rates, faster complaint resolution, stronger policy safeguards, or improved outcomes under comparable constraints.",
-    panels: [
-      {
-        aria: "Disabled sample peer comparison chart",
-        chart: {
-          kind: "barRows",
-          rows: [
-            { label: "Peer median", width: 62, value: "--" },
-            { label: "Lower-force peers", width: 38, value: "--" },
-            { label: `${heading} agencies`, width: 54, value: "--" },
-          ],
-        },
-        description:
-          "Positive signal only when peer groups, comparison groups, and limits are documented.",
-        meta: ["Peer comparison"],
-        title: "Force rate compared with peer median, 12 months",
-      },
-      {
-        aria: "Disabled sample safeguards and outcomes chart",
-        chart: {
-          kind: "barRows",
-          rows: [
-            { label: "Strong safeguards", width: 48, value: "--" },
-            { label: "Complaint rate", width: 32, value: "--" },
-            { label: "Force rate", width: 28, value: "--" },
-          ],
-        },
-        description:
-          "Compare safeguards with complaint, force, payout, disparity, or public-trust outcome records.",
-        meta: ["Peer comparison"],
-        title: "Policy safeguards and outcomes, 12 months",
-      },
-    ],
-  },
+const monthSampleRows: SampleRow[] = [
+  { label: "Jan", value: "--", width: 0 },
+  { label: "Apr", value: "--", width: 0 },
+  { label: "Jul", value: "--", width: 0 },
+  { label: "Oct", value: "--", width: 0 },
 ];
+const yearSampleRows: SampleRow[] = [
+  { label: "2021", value: "--", width: 0 },
+  { label: "2022", value: "--", width: 0 },
+  { label: "2023", value: "--", width: 0 },
+  { label: "2024", value: "--", width: 0 },
+  { label: "2025", value: "--", width: 0 },
+];
+const fiscalYearSampleRows: SampleRow[] = [
+  { label: "FY 2021", value: "$--", width: 0 },
+  { label: "FY 2022", value: "$--", width: 0 },
+  { label: "FY 2023", value: "$--", width: 0 },
+  { label: "FY 2024", value: "$--", width: 0 },
+  { label: "FY 2025", value: "$--", width: 0 },
+];
+const currentContextSampleRows: SampleRow[] = [
+  { label: "Policy", value: "--", width: 0 },
+  { label: "Safeguard", value: "--", width: 0 },
+  { label: "Outcome", value: "--", width: 0 },
+  { label: "Source", value: "--", width: 0 },
+];
+const sampleRowsForWindow = (window?: string) => {
+  if (window === "Previous 5 fiscal years") {
+    return fiscalYearSampleRows;
+  }
+  if (window === "Previous 5 years") {
+    return yearSampleRows;
+  }
+  if (window === "Current policy context") {
+    return currentContextSampleRows;
+  }
+  return monthSampleRows;
+};
 
 type DecertificationColumn = {
   key: string;
@@ -722,11 +277,11 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
           aria-label={`Top ${heading} Civic Index metrics`}
         >
           {
-            topMetrics.map((metric) => (
+            topMetricCards.map((metric) => (
               <article
                 class:list={[
                   "metric-card",
-                  metric.className,
+                  `metric-icon-${metric.icon}`,
                   metric.defaultAction && "default",
                 ]}
               >
@@ -784,6 +339,35 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
                         <path d="M6.5 7h11l2 13H4.5Z" />
                         <path d="M10 12h4" />
                       </>
+                    ) : metric.icon === "people" ? (
+                      <>
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </>
+                    ) : metric.icon === "person" ? (
+                      <>
+                        <circle cx="12" cy="8" r="4" />
+                        <path d="M6 21v-2a6 6 0 0 1 12 0v2" />
+                      </>
+                    ) : metric.icon === "shield" ? (
+                      <>
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+                        <path d="m9 12 2 2 4-5" />
+                      </>
+                    ) : metric.icon === "calendar" ? (
+                      <>
+                        <path d="M8 2v4" />
+                        <path d="M16 2v4" />
+                        <path d="M3 10h18" />
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                      </>
+                    ) : metric.icon === "link" ? (
+                      <>
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                      </>
                     ) : (
                       <>
                         <path d="M12 3v18" />
@@ -801,18 +385,24 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
                 <p class="metric-detail">{metric.detail}</p>
                 <div class="metric-actions">
                   {metric.defaultAction ? (
-                    <a class="metric-action primary" href={metric.href}>
-                      {metric.action}
+                    <a
+                      class="metric-action primary"
+                      href={metric.defaultAction.href}
+                    >
+                      {metric.defaultAction.label}
                     </a>
-                  ) : metric.href ? (
-                    <a class="metric-action secondary" href={metric.href}>
+                  ) : metric.detailHref ? (
+                    <a class="metric-action secondary" href={metric.detailHref}>
                       View details
                     </a>
                   ) : null}
                 </div>
-                {metric.updated ? (
+                {metric.scope || metric.window ? (
                   <div class="meta">
-                    <span class="chip">{metric.updated}</span>
+                    <span class="chip">{metric.scope}</span>
+                    {metric.window ? (
+                      <span class="chip">{metric.window}</span>
+                    ) : null}
                   </div>
                 ) : null}
               </article>
@@ -828,135 +418,77 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
                   <header class="band-heading">
                     <div>
                       <h2>{band.title}</h2>
-                      <p>{band.description}</p>
+                      {band.summary ? <p>{band.summary}</p> : null}
                     </div>
                   </header>
 
-                  {band.policy ? (
-                    <article class="policy-card">
-                      <h3>{band.policy.title}</h3>
-                      <p>{band.policy.description}</p>
-                    </article>
+                  {band.metrics.length ? (
+                    <div class="band-metric-list">
+                      {band.metrics.map((metric) => (
+                        <article class="band-metric">
+                          <div>
+                            <p class="metric-label">{metric.label}</p>
+                            <strong class="band-metric-value">
+                              {metric.value}
+                            </strong>
+                          </div>
+                          <p>{metric.detail}</p>
+                          <div class="meta">
+                            <span class="chip">{metric.scope}</span>
+                            {metric.window ? (
+                              <span class="chip">{metric.window}</span>
+                            ) : null}
+                            {metric.defaultAction ? (
+                              <a href={metric.defaultAction.href}>
+                                {metric.defaultAction.label}
+                              </a>
+                            ) : metric.detailHref ? (
+                              <a href={metric.detailHref}>View details</a>
+                            ) : null}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
                   ) : null}
 
-                  {band.panels ? (
+                  {band.graphs.length ? (
                     <div class="chart-grid">
-                      {band.panels.map((panel) => (
+                      {band.graphs.map((graph) => (
                         <article class="panel">
                           <header>
-                            <h3>{panel.title}</h3>
-                            <p>{panel.description}</p>
+                            <h3>{graph.label}</h3>
+                            <p>{graph.seriesLabel}</p>
                           </header>
 
-                          {panel.chart.kind === "bars" ? (
-                            <div class:list={["bars", panel.chart.color]}>
-                              <i />
-                              <i />
-                              <i />
-                              <i />
-                              <i />
-                              <i />
-                              <i />
-                              <i />
-                            </div>
-                          ) : panel.chart.kind === "stacked" ? (
-                            <div
-                              class="sample-chart disabled"
-                              aria-label={panel.aria}
-                            >
-                              <div class="stacked-bars">
-                                {panel.chart.rows.map((row) => (
-                                  <div class="stacked-row">
-                                    <span class="mini-label">{row.label}</span>
-                                    <div
-                                      style={`--a: ${row.a}%; --b: ${row.b}%; --c: ${row.c}%`}
-                                    >
-                                      <i />
-                                      <i />
-                                      <i />
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                              <div class="mini-legend">
-                                {panel.chart.legend.map((item) => (
-                                  <span>
-                                    <i />
-                                    {item}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          ) : panel.chart.kind === "grouped" ? (
-                            <div
-                              class="sample-chart disabled"
-                              aria-label={panel.aria}
-                            >
-                              <div class="grouped-bars">
-                                {panel.chart.groups.map((group) => (
-                                  <div class="group">
-                                    <div class="columns">
-                                      <i style={`height: ${group.day}%`} />
-                                      <i style={`height: ${group.night}%`} />
-                                    </div>
-                                    <small>{group.label}</small>
-                                  </div>
-                                ))}
-                              </div>
-                              <div class="mini-legend">
-                                {panel.chart.legend.map((item) => (
-                                  <span>
-                                    <i />
-                                    {item}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          ) : panel.chart.kind === "countSummary" ? (
-                            <div class="count-summary">
-                              {panel.chart.items.map((item) => (
-                                <div class="count-box">
-                                  <strong>{item.value}</strong>
-                                  <span>{item.label}</span>
+                          <div
+                            class="sample-chart disabled"
+                            aria-label={`${graph.label}: ${graph.seriesLabel}`}
+                          >
+                            {sampleRowsForWindow(graph.window).map((row) => (
+                              <div class="bar-row">
+                                <b>{row.label}</b>
+                                <div class="track">
+                                  <span style={`--v: ${row.width}`} />
                                 </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div
-                              class="sample-chart disabled"
-                              aria-label={panel.aria}
-                            >
-                              {panel.chart.rows.map((row) => (
-                                <div class="bar-row">
-                                  <b>{row.label}</b>
-                                  <div class="track">
-                                    <span style={`--v: ${row.width}`} />
-                                  </div>
-                                  <em>{row.value}</em>
-                                </div>
-                              ))}
-                              {panel.title === "Complaint outcomes, 5 years" ? (
-                                <div class="mini-legend">
-                                  <span>
-                                    <i />
-                                    Actions: discipline, training, coaching,
-                                    mediation, rapid resolution
-                                  </span>
-                                </div>
-                              ) : null}
-                            </div>
-                          )}
+                                <em>{row.value}</em>
+                              </div>
+                            ))}
+                          </div>
 
-                          {panel.meta?.length || panel.href ? (
-                            <div class="meta">
-                              {panel.meta?.map((item) => (
-                                <span class="chip">{item}</span>
-                              ))}
-                              {panel.href ? (
-                                <a href={panel.href}>View details</a>
-                              ) : null}
-                            </div>
-                          ) : null}
+                          {graph.caption ? <p>{graph.caption}</p> : null}
+
+                          <div class="meta">
+                            <span class="chip">{graph.scope}</span>
+                            {graph.window ? (
+                              <span class="chip">{graph.window}</span>
+                            ) : null}
+                            {graph.metadata?.map((item) => (
+                              <span class="chip">{item}</span>
+                            ))}
+                            {graph.detailHref ? (
+                              <a href={graph.detailHref}>View details</a>
+                            ) : null}
+                          </div>
                         </article>
                       ))}
                     </div>
@@ -974,7 +506,7 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
                       <span class="report-card-summary">
                         {decertificationPresentCount} of {decertificationTotal}{" "}
                         mechanisms present ({decertificationUnknownCount}{" "}
-                        unknown). Updated Oct. 16, 2025.
+                        unknown).
                       </span>
                       {decertificationPayload.tier}
                       <a href={decertificationReport.sources[0]!.url}>
@@ -1033,7 +565,7 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
               <p class="menu-title">On this page</p>
               {
                 intentBands.map((band) => (
-                  <a href={`#${band.id}`}>{band.nav}</a>
+                  <a href={`#${band.id}`}>{band.title}</a>
                 ))
               }
             </nav>
@@ -1132,23 +664,28 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
     width: 1.75rem;
   }
 
-  .metric-card.counties svg,
-  .metric-card.places svg,
-  .metric-card.agencies svg,
-  .metric-card.budget svg {
+  .metric-icon-building svg,
+  .metric-icon-calendar svg,
+  .metric-icon-dollar svg,
+  .metric-icon-map svg,
+  .metric-icon-people svg,
+  .metric-icon-pin svg,
+  .metric-icon-shield svg {
     color: #087f3b;
   }
 
-  .metric-card.reports svg {
+  .metric-icon-file svg,
+  .metric-icon-link svg,
+  .metric-icon-person svg {
     color: #174bff;
   }
 
-  .metric-card.cases svg {
+  .metric-icon-scales svg {
     color: #5b2df5;
   }
 
-  .metric-card.liability svg,
-  .metric-card.fatal svg {
+  .metric-icon-cross svg,
+  .metric-icon-weight svg {
     color: #b42318;
   }
 
@@ -1281,6 +818,37 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
     display: grid;
     gap: 0.875rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .band-metric-list {
+    display: grid;
+    gap: 0.625rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .band-metric {
+    background: #fbfcff;
+    border: 1px solid #d7dfeb;
+    border-radius: 0.5rem;
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.85rem 0.95rem;
+  }
+
+  .band-metric p {
+    color: #34496b;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  .band-metric-value {
+    color: #071842;
+    display: block;
+    font-size: 1.35rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    margin-top: 0.25rem;
   }
 
   .panel,
@@ -1707,6 +1275,7 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
       display: none;
     }
 
+    .band-metric-list,
     .metrics-grid,
     .chart-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1714,6 +1283,7 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
   }
 
   @media (max-width: 640px) {
+    .band-metric-list,
     .metrics-grid,
     .chart-grid,
     .count-summary {

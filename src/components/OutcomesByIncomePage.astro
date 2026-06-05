@@ -2,6 +2,7 @@
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 
@@ -47,7 +48,15 @@ const tableOutcomes = ["Dismissed", "Reduced", "Plea", "Convicted", "Jail"];
     <section class="outcomes-income-main">
       <div class="container">
         <Breadcrumbs items={breadcrumbs} className="mb-2" />
-        <EntityPageHeader title={title} description={description} />
+        <EntityPageHeader title={title} description={description}>
+          <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={title}
+              sourcePage={pagePath}
+              topic="Outcomes by income"
+            />
+          </Fragment>
+        </EntityPageHeader>
         <div class="entity-chart-grid outcomes-income-page-grid">
           <form
             class="outcomes-income-filters"

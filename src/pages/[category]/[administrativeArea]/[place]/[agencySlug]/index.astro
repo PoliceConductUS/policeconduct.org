@@ -1,20 +1,17 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
-import DataPanel from "#src/components/DataPanel.astro";
+import EntityActionButton from "#src/components/EntityActionButton.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
-import MetricGrid from "#src/components/MetricGrid.astro";
-import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
-import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
-import PrefillNavButton from "#src/components/PrefillNavButton.astro";
-import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
   loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPaths,
 } from "#src/lib/data/agency-detail.js";
+import {
+  buildTopMetricCards,
+  buildVisitorIntentBands,
+} from "#src/lib/data/civic-index.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
-import { metricVisuals } from "#src/lib/metric-vocabulary.js";
-import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 
 export async function getStaticPaths() {
   return loadAgencyLocationStaticPaths();
@@ -31,19 +28,12 @@ const {
   administrativeArea,
   placeLabel,
   placePath,
-  civilCases,
   counts,
 } = data;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(agencyPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
 const pageDescription = `${agencyName} agency profile with contact information, personnel, public reports, and recent civil litigation references.`;
-const personnelIndexPath = `${agencyPath}personnel/`;
-const reportsIndexPath = `${agencyPath}reports/`;
-const budgetIndexPath = `${agencyPath}budget/`;
-const civilCasesIndexPath = `${agencyPath}civil-cases/`;
-const liabilityCostsIndexPath = `${agencyPath}liability-costs/`;
-const outcomesByIncomePath = `${agencyPath}outcomes-by-income/`;
 const civilCaseTotal = counts.civilCases + counts.personnelLinkedCivilCases;
 const addressAvailable =
   data.agency.address ||
@@ -70,89 +60,12 @@ const contactPoints = data.agencyPhones.map(
 const sameAs = data.agencyLinks
   .map((link: { url?: string | null }) => link.url)
   .filter(Boolean);
-const agencyPrefillName = agencyName.toLocaleUpperCase("en-US");
-const primaryWebsite =
-  data.agencyLinks.find((link: { url?: string | null }) =>
-    /^https?:\/\//i.test(link.url || ""),
-  )?.url || "";
-const agencyLinksSummary = data.agencyLinks
-  .map((link: { label?: string | null; url?: string | null }) =>
-    [link.label, link.url].filter(Boolean).join(": "),
-  )
-  .filter(Boolean)
-  .join("\n");
-const civilLitigationSummary = [
-  ...civilCases.map((record: any) => ({
-    ...record,
-    caseUrl: `/civil-cases/${record.slug}/`,
-  })),
-  ...data.personnelLinkedCivilCases.map((record: any) => ({
-    ...record,
-    caseUrl: `/civil-cases/${record.slug}/`,
-  })),
-]
-  .map((record) => {
-    const segments = [
-      record.title || "Civil case",
-      record.cause_number || null,
-      record.court || null,
-      record.caseUrl,
-    ];
-    return segments.filter(Boolean).join(" — ");
-  })
-  .join("\n");
-const reportLinksSummary = data.reportedReports
-  .map((report: { url: string }) => report.url)
-  .join("\n");
-const reportNewPrefillPayload = JSON.stringify({
-  officer: {
-    department: agencyPrefillName,
-  },
-} satisfies ReportNewPrefill);
-const addCivilCasePrefillPayload = JSON.stringify({
-  jurisdiction: categorySlug,
-  defendants: agencyPrefillName,
-  summary: `${agencyPrefillName} agency profile: ${agencyPath}`,
-  links: [
-    agencyPath,
-    ...data.reportedReports
-      .slice(0, 3)
-      .map((report: { url: string }) => report.url),
-  ]
-    .filter(Boolean)
-    .join("\n"),
-});
-const suggestEditPrefillPayload = JSON.stringify({
-  agencyPath,
-  agencyName: agencyPrefillName,
-  jurisdiction: categorySlug,
-  departmentWebsite: primaryWebsite,
-  departmentHead: data.agency.contact_name || "",
-  socialLinks: agencyLinksSummary,
-  civilLitigation: civilLitigationSummary,
-});
-const suggestPersonnelPrefillPayload = JSON.stringify({
-  currentAgency: agencyPrefillName,
-  currentAgencyCity: data.agency.city || "",
-  currentAgencyState: agencyState,
-  civilLitigation: civilLitigationSummary,
-  reportLinks: reportLinksSummary,
-});
-const subscribePrefillPayload = JSON.stringify({
-  whoami: "Subscriber",
-  message: `Please notify me when this agency page changes: ${agencyPath}`,
-});
-const claimProfilePrefillPayload = JSON.stringify({
-  whoami: "Profile Owner",
-  message: `I would like to claim ownership of this profile.\nProfile path: ${agencyPath}`,
-});
 const federalAgency = data.federalAgency
   ? {
       name: data.federalAgency.name,
       path: `/federal/${data.federalAgency.slug}/`,
     }
   : null;
-const formatNumber = (value: number) => value.toLocaleString("en-US");
 const toDisplayName = (value: string) =>
   value === value.toUpperCase()
     ? value
@@ -160,97 +73,69 @@ const toDisplayName = (value: string) =>
         .replace(/\b[a-z]/g, (letter) => letter.toLocaleUpperCase("en-US"))
     : value;
 const agencyDisplayName = toDisplayName(agencyName);
-const getYear = (value: string | null | undefined) => {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return String(date.getUTCFullYear());
+const agencyCoverage = [
+  { key: "agencies", label: "Agencies", value: 1 },
+  { key: "personnel", label: "Personnel", value: counts.personnel },
+  { key: "reports", label: "Reports", value: counts.reports },
+  { key: "civil_cases", label: "Civil Cases", value: civilCaseTotal },
+] as const;
+const intentBands = buildVisitorIntentBands({
+  coverage: [...agencyCoverage],
+  jurisdictionLabel: agencyDisplayName,
+  pagePath: agencyPath,
+  rowCount: 0,
+  scope: "agency",
+}).map((band, index) => ({ ...band, id: `intent-${index + 1}` }));
+const topMetricCards = buildTopMetricCards({
+  coverage: [...agencyCoverage],
+  jurisdictionLabel: agencyDisplayName,
+  pagePath: agencyPath,
+  rowCount: 0,
+  scope: "agency",
+});
+type SampleRow = {
+  label: string;
+  value: string;
+  width: number;
 };
-const buildYearSeries = (
-  records: Record<string, string | null | undefined>[],
-  dateKey: string,
-) => {
-  const countsByYear = new Map<string, number>();
-  records.forEach((record) => {
-    const year = getYear(record[dateKey]);
-    if (year) countsByYear.set(year, (countsByYear.get(year) || 0) + 1);
-  });
-  return [...countsByYear.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
-    .slice(-7)
-    .map(([year, value]) => ({ label: year, value }));
+const monthSampleRows: SampleRow[] = [
+  { label: "Jan", value: "--", width: 0 },
+  { label: "Apr", value: "--", width: 0 },
+  { label: "Jul", value: "--", width: 0 },
+  { label: "Oct", value: "--", width: 0 },
+];
+const yearSampleRows: SampleRow[] = [
+  { label: "2021", value: "--", width: 0 },
+  { label: "2022", value: "--", width: 0 },
+  { label: "2023", value: "--", width: 0 },
+  { label: "2024", value: "--", width: 0 },
+  { label: "2025", value: "--", width: 0 },
+];
+const fiscalYearSampleRows: SampleRow[] = [
+  { label: "FY 2021", value: "$--", width: 0 },
+  { label: "FY 2022", value: "$--", width: 0 },
+  { label: "FY 2023", value: "$--", width: 0 },
+  { label: "FY 2024", value: "$--", width: 0 },
+  { label: "FY 2025", value: "$--", width: 0 },
+];
+const currentContextSampleRows: SampleRow[] = [
+  { label: "Policy", value: "--", width: 0 },
+  { label: "Safeguard", value: "--", width: 0 },
+  { label: "Outcome", value: "--", width: 0 },
+  { label: "Source", value: "--", width: 0 },
+];
+const sampleRowsForWindow = (window?: string) => {
+  if (window === "Previous 5 fiscal years") {
+    return fiscalYearSampleRows;
+  }
+  if (window === "Previous 5 years") {
+    return yearSampleRows;
+  }
+  if (window === "Current policy context") {
+    return currentContextSampleRows;
+  }
+  return monthSampleRows;
 };
-const civilCasesByYear = buildYearSeries(
-  civilCases as Record<string, string | null | undefined>[],
-  "filed_date",
-);
-const disabledChartRows = {
-  arrests: [
-    { label: "Low-level", value: "--", width: 54 },
-    { label: "Violent", value: "--", width: 22 },
-    { label: "Drug", value: "--", width: 34 },
-    { label: "Other", value: "--", width: 42 },
-  ],
-  fatalForce: [
-    { label: "Under 18", value: "--", width: 12 },
-    { label: "18 and older", value: "--", width: 58 },
-    { label: "Dogs", value: "--", width: 34 },
-    { label: "Other animals", value: "--", width: 14 },
-  ],
-  useOfForce: [
-    { label: "Hands or holds", value: "--", width: 52 },
-    { label: "Taser", value: "--", width: 28 },
-    { label: "Chemical spray", value: "--", width: 18 },
-    { label: "Firearm", value: "--", width: 8 },
-  ],
-  civilCosts: [
-    { label: "Civil cases", value: "--", width: 46 },
-    { label: "Claims", value: "$--", width: 58 },
-    { label: "Defense costs", value: "$--", width: 42 },
-    { label: "Settlements", value: "$--", width: 72 },
-  ],
-  stopsEthnicity: [
-    { label: "Hispanic", value: "--", width: 44 },
-    { label: "Black", value: "--", width: 24 },
-    { label: "White", value: "--", width: 30 },
-    { label: "Other", value: "--", width: 10 },
-  ],
-  dayNight: [
-    { label: "Day stops", value: "--", width: 46 },
-    { label: "Night stops", value: "--", width: 62 },
-    { label: "Day searches", value: "--", width: 22 },
-    { label: "Night searches", value: "--", width: 34 },
-  ],
-  charges: [
-    { label: "Traffic", value: "--", width: 58 },
-    { label: "Drug", value: "--", width: 36 },
-    { label: "Warrant", value: "--", width: 28 },
-    { label: "Other", value: "--", width: 44 },
-  ],
-  budget: [
-    { label: "2021", value: "$--", width: 48 },
-    { label: "2022", value: "$--", width: 54 },
-    { label: "2023", value: "$--", width: 62 },
-    { label: "2024", value: "$--", width: 70 },
-  ],
-};
-const maxYearValue = Math.max(
-  1,
-  ...civilCasesByYear.map((point) => point.value),
-);
-const getPlotLeft = (index: number, total: number) =>
-  total <= 1 ? 50 : 8 + (index / (total - 1)) * 84;
-const getPlotTop = (value: number, max: number) => 90 - (value / max) * 76;
-const getLinePoints = (series: { label: string; value: number }[]) =>
-  series
-    .map(
-      (point, index) =>
-        `${getPlotLeft(index, series.length)},${getPlotTop(
-          point.value,
-          maxYearValue,
-        )}`,
-    )
-    .join(" ");
 const organization = {
   "@type": "GovernmentOrganization",
   "@id": `${pageUrl}#organization`,
@@ -288,70 +173,6 @@ const structuredData = {
     organization,
   ],
 };
-const agencyMetrics = [
-  {
-    accent: metricVisuals.personnel.accent,
-    action: {
-      href: personnelIndexPath,
-      kind: "link",
-      label: "View details",
-    },
-    detail: "Active / total",
-    icon: metricVisuals.personnel.icon,
-    label: metricVisuals.personnel.label,
-    value: `${formatNumber(counts.currentPersonnel)} active / ${formatNumber(
-      counts.personnel,
-    )} total`,
-  },
-  {
-    accent: metricVisuals.budget.accent,
-    action: {
-      href: budgetIndexPath,
-      kind: "link",
-      label: "View details",
-    },
-    detail: "Fiscal year agency budget",
-    icon: metricVisuals.budget.icon,
-    label: metricVisuals.budget.label,
-    value: "$--",
-  },
-  {
-    accent: metricVisuals.reports.accent,
-    action: {
-      href: reportsIndexPath,
-      kind: "link",
-      label: "View details",
-    },
-    detail: "Published public reports",
-    icon: metricVisuals.reports.icon,
-    label: metricVisuals.reports.label,
-    value: formatNumber(counts.reports),
-  },
-  {
-    accent: metricVisuals.civilCases.accent,
-    action: {
-      href: civilCasesIndexPath,
-      kind: "link",
-      label: "View details",
-    },
-    detail: "Direct and personnel-linked civil cases",
-    icon: metricVisuals.civilCases.icon,
-    label: metricVisuals.civilCases.label,
-    value: formatNumber(civilCaseTotal),
-  },
-  {
-    accent: metricVisuals.liabilityCosts.accent,
-    action: {
-      href: liabilityCostsIndexPath,
-      kind: "link",
-      label: "View details",
-    },
-    detail: "Claims, settlements, judgments, and related costs",
-    icon: metricVisuals.liabilityCosts.icon,
-    label: metricVisuals.liabilityCosts.label,
-    value: "$--",
-  },
-] as const;
 ---
 
 <SiteLayout
@@ -360,7 +181,6 @@ const agencyMetrics = [
   pagePath={agencyPath}
   structuredData={structuredData}
 >
-  <PrefillBootstrap />
   <main class="agency-overview-page flex-grow-1">
     <section class="agency-overview">
       <div class="container">
@@ -392,155 +212,158 @@ const agencyMetrics = [
             ) : null
           }
           <Fragment slot="actions">
-            <PrefillNavButton
-              to="/law-enforcement-agency/suggest-edit/"
-              payload={suggestEditPrefillPayload}
-              class="entity-action-button"
-            >
-              Suggest edit
-            </PrefillNavButton>
-            <PrefillNavButton
-              to="/report/new/"
-              payload={reportNewPrefillPayload}
-              class="entity-action-button entity-action-primary"
-            >
-              Share your experience
-            </PrefillNavButton>
-            <PrefillNavButton
-              to="/civil-litigation/new/"
-              payload={addCivilCasePrefillPayload}
-              class="entity-action-button"
-            >
-              Add a civil case
-            </PrefillNavButton>
-            <PrefillNavButton
-              to="/personnel/new/"
-              payload={suggestPersonnelPrefillPayload}
-              class="entity-action-button"
-            >
-              Suggest new personnel
-            </PrefillNavButton>
-            <PrefillNavButton
-              to="/about/contact/"
-              payload={subscribePrefillPayload}
-              data-testid="agency-subscribe-link"
-              class="entity-action-button"
-            >
-              Notify Me
-            </PrefillNavButton>
-            <PrefillNavButton
-              to="/about/contact/"
-              payload={claimProfilePrefillPayload}
-              data-testid="agency-claim-profile-link"
-              class="entity-action-button"
-            >
-              Claim Profile
-            </PrefillNavButton>
+            <EntityActionButton data-agency-share>Share</EntityActionButton>
+            <EntityActionButton data-agency-download-report>
+              Download report
+            </EntityActionButton>
             <span class="agency-coming-soon" data-agency-coming-soon></span>
           </Fragment>
         </EntityPageHeader>
 
-        <MetricGrid metrics={agencyMetrics} columns="auto" />
-
-        <div class="entity-chart-grid">
-          <OutcomesByIncomePanel href={outcomesByIncomePath} showSampleChart />
-          <DataPanel
-            title="Arrests, 5 Years"
-            description="Number of arrests by category"
-          >
-            <SampleMeasurementChart
-              ariaLabel="Sample arrests chart"
-              rows={disabledChartRows.arrests}
-            />
-          </DataPanel>
-          <DataPanel
-            title="Fatal Force Incidents, 5 Years"
-            description="People by age group, dogs and other animals"
-          >
-            <SampleMeasurementChart
-              ariaLabel="Sample fatal force incidents chart"
-              rows={disabledChartRows.fatalForce}
-            />
-          </DataPanel>
-          <DataPanel
-            title="Use of Force, 5 Years"
-            description="Number of use of force incidents"
-          >
-            <SampleMeasurementChart
-              ariaLabel="Sample use of force chart"
-              rows={disabledChartRows.useOfForce}
-            />
-          </DataPanel>
-          <DataPanel
-            id="agency-liability-costs"
-            title="Civil Cases and Liability Costs, 5 Years"
-            description="Civil cases and liability costs"
-          >
-            {
-              civilCasesByYear.length ? (
-                <div class="agency-line-chart">
-                  <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <path class="agency-grid-line" d="M8 14H96" />
-                    <path class="agency-grid-line" d="M8 38H96" />
-                    <path class="agency-grid-line" d="M8 62H96" />
-                    <path class="agency-grid-line" d="M8 86H96" />
-                    <path class="agency-axis-line" d="M8 8V90H96" />
-                    <polyline
-                      class="agency-line agency-line-green"
-                      points={getLinePoints(civilCasesByYear)}
-                    />
-                  </svg>
-                  <div class="agency-chart-labels">
-                    {civilCasesByYear.map((point) => (
-                      <span>{point.label}</span>
-                    ))}
+        <section
+          class="agency-metric-grid"
+          aria-label={`${agencyDisplayName} Civic Index metrics`}
+        >
+          {
+            topMetricCards.map((metric) => (
+              <article class="agency-metric-card" data-metric-icon={metric.icon}>
+                <svg
+                  class="agency-metric-icon"
+                  aria-hidden="true"
+                  data-metric-icon={metric.icon}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  {metric.icon === "people" ? (
+                    <>
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </>
+                  ) : metric.icon === "dollar" ? (
+                    <>
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+                      <path d="M12 6v12" />
+                    </>
+                  ) : metric.icon === "file" ? (
+                    <>
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                      <path d="M14 2v6h6" />
+                      <path d="M8 13h8" />
+                      <path d="M8 17h5" />
+                    </>
+                  ) : metric.icon === "scales" ? (
+                    <>
+                      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                      <path d="M7 21h10" />
+                      <path d="M12 3v18" />
+                    </>
+                  ) : (
+                    <>
+                      <path d="M8 7a4 4 0 0 1 8 0" />
+                      <path d="M6.5 7h11l2 13H4.5Z" />
+                      <path d="M10 12h4" />
+                    </>
+                  )}
+                </svg>
+                <div>
+                  <p>{metric.label}</p>
+                  <strong>{metric.value}</strong>
+                  <span>{metric.detail}</span>
+                  <div class="agency-meta">
+                    <span>{metric.scope}</span>
+                    {metric.window ? <span>{metric.window}</span> : null}
+                    {metric.detailHref ? (
+                      <a href={metric.detailHref}>View details</a>
+                    ) : null}
                   </div>
                 </div>
-              ) : (
-                <SampleMeasurementChart
-                  ariaLabel="Sample civil cases and liability costs chart"
-                  rows={disabledChartRows.civilCosts}
-                />
-              )
+              </article>
+            ))
+          }
+        </section>
+
+        <div class="agency-intent-layout">
+          <div>
+            {
+              intentBands.map((band) => (
+                <section class="agency-intent-band" id={band.id}>
+                  <header>
+                    <h2>{band.title}</h2>
+                    {band.summary ? <p>{band.summary}</p> : null}
+                  </header>
+                  {band.metrics.length ? (
+                    <div class="agency-band-metrics">
+                      {band.metrics.map((metric) => (
+                        <article>
+                          <p>{metric.label}</p>
+                          <strong>{metric.value}</strong>
+                          <span>{metric.detail}</span>
+                          <div class="agency-meta">
+                            <span>{metric.scope}</span>
+                            {metric.window ? <span>{metric.window}</span> : null}
+                            {metric.detailHref ? (
+                              <a href={metric.detailHref}>View details</a>
+                            ) : null}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+                  {band.graphs.length ? (
+                    <div class="agency-chart-grid">
+                      {band.graphs.map((graph) => (
+                        <article class="agency-graph-panel">
+                          <header>
+                            <h3>{graph.label}</h3>
+                            <p>{graph.seriesLabel}</p>
+                          </header>
+                          <div
+                            class="agency-sample-chart"
+                            aria-label={`${graph.label}: ${graph.seriesLabel}`}
+                          >
+                            {sampleRowsForWindow(graph.window).map((row) => (
+                              <div class="agency-bar-row">
+                                <b>{row.label}</b>
+                                <div>
+                                  <span style={`--v: ${row.width}`} />
+                                </div>
+                                <em>{row.value}</em>
+                              </div>
+                            ))}
+                          </div>
+                          {graph.caption ? <p>{graph.caption}</p> : null}
+                          <div class="agency-meta">
+                            <span>{graph.scope}</span>
+                            {graph.window ? <span>{graph.window}</span> : null}
+                            {graph.metadata?.map((item) => (
+                              <span>{item}</span>
+                            ))}
+                            {graph.detailHref ? (
+                              <a href={graph.detailHref}>View details</a>
+                            ) : null}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              ))
             }
-          </DataPanel>
-          <DataPanel
-            title="Stops by Ethnicity, 12 Months"
-            description="Stop share by recorded ethnicity"
-          >
-            <SampleMeasurementChart
-              ariaLabel="Sample stops by ethnicity chart"
-              rows={disabledChartRows.stopsEthnicity}
-            />
-          </DataPanel>
-          <DataPanel
-            title="Stops by Ethnicity and Day/Night, 12 Months"
-            description="Stops split by daylight and nighttime incidents"
-          >
-            <SampleMeasurementChart
-              ariaLabel="Sample stops by ethnicity and day or night chart"
-              rows={disabledChartRows.dayNight}
-            />
-          </DataPanel>
-          <DataPanel
-            title="Top Charge Categories, 12 Months"
-            description="Most common reasons for arrest"
-          >
-            <SampleMeasurementChart
-              ariaLabel="Sample top charge categories chart"
-              rows={disabledChartRows.charges}
-            />
-          </DataPanel>
-          <DataPanel
-            id="agency-budget-trend"
-            title="Budget, 5 Years"
-            description="Fiscal-year budget records"
-          >
-            <SampleMeasurementChart
-              ariaLabel="Sample budget chart"
-              rows={disabledChartRows.budget}
-            />
-          </DataPanel>
+          </div>
+          <aside>
+            <nav class="agency-intent-nav" aria-label="Page sections">
+              <p>On this page</p>
+              {intentBands.map((band) => <a href={`#${band.id}`}>{band.title}</a>)}
+            </nav>
+          </aside>
         </div>
       </div>
     </section>
@@ -661,29 +484,35 @@ const agencyMetrics = [
     }
 
     .agency-metric-card {
+      align-items: start;
       display: grid;
-      gap: 0.95rem;
-      grid-template-columns: 3rem minmax(0, 1fr);
-      min-height: 8.8rem;
+      gap: 0.65rem;
+      grid-template-columns: 2rem minmax(0, 1fr);
+      min-height: 9.6rem;
       padding: 1rem 1.15rem;
     }
 
     .agency-metric-icon {
-      height: 2.7rem;
-      margin-top: 0.35rem;
-      width: 2.7rem;
+      height: 1.75rem;
+      margin-top: 0.1rem;
+      width: 1.75rem;
     }
 
-    .agency-metric-icon-blue {
-      color: #174bff;
-    }
-
-    .agency-metric-icon-green {
+    .agency-metric-card[data-metric-icon="people"] .agency-metric-icon,
+    .agency-metric-card[data-metric-icon="dollar"] .agency-metric-icon {
       color: #087f3b;
     }
 
-    .agency-metric-icon-purple {
+    .agency-metric-card[data-metric-icon="file"] .agency-metric-icon {
+      color: #174bff;
+    }
+
+    .agency-metric-card[data-metric-icon="scales"] .agency-metric-icon {
       color: #5b2df5;
+    }
+
+    .agency-metric-card[data-metric-icon="weight"] .agency-metric-icon {
+      color: #b42318;
     }
 
     .agency-metric-card p {
@@ -711,6 +540,7 @@ const agencyMetrics = [
     }
 
     .agency-metric-card a,
+    .agency-meta a,
     .agency-inline-action,
     .agency-action-link {
       color: #064cfb;
@@ -718,66 +548,171 @@ const agencyMetrics = [
       text-decoration: none;
     }
 
-    .agency-line-chart {
-      display: grid;
-      gap: 0.5rem;
-      margin-top: 1rem;
-      min-height: 11rem;
-    }
-
-    .agency-line-chart svg {
-      height: 9.3rem;
-      overflow: visible;
-      width: 100%;
-    }
-
-    .agency-grid-line,
-    .agency-axis-line {
-      fill: none;
-      vector-effect: non-scaling-stroke;
-    }
-
-    .agency-grid-line {
-      stroke: #d9e1ee;
-      stroke-width: 1;
-    }
-
-    .agency-axis-line {
-      stroke: #b8c4d8;
-      stroke-width: 1.15;
-    }
-
-    .agency-line {
-      fill: none;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      stroke-width: 2.5;
-      vector-effect: non-scaling-stroke;
-    }
-
-    .agency-line-green {
-      stroke: #087f3b;
-    }
-
-    .agency-chart-labels {
-      color: #33456f;
+    .agency-meta {
+      align-items: center;
       display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.15rem;
+    }
+
+    .agency-meta span {
+      background: #f3f6fb;
+      border: 1px solid #d9e1ee;
+      border-radius: 999px;
+      color: #34496b;
+      display: inline-flex;
       font-size: 0.75rem;
-      justify-content: space-between;
-      min-height: 1rem;
+      font-weight: 750;
+      padding: 0.18rem 0.46rem;
     }
 
-    .agency-action-list {
+    .agency-intent-layout {
+      align-items: start;
       display: grid;
-      gap: 0.55rem;
-      margin-top: 0.9rem;
+      gap: 1.35rem;
+      grid-template-columns: minmax(0, 1fr) 13.75rem;
     }
 
-    .agency-action-link {
-      border-top: 1px solid #d9e1ee;
+    .agency-intent-band {
+      border-top: 1px solid #d7dfeb;
+      display: grid;
+      gap: 0.875rem;
+      padding: 1.35rem 0;
+    }
+
+    .agency-intent-band h2 {
+      color: #071842;
+      font-size: var(--ipc-type-h2);
+      line-height: var(--ipc-leading-heading);
+      margin: 0;
+    }
+
+    .agency-intent-band header > p {
+      color: #34496b;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      margin: 0.45rem 0 0;
+      max-width: 82ch;
+    }
+
+    .agency-band-metrics,
+    .agency-chart-grid {
+      display: grid;
+      gap: 0.875rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .agency-band-metrics article,
+    .agency-graph-panel {
+      background: #fbfcff;
+      border: 1px solid #d7dfeb;
+      border-radius: 0.5rem;
+      box-shadow: 0 1px 2px rgba(7, 24, 66, 0.035);
+      display: grid;
+      gap: 0.65rem;
+      padding: 0.95rem;
+    }
+
+    .agency-band-metrics p,
+    .agency-graph-panel h3,
+    .agency-graph-panel p {
+      margin: 0;
+    }
+
+    .agency-band-metrics p,
+    .agency-graph-panel header p,
+    .agency-graph-panel > p {
+      color: #34496b;
+      font-size: 0.875rem;
+      line-height: 1.45;
+    }
+
+    .agency-band-metrics strong {
+      color: #071842;
+      font-size: 1.35rem;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .agency-graph-panel h3 {
+      color: #071842;
+      font-size: var(--ipc-type-h3);
+      line-height: 1.25;
+    }
+
+    .agency-sample-chart {
+      background: #f8fafc;
+      border: 1px solid #d8e0eb;
+      border-radius: 0.38rem;
+      display: grid;
+      gap: 0.625rem;
+      min-height: 7.38rem;
+      opacity: 0.74;
+      padding: 0.75rem;
+    }
+
+    .agency-bar-row {
+      align-items: center;
+      display: grid;
+      gap: 0.56rem;
+      grid-template-columns: 5.75rem minmax(0, 1fr) 2.38rem;
+    }
+
+    .agency-bar-row b {
+      color: #071842;
+      font-size: 0.75rem;
+    }
+
+    .agency-bar-row div {
+      background: #e5ebf3;
+      border-radius: 999px;
+      height: 0.56rem;
+      overflow: hidden;
+    }
+
+    .agency-bar-row div span {
+      background: #aebbcf;
+      border-radius: inherit;
       display: block;
-      font-size: 0.84rem;
-      padding-top: 0.55rem;
+      height: 100%;
+      width: calc(var(--v) * 1%);
+    }
+
+    .agency-bar-row em {
+      color: #687a96;
+      font-size: 0.75rem;
+      font-style: normal;
+      text-align: right;
+    }
+
+    .agency-intent-nav {
+      background: #fbfcff;
+      border: 1px solid #d7dfeb;
+      border-radius: 0.5rem;
+      display: grid;
+      gap: 0.12rem;
+      padding: 0.75rem;
+      position: sticky;
+      top: 1rem;
+    }
+
+    .agency-intent-nav p {
+      color: #687a96;
+      font-size: 0.69rem;
+      font-weight: 900;
+      margin: 0 0 0.38rem;
+      text-transform: uppercase;
+    }
+
+    .agency-intent-nav a {
+      border-radius: 0.25rem;
+      color: #34496b;
+      font-size: 0.75rem;
+      font-weight: 800;
+      line-height: 1.25;
+      padding: 0.5rem;
+      text-decoration: none;
     }
 
     @media (min-width: 768px) {
@@ -797,11 +732,20 @@ const agencyMetrics = [
       }
 
       .agency-metric-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
       }
     }
 
     @media (max-width: 991.98px) {
+      .agency-band-metrics,
+      .agency-chart-grid,
+      .agency-intent-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .agency-intent-nav {
+        position: static;
+      }
     }
 
     @media (max-width: 575.98px) {
@@ -820,19 +764,8 @@ const agencyMetrics = [
     }
   </style>
   <script>
-    import AOS from "aos";
-    import "aos/dist/aos.css";
-
-    if (!document.documentElement.dataset.aosInit) {
-      AOS.init({
-        duration: 800,
-        once: true,
-      });
-      document.documentElement.dataset.aosInit = "1";
-    }
-
     const setComingSoon = (button: Element, message: string) => {
-      const actions = button.closest(".agency-overview-actions");
+      const actions = button.closest(".entity-page-actions");
       const output = actions?.querySelector("[data-agency-coming-soon]");
       if (output) output.textContent = message;
     };

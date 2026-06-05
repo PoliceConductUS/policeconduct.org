@@ -1,6 +1,7 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
   loadAgencyDetailByRouteParams,
@@ -139,6 +140,11 @@ const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
             <p>{pageDescription}</p>
           </div>
           <div class="budget-actions">
+            <HelpCollectDataButton
+              context={agencyName}
+              sourcePage={pagePath}
+              topic="Budget"
+            />
             <button type="button" class="budget-action" data-agency-share>
               <svg
                 aria-hidden="true"
@@ -159,7 +165,7 @@ const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
             </button>
             <button
               type="button"
-              class="budget-action budget-action-primary"
+              class="budget-action"
               data-agency-download-report
             >
               <svg

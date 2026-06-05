@@ -2,10 +2,11 @@
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import Pagination from "#src/components/Pagination.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { buildAgencyCivilCaseRows } from "#src/lib/data/agency-civil-case-rows.js";
 import {
@@ -93,6 +94,32 @@ const metricCards = [
     value: formatCount(courtCount),
   },
 ];
+const caseTimeRows = [
+  { label: "2021", value: "--", width: 32 },
+  { label: "2022", value: "--", width: 48 },
+  { label: "2023", value: "--", width: 64 },
+  { label: "2024", value: "--", width: 52 },
+];
+const caseStatusRows = [
+  { label: "Active", value: "--", width: 34 },
+  { label: "Closed", value: "--", width: 58 },
+];
+const courtRows = [
+  { label: "Federal", value: "--", width: 44 },
+  { label: "State", value: "--", width: 36 },
+  { label: "Other", value: "--", width: 18 },
+];
+const connectionRows = [
+  { label: "Direct", value: "--", width: 46 },
+  { label: "Personnel-linked", value: "--", width: 28 },
+  { label: "Both", value: "--", width: 18 },
+];
+const liabilityRows = [
+  { label: "Claims", value: "$--", width: 58 },
+  { label: "Defense costs", value: "$--", width: 42 },
+  { label: "Settlements", value: "$--", width: 72 },
+  { label: "Judgments", value: "$--", width: 24 },
+];
 
 const formatDate = (value?: string | null) =>
   value
@@ -127,7 +154,15 @@ const formatDate = (value?: string | null) =>
           ]}
           className="mb-2"
         />
-        <EntityPageHeader title={pageTitle} description={pageDescription} />
+        <EntityPageHeader title={pageTitle} description={pageDescription}>
+          <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={agencyName}
+              sourcePage={pagePath}
+              topic="Civil cases"
+            />
+          </Fragment>
+        </EntityPageHeader>
 
         <MetricGrid metrics={metricCards} columns="auto" />
 
@@ -136,7 +171,9 @@ const formatDate = (value?: string | null) =>
             title="Civil Cases Over Time"
             description="Civil cases by filed year"
           >
-            <EmptyMeasurementState
+            <SampleMeasurementChart
+              ariaLabel="Sample civil cases over time chart"
+              rows={caseTimeRows}
             />
           </DataPanel>
 
@@ -144,66 +181,39 @@ const formatDate = (value?: string | null) =>
             title="Active vs Closed"
             description="Civil cases by termination status"
           >
-            <div class="agency-topic-bars">
-              {
-                ["Active", "Closed"].map((label) => (
-                  <div>
-                    <span>{label}</span>
-                    <i>
-                      <b style="width: 0%" />
-                    </i>
-                    <strong />
-                  </div>
-                ))
-              }
-            </div>
+            <SampleMeasurementChart
+              ariaLabel="Sample active and closed civil cases chart"
+              rows={caseStatusRows}
+            />
           </DataPanel>
 
           <DataPanel
             title="Cases by Court"
             description="Civil cases grouped by court"
           >
-            <div class="agency-topic-bars">
-              {
-                ["Federal", "State", "Other / Unknown"].map((label) => (
-                  <div>
-                    <span>{label}</span>
-                    <i>
-                      <b style="width: 0%" />
-                    </i>
-                    <strong />
-                  </div>
-                ))
-              }
-            </div>
+            <SampleMeasurementChart
+              ariaLabel="Sample cases by court chart"
+              rows={courtRows}
+            />
           </DataPanel>
 
           <DataPanel
             title="Cases by Personnel Connection"
             description="Direct agency cases and personnel-linked cases"
           >
-            <div class="agency-topic-bars">
-              {
-                ["Direct", "Personnel-linked", "Direct + personnel-linked"].map(
-                  (label) => (
-                    <div>
-                      <span>{label}</span>
-                      <i>
-                        <b style="width: 0%" />
-                      </i>
-                      <strong />
-                    </div>
-                  ),
-                )
-              }
-            </div>
+            <SampleMeasurementChart
+              ariaLabel="Sample cases by personnel connection chart"
+              rows={connectionRows}
+            />
           </DataPanel>
 
           <DataPanel
             title="Liability Costs Over Time"
             description="Costs connected to civil cases"
           >
-            <EmptyMeasurementState
+            <SampleMeasurementChart
+              ariaLabel="Sample liability costs over time chart"
+              rows={liabilityRows}
             />
           </DataPanel>
 

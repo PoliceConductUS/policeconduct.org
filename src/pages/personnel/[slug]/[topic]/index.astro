@@ -1,9 +1,10 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { withDb } from "#src/lib/db.js";
 import { formatShortDate } from "#src/lib/format.js";
@@ -124,6 +125,32 @@ const metricCards = [
     value: countValue ? countValue.toLocaleString("en-US") : "--",
   },
 ];
+const monthlySampleRows = [
+  { label: "Jan", value: "--", width: 0 },
+  { label: "Apr", value: "--", width: 0 },
+  { label: "Jul", value: "--", width: 0 },
+  { label: "Oct", value: "--", width: 0 },
+];
+const currentStatusSampleRows = [
+  { label: "Current", value: "$--", width: 0 },
+  { label: "Agency", value: "--", width: 0 },
+  { label: "Source", value: "--", width: 0 },
+  { label: "Status", value: "--", width: 0 },
+];
+const fallbackChart =
+  topicKey === "salary"
+    ? {
+        description:
+          "Current personnel salary status where source data supports the measure.",
+        rows: currentStatusSampleRows,
+        title: `${topicConfig.label}, Current status`,
+      }
+    : {
+        description:
+          "Personnel-linked records by month where source data supports the measure.",
+        rows: monthlySampleRows,
+        title: `${topicConfig.label}, Previous 12 months`,
+      };
 ---
 
 <SiteLayout
@@ -146,7 +173,15 @@ const metricCards = [
         <EntityPageHeader
           title={pageTitle}
           description={topicConfig.description}
-        />
+        >
+          <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={officerName}
+              sourcePage={pagePath}
+              topic={topicConfig.label}
+            />
+          </Fragment>
+        </EntityPageHeader>
         <MetricGrid metrics={metricCards} columns="four" />
 
         <div class="entity-chart-grid">
@@ -255,8 +290,14 @@ const metricCards = [
                 </table>
               </DataPanel>
             ) : (
-              <DataPanel title={`${topicConfig.label} Over Time`}>
-                <EmptyMeasurementState />
+              <DataPanel
+                title={fallbackChart.title}
+                description={fallbackChart.description}
+              >
+                <SampleMeasurementChart
+                  ariaLabel={`Sample ${topicConfig.label} chart`}
+                  rows={fallbackChart.rows}
+                />
               </DataPanel>
             )
           }

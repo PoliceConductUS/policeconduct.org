@@ -1,12 +1,13 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityActionButton from "#src/components/EntityActionButton.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
+import { metricVisuals } from "#src/lib/metric-vocabulary.js";
 import type { MetricCardItem } from "#src/components/metric-card-types.js";
 
 const { breadcrumbs, description, pagePath, title } = Astro.props as {
@@ -49,6 +50,12 @@ const chartTitles = [
   "Fatal Force Incidents by Age",
   "Fatal Force Incidents Involving Animals",
 ];
+const sampleRows = [
+  { label: "Under 18", value: "--", width: 12 },
+  { label: "18 and older", value: "--", width: 58 },
+  { label: "Dogs", value: "--", width: 34 },
+  { label: "Other animals", value: "--", width: 14 },
+];
 ---
 
 <SiteLayout
@@ -63,6 +70,11 @@ const chartTitles = [
         <Breadcrumbs items={breadcrumbs} className="mb-2" />
         <EntityPageHeader title={title} description={description}>
           <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={title}
+              sourcePage={pagePath}
+              topic="Fatal Force Incidents"
+            />
             <EntityActionButton>Share</EntityActionButton>
             <EntityActionButton>Download report</EntityActionButton>
           </Fragment>
@@ -74,9 +86,9 @@ const chartTitles = [
           {
             chartTitles.map((chartTitle) => (
               <DataPanel title={chartTitle}>
-                <EmptyMeasurementState
-                  label={metricLabels.fatalForceIncidents}
-                  detail="Breakdown categories: people under 18, people 18 and older, dogs, and other animals."
+                <SampleMeasurementChart
+                  ariaLabel={`Sample ${chartTitle} chart`}
+                  rows={sampleRows}
                 />
               </DataPanel>
             ))

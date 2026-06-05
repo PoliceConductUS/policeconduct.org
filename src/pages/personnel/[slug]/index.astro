@@ -1,10 +1,11 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
-import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
@@ -25,26 +26,30 @@ export async function getStaticPaths() {
   const officers = await withDb(async (client) => {
     return (
       await client.query(
-        `select distinct o.id, o.first_name, o.last_name, o.suffix, o.slug
+        `select distinct o.slug
          from public.officers o
          join public.agency_officers ao on ao.officer_id = o.id`,
       )
     ).rows;
   });
 
-  return officers.map((officer: { id: string; slug: string }) => ({
+  return officers.map((officer: { slug: string }) => ({
     params: { slug: officer.slug },
-    props: { officerId: officer.id },
   }));
 }
 
-const { officerId } = Astro.props;
+const { slug } = Astro.params;
+if (!slug) {
+  throw new Error("Personnel route requires a slug.");
+}
 const data = await withDb(async (client) => {
   const officer = (
-    await client.query("select * from public.officers where id = $1", [
-      officerId,
-    ])
+    await client.query("select * from public.officers where slug = $1", [slug])
   ).rows[0];
+  if (!officer || officer.slug !== slug) {
+    throw new Error(`Personnel ${slug} not found.`);
+  }
+  const officerId = officer.id;
   const officerStats = (
     await client.query("select * from public.officers_stats where id = $1", [
       officerId,
@@ -459,6 +464,60 @@ const personnelMetricCards: MetricCardItem[] = [
     value: formatCount(reportItems.length),
   },
 ];
+const sampleRows = {
+  salary: [
+    { label: "2021", value: "$--", width: 0 },
+    { label: "2022", value: "$--", width: 0 },
+    { label: "2023", value: "$--", width: 0 },
+    { label: "2024", value: "$--", width: 0 },
+    { label: "2025", value: "$--", width: 0 },
+  ],
+  arrests: [
+    { label: "Jan", value: "--", width: 0 },
+    { label: "Apr", value: "--", width: 0 },
+    { label: "Jul", value: "--", width: 0 },
+    { label: "Oct", value: "--", width: 0 },
+  ],
+  liability: [
+    { label: "2021", value: "$--", width: 0 },
+    { label: "2022", value: "$--", width: 0 },
+    { label: "2023", value: "$--", width: 0 },
+    { label: "2024", value: "$--", width: 0 },
+    { label: "2025", value: "$--", width: 0 },
+  ],
+  civilCases: [
+    { label: "2021", value: "--", width: 0 },
+    { label: "2022", value: "--", width: 0 },
+    { label: "2023", value: "--", width: 0 },
+    { label: "2024", value: "--", width: 0 },
+    { label: "2025", value: "--", width: 0 },
+  ],
+  stopsEthnicity: [
+    { label: "Jan", value: "--", width: 0 },
+    { label: "Apr", value: "--", width: 0 },
+    { label: "Jul", value: "--", width: 0 },
+    { label: "Oct", value: "--", width: 0 },
+  ],
+  dayNight: [
+    { label: "Jan", value: "--", width: 0 },
+    { label: "Apr", value: "--", width: 0 },
+    { label: "Jul", value: "--", width: 0 },
+    { label: "Oct", value: "--", width: 0 },
+  ],
+  charges: [
+    { label: "Jan", value: "--", width: 0 },
+    { label: "Apr", value: "--", width: 0 },
+    { label: "Jul", value: "--", width: 0 },
+    { label: "Oct", value: "--", width: 0 },
+  ],
+  fatalForce: [
+    { label: "2021", value: "--", width: 0 },
+    { label: "2022", value: "--", width: 0 },
+    { label: "2023", value: "--", width: 0 },
+    { label: "2024", value: "--", width: 0 },
+    { label: "2025", value: "--", width: 0 },
+  ],
+};
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(officerPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
@@ -530,6 +589,11 @@ const structuredData = {
             className="personnel-breadcrumbs"
           />
           <div class="personnel-actions">
+            <HelpCollectDataButton
+              context={officerName}
+              sourcePage={officerPath}
+              topic="Personnel"
+            />
             <PrefillNavButton
               to={suggestEditHref}
               payload={suggestEditPrefillPayload}
@@ -606,7 +670,7 @@ const structuredData = {
                 <dd><a href={currentAgencyPath}>{currentAgency!.name}</a></dd>
               </div>
               <div>
-                <dt>Last Updated</dt>
+                <dt>Updated</dt>
                 <dd>{formatShortDate(data.officer.updated_at)}</dd>
               </div>
             </dl>
@@ -620,31 +684,40 @@ const structuredData = {
           <section class="personnel-panel">
             <div class="personnel-panel-heading">
               <h2>1. Salary History</h2>
-              <p>Annual base salary</p>
+              <p>Annual base salary, Previous 5 years</p>
             </div>
-            <EmptyMeasurementState />
+            <SampleMeasurementChart
+              ariaLabel="Sample salary history chart"
+              rows={sampleRows.salary}
+            />
           </section>
 
           <section class="personnel-panel">
             <div class="personnel-panel-heading">
               <h2>2. Arrests Over Time</h2>
-              <p>Low-level arrests and other arrests</p>
+              <p>Low-level arrests and other arrests, Previous 12 months</p>
             </div>
-            <EmptyMeasurementState />
+            <SampleMeasurementChart
+              ariaLabel="Sample arrests over time chart, Previous 12 months"
+              rows={sampleRows.arrests}
+            />
           </section>
 
           <section class="personnel-panel">
             <div class="personnel-panel-heading">
               <h2>3. Liability Costs Over Time</h2>
-              <p>Total liability costs</p>
+              <p>Total liability costs, Previous 5 years</p>
             </div>
-            <EmptyMeasurementState />
+            <SampleMeasurementChart
+              ariaLabel="Sample liability costs over time chart, Previous 5 years"
+              rows={sampleRows.liability}
+            />
           </section>
 
           <section class="personnel-panel">
             <div class="personnel-panel-heading">
               <h2>4. Civil Cases and Claims Over Time</h2>
-              <p>Active and historical cases</p>
+              <p>Active and historical cases, Previous 5 years</p>
             </div>
             {
               civilCaseYears.length ? (
@@ -660,7 +733,10 @@ const structuredData = {
                   ))}
                 </div>
               ) : (
-                <EmptyMeasurementState />
+                <SampleMeasurementChart
+                  ariaLabel="Sample civil cases and claims chart"
+                  rows={sampleRows.civilCases}
+                />
               )
             }
           </section>
@@ -668,33 +744,50 @@ const structuredData = {
           <section class="personnel-panel">
             <div class="personnel-panel-heading">
               <h2>5. {metricLabels.racialBreakdownStopsArrests}</h2>
-              <p>Who is most affected in the current dataset</p>
+              <p>
+                Stops and arrests by recorded race or ethnicity, Previous 12
+                months
+              </p>
             </div>
-            <EmptyMeasurementState />
+            <SampleMeasurementChart
+              ariaLabel="Sample stops by ethnicity chart"
+              rows={sampleRows.stopsEthnicity}
+            />
           </section>
 
           <section class="personnel-panel">
             <div class="personnel-panel-heading">
               <h2>6. {metricLabels.daylightNighttimeStops}</h2>
-              <p>Comparison of stops by time of day and race</p>
+              <p>
+                Stops by time of day and recorded race, Previous 12 months
+              </p>
             </div>
-            <EmptyMeasurementState />
+            <SampleMeasurementChart
+              ariaLabel="Sample stops by time of day chart"
+              rows={sampleRows.dayNight}
+            />
           </section>
 
           <section class="personnel-panel">
             <div class="personnel-panel-heading">
               <h2>7. {metricLabels.topChargeCategories}</h2>
-              <p>By arrests</p>
+              <p>Arrest charge categories, Previous 12 months</p>
             </div>
-            <EmptyMeasurementState />
+            <SampleMeasurementChart
+              ariaLabel="Sample top charge categories chart"
+              rows={sampleRows.charges}
+            />
           </section>
 
           <section class="personnel-panel">
             <div class="personnel-panel-heading">
-              <h2>8. Killings Over Time</h2>
+              <h2>8. Fatal Force Incidents, Previous 5 years</h2>
               <p>People by age group, dogs and other animals</p>
             </div>
-            <EmptyMeasurementState />
+            <SampleMeasurementChart
+              ariaLabel="Sample fatal force incidents chart"
+              rows={sampleRows.fatalForce}
+            />
           </section>
 
           <section class="personnel-panel personnel-panel-wide">

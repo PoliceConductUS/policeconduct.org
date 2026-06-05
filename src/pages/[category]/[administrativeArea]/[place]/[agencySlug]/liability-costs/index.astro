@@ -1,6 +1,7 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
   loadAgencyDetailByRouteParams,
@@ -29,7 +30,7 @@ const {
 const pagePath = `${agencyPath}liability-costs/`;
 const reportsIndexPath = `${agencyPath}reports/`;
 const pageTitle = `${agencyName} Liability Costs`;
-const pageDescription = `Claims, settlements, judgments, defense costs, and related financial exposure for ${agencyName}.`;
+const pageDescription = `Claims, settlements, judgments, defense costs, and related payments for ${agencyName}.`;
 const allCaseCount = new Set([
   ...civilCases.map((caseItem) => caseItem.id),
   ...personnelLinkedCivilCases.map((caseItem) => caseItem.id),
@@ -58,7 +59,7 @@ const metricCards = [
     accent: "purple",
   },
   {
-    label: "Active Liability Exposure",
+    label: "Active cases",
     value: "$0",
     detail: `${allCaseCount.toLocaleString("en")} active or linked matters`,
     icon: "alert",
@@ -159,6 +160,11 @@ const formatDate = (value?: string | null) =>
             <p>{pageDescription}</p>
           </div>
           <div class="liability-actions">
+            <HelpCollectDataButton
+              context={agencyName}
+              sourcePage={pagePath}
+              topic="Liability costs"
+            />
             <button type="button" class="liability-action" data-agency-share>
               <svg
                 aria-hidden="true"
@@ -179,7 +185,7 @@ const formatDate = (value?: string | null) =>
             </button>
             <button
               type="button"
-              class="liability-action liability-action-primary"
+              class="liability-action"
               data-agency-download-report
             >
               <svg

@@ -1,11 +1,12 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import EmptyMeasurementState from "#src/components/EmptyMeasurementState.astro";
 import EntityActionButton from "#src/components/EntityActionButton.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
 import type {
@@ -56,7 +57,7 @@ const pageConfig = {
     label: metricLabels.liabilityCosts,
     title: metricLabels.liabilityCosts,
     description:
-      "Claims, settlements, judgments, defense costs, and related financial exposure.",
+      "Claims, settlements, judgments, defense costs, and related payments.",
     value: "$--",
   },
   "outcomes-by-income": {
@@ -77,13 +78,48 @@ const heading =
   model.jurisdictionLabel;
 const pagePath = `${model.pagePath}${kind}/`;
 const pageTitle = `${heading} ${pageConfig.title}`;
+const sampleChartRows = {
+  personnel: [
+    { label: "Current", value: "--", width: 62 },
+    { label: "Former", value: "--", width: 38 },
+    { label: "New records", value: "--", width: 24 },
+    { label: "Updated records", value: "--", width: 48 },
+  ],
+  budget: [
+    { label: "2021", value: "$--", width: 48 },
+    { label: "2022", value: "$--", width: 54 },
+    { label: "2023", value: "$--", width: 62 },
+    { label: "2024", value: "$--", width: 70 },
+  ],
+  "civil-cases": [
+    { label: "Filed", value: "--", width: 46 },
+    { label: "Active", value: "--", width: 34 },
+    { label: "Closed", value: "--", width: 58 },
+    { label: "Personnel-linked", value: "--", width: 28 },
+  ],
+  "fatal-force-incidents": [
+    { label: "Under 18", value: "--", width: 12 },
+    { label: "18 and older", value: "--", width: 58 },
+    { label: "Dogs", value: "--", width: 34 },
+    { label: "Other animals", value: "--", width: 14 },
+  ],
+  "liability-costs": [
+    { label: "Claims", value: "$--", width: 58 },
+    { label: "Defense costs", value: "$--", width: 42 },
+    { label: "Settlements", value: "$--", width: 72 },
+    { label: "Records disputes", value: "$--", width: 18 },
+  ],
+} satisfies Record<
+  Exclude<CivicTopicKind, "outcomes-by-income">,
+  { label: string; value: string; width: number }[]
+>;
 const topicConfig = {
   personnel: {
     metrics: [
       {
         ...metricVisuals.personnel,
         value: coverageValue("personnel"),
-        detail: "Projected personnel connected to this geography",
+        detail: "Personnel connected to this geography",
       },
       {
         ...metricVisuals.personnelRecords,
@@ -103,12 +139,12 @@ const topicConfig = {
       {
         ...metricVisuals.agencies,
         value: "$--",
-        detail: "Assignment history coverage is not projected yet",
+        detail: "Assignment history by year",
       },
       {
         ...metricVisuals.latestPersonnelUpdate,
         value: "$--",
-        detail: "Personnel update recency is not projected yet",
+        detail: "Last personnel update",
       },
     ],
     charts: ["Personnel Over Time", "Personnel by Child Area", "Record Mix"],
@@ -118,12 +154,12 @@ const topicConfig = {
       {
         ...metricVisuals.budget,
         value: "$--",
-        detail: "Budget totals are not projected yet",
+        detail: "Budget totals by year",
       },
       {
         ...metricVisuals.operatingSpend,
         value: "$--",
-        detail: "Operating spend is not projected yet",
+        detail: "Operating spending by year",
       },
       {
         ...metricVisuals.reports,
@@ -138,12 +174,12 @@ const topicConfig = {
       {
         ...metricVisuals.overtime,
         value: "$--",
-        detail: "Overtime spending is not projected yet",
+        detail: "Overtime spending by year",
       },
       {
         ...metricVisuals.latestFiscalYear,
         value: "$--",
-        detail: "Fiscal-year coverage is not projected yet",
+        detail: "Fiscal years listed",
       },
     ],
     charts: [
@@ -165,12 +201,12 @@ const topicConfig = {
       {
         ...metricVisuals.caseTypes,
         value: "$--",
-        detail: "Case type coverage is not projected yet",
+        detail: "Cases by type",
       },
       {
         ...metricVisuals.caseOutcomes,
         value: "$--",
-        detail: "Outcome coverage is not projected yet",
+        detail: "Cases by outcome",
       },
       {
         ...metricVisuals.reports,
@@ -185,7 +221,7 @@ const topicConfig = {
       {
         ...metricVisuals.latestCaseActivity,
         value: "$--",
-        detail: "Case activity recency is not projected yet",
+        detail: "Latest case activity",
       },
     ],
     charts: ["Civil Cases Over Time", "Case Types", "Cases by Child Area"],
@@ -229,17 +265,17 @@ const topicConfig = {
       {
         ...metricVisuals.liabilityCosts,
         value: "$--",
-        detail: "Liability cost totals are not projected yet",
+        detail: "Liability cost totals by year",
       },
       {
         ...metricVisuals.settlements,
         value: "$--",
-        detail: "Settlement totals are not projected yet",
+        detail: "Settlement totals by year",
       },
       {
         ...metricVisuals.judgments,
         value: "$--",
-        detail: "Judgment totals are not projected yet",
+        detail: "Judgment totals by year",
       },
       {
         ...metricVisuals.reports,
@@ -254,7 +290,7 @@ const topicConfig = {
       {
         ...metricVisuals.latestRecordedYear,
         value: "$--",
-        detail: "Liability-cost recency is not projected yet",
+        detail: "Latest liability-cost year",
       },
     ],
     charts: [
@@ -291,10 +327,13 @@ const topicConfig = {
           description={pageConfig.description}
         >
           <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={heading}
+              sourcePage={pagePath}
+              topic={pageConfig.label}
+            />
             <EntityActionButton>Share</EntityActionButton>
-            <EntityActionButton className="entity-action-primary">
-              Download Report
-            </EntityActionButton>
+            <EntityActionButton>Download Report</EntityActionButton>
           </Fragment>
         </EntityPageHeader>
 
@@ -313,7 +352,10 @@ const topicConfig = {
             <div class="entity-chart-grid">
               {topicConfig.charts.map((title) => (
                 <DataPanel title={title}>
-                  <EmptyMeasurementState />
+                  <SampleMeasurementChart
+                    ariaLabel={`Sample ${title} chart`}
+                    rows={sampleChartRows[kind]}
+                  />
                 </DataPanel>
               ))}
             </div>

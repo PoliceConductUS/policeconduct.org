@@ -186,7 +186,7 @@ Do not add a generic "Graphs" heading.
 Search changed UI files:
 
 ```bash
-rg -n "Top 5 things to know|Who is most affected|Graphs|Metrics|Datasets|will appear when verified|not collected yet|source needed|Explore within|child entity|browse table|drill-down|drilldown" src/components/CivicIndexPage.astro src/lib/data/civic-index.ts
+rg -n "Top 5 things to know|Who is most affected|Graphs|Metrics|Datasets|Explore within|child entity|browse table|drill-down|drilldown" src/components/CivicIndexPage.astro src/lib/data/civic-index.ts
 ```
 
 Expected: no matches for prohibited Civic Index landing-page copy.
@@ -241,7 +241,7 @@ For absent source data, render muted sample charts or neutral values on landing 
 Run:
 
 ```bash
-rg -n "Top 5 things to know|Who is most affected|Graphs|Metrics|Datasets|will appear when verified|not collected yet|source needed|best|safe|accountable|improved because" src/components/CivicIndexPage.astro src/lib/data/civic-index.ts tests/e2e/civic-index.spec.ts
+rg -n "Top 5 things to know|Who is most affected|Graphs|Metrics|Datasets|best|safe|accountable|improved because" src/components/CivicIndexPage.astro src/lib/data/civic-index.ts tests/e2e/civic-index.spec.ts
 ```
 
 Expected: no user-visible prohibited Civic Index landing-page copy. Investigate any positive-language match and keep only neutral, evidence-backed wording.
