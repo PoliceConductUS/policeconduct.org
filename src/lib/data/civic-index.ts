@@ -126,7 +126,7 @@ export const civicIndexVisitorIntentBandCatalog = {
   credibility:
     "Officer credibility, search validity, force justification, and impeachment records",
   safeguards: "Policy safeguards and accountability systems",
-  betterOutcomes: "Better outcomes and positive-deviance signals",
+  betterOutcomes: "Positive-deviance",
 } as const;
 
 const buildCoverageFromPayload = (
@@ -550,7 +550,46 @@ export const buildVisitorIntentBands = ({
       }
     : null;
 
+  const positiveDevianceBand: CivicIndexVisitorIntentBand = {
+    title: civicIndexVisitorIntentBandCatalog.betterOutcomes,
+    summary:
+      "Comparative indicators that track lower rates, documented outcome changes, stronger safeguards, or positive conduct signals under stated comparison limits.",
+    metrics: [
+      {
+        detail: isAgency
+          ? "Positive-conduct and better-outcome indicators from the past 12 months require source type, comparison group, and limitations before they are shown."
+          : "Better-outcome indicators from the past 12 months use geography-level comparison groups and do not expose officer-level positive-conduct records.",
+        icon: isAgency ? "map" : "shield",
+        label: "Comparable-outcome signals",
+        scope: jurisdictionLabel,
+        value: "--",
+        window: "Previous 12 months",
+      },
+    ],
+    graphs: [
+      {
+        caption:
+          "Comparison context may be peer median, previous 12 months, similar population, similar call volume, or another documented group.",
+        label: "Outcome rate compared with peer median",
+        metadata: ["Comparison group required"],
+        scope: jurisdictionLabel,
+        seriesLabel: "Rate compared with peer median",
+        window: "Previous 12 months",
+      },
+      {
+        caption:
+          "Positive-deviance signals are descriptive unless a reviewed method supports a stronger conclusion.",
+        label: "Policy safeguards and measured outcomes",
+        metadata: ["Methodology and limits required"],
+        scope: jurisdictionLabel,
+        seriesLabel: "Safeguard score and outcome measure",
+        window: "Previous 12 months",
+      },
+    ],
+  };
+
   return [
+    positiveDevianceBand,
     {
       title: civicIndexVisitorIntentBandCatalog.contacts,
       summary:
@@ -802,43 +841,6 @@ export const buildVisitorIntentBands = ({
           scope: jurisdictionLabel,
           seriesLabel: "Safeguard status and measured outcome",
           window: "Current policy context",
-        },
-      ],
-    },
-    {
-      title: civicIndexVisitorIntentBandCatalog.betterOutcomes,
-      summary:
-        "Comparative indicators that track lower rates, documented outcome changes, stronger safeguards, or positive conduct signals under stated comparison limits.",
-      metrics: [
-        {
-          detail: isAgency
-            ? "Positive-conduct and better-outcome indicators from the past 12 months require source type, comparison group, and limitations before they are shown."
-            : "Better-outcome indicators from the past 12 months use geography-level comparison groups and do not expose officer-level positive-conduct records.",
-          icon: isAgency ? "map" : "shield",
-          label: "Comparable-outcome signals",
-          scope: jurisdictionLabel,
-          value: "--",
-          window: "Previous 12 months",
-        },
-      ],
-      graphs: [
-        {
-          caption:
-            "Comparison context may be peer median, previous 12 months, similar population, similar call volume, or another documented group.",
-          label: "Outcome rate compared with peer median",
-          metadata: ["Comparison group required"],
-          scope: jurisdictionLabel,
-          seriesLabel: "Rate compared with peer median",
-          window: "Previous 12 months",
-        },
-        {
-          caption:
-            "Positive-deviance signals are descriptive unless a reviewed method supports a stronger conclusion.",
-          label: "Policy safeguards and measured outcomes",
-          metadata: ["Methodology and limits required"],
-          scope: jurisdictionLabel,
-          seriesLabel: "Safeguard score and outcome measure",
-          window: "Previous 12 months",
         },
       ],
     },

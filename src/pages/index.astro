@@ -27,6 +27,8 @@ const categoryCoverageStats = US_STATE_TILES.map((state) => {
   const personnelCount = stateLocation?.coverage.personnel ?? 0;
   const agencyCount = stateLocation?.coverage.agencies ?? 0;
   const civilCaseCount = stateLocation?.coverage.civilCases ?? 0;
+  // State context reports, such as decertification law context, do not make a
+  // state clickable on the home map. Only record coverage counts do.
   const totalCount =
     reportCount + personnelCount + agencyCount + civilCaseCount;
   const onlyChild =

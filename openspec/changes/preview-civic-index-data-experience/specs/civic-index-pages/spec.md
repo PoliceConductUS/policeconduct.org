@@ -215,6 +215,13 @@ The system SHALL render a level-appropriate catalog of desired civic indicators 
 - **AND** the page does not also render a duplicate decertification law context metric outside this state-context section
 - **AND** the landing page does not need to render lengthy decertification explanation or the full report-card detail surface
 
+#### Scenario: Decertification context does not affect home-map state links
+
+- **WHEN** a state has decertification law context but has no reports, personnel, agencies, or civil-case coverage count
+- **THEN** the state may still have state Civic Index page content
+- **AND** the state is not linked from the home map because of decertification context alone
+- **AND** the home map continues to decide state links only from reports, personnel, agencies, and civil-case coverage counts
+
 #### Scenario: Accountability barriers are rendered
 
 - **WHEN** accountability barriers are rendered

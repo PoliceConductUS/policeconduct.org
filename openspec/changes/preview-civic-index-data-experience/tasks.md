@@ -19,6 +19,8 @@
 - [x] 2.6 Remove right-side in-page navigation from Civic Index landing pages and do not render the current state, area, place, agency, or personnel name as metric or graph pills/tags.
 - [x] 2.7 Remove duplicate decertification law context from state metric bands and render bottom state decertification statuses in a compact responsive non-table layout with only one section-level source link.
 - [x] 2.8 Remove the duplicate Reports metric from the contacts band when the top Reports metric and monthly reports graph are present, and rename the graph to "Reports by month".
+- [x] 2.9 Rename "Better outcomes and positive-deviance signals" to "Positive-deviance" and render that band first after the top metric cards.
+- [x] 2.10 Allow state-level decertification context to produce state page content without counting it toward home-map state link eligibility.
 
 ## 3. Copy, Scope, and Neutrality
 

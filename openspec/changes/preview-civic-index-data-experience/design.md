@@ -40,13 +40,13 @@ Represent the landing page as ordered visitor-intent bands. Each band should hav
 
 The bands are:
 
-1. Police contact and enforcement activity
-2. Disparate impact and community outcomes
-3. Public cost and litigation
-4. Complaints, discipline, force, lawsuits, and accountability outcomes
-5. Officer credibility, search validity, force justification, and impeachment records
-6. Policy safeguards and accountability systems
-7. Better outcomes and positive-deviance signals
+1. Positive-deviance
+2. Police contact and enforcement activity
+3. Disparate impact and community outcomes
+4. Public cost and litigation
+5. Complaints, discipline, force, lawsuits, and accountability outcomes
+6. Officer credibility, search validity, force justification, and impeachment records
+7. Policy safeguards and accountability systems
 
 ### Use graph placeholders as first-class previews
 
@@ -85,6 +85,8 @@ Existing personnel detail pages should keep their content model. This change may
 State top-level metrics should stay limited to county count, report count, budget, civil cases, liability costs, and fatal force incidents. Decertification law context belongs in the bottom state-context section, not as a repeated top-level metric. Use "Liability costs" for the public-facing overview label when the measurement concerns claims, settlements, judgments, defense costs, and related payments. Avoid "taxpayer cost" unless the source records establish direct taxpayer payment.
 
 State decertification context should remain near the bottom of each state landing page and should include compact source-backed report-card information plus one section-level source link. When report-card statuses exist, summarize them with a count such as `{present} of {total} present ({unknown} unknown)`, then render only the field label and status symbol from the report payload or cited source data in a tight responsive non-table layout. Do not repeat source links on each status card, and do not add visible "Present" or "Missing" status text when the symbol and accessible label carry that state. Do not invent friendly replacement fields. It should provide useful report-card content without rendering lengthy explanation or a full detail surface unless a later approved design adds one.
+
+State-level decertification context may create state Civic Index page content, including for states that do not yet have local record coverage. It must not count as home-map record coverage and must not make a state clickable from the home map. Home-map state link eligibility remains based only on reports, personnel, agencies, and civil-case coverage counts.
 
 Public page copy must be self-documenting, not self-referential. The visitor should understand the page from the title, metric cards, band labels, chart titles, compact captions, and action labels. Do not write public-facing copy that tells the visitor the page is a future data product, a grant/funding artifact, a roadmap, a preview experience, or a release-before-data placeholder.
 

@@ -93,6 +93,7 @@ In `src/lib/data/civic-index.ts`, add a helper with the seven fixed visitor-inte
 
 ```ts
 const visitorIntentBands = {
+  betterOutcomes: "Positive-deviance",
   contacts: "Police contact and enforcement activity",
   disparateImpact: "Disparate impact and community outcomes",
   publicCost: "Public cost and litigation",
@@ -101,13 +102,12 @@ const visitorIntentBands = {
   credibility:
     "Officer credibility, search validity, force justification, and impeachment records",
   safeguards: "Policy safeguards and accountability systems",
-  betterOutcomes: "Better outcomes and positive-deviance signals",
 } as const;
 ```
 
 - [ ] **Step 4: Build level-aware visitor-intent bands**
 
-Add `buildVisitorIntentBands(modelInput)` in `src/lib/data/civic-index.ts` near the other model helpers. Use existing count values, neutral `$--` placeholders, existing scoped detail routes such as `reports`, `budget`, `civil-cases`, and `liability-costs`, and default top-metric browse CTAs to existing child/region/place/agency or related scoped subpages. Do not create new sub-pages or routes for this change.
+Add `buildVisitorIntentBands(modelInput)` in `src/lib/data/civic-index.ts` near the other model helpers. Use existing count values, neutral `$--` placeholders, existing scoped detail routes such as `reports`, `budget`, `civil-cases`, and `liability-costs`, and default top-metric browse CTAs to existing child/region/place/agency or related scoped subpages. Put the `Positive-deviance` band first after the top metric cards. Do not create new sub-pages or routes for this change.
 
 Keep state metrics limited to county count, report count, budget, civil cases, liability costs, and fatal force incidents. Keep decertification law context in the bottom state-context section only, rendered as responsive status content rather than a table. For state, administrative-area, and place models, do not include a `Personnel records` metric or officer-level indicators.
 

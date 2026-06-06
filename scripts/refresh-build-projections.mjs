@@ -1098,6 +1098,54 @@ await withDb(async (client) => {
       );
     }
 
+    const reportStateLocationRows = locationReportsByLocationId.size
+      ? (
+          await client.query(
+            `
+              select
+                location_path_id,
+                path,
+                state_or_territory_slug,
+                state_or_territory_name,
+                updated_at
+              from public.location_path
+              where level = 'state'
+                and location_path_id = any($1)
+            `,
+            [[...locationReportsByLocationId.keys()]],
+          )
+        ).rows
+      : [];
+
+    for (const row of reportStateLocationRows) {
+      const stateSlug = assertValue(
+        row.state_or_territory_slug,
+        `Location report state path ${row.location_path_id} is missing state slug.`,
+      );
+      if (states.has(stateSlug)) {
+        continue;
+      }
+      states.set(stateSlug, {
+        level: "state",
+        state: stateSlug,
+        stateLabel: assertValue(
+          row.state_or_territory_name,
+          `Location report state path ${row.location_path_id} is missing state name.`,
+        ),
+        path: assertValue(
+          row.path,
+          `Location report state path ${row.location_path_id} is missing path.`,
+        ),
+        id: assertValue(
+          row.location_path_id,
+          "Location report state path row is missing id.",
+        ),
+        areas: new Map(),
+        agencies: [],
+        updatedAt: row.updated_at,
+      });
+    }
+
     await client.query("delete from public.build_page_payload");
     await client.query("delete from public.agency_zip_index");
     await client.query("delete from public.location_path_closure");

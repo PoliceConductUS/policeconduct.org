@@ -9,7 +9,9 @@ export const loadStateScopedPaths = async () => {
   return locations
     .filter(
       (location) =>
-        location.level === "state" && (location.children?.length ?? 0) > 0,
+        location.level === "state" &&
+        ((location.children?.length ?? 0) > 0 ||
+          (location.locationReports?.length ?? 0) > 0),
     )
     .map((state) => ({
       params: { category: state.state },
