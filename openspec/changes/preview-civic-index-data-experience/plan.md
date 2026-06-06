@@ -109,7 +109,7 @@ const visitorIntentBands = {
 
 Add `buildVisitorIntentBands(modelInput)` in `src/lib/data/civic-index.ts` near the other model helpers. Use existing count values, neutral `$--` placeholders, existing scoped detail routes such as `reports`, `budget`, `civil-cases`, and `liability-costs`, and default top-metric browse CTAs to existing child/region/place/agency or related scoped subpages. Do not create new sub-pages or routes for this change.
 
-Keep state metrics limited to county count, report count, budget, civil cases, liability costs, and decertification law context. For state, administrative-area, and place models, do not include a `Personnel records` metric or officer-level indicators.
+Keep state metrics limited to county count, report count, budget, civil cases, liability costs, and fatal force incidents. Keep decertification law context in the bottom state-context section only, rendered as responsive status content rather than a table. For state, administrative-area, and place models, do not include a `Personnel records` metric or officer-level indicators.
 
 - [ ] **Step 4a: Confirm agency landing integration path**
 
@@ -168,7 +168,7 @@ For each `CivicIndexPreviewMetric`, render:
 - label
 - value
 - detail text
-- visible scope
+- scope context through the page heading, band heading, label, or detail text when needed; do not render the current state, area, place, agency, or personnel name as a pill/tag
 - visible time window when `window` exists
 - "View details" link when `detailHref` exists
 - default scoped browse CTA when a useful existing subpage exists
@@ -177,9 +177,10 @@ Do not render numeric zero for absent source data unless the model explicitly gi
 
 - [ ] **Step 4: Render graph previews**
 
-For each `CivicIndexGraphPreview`, render a neutral graph-preview surface inside the same visitor-intent band. Include label, series label, scope, visible time window where needed, optional caption/metadata, and a "View details" link when `detailHref` exists. Do not require every graph to include a "how to read this" explanation.
+For each `CivicIndexGraphPreview`, render a neutral graph-preview surface inside the same visitor-intent band. Include label, series label, visible time window where needed, optional caption/metadata, and a "View details" link when `detailHref` exists. Use the page title, band heading, graph label, caption, or nearby plain text for scope context when needed; do not render the current state, area, place, agency, or personnel name as a pill/tag. Do not require every graph to include a "how to read this" explanation.
 
 Do not add a generic "Graphs" heading.
+Do not add a right-side "On this page" navigation rail or sticky in-page section navigation.
 
 - [ ] **Step 5: Remove prohibited copy**
 
@@ -220,9 +221,9 @@ git commit -m "feat: render civic index question previews"
 - Modify: `src/components/CivicIndexPage.astro`
 - Modify: `openspec/changes/preview-civic-index-data-experience/tasks.md`
 
-- [ ] **Step 1: Add scope text to every preview item**
+- [ ] **Step 1: Add scope context to every preview item**
 
-Audit every metric and graph preview object in `src/lib/data/civic-index.ts`. Ensure each object has `scope` text that names the current jurisdiction or agency/personnel scope without using implementation labels.
+Audit every metric and graph preview object in `src/lib/data/civic-index.ts`. Ensure each object has enough scope context for the renderer to keep the page neutral, while the UI does not render the current jurisdiction, agency, or personnel name as a pill/tag.
 
 - [ ] **Step 2: Add time windows for over-time previews**
 

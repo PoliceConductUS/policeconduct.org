@@ -51,6 +51,12 @@ The system SHALL render graph previews as central Civic Index measurement surfac
 - **AND** the graph includes scope, denominator, grouping, comparison, or time-window context when that context is needed to avoid ambiguity or unsupported interpretation
 - **AND** the graph includes a "View details" link when an applicable scoped detail subpage already exists for the measurement
 
+#### Scenario: Reports are not duplicated inside the contacts band
+
+- **WHEN** a Civic Index landing page renders a top Reports metric and a monthly reports graph
+- **THEN** the contacts band does not render a second Reports metric card
+- **AND** the monthly reports graph uses a concise title such as "Reports" or "Reports by month"
+
 #### Scenario: Source data is absent for a graph preview
 
 - **WHEN** a graph preview applies to the current scope but source data is absent
@@ -164,9 +170,10 @@ The system SHALL render a level-appropriate catalog of desired civic indicators 
 #### Scenario: State indicator catalog is rendered
 
 - **WHEN** a state Civic Index page is rendered
-- **THEN** the page may include top-level metrics for county count, report count, budget, civil cases, liability costs, fatal force incidents, and decertification law context
+- **THEN** the page may include top-level metrics for county count, report count, budget, civil cases, liability costs, and fatal force incidents
 - **AND** the page does not render personnel records as a top-level metric
 - **AND** the page does not render officer-level complaint, force, discipline, credibility, or positive-conduct indicators as top-level metrics
+- **AND** the page does not render decertification law context as a repeated top-level metric when the bottom state context is present
 
 #### Scenario: County or place indicator catalog is rendered
 
@@ -200,9 +207,12 @@ The system SHALL render a level-appropriate catalog of desired civic indicators 
 
 - **WHEN** a state Civic Index landing page has decertification law context
 - **THEN** the page may show compact decertification report-card information near the bottom of the state page
-- **AND** the item links to the source record or source report
+- **AND** the section links once to the source record or source report
 - **AND** the item may summarize source-backed status fields from the report card using counts such as `{present} of {total} present ({unknown} unknown)` when those statuses exist
 - **AND** any rendered report-card field labels and statuses are taken from the report payload or cited source data rather than invented summary labels
+- **AND** report-card field statuses render in a compact responsive non-table layout with the field label and status symbol
+- **AND** the report-card status cards do not repeat source links or visible "Present" or "Missing" text
+- **AND** the page does not also render a duplicate decertification law context metric outside this state-context section
 - **AND** the landing page does not need to render lengthy decertification explanation or the full report-card detail surface
 
 #### Scenario: Accountability barriers are rendered
@@ -246,6 +256,18 @@ The system MUST make every displayed civic indicator and graph explicit and neut
 - **THEN** the metric or graph defaults to the previous 12 months unless the label states a different date range
 - **AND** the date range is visible near the metric value, metric label, graph title, or graph caption
 - **AND** longer windows such as 5 years are used only when the label or nearby copy states that range
+
+#### Scenario: Scope context is rendered without entity-name pills
+
+- **WHEN** a Civic Index landing page renders a metric or graph
+- **THEN** the page does not repeat the current state, administrative area, place, agency, or personnel name as a pill, chip, tag, or badge on that metric or graph
+- **AND** the page communicates scope through the page title, band heading, metric label, metric detail, graph title, graph caption, or other nearby plain text when additional scope context is needed
+
+#### Scenario: Right-side page navigation is absent
+
+- **WHEN** a Civic Index landing page renders visitor-intent bands
+- **THEN** the page does not render a right-side "On this page" navigation rail
+- **AND** the page does not render sticky in-page section navigation for the visitor-intent bands
 
 #### Scenario: Update date metadata is rendered
 

@@ -16,6 +16,9 @@
 - [x] 2.3 Render top metric "View details" links only when an applicable scoped detail sub-page already exists, and render default top-metric CTAs to existing child, region, place, agency, or related scoped browse sub-pages where useful; do not create new sub-pages or routes.
 - [x] 2.4 Keep collection CTAs and record-needed labels off Civic Index landing pages.
 - [x] 2.5 Keep Civic Index landing pages free of child entity lists, maps, browse tables, direct drill-down sections, child browse sections, and explore-child sections; landing pages may link to existing scoped browse sub-pages through metric CTAs, but those browse surfaces render only on scoped sub-pages if they exist at all.
+- [x] 2.6 Remove right-side in-page navigation from Civic Index landing pages and do not render the current state, area, place, agency, or personnel name as metric or graph pills/tags.
+- [x] 2.7 Remove duplicate decertification law context from state metric bands and render bottom state decertification statuses in a compact responsive non-table layout with only one section-level source link.
+- [x] 2.8 Remove the duplicate Reports metric from the contacts band when the top Reports metric and monthly reports graph are present, and rename the graph to "Reports by month".
 
 ## 3. Copy, Scope, and Neutrality
 
@@ -29,8 +32,8 @@
 - [ ] 4.1 Get page approval before changing implementation tests.
 - [ ] 4.2 After page approval, update `tests/e2e/civic-index.spec.ts` to assert the seven visitor-intent bands render on the appropriate pages and prohibited headings do not render.
 - [ ] 4.3 After page approval, add or update tests that state, county, and place pages do not expose personnel records or officer-level indicators as top-level metrics.
-- [ ] 4.4 After page approval, add or update tests that graph previews include a reader frame, scope, comparison guidance, and time-window text and are not grouped under a generic "Graphs" heading.
-- [ ] 4.5 After page approval, add or update tests that visible metric cards do not duplicate icons on the same page.
+- [ ] 4.4 After page approval, add or update tests that graph previews include a reader frame, scope, comparison guidance, and visible range context through labels, captions, or chart axes, without redundant time-window metadata, and are not grouped under a generic "Graphs" heading.
+- [ ] 4.5 After page approval, add or update tests that visible metric cards do not duplicate icons on the same page, the current entity name is not repeated as a metric or graph pill/tag, and right-side in-page navigation does not render.
 - [x] 4.6 Run `npx openspec validate --changes preview-civic-index-data-experience`.
 - [x] 4.7 Run `npx openspec status --change preview-civic-index-data-experience`.
 - [ ] 4.8 Run relevant site validation, including `npm run astro -- check` for frontend/type changes and `npm run validate` before claiming implementation complete.

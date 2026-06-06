@@ -455,7 +455,8 @@ export const buildTopMetricCards = ({
   const agencyPersonnelMetric: CivicIndexPreviewMetric | null =
     scope === "agency"
       ? {
-          detail: "Current and former personnel records connected to this agency.",
+          detail:
+            "Current and former personnel records connected to this agency.",
           detailHref: scopedDetailHref(pagePath, "personnel"),
           icon: "people",
           label: metricLabels.personnelRecords,
@@ -464,7 +465,7 @@ export const buildTopMetricCards = ({
         }
       : null;
   const reportsMetric: CivicIndexPreviewMetric = {
-    detail: `Published public reports connected to ${jurisdictionLabel}.`,
+    detail: `Published public reports connected to ${jurisdictionLabel} from the past 12 months.`,
     detailHref: reportsHref,
     icon: "file",
     label: metricLabels.reports,
@@ -473,7 +474,8 @@ export const buildTopMetricCards = ({
     window: "Previous 12 months",
   };
   const budgetMetric: CivicIndexPreviewMetric = {
-    detail: "Current fiscal-year budget, revenue, overtime, and related finance records.",
+    detail:
+      "Current fiscal-year budget, revenue, overtime, and related finance records.",
     detailHref: scopedDetailHref(pagePath, "budget"),
     icon: "dollar",
     label: metricLabels.budget,
@@ -483,8 +485,8 @@ export const buildTopMetricCards = ({
   const civilCasesMetric: CivicIndexPreviewMetric = {
     detail:
       scope === "state"
-        ? `Incident-location civil case records connected to ${jurisdictionLabel}.`
-        : `Civil case records connected to ${jurisdictionLabel}.`,
+        ? `Incident-location civil case records connected to ${jurisdictionLabel} from the past 5 years.`
+        : `Civil case records connected to ${jurisdictionLabel} from the past 5 years.`,
     detailHref: scopedDetailHref(pagePath, "civil-cases"),
     icon: "scales",
     label: metricLabels.civilCases,
@@ -494,7 +496,7 @@ export const buildTopMetricCards = ({
   };
   const liabilityMetric: CivicIndexPreviewMetric = {
     detail:
-      "Claims, settlements, judgments, defense costs, and related documented payments.",
+      "Claims, settlements, judgments, defense costs, and related documented payments from the past 5 years.",
     detailHref: scopedDetailHref(pagePath, "liability-costs"),
     icon: "weight",
     label: metricLabels.liabilityCosts,
@@ -504,7 +506,7 @@ export const buildTopMetricCards = ({
   };
   const fatalForceMetric: CivicIndexPreviewMetric = {
     detail:
-      "Fatal force, custody deaths, pursuit deaths, and other deaths involving police contact.",
+      "Fatal force, custody deaths, pursuit deaths, and other deaths involving police contact from the past 5 years.",
     detailHref: scopedDetailHref(pagePath, "fatal-force-incidents"),
     icon: "cross",
     label: metricLabels.fatalForceIncidents,
@@ -553,23 +555,13 @@ export const buildVisitorIntentBands = ({
       title: civicIndexVisitorIntentBandCatalog.contacts,
       summary:
         "Calls, reports, stops, citations, arrests, charges, and other documented contact activity.",
-      metrics: [
-        {
-          detail: `Published public reports connected to ${jurisdictionLabel}.`,
-          detailHref: reportsHref,
-          icon: "file",
-          label: metricLabels.reports,
-          scope: jurisdictionLabel,
-          value: formatMetricValue(reports),
-          window: "Previous 12 months",
-        },
-      ],
+      metrics: [],
       graphs: [
         {
           caption:
             "Counts show published reports only; contact records use source-specific categories when available.",
           detailHref: reportsHref,
-          label: "Public reports by month",
+          label: "Reports by month",
           metadata: ["Published reports"],
           scope: jurisdictionLabel,
           seriesLabel: "Report count",
@@ -593,7 +585,7 @@ export const buildVisitorIntentBands = ({
       metrics: [
         {
           detail:
-            "Dismissed, convicted, plea deal, jail, probation, and deferred-prosecution outcomes grouped by income when source data supports it.",
+            "Dismissed, convicted, plea deal, jail, probation, and deferred-prosecution outcomes from the past 5 years, grouped by income when source data supports it.",
           detailHref: scopedDetailHref(pagePath, "outcomes-by-income"),
           icon: "link",
           label: metricLabels.outcomesByIncome,
@@ -641,8 +633,8 @@ export const buildVisitorIntentBands = ({
         {
           detail:
             scope === "state"
-              ? `Incident-location civil case records connected to ${jurisdictionLabel}.`
-              : `Civil case records connected to ${jurisdictionLabel}.`,
+              ? `Incident-location civil case records connected to ${jurisdictionLabel} from the past 5 years.`
+              : `Civil case records connected to ${jurisdictionLabel} from the past 5 years.`,
           detailHref: scopedDetailHref(pagePath, "civil-cases"),
           icon: "scales",
           label: metricLabels.civilCases,
@@ -652,7 +644,7 @@ export const buildVisitorIntentBands = ({
         },
         {
           detail:
-            "Claims, settlements, judgments, defense costs, and related documented payments.",
+            "Claims, settlements, judgments, defense costs, and related documented payments from the past 5 years.",
           detailHref: scopedDetailHref(pagePath, "liability-costs"),
           icon: "weight",
           label: metricLabels.liabilityCosts,
@@ -668,10 +660,9 @@ export const buildVisitorIntentBands = ({
               ? "State geography uses incident-location civil case scope."
               : "Civil case scope follows the page's geography or agency relationship.",
           detailHref: scopedDetailHref(pagePath, "civil-cases"),
-          label: "Civil cases filed and total cases found",
-          metadata: ["Filed cases plus total found"],
+          label: "Civil cases",
           scope: jurisdictionLabel,
-          seriesLabel: "Civil case count",
+          seriesLabel: "Case count",
           window: "Previous 5 years",
         },
         {
@@ -703,7 +694,7 @@ export const buildVisitorIntentBands = ({
       metrics: [
         {
           detail:
-            "Fatal force, custody deaths, pursuit deaths, and other deaths involving police contact.",
+            "Fatal force, custody deaths, pursuit deaths, and other deaths involving police contact from the past 5 years.",
           detailHref: scopedDetailHref(pagePath, "fatal-force-incidents"),
           icon: "cross",
           label: metricLabels.fatalForceIncidents,
@@ -715,7 +706,7 @@ export const buildVisitorIntentBands = ({
           ? [
               {
                 detail:
-                  "Agency-level complaint, force, discipline, and body-camera records when official source data supports the measure.",
+                  "Agency-level complaint, force, discipline, and body-camera records from the past 12 months when official source data supports the measure.",
                 icon: "shield" as const,
                 label: "Complaint and force outcome records",
                 scope: jurisdictionLabel,
@@ -760,7 +751,7 @@ export const buildVisitorIntentBands = ({
           ? [
               {
                 detail:
-                  "Officer-level credibility indicators are shown only for agency or personnel scope when source records support them.",
+                  "Officer-level credibility indicators from the past 5 years are shown only for agency or personnel scope when source records support them.",
                 icon: "person" as const,
                 label: "Officer credibility records",
                 scope: jurisdictionLabel,
@@ -772,10 +763,9 @@ export const buildVisitorIntentBands = ({
       ],
       graphs: [
         {
-          caption:
-            isAgency
-              ? "Agency/personnel-scope records may include Brady, Giglio, suppression, evidence exclusion, search, and force-justification records."
-              : "Geography landing pages do not expose officer-level credibility indicators as top-level metrics.",
+          caption: isAgency
+            ? "Agency/personnel-scope records may include Brady, Giglio, suppression, evidence exclusion, search, and force-justification records."
+            : "Geography landing pages do not expose officer-level credibility indicators as top-level metrics.",
           label: "Credibility and impeachment record categories",
           metadata: ["Agency/personnel scope where applicable"],
           scope: isAgency
@@ -790,21 +780,19 @@ export const buildVisitorIntentBands = ({
       title: civicIndexVisitorIntentBandCatalog.safeguards,
       summary:
         "Policy safeguards, complaint access, transparency records, public-records barriers, decertification context, and accountability-system barriers.",
-      metrics: [
-        {
-          detail:
-            scope === "state"
-              ? "Decertification law context from cited report-card source records."
-              : "Policy safeguards and accountability-system records when source data is available.",
-          icon: "calendar",
-          label:
-            scope === "state"
-              ? "Decertification law context"
-              : "Policy safeguard records",
-          scope: jurisdictionLabel,
-          value: "--",
-        },
-      ],
+      metrics:
+        scope === "state"
+          ? []
+          : [
+              {
+                detail:
+                  "Policy safeguards and accountability-system records when source data is available.",
+                icon: "calendar",
+                label: "Policy safeguard records",
+                scope: jurisdictionLabel,
+                value: "--",
+              },
+            ],
       graphs: [
         {
           caption:
@@ -823,10 +811,9 @@ export const buildVisitorIntentBands = ({
         "Comparative indicators that track lower rates, documented outcome changes, stronger safeguards, or positive conduct signals under stated comparison limits.",
       metrics: [
         {
-          detail:
-            isAgency
-              ? "Positive-conduct and better-outcome indicators require source type, comparison group, and limitations before they are shown."
-              : "Better-outcome indicators use geography-level comparison groups and do not expose officer-level positive-conduct records.",
+          detail: isAgency
+            ? "Positive-conduct and better-outcome indicators from the past 12 months require source type, comparison group, and limitations before they are shown."
+            : "Better-outcome indicators from the past 12 months use geography-level comparison groups and do not expose officer-level positive-conduct records.",
           icon: isAgency ? "map" : "shield",
           label: "Comparable-outcome signals",
           scope: jurisdictionLabel,

@@ -13,9 +13,11 @@ The attached prompt is constrained: keep the top metric cards, keep graphs, do n
 - Keep graph previews central to the page and place them in the relevant visitor-intent bands.
 - Make metric and graph intent clear enough to show the future data product before all source data is present.
 - Make metric and graph scope, denominator, grouping, comparison, source-basis, or time-window context visible where needed to avoid ambiguity or unsupported interpretation.
+- Do not repeat the current state, area, place, agency, or personnel name as metric or graph pills/tags. When scope is already clear from the page title or band context, do not render a separate scope label.
 - Include "View details" only when an applicable scoped detail sub-page already exists.
 - Include default top-metric CTAs to existing child, region, place, agency, or related scoped browse sub-pages where useful.
 - Do not include collection CTAs on Civic Index landing pages.
+- Do not render a right-side in-page section navigation rail on Civic Index landing pages.
 - Keep visible metric icons distinct within the same page.
 - Keep personnel records and officer-level indicators at agency/personnel scope only.
 - Frame positive indicators as evidence-backed comparative signals, not praise or endorsement.
@@ -48,13 +50,19 @@ The bands are:
 
 ### Use graph placeholders as first-class previews
 
-Graph previews should be treated as part of the intended data product even when data is not available. The page should provide enough context through band labels, section summaries, chart titles, captions, chips, or compact metadata for visitors and funders to understand what will be measured. The spec does not require every chart to include a "how to read this" explanation.
+Graph previews should be treated as part of the intended data product even when data is not available. The page should provide enough context through band labels, section summaries, chart titles, captions, or compact metadata for visitors and funders to understand what will be measured. The spec does not require every chart to include a "how to read this" explanation.
 
-Charts and metric cards should show a visible time period near the label, value, caption, or card detail unless the item is a structural count, current status, or source/report-date context. Charts should also show scope, denominator, grouping, comparison, or source basis when that context is needed to avoid ambiguity. "View details" should appear only when an applicable scoped detail sub-page already exists.
+Charts and metric cards should show a visible time period near the label, value, caption, or card detail unless the item is a structural count, current status, or source/report-date context. Charts should also show scope, denominator, grouping, comparison, or source basis when that context is needed to avoid ambiguity. Scope context should come from the page title, band heading, label, detail text, or caption rather than a repeated jurisdiction-name pill or tag. "View details" should appear only when an applicable scoped detail sub-page already exists.
+
+When reports are already represented by the top Reports metric, the contacts band should not render another reports metric card. It may keep one compact reports graph labeled "Reports" or "Reports by month" when the chart shows monthly report counts.
 
 When a metric, graph, report-card item, policy item, or source-backed summary has a known update date, use the same public label everywhere: `Updated {date}`. Place it near the related item. If an update date does not exist, omit the update-date field entirely; do not show `--`, "pending", "unknown", "not available", or another placeholder for update metadata.
 
-Empty graph surfaces may render as muted or disabled sample charts with scope, explicit time window where relevant, and neutral empty values such as `--`. Copy should present the measurement directly and avoid phrases such as "future source-record surface," "measurement preview," "will appear when verified," or "not collected yet." Do not show collection CTAs on Civic Index landing pages.
+Empty graph surfaces may render as muted or disabled sample charts with explicit time window where relevant and neutral empty values such as `--`. Copy should present the measurement directly and avoid phrases such as "future source-record surface," "measurement preview," "will appear when verified," or "not collected yet." Do not show collection CTAs on Civic Index landing pages.
+
+### Keep the landing page full-width
+
+Civic Index landing pages should render the visitor-intent bands in a single content column below the top metrics. Do not add or keep a right-side "On this page" navigation rail, sticky in-page navigation, or separate page-section menu on Civic Index landing pages.
 
 ### Keep detail and browse actions scoped
 
@@ -74,9 +82,9 @@ State, county, and place landing pages must not show personnel records or office
 
 Existing personnel detail pages should keep their content model. This change may align their labels, graph styles, icons, time-window wording, and neutral availability states with the shared Civic Index presentation system, but it should not reorganize personnel pages into visitor-intent landing-page bands or add new personnel metrics without separate approval. Existing personnel-linked use-of-force and fatal-force records remain eligible for personnel-page display.
 
-State top-level metrics should stay limited to county count, report count, budget, civil cases, liability costs, fatal force incidents, and decertification law context. Use "Liability costs" for the public-facing overview label when the measurement concerns claims, settlements, judgments, defense costs, and related payments. Avoid "taxpayer cost" unless the source records establish direct taxpayer payment.
+State top-level metrics should stay limited to county count, report count, budget, civil cases, liability costs, and fatal force incidents. Decertification law context belongs in the bottom state-context section, not as a repeated top-level metric. Use "Liability costs" for the public-facing overview label when the measurement concerns claims, settlements, judgments, defense costs, and related payments. Avoid "taxpayer cost" unless the source records establish direct taxpayer payment.
 
-State decertification context should remain near the bottom of each state landing page and should include compact source-backed report-card information plus a source link. When report-card statuses exist, summarize them with a count such as `{present} of {total} present ({unknown} unknown)`, then render only labels and statuses from the report payload or cited source data. Do not invent friendly replacement fields. It should provide useful report-card content without rendering lengthy explanation or a full detail surface unless a later approved design adds one.
+State decertification context should remain near the bottom of each state landing page and should include compact source-backed report-card information plus one section-level source link. When report-card statuses exist, summarize them with a count such as `{present} of {total} present ({unknown} unknown)`, then render only the field label and status symbol from the report payload or cited source data in a tight responsive non-table layout. Do not repeat source links on each status card, and do not add visible "Present" or "Missing" status text when the symbol and accessible label carry that state. Do not invent friendly replacement fields. It should provide useful report-card content without rendering lengthy explanation or a full detail surface unless a later approved design adds one.
 
 Public page copy must be self-documenting, not self-referential. The visitor should understand the page from the title, metric cards, band labels, chart titles, compact captions, and action labels. Do not write public-facing copy that tells the visitor the page is a future data product, a grant/funding artifact, a roadmap, a preview experience, or a release-before-data placeholder.
 

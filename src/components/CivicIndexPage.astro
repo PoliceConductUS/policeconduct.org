@@ -216,21 +216,6 @@ const statusLabel = (status: DecertificationColumn["status"]) =>
 const statusSymbol = (status: DecertificationColumn["status"]) =>
   status === "present" ? "✓" : status === "missing" ? "X" : "?";
 
-const sourceForColumn = (
-  report: CivicIndexModel["locationReports"][number],
-  column: DecertificationColumn,
-) => {
-  const sourceKey = column.sourceKeys?.[0];
-  return sourceKey
-    ? report.sources.find((source) => source.sourceKey === sourceKey) || null
-    : null;
-};
-
-const sourceFootnote = (label: string) => {
-  const match = label.match(/\[(\d+)\]/);
-  return match?.[0] || "Source";
-};
-
 const decertificationReport = model.locationReports.find(
   (report) => report.reportType === "decertification_report_card",
 );
@@ -397,14 +382,6 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
                     </a>
                   ) : null}
                 </div>
-                {metric.scope || metric.window ? (
-                  <div class="meta">
-                    <span class="chip">{metric.scope}</span>
-                    {metric.window ? (
-                      <span class="chip">{metric.window}</span>
-                    ) : null}
-                  </div>
-                ) : null}
               </article>
             ))
           }
@@ -433,19 +410,17 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
                             </strong>
                           </div>
                           <p>{metric.detail}</p>
-                          <div class="meta">
-                            <span class="chip">{metric.scope}</span>
-                            {metric.window ? (
-                              <span class="chip">{metric.window}</span>
-                            ) : null}
-                            {metric.defaultAction ? (
-                              <a href={metric.defaultAction.href}>
-                                {metric.defaultAction.label}
-                              </a>
-                            ) : metric.detailHref ? (
-                              <a href={metric.detailHref}>View details</a>
-                            ) : null}
-                          </div>
+                          {metric.defaultAction || metric.detailHref ? (
+                            <div class="meta">
+                              {metric.defaultAction ? (
+                                <a href={metric.defaultAction.href}>
+                                  {metric.defaultAction.label}
+                                </a>
+                              ) : metric.detailHref ? (
+                                <a href={metric.detailHref}>View details</a>
+                              ) : null}
+                            </div>
+                          ) : null}
                         </article>
                       ))}
                     </div>
@@ -477,18 +452,16 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
 
                           {graph.caption ? <p>{graph.caption}</p> : null}
 
-                          <div class="meta">
-                            <span class="chip">{graph.scope}</span>
-                            {graph.window ? (
-                              <span class="chip">{graph.window}</span>
-                            ) : null}
-                            {graph.metadata?.map((item) => (
-                              <span class="chip">{item}</span>
-                            ))}
-                            {graph.detailHref ? (
-                              <a href={graph.detailHref}>View details</a>
-                            ) : null}
-                          </div>
+                          {graph.metadata?.length || graph.detailHref ? (
+                            <div class="meta">
+                              {graph.metadata?.map((item) => (
+                                <span>{item}</span>
+                              ))}
+                              {graph.detailHref ? (
+                                <a href={graph.detailHref}>View details</a>
+                              ) : null}
+                            </div>
+                          ) : null}
                         </article>
                       ))}
                     </div>
@@ -514,62 +487,27 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
                       </a>
                     </p>
                     <div
-                      class="report-matrix-wrap"
+                      class="report-status-grid"
                       aria-label={`${heading} decertification report card statuses`}
                     >
-                      <table class="report-matrix">
-                        <thead>
-                          <tr>
-                            {decertificationPayload.columns.map((column) => (
-                              <th scope="col">{column.label}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            {decertificationPayload.columns.map((column) => {
-                              const source = sourceForColumn(
-                                decertificationReport,
-                                column,
-                              );
-                              const result = (
-                                <span
-                                  class:list={["status-mark", column.status]}
-                                >
-                                  <strong
-                                    aria-label={statusLabel(column.status)}
-                                  >
-                                    {statusSymbol(column.status)}
-                                  </strong>
-                                  {source ? (
-                                    <a href={source.url}>
-                                      {sourceFootnote(source.label)}
-                                    </a>
-                                  ) : null}
-                                </span>
-                              );
-                              return <td>{result}</td>;
-                            })}
-                          </tr>
-                        </tbody>
-                      </table>
+                      {decertificationPayload.columns.map((column) => {
+                        return (
+                          <article class="report-status-card">
+                            <h4>{column.label}</h4>
+                            <span class:list={["status-mark", column.status]}>
+                              <strong aria-label={statusLabel(column.status)}>
+                                {statusSymbol(column.status)}
+                              </strong>
+                            </span>
+                          </article>
+                        );
+                      })}
                     </div>
                   </article>
                 </section>
               ) : null
             }
           </div>
-
-          <aside>
-            <nav class="intent-nav" aria-label="Page sections">
-              <p class="menu-title">On this page</p>
-              {
-                intentBands.map((band) => (
-                  <a href={`#${band.id}`}>{band.title}</a>
-                ))
-              }
-            </nav>
-          </aside>
         </div>
       </div>
     </section>
@@ -746,43 +684,8 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
   }
 
   .page-layout {
-    align-items: start;
     display: grid;
-    gap: 1.4rem;
-    grid-template-columns: minmax(0, 1fr) 13.75rem;
-  }
-
-  .intent-nav {
-    background: #fbfcff;
-    border: 1px solid #d7dfeb;
-    border-radius: 0.5rem;
-    display: grid;
-    gap: 0.12rem;
-    padding: 0.75rem;
-    position: sticky;
-    top: 1rem;
-  }
-
-  .intent-nav a {
-    border-radius: 0.25rem;
-    color: #34496b;
-    font-size: 0.75rem;
-    font-weight: 800;
-    line-height: 1.25;
-    padding: 0.5rem;
-    text-decoration: none;
-  }
-
-  .intent-nav a:hover {
-    background: #f3f6fb;
-  }
-
-  .menu-title {
-    color: #687a96;
-    font-size: 0.69rem;
-    font-weight: 900;
-    margin: 0 0 0.38rem;
-    text-transform: uppercase;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .intent-band {
@@ -1122,18 +1025,14 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
     gap: 0.38rem 0.5rem;
     font-size: 0.75rem;
     font-weight: 750;
-    line-height: 1;
+    line-height: 1.35;
     min-height: 1.75rem;
   }
 
-  .chip {
-    align-items: center;
-    background: #f3f6fb;
-    border: 1px solid #d7dfeb;
-    border-radius: 999px;
-    display: inline-flex;
-    min-height: 1.62rem;
-    padding: 0.25rem 0.5rem;
+  .meta span + span::before {
+    color: #9aa8bc;
+    content: "·";
+    margin-right: 0.5rem;
   }
 
   .meta a {
@@ -1186,61 +1085,47 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
     font-weight: 850;
   }
 
-  .report-matrix-wrap {
+  .report-status-grid {
+    display: grid;
+    gap: 0.45rem;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  }
+
+  .report-status-card {
+    align-content: center;
+    background: #fbfcff;
     border: 1px solid #d7dfeb;
     border-radius: 0.5rem;
-    overflow-x: auto;
-  }
-
-  .report-matrix {
-    border-collapse: collapse;
-    font-size: 0.75rem;
-    line-height: 1.25;
-    min-width: 60rem;
-    width: 100%;
-  }
-
-  .report-matrix th,
-  .report-matrix td {
-    border-right: 1px solid #d7dfeb;
-    padding: 0.5rem;
+    display: grid;
+    gap: 0.4rem;
+    grid-template-rows: minmax(2.35rem, auto) auto;
+    justify-items: center;
+    min-width: 0;
+    padding: 0.55rem 0.6rem 0.65rem;
     text-align: center;
-    vertical-align: middle;
   }
 
-  .report-matrix th:last-child,
-  .report-matrix td:last-child {
-    border-right: 0;
-  }
-
-  .report-matrix thead th {
-    background: #f7f9fc;
+  .report-status-card h4 {
     color: #071842;
-    font-size: 0.69rem;
-    font-weight: 850;
-    height: 7.25rem;
-    line-height: 1.15;
-    vertical-align: bottom;
-  }
-
-  .report-matrix tbody td {
-    background: #fbfcff;
-    border-top: 1px solid #d7dfeb;
+    font-size: 0.4rem;
+    font-weight: 650;
+    line-height: 1;
+    margin: 0;
   }
 
   .status-mark {
-    display: grid;
-    gap: 0.25rem;
-    justify-items: center;
+    align-items: center;
+    display: inline-flex;
+    min-width: 0;
   }
 
   .status-mark strong {
     border-radius: 999px;
     display: inline-grid;
-    font-size: 0.875rem;
-    height: 1.5rem;
+    font-size: 1rem;
+    height: 1.65rem;
     place-items: center;
-    width: 1.5rem;
+    width: 1.65rem;
   }
 
   .status-mark.present strong {
@@ -1258,21 +1143,9 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
     color: #687a96;
   }
 
-  .status-mark a {
-    color: #174bff;
-    font-size: 0.69rem;
-    font-weight: 850;
-    text-decoration: none;
-  }
-
   @media (max-width: 1050px) {
-    .band-heading,
-    .page-layout {
+    .band-heading {
       grid-template-columns: minmax(0, 1fr);
-    }
-
-    .intent-nav {
-      display: none;
     }
 
     .band-metric-list,

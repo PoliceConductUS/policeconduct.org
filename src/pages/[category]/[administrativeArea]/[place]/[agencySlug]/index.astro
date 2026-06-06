@@ -226,7 +226,10 @@ const structuredData = {
         >
           {
             topMetricCards.map((metric) => (
-              <article class="agency-metric-card" data-metric-icon={metric.icon}>
+              <article
+                class="agency-metric-card"
+                data-metric-icon={metric.icon}
+              >
                 <svg
                   class="agency-metric-icon"
                   aria-hidden="true"
@@ -277,13 +280,11 @@ const structuredData = {
                   <p>{metric.label}</p>
                   <strong>{metric.value}</strong>
                   <span>{metric.detail}</span>
-                  <div class="agency-meta">
-                    <span>{metric.scope}</span>
-                    {metric.window ? <span>{metric.window}</span> : null}
-                    {metric.detailHref ? (
+                  {metric.detailHref ? (
+                    <div class="agency-meta">
                       <a href={metric.detailHref}>View details</a>
-                    ) : null}
-                  </div>
+                    </div>
+                  ) : null}
                 </div>
               </article>
             ))
@@ -306,13 +307,11 @@ const structuredData = {
                           <p>{metric.label}</p>
                           <strong>{metric.value}</strong>
                           <span>{metric.detail}</span>
-                          <div class="agency-meta">
-                            <span>{metric.scope}</span>
-                            {metric.window ? <span>{metric.window}</span> : null}
-                            {metric.detailHref ? (
+                          {metric.detailHref ? (
+                            <div class="agency-meta">
                               <a href={metric.detailHref}>View details</a>
-                            ) : null}
-                          </div>
+                            </div>
+                          ) : null}
                         </article>
                       ))}
                     </div>
@@ -340,16 +339,16 @@ const structuredData = {
                             ))}
                           </div>
                           {graph.caption ? <p>{graph.caption}</p> : null}
-                          <div class="agency-meta">
-                            <span>{graph.scope}</span>
-                            {graph.window ? <span>{graph.window}</span> : null}
-                            {graph.metadata?.map((item) => (
-                              <span>{item}</span>
-                            ))}
-                            {graph.detailHref ? (
-                              <a href={graph.detailHref}>View details</a>
-                            ) : null}
-                          </div>
+                          {graph.metadata?.length || graph.detailHref ? (
+                            <div class="agency-meta">
+                              {graph.metadata?.map((item) => (
+                                <span>{item}</span>
+                              ))}
+                              {graph.detailHref ? (
+                                <a href={graph.detailHref}>View details</a>
+                              ) : null}
+                            </div>
+                          ) : null}
                         </article>
                       ))}
                     </div>
@@ -358,12 +357,6 @@ const structuredData = {
               ))
             }
           </div>
-          <aside>
-            <nav class="agency-intent-nav" aria-label="Page sections">
-              <p>On this page</p>
-              {intentBands.map((band) => <a href={`#${band.id}`}>{band.title}</a>)}
-            </nav>
-          </aside>
         </div>
       </div>
     </section>
@@ -557,21 +550,22 @@ const structuredData = {
     }
 
     .agency-meta span {
-      background: #f3f6fb;
-      border: 1px solid #d9e1ee;
-      border-radius: 999px;
       color: #34496b;
       display: inline-flex;
       font-size: 0.75rem;
       font-weight: 750;
-      padding: 0.18rem 0.46rem;
+      line-height: 1.35;
+    }
+
+    .agency-meta span + span::before {
+      color: #9aa8bc;
+      content: "·";
+      margin-right: 0.4rem;
     }
 
     .agency-intent-layout {
-      align-items: start;
       display: grid;
-      gap: 1.35rem;
-      grid-template-columns: minmax(0, 1fr) 13.75rem;
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .agency-intent-band {
@@ -686,35 +680,6 @@ const structuredData = {
       text-align: right;
     }
 
-    .agency-intent-nav {
-      background: #fbfcff;
-      border: 1px solid #d7dfeb;
-      border-radius: 0.5rem;
-      display: grid;
-      gap: 0.12rem;
-      padding: 0.75rem;
-      position: sticky;
-      top: 1rem;
-    }
-
-    .agency-intent-nav p {
-      color: #687a96;
-      font-size: 0.69rem;
-      font-weight: 900;
-      margin: 0 0 0.38rem;
-      text-transform: uppercase;
-    }
-
-    .agency-intent-nav a {
-      border-radius: 0.25rem;
-      color: #34496b;
-      font-size: 0.75rem;
-      font-weight: 800;
-      line-height: 1.25;
-      padding: 0.5rem;
-      text-decoration: none;
-    }
-
     @media (min-width: 768px) {
       .agency-metric-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -738,13 +703,8 @@ const structuredData = {
 
     @media (max-width: 991.98px) {
       .agency-band-metrics,
-      .agency-chart-grid,
-      .agency-intent-layout {
+      .agency-chart-grid {
         grid-template-columns: minmax(0, 1fr);
-      }
-
-      .agency-intent-nav {
-        position: static;
       }
     }
 
