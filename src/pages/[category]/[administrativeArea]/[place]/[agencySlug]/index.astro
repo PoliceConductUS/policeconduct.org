@@ -2,11 +2,14 @@
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import EntityActionButton from "#src/components/EntityActionButton.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
   loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPaths,
 } from "#src/lib/data/agency-detail.js";
+import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import {
   buildTopMetricCards,
   buildVisitorIntentBands,
@@ -28,6 +31,7 @@ const {
   administrativeArea,
   placeLabel,
   placePath,
+  civilCases,
   counts,
 } = data;
 const siteUrl = getSiteUrl(Astro.site);
@@ -60,6 +64,82 @@ const contactPoints = data.agencyPhones.map(
 const sameAs = data.agencyLinks
   .map((link: { url?: string | null }) => link.url)
   .filter(Boolean);
+const agencyPrefillName = agencyName.toLocaleUpperCase("en-US");
+const primaryWebsite =
+  data.agencyLinks.find((link: { url?: string | null }) =>
+    /^https?:\/\//i.test(link.url || ""),
+  )?.url || "";
+const agencyLinksSummary = data.agencyLinks
+  .map((link: { label?: string | null; url?: string | null }) =>
+    [link.label, link.url].filter(Boolean).join(": "),
+  )
+  .filter(Boolean)
+  .join("\n");
+const civilLitigationSummary = [
+  ...civilCases.map((record: any) => ({
+    ...record,
+    caseUrl: `/civil-cases/${record.slug}/`,
+  })),
+  ...data.personnelLinkedCivilCases.map((record: any) => ({
+    ...record,
+    caseUrl: `/civil-cases/${record.slug}/`,
+  })),
+]
+  .map((record) => {
+    const segments = [
+      record.title || "Civil case",
+      record.cause_number || null,
+      record.court || null,
+      record.caseUrl,
+    ];
+    return segments.filter(Boolean).join(" — ");
+  })
+  .join("\n");
+const reportLinksSummary = data.reportedReports
+  .map((report: { url: string }) => report.url)
+  .join("\n");
+const reportNewPrefillPayload = JSON.stringify({
+  officer: {
+    department: agencyPrefillName,
+  },
+} satisfies ReportNewPrefill);
+const addCivilCasePrefillPayload = JSON.stringify({
+  jurisdiction: categorySlug,
+  defendants: agencyPrefillName,
+  summary: `${agencyPrefillName} agency profile: ${agencyPath}`,
+  links: [
+    agencyPath,
+    ...data.reportedReports
+      .slice(0, 3)
+      .map((report: { url: string }) => report.url),
+  ]
+    .filter(Boolean)
+    .join("\n"),
+});
+const suggestEditPrefillPayload = JSON.stringify({
+  agencyPath,
+  agencyName: agencyPrefillName,
+  jurisdiction: categorySlug,
+  departmentWebsite: primaryWebsite,
+  departmentHead: data.agency.contact_name || "",
+  socialLinks: agencyLinksSummary,
+  civilLitigation: civilLitigationSummary,
+});
+const suggestPersonnelPrefillPayload = JSON.stringify({
+  currentAgency: agencyPrefillName,
+  currentAgencyCity: data.agency.city || "",
+  currentAgencyState: agencyState,
+  civilLitigation: civilLitigationSummary,
+  reportLinks: reportLinksSummary,
+});
+const subscribePrefillPayload = JSON.stringify({
+  whoami: "Subscriber",
+  message: `Please notify me when this agency page changes: ${agencyPath}`,
+});
+const claimProfilePrefillPayload = JSON.stringify({
+  whoami: "Profile Owner",
+  message: `I would like to claim ownership of this profile.\nProfile path: ${agencyPath}`,
+});
 const federalAgency = data.federalAgency
   ? {
       name: data.federalAgency.name,
@@ -181,6 +261,7 @@ const structuredData = {
   pagePath={agencyPath}
   structuredData={structuredData}
 >
+  <PrefillBootstrap />
   <main class="agency-overview-page flex-grow-1">
     <section class="agency-overview">
       <div class="container">
@@ -212,7 +293,50 @@ const structuredData = {
             ) : null
           }
           <Fragment slot="actions">
-            <EntityActionButton data-agency-share>Share</EntityActionButton>
+            <PrefillNavButton
+              to="/law-enforcement-agency/suggest-edit/"
+              payload={suggestEditPrefillPayload}
+              class="entity-action-button"
+            >
+              Suggest edit
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/report/new/"
+              payload={reportNewPrefillPayload}
+              class="entity-action-button entity-action-primary"
+            >
+              Share your experience
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/civil-litigation/new/"
+              payload={addCivilCasePrefillPayload}
+              class="entity-action-button"
+            >
+              Add a civil case
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/personnel/new/"
+              payload={suggestPersonnelPrefillPayload}
+              class="entity-action-button"
+            >
+              Suggest new personnel
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/about/contact/"
+              payload={subscribePrefillPayload}
+              data-testid="agency-subscribe-link"
+              class="entity-action-button"
+            >
+              Notify Me
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/about/contact/"
+              payload={claimProfilePrefillPayload}
+              data-testid="agency-claim-profile-link"
+              class="entity-action-button"
+            >
+              Claim Profile
+            </PrefillNavButton>
             <EntityActionButton data-agency-download-report>
               Download report
             </EntityActionButton>
