@@ -3,13 +3,13 @@ import AgencyReportsPage from "#src/components/AgencyReportsPage.astro";
 import { timeBuildStep } from "#src/lib/build-timing.js";
 import {
   loadAgencyDetailByRouteParams,
-  loadAgencyLocationStaticPaths,
+  loadAgencyLocationStaticPathsForTopic,
 } from "#src/lib/data/agency-detail.js";
 import { PAGE_SIZE } from "#src/lib/pagination.js";
 
 export async function getStaticPaths({ paginate }: { paginate: any }) {
   return timeBuildStep("agency reports pagination static paths", async () => {
-    const agencyPaths = await loadAgencyLocationStaticPaths();
+    const agencyPaths = await loadAgencyLocationStaticPathsForTopic("reports");
     const pages: any[] = [];
 
     for (const agencyPath of agencyPaths) {

@@ -22,17 +22,46 @@ export async function getStaticPaths() {
   const officers = await withDb(async (client) => {
     return (
       await client.query(
-        `select distinct o.slug
-         from public.officers o
-         join public.agency_officers ao on ao.officer_id = o.id
-         order by o.slug`,
+        `
+          select
+            o.slug,
+            count(distinct ao.agency_id) as agency_count,
+            count(distinct ro.review_id) as report_count,
+            count(distinct cco.civil_case_id) as civil_case_count
+          from public.officers o
+          join public.agency_officers ao
+            on ao.officer_id = o.id
+          left join public.review_officers ro
+            on ro.agency_officer_id = ao.id
+          left join public.civil_case_officers cco
+            on cco.agency_officer_id = ao.id
+          group by o.slug
+          order by o.slug
+        `,
       )
     ).rows;
   });
-  return officers.flatMap((officer: { slug: string }) =>
-    (Object.keys(personnelTopics) as PersonnelTopic[]).map((topic) => ({
-      params: { slug: officer.slug, topic },
-    })),
+  return officers.flatMap(
+    (officer: {
+      agency_count: string | number;
+      civil_case_count: string | number;
+      report_count: string | number;
+      slug: string;
+    }) => {
+      const availableTopics: PersonnelTopic[] = [];
+      if (Number(officer.agency_count) > 1) {
+        availableTopics.push("agencies");
+      }
+      if (Number(officer.report_count) > 0) {
+        availableTopics.push("reports");
+      }
+      if (Number(officer.civil_case_count) > 0) {
+        availableTopics.push("civil-cases");
+      }
+      return availableTopics.map((topic) => ({
+        params: { slug: officer.slug, topic },
+      }));
+    },
   );
 }
 

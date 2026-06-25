@@ -3,11 +3,11 @@ import CivicScopedIndexPage from "#src/components/CivicScopedIndexPage.astro";
 import { buildStateCivicIndex } from "#src/lib/data/civic-index.js";
 import {
   loadRequiredLocationByPath,
-  loadStateScopedPaths,
+  loadStateScopedPathsForTopic,
 } from "#src/lib/data/civic-scoped-routes.js";
 
 export async function getStaticPaths() {
-  return loadStateScopedPaths();
+  return loadStateScopedPathsForTopic("budget");
 }
 
 const location = await loadRequiredLocationByPath(

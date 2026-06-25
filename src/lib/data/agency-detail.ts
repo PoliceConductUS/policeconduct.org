@@ -5,6 +5,15 @@ import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
 
+export type AgencyScopedTopicKind =
+  | "personnel"
+  | "reports"
+  | "budget"
+  | "civil-cases"
+  | "fatal-force-incidents"
+  | "liability-costs"
+  | "outcomes-by-income";
+
 export const requireAgencyText = (
   value: unknown,
   fieldName: string,
@@ -82,6 +91,99 @@ export const loadAgencyLocationStaticPaths = async () => {
       },
     };
   });
+};
+
+const agencyLocationStaticPathSelect = `
+  select
+    bpp.path,
+    bpp.entity_id
+  from public.build_page_payload bpp
+`;
+
+const agencyTopicWhereSql = (kind: AgencyScopedTopicKind) => {
+  if (kind === "personnel") {
+    return `
+      where bpp.page_type = 'agency'
+        and exists (
+          select 1
+          from public.agency_officers ao
+          where ao.agency_id = bpp.entity_id
+        )
+    `;
+  }
+
+  if (kind === "reports") {
+    return `
+      where bpp.page_type = 'agency'
+        and exists (
+          select 1
+          from public.agency_officers ao
+          join public.review_officers ro
+            on ro.agency_officer_id = ao.id
+          where ao.agency_id = bpp.entity_id
+        )
+    `;
+  }
+
+  if (kind === "civil-cases") {
+    return `
+      where bpp.page_type = 'agency'
+        and exists (
+          select 1
+          from public.agency_officers target_ao
+          join public.agency_officers case_ao
+            on case_ao.officer_id = target_ao.officer_id
+          join public.civil_case_officers cco
+            on cco.agency_officer_id = case_ao.id
+          where target_ao.agency_id = bpp.entity_id
+        )
+    `;
+  }
+
+  return `
+    where false
+  `;
+};
+
+const toAgencyLocationStaticPath = (agency: {
+  entity_id: string | null;
+  path: string | null;
+}) => {
+  const agencyId = requireAgencyText(agency.entity_id, "id", "unknown");
+  const pathParts = requireAgencyText(agency.path, "path", agencyId)
+    .split("/")
+    .filter(Boolean);
+  if (pathParts.length !== 4) {
+    throw new Error(
+      `Agency ${agencyId} has malformed projected canonical path ${agency.path}.`,
+    );
+  }
+  return {
+    params: {
+      category: pathParts[0],
+      administrativeArea: pathParts[1],
+      place: pathParts[2],
+      agencySlug: pathParts[3],
+    },
+  };
+};
+
+export const loadAgencyLocationStaticPathsForTopic = async (
+  kind: AgencyScopedTopicKind,
+) => {
+  const agencies = await withDb(async (client) => {
+    return (
+      await client.query(
+        `
+          ${agencyLocationStaticPathSelect}
+          ${agencyTopicWhereSql(kind)}
+          order by bpp.path
+        `,
+      )
+    ).rows;
+  });
+
+  return agencies.map(toAgencyLocationStaticPath);
 };
 
 type AgencyRouteParams = {

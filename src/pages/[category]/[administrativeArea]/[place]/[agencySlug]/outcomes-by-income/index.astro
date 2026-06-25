@@ -2,12 +2,12 @@
 import OutcomesByIncomePage from "#src/components/OutcomesByIncomePage.astro";
 import {
   loadAgencyDetailByRouteParams,
-  loadAgencyLocationStaticPaths,
+  loadAgencyLocationStaticPathsForTopic,
 } from "#src/lib/data/agency-detail.js";
 import { metricLabels } from "#src/lib/metric-vocabulary.js";
 
 export async function getStaticPaths() {
-  return loadAgencyLocationStaticPaths();
+  return loadAgencyLocationStaticPathsForTopic("outcomes-by-income");
 }
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);

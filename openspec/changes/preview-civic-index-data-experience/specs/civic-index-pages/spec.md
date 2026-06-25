@@ -376,3 +376,10 @@ The system MUST keep Civic Index landing pages focused on visitor-intent preview
 - **THEN** the page does not render browse tables, maps, paginated personnel lists, paginated report lists, or paginated civil-case lists alongside the visitor-intent data previews
 - **AND** the page may link to existing personnel, reports, civil-cases, budget, liability-costs, outcomes, or related scoped subpages
 - **AND** any personnel, report, civil-case, budget, liability, or other browse experience is rendered only on a scoped subpage, if it exists at all
+
+#### Scenario: Personnel agencies subpage is omitted for one agency
+
+- **WHEN** a personnel record is associated with exactly one distinct agency
+- **THEN** the personnel page does not link the Agencies metric card to `/personnel/{slug}/agencies/`
+- **AND** the build does not generate `/personnel/{slug}/agencies/`
+- **AND** personnel records associated with more than one distinct agency may still link to and generate `/personnel/{slug}/agencies/`

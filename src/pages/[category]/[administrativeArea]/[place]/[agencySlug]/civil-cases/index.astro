@@ -11,13 +11,13 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { buildAgencyCivilCaseRows } from "#src/lib/data/agency-civil-case-rows.js";
 import {
   loadAgencyDetailByRouteParams,
-  loadAgencyLocationStaticPaths,
+  loadAgencyLocationStaticPathsForTopic,
 } from "#src/lib/data/agency-detail.js";
 import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
 import { PAGE_SIZE } from "#src/lib/pagination.js";
 
 export async function getStaticPaths() {
-  return loadAgencyLocationStaticPaths();
+  return loadAgencyLocationStaticPathsForTopic("civil-cases");
 }
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);

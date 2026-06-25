@@ -5,13 +5,14 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { timeBuildStep } from "#src/lib/build-timing.js";
 import {
   loadAgencyDetailByRouteParams,
-  loadAgencyLocationStaticPaths,
+  loadAgencyLocationStaticPathsForTopic,
 } from "#src/lib/data/agency-detail.js";
 import { PAGE_SIZE } from "#src/lib/pagination.js";
 
 export async function getStaticPaths({ paginate }: { paginate: any }) {
   return timeBuildStep("agency personnel pagination static paths", async () => {
-    const agencyPaths = await loadAgencyLocationStaticPaths();
+    const agencyPaths =
+      await loadAgencyLocationStaticPathsForTopic("personnel");
     const pages: any[] = [];
 
     for (const agencyPath of agencyPaths) {

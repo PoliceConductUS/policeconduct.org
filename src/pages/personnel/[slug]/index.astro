@@ -228,7 +228,6 @@ const reportItems = data.reports.map(
 );
 
 const officerPath = `/personnel/${data.officer.slug}/`;
-const outcomesByIncomePath = `${officerPath}outcomes-by-income/`;
 const officerName =
   `${data.officer.first_name} ${data.officer.last_name}`.trim();
 const deceasedOnValue = data.officer.deceased_on;
@@ -336,7 +335,9 @@ const civilCaseCount = data.civilCases.length;
 const activeCivilCaseCount = civilCasesWithPaths.filter(
   (caseItem) => !caseItem.date_terminated,
 ).length;
-const assignmentHistoryCount = assignmentHistory.length;
+const associatedAgencyCount = new Set(
+  assignmentHistory.map((entry) => entry.agency_id),
+).size;
 const currentAgencyPath = requireAgencyCanonicalPath(currentAgency!);
 const currentAgencyLocation = [currentAgency!.city, currentAgency!.state]
   .filter(Boolean)
@@ -395,35 +396,40 @@ const civilCaseYears = Object.entries(
 )
   .map(([year, count]) => ({ count, year }))
   .sort((left, right) => left.year.localeCompare(right.year));
+const civilCaseYearBarValue = (count: number) =>
+  Math.min(100, Math.max(12, count * 18));
 const personnelMetricCards: MetricCardItem[] = [
   {
-    action: {
-      href: `${officerPath}agencies/`,
-      kind: "link",
-      label: "View details",
-    },
+    ...(associatedAgencyCount > 1
+      ? {
+          action: {
+            href: `${officerPath}agencies/`,
+            kind: "link" as const,
+            label: "View details",
+          },
+        }
+      : {}),
     accent: metricVisuals.agencies.accent,
     icon: metricVisuals.agencies.icon,
     label: metricVisuals.agencies.label,
-    value: formatCount(assignmentHistoryCount),
+    value: formatCount(associatedAgencyCount),
   },
   {
-    action: {
-      href: `${officerPath}salary/`,
-      kind: "link",
-      label: "View details",
-    },
     accent: metricVisuals.currentSalary.accent,
     icon: metricVisuals.currentSalary.icon,
     label: metricVisuals.currentSalary.label,
     value: unavailableValue,
   },
   {
-    action: {
-      href: `${officerPath}civil-cases/`,
-      kind: "link",
-      label: "View details",
-    },
+    ...(civilCaseCount > 0
+      ? {
+          action: {
+            href: `${officerPath}civil-cases/`,
+            kind: "link" as const,
+            label: "View details",
+          },
+        }
+      : {}),
     accent: metricVisuals.civilCases.accent,
     detail: metricLabels.activeTotal,
     icon: metricVisuals.civilCases.icon,
@@ -431,33 +437,27 @@ const personnelMetricCards: MetricCardItem[] = [
     value: `${formatCount(activeCivilCaseCount)} / ${formatCount(civilCaseCount)}`,
   },
   {
-    action: {
-      href: `${officerPath}liability-costs/`,
-      kind: "link",
-      label: "View details",
-    },
     accent: metricVisuals.liabilityCosts.accent,
     icon: metricVisuals.liabilityCosts.icon,
     label: metricVisuals.liabilityCosts.label,
     value: unavailableValue,
   },
   {
-    action: {
-      href: `${officerPath}arrests/`,
-      kind: "link",
-      label: "View details",
-    },
     accent: metricVisuals.arrests.accent,
     icon: metricVisuals.arrests.icon,
     label: metricVisuals.arrests.label,
     value: unavailableValue,
   },
   {
-    action: {
-      href: `${officerPath}reports/`,
-      kind: "link",
-      label: "View details",
-    },
+    ...(reportItems.length > 0
+      ? {
+          action: {
+            href: `${officerPath}reports/`,
+            kind: "link" as const,
+            label: "View details",
+          },
+        }
+      : {}),
     accent: metricVisuals.reports.accent,
     icon: metricVisuals.reports.icon,
     label: metricVisuals.reports.label,
@@ -680,7 +680,7 @@ const structuredData = {
         <MetricGrid metrics={personnelMetricCards} />
 
         <div class="personnel-section-grid">
-          <OutcomesByIncomePanel href={outcomesByIncomePath} />
+          <OutcomesByIncomePanel />
           <section class="personnel-panel">
             <div class="personnel-panel-heading">
               <h2>1. Salary History</h2>
@@ -725,9 +725,14 @@ const structuredData = {
                   {civilCaseYears.map((row) => (
                     <div>
                       <span>{row.year}</span>
-                      <i
-                        style={`--bar-width: ${Math.max(12, row.count * 18)}%`}
-                      />
+                      <meter
+                        min="0"
+                        max="100"
+                        value={civilCaseYearBarValue(row.count)}
+                        aria-label={`${row.year} civil case count`}
+                      >
+                        {row.count}
+                      </meter>
                       <strong>{row.count}</strong>
                     </div>
                   ))}
@@ -1348,12 +1353,29 @@ const structuredData = {
   }
 
   .personnel-horizontal-bars i,
-  .personnel-year-bars i {
+  .personnel-year-bars meter {
+    appearance: none;
     background: #174bff;
     border-radius: 0.1rem;
     display: block;
     height: 0.85rem;
-    width: var(--bar-width);
+    width: 100%;
+  }
+
+  .personnel-year-bars meter::-webkit-meter-bar {
+    background: #e7edf7;
+    border: 0;
+    border-radius: 0.1rem;
+  }
+
+  .personnel-year-bars meter::-webkit-meter-optimum-value {
+    background: #174bff;
+    border-radius: 0.1rem;
+  }
+
+  .personnel-year-bars meter::-moz-meter-bar {
+    background: #174bff;
+    border-radius: 0.1rem;
   }
 
   .personnel-charge-bars div {

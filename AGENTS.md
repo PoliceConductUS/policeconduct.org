@@ -33,6 +33,7 @@ Design Standards
 - Replace technical, legal, and data-analysis terms in public labels with familiar wording. A tooltip, definition, or detail-page explanation may show the original source/legal term when needed, but the visible label must remain familiar.
 - H1/H2/H3 styling must come from shared typography tokens/classes. Do not use Bootstrap `display-*` classes or page-local heading CSS to change semantic heading size or font family.
 - One heading level means one visual role across pages. If a compact panel cannot visually support an H2, use a non-heading label or the correct lower heading level rather than styling H2 differently.
+- Generated HTML must not contain inline CSS. Keep `astro.config.mjs` `build.inlineStylesheets` set to `"never"`, do not add `style` attributes, and ensure component/page CSS ships through external stylesheets only. `npm run build` enforces this with `npm run validate:no-inline-css`.
 
 OpenSpec Usage
 

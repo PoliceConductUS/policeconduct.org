@@ -2,12 +2,12 @@
 import CivicScopedIndexPage from "#src/components/CivicScopedIndexPage.astro";
 import { buildAdministrativeAreaCivicIndex } from "#src/lib/data/civic-index.js";
 import {
-  loadAdministrativeAreaScopedPaths,
+  loadAdministrativeAreaScopedPathsForTopic,
   loadRequiredLocationByPath,
 } from "#src/lib/data/civic-scoped-routes.js";
 
 export async function getStaticPaths() {
-  return loadAdministrativeAreaScopedPaths();
+  return loadAdministrativeAreaScopedPathsForTopic("outcomes-by-income");
 }
 
 const location = await loadRequiredLocationByPath(

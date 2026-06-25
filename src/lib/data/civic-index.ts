@@ -20,6 +20,15 @@ export type CivicIndexScope =
   | "place"
   | "agency";
 
+export type CivicScopedTopicKind =
+  | "personnel"
+  | "reports"
+  | "budget"
+  | "civil-cases"
+  | "fatal-force-incidents"
+  | "liability-costs"
+  | "outcomes-by-income";
+
 export type CivicCoverageMetric = {
   key: "agencies" | "personnel" | "reports" | "civil_cases";
   label: string;
@@ -388,8 +397,44 @@ const getCoverageCount = (
   return coverageByKey.get(key) || 0;
 };
 
+export const hasCivicScopedTopicData = (
+  coverage: LocationPagePayload["coverage"],
+  kind: CivicScopedTopicKind,
+) => {
+  if (kind === "personnel") {
+    return coverage.personnel > 0;
+  }
+
+  if (kind === "reports") {
+    return coverage.reports > 0;
+  }
+
+  if (kind === "civil-cases") {
+    return coverage.civilCases > 0;
+  }
+
+  return false;
+};
+
 const scopedDetailHref = (pagePath: string, slug: string) =>
   `${pagePath}${slug}/`;
+
+const scopedDataDetailHref = (
+  coverage: CivicCoverageMetric[],
+  pagePath: string,
+  kind: CivicScopedTopicKind,
+) => {
+  const payloadCoverage = {
+    agencies: getCoverageCount(coverage, "agencies"),
+    civilCases: getCoverageCount(coverage, "civil_cases"),
+    personnel: getCoverageCount(coverage, "personnel"),
+    reports: getCoverageCount(coverage, "reports"),
+  };
+
+  return hasCivicScopedTopicData(payloadCoverage, kind)
+    ? scopedDetailHref(pagePath, kind)
+    : undefined;
+};
 
 const formatMetricValue = (value: number) => value.toLocaleString("en-US");
 
@@ -412,8 +457,24 @@ export const buildTopMetricCards = ({
   const civilCases = getCoverageCount(coverage, "civil_cases");
   const agencies = getCoverageCount(coverage, "agencies");
   const personnel = getCoverageCount(coverage, "personnel");
-  const reportsHref =
-    reports > 0 ? scopedDetailHref(pagePath, "reports") : undefined;
+  const reportsHref = scopedDataDetailHref(coverage, pagePath, "reports");
+  const personnelHref = scopedDataDetailHref(coverage, pagePath, "personnel");
+  const civilCasesHref = scopedDataDetailHref(
+    coverage,
+    pagePath,
+    "civil-cases",
+  );
+  const budgetHref = scopedDataDetailHref(coverage, pagePath, "budget");
+  const liabilityCostsHref = scopedDataDetailHref(
+    coverage,
+    pagePath,
+    "liability-costs",
+  );
+  const fatalForceHref = scopedDataDetailHref(
+    coverage,
+    pagePath,
+    "fatal-force-incidents",
+  );
   const childMetric =
     scope === "state"
       ? {
@@ -457,7 +518,7 @@ export const buildTopMetricCards = ({
       ? {
           detail:
             "Current and former personnel records connected to this agency.",
-          detailHref: scopedDetailHref(pagePath, "personnel"),
+          detailHref: personnelHref,
           icon: "people",
           label: metricLabels.personnelRecords,
           scope: jurisdictionLabel,
@@ -476,7 +537,7 @@ export const buildTopMetricCards = ({
   const budgetMetric: CivicIndexPreviewMetric = {
     detail:
       "Current fiscal-year budget, revenue, overtime, and related finance records.",
-    detailHref: scopedDetailHref(pagePath, "budget"),
+    detailHref: budgetHref,
     icon: "dollar",
     label: metricLabels.budget,
     scope: jurisdictionLabel,
@@ -487,7 +548,7 @@ export const buildTopMetricCards = ({
       scope === "state"
         ? `Incident-location civil case records connected to ${jurisdictionLabel} from the past 5 years.`
         : `Civil case records connected to ${jurisdictionLabel} from the past 5 years.`,
-    detailHref: scopedDetailHref(pagePath, "civil-cases"),
+    detailHref: civilCasesHref,
     icon: "scales",
     label: metricLabels.civilCases,
     scope: jurisdictionLabel,
@@ -497,7 +558,7 @@ export const buildTopMetricCards = ({
   const liabilityMetric: CivicIndexPreviewMetric = {
     detail:
       "Claims, settlements, judgments, defense costs, and related documented payments from the past 5 years.",
-    detailHref: scopedDetailHref(pagePath, "liability-costs"),
+    detailHref: liabilityCostsHref,
     icon: "weight",
     label: metricLabels.liabilityCosts,
     scope: jurisdictionLabel,
@@ -507,7 +568,7 @@ export const buildTopMetricCards = ({
   const fatalForceMetric: CivicIndexPreviewMetric = {
     detail:
       "Fatal force, custody deaths, pursuit deaths, and other deaths involving police contact from the past 5 years.",
-    detailHref: scopedDetailHref(pagePath, "fatal-force-incidents"),
+    detailHref: fatalForceHref,
     icon: "cross",
     label: metricLabels.fatalForceIncidents,
     scope: jurisdictionLabel,
@@ -532,17 +593,37 @@ export const buildVisitorIntentBands = ({
   pagePath,
   scope,
 }: VisitorIntentBandInput): CivicIndexVisitorIntentBand[] => {
-  const reports = getCoverageCount(coverage, "reports");
   const civilCases = getCoverageCount(coverage, "civil_cases");
   const personnel = getCoverageCount(coverage, "personnel");
-  const reportsHref =
-    reports > 0 ? scopedDetailHref(pagePath, "reports") : undefined;
+  const reportsHref = scopedDataDetailHref(coverage, pagePath, "reports");
+  const personnelHref = scopedDataDetailHref(coverage, pagePath, "personnel");
+  const budgetHref = scopedDataDetailHref(coverage, pagePath, "budget");
+  const civilCasesHref = scopedDataDetailHref(
+    coverage,
+    pagePath,
+    "civil-cases",
+  );
+  const fatalForceHref = scopedDataDetailHref(
+    coverage,
+    pagePath,
+    "fatal-force-incidents",
+  );
+  const liabilityCostsHref = scopedDataDetailHref(
+    coverage,
+    pagePath,
+    "liability-costs",
+  );
+  const outcomesByIncomeHref = scopedDataDetailHref(
+    coverage,
+    pagePath,
+    "outcomes-by-income",
+  );
   const isAgency = scope === "agency";
   const agencyPersonnelMetric: CivicIndexPreviewMetric | null = isAgency
     ? {
         detail:
           "Current and former personnel records connected to this agency.",
-        detailHref: scopedDetailHref(pagePath, "personnel"),
+        detailHref: personnelHref,
         icon: "people",
         label: metricLabels.personnelRecords,
         scope: jurisdictionLabel,
@@ -625,7 +706,7 @@ export const buildVisitorIntentBands = ({
         {
           detail:
             "Dismissed, convicted, plea deal, jail, probation, and deferred-prosecution outcomes from the past 5 years, grouped by income when source data supports it.",
-          detailHref: scopedDetailHref(pagePath, "outcomes-by-income"),
+          detailHref: outcomesByIncomeHref,
           icon: "link",
           label: metricLabels.outcomesByIncome,
           scope: jurisdictionLabel,
@@ -646,7 +727,7 @@ export const buildVisitorIntentBands = ({
         {
           caption:
             "Case outcomes use familiar public labels and preserve the source basis on detail pages.",
-          detailHref: scopedDetailHref(pagePath, "outcomes-by-income"),
+          detailHref: outcomesByIncomeHref,
           label: "Case outcomes by income",
           metadata: ["Dismissed, plea, conviction, jail, probation"],
           scope: jurisdictionLabel,
@@ -663,7 +744,7 @@ export const buildVisitorIntentBands = ({
         {
           detail:
             "Current fiscal-year budget, revenue, overtime, and related finance records.",
-          detailHref: scopedDetailHref(pagePath, "budget"),
+          detailHref: budgetHref,
           icon: "dollar",
           label: metricLabels.budget,
           scope: jurisdictionLabel,
@@ -674,7 +755,7 @@ export const buildVisitorIntentBands = ({
             scope === "state"
               ? `Incident-location civil case records connected to ${jurisdictionLabel} from the past 5 years.`
               : `Civil case records connected to ${jurisdictionLabel} from the past 5 years.`,
-          detailHref: scopedDetailHref(pagePath, "civil-cases"),
+          detailHref: civilCasesHref,
           icon: "scales",
           label: metricLabels.civilCases,
           scope: jurisdictionLabel,
@@ -684,7 +765,7 @@ export const buildVisitorIntentBands = ({
         {
           detail:
             "Claims, settlements, judgments, defense costs, and related documented payments from the past 5 years.",
-          detailHref: scopedDetailHref(pagePath, "liability-costs"),
+          detailHref: liabilityCostsHref,
           icon: "weight",
           label: metricLabels.liabilityCosts,
           scope: jurisdictionLabel,
@@ -698,7 +779,7 @@ export const buildVisitorIntentBands = ({
             scope === "state"
               ? "State geography uses incident-location civil case scope."
               : "Civil case scope follows the page's geography or agency relationship.",
-          detailHref: scopedDetailHref(pagePath, "civil-cases"),
+          detailHref: civilCasesHref,
           label: "Civil cases",
           scope: jurisdictionLabel,
           seriesLabel: "Case count",
@@ -707,7 +788,7 @@ export const buildVisitorIntentBands = ({
         {
           caption:
             "Liability costs include documented claims, litigation, settlements, judgments, defense, and related conduct events.",
-          detailHref: scopedDetailHref(pagePath, "liability-costs"),
+          detailHref: liabilityCostsHref,
           label: "Liability costs by type",
           metadata: ["Claims, defense, settlements, judgments"],
           scope: jurisdictionLabel,
@@ -717,7 +798,7 @@ export const buildVisitorIntentBands = ({
         {
           caption:
             "Budget and overtime remain separate measures unless a chart explicitly compares them.",
-          detailHref: scopedDetailHref(pagePath, "budget"),
+          detailHref: budgetHref,
           label: "Budget by fiscal year",
           metadata: ["Fiscal-year records"],
           scope: jurisdictionLabel,
@@ -734,7 +815,7 @@ export const buildVisitorIntentBands = ({
         {
           detail:
             "Fatal force, custody deaths, pursuit deaths, and other deaths involving police contact from the past 5 years.",
-          detailHref: scopedDetailHref(pagePath, "fatal-force-incidents"),
+          detailHref: fatalForceHref,
           icon: "cross",
           label: metricLabels.fatalForceIncidents,
           scope: jurisdictionLabel,

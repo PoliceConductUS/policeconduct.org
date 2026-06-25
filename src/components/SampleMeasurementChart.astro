@@ -15,6 +15,17 @@ const {
   rows: ChartRow[];
   legend?: string[];
 };
+
+const allowedWidths = new Set([
+  0, 12, 14, 18, 24, 26, 28, 30, 32, 34, 36, 38, 42, 44, 46, 48, 52, 54, 56, 58,
+  62, 64, 70, 72,
+]);
+const segmentWidthClass = (width = 0) => {
+  if (!allowedWidths.has(width)) {
+    throw new Error(`Unsupported sample measurement width: ${width}`);
+  }
+  return `sample-measurement-width-${width}`;
+};
 ---
 
 <div class="sample-measurement-chart disabled" aria-label={ariaLabel}>
@@ -25,10 +36,10 @@ const {
         <span>
           {row.segments?.length ? (
             row.segments.map((segment) => (
-              <i style={`--segment-width: ${segment}%`} />
+              <i class={segmentWidthClass(segment)} />
             ))
           ) : (
-            <i style={`--segment-width: ${row.width ?? 0}%`} />
+            <i class={segmentWidthClass(row.width)} />
           )}
         </span>
         <em>{row.value}</em>
@@ -93,7 +104,102 @@ const {
     background: #bac7d8;
     display: block;
     height: 100%;
-    width: var(--segment-width);
+  }
+
+  .sample-measurement-width-0 {
+    width: 0%;
+  }
+
+  .sample-measurement-width-12 {
+    width: 12%;
+  }
+
+  .sample-measurement-width-14 {
+    width: 14%;
+  }
+
+  .sample-measurement-width-18 {
+    width: 18%;
+  }
+
+  .sample-measurement-width-24 {
+    width: 24%;
+  }
+
+  .sample-measurement-width-26 {
+    width: 26%;
+  }
+
+  .sample-measurement-width-28 {
+    width: 28%;
+  }
+
+  .sample-measurement-width-30 {
+    width: 30%;
+  }
+
+  .sample-measurement-width-32 {
+    width: 32%;
+  }
+
+  .sample-measurement-width-34 {
+    width: 34%;
+  }
+
+  .sample-measurement-width-36 {
+    width: 36%;
+  }
+
+  .sample-measurement-width-38 {
+    width: 38%;
+  }
+
+  .sample-measurement-width-42 {
+    width: 42%;
+  }
+
+  .sample-measurement-width-44 {
+    width: 44%;
+  }
+
+  .sample-measurement-width-46 {
+    width: 46%;
+  }
+
+  .sample-measurement-width-48 {
+    width: 48%;
+  }
+
+  .sample-measurement-width-52 {
+    width: 52%;
+  }
+
+  .sample-measurement-width-54 {
+    width: 54%;
+  }
+
+  .sample-measurement-width-56 {
+    width: 56%;
+  }
+
+  .sample-measurement-width-58 {
+    width: 58%;
+  }
+
+  .sample-measurement-width-62 {
+    width: 62%;
+  }
+
+  .sample-measurement-width-64 {
+    width: 64%;
+  }
+
+  .sample-measurement-width-70 {
+    width: 70%;
+  }
+
+  .sample-measurement-width-72 {
+    width: 72%;
   }
 
   .sample-measurement-row i:nth-child(1),

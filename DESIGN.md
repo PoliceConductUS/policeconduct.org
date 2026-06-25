@@ -80,6 +80,7 @@ Components
 
 - Reuse shared components for entity headers, metric grids, data panels, action buttons, breadcrumbs, and topic pages.
 - Do not copy/paste page-local versions of heading or metric styles.
+- Generated HTML must not contain inline CSS. Do not use `style` attributes for one-off values, and do not allow Astro to inline component styles into HTML. CSS must ship through external stylesheets because the site generates hundreds of thousands of pages.
 - No nested cards.
 - No placeholder copy that explains missing data. Use neutral empty values such as `--` only where explicitly approved.
 
@@ -87,4 +88,5 @@ Verification
 
 - Before completing frontend work, audit H1/H2/H3 usage on changed pages.
 - The home page, civil case detail pages, civic index pages, agency pages, personnel pages, and collection pages must use the same heading tokens for the same heading levels.
+- Run `npm run validate:no-inline-css` against generated `dist` after builds that affect page styling or HTML output.
 - Run `npm run astro -- check` after typography or component changes.

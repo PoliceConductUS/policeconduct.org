@@ -5,12 +5,12 @@ import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
   loadAgencyDetailByRouteParams,
-  loadAgencyLocationStaticPaths,
+  loadAgencyLocationStaticPathsForTopic,
 } from "#src/lib/data/agency-detail.js";
 import { metricVisuals } from "#src/lib/metric-vocabulary.js";
 
 export async function getStaticPaths() {
-  return loadAgencyLocationStaticPaths();
+  return loadAgencyLocationStaticPathsForTopic("budget");
 }
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
@@ -313,7 +313,7 @@ const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
                   <div>
                     <span>{label}</span>
                     <i>
-                      <b style="width: 0%" />
+                      <b />
                     </i>
                     <strong>$0</strong>
                   </div>
@@ -709,6 +709,7 @@ const years = ["2019", "2020", "2021", "2022", "2023", "2024", "2025 YTD"];
     background: #174bff;
     display: block;
     height: 100%;
+    width: 0%;
   }
 
   @media (min-width: 768px) {

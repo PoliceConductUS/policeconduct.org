@@ -7,7 +7,7 @@
     "audit": "npm run audit:seo && npm run audit:a11y",
     "audit:a11y": "node scripts/audit-a11y.mjs",
     "audit:seo": "node scripts/audit-seo.mjs",
-    "build": "node scripts/validate-build-env.mjs && node scripts/validate-schema-contract.mjs && node scripts/refresh-build-projections.mjs && GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-$(git rev-parse --short=12 HEAD)} GIT_COMMIT_DIRTY=${GIT_COMMIT_DIRTY:-$(if git diff --quiet HEAD -- && [ -z \"$(git ls-files --others --exclude-standard)\" ]; then echo 0; else echo 1; fi)} astro build && node scripts/generate-redirect-map.mjs",
+    "build": "node scripts/validate-build-env.mjs && node scripts/validate-schema-contract.mjs && node scripts/refresh-build-projections.mjs && GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-$(git rev-parse --short=12 HEAD)} GIT_COMMIT_DIRTY=${GIT_COMMIT_DIRTY:-$(if git diff --quiet HEAD -- && [ -z \"$(git ls-files --others --exclude-standard)\" ]; then echo 0; else echo 1; fi)} astro build && npm run validate:no-inline-css && node scripts/generate-redirect-map.mjs",
     "deploy:preview": "bash scripts/deploy-preview.sh",
     "deploy:prod": "bash scripts/deploy-incremental.sh",
     "dev": "node scripts/dev.mjs",
@@ -31,6 +31,7 @@
     "update:deps:all": "node scripts/update-dependencies.mjs --all",
     "validate": "npm run format:check && npm run lint && npm run validate:types && npm run validate:shell && npm run validate:schema && npm run validate:openspec && npm run test",
     "validate:openspec": "openspec validate --all",
+    "validate:no-inline-css": "node scripts/validate-no-inline-css.mjs",
     "validate:schema": "node scripts/validate-schema-contract.mjs",
     "validate:shell": "bash -n scripts/*.sh infrastructure/bootstrap-*/*.sh infrastructure/bootstrap-*/scripts/*.sh",
     "validate:types": "astro check"

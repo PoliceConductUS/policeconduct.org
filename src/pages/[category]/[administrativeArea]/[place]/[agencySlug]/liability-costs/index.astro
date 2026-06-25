@@ -5,12 +5,12 @@ import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
   loadAgencyDetailByRouteParams,
-  loadAgencyLocationStaticPaths,
+  loadAgencyLocationStaticPathsForTopic,
 } from "#src/lib/data/agency-detail.js";
 import { metricVisuals } from "#src/lib/metric-vocabulary.js";
 
 export async function getStaticPaths() {
-  return loadAgencyLocationStaticPaths();
+  return loadAgencyLocationStaticPathsForTopic("liability-costs");
 }
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
@@ -339,7 +339,7 @@ const formatDate = (value?: string | null) =>
                   <div>
                     <span>{label}</span>
                     <i>
-                      <b style="width: 0%" />
+                      <b />
                     </i>
                     <strong>$0</strong>
                   </div>
@@ -742,6 +742,7 @@ const formatDate = (value?: string | null) =>
     background: #174bff;
     display: block;
     height: 100%;
+    width: 0%;
   }
 
   .liability-donut-card {

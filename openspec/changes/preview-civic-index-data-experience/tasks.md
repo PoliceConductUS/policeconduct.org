@@ -21,6 +21,7 @@
 - [x] 2.8 Remove the duplicate Reports metric from the contacts band when the top Reports metric and monthly reports graph are present, and rename the graph to "Reports by month".
 - [x] 2.9 Rename "Better outcomes and positive-deviance signals" to "Positive-deviance" and render that band first after the top metric cards.
 - [x] 2.10 Allow state-level decertification context to produce state page content without counting it toward home-map state link eligibility.
+- [x] 2.11 Do not link or generate personnel Agencies scoped subpages for personnel records associated with only one distinct agency.
 
 ## 3. Copy, Scope, and Neutrality
 

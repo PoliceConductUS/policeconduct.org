@@ -154,6 +154,37 @@ test.describe("civic index pages", () => {
     ).toHaveAttribute("href", "/tx/counties/");
   });
 
+  test("omits detail links for state scoped topics with no generated data page", async ({
+    page,
+  }) => {
+    await page.goto("/tx/");
+
+    const topMetrics = page.getByRole("region", {
+      name: "Top Texas Civic Index metrics",
+    });
+
+    await expect(
+      topMetrics
+        .locator("article")
+        .filter({ has: page.getByText("Budget", { exact: true }) })
+        .getByRole("link", { name: "View details" }),
+    ).toHaveCount(0);
+    await expect(
+      topMetrics
+        .locator("article")
+        .filter({ has: page.getByText("Liability Costs", { exact: true }) })
+        .getByRole("link", { name: "View details" }),
+    ).toHaveCount(0);
+    await expect(
+      topMetrics
+        .locator("article")
+        .filter({
+          has: page.getByText("Fatal Force Incidents", { exact: true }),
+        })
+        .getByRole("link", { name: "View details" }),
+    ).toHaveCount(0);
+  });
+
   test("renders administrative-area pages with visitor-intent bands", async ({
     page,
   }) => {

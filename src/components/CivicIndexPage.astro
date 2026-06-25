@@ -443,7 +443,7 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
                               <div class="bar-row">
                                 <b>{row.label}</b>
                                 <div class="track">
-                                  <span style={`--v: ${row.width}`} />
+                                  <span />
                                 </div>
                                 <em>{row.value}</em>
                               </div>
@@ -884,7 +884,7 @@ const decertificationTotal = decertificationPayload?.columns.length ?? 0;
     border-radius: inherit;
     display: block;
     height: 100%;
-    width: calc(var(--v) * 1%);
+    width: 0%;
   }
 
   .bar-row em {

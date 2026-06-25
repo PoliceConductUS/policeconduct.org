@@ -587,7 +587,6 @@ await withDb(async (client) => {
               select 1
               from public.agency_officers ao
               where ao.agency_id = a.id
-                and ao.end_date is null
             )
             or exists (
               select 1

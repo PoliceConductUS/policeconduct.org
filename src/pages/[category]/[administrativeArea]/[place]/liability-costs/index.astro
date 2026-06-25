@@ -2,12 +2,12 @@
 import CivicScopedIndexPage from "#src/components/CivicScopedIndexPage.astro";
 import { buildPlaceCivicIndex } from "#src/lib/data/civic-index.js";
 import {
-  loadPlaceScopedPaths,
+  loadPlaceScopedPathsForTopic,
   loadRequiredLocationByPath,
 } from "#src/lib/data/civic-scoped-routes.js";
 
 export async function getStaticPaths() {
-  return loadPlaceScopedPaths();
+  return loadPlaceScopedPathsForTopic("liability-costs");
 }
 
 const location = await loadRequiredLocationByPath(
