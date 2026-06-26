@@ -264,7 +264,7 @@ const formatDate = (value?: string | null) =>
                           name,
                           status,
                           employee.entry.badge_number,
-                          employee.entry.title,
+                          employee.entry.license_type,
                           formatDate(employee.entry.start_date),
                           endDate,
                         ]
@@ -290,7 +290,7 @@ const formatDate = (value?: string | null) =>
                             </td>
                             <td>{status}</td>
                             <td>{employee.entry.badge_number || ""}</td>
-                            <td>{employee.entry.title || ""}</td>
+                            <td>{employee.entry.license_type || ""}</td>
                             <td>
                               {formatDate(employee.entry.start_date) || ""}
                             </td>

@@ -14,7 +14,7 @@ export type CivilCaseCoverageLink = {
 
 export type CivilCaseDetailOfficer = {
   id: string;
-  license_type?: string | null;
+  license_type: string;
   slug: string;
   first_name: string;
   last_name: string;
@@ -111,7 +111,7 @@ export const loadCivilCaseDetail = async (
             officer.slug,
             officer.first_name,
             officer.last_name,
-            agency_officer.title as license_type
+            agency_officer.license_type
           from public.civil_case_officers civil_case_officer
           join public.agency_officers agency_officer
             on agency_officer.id = civil_case_officer.agency_officer_id

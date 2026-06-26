@@ -8,19 +8,18 @@ const recaptchaFormRoutes = [
   "/report/new/",
   "/personnel/new/",
   "/personnel/suggest-edit/",
-  "/law-enforcement-agency/new/",
-  "/law-enforcement-agency/suggest-edit/",
-  "/civil-litigation/new/",
-  "/civil-litigation/suggest-edit/",
+  "/agency/new/",
+  "/agency/suggest-edit/",
+  "/civil-cases/new/",
+  "/civil-cases/suggest-edit/",
   "/legal-notice/data-subject-access-request/",
 ];
 
 const nonRecaptchaRoutes = [
   "/",
   "/about/",
-  "/report/",
-  "/personnel/tx/",
-  "/law-enforcement-agency/tx/",
+  "/tx/",
+  "/personnel/",
   "/status/",
   "/verify/",
 ];

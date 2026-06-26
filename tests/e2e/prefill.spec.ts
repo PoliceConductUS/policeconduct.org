@@ -177,7 +177,7 @@ const profileSenderCases: SenderCase[] = [
         "/personnel/james-markham-v-7635c7/\n/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
     },
     locator: { kind: "role", value: "Add a civil case" },
-    targetPath: "/civil-litigation/new/",
+    targetPath: "/civil-cases/new/",
   },
   {
     name: "submit past employer",
@@ -283,7 +283,7 @@ const profileSenderCases: SenderCase[] = [
         "/tx/dallas-county/irving/irving-police-department-049f9a/\n/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
     },
     locator: { kind: "role", value: "Add a civil case" },
-    targetPath: "/civil-litigation/new/",
+    targetPath: "/civil-cases/new/",
   },
   {
     name: "suggest new personnel",
@@ -311,7 +311,7 @@ const profileSenderCases: SenderCase[] = [
       "socialLinks",
     ],
     locator: { kind: "role", value: "Suggest edit" },
-    targetPath: "/law-enforcement-agency/suggest-edit/",
+    targetPath: "/agency/suggest-edit/",
   },
   {
     name: "subscribe",
@@ -358,8 +358,8 @@ const flashCases: FlashCase[] = [
     },
   },
   {
-    key: "/civil-litigation/new/",
-    route: "/civil-litigation/new/",
+    key: "/civil-cases/new/",
+    route: "/civil-cases/new/",
     expectedFields: ["jurisdiction"],
     payload: { jurisdiction: "tx" },
   },
@@ -384,11 +384,11 @@ const flashCases: FlashCase[] = [
     payload: { officerPath: "/personnel/example/" },
   },
   {
-    key: "/law-enforcement-agency/suggest-edit/",
-    route: "/law-enforcement-agency/suggest-edit/",
+    key: "/agency/suggest-edit/",
+    route: "/agency/suggest-edit/",
     expectedFields: ["agencyPath", "jurisdiction"],
     payload: {
-      agencyPath: "/law-enforcement-agency/tx/example/",
+      agencyPath: "/tx/example-county/example-place/example-agency/",
       jurisdiction: "tx",
     },
   },

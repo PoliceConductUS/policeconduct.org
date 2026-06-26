@@ -89,7 +89,7 @@ export const buildCategoryCollectionStats = (
       label: "Agencies",
       value: counts.agencyCount,
       description: `Listed agencies in ${categoryLabel}.`,
-      href: `/law-enforcement-agency/${category}/`,
+      href: `/${category}/`,
       actionLabel: "Open agencies",
     },
     {

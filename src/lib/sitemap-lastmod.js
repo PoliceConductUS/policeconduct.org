@@ -1,8 +1,6 @@
 import { withDb } from "./db.js";
 import { US_STATE_TILES } from "./geo/states.js";
 
-const PAGE_SIZE = 50;
-
 const CATEGORY_SLUGS = US_STATE_TILES.map((state) => state.code.toLowerCase());
 
 const parseDate = (value) => {
@@ -36,10 +34,6 @@ const setLastmod = (map, path, value) => {
   }
 };
 
-const incrementCount = (map, key) => {
-  map.set(key, (map.get(key) || 0) + 1);
-};
-
 const setCategoryLastmod = (map, key, value) => {
   const parsed = parseDate(value);
   if (!parsed) {
@@ -48,14 +42,6 @@ const setCategoryLastmod = (map, key, value) => {
   const existing = map.get(key);
   if (!existing || parsed > existing) {
     map.set(key, parsed);
-  }
-};
-
-const addPaginatedPaths = (map, basePath, count, lastmod) => {
-  setLastmod(map, basePath, lastmod);
-  const totalPages = Math.max(1, Math.ceil((count || 0) / PAGE_SIZE));
-  for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
-    setLastmod(map, `${basePath}page/${pageNumber}/`, lastmod);
   }
 };
 
@@ -110,13 +96,9 @@ const setReportArchiveLastmods = (pathLastmods, report, lastmod) => {
 
 export const buildSitemapLastmodMap = async () => {
   const pathLastmods = new Map();
-  const reportCountsByCategory = new Map();
   const reportLastmodsByCategory = new Map();
-  const agencyCountsByCategory = new Map();
   const agencyLastmodsByCategory = new Map();
-  const personnelCountsByCategory = new Map();
   const personnelLastmodsByCategory = new Map();
-  const civilCaseCountsByCategory = new Map();
   const civilCaseLastmodsByCategory = new Map();
 
   await withDb(async (client) => {
@@ -148,9 +130,7 @@ export const buildSitemapLastmodMap = async () => {
         setLastmod(pathLastmods, reportPath, lastmod);
       }
       setReportArchiveLastmods(pathLastmods, report, lastmod);
-      incrementCount(reportCountsByCategory, report.state);
       setCategoryLastmod(reportLastmodsByCategory, report.state, lastmod);
-      setLastmod(pathLastmods, "/report/", lastmod);
     }
 
     const agencyRows = (
@@ -235,13 +215,11 @@ export const buildSitemapLastmodMap = async () => {
         setLastmod(pathLastmods, agency.canonical_path, agency.lastmod);
       }
 
-      incrementCount(agencyCountsByCategory, agency.state);
       setCategoryLastmod(
         agencyLastmodsByCategory,
         agency.state,
         agency.lastmod,
       );
-      setLastmod(pathLastmods, "/law-enforcement-agency/", agency.lastmod);
     }
 
     const personnelDetailRows = (
@@ -360,7 +338,6 @@ export const buildSitemapLastmodMap = async () => {
       if (!person.state) {
         continue;
       }
-      incrementCount(personnelCountsByCategory, person.state);
       setCategoryLastmod(
         personnelLastmodsByCategory,
         person.state,
@@ -391,20 +368,11 @@ export const buildSitemapLastmodMap = async () => {
         continue;
       }
       setLastmod(pathLastmods, `/civil-cases/${civilCase.slug}/`, lastmod);
-      incrementCount(civilCaseCountsByCategory, civilCase.state);
       setCategoryLastmod(civilCaseLastmodsByCategory, civilCase.state, lastmod);
-      setLastmod(pathLastmods, "/civil-litigation/", lastmod);
     }
   });
 
   for (const category of CATEGORY_SLUGS) {
-    addPaginatedPaths(
-      pathLastmods,
-      `/law-enforcement-agency/${category}/`,
-      agencyCountsByCategory.get(category) || 0,
-      agencyLastmodsByCategory.get(category),
-    );
-
     setLastmod(
       pathLastmods,
       `/${category}/`,
@@ -421,10 +389,8 @@ export const buildSitemapLastmodMap = async () => {
     pathLastmods,
     "/",
     getLatestDate(
-      pathLastmods.get("/report/"),
       pathLastmods.get("/personnel/"),
-      pathLastmods.get("/law-enforcement-agency/"),
-      pathLastmods.get("/civil-litigation/"),
+      ...CATEGORY_SLUGS.map((category) => pathLastmods.get(`/${category}/`)),
     ),
   );
 

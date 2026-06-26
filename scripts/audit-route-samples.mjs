@@ -12,10 +12,10 @@ export const FORM_ROUTES = [
   "/report/new/",
   "/personnel/new/",
   "/personnel/suggest-edit/",
-  "/law-enforcement-agency/new/",
-  "/law-enforcement-agency/suggest-edit/",
-  "/civil-litigation/new/",
-  "/civil-litigation/suggest-edit/",
+  "/agency/new/",
+  "/agency/suggest-edit/",
+  "/civil-cases/new/",
+  "/civil-cases/suggest-edit/",
   "/legal-notice/data-subject-access-request/",
   "/status/",
 ];
@@ -25,40 +25,20 @@ const OPTIONAL_SAMPLE_SPECS = [
     label: "state report date archive",
     pattern: /^\/[a-z]{2}\/reports\/\d{4}\/\d{2}\/\d{2}\/$/,
   },
-  {
-    label: "agency pagination",
-    pattern: /^\/law-enforcement-agency\/[^/]+\/page\/\d+\/$/,
-  },
-  {
-    label: "personnel pagination",
-    pattern: /^\/personnel\/[^/]+\/page\/\d+\/$/,
-  },
-  {
-    label: "civil litigation pagination",
-    pattern: /^\/civil-litigation\/[^/]+\/page\/\d+\/$/,
-  },
+];
+
+const REDIRECT_ROUTE_PATTERNS = [
+  /^\/personnel\/[a-z]{2,8}\/$/,
+  /^\/personnel\/[a-z]{2,8}\/page\/\d+\/$/,
 ];
 
 const REQUIRED_SAMPLE_SPECS = [
   { label: "home", pattern: /^\/$/ },
-  { label: "report index", pattern: /^\/report\/$/ },
   { label: "state report archive", pattern: /^\/[a-z]{2}\/reports\/$/ },
   {
     label: "report detail",
     pattern:
       /^\/[a-z]{2}\/[^/]+\/[^/]+\/reports\/\d{4}\/\d{2}\/\d{2}\/[^/]+\/$/,
-  },
-  {
-    label: "agency index",
-    pattern: /^\/law-enforcement-agency\/$/,
-  },
-  {
-    label: "agency category",
-    pattern: /^\/law-enforcement-agency\/[a-z-]{2,20}\/$/,
-  },
-  {
-    label: "agency detail",
-    pattern: /^\/law-enforcement-agency\/[^/]+\/[^/]+\/$/,
   },
   {
     label: "county-equivalent",
@@ -74,24 +54,13 @@ const REQUIRED_SAMPLE_SPECS = [
   },
   { label: "personnel index", pattern: /^\/personnel\/$/ },
   {
-    label: "personnel category",
-    pattern: /^\/personnel\/[a-z]{2,8}\/$/,
-  },
-  {
     label: "personnel detail",
     pattern:
       /^\/personnel\/(?!new\/|suggest-edit\/)(?=.*-[a-f0-9]{6}\/$)[^/]+\/$/,
   },
+  { label: "civil cases index", pattern: /^\/civil-cases\/$/ },
   {
-    label: "civil litigation index",
-    pattern: /^\/civil-litigation\/$/,
-  },
-  {
-    label: "civil litigation category",
-    pattern: /^\/civil-litigation\/[a-z]{2,8}\/$/,
-  },
-  {
-    label: "civil litigation detail",
+    label: "civil case detail",
     pattern: /^\/civil-cases\/[^/]+\/$/,
   },
 ];
@@ -156,7 +125,12 @@ export const collectHtmlRoutes = async (distDir) => {
 };
 
 export const buildAuditRouteSelection = ({ routes, maxRoutes }) => {
-  const allRoutes = sortRoutes(routes);
+  const allRoutes = sortRoutes(
+    routes.filter(
+      (route) =>
+        !REDIRECT_ROUTE_PATTERNS.some((pattern) => pattern.test(route)),
+    ),
+  );
   const routeSet = new Set(allRoutes);
   const formSet = new Set(FORM_ROUTES);
   const nonFormRoutes = allRoutes.filter((route) => !formSet.has(route));

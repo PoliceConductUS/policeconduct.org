@@ -165,8 +165,8 @@ if (!currentAssignment) {
 const hasCurrentAssignment = Boolean(activeAssignment);
 const currentBadge = currentAssignment?.badge_number || null;
 const currentLicenseType =
-  typeof currentAssignment?.title === "string"
-    ? currentAssignment.title.trim()
+  typeof currentAssignment?.license_type === "string"
+    ? currentAssignment.license_type.trim()
     : "";
 const currentAgency = currentAssignment
   ? agenciesById[currentAssignment.agency_id]
@@ -183,7 +183,7 @@ const isPlaceholderPersonnel =
     data.officer.last_name === "Personnel");
 if (!isPlaceholderPersonnel && !currentLicenseType) {
   throw new Error(
-    `Personnel ${data.officer.slug} is missing required license type on agency_officers ${currentAssignment?.id || "unknown"}`,
+    `Personnel ${data.officer.slug} is missing required license_type on agency_officers ${currentAssignment?.id || "unknown"}`,
   );
 }
 
@@ -289,7 +289,7 @@ const reportNewPrefillPayload = JSON.stringify({
     name: `${data.officer.first_name} ${data.officer.last_name}`,
   },
 } satisfies ReportNewPrefill);
-const addCivilCaseHref = "/civil-litigation/new/";
+const addCivilCaseHref = "/civil-cases/new/";
 const addCivilCasePrefillPayload = JSON.stringify({
   jurisdiction: String(currentAgency?.state || "").toLowerCase(),
   defendants: [officerName, currentAgencyPrefillName]
@@ -860,7 +860,7 @@ const structuredData = {
                               {entry.agency.name}
                             </a>
                           </th>
-                          <td>{entry.title || currentLicenseType}</td>
+                          <td>{entry.license_type || currentLicenseType}</td>
                           <td>
                             {entry.start_date
                               ? formatShortDate(entry.start_date)

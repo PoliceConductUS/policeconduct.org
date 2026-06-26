@@ -3,10 +3,10 @@ import { expect, type Locator, type Page } from "@playwright/test";
 export type PrefillPath =
   | "/about/contact/"
   | "/report/new/"
-  | "/civil-litigation/new/"
+  | "/civil-cases/new/"
   | "/personnel/new/"
   | "/personnel/suggest-edit/"
-  | "/law-enforcement-agency/suggest-edit/";
+  | "/agency/suggest-edit/";
 
 type PrefillFieldConfig = {
   kind: "input" | "textarea" | "select";
@@ -62,7 +62,7 @@ const FIELD_CONFIG: Record<PrefillPath, Record<string, PrefillFieldConfig>> = {
       toExpectedValue: identity,
     },
   },
-  "/civil-litigation/new/": {
+  "/civil-cases/new/": {
     jurisdiction: {
       kind: "select",
       selector: "#jurisdiction",
@@ -174,7 +174,7 @@ const FIELD_CONFIG: Record<PrefillPath, Record<string, PrefillFieldConfig>> = {
       toExpectedValue: identity,
     },
   },
-  "/law-enforcement-agency/suggest-edit/": {
+  "/agency/suggest-edit/": {
     agencyPath: {
       kind: "input",
       selector: "#agencyPath",

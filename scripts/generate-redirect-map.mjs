@@ -214,10 +214,34 @@ const redirects = await withDb(async (client) => {
       source: "root collection route retired",
     },
     {
+      from: normalizePath("/law-enforcement-agency/new/"),
+      to: normalizePath("/agency/new/"),
+      status: 301,
+      source: "agency form route renamed",
+    },
+    {
+      from: normalizePath("/law-enforcement-agency/suggest-edit/"),
+      to: normalizePath("/agency/suggest-edit/"),
+      status: 301,
+      source: "agency form route renamed",
+    },
+    {
       from: normalizePath("/civil-litigation/"),
       to: normalizePath("/find-records/"),
       status: 301,
       source: "root collection route retired",
+    },
+    {
+      from: normalizePath("/civil-litigation/new/"),
+      to: normalizePath("/civil-cases/new/"),
+      status: 301,
+      source: "civil case form route renamed",
+    },
+    {
+      from: normalizePath("/civil-litigation/suggest-edit/"),
+      to: normalizePath("/civil-cases/suggest-edit/"),
+      status: 301,
+      source: "civil case form route renamed",
     },
     ...stateRows.flatMap((entry) => [
       {

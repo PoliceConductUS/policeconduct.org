@@ -880,7 +880,7 @@ await withDb(async (client) => {
             report_location.path as location_path,
             ro.id as review_officer_id,
             ao.agency_id,
-            ao.title as license_type,
+            ao.license_type,
             o.first_name,
             o.last_name,
             o.suffix,

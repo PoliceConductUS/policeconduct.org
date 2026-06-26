@@ -199,7 +199,7 @@ export const getActionGroups = (pagePath: string): CivicIndexActionGroup[] => [
         label: "Review civil litigation",
         description:
           "Search civil cases involving law enforcement agencies or officers.",
-        href: "/civil-litigation/",
+        href: "/civil-cases/",
       },
       {
         label: "Submit missing source records",
@@ -240,7 +240,7 @@ export const getActionCenter = (pagePath: string): CivicIndexAction[] => [
     label: "Review civil litigation",
     description:
       "Inspect civil cases already connected to agencies or personnel here.",
-    href: "/civil-litigation/",
+    href: "/civil-cases/",
   },
 ];
 

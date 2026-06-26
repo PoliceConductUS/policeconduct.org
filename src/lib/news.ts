@@ -8,13 +8,13 @@ export type NewsMeta = {
 
 export { PAGE_SIZE } from "#src/lib/pagination.js";
 
-const modules = import.meta.glob("../pages/news/**/index.astro", {
+const modules = import.meta.glob("../pages/news/*/*/*/*/index.astro", {
   eager: true,
 });
 
 export const loadNewsArticles = (): NewsMeta[] =>
   Object.values(modules)
-    .map((module) => (module as { newsMeta?: NewsMeta }).newsMeta)
+    .map((module) => (module as { newsMeta?: NewsMeta } | undefined)?.newsMeta)
     .filter((entry): entry is NewsMeta => Boolean(entry))
     .sort((left, right) => right.date.localeCompare(left.date));
 

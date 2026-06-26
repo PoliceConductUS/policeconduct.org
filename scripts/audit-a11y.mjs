@@ -178,6 +178,13 @@ const main = async () => {
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext();
+    await context.route("**/*", (route) => {
+      const requestUrl = new URL(route.request().url());
+      if (requestUrl.hostname !== HOST) {
+        return route.abort();
+      }
+      return route.continue();
+    });
 
     const failures = [];
 
