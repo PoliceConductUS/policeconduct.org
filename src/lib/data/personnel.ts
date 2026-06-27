@@ -63,10 +63,13 @@ export const loadPersonnelSummaries = async (
         ? (
             await client.query(
               `
-                select a.*, lp.path as location_path
+                select a.*, lp.path as location_path, bpp.path as canonical_path
                 from public.agency a
                 join public.location_path lp
                   on lp.location_path_id = a.location_path_id
+                join public.build_page_payload bpp
+                  on bpp.page_type = 'agency'
+                 and bpp.entity_id = a.id
                 where a.id = any($1)
               `,
               [agencyIds],
@@ -142,8 +145,8 @@ export const loadPersonnelSummaries = async (
         lastName: officer.last_name,
         firstName: officer.first_name,
         nameSuffix: officer.suffix || null,
-        licenseType: eligibleAssignment?.title || null,
-        roleTitle: eligibleAssignment?.title || null,
+        licenseType: eligibleAssignment?.license_type || null,
+        roleTitle: eligibleAssignment?.license_type || null,
         agencyName: agency.name,
         agencyState: String(agency.state || "").toLowerCase(),
         agencyCanonicalPath: requireAgencyCanonicalPath(agency),

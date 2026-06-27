@@ -1,0 +1,1170 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import EntityActionButton from "#src/components/EntityActionButton.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
+import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+
+const { model, site } = Astro.props as {
+  model: CivicIndexModel;
+  site: URL | undefined;
+};
+
+const siteUrl = getSiteUrl(site);
+const pageUrl = new URL(model.pagePath, siteUrl).toString();
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: model.title,
+  description: model.description,
+  type: "CollectionPage",
+});
+
+const heading =
+  model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
+  model.jurisdictionLabel;
+const intentBands = model.visitorIntentBands.map((band, index) => ({
+  ...band,
+  id: `intent-${index + 1}`,
+}));
+const topMetricCards = model.topMetricCards;
+type SampleRow = {
+  label: string;
+  value: string;
+  width: number;
+};
+const monthSampleRows: SampleRow[] = [
+  { label: "Jan", value: "--", width: 0 },
+  { label: "Apr", value: "--", width: 0 },
+  { label: "Jul", value: "--", width: 0 },
+  { label: "Oct", value: "--", width: 0 },
+];
+const yearSampleRows: SampleRow[] = [
+  { label: "2021", value: "--", width: 0 },
+  { label: "2022", value: "--", width: 0 },
+  { label: "2023", value: "--", width: 0 },
+  { label: "2024", value: "--", width: 0 },
+  { label: "2025", value: "--", width: 0 },
+];
+const fiscalYearSampleRows: SampleRow[] = [
+  { label: "FY 2021", value: "$--", width: 0 },
+  { label: "FY 2022", value: "$--", width: 0 },
+  { label: "FY 2023", value: "$--", width: 0 },
+  { label: "FY 2024", value: "$--", width: 0 },
+  { label: "FY 2025", value: "$--", width: 0 },
+];
+const currentContextSampleRows: SampleRow[] = [
+  { label: "Policy", value: "--", width: 0 },
+  { label: "Safeguard", value: "--", width: 0 },
+  { label: "Outcome", value: "--", width: 0 },
+  { label: "Source", value: "--", width: 0 },
+];
+const sampleRowsForWindow = (window?: string) => {
+  if (window === "Previous 5 fiscal years") {
+    return fiscalYearSampleRows;
+  }
+  if (window === "Previous 5 years") {
+    return yearSampleRows;
+  }
+  if (window === "Current policy context") {
+    return currentContextSampleRows;
+  }
+  return monthSampleRows;
+};
+
+type DecertificationColumn = {
+  key: string;
+  label: string;
+  sourceKeys?: string[];
+  status: "missing" | "present" | "unknown";
+};
+
+type DecertificationPayload = {
+  columns: DecertificationColumn[];
+  methodology?: string;
+  note?: string;
+  tier?: string;
+};
+
+const assertString = (value: unknown, field: string, reportId: string) => {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`Location report ${reportId} has invalid ${field}.`);
+  }
+  return value;
+};
+
+const assertSourceUrl = (value: string, sourceId: string, reportId: string) => {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(
+      `Location report ${reportId} source ${sourceId} has invalid url.`,
+    );
+  }
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    throw new Error(
+      `Location report ${reportId} source ${sourceId} url must be http or https.`,
+    );
+  }
+};
+
+const assertDecertificationPayload = (
+  report: CivicIndexModel["locationReports"][number],
+): DecertificationPayload => {
+  if (report.reportType !== "decertification_report_card") {
+    throw new Error(`Unsupported location report type: ${report.reportType}`);
+  }
+  if (!report.sources.length) {
+    throw new Error(`Location report ${report.id} must include sources.`);
+  }
+  for (const source of report.sources) {
+    assertString(source.id, "source.id", report.id);
+    assertString(source.sourceKey, `source ${source.id} sourceKey`, report.id);
+    assertString(source.label, `source ${source.id} label`, report.id);
+    assertString(source.url, `source ${source.id} url`, report.id);
+    assertSourceUrl(source.url, source.id, report.id);
+    if (!["law", "methodology", "pdf", "web"].includes(source.sourceType)) {
+      throw new Error(
+        `Location report ${report.id} source ${source.id} has invalid sourceType ${source.sourceType}.`,
+      );
+    }
+  }
+
+  const payload = report.payload as Record<string, unknown>;
+  const methodology = assertString(
+    payload.methodology,
+    "methodology",
+    report.id,
+  );
+  const tier = assertString(payload.tier, "tier", report.id);
+  const note = assertString(payload.note, "note", report.id);
+  const columns = payload.columns;
+  if (!Array.isArray(columns) || !columns.length) {
+    throw new Error(`Location report ${report.id} is missing columns.`);
+  }
+
+  const sourceKeys = new Set(report.sources.map((source) => source.sourceKey));
+  const validatedColumns = columns.map((rawColumn, index) => {
+    if (!rawColumn || typeof rawColumn !== "object") {
+      throw new Error(
+        `Location report ${report.id} column ${index + 1} must be an object.`,
+      );
+    }
+    const column = rawColumn as Record<string, unknown>;
+    const key = assertString(column.key, `columns[${index}].key`, report.id);
+    const label = assertString(
+      column.label,
+      `columns[${index}].label`,
+      report.id,
+    );
+    const status = assertString(
+      column.status,
+      `columns[${index}].status`,
+      report.id,
+    );
+    if (!["present", "missing", "unknown"].includes(status)) {
+      throw new Error(
+        `Location report ${report.id} column ${key} has invalid status ${status}.`,
+      );
+    }
+    if (!Array.isArray(column.sourceKeys) || !column.sourceKeys.length) {
+      throw new Error(
+        `Location report ${report.id} column ${key} must include sourceKeys.`,
+      );
+    }
+    const columnSourceKeys = column.sourceKeys.map((sourceKey, sourceIndex) =>
+      assertString(
+        sourceKey,
+        `columns[${index}].sourceKeys[${sourceIndex}]`,
+        report.id,
+      ),
+    );
+    for (const sourceKey of columnSourceKeys) {
+      if (!sourceKeys.has(sourceKey)) {
+        throw new Error(
+          `Location report ${report.id} column ${key} references missing source ${sourceKey}.`,
+        );
+      }
+    }
+    return {
+      key,
+      label,
+      sourceKeys: columnSourceKeys,
+      status: status as DecertificationColumn["status"],
+    };
+  });
+
+  return {
+    columns: validatedColumns.filter(
+      (column) => !["state", "name", "jurisdiction"].includes(column.key),
+    ),
+    methodology,
+    note,
+    tier,
+  };
+};
+
+const statusLabel = (status: DecertificationColumn["status"]) =>
+  status === "present"
+    ? "Present"
+    : status === "missing"
+      ? "Missing"
+      : "Unknown";
+
+const statusSymbol = (status: DecertificationColumn["status"]) =>
+  status === "present" ? "✓" : status === "missing" ? "X" : "?";
+
+const decertificationReport = model.locationReports.find(
+  (report) => report.reportType === "decertification_report_card",
+);
+const decertificationPayload = decertificationReport
+  ? assertDecertificationPayload(decertificationReport)
+  : null;
+const decertificationKnownColumns = decertificationPayload?.columns.filter(
+  (column) => column.status !== "unknown",
+);
+const decertificationPresentCount =
+  decertificationKnownColumns?.filter((column) => column.status === "present")
+    .length ?? 0;
+const decertificationUnknownCount =
+  decertificationPayload?.columns.filter(
+    (column) => column.status === "unknown",
+  ).length ?? 0;
+const decertificationTotal = decertificationPayload?.columns.length ?? 0;
+---
+
+<SiteLayout
+  title={model.title}
+  description={model.description}
+  pagePath={model.pagePath}
+  structuredData={structuredData}
+>
+  <main class="civic-index-page">
+    <section class="civic-index-page-main">
+      <div class="container">
+        <Breadcrumbs items={model.breadcrumbs} className="mb-2" />
+        <p class="civic-index-kicker">{model.jurisdictionLabel}</p>
+        <EntityPageHeader title={heading} description={model.description}>
+          <Fragment slot="actions">
+            <EntityActionButton data-civic-share>Share</EntityActionButton>
+            <EntityActionButton data-civic-download>
+              Download report
+            </EntityActionButton>
+            <span class="civic-header-action-status" data-civic-action-status
+            ></span>
+          </Fragment>
+        </EntityPageHeader>
+
+        <section
+          class="metrics-grid"
+          aria-label={`Top ${heading} Civic Index metrics`}
+        >
+          {
+            topMetricCards.map((metric) => (
+              <article
+                class:list={[
+                  "metric-card",
+                  `metric-icon-${metric.icon}`,
+                  metric.defaultAction && "default",
+                ]}
+              >
+                <div class="metric-top">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    {metric.icon === "map" ? (
+                      <>
+                        <path d="M14.5 5.5 9.5 3 3 5.5v15l6.5-2.5 5 2.5 6.5-2.5v-15Z" />
+                        <path d="M9.5 3v15" />
+                        <path d="M14.5 5.5v15" />
+                      </>
+                    ) : metric.icon === "pin" ? (
+                      <>
+                        <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </>
+                    ) : metric.icon === "building" ? (
+                      <>
+                        <path d="M3 21V7l9-4 9 4v14" />
+                        <path d="M9 21v-8h6v8" />
+                        <path d="M9 9h.01" />
+                        <path d="M15 9h.01" />
+                      </>
+                    ) : metric.icon === "file" ? (
+                      <>
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                        <path d="M14 2v6h6" />
+                        <path d="M8 13h8" />
+                        <path d="M8 17h5" />
+                      </>
+                    ) : metric.icon === "dollar" ? (
+                      <>
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+                        <path d="M12 6v12" />
+                      </>
+                    ) : metric.icon === "scales" ? (
+                      <>
+                        <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                        <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                        <path d="M7 21h10" />
+                        <path d="M12 3v18" />
+                      </>
+                    ) : metric.icon === "weight" ? (
+                      <>
+                        <path d="M8 7a4 4 0 0 1 8 0" />
+                        <path d="M6.5 7h11l2 13H4.5Z" />
+                        <path d="M10 12h4" />
+                      </>
+                    ) : metric.icon === "people" ? (
+                      <>
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                      </>
+                    ) : metric.icon === "person" ? (
+                      <>
+                        <circle cx="12" cy="8" r="4" />
+                        <path d="M6 21v-2a6 6 0 0 1 12 0v2" />
+                      </>
+                    ) : metric.icon === "shield" ? (
+                      <>
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+                        <path d="m9 12 2 2 4-5" />
+                      </>
+                    ) : metric.icon === "calendar" ? (
+                      <>
+                        <path d="M8 2v4" />
+                        <path d="M16 2v4" />
+                        <path d="M3 10h18" />
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                      </>
+                    ) : metric.icon === "link" ? (
+                      <>
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                      </>
+                    ) : (
+                      <>
+                        <path d="M12 3v18" />
+                        <path d="M5 10h14" />
+                        <path d="M7 21h10" />
+                        <path d="M8 3h8" />
+                      </>
+                    )}
+                  </svg>
+                  <div>
+                    <p class="metric-label">{metric.label}</p>
+                    <strong class="metric-value">{metric.value}</strong>
+                  </div>
+                </div>
+                <p class="metric-detail">{metric.detail}</p>
+                <div class="metric-actions">
+                  {metric.defaultAction ? (
+                    <a
+                      class="metric-action primary"
+                      href={metric.defaultAction.href}
+                    >
+                      {metric.defaultAction.label}
+                    </a>
+                  ) : metric.detailHref ? (
+                    <a class="metric-action secondary" href={metric.detailHref}>
+                      View details
+                    </a>
+                  ) : null}
+                </div>
+              </article>
+            ))
+          }
+        </section>
+
+        <div class="page-layout">
+          <div>
+            {
+              intentBands.map((band) => (
+                <section class="intent-band" id={band.id}>
+                  <header class="band-heading">
+                    <div>
+                      <h2>{band.title}</h2>
+                      {band.summary ? <p>{band.summary}</p> : null}
+                    </div>
+                  </header>
+
+                  {band.metrics.length ? (
+                    <div class="band-metric-list">
+                      {band.metrics.map((metric) => (
+                        <article class="band-metric">
+                          <div>
+                            <p class="metric-label">{metric.label}</p>
+                            <strong class="band-metric-value">
+                              {metric.value}
+                            </strong>
+                          </div>
+                          <p>{metric.detail}</p>
+                          {metric.defaultAction || metric.detailHref ? (
+                            <div class="meta">
+                              {metric.defaultAction ? (
+                                <a href={metric.defaultAction.href}>
+                                  {metric.defaultAction.label}
+                                </a>
+                              ) : metric.detailHref ? (
+                                <a href={metric.detailHref}>View details</a>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {band.graphs.length ? (
+                    <div class="chart-grid">
+                      {band.graphs.map((graph) => (
+                        <article class="panel">
+                          <header>
+                            <h3>{graph.label}</h3>
+                            <p>{graph.seriesLabel}</p>
+                          </header>
+
+                          <div
+                            class="sample-chart disabled"
+                            aria-label={`${graph.label}: ${graph.seriesLabel}`}
+                          >
+                            {sampleRowsForWindow(graph.window).map((row) => (
+                              <div class="bar-row">
+                                <b>{row.label}</b>
+                                <div class="track">
+                                  <span />
+                                </div>
+                                <em>{row.value}</em>
+                              </div>
+                            ))}
+                          </div>
+
+                          {graph.caption ? <p>{graph.caption}</p> : null}
+
+                          {graph.metadata?.length || graph.detailHref ? (
+                            <div class="meta">
+                              {graph.metadata?.map((item) => (
+                                <span>{item}</span>
+                              ))}
+                              {graph.detailHref ? (
+                                <a href={graph.detailHref}>View details</a>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              ))
+            }
+
+            {
+              decertificationReport && decertificationPayload ? (
+                <section class="bottom-context" aria-label="State context">
+                  <article class="policy-card">
+                    <h3>Decertification law context</h3>
+                    <p class="report-source-line">
+                      <span class="report-card-summary">
+                        {decertificationPresentCount} of {decertificationTotal}{" "}
+                        mechanisms present ({decertificationUnknownCount}{" "}
+                        unknown).
+                      </span>
+                      {decertificationPayload.tier}
+                      <a href={decertificationReport.sources[0]!.url}>
+                        Report source
+                      </a>
+                    </p>
+                    <div
+                      class="report-status-grid"
+                      aria-label={`${heading} decertification report card statuses`}
+                    >
+                      {decertificationPayload.columns.map((column) => {
+                        return (
+                          <article class="report-status-card">
+                            <h4>{column.label}</h4>
+                            <span class:list={["status-mark", column.status]}>
+                              <strong aria-label={statusLabel(column.status)}>
+                                {statusSymbol(column.status)}
+                              </strong>
+                            </span>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </article>
+                </section>
+              ) : null
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<script is:inline>
+  (() => {
+    const setStatus = (button, message) => {
+      const output = button
+        .closest(".entity-page-actions")
+        ?.querySelector("[data-civic-action-status]");
+      if (output) output.textContent = message;
+    };
+
+    document.querySelectorAll("[data-civic-share]").forEach((button) => {
+      button.addEventListener("click", () =>
+        setStatus(button, "Sharing tools are coming soon."),
+      );
+    });
+
+    document.querySelectorAll("[data-civic-download]").forEach((button) => {
+      button.addEventListener("click", () =>
+        setStatus(button, "Downloadable reports are coming soon."),
+      );
+    });
+  })();
+</script>
+
+<style>
+  .civic-index-page {
+    background: #fbfcff;
+    color: #071842;
+  }
+
+  .civic-index-page-main {
+    padding: 1.35rem 0 2rem;
+  }
+
+  .civic-index-page-main > .container {
+    max-width: 1240px;
+  }
+
+  .civic-index-kicker {
+    color: #34496b;
+    font-size: 0.875rem;
+    font-weight: 850;
+    margin: 0 0 0.4rem;
+  }
+
+  .civic-header-action-status {
+    color: #34496b;
+    flex-basis: 100%;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    min-height: 1.15rem;
+  }
+
+  .metrics-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    margin: 1.25rem 0 1.4rem;
+  }
+
+  .metric-card {
+    background: #fbfcff;
+    border: 1px solid #d7dfeb;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+    display: grid;
+    gap: 0.75rem;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    min-height: 10.4rem;
+    padding: 1rem;
+  }
+
+  .metric-card.default {
+    border-color: #9fb5ff;
+    box-shadow: 0 0 0 2px rgba(23, 75, 255, 0.08);
+  }
+
+  .metric-top {
+    align-items: start;
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: 1.9rem minmax(0, 1fr);
+  }
+
+  .metric-card svg {
+    height: 1.75rem;
+    width: 1.75rem;
+  }
+
+  .metric-icon-building svg,
+  .metric-icon-calendar svg,
+  .metric-icon-dollar svg,
+  .metric-icon-map svg,
+  .metric-icon-people svg,
+  .metric-icon-pin svg,
+  .metric-icon-shield svg {
+    color: #087f3b;
+  }
+
+  .metric-icon-file svg,
+  .metric-icon-link svg,
+  .metric-icon-person svg {
+    color: #174bff;
+  }
+
+  .metric-icon-scales svg {
+    color: #5b2df5;
+  }
+
+  .metric-icon-cross svg,
+  .metric-icon-weight svg {
+    color: #b42318;
+  }
+
+  .metric-label {
+    color: #071842;
+    font-size: 0.875rem;
+    font-weight: 850;
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  .metric-value {
+    display: block;
+    font-size: 1.94rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 900;
+    line-height: 1;
+    margin-top: 0.3rem;
+  }
+
+  .metric-detail {
+    color: #34496b;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  .metric-actions {
+    align-content: end;
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .metric-action {
+    align-items: center;
+    border: 1px solid #d7dfeb;
+    border-radius: 0.32rem;
+    display: flex;
+    font-size: 0.75rem;
+    font-weight: 800;
+    justify-content: center;
+    line-height: 1.2;
+    min-height: 2rem;
+    padding: 0.44rem 0.56rem;
+    text-decoration: none;
+  }
+
+  .metric-action.primary {
+    background: #071842;
+    border-color: #071842;
+    color: #fbfcff;
+  }
+
+  .metric-action.secondary {
+    border-color: transparent;
+    min-height: 1.5rem;
+    padding: 0;
+  }
+
+  .page-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .intent-band {
+    border-top: 1px solid #d7dfeb;
+    display: grid;
+    gap: 0.875rem;
+    padding: 1.38rem 0;
+  }
+
+  .band-heading {
+    align-items: end;
+    display: grid;
+    gap: 0.875rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .band-heading h2 {
+    color: #071842;
+    font-size: var(--ipc-type-h2);
+    line-height: var(--ipc-leading-heading);
+    margin: 0;
+  }
+
+  .band-heading p {
+    color: #34496b;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin: 0.45rem 0 0;
+    max-width: 82ch;
+  }
+
+  .chart-grid {
+    display: grid;
+    gap: 0.875rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .band-metric-list {
+    display: grid;
+    gap: 0.625rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .band-metric {
+    background: #fbfcff;
+    border: 1px solid #d7dfeb;
+    border-radius: 0.5rem;
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.85rem 0.95rem;
+  }
+
+  .band-metric p {
+    color: #34496b;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  .band-metric-value {
+    color: #071842;
+    display: block;
+    font-size: 1.35rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    margin-top: 0.25rem;
+  }
+
+  .panel,
+  .policy-card {
+    background: #fbfcff;
+    border: 1px solid #d7dfeb;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.035);
+  }
+
+  .panel {
+    display: grid;
+    gap: 0.82rem;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    min-height: 13.75rem;
+    padding: 1rem;
+  }
+
+  .panel h3,
+  .policy-card h3 {
+    color: #071842;
+    font-size: var(--ipc-type-h3);
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  .panel p,
+  .policy-card p {
+    color: #34496b;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    margin: 0.32rem 0 0;
+  }
+
+  .bars {
+    align-items: end;
+    border-bottom: 1px solid #b8c4d8;
+    border-left: 1px solid #b8c4d8;
+    display: grid;
+    gap: 0.625rem;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    height: 6.56rem;
+    padding: 0 0.625rem;
+  }
+
+  .bars i {
+    background: #cbd7e8;
+    display: block;
+  }
+
+  .bars.blue i {
+    background: #b9caff;
+  }
+
+  .bars.green i {
+    background: #b6dfc7;
+  }
+
+  .bars.red i {
+    background: #edbdb8;
+  }
+
+  .bars.purple i {
+    background: #d6cbfd;
+  }
+
+  .bars i:nth-child(1) {
+    height: 32%;
+  }
+  .bars i:nth-child(2) {
+    height: 46%;
+  }
+  .bars i:nth-child(3) {
+    height: 39%;
+  }
+  .bars i:nth-child(4) {
+    height: 61%;
+  }
+  .bars i:nth-child(5) {
+    height: 57%;
+  }
+  .bars i:nth-child(6) {
+    height: 74%;
+  }
+  .bars i:nth-child(7) {
+    height: 68%;
+  }
+  .bars i:nth-child(8) {
+    height: 82%;
+  }
+
+  .sample-chart {
+    background: #f8fafc;
+    border: 1px solid #d8e0eb;
+    border-radius: 0.38rem;
+    color: #34496b;
+    display: grid;
+    gap: 0.625rem;
+    min-height: 7.38rem;
+    padding: 0.75rem;
+  }
+
+  .sample-chart.disabled {
+    opacity: 0.74;
+  }
+
+  .bar-row {
+    align-items: center;
+    display: grid;
+    gap: 0.56rem;
+    grid-template-columns: 5.75rem minmax(0, 1fr) 2.38rem;
+  }
+
+  .bar-row b,
+  .mini-label {
+    color: #071842;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .track {
+    background: #e5ebf3;
+    border-radius: 999px;
+    height: 0.56rem;
+    overflow: hidden;
+  }
+
+  .track span {
+    background: #aebbcf;
+    border-radius: inherit;
+    display: block;
+    height: 100%;
+    width: 0%;
+  }
+
+  .bar-row em {
+    color: #687a96;
+    font-size: 0.75rem;
+    font-style: normal;
+    text-align: right;
+  }
+
+  .grouped-bars {
+    align-items: end;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    min-height: 7rem;
+  }
+
+  .group {
+    display: grid;
+    gap: 0.38rem;
+  }
+
+  .group .columns {
+    align-items: end;
+    display: grid;
+    gap: 0.25rem;
+    grid-template-columns: 1fr 1fr;
+    height: 5.12rem;
+  }
+
+  .columns i {
+    background: #b8c4d8;
+    border-radius: 0.2rem 0.2rem 0 0;
+    display: block;
+  }
+
+  .columns i:nth-child(2) {
+    background: #d3dae5;
+  }
+
+  .group small {
+    color: #687a96;
+    font-size: 0.69rem;
+    font-weight: 750;
+    text-align: center;
+  }
+
+  .stacked-bars {
+    display: grid;
+    gap: 0.56rem;
+  }
+
+  .stacked-row {
+    display: grid;
+    gap: 0.38rem;
+  }
+
+  .stacked-row div {
+    background: #e5ebf3;
+    border-radius: 999px;
+    display: grid;
+    grid-template-columns: var(--a) var(--b) var(--c);
+    height: 0.75rem;
+    overflow: hidden;
+  }
+
+  .stacked-row i {
+    display: block;
+  }
+
+  .stacked-row i:nth-child(1) {
+    background: #aebbcf;
+  }
+  .stacked-row i:nth-child(2) {
+    background: #c6d0df;
+  }
+  .stacked-row i:nth-child(3) {
+    background: #dce3ed;
+  }
+
+  .mini-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.12rem;
+  }
+
+  .mini-legend span {
+    color: #687a96;
+    font-size: 0.69rem;
+    font-weight: 750;
+  }
+
+  .mini-legend i {
+    background: #aebbcf;
+    border-radius: 999px;
+    display: inline-block;
+    height: 0.5rem;
+    margin-right: 0.25rem;
+    width: 0.5rem;
+  }
+
+  .count-summary {
+    align-items: end;
+    display: grid;
+    gap: 0.625rem;
+    grid-template-columns: 1fr 1fr;
+    min-height: 7.38rem;
+  }
+
+  .count-box {
+    background: #f8fafc;
+    border: 1px solid #d8e0eb;
+    border-radius: 0.38rem;
+    display: grid;
+    gap: 0.32rem;
+    padding: 0.875rem;
+  }
+
+  .count-box strong {
+    color: #071842;
+    font-size: 1.875rem;
+    line-height: 1;
+  }
+
+  .count-box span {
+    color: #34496b;
+    font-size: 0.75rem;
+    font-weight: 800;
+    line-height: 1.25;
+  }
+
+  .meta {
+    align-items: center;
+    color: #687a96;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.38rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 750;
+    line-height: 1.35;
+    min-height: 1.75rem;
+  }
+
+  .meta span + span::before {
+    color: #9aa8bc;
+    content: "·";
+    margin-right: 0.5rem;
+  }
+
+  .meta a {
+    align-items: center;
+    display: inline-flex;
+    font-weight: 800;
+    min-height: 1.62rem;
+    margin-left: auto;
+    order: 10;
+    padding: 0 1px;
+    text-decoration: none;
+  }
+
+  .policy-card {
+    display: grid;
+    gap: 0.5rem;
+    padding: 1rem;
+  }
+
+  .button {
+    align-items: center;
+    background: #fbfcff;
+    border: 1px solid #c6d0df;
+    border-radius: 0.38rem;
+    color: #071842;
+    display: inline-flex;
+    font-size: 0.875rem;
+    font-weight: 850;
+    min-height: 2.5rem;
+    padding: 0.625rem 0.875rem;
+    text-decoration: none;
+  }
+
+  .bottom-context {
+    border-top: 1px solid #d7dfeb;
+    margin-top: 1.5rem;
+    padding-top: 1.38rem;
+  }
+
+  .report-source-line {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .report-card-summary {
+    color: #071842;
+    font-size: 0.94rem;
+    font-weight: 850;
+  }
+
+  .report-status-grid {
+    display: grid;
+    gap: 0.45rem;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  }
+
+  .report-status-card {
+    align-content: center;
+    background: #fbfcff;
+    border: 1px solid #d7dfeb;
+    border-radius: 0.5rem;
+    display: grid;
+    gap: 0.4rem;
+    grid-template-rows: minmax(2.35rem, auto) auto;
+    justify-items: center;
+    min-width: 0;
+    padding: 0.55rem 0.6rem 0.65rem;
+    text-align: center;
+  }
+
+  .report-status-card h4 {
+    color: #071842;
+    font-size: 0.4rem;
+    font-weight: 650;
+    line-height: 1;
+    margin: 0;
+  }
+
+  .status-mark {
+    align-items: center;
+    display: inline-flex;
+    min-width: 0;
+  }
+
+  .status-mark strong {
+    border-radius: 999px;
+    display: inline-grid;
+    font-size: 1rem;
+    height: 1.65rem;
+    place-items: center;
+    width: 1.65rem;
+  }
+
+  .status-mark.present strong {
+    background: #e9f8ef;
+    color: #146c36;
+  }
+
+  .status-mark.missing strong {
+    background: #fff2e6;
+    color: #a94b00;
+  }
+
+  .status-mark.unknown strong {
+    background: #f3f6fb;
+    color: #687a96;
+  }
+
+  @media (max-width: 1050px) {
+    .band-heading {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .band-metric-list,
+    .metrics-grid,
+    .chart-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    .band-metric-list,
+    .metrics-grid,
+    .chart-grid,
+    .count-summary {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .bar-row {
+      grid-template-columns: 5.2rem minmax(0, 1fr) 2.25rem;
+    }
+  }
+</style>

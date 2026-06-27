@@ -1,0 +1,31 @@
+---
+import CivicAgencyHierarchyPage from "#src/components/CivicAgencyHierarchyPage.astro";
+import {
+  buildFederalAgencyDetailTopicIndexModel,
+  loadFederalAgencyDetailBySlug,
+  loadFederalAgencySummaries,
+} from "#src/lib/data/federal-agencies.js";
+
+export async function getStaticPaths() {
+  const federalAgencies = await loadFederalAgencySummaries();
+
+  return federalAgencies.map((agency) => ({
+    params: { slug: agency.slug },
+  }));
+}
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  throw new Error("Federal budget route is missing slug.");
+}
+
+const federalAgency = await loadFederalAgencyDetailBySlug(slug);
+if (!federalAgency) {
+  throw new Error(`Federal agency ${slug} was not found`);
+}
+
+const model = buildFederalAgencyDetailTopicIndexModel(federalAgency, "budget");
+---
+
+<CivicAgencyHierarchyPage model={model} site={Astro.site} />

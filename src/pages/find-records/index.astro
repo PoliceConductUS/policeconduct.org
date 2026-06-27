@@ -1,15 +1,15 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { loadAgencyFinderResults } from "#src/lib/data/agencies.js";
 import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import { loadLocationBuildPayloads } from "#src/lib/data/build-payloads.js";
-import { loadAgencySummaries } from "#src/lib/data/summaries.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const [locations, federalAgencies, agencies] = await Promise.all([
   loadLocationBuildPayloads(),
   loadFederalAgencySummaries(),
-  loadAgencySummaries(),
+  loadAgencyFinderResults(),
 ]);
 
 const places = locations
@@ -43,9 +43,9 @@ const agencyResults = agencies.map((agency) => ({
     agency.name,
     agency.city,
     agency.administrativeArea,
-    agency.administrativeAreaSlug,
     agency.state,
     agency.zipCode,
+    agency.canonicalPath,
   ]
     .filter(Boolean)
     .join(" "),
@@ -72,6 +72,24 @@ const structuredData = buildWebPage({
   description,
   type: "SearchResultsPage",
 });
+const finderGroups = [
+  {
+    type: "place",
+    label: "Places",
+    results: places,
+  },
+  {
+    type: "agency",
+    label: "Agencies",
+    results: agencyResults,
+  },
+  {
+    type: "federal-agency",
+    label: "Federal agencies",
+    results: federalAgencyResults,
+  },
+];
+const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
 ---
 
 <SiteLayout
@@ -90,7 +108,7 @@ const structuredData = buildWebPage({
           ]}
           className="mb-2"
         />
-        <h1 class="display-4 fw-bold mb-3">Find records by place or agency</h1>
+        <h1 class="ipc-page-title mb-3">Find records by place or agency</h1>
         <p class="lead text-muted mb-0">
           Enter a place or law enforcement agency to see what PoliceConduct.org
           has in the record.
@@ -112,11 +130,21 @@ const structuredData = buildWebPage({
               placeholder="Irving, Dallas County, Texas, or Irving Police Department"
               data-record-finder-input
               autocomplete="off"
+              aria-describedby="recordFinderStatus"
             />
+            <p
+              class="finder-status text-muted small mb-0"
+              id="recordFinderStatus"
+              data-finder-status
+              role="status"
+              aria-live="polite"
+            >
+              Type a place or agency name to show matching records.
+            </p>
           </div>
 
           <div class="finder-empty-state" data-finder-start>
-            <h2 class="h4">Start with a place or agency.</h2>
+            <h2 class="ipc-section-title">Start with a place or agency.</h2>
             <p class="text-muted mb-0">
               Search results will focus on places, law enforcement agencies, and
               federal agencies. Open a result to see connected personnel,
@@ -125,7 +153,9 @@ const structuredData = buildWebPage({
           </div>
 
           <div class="finder-empty-state d-none" data-finder-no-results>
-            <h2 class="h4">We do not have records for that search yet.</h2>
+            <h2 class="ipc-section-title">
+              We do not have records for that search yet.
+            </h2>
             <p class="text-muted mb-0">
               We use searches with no results to understand which places and
               agencies people are looking for.
@@ -133,78 +163,56 @@ const structuredData = buildWebPage({
           </div>
 
           <div class="finder-result-groups d-none" data-finder-results>
-            <section class="finder-result-group" data-result-group>
-              <h2 class="h4">Places</h2>
-              <div class="finder-result-list">
-                {
-                  places.map((place) => (
-                    <a
-                      class="finder-result"
-                      href={place.href}
-                      data-finder-result
-                      data-result-type="place"
-                      data-search-item={place.searchText}
-                    >
-                      <span>{place.label}</span>
-                      <small>{place.meta}</small>
-                    </a>
-                  ))
-                }
-              </div>
-            </section>
-
-            <section class="finder-result-group" data-result-group>
-              <h2 class="h4">Agencies</h2>
-              <div class="finder-result-list">
-                {
-                  agencyResults.map((agency) => (
-                    <a
-                      class="finder-result"
-                      href={agency.href}
-                      data-finder-result
-                      data-result-type="agency"
-                      data-search-item={agency.searchText}
-                    >
-                      <span>{agency.label}</span>
-                      <small>{agency.meta}</small>
-                    </a>
-                  ))
-                }
-              </div>
-            </section>
-
-            <section class="finder-result-group" data-result-group>
-              <h2 class="h4">Federal agencies</h2>
-              <div class="finder-result-list">
-                {
-                  federalAgencyResults.map((agency) => (
-                    <a
-                      class="finder-result"
-                      href={agency.href}
-                      data-finder-result
-                      data-result-type="federal-agency"
-                      data-search-item={agency.searchText}
-                    >
-                      <span>{agency.label}</span>
-                      <small>{agency.meta}</small>
-                    </a>
-                  ))
-                }
-              </div>
-            </section>
+            {
+              finderGroups.map((group) => (
+                <section
+                  class="finder-result-group"
+                  data-result-group={group.type}
+                  hidden
+                >
+                  <h2 class="ipc-section-title">{group.label}</h2>
+                  <div
+                    class="finder-result-list"
+                    data-result-list={group.type}
+                  />
+                </section>
+              ))
+            }
           </div>
         </div>
       </div>
     </section>
   </main>
 
+  <script
+    id="recordFinderData"
+    type="application/json"
+    set:html={finderDataJson}
+    is:inline
+  />
+
   <script is:inline>
     const input = document.querySelector("[data-record-finder-input]");
     const startState = document.querySelector("[data-finder-start]");
     const noResultsState = document.querySelector("[data-finder-no-results]");
     const resultsRoot = document.querySelector("[data-finder-results]");
-    const groups = [...document.querySelectorAll("[data-result-group]")];
-    const results = [...document.querySelectorAll("[data-finder-result]")];
+    const status = document.querySelector("[data-finder-status]");
+    const groupElements = new Map(
+      [...document.querySelectorAll("[data-result-group]")].map((group) => [
+        group.getAttribute("data-result-group"),
+        group,
+      ]),
+    );
+    const resultLists = new Map(
+      [...document.querySelectorAll("[data-result-list]")].map((list) => [
+        list.getAttribute("data-result-list"),
+        list,
+      ]),
+    );
+    const finderDataElement = document.getElementById("recordFinderData");
+    const finderGroups = finderDataElement?.textContent
+      ? JSON.parse(finderDataElement.textContent)
+      : [];
     const maxVisiblePerGroup = 12;
     const reportedNoResultQueries = new Set();
     let noResultTimer = 0;
@@ -232,49 +240,82 @@ const structuredData = buildWebPage({
       element?.classList.toggle("d-none", hidden);
     };
 
+    const setStatus = (message) => {
+      if (status) {
+        status.textContent = message;
+      }
+    };
+
+    const clearResults = () => {
+      resultLists.forEach((list) => {
+        list.replaceChildren();
+      });
+      groupElements.forEach((group) => {
+        group.hidden = true;
+      });
+    };
+
+    const renderResult = (result) => {
+      const link = document.createElement("a");
+      link.className = "finder-result";
+      link.href = result.href;
+
+      const label = document.createElement("span");
+      label.textContent = result.label;
+      link.append(label);
+
+      if (result.meta) {
+        const meta = document.createElement("small");
+        meta.textContent = result.meta;
+        link.append(meta);
+      }
+
+      return link;
+    };
+
     const updateResults = () => {
       const query = normalize(input?.value);
       window.clearTimeout(noResultTimer);
+      clearResults();
 
       if (!query) {
         setHidden(startState, false);
         setHidden(noResultsState, true);
         setHidden(resultsRoot, true);
-        results.forEach((result) => {
-          result.hidden = true;
-        });
+        setStatus("Type a place or agency name to show matching records.");
         return;
       }
 
       let visibleTotal = 0;
-      const visibleByType = new Map();
+      let matchTotal = 0;
 
-      results.forEach((result) => {
-        const text = normalize(result.getAttribute("data-search-item"));
-        const type = result.getAttribute("data-result-type") || "result";
-        const currentVisibleForType = visibleByType.get(type) || 0;
-        const matches = text.includes(query);
-        const shouldShow =
-          matches && currentVisibleForType < maxVisiblePerGroup;
-        result.hidden = !shouldShow;
-        if (matches) {
-          visibleByType.set(type, currentVisibleForType + 1);
-        }
-        if (shouldShow) {
-          visibleTotal += 1;
-        }
-      });
-
-      groups.forEach((group) => {
-        const hasVisibleResult = Boolean(
-          group.querySelector("[data-finder-result]:not([hidden])"),
+      finderGroups.forEach((group) => {
+        const matches = group.results.filter((result) =>
+          normalize(result.searchText).includes(query),
         );
-        group.hidden = !hasVisibleResult;
+        matchTotal += matches.length;
+
+        const list = resultLists.get(group.type);
+        const groupElement = groupElements.get(group.type);
+        const visibleResults = matches.slice(0, maxVisiblePerGroup);
+
+        if (!list || !groupElement || visibleResults.length === 0) {
+          return;
+        }
+
+        list.replaceChildren(...visibleResults.map(renderResult));
+        groupElement.hidden = false;
+        visibleTotal += visibleResults.length;
       });
 
       setHidden(startState, true);
       setHidden(noResultsState, visibleTotal !== 0);
       setHidden(resultsRoot, visibleTotal === 0);
+      setStatus(
+        visibleTotal === 0
+          ? `No matching records for "${input?.value.trim() || query}".`
+          : `Showing ${visibleTotal} of ${matchTotal} matching records.`,
+      );
 
       if (visibleTotal === 0) {
         noResultTimer = window.setTimeout(() => reportNoResults(query), 750);
@@ -296,6 +337,10 @@ const structuredData = buildWebPage({
     background: var(--bs-white);
     border: 1px solid var(--bs-border-color);
     padding: clamp(1.25rem, 3vw, 2rem);
+  }
+
+  .finder-status {
+    margin-top: 0.75rem;
   }
 
   .finder-empty-state {

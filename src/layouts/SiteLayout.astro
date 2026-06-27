@@ -59,6 +59,11 @@ const navItems = [
     title: "Find records by place or agency",
   },
   {
+    label: "News",
+    href: "/news/",
+    title: "News and updates from PoliceConduct.org",
+  },
+  {
     label: "About",
     href: "/about/",
     title: "About PoliceConduct.org",
@@ -463,8 +468,8 @@ const isActivePath = (href: string) =>
           </a>
         </div>
         <div class="row g-4 mb-4">
-          <div class="col-12 col-md-3">
-            <h3 class="h6 fw-semibold mb-3">About</h3>
+          <div class="col-12 col-md">
+            <h3 class="ipc-subsection-title mb-3">About</h3>
             <ul class="list-unstyled text-muted mb-0">
               <li class="mb-2">
                 <a class="text-muted text-decoration-none" href="/about"
@@ -485,6 +490,10 @@ const isActivePath = (href: string) =>
               <li class="mb-2">
                 <a class="text-muted text-decoration-none" href="/about/contact"
                   >Contact Us</a
+                >
+              </li>
+              <li class="mb-2">
+                <a class="text-muted text-decoration-none" href="/news/">News</a
                 >
               </li>
               <li class="mb-2">
@@ -515,8 +524,35 @@ const isActivePath = (href: string) =>
               Federal Tax ID (EIN): 99-3296620
             </p>
           </div>
-          <div class="col-12 col-md-3">
-            <h3 class="h6 fw-semibold mb-3">Partner</h3>
+          <div class="col-12 col-md">
+            <h3 class="ipc-subsection-title mb-3">Data &amp; Methods</h3>
+            <ul class="list-unstyled text-muted mb-0">
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/data-and-methods/">Data and Methods</a
+                >
+              </li>
+              <li class="mb-2">
+                <a class="text-muted text-decoration-none" href="/find-records/"
+                  >Find Records</a
+                >
+              </li>
+              <li class="mb-2">
+                <a class="text-muted text-decoration-none" href="/civil-cases/"
+                  >Civil Cases</a
+                >
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/frequently-asked-questions/">FAQ</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div class="col-12 col-md">
+            <h3 class="ipc-subsection-title mb-3">Partner</h3>
             <ul class="list-unstyled text-muted mb-0">
               <li class="mb-2">
                 <a
@@ -543,8 +579,8 @@ const isActivePath = (href: string) =>
               </li>
             </ul>
           </div>
-          <div class="col-12 col-md-3">
-            <h3 class="h6 fw-semibold mb-3">Support</h3>
+          <div class="col-12 col-md">
+            <h3 class="ipc-subsection-title mb-3">Support</h3>
             <ul class="list-unstyled text-muted mb-0">
               <li class="mb-2">
                 <a
@@ -607,8 +643,8 @@ const isActivePath = (href: string) =>
               </li>
             </ul>
           </div>
-          <div class="col-12 col-md-3">
-            <h3 class="h6 fw-semibold mb-3">Legal Notices</h3>
+          <div class="col-12 col-md">
+            <h3 class="ipc-subsection-title mb-3">Legal Notices</h3>
             <ul class="list-unstyled text-muted mb-0">
               <li class="mb-2">
                 <a

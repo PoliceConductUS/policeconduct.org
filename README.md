@@ -316,3 +316,24 @@ and project:
 - `TF_VAR_sentry_org` (set to your Sentry org slug)
 - `TF_VAR_sentry_project` (set to `PoliceConduct`)
 - `TF_VAR_sentry_auth_token` (for source-map upload during deploys)
+
+https://8cantwait.org/
+https://clean.calmatters.org
+https://clearinghouse.net
+https://endqi.org/
+https://ij.org/report/policing-for-profit-4\
+https://invisible.institute
+https://legalaidnyc.org/law-enforcement-look-up
+https://mappingpoliceviolence.org/
+https://mappingpoliceviolence.us
+https://nixthe6.org/
+https://openoversight.com
+https://policecrime.bgsu.edu
+https://policedata.org
+https://policescorecard.org/
+https://policeviolencereport.org/
+https://safecitiesproject.org/ (sans economic info)
+https://www.minneapolismn.gov/government/government-data/datasource/officer-payouts-dashboard/
+https://www.policefilesny.com
+https://www.themarshallproject.org/records/1712-police-settlements
+https://www.thepolicetransparencyproject.com

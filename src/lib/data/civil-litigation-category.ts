@@ -102,11 +102,15 @@ export const loadCivilCasesByState = async (
             a.slug,
             a.name,
             lp.state_or_territory_slug as state,
-            lp.path as location_path
+            lp.path as location_path,
+            bpp.path as canonical_path
           from public.civil_case_officers cco
           join public.agency_officers ao on ao.id = cco.agency_officer_id
           join public.agency a on a.id = ao.agency_id
           join public.location_path lp on lp.location_path_id = a.location_path_id
+          join public.build_page_payload bpp
+            on bpp.page_type = 'agency'
+           and bpp.entity_id = a.id
           where cco.civil_case_id = any($1)
           order by a.name
         `,

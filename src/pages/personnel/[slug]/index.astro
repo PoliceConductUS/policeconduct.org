@@ -1,19 +1,22 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
+import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import DisqusComments from "#src/components/DisqusComments.astro";
 import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
+import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
 import { getPersonnelImageById } from "#src/lib/personnel-images.js";
-import ProfileTabs from "#src/components/ProfileTabs.astro";
-import { loadCoverageLinksForOfficer } from "#src/lib/data/coverage.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
+import type { MetricCardItem } from "#src/components/metric-card-types.js";
 
 export async function getStaticPaths() {
   if ((process.env.NO_PERSONNEL || "").trim() !== "") {
@@ -23,26 +26,30 @@ export async function getStaticPaths() {
   const officers = await withDb(async (client) => {
     return (
       await client.query(
-        `select distinct o.id, o.first_name, o.last_name, o.suffix, o.slug
+        `select distinct o.slug
          from public.officers o
          join public.agency_officers ao on ao.officer_id = o.id`,
       )
     ).rows;
   });
 
-  return officers.map((officer: { id: string; slug: string }) => ({
+  return officers.map((officer: { slug: string }) => ({
     params: { slug: officer.slug },
-    props: { officerId: officer.id },
   }));
 }
 
-const { officerId } = Astro.props;
+const { slug } = Astro.params;
+if (!slug) {
+  throw new Error("Personnel route requires a slug.");
+}
 const data = await withDb(async (client) => {
   const officer = (
-    await client.query("select * from public.officers where id = $1", [
-      officerId,
-    ])
+    await client.query("select * from public.officers where slug = $1", [slug])
   ).rows[0];
+  if (!officer || officer.slug !== slug) {
+    throw new Error(`Personnel ${slug} not found.`);
+  }
+  const officerId = officer.id;
   const officerStats = (
     await client.query("select * from public.officers_stats where id = $1", [
       officerId,
@@ -61,10 +68,13 @@ const data = await withDb(async (client) => {
     ? (
         await client.query(
           `
-            select a.*, lp.path as location_path
+            select a.*, lp.path as location_path, bpp.path as canonical_path
             from public.agency a
             join public.location_path lp
               on lp.location_path_id = a.location_path_id
+            join public.build_page_payload bpp
+              on bpp.page_type = 'agency'
+             and bpp.entity_id = a.id
             where a.id = any($1)
           `,
           [agencyIds],
@@ -119,25 +129,6 @@ const data = await withDb(async (client) => {
         )
       ).rows
     : [];
-  const sameNameOfficers = (
-    await client.query(
-      `select
-         o.id,
-         o.slug,
-         concat_ws(' ', o.first_name, o.middle_name, o.last_name, o.suffix) as name,
-         array_remove(array_agg(distinct a.name order by a.name), null) as agency_names
-       from public.officers o
-       join public.agency_officers ao on ao.officer_id = o.id
-       join public.agency a on a.id = ao.agency_id
-       where lower(o.first_name) = lower($1)
-         and lower(o.last_name) = lower($2)
-         and o.id <> $3
-       group by o.id, o.slug, o.first_name, o.middle_name, o.last_name, o.suffix
-       order by o.last_name asc, o.first_name asc, o.middle_name asc nulls last`,
-      [officer.first_name, officer.last_name, officerId],
-    )
-  ).rows;
-
   return {
     officer,
     officerStats,
@@ -145,13 +136,18 @@ const data = await withDb(async (client) => {
     agencies,
     reports,
     civilCases,
-    sameNameOfficers,
   };
 });
-const coverageLinks = await loadCoverageLinksForOfficer(officerId);
-
 const agenciesById = mapBy(data.agencies, "id");
 const history = normalizeAgencyHistory(data.agencyOfficers);
+const missingAgencyAssignment = history.find(
+  (entry) => !agenciesById[entry.agency_id],
+);
+if (missingAgencyAssignment) {
+  throw new Error(
+    `Personnel ${data.officer.slug} assignment ${missingAgencyAssignment.id} references agency ${missingAgencyAssignment.agency_id} without a required canonical path.`,
+  );
+}
 const assignmentHistory = history
   .map((entry) => ({
     ...entry,
@@ -161,22 +157,33 @@ const assignmentHistory = history
 const activeAssignment =
   [...history].reverse().find((entry) => !entry.end_date) || null;
 const currentAssignment = activeAssignment || history[history.length - 1];
+if (!currentAssignment) {
+  throw new Error(
+    `Personnel ${data.officer.slug} is missing required agency assignment history.`,
+  );
+}
 const hasCurrentAssignment = Boolean(activeAssignment);
 const currentBadge = currentAssignment?.badge_number || null;
 const currentLicenseType =
-  typeof currentAssignment?.title === "string"
-    ? currentAssignment.title.trim()
+  typeof currentAssignment?.license_type === "string"
+    ? currentAssignment.license_type.trim()
     : "";
 const currentAgency = currentAssignment
   ? agenciesById[currentAssignment.agency_id]
   : null;
+if (!currentAgency) {
+  throw new Error(
+    `Personnel ${data.officer.slug} assignment ${currentAssignment.id} is missing required agency ${currentAssignment.agency_id}.`,
+  );
+}
+const currentAgencyPrefillName = currentAgency.name.toLocaleUpperCase("en-US");
 const isPlaceholderPersonnel =
   data.officer.slug === "unknown-personnel-935d1d" ||
   (data.officer.first_name === "Unknown" &&
     data.officer.last_name === "Personnel");
 if (!isPlaceholderPersonnel && !currentLicenseType) {
   throw new Error(
-    `Personnel ${data.officer.slug} is missing required license type on agency_officers ${currentAssignment?.id || "unknown"}`,
+    `Personnel ${data.officer.slug} is missing required license_type on agency_officers ${currentAssignment?.id || "unknown"}`,
   );
 }
 
@@ -188,6 +195,7 @@ const civilCasesWithPaths = data.civilCases.map(
     title?: string | null;
     cause_number?: string | null;
     filed_date: string;
+    date_terminated?: string | null;
     court?: string | null;
     primary_source_url?: string | null;
   }) => {
@@ -204,6 +212,7 @@ const reportItems = data.reports.map(
     incident_date: string;
     location_path: string;
     slug: string;
+    title?: string | null;
   }) => {
     return {
       ...report,
@@ -238,8 +247,8 @@ const assignmentStatusLabel = hasCurrentAssignment
   : "Last known agency";
 const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${data.officer.first_name} ${data.officer.last_name} | ${hasCurrentAssignment ? currentAgency!.name : `Last known: ${currentAgency!.name}`}`;
 const pageDescription = isDeceased
-  ? `${officerName} personnel profile with agency history, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
-  : `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}, agency history, public reports, coverage, and civil litigation records.`;
+  ? `${officerName} personnel profile with agency assignments, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
+  : `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}, agency assignments, public reports, coverage, and civil litigation records.`;
 const pastEmployerSummary = assignmentHistory
   .filter((entry) => entry.id !== activeAssignment?.id)
   .map((entry) => ({
@@ -276,17 +285,17 @@ const civilLitigationSummary = civilCasesWithPaths
 const reportLinksSummary = reportItems.map((report) => report.url).join("\n");
 const reportNewPrefillPayload = JSON.stringify({
   officer: {
-    department: currentAgency!.name,
+    department: currentAgencyPrefillName,
     name: `${data.officer.first_name} ${data.officer.last_name}`,
   },
 } satisfies ReportNewPrefill);
-const addCivilCaseHref = "/civil-litigation/new/";
+const addCivilCaseHref = "/civil-cases/new/";
 const addCivilCasePrefillPayload = JSON.stringify({
   jurisdiction: String(currentAgency?.state || "").toLowerCase(),
-  defendants: [officerName, currentAgency?.name || ""]
+  defendants: [officerName, currentAgencyPrefillName]
     .filter(Boolean)
     .join("\n"),
-  summary: `${officerName} profile: ${officerPath}${currentAgency?.name ? `\nCurrent agency: ${currentAgency.name}` : ""}`,
+  summary: `${officerName} profile: ${officerPath}\nCurrent agency: ${currentAgencyPrefillName}`,
   links: [officerPath, ...reportItems.slice(0, 3).map((report) => report.url)]
     .filter(Boolean)
     .join("\n"),
@@ -297,7 +306,7 @@ const pastEmployerPrefillPayload = JSON.stringify({
   lastName: data.officer.last_name || "",
   suffix: data.officer.suffix || "",
   badgeNumber: currentBadge || "",
-  currentAgency: currentAgency?.name || "",
+  currentAgency: currentAgencyPrefillName,
   currentAgencyCity: currentAgency?.city || "",
   currentAgencyState: currentAgency?.state || "",
   pastEmployers: pastEmployerSummary,
@@ -309,7 +318,7 @@ const suggestEditPrefillPayload = JSON.stringify({
   officerPath,
   officerName,
   badgeNumber: currentBadge || "",
-  currentEmployer: currentAgency?.name || "",
+  currentEmployer: currentAgencyPrefillName,
   pastEmployers: pastEmployerSummary,
   civilLitigation: civilLitigationSummary,
 });
@@ -319,17 +328,199 @@ const claimProfilePrefillPayload = JSON.stringify({
   message: `I would like to claim ownership of this profile.\nProfile path: ${officerPath}`,
 });
 
-const defaultPersonnelImagePath = "/img/personnel/default.webp";
 const personnelImageSrc =
-  getPersonnelImageById(data.officer.id) || defaultPersonnelImagePath;
+  getPersonnelImageById(data.officer.id) || "/img/personnel/default.webp";
+const hasMappedPersonnelImage = Boolean(getPersonnelImageById(data.officer.id));
 const civilCaseCount = data.civilCases.length;
-const reportCount = data.reports.length;
-const coverageCount = coverageLinks.length;
-const assignmentHistoryCount = assignmentHistory.length;
+const activeCivilCaseCount = civilCasesWithPaths.filter(
+  (caseItem) => !caseItem.date_terminated,
+).length;
+const associatedAgencyCount = new Set(
+  assignmentHistory.map((entry) => entry.agency_id),
+).size;
+const currentAgencyPath = requireAgencyCanonicalPath(currentAgency!);
+const currentAgencyLocation = [currentAgency!.city, currentAgency!.state]
+  .filter(Boolean)
+  .join(", ");
+const statusLabel = isDeceased
+  ? "Deceased"
+  : hasCurrentAssignment
+    ? "Active"
+    : "Former";
+const formatCount = (value: number) =>
+  new Intl.NumberFormat("en-US").format(value);
+const unavailableValue = "--";
+const formatMonthsDuration = (months: number) => {
+  const years = Math.floor(months / 12);
+  const remainingMonths = months % 12;
+  return years
+    ? `${years} yrs${remainingMonths ? `, ${remainingMonths} mos` : ""}`
+    : `${remainingMonths} mos`;
+};
+const countAssignmentMonths = (start?: string | null, end?: string | null) => {
+  if (!start) {
+    return 0;
+  }
+  const startDate = new Date(start);
+  const endDate = end ? new Date(end) : new Date();
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return 0;
+  }
+  return Math.max(
+    0,
+    (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+      endDate.getMonth() -
+      startDate.getMonth(),
+  );
+};
+const totalAssignmentMonths = assignmentHistory.reduce(
+  (total, entry) =>
+    total + countAssignmentMonths(entry.start_date, entry.end_date),
+  0,
+);
+const totalTimeAsOfficer = totalAssignmentMonths
+  ? formatMonthsDuration(totalAssignmentMonths)
+  : unavailableValue;
+const civilCaseYears = Object.entries(
+  civilCasesWithPaths.reduce<Record<string, number>>((counts, caseItem) => {
+    if (!caseItem.filed_date) {
+      return counts;
+    }
+    const year = String(new Date(caseItem.filed_date).getFullYear());
+    if (year === "NaN") {
+      return counts;
+    }
+    counts[year] = (counts[year] || 0) + 1;
+    return counts;
+  }, {}),
+)
+  .map(([year, count]) => ({ count, year }))
+  .sort((left, right) => left.year.localeCompare(right.year));
+const civilCaseYearBarValue = (count: number) =>
+  Math.min(100, Math.max(12, count * 18));
+const personnelMetricCards: MetricCardItem[] = [
+  {
+    ...(associatedAgencyCount > 1
+      ? {
+          action: {
+            href: `${officerPath}agencies/`,
+            kind: "link" as const,
+            label: "View details",
+          },
+        }
+      : {}),
+    accent: metricVisuals.agencies.accent,
+    icon: metricVisuals.agencies.icon,
+    label: metricVisuals.agencies.label,
+    value: formatCount(associatedAgencyCount),
+  },
+  {
+    accent: metricVisuals.currentSalary.accent,
+    icon: metricVisuals.currentSalary.icon,
+    label: metricVisuals.currentSalary.label,
+    value: unavailableValue,
+  },
+  {
+    ...(civilCaseCount > 0
+      ? {
+          action: {
+            href: `${officerPath}civil-cases/`,
+            kind: "link" as const,
+            label: "View details",
+          },
+        }
+      : {}),
+    accent: metricVisuals.civilCases.accent,
+    detail: metricLabels.activeTotal,
+    icon: metricVisuals.civilCases.icon,
+    label: metricVisuals.civilCases.label,
+    value: `${formatCount(activeCivilCaseCount)} / ${formatCount(civilCaseCount)}`,
+  },
+  {
+    accent: metricVisuals.liabilityCosts.accent,
+    icon: metricVisuals.liabilityCosts.icon,
+    label: metricVisuals.liabilityCosts.label,
+    value: unavailableValue,
+  },
+  {
+    accent: metricVisuals.arrests.accent,
+    icon: metricVisuals.arrests.icon,
+    label: metricVisuals.arrests.label,
+    value: unavailableValue,
+  },
+  {
+    ...(reportItems.length > 0
+      ? {
+          action: {
+            href: `${officerPath}reports/`,
+            kind: "link" as const,
+            label: "View details",
+          },
+        }
+      : {}),
+    accent: metricVisuals.reports.accent,
+    icon: metricVisuals.reports.icon,
+    label: metricVisuals.reports.label,
+    value: formatCount(reportItems.length),
+  },
+];
+const sampleRows = {
+  salary: [
+    { label: "2021", value: "$--", width: 0 },
+    { label: "2022", value: "$--", width: 0 },
+    { label: "2023", value: "$--", width: 0 },
+    { label: "2024", value: "$--", width: 0 },
+    { label: "2025", value: "$--", width: 0 },
+  ],
+  arrests: [
+    { label: "Jan", value: "--", width: 0 },
+    { label: "Apr", value: "--", width: 0 },
+    { label: "Jul", value: "--", width: 0 },
+    { label: "Oct", value: "--", width: 0 },
+  ],
+  liability: [
+    { label: "2021", value: "$--", width: 0 },
+    { label: "2022", value: "$--", width: 0 },
+    { label: "2023", value: "$--", width: 0 },
+    { label: "2024", value: "$--", width: 0 },
+    { label: "2025", value: "$--", width: 0 },
+  ],
+  civilCases: [
+    { label: "2021", value: "--", width: 0 },
+    { label: "2022", value: "--", width: 0 },
+    { label: "2023", value: "--", width: 0 },
+    { label: "2024", value: "--", width: 0 },
+    { label: "2025", value: "--", width: 0 },
+  ],
+  stopsEthnicity: [
+    { label: "Jan", value: "--", width: 0 },
+    { label: "Apr", value: "--", width: 0 },
+    { label: "Jul", value: "--", width: 0 },
+    { label: "Oct", value: "--", width: 0 },
+  ],
+  dayNight: [
+    { label: "Jan", value: "--", width: 0 },
+    { label: "Apr", value: "--", width: 0 },
+    { label: "Jul", value: "--", width: 0 },
+    { label: "Oct", value: "--", width: 0 },
+  ],
+  charges: [
+    { label: "Jan", value: "--", width: 0 },
+    { label: "Apr", value: "--", width: 0 },
+    { label: "Jul", value: "--", width: 0 },
+    { label: "Oct", value: "--", width: 0 },
+  ],
+  fatalForce: [
+    { label: "2021", value: "--", width: 0 },
+    { label: "2022", value: "--", width: 0 },
+    { label: "2023", value: "--", width: 0 },
+    { label: "2024", value: "--", width: 0 },
+    { label: "2025", value: "--", width: 0 },
+  ],
+};
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(officerPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
-const disqusIdentifier = `personnel:${data.officer.slug}`;
 const agencyUrl = currentAgency
   ? new URL(requireAgencyCanonicalPath(currentAgency), siteUrl).toString()
   : null;
@@ -347,7 +538,9 @@ const person = {
   "@id": `${pageUrl}#person`,
   name: officerName,
   url: pageUrl,
-  image: new URL(personnelImageSrc, siteUrl).toString(),
+  ...(hasMappedPersonnelImage
+    ? { image: new URL(personnelImageSrc, siteUrl).toString() }
+    : {}),
   mainEntityOfPage: { "@id": profilePageId },
   ...(isDeceased ? { deathDate: String(deceasedOnValue) } : {}),
   ...(organization ? { worksFor: { "@id": organization["@id"] } } : {}),
@@ -384,254 +577,1146 @@ const structuredData = {
   structuredData={structuredData}
 >
   <PrefillBootstrap />
-  <main class="">
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
-      <div class="container">
-        <Breadcrumbs
-          items={[
-            { label: "Personnel", href: "/personnel/" },
-            { label: officerName, href: officerPath, current: true },
-          ]}
-        />
-        <div class="row align-items-center">
-          <div class="col-lg-12">
-            <p class="text-uppercase small text-muted mb-2">
-              {assignmentStatusLabel}: {currentAgency!.name} •{" "}
-              {currentAgency!.city || "Unknown"}, {currentAgency!.state}
-            </p>
-            <h1 class="display-4 fw-bold mb-3">
-              {data.officer.first_name}
-              {data.officer.last_name}
-            </h1>
-            {
-              isDeceased ? (
-                <div
-                  class="alert alert-secondary border-dark rounded-0 mb-3"
-                  role="status"
-                >
-                  <p class="mb-1 fw-semibold">Status: Deceased.</p>
-                  <p class="mb-0">{deceasedPublicMessage}</p>
-                </div>
-              ) : null
-            }
-            <p class="text-muted small mb-0">
-              Last updated {formatShortDate(data.officer.updated_at)}. Compiled
-              from public records and community submitted reports.
-            </p>
+  <main class="personnel-dashboard">
+    <section class="personnel-profile-surface">
+      <div class="container personnel-profile-container">
+        <div class="personnel-topbar">
+          <Breadcrumbs
+            items={[
+              { label: "Personnel", href: "/personnel/" },
+              { label: officerName, href: officerPath, current: true },
+            ]}
+            className="personnel-breadcrumbs"
+          />
+          <div class="personnel-actions">
+            <HelpCollectDataButton
+              context={officerName}
+              sourcePage={officerPath}
+              topic="Personnel"
+            />
+            <PrefillNavButton
+              to={suggestEditHref}
+              payload={suggestEditPrefillPayload}
+              class="personnel-action"
+            >
+              Suggest edit
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/report/new/"
+              payload={reportNewPrefillPayload}
+              class="personnel-action personnel-action-primary"
+            >
+              Share your experience
+            </PrefillNavButton>
           </div>
         </div>
-      </div>
-    </section>
 
-    <section class="py-vh-2">
-      <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-12 col-lg-10">
+        <div class="personnel-profile-hero">
+          <div class="personnel-profile-title">
+            <h1 class="ipc-page-title">{officerName}</h1>
+            <p class="personnel-current-line">
+              Current agency: <a href={currentAgencyPath}
+                >{currentAgency!.name}</a
+              >
+              <span aria-hidden="true"> · </span>
+              {currentAgencyLocation}
+            </p>
+            <p class="personnel-profile-note">
+              Combined career data aggregated across all known agencies.
+            </p>
             {
-              data.sameNameOfficers.length ? (
-                <div class="alert alert-light border rounded-2 mb-4">
-                  <div class="fw-semibold mb-2">
-                    Similar names in the database
-                  </div>
-                  <ul class="mb-0">
-                    {data.sameNameOfficers.map(
-                      (person: {
-                        slug: string;
-                        name: string;
-                        agency_names?: string[] | null;
-                      }) => (
-                        <li>
-                          <a href={`/personnel/${person.slug}/`}>
-                            {person.name}
-                          </a>
-                          {person.agency_names?.length
-                            ? ` — ${person.agency_names.join(", ")}`
-                            : ""}
-                        </li>
-                      ),
-                    )}
-                  </ul>
+              isDeceased ? (
+                <div class="personnel-status-note" role="status">
+                  <strong>Status: Deceased.</strong>
+                  <span>{deceasedPublicMessage}</span>
                 </div>
               ) : null
             }
-            <div class="row align-items-start">
-              <div class="col-12 col-lg-7">
-                <dl class="row mb-4 mb-lg-0">
-                  <dt class="col-sm-4">Badge number</dt>
-                  <dd class="col-sm-8">
-                    {currentBadge || "Not publicly listed"}
-                  </dd>
-                  <dt class="col-sm-4">License type</dt>
-                  <dd class="col-sm-8">
-                    {currentLicenseType}
-                  </dd>
-                  <dt class="col-sm-4">{assignmentStatusLabel}</dt>
-                  <dd class="col-sm-8">
-                    <a href={requireAgencyCanonicalPath(currentAgency!)}>
-                      {currentAgency!.name}
-                    </a>
-                    {
-                      currentAssignment?.start_date
-                        ? `${hasCurrentAssignment ? " since" : " from"}: ${formatShortDate(currentAssignment.start_date)}`
-                        : ""
-                    }
-                    {
-                      currentAssignment?.end_date
-                        ? `; ended: ${formatShortDate(currentAssignment.end_date)}`
-                        : ""
-                    }
-                  </dd>
-                  <dt class="col-sm-4">Civil litigation</dt>
-                  <dd class="col-sm-8">{data.civilCases.length}</dd>
-                  <dt class="col-sm-4">Reports</dt>
-                  <dd class="col-sm-8">{reportCount}</dd>
-                  <dt class="col-sm-4">Agency history</dt>
-                  <dd class="col-sm-8">{assignmentHistoryCount}</dd>
-                </dl>
-                <div class="d-flex flex-wrap gap-2 mt-3">
-                  <PrefillNavButton
-                    class="btn btn-dark rounded-0"
-                    to="/report/new/"
-                    payload={reportNewPrefillPayload}
-                  >
-                    Share your experience
-                  </PrefillNavButton>
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0"
-                    to={addCivilCaseHref}
-                    payload={addCivilCasePrefillPayload}
-                  >
-                    Add a civil case
-                  </PrefillNavButton>
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0"
-                    to={pastEmployerHref}
-                    payload={pastEmployerPrefillPayload}
-                  >
-                    Submit past employer
-                  </PrefillNavButton>
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0"
-                    to={suggestEditHref}
-                    payload={suggestEditPrefillPayload}
-                  >
-                    Suggest edit
-                  </PrefillNavButton>
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
-                    to="/about/contact/"
-                    payload={{
-                      whoami: "Subscriber",
-                      message: `Please notify me when this profile changes: /personnel/${data.officer.slug}/`,
-                    }}
-                    data-testid="personnel-subscribe-link"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="lucide lucide-bell"
-                    >
-                      <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
-                      <path
-                        d="M3.262 15a4 4 0 0 0 3.938 3h9.6a4 4 0 0 0 3.938-3"
-                      ></path>
-                      <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
-                    </svg>
-                    <span>Notify me when this profile changes</span>
-                  </PrefillNavButton>
-                </div>
-              </div>
-              <div class="col-12 col-lg-5 text-center">
-                <img
-                  src={personnelImageSrc}
-                  class="img-fluid rounded shadow"
-                  alt={`Portrait of ${data.officer.first_name} ${data.officer.last_name}`}
-                />
-                {
-                  personnelImageSrc === defaultPersonnelImagePath ? (
-                    <p class="small text-muted mt-2">
-                      Official portrait not yet available — placeholder image
-                      shown.
-                    </p>
-                  ) : null
-                }
-              </div>
-            </div>
-
-            <hr class="my-5" />
-
-            <ProfileTabs
-              tabs={[
-                {
-                  id: "officer-reports",
-                  label: "Reports",
-                  badge: reportCount,
-                  tabType: "reports",
-                },
-                {
-                  id: "officer-litigation",
-                  label: "Civil litigation",
-                  badge: civilCaseCount,
-                  tabType: "litigation",
-                },
-                {
-                  id: "officer-coverage",
-                  label: "Related Links",
-                  badge: coverageCount,
-                  tabType: "coverage",
-                },
-                {
-                  id: "officer-past",
-                  label: "Agency history",
-                  badge: assignmentHistoryCount,
-                  tabType: "pastEmployers",
-                },
-              ]}
-              litigation={{
-                cases: civilCasesWithPaths,
-              }}
-              reports={{
-                items: reportItems,
-                layout: "table",
-              }}
-              coverage={{
-                links: coverageLinks,
-                helperText: "Links about this officer.",
-              }}
-              pastEmployers={{
-                entries: assignmentHistory,
-              }}
-            />
-
-            <div class="mt-3">
-              <PrefillNavButton
-                class="link-dark small"
-                to={claimProfileHref}
-                payload={claimProfilePrefillPayload}
-                data-testid="personnel-claim-profile-link"
-                variant="link"
-              >
-                Claim this profile
-              </PrefillNavButton>
-            </div>
-
-            <div class="my-5">
-              <h2 class="h5 text-uppercase text-muted">Comments</h2>
-              <DisqusComments
-                pageUrl={pageUrl}
-                disqusIdentifier={disqusIdentifier}
-              />
-            </div>
           </div>
+
+          <figure class="personnel-portrait">
+            <img
+              src={personnelImageSrc}
+              alt={`Portrait of ${data.officer.first_name} ${data.officer.last_name}`}
+            />
+          </figure>
+
+          <aside class="personnel-profile-aside" aria-label="Personnel summary">
+            <dl>
+              <div>
+                <dt>License Type</dt>
+                <dd>{currentLicenseType}</dd>
+              </div>
+              <div>
+                <dt>Status</dt>
+                <dd>
+                  <span class="personnel-status-pill">{statusLabel}</span>
+                </dd>
+              </div>
+              <div>
+                <dt>{metricLabels.totalTimeAsOfficer}</dt>
+                <dd>{totalTimeAsOfficer}</dd>
+              </div>
+              {
+                currentBadge ? (
+                  <div>
+                    <dt>Badge Number</dt>
+                    <dd>{currentBadge}</dd>
+                  </div>
+                ) : null
+              }
+              <div>
+                <dt>{assignmentStatusLabel}</dt>
+                <dd><a href={currentAgencyPath}>{currentAgency!.name}</a></dd>
+              </div>
+              <div>
+                <dt>Updated</dt>
+                <dd>{formatShortDate(data.officer.updated_at)}</dd>
+              </div>
+            </dl>
+          </aside>
+        </div>
+
+        <MetricGrid metrics={personnelMetricCards} />
+
+        <div class="personnel-section-grid">
+          <OutcomesByIncomePanel />
+          <section class="personnel-panel">
+            <div class="personnel-panel-heading">
+              <h2>1. Salary History</h2>
+              <p>Annual base salary, Previous 5 years</p>
+            </div>
+            <SampleMeasurementChart
+              ariaLabel="Sample salary history chart"
+              rows={sampleRows.salary}
+            />
+          </section>
+
+          <section class="personnel-panel">
+            <div class="personnel-panel-heading">
+              <h2>2. Arrests Over Time</h2>
+              <p>Low-level arrests and other arrests, Previous 12 months</p>
+            </div>
+            <SampleMeasurementChart
+              ariaLabel="Sample arrests over time chart, Previous 12 months"
+              rows={sampleRows.arrests}
+            />
+          </section>
+
+          <section class="personnel-panel">
+            <div class="personnel-panel-heading">
+              <h2>3. Liability Costs Over Time</h2>
+              <p>Total liability costs, Previous 5 years</p>
+            </div>
+            <SampleMeasurementChart
+              ariaLabel="Sample liability costs over time chart, Previous 5 years"
+              rows={sampleRows.liability}
+            />
+          </section>
+
+          <section class="personnel-panel">
+            <div class="personnel-panel-heading">
+              <h2>4. Civil Cases and Claims Over Time</h2>
+              <p>Active and historical cases, Previous 5 years</p>
+            </div>
+            {
+              civilCaseYears.length ? (
+                <div class="personnel-year-bars">
+                  {civilCaseYears.map((row) => (
+                    <div>
+                      <span>{row.year}</span>
+                      <meter
+                        min="0"
+                        max="100"
+                        value={civilCaseYearBarValue(row.count)}
+                        aria-label={`${row.year} civil case count`}
+                      >
+                        {row.count}
+                      </meter>
+                      <strong>{row.count}</strong>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <SampleMeasurementChart
+                  ariaLabel="Sample civil cases and claims chart"
+                  rows={sampleRows.civilCases}
+                />
+              )
+            }
+          </section>
+
+          <section class="personnel-panel">
+            <div class="personnel-panel-heading">
+              <h2>5. {metricLabels.racialBreakdownStopsArrests}</h2>
+              <p>
+                Stops and arrests by recorded race or ethnicity, Previous 12
+                months
+              </p>
+            </div>
+            <SampleMeasurementChart
+              ariaLabel="Sample stops by ethnicity chart"
+              rows={sampleRows.stopsEthnicity}
+            />
+          </section>
+
+          <section class="personnel-panel">
+            <div class="personnel-panel-heading">
+              <h2>6. {metricLabels.daylightNighttimeStops}</h2>
+              <p>Stops by time of day and recorded race, Previous 12 months</p>
+            </div>
+            <SampleMeasurementChart
+              ariaLabel="Sample stops by time of day chart"
+              rows={sampleRows.dayNight}
+            />
+          </section>
+
+          <section class="personnel-panel">
+            <div class="personnel-panel-heading">
+              <h2>7. {metricLabels.topChargeCategories}</h2>
+              <p>Arrest charge categories, Previous 12 months</p>
+            </div>
+            <SampleMeasurementChart
+              ariaLabel="Sample top charge categories chart"
+              rows={sampleRows.charges}
+            />
+          </section>
+
+          <section class="personnel-panel">
+            <div class="personnel-panel-heading">
+              <h2>8. Fatal Force Incidents, Previous 5 years</h2>
+              <p>People by age group, dogs and other animals</p>
+            </div>
+            <SampleMeasurementChart
+              ariaLabel="Sample fatal force incidents chart"
+              rows={sampleRows.fatalForce}
+            />
+          </section>
+
+          <section class="personnel-panel personnel-panel-wide">
+            <div class="personnel-panel-heading">
+              <h2>9. Civil Cases</h2>
+              <p>Cases connected through agency assignments.</p>
+            </div>
+            {
+              civilCasesWithPaths.length ? (
+                <div class="personnel-table-wrap">
+                  <table class="personnel-mini-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Case Name</th>
+                        <th scope="col">Filed</th>
+                        <th scope="col">Court</th>
+                        <th scope="col">Cause</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {civilCasesWithPaths.slice(0, 4).map((caseItem) => (
+                        <tr>
+                          <th scope="row">
+                            <a href={caseItem.caseUrl}>
+                              {caseItem.title || "Civil case"}
+                            </a>
+                          </th>
+                          <td>
+                            {caseItem.filed_date
+                              ? formatShortDate(caseItem.filed_date)
+                              : ""}
+                          </td>
+                          <td>{caseItem.court || ""}</td>
+                          <td>{caseItem.cause_number || ""}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null
+            }
+          </section>
+
+          <section class="personnel-panel personnel-panel-wide">
+            <div class="personnel-panel-heading">
+              <h2>10. {metricLabels.agencies}</h2>
+              <p>Known agency assignments linked to this profile.</p>
+            </div>
+            {
+              assignmentHistory.length ? (
+                <div class="personnel-table-wrap">
+                  <table class="personnel-mini-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Agency</th>
+                        <th scope="col">License Type</th>
+                        <th scope="col">Start Date</th>
+                        <th scope="col">End Date</th>
+                        <th scope="col">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {assignmentHistory.map((entry) => (
+                        <tr>
+                          <th scope="row">
+                            <a href={requireAgencyCanonicalPath(entry.agency)}>
+                              {entry.agency.name}
+                            </a>
+                          </th>
+                          <td>{entry.license_type || currentLicenseType}</td>
+                          <td>
+                            {entry.start_date
+                              ? formatShortDate(entry.start_date)
+                              : ""}
+                          </td>
+                          <td>
+                            {entry.end_date
+                              ? formatShortDate(entry.end_date)
+                              : "Present"}
+                          </td>
+                          <td>
+                            <span class="personnel-status-pill">
+                              {entry.end_date ? "Completed" : "Active"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null
+            }
+          </section>
+        </div>
+
+        <div class="personnel-footer-actions">
+          <PrefillNavButton
+            to={addCivilCaseHref}
+            payload={addCivilCasePrefillPayload}
+            class="personnel-action"
+          >
+            Add a civil case
+          </PrefillNavButton>
+          <PrefillNavButton
+            to={pastEmployerHref}
+            payload={pastEmployerPrefillPayload}
+            class="personnel-action"
+          >
+            Submit past employer
+          </PrefillNavButton>
+          <PrefillNavButton
+            to="/about/contact/"
+            payload={{
+              whoami: "Subscriber",
+              message: `Please notify me when this profile changes: /personnel/${data.officer.slug}/`,
+            }}
+            data-testid="personnel-subscribe-link"
+            class="personnel-action"
+          >
+            Notify Me
+          </PrefillNavButton>
+          <PrefillNavButton
+            to={claimProfileHref}
+            payload={claimProfilePrefillPayload}
+            data-testid="personnel-claim-profile-link"
+            class="personnel-action"
+          >
+            Claim Profile
+          </PrefillNavButton>
         </div>
       </div>
     </section>
   </main>
 </SiteLayout>
+
+<style>
+  .personnel-dashboard {
+    background: #f7f9fd;
+    color: #071842;
+  }
+
+  .personnel-dashboard-main {
+    padding: 1.25rem 0 2.5rem;
+  }
+
+  .personnel-dashboard-main > .container {
+    max-width: 1240px;
+  }
+
+  .personnel-heading {
+    align-items: flex-start;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin-bottom: 1rem;
+  }
+
+  .personnel-kicker {
+    color: #33456f;
+    font-size: 0.8125rem;
+    font-weight: 750;
+    letter-spacing: 0.04em;
+    line-height: 1.3;
+    margin: 0 0 0.35rem;
+    text-transform: uppercase;
+  }
+
+  .personnel-heading h1 {
+    color: #071842;
+    margin: 0;
+  }
+
+  .personnel-heading p {
+    color: #071842;
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0.55rem 0 0;
+  }
+
+  .personnel-heading a,
+  .personnel-panel a,
+  .personnel-detail-card a {
+    color: #064cfb;
+    font-weight: 750;
+    text-decoration: none;
+  }
+
+  .personnel-actions,
+  .personnel-secondary-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: flex-end;
+  }
+
+  .personnel-action {
+    align-items: center;
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.35rem;
+    color: #071842;
+    display: inline-flex;
+    font-size: 0.8125rem;
+    font-weight: 750;
+    justify-content: center;
+    line-height: 1.1;
+    min-height: 2.35rem;
+    padding: 0.6rem 0.85rem;
+    text-decoration: none;
+  }
+
+  .personnel-action-primary {
+    background: #071842;
+    border-color: #071842;
+    color: #f8faff;
+  }
+
+  .personnel-status-note {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    color: #33456f;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-top: 0.85rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .personnel-status-note strong,
+  .personnel-status-note span {
+    display: block;
+  }
+
+  .personnel-overview {
+    align-items: stretch;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(11rem, 14rem) minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  .personnel-portrait {
+    margin: 0;
+  }
+
+  .personnel-portrait img {
+    aspect-ratio: 4 / 5;
+    background: #e8edf6;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  .personnel-portrait figcaption {
+    color: #33456f;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    margin-top: 0.45rem;
+  }
+
+  .personnel-detail-card,
+  .personnel-metric-card,
+  .personnel-panel {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+  }
+
+  .personnel-detail-card {
+    padding: 1rem 1.1rem;
+  }
+
+  .personnel-detail-card dl {
+    display: grid;
+    gap: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+  }
+
+  .personnel-detail-card div {
+    border-bottom: 1px solid #d9e1ee;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: minmax(8rem, 11rem) minmax(0, 1fr);
+    padding: 0.75rem 0;
+  }
+
+  .personnel-detail-card div:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .personnel-detail-card dt {
+    color: #33456f;
+    font-size: 0.8125rem;
+    font-weight: 750;
+    margin: 0;
+  }
+
+  .personnel-detail-card dd {
+    color: #071842;
+    font-size: 0.875rem;
+    font-weight: 650;
+    margin: 0;
+  }
+
+  .personnel-status-pill {
+    background: #dff5e7;
+    border: 1px solid #b9e7c8;
+    border-radius: 999px;
+    color: #087f3b;
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 750;
+    line-height: 1;
+    padding: 0.25rem 0.55rem;
+  }
+
+  .personnel-metric-grid,
+  .personnel-section-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  .personnel-metric-card {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: 2.2rem minmax(0, 1fr);
+    min-height: 7.1rem;
+    padding: 0.85rem;
+  }
+
+  .personnel-metric-icon {
+    height: 2.15rem;
+    margin-top: 0.2rem;
+    width: 2.15rem;
+  }
+
+  .personnel-blue {
+    color: #174bff;
+  }
+
+  .personnel-green {
+    color: #087f3b;
+  }
+
+  .personnel-purple {
+    color: #5b2df5;
+  }
+
+  .personnel-metric-card p,
+  .personnel-panel-heading p {
+    color: #33456f;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  .personnel-metric-card p {
+    color: #071842;
+    font-size: 0.875rem;
+    font-weight: 750;
+    line-height: 1.3;
+  }
+
+  .personnel-metric-card strong {
+    color: #071842;
+    display: block;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.12;
+    margin: 0.25rem 0 0.3rem;
+  }
+
+  .personnel-metric-card span {
+    color: #33456f;
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  .personnel-section-grid {
+    align-items: stretch;
+  }
+
+  .personnel-panel {
+    min-height: 15rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .personnel-panel-heading {
+    margin-bottom: 0.85rem;
+  }
+
+  .personnel-panel h2 {
+    color: #071842;
+    margin: 0 0 0.25rem;
+  }
+
+  .personnel-record-list,
+  .personnel-history-list {
+    display: grid;
+    gap: 0.7rem;
+  }
+
+  .personnel-unavailable-chart {
+    align-items: center;
+    background:
+      linear-gradient(#d9e1ee 1px, transparent 1px) 0 0 / 100% 25%,
+      linear-gradient(90deg, #eef3fa 1px, transparent 1px) 0 0 / 12.5% 100%;
+    border-bottom: 1px solid #b8c4d8;
+    border-left: 1px solid #b8c4d8;
+    display: grid;
+    justify-items: center;
+    margin-top: 1rem;
+    min-height: 9rem;
+    text-align: center;
+  }
+
+  .personnel-unavailable-chart strong {
+    color: #071842;
+    font-size: 1.7rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .personnel-unavailable-chart span {
+    color: #33456f;
+    font-size: 0.8125rem;
+    font-weight: 650;
+    line-height: 1.35;
+    margin-top: -2.6rem;
+    max-width: 16rem;
+  }
+
+  .personnel-line-chart {
+    margin-top: 0.85rem;
+  }
+
+  .personnel-line-chart svg {
+    display: block;
+    height: auto;
+    overflow: visible;
+    width: 100%;
+  }
+
+  .personnel-line-chart text {
+    fill: #071842;
+    font-size: 0.58rem;
+    font-weight: 750;
+  }
+
+  .personnel-chart-grid-line,
+  .personnel-chart-axis {
+    fill: none;
+    stroke: #d9e1ee;
+    stroke-width: 1;
+  }
+
+  .personnel-chart-axis {
+    stroke: #b8c4d8;
+  }
+
+  .personnel-chart-line {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 3;
+  }
+
+  .personnel-blue-line {
+    stroke: #174bff;
+  }
+
+  .personnel-red-line {
+    stroke: #ff2020;
+  }
+
+  .personnel-chart-legend,
+  .personnel-chart-years {
+    align-items: center;
+    color: #071842;
+    display: flex;
+    font-size: 0.68rem;
+    font-weight: 700;
+    gap: 0.8rem;
+    line-height: 1.2;
+  }
+
+  .personnel-chart-legend {
+    margin-bottom: 0.35rem;
+  }
+
+  .personnel-chart-years {
+    color: #33456f;
+    justify-content: space-between;
+    margin-top: 0.1rem;
+  }
+
+  .personnel-chart-legend i,
+  .personnel-legend i {
+    border-radius: 999px;
+    display: inline-block;
+    height: 0.55rem;
+    margin-right: 0.35rem;
+    width: 0.55rem;
+  }
+
+  .personnel-blue-bg {
+    background: #174bff;
+  }
+
+  .personnel-red-bg {
+    background: #ff2020;
+  }
+
+  .personnel-yellow-bg {
+    background: #ffb703;
+  }
+
+  .personnel-navy-bg {
+    background: #082777;
+  }
+
+  .personnel-horizontal-bars {
+    display: grid;
+    gap: 0.62rem;
+    margin-top: 1rem;
+  }
+
+  .personnel-year-bars {
+    display: grid;
+    gap: 0.7rem;
+    margin-top: 1rem;
+  }
+
+  .personnel-horizontal-bars div,
+  .personnel-year-bars div {
+    align-items: center;
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: minmax(5.5rem, 8rem) minmax(0, 1fr) auto;
+  }
+
+  .personnel-horizontal-bars span,
+  .personnel-horizontal-bars strong,
+  .personnel-year-bars span,
+  .personnel-year-bars strong {
+    color: #071842;
+    font-size: 0.75rem;
+    font-weight: 750;
+    line-height: 1.25;
+  }
+
+  .personnel-horizontal-bars i,
+  .personnel-year-bars meter {
+    appearance: none;
+    background: #174bff;
+    border-radius: 0.1rem;
+    display: block;
+    height: 0.85rem;
+    width: 100%;
+  }
+
+  .personnel-year-bars meter::-webkit-meter-bar {
+    background: #e7edf7;
+    border: 0;
+    border-radius: 0.1rem;
+  }
+
+  .personnel-year-bars meter::-webkit-meter-optimum-value {
+    background: #174bff;
+    border-radius: 0.1rem;
+  }
+
+  .personnel-year-bars meter::-moz-meter-bar {
+    background: #174bff;
+    border-radius: 0.1rem;
+  }
+
+  .personnel-charge-bars div {
+    grid-template-columns: minmax(5rem, 7.5rem) minmax(0, 1fr) 2.25rem;
+  }
+
+  .personnel-donut-wrap {
+    align-items: center;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    margin-top: 1rem;
+  }
+
+  .personnel-donut {
+    align-items: center;
+    aspect-ratio: 1;
+    background: conic-gradient(#ffb703 0 46%, #082777 46% 100%);
+    border-radius: 999px;
+    display: grid;
+    justify-items: center;
+    padding: 1.1rem;
+    position: relative;
+  }
+
+  .personnel-donut::after {
+    background: #fbfcff;
+    border-radius: 999px;
+    content: "";
+    inset: 1.25rem;
+    position: absolute;
+  }
+
+  .personnel-donut strong,
+  .personnel-donut span {
+    color: #071842;
+    position: relative;
+    z-index: 1;
+  }
+
+  .personnel-donut strong {
+    align-self: end;
+    font-size: 1.125rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .personnel-donut span {
+    align-self: start;
+    font-size: 0.7rem;
+    font-weight: 750;
+  }
+
+  .personnel-legend {
+    display: grid;
+    gap: 0.65rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .personnel-legend li {
+    color: #071842;
+    font-size: 0.78rem;
+    font-weight: 750;
+    line-height: 1.35;
+  }
+
+  .personnel-table-wrap {
+    overflow-x: auto;
+  }
+
+  .personnel-mini-table {
+    border-collapse: collapse;
+    min-width: 36rem;
+    width: 100%;
+  }
+
+  .personnel-mini-table th,
+  .personnel-mini-table td {
+    border-top: 1px solid #d9e1ee;
+    color: #071842;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    padding: 0.55rem 0.45rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .personnel-mini-table thead th {
+    color: #33456f;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .personnel-record,
+  .personnel-history-row {
+    border-top: 1px solid #d9e1ee;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-top: 0.75rem;
+  }
+
+  .personnel-record h3,
+  .personnel-history-row h3 {
+    margin: 0;
+  }
+
+  .personnel-record p,
+  .personnel-history-row p,
+  .personnel-history-row span,
+  .personnel-empty {
+    color: #33456f;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    margin: 0.25rem 0 0;
+  }
+
+  .personnel-record > a {
+    align-self: start;
+    font-size: 0.8125rem;
+  }
+
+  .personnel-history-row > div:last-child {
+    display: grid;
+    gap: 0.15rem;
+    justify-items: end;
+    text-align: right;
+  }
+
+  .personnel-secondary-actions {
+    justify-content: flex-start;
+    margin: 1.25rem 0;
+  }
+
+  @media (min-width: 768px) {
+    .personnel-metric-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 992px) {
+    .personnel-section-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .personnel-panel-wide {
+      grid-column: span 2;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .personnel-metric-grid {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 991.98px) {
+    .personnel-heading,
+    .personnel-overview,
+    .personnel-detail-card dl {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .personnel-actions {
+      justify-content: flex-start;
+    }
+
+    .personnel-detail-card div:nth-last-child(-n + 2) {
+      border-bottom: 1px solid #d9e1ee;
+    }
+
+    .personnel-detail-card div:last-child {
+      border-bottom: 0;
+    }
+
+    .personnel-portrait {
+      max-width: 14rem;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .personnel-heading h1 {
+    }
+
+    .personnel-detail-card div,
+    .personnel-record,
+    .personnel-history-row,
+    .personnel-donut-wrap,
+    .personnel-horizontal-bars div {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .personnel-history-row > div:last-child {
+      justify-items: start;
+      text-align: left;
+    }
+
+    .personnel-action {
+      width: 100%;
+    }
+  }
+
+  .personnel-profile-surface {
+    padding: 1rem 0 1.5rem;
+  }
+
+  .personnel-profile-container {
+    max-width: 1240px;
+  }
+
+  .personnel-breadcrumbs {
+    margin-bottom: 0.55rem;
+  }
+
+  .personnel-topbar {
+    align-items: flex-start;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin-bottom: 0.65rem;
+  }
+
+  .personnel-topbar .personnel-breadcrumbs {
+    margin-bottom: 0;
+  }
+
+  .personnel-topbar .personnel-actions {
+    display: flex;
+    gap: 0.55rem;
+    justify-content: flex-end;
+  }
+
+  .personnel-profile-hero {
+    align-items: start;
+    display: grid;
+    gap: 1.1rem;
+    grid-template-columns: minmax(0, 1fr) 10rem minmax(22rem, 27rem);
+    margin-bottom: 1.05rem;
+  }
+
+  .personnel-profile-title h1 {
+    color: #071842;
+    margin: 0;
+  }
+
+  .personnel-current-line {
+    color: #071842;
+    font-size: 0.95rem;
+    font-weight: 750;
+    line-height: 1.45;
+    margin: 0.7rem 0 0;
+  }
+
+  .personnel-profile-note {
+    color: #0f3172;
+    font-size: 0.93rem;
+    line-height: 1.45;
+    margin: 0.7rem 0 0;
+  }
+
+  .personnel-current-line a,
+  .personnel-profile-aside a {
+    color: #064cfb;
+    font-weight: 750;
+    text-decoration: none;
+  }
+
+  .personnel-profile-hero .personnel-portrait {
+    justify-self: end;
+    width: 9.3rem;
+  }
+
+  .personnel-profile-hero .personnel-portrait img {
+    aspect-ratio: 4 / 5;
+    height: auto;
+    max-height: 12rem;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  .personnel-profile-aside dl {
+    margin: 0;
+  }
+
+  .personnel-profile-aside dl div {
+    border-bottom: 1px solid #d9e1ee;
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: minmax(7.5rem, 10rem) minmax(0, 1fr);
+    padding: 0.46rem 0;
+  }
+
+  .personnel-profile-aside dt,
+  .personnel-profile-aside dd {
+    color: #071842;
+    font-size: 0.75rem;
+    margin: 0;
+  }
+
+  .personnel-profile-aside dt {
+    font-weight: 800;
+  }
+
+  .personnel-profile-aside dd {
+    font-weight: 650;
+  }
+
+  @media (max-width: 991.98px) {
+    .personnel-profile-hero {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .personnel-profile-hero .personnel-portrait {
+      justify-self: start;
+      width: 10rem;
+    }
+
+    .personnel-topbar {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .personnel-topbar .personnel-actions {
+      justify-content: flex-start;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .personnel-profile-title h1 {
+    }
+
+    .personnel-profile-aside dl div {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .personnel-metric-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+</style>

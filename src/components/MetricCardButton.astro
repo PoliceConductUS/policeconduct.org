@@ -1,0 +1,27 @@
+---
+const { href } = Astro.props as {
+  href: string;
+};
+---
+
+<a class="entity-metric-primary-action" href={href}>
+  <slot />
+</a>
+
+<style>
+  .entity-metric-primary-action {
+    background: #071842;
+    border: 1px solid #071842;
+    border-radius: 0.35rem;
+    color: #f8faff;
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-top: 0;
+    padding: 0.55rem 0.7rem;
+    text-align: center;
+    text-decoration: none;
+    width: 100%;
+  }
+</style>

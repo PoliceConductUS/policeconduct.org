@@ -1,0 +1,1743 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Texas Civic Index</title>
+    <style>
+      :root {
+        --ink: #071842;
+        --muted: #34496b;
+        --faint: #687a96;
+        --line: #d7dfeb;
+        --paper: #fbfcff;
+        --soft: #f3f6fb;
+        --blue: #174bff;
+        --green: #087f3b;
+        --red: #b42318;
+        --purple: #5b2df5;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background: var(--paper);
+        color: var(--ink);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        margin: 0;
+      }
+
+      a {
+        color: var(--blue);
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      main {
+        margin: 0;
+        max-width: none;
+        padding: 0;
+      }
+
+      .breadcrumbs {
+        color: var(--faint);
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 14px;
+      }
+
+      .hero {
+        display: grid;
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .kicker {
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 850;
+        margin: 0 0 7px;
+      }
+
+      h1 {
+        font-size: clamp(34px, 5vw, 56px);
+        line-height: 0.98;
+        margin: 0;
+      }
+
+      .hero p {
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.55;
+        margin: 12px 0 0;
+        max-width: 76ch;
+      }
+
+      .button {
+        background: white;
+        border: 1px solid #c6d0df;
+        border-radius: 6px;
+        color: var(--ink);
+        display: inline-flex;
+        font-size: 14px;
+        font-weight: 850;
+        min-height: 40px;
+        padding: 10px 14px;
+      }
+
+      .page-layout {
+        align-items: start;
+        display: grid;
+        gap: 22px;
+        grid-template-columns: minmax(0, 1fr) 220px;
+      }
+
+      .metrics-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        margin: 20px 0 22px;
+      }
+
+      .metric-card {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+        display: grid;
+        gap: 12px;
+        min-height: 166px;
+        padding: 16px;
+      }
+
+      .metric-card.default {
+        border-color: #9fb5ff;
+        box-shadow: 0 0 0 2px rgba(23, 75, 255, 0.08);
+      }
+
+      .metric-top {
+        align-items: start;
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 30px minmax(0, 1fr);
+      }
+
+      .metric-card svg {
+        height: 28px;
+        width: 28px;
+      }
+
+      .metric-card.counties svg,
+      .metric-card.budget svg {
+        color: var(--green);
+      }
+
+      .metric-card.reports svg {
+        color: var(--blue);
+      }
+
+      .metric-card.cases svg {
+        color: var(--purple);
+      }
+
+      .metric-card.liability svg {
+        color: var(--red);
+      }
+
+      .metric-card.fatal svg {
+        color: var(--red);
+      }
+
+      .metric-label {
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 850;
+        line-height: 1.25;
+        margin: 0;
+      }
+
+      .metric-value {
+        display: block;
+        font-size: 31px;
+        font-variant-numeric: tabular-nums;
+        font-weight: 900;
+        line-height: 1;
+        margin-top: 5px;
+      }
+
+      .metric-detail {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+        margin: 0;
+      }
+
+      .metric-actions {
+        align-content: end;
+        display: grid;
+        gap: 7px;
+      }
+
+      .metric-action {
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        display: flex;
+        font-size: 12px;
+        justify-content: center;
+        line-height: 1.2;
+        min-height: 32px;
+        padding: 7px 9px;
+      }
+
+      .metric-action.primary {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: white;
+      }
+
+      .metric-action.secondary {
+        border-color: transparent;
+        min-height: 24px;
+        padding: 0;
+      }
+
+      .intent-nav {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        display: grid;
+        gap: 2px;
+        padding: 12px;
+        position: sticky;
+        top: 16px;
+      }
+
+      .intent-nav a {
+        border-radius: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.25;
+        min-height: 0;
+        padding: 8px;
+      }
+
+      .intent-nav a:hover {
+        background: var(--soft);
+      }
+
+      .menu-title {
+        color: var(--faint);
+        font-size: 11px;
+        font-weight: 900;
+        margin: 0 0 6px;
+        text-transform: uppercase;
+      }
+
+      .intent-band {
+        border-top: 1px solid var(--line);
+        display: grid;
+        gap: 14px;
+        padding: 22px 0;
+      }
+
+      .band-heading {
+        align-items: end;
+        display: grid;
+        gap: 14px;
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      h2 {
+        font-size: 26px;
+        line-height: 1.12;
+        margin: 0;
+      }
+
+      .band-heading p {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 7px 0 0;
+        max-width: 82ch;
+      }
+
+      .chart-grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .panel {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(7, 24, 66, 0.035);
+        display: grid;
+        gap: 13px;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        min-height: 220px;
+        padding: 16px;
+      }
+
+      .panel h3 {
+        font-size: 17px;
+        line-height: 1.25;
+        margin: 0;
+      }
+
+      .panel p {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+        margin: 5px 0 0;
+      }
+
+      .bars {
+        align-items: end;
+        border-bottom: 1px solid #b8c4d8;
+        border-left: 1px solid #b8c4d8;
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        height: 105px;
+        padding: 0 10px;
+      }
+
+      .bars i {
+        background: #cbd7e8;
+        display: block;
+      }
+
+      .bars.blue i {
+        background: #b9caff;
+      }
+
+      .bars.green i {
+        background: #b6dfc7;
+      }
+
+      .bars.red i {
+        background: #edbdb8;
+      }
+
+      .bars.purple i {
+        background: #d6cbfd;
+      }
+
+      .bars i:nth-child(1) {
+        height: 32%;
+      }
+      .bars i:nth-child(2) {
+        height: 46%;
+      }
+      .bars i:nth-child(3) {
+        height: 39%;
+      }
+      .bars i:nth-child(4) {
+        height: 61%;
+      }
+      .bars i:nth-child(5) {
+        height: 57%;
+      }
+      .bars i:nth-child(6) {
+        height: 74%;
+      }
+      .bars i:nth-child(7) {
+        height: 68%;
+      }
+      .bars i:nth-child(8) {
+        height: 82%;
+      }
+
+      .sample-chart {
+        background: #f8fafc;
+        border: 1px solid #d8e0eb;
+        border-radius: 6px;
+        color: var(--muted);
+        display: grid;
+        gap: 10px;
+        min-height: 118px;
+        padding: 12px;
+      }
+
+      .sample-chart.disabled {
+        opacity: 0.74;
+      }
+
+      .bar-row {
+        align-items: center;
+        display: grid;
+        gap: 9px;
+        grid-template-columns: 92px minmax(0, 1fr) 38px;
+      }
+
+      .bar-row b,
+      .mini-label {
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .track {
+        background: #e5ebf3;
+        border-radius: 999px;
+        height: 9px;
+        overflow: hidden;
+      }
+
+      .track span {
+        background: #aebbcf;
+        border-radius: inherit;
+        display: block;
+        height: 100%;
+        width: calc(var(--v) * 1%);
+      }
+
+      .bar-row em {
+        color: var(--faint);
+        font-size: 12px;
+        font-style: normal;
+        text-align: right;
+      }
+
+      .grouped-bars {
+        align-items: end;
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        min-height: 112px;
+      }
+
+      .group {
+        display: grid;
+        gap: 6px;
+      }
+
+      .group .columns {
+        align-items: end;
+        display: grid;
+        gap: 4px;
+        grid-template-columns: 1fr 1fr;
+        height: 82px;
+      }
+
+      .columns i {
+        background: #b8c4d8;
+        border-radius: 3px 3px 0 0;
+        display: block;
+      }
+
+      .columns i:nth-child(2) {
+        background: #d3dae5;
+      }
+
+      .group small {
+        color: var(--faint);
+        font-size: 11px;
+        font-weight: 750;
+        text-align: center;
+      }
+
+      .stacked-bars {
+        display: grid;
+        gap: 9px;
+      }
+
+      .stacked-row {
+        display: grid;
+        gap: 6px;
+      }
+
+      .stacked-row div {
+        background: #e5ebf3;
+        border-radius: 999px;
+        display: grid;
+        grid-template-columns: var(--a) var(--b) var(--c);
+        height: 12px;
+        overflow: hidden;
+      }
+
+      .stacked-row i {
+        display: block;
+      }
+
+      .stacked-row i:nth-child(1) {
+        background: #aebbcf;
+      }
+      .stacked-row i:nth-child(2) {
+        background: #c6d0df;
+      }
+      .stacked-row i:nth-child(3) {
+        background: #dce3ed;
+      }
+
+      .mini-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 2px;
+      }
+
+      .mini-legend span {
+        color: var(--faint);
+        font-size: 11px;
+        font-weight: 750;
+      }
+
+      .mini-legend i {
+        background: #aebbcf;
+        border-radius: 999px;
+        display: inline-block;
+        height: 8px;
+        margin-right: 4px;
+        width: 8px;
+      }
+
+      .count-summary {
+        align-items: end;
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 1fr 1fr;
+        min-height: 118px;
+      }
+
+      .count-box {
+        background: #f8fafc;
+        border: 1px solid #d8e0eb;
+        border-radius: 6px;
+        display: grid;
+        gap: 5px;
+        padding: 14px;
+      }
+
+      .count-box strong {
+        color: var(--ink);
+        font-size: 30px;
+        line-height: 1;
+      }
+
+      .count-box span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.25;
+      }
+
+      .meta {
+        align-items: center;
+        color: var(--faint);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 8px;
+        font-size: 12px;
+        font-weight: 750;
+        line-height: 1;
+        min-height: 28px;
+      }
+
+      .chip {
+        align-items: center;
+        background: var(--soft);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        display: inline-flex;
+        min-height: 26px;
+        padding: 4px 8px;
+      }
+
+      .meta a {
+        align-items: center;
+        display: inline-flex;
+        min-height: 26px;
+        margin-left: auto;
+        order: 10;
+        padding: 0 1px;
+      }
+
+      .policy-card {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        display: grid;
+        gap: 8px;
+        padding: 16px;
+      }
+
+      .policy-card p {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0;
+      }
+
+      .bottom-context {
+        border-top: 1px solid var(--line);
+        margin-top: 24px;
+        padding-top: 22px;
+      }
+
+      .report-source-line {
+        align-items: baseline;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .report-card-summary {
+        color: var(--ink);
+        font-size: 15px;
+        font-weight: 850;
+      }
+
+      .report-matrix-wrap {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow-x: auto;
+      }
+
+      .report-matrix {
+        border-collapse: collapse;
+        font-size: 12px;
+        line-height: 1.25;
+        min-width: 960px;
+        width: 100%;
+      }
+
+      .report-matrix th,
+      .report-matrix td {
+        border-right: 1px solid var(--line);
+        padding: 8px;
+        text-align: center;
+        vertical-align: middle;
+      }
+
+      .report-matrix th:last-child,
+      .report-matrix td:last-child {
+        border-right: 0;
+      }
+
+      .report-matrix thead th {
+        background: #f7f9fc;
+        color: var(--ink);
+        font-size: 11px;
+        font-weight: 850;
+        height: 116px;
+        line-height: 1.15;
+        vertical-align: bottom;
+      }
+
+      .report-matrix tbody td {
+        background: white;
+        border-top: 1px solid var(--line);
+      }
+
+      .status-mark {
+        display: grid;
+        gap: 4px;
+        justify-items: center;
+      }
+
+      .status-mark strong {
+        border-radius: 999px;
+        display: inline-grid;
+        font-size: 14px;
+        height: 24px;
+        place-items: center;
+        width: 24px;
+      }
+
+      .status-mark.present strong {
+        background: #e9f8ef;
+        color: #146c36;
+      }
+
+      .status-mark.missing strong {
+        background: #fff2e6;
+        color: #a94b00;
+      }
+
+      .status-mark a {
+        color: var(--blue);
+        font-size: 11px;
+        font-weight: 850;
+        text-decoration: none;
+      }
+
+      @media (max-width: 1050px) {
+        .hero,
+        .band-heading,
+        .page-layout {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .intent-nav {
+          display: none;
+        }
+
+        .metrics-grid,
+        .intent-nav,
+        .chart-grid,
+        .status-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 640px) {
+        .metrics-grid,
+        .intent-nav,
+        .chart-grid,
+        .status-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav class="breadcrumbs" aria-label="Breadcrumb">Home / Texas</nav>
+
+      <section class="hero">
+        <div>
+          <p class="kicker">State civic index</p>
+          <h1>Texas</h1>
+          <p>
+            Public records, civil litigation, policy context, and accountability
+            indicators connected to law enforcement in Texas.
+          </p>
+        </div>
+        <div class="hero-actions">
+          <a class="button" href="#">Share</a>
+          <a class="button" href="#">Download report</a>
+        </div>
+      </section>
+
+      <section class="metrics-grid" aria-label="Top Texas Civic Index metrics">
+        <article class="metric-card counties default">
+          <div class="metric-top">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <path d="M14.5 5.5 9.5 3 3 5.5v15l6.5-2.5 5 2.5 6.5-2.5v-15Z" />
+              <path d="M9.5 3v15" />
+              <path d="M14.5 5.5v15" />
+            </svg>
+            <div>
+              <p class="metric-label">Counties</p>
+              <strong class="metric-value">254</strong>
+            </div>
+          </div>
+          <p class="metric-detail">
+            County and regional pages available under the Texas index.
+          </p>
+          <div class="metric-actions">
+            <a class="metric-action primary" href="/tx/counties/"
+              >Explore counties</a
+            >
+          </div>
+        </article>
+
+        <article class="metric-card reports">
+          <div class="metric-top">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <path
+                d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"
+              />
+              <path d="M14 2v6h6" />
+              <path d="M8 13h8" />
+              <path d="M8 17h5" />
+            </svg>
+            <div>
+              <p class="metric-label">Reports</p>
+              <strong class="metric-value">5</strong>
+            </div>
+          </div>
+          <p class="metric-detail">
+            Published public reports connected to Texas records in the past 12
+            months.
+          </p>
+          <div class="metric-actions">
+            <a class="metric-action secondary" href="/tx/reports/"
+              >View details</a
+            >
+          </div>
+          <div class="meta"><span class="chip">Updated May 2026</span></div>
+        </article>
+
+        <article class="metric-card budget">
+          <div class="metric-top">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+              <path d="M12 6v12" />
+            </svg>
+            <div>
+              <p class="metric-label">Budget</p>
+              <strong class="metric-value">$--</strong>
+            </div>
+          </div>
+          <p class="metric-detail">
+            Current fiscal-year budget, revenue, overtime, and related finance
+            records.
+          </p>
+          <div class="metric-actions">
+            <a class="metric-action secondary" href="/tx/budget/"
+              >View details</a
+            >
+          </div>
+        </article>
+
+        <article class="metric-card cases">
+          <div class="metric-top">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+              <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+              <path d="M7 21h10" />
+              <path d="M12 3v18" />
+            </svg>
+            <div>
+              <p class="metric-label">Civil cases</p>
+              <strong class="metric-value">3</strong>
+            </div>
+          </div>
+          <p class="metric-detail">
+            Total incident-location civil case records connected to Texas.
+          </p>
+          <div class="metric-actions">
+            <a class="metric-action secondary" href="/tx/civil-cases/"
+              >View details</a
+            >
+          </div>
+          <div class="meta"><span class="chip">Updated May 2026</span></div>
+        </article>
+
+        <article class="metric-card liability">
+          <div class="metric-top">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <path d="M8 7a4 4 0 0 1 8 0" />
+              <path d="M6.5 7h11l2 13H4.5Z" />
+              <path d="M10 12h4" />
+            </svg>
+            <div>
+              <p class="metric-label">Liability costs</p>
+              <strong class="metric-value">$--</strong>
+            </div>
+          </div>
+          <p class="metric-detail">
+            Claims, settlements, judgments, defense costs, and related payments
+            from the past 5 years.
+          </p>
+          <div class="metric-actions">
+            <a class="metric-action secondary" href="/tx/liability-costs/"
+              >View details</a
+            >
+          </div>
+        </article>
+
+        <article class="metric-card fatal">
+          <div class="metric-top">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <path d="M12 3v18" />
+              <path d="M5 10h14" />
+              <path d="M7 21h10" />
+              <path d="M8 3h8" />
+            </svg>
+            <div>
+              <p class="metric-label">Fatal Force Incidents</p>
+              <strong class="metric-value">0</strong>
+            </div>
+          </div>
+          <p class="metric-detail">
+            Fatal force, custody deaths, pursuit deaths, and other
+            police-contact deaths from the past 5 years.
+          </p>
+          <div class="metric-actions">
+            <a class="metric-action secondary" href="/tx/fatal-force-incidents/"
+              >View details</a
+            >
+          </div>
+          <div class="meta"><span class="chip">Updated May 2026</span></div>
+        </article>
+      </section>
+
+      <div class="page-layout">
+        <div>
+          <section class="intent-band" id="contacts">
+            <header class="band-heading">
+              <div>
+                <h2>Police contact and enforcement activity</h2>
+                <p>
+                  Calls, stops, arrests, citations, charges, and other recorded
+                  police-contact activity.
+                </p>
+              </div>
+            </header>
+            <div class="chart-grid">
+              <article class="panel">
+                <header>
+                  <h3>Public reports, 12 months</h3>
+                  <p>Published reports attached to Texas location records.</p>
+                </header>
+                <div class="bars blue">
+                  <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                </div>
+                <div class="meta">
+                  <span class="chip">Previous 12 months</span
+                  ><span class="chip">Updated May 2026</span
+                  ><a href="/tx/reports/">View details</a>
+                </div>
+              </article>
+              <article class="panel">
+                <header>
+                  <h3>Contact activity, 12 months</h3>
+                  <p>Stops, arrests, citations, and calls grouped by month.</p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample contact activity chart"
+                >
+                  <div class="stacked-bars">
+                    <div class="stacked-row">
+                      <span class="mini-label">Jan</span>
+                      <div style="--a: 46%; --b: 28%; --c: 26%">
+                        <i></i><i></i><i></i>
+                      </div>
+                    </div>
+                    <div class="stacked-row">
+                      <span class="mini-label">Apr</span>
+                      <div style="--a: 52%; --b: 22%; --c: 26%">
+                        <i></i><i></i><i></i>
+                      </div>
+                    </div>
+                    <div class="stacked-row">
+                      <span class="mini-label">Jul</span>
+                      <div style="--a: 58%; --b: 18%; --c: 24%">
+                        <i></i><i></i><i></i>
+                      </div>
+                    </div>
+                    <div class="stacked-row">
+                      <span class="mini-label">Oct</span>
+                      <div style="--a: 49%; --b: 30%; --c: 21%">
+                        <i></i><i></i><i></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mini-legend">
+                    <span><i></i>Stops</span><span><i></i>Arrests</span
+                    ><span><i></i>Citations</span>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="intent-band" id="disparities">
+            <header class="band-heading">
+              <div>
+                <h2>Disparities and community outcomes</h2>
+                <p>
+                  Contacts, fines, charges, searches, force, and outcomes by
+                  race, ethnicity, income, location, and time of day.
+                </p>
+              </div>
+            </header>
+            <div class="chart-grid">
+              <article class="panel">
+                <header>
+                  <h3>Outcomes by income, 5 years</h3>
+                  <p>
+                    Dismissed cases, convictions, plea deals, jail, probation,
+                    and deferred prosecution by income level.
+                  </p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample outcomes by income chart"
+                >
+                  <div class="stacked-bars">
+                    <div class="stacked-row">
+                      <span class="mini-label">Lower income</span>
+                      <div style="--a: 18%; --b: 26%; --c: 56%">
+                        <i></i><i></i><i></i>
+                      </div>
+                    </div>
+                    <div class="stacked-row">
+                      <span class="mini-label">Middle income</span>
+                      <div style="--a: 30%; --b: 24%; --c: 46%">
+                        <i></i><i></i><i></i>
+                      </div>
+                    </div>
+                    <div class="stacked-row">
+                      <span class="mini-label">Higher income</span>
+                      <div style="--a: 44%; --b: 18%; --c: 38%">
+                        <i></i><i></i><i></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mini-legend">
+                    <span><i></i>Dismissed</span><span><i></i>Plea deal</span
+                    ><span><i></i>Other outcomes</span>
+                  </div>
+                </div>
+                <div class="meta">
+                  <span class="chip">Texas</span
+                  ><a href="/tx/outcomes-by-income/">View details</a>
+                </div>
+              </article>
+              <article class="panel">
+                <header>
+                  <h3>Stops by ethnicity, 12 months</h3>
+                  <p>
+                    Stop share by recorded ethnicity. The detail page explains
+                    what the percentages compare against.
+                  </p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample stops by ethnicity chart"
+                >
+                  <div class="bar-row">
+                    <b>Hispanic</b>
+                    <div class="track"><span style="--v: 44"></span></div>
+                    <em>44%</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Black</b>
+                    <div class="track"><span style="--v: 22"></span></div>
+                    <em>22%</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>White</b>
+                    <div class="track"><span style="--v: 26"></span></div>
+                    <em>26%</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Other</b>
+                    <div class="track"><span style="--v: 8"></span></div>
+                    <em>8%</em>
+                  </div>
+                </div>
+              </article>
+              <article class="panel">
+                <header>
+                  <h3>Stops by ethnicity and day/night, 12 months</h3>
+                  <p>
+                    Stop share by recorded ethnicity split by daylight and
+                    nighttime incidents.
+                  </p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample stops by ethnicity and day or night chart"
+                >
+                  <div class="grouped-bars">
+                    <div class="group">
+                      <div class="columns">
+                        <i style="height: 54%"></i><i style="height: 68%"></i>
+                      </div>
+                      <small>Hispanic</small>
+                    </div>
+                    <div class="group">
+                      <div class="columns">
+                        <i style="height: 32%"></i><i style="height: 45%"></i>
+                      </div>
+                      <small>Black</small>
+                    </div>
+                    <div class="group">
+                      <div class="columns">
+                        <i style="height: 48%"></i><i style="height: 36%"></i>
+                      </div>
+                      <small>White</small>
+                    </div>
+                    <div class="group">
+                      <div class="columns">
+                        <i style="height: 18%"></i><i style="height: 22%"></i>
+                      </div>
+                      <small>Other</small>
+                    </div>
+                  </div>
+                  <div class="mini-legend">
+                    <span><i></i>Day</span><span><i></i>Night</span>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="intent-band" id="costs">
+            <header class="band-heading">
+              <div>
+                <h2>Public costs and litigation</h2>
+                <p>
+                  Budget, revenue, civil litigation, settlements, judgments,
+                  defense costs, and related public costs.
+                </p>
+              </div>
+            </header>
+            <div class="chart-grid">
+              <article class="panel">
+                <header>
+                  <h3>Civil cases filed</h3>
+                  <p>Cases connected to Texas by incident location.</p>
+                </header>
+                <div class="count-summary">
+                  <div class="count-box">
+                    <strong>3</strong><span>Filed in the past 5 years</span>
+                  </div>
+                  <div class="count-box">
+                    <strong>3</strong><span>Total civil cases found</span>
+                  </div>
+                </div>
+                <div class="meta">
+                  <span class="chip">Texas</span
+                  ><span class="chip">Incident-location records</span
+                  ><span class="chip">Updated May 2026</span
+                  ><a href="/tx/civil-cases/">View details</a>
+                </div>
+              </article>
+              <article class="panel">
+                <header>
+                  <h3>Liability costs, 5 years</h3>
+                  <p>
+                    Claims, settlements, judgments, defense costs, and related
+                    payments.
+                  </p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample liability costs chart"
+                >
+                  <div class="bar-row">
+                    <b>Claims</b>
+                    <div class="track"><span style="--v: 58"></span></div>
+                    <em>$--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Defense</b>
+                    <div class="track"><span style="--v: 42"></span></div>
+                    <em>$--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Settlements</b>
+                    <div class="track"><span style="--v: 75"></span></div>
+                    <em>$--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Records disputes</b>
+                    <div class="track"><span style="--v: 18"></span></div>
+                    <em>$--</em>
+                  </div>
+                </div>
+                <div class="meta">
+                  <a href="/tx/liability-costs/">View details</a>
+                </div>
+              </article>
+              <article class="panel">
+                <header>
+                  <h3>Revenue by income, 5 years</h3>
+                  <p>
+                    Fine, fee, forfeiture, and court-cost revenue by
+                    neighborhood income level.
+                  </p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample revenue by income chart"
+                >
+                  <div class="bar-row">
+                    <b>Lower income</b>
+                    <div class="track"><span style="--v: 64"></span></div>
+                    <em>$--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Middle income</b>
+                    <div class="track"><span style="--v: 38"></span></div>
+                    <em>$--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Higher income</b>
+                    <div class="track"><span style="--v: 19"></span></div>
+                    <em>$--</em>
+                  </div>
+                </div>
+              </article>
+              <article class="panel">
+                <header>
+                  <h3>Budget, 5 years</h3>
+                  <p>Fiscal-year budget records by year.</p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample budget chart"
+                >
+                  <div class="bar-row">
+                    <b>2021</b>
+                    <div class="track"><span style="--v: 52"></span></div>
+                    <em>$--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>2022</b>
+                    <div class="track"><span style="--v: 58"></span></div>
+                    <em>$--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>2023</b>
+                    <div class="track"><span style="--v: 64"></span></div>
+                    <em>$--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>2024</b>
+                    <div class="track"><span style="--v: 70"></span></div>
+                    <em>$--</em>
+                  </div>
+                </div>
+                <div class="meta">
+                  <span class="chip">Texas</span
+                  ><a href="/tx/budget/">View details</a>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="intent-band" id="accountability">
+            <header class="band-heading">
+              <div>
+                <h2>
+                  Complaints, discipline, force, lawsuits, and accountability
+                  outcomes
+                </h2>
+                <p>
+                  Complaints, force incidents, lawsuits, body-camera issues,
+                  discipline decisions, and public-record barriers.
+                </p>
+              </div>
+            </header>
+            <div class="chart-grid">
+              <article class="panel">
+                <header>
+                  <h3>Complaint outcomes, 5 years</h3>
+                  <p>
+                    Findings and actions taken after complaints are reviewed.
+                  </p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample complaint outcomes chart"
+                >
+                  <div class="bar-row">
+                    <b>Sustained</b>
+                    <div class="track"><span style="--v: 22"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Not proven</b>
+                    <div class="track"><span style="--v: 42"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Unfounded</b>
+                    <div class="track"><span style="--v: 18"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Exonerated</b>
+                    <div class="track"><span style="--v: 30"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Closed or withdrawn</b>
+                    <div class="track"><span style="--v: 24"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="mini-legend">
+                    <span
+                      ><i></i>Actions: discipline, training, coaching,
+                      mediation, rapid resolution</span
+                    >
+                  </div>
+                </div>
+                <div class="meta">
+                  <span class="chip">Texas</span
+                  ><span class="chip">Geography-level summary</span>
+                </div>
+              </article>
+              <article class="panel">
+                <header>
+                  <h3>Body-camera and report-quality records, 12 months</h3>
+                  <p>
+                    Activation failures, missing video, late uploads, report
+                    corrections, and amended reports.
+                  </p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample body-camera and report-quality records chart"
+                >
+                  <div class="bar-row">
+                    <b>Missing video</b>
+                    <div class="track"><span style="--v: 48"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Late upload</b>
+                    <div class="track"><span style="--v: 34"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Report correction</b>
+                    <div class="track"><span style="--v: 28"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Amended report</b>
+                    <div class="track"><span style="--v: 20"></span></div>
+                    <em>--</em>
+                  </div>
+                </div>
+              </article>
+              <article class="panel">
+                <header>
+                  <h3>Use of force, 12 months</h3>
+                  <p>
+                    Force reports by type, with the source record named on the
+                    detail page.
+                  </p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample use of force chart"
+                >
+                  <div class="bar-row">
+                    <b>Hands or holds</b>
+                    <div class="track"><span style="--v: 52"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Taser</b>
+                    <div class="track"><span style="--v: 26"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Chemical spray</b>
+                    <div class="track"><span style="--v: 18"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Firearm</b>
+                    <div class="track"><span style="--v: 8"></span></div>
+                    <em>--</em>
+                  </div>
+                </div>
+              </article>
+              <article class="panel">
+                <header>
+                  <h3>Fatal force incidents, 5 years</h3>
+                  <p>Fatal force and other deaths involving police contact.</p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample fatal force incidents chart"
+                >
+                  <div class="bar-row">
+                    <b>Under 18</b>
+                    <div class="track"><span style="--v: 10"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>18 and older</b>
+                    <div class="track"><span style="--v: 58"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Dogs</b>
+                    <div class="track"><span style="--v: 34"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Other animals</b>
+                    <div class="track"><span style="--v: 12"></span></div>
+                    <em>--</em>
+                  </div>
+                </div>
+                <div class="meta">
+                  <span class="chip">Texas</span
+                  ><span class="chip">Updated May 2026</span
+                  ><a href="/tx/fatal-force-incidents/">View details</a>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="intent-band" id="credibility">
+            <header class="band-heading">
+              <div>
+                <h2>
+                  Officer credibility, search validity, force justification, and
+                  impeachment records
+                </h2>
+                <p>
+                  Brady, Giglio, suppression, evidence-exclusion,
+                  search-validity, and force-justification records.
+                </p>
+              </div>
+            </header>
+            <div class="chart-grid">
+              <article class="panel">
+                <header>
+                  <h3>Credibility records, 5 years</h3>
+                  <p>
+                    Agency/personnel-scope records that may affect credibility
+                    or criminal-case review.
+                  </p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample credibility records chart"
+                >
+                  <div class="bar-row">
+                    <b>Brady/Giglio</b>
+                    <div class="track"><span style="--v: 26"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Suppression</b>
+                    <div class="track"><span style="--v: 34"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Evidence excluded</b>
+                    <div class="track"><span style="--v: 18"></span></div>
+                    <em>--</em>
+                  </div>
+                </div>
+              </article>
+              <article class="panel">
+                <header>
+                  <h3>Search hit rate and force records, 12 months</h3>
+                  <p>
+                    Compare search, force, and evidence records only when the
+                    record source and comparison group are documented.
+                  </p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample search and force record chart"
+                >
+                  <div class="bar-row">
+                    <b>Searches</b>
+                    <div class="track"><span style="--v: 56"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Hits</b>
+                    <div class="track"><span style="--v: 18"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Force reports</b>
+                    <div class="track"><span style="--v: 31"></span></div>
+                    <em>--</em>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="intent-band" id="safeguards">
+            <header class="band-heading">
+              <div>
+                <h2>Policy safeguards and accountability systems</h2>
+                <p>
+                  Policy safeguards, transparency mechanisms, decertification
+                  law context, and accountability-system barriers.
+                </p>
+              </div>
+            </header>
+            <article class="policy-card">
+              <h3>Policy and transparency records, current</h3>
+              <p>
+                De-escalation, duty to intervene, force reporting, complaint
+                access, body-camera rules, public reporting, and related
+                safeguards.
+              </p>
+            </article>
+          </section>
+
+          <section class="intent-band" id="better">
+            <header class="band-heading">
+              <div>
+                <h2>Better outcomes and positive-deviance signals</h2>
+                <p>
+                  Comparative signals such as lower complaint rates, lower force
+                  rates, faster complaint resolution, stronger policy
+                  safeguards, or improved outcomes under comparable constraints.
+                </p>
+              </div>
+            </header>
+            <div class="chart-grid">
+              <article class="panel">
+                <header>
+                  <h3>Force rate compared with peer median, 12 months</h3>
+                  <p>
+                    Positive signal only when peer groups, comparison groups,
+                    and limits are documented.
+                  </p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample peer comparison chart"
+                >
+                  <div class="bar-row">
+                    <b>Peer median</b>
+                    <div class="track"><span style="--v: 62"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Lower-force peers</b>
+                    <div class="track"><span style="--v: 38"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Texas agencies</b>
+                    <div class="track"><span style="--v: 54"></span></div>
+                    <em>--</em>
+                  </div>
+                </div>
+                <div class="meta">
+                  <span class="chip">Peer comparison</span>
+                </div>
+              </article>
+              <article class="panel">
+                <header>
+                  <h3>Policy safeguards and outcomes, 12 months</h3>
+                  <p>
+                    Compare safeguards with complaint, force, payout, disparity,
+                    or public-trust outcome records.
+                  </p>
+                </header>
+                <div
+                  class="sample-chart disabled"
+                  aria-label="Disabled sample safeguards and outcomes chart"
+                >
+                  <div class="bar-row">
+                    <b>Strong safeguards</b>
+                    <div class="track"><span style="--v: 48"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Complaint rate</b>
+                    <div class="track"><span style="--v: 32"></span></div>
+                    <em>--</em>
+                  </div>
+                  <div class="bar-row">
+                    <b>Force rate</b>
+                    <div class="track"><span style="--v: 28"></span></div>
+                    <em>--</em>
+                  </div>
+                </div>
+                <div class="meta">
+                  <span class="chip">Peer comparison</span>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="bottom-context" aria-label="State context">
+            <article class="policy-card">
+              <h3>Decertification law context</h3>
+              <p class="report-source-line">
+                <span class="report-card-summary"
+                  >5 of 9 mechanisms present (0 unknown). Updated Oct. 16,
+                  2025.</span
+                >
+                National Police Decertification Report Card Results: top tier of
+                most empowering mechanisms and processes.
+                <a href="https://www.mayerssolutions.com/licenserevoked"
+                  >Report source</a
+                >
+              </p>
+              <div
+                class="report-matrix-wrap"
+                aria-label="Texas decertification report card statuses"
+              >
+                <table class="report-matrix">
+                  <thead>
+                    <tr>
+                      <th scope="col">
+                        Are meetings accessible to the public?
+                      </th>
+                      <th scope="col">Do meetings occur often?</th>
+                      <th scope="col">Can civilians file complaints?</th>
+                      <th scope="col">
+                        Are civilians involved in the decision-making process?
+                      </th>
+                      <th scope="col">
+                        Has power to investigate complaints independent of law
+                        enforcement agencies?
+                      </th>
+                      <th scope="col">
+                        Provides information on ongoing decertification
+                        investigations?
+                      </th>
+                      <th scope="col">
+                        Provides information on determinations or adverse
+                        actions?
+                      </th>
+                      <th scope="col">
+                        Requires checking and/or reporting to the N.D.I.?
+                      </th>
+                      <th scope="col">
+                        Has automatic and discretionary decertifications?
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <span class="status-mark missing"
+                          ><strong aria-label="Missing">X</strong
+                          ><a
+                            href="https://www.tcole.texas.gov/content/tcole-commission-and-its-members"
+                            >[186]</a
+                          ></span
+                        >
+                      </td>
+                      <td>
+                        <span class="status-mark missing"
+                          ><strong aria-label="Missing">X</strong
+                          ><a
+                            href="https://www.tcole.texas.gov/content/tcole-commission-and-its-members"
+                            >[187]</a
+                          ></span
+                        >
+                      </td>
+                      <td>
+                        <span class="status-mark present"
+                          ><strong aria-label="Present">✓</strong
+                          ><a
+                            href="https://www.tcole.texas.gov/content/complaint-procedures"
+                            >[188]</a
+                          ></span
+                        >
+                      </td>
+                      <td>
+                        <span class="status-mark present"
+                          ><strong aria-label="Present">✓</strong
+                          ><a
+                            href="https://www.tcole.texas.gov/content/tcole-commission-and-its-members"
+                            >[189]</a
+                          ></span
+                        >
+                      </td>
+                      <td>
+                        <span class="status-mark present"
+                          ><strong aria-label="Present">✓</strong
+                          ><a
+                            href="https://www.tcole.texas.gov/content/complaint-procedures"
+                            >[190]</a
+                          ></span
+                        >
+                      </td>
+                      <td>
+                        <span class="status-mark missing"
+                          ><strong aria-label="Missing">X</strong
+                          ><a
+                            href="https://www.tcole.texas.gov/content/public-information-act"
+                            >[191]</a
+                          ></span
+                        >
+                      </td>
+                      <td>
+                        <span class="status-mark missing"
+                          ><strong aria-label="Missing">X</strong
+                          ><a
+                            href="https://www.tcole.texas.gov/content/public-information-act"
+                            >[192]</a
+                          ></span
+                        >
+                      </td>
+                      <td>
+                        <span class="status-mark present"
+                          ><strong aria-label="Present">✓</strong
+                          ><a
+                            href="https://www.tcole.texas.gov/content/technical-assistance-bulletins"
+                            >[193]</a
+                          ></span
+                        >
+                      </td>
+                      <td>
+                        <span class="status-mark present"
+                          ><strong aria-label="Present">✓</strong
+                          ><a
+                            href="https://statutes.capitol.texas.gov/Docs/OC/htm/OC.53.htm#53.021"
+                            >[194]</a
+                          ></span
+                        >
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+        </div>
+
+        <aside>
+          <nav class="intent-nav" aria-label="Page sections">
+            <p class="menu-title">On this page</p>
+            <a href="#contacts">Contact and enforcement</a>
+            <a href="#disparities">Disparities and outcomes</a>
+            <a href="#costs">Public cost</a>
+            <a href="#accountability">Accountability outcomes</a>
+            <a href="#credibility">Officer credibility</a>
+            <a href="#safeguards">Policy safeguards</a>
+            <a href="#better">Better outcomes</a>
+          </nav>
+        </aside>
+      </div>
+    </main>
+  </body>
+</html>

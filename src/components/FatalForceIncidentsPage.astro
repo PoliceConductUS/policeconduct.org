@@ -1,0 +1,115 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityActionButton from "#src/components/EntityActionButton.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { metricVisuals } from "#src/lib/metric-vocabulary.js";
+import type { MetricCardItem } from "#src/components/metric-card-types.js";
+
+const { breadcrumbs, description, pagePath, title } = Astro.props as {
+  breadcrumbs: { current?: boolean; href: string; label: string }[];
+  description: string;
+  pagePath: string;
+  title: string;
+};
+
+const metricCards: MetricCardItem[] = [
+  {
+    ...metricVisuals.fatalForceIncidents,
+    value: "0",
+    detail: "Fatal force incidents from the past 5 years",
+  },
+  {
+    ...metricVisuals.fatalForceIncidents,
+    value: "--",
+    detail: "People under 18",
+  },
+  {
+    ...metricVisuals.fatalForceIncidents,
+    value: "--",
+    detail: "People 18 and older",
+  },
+  {
+    ...metricVisuals.fatalForceIncidents,
+    value: "--",
+    detail: "Dogs",
+  },
+  {
+    ...metricVisuals.fatalForceIncidents,
+    value: "--",
+    detail: "Other animals",
+  },
+];
+
+const chartTitles = [
+  "Fatal Force Incidents, 5 Years",
+  "Fatal Force Incidents by Age",
+  "Fatal Force Incidents Involving Animals",
+];
+const sampleRows = [
+  { label: "Under 18", value: "--", width: 12 },
+  { label: "18 and older", value: "--", width: 58 },
+  { label: "Dogs", value: "--", width: 34 },
+  { label: "Other animals", value: "--", width: 14 },
+];
+---
+
+<SiteLayout
+  title={title}
+  description={description}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main class="fatal-force-page">
+    <section class="fatal-force-overview">
+      <div class="container">
+        <Breadcrumbs items={breadcrumbs} className="mb-2" />
+        <EntityPageHeader title={title} description={description}>
+          <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={title}
+              sourcePage={pagePath}
+              topic="Fatal Force Incidents"
+            />
+            <EntityActionButton>Share</EntityActionButton>
+            <EntityActionButton>Download report</EntityActionButton>
+          </Fragment>
+        </EntityPageHeader>
+
+        <MetricGrid metrics={metricCards} columns="auto" />
+
+        <div class="entity-chart-grid">
+          {
+            chartTitles.map((chartTitle) => (
+              <DataPanel title={chartTitle}>
+                <SampleMeasurementChart
+                  ariaLabel={`Sample ${chartTitle} chart`}
+                  rows={sampleRows}
+                />
+              </DataPanel>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<style>
+  .fatal-force-page {
+    background: #fbfcff;
+    color: #071842;
+  }
+
+  .fatal-force-overview {
+    padding: 1.35rem 0 2rem;
+  }
+
+  .fatal-force-overview > .container {
+    max-width: 1240px;
+  }
+</style>

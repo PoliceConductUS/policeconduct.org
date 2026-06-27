@@ -1,10 +1,18 @@
 import { groupBy, mapBy } from "#src/lib/data.js";
 import { withDb } from "#src/lib/db.js";
-import { formatShortDate } from "#src/lib/format.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
-import { buildReportCanonicalPath } from "./report-paths.js";
+
+export type AgencyScopedTopicKind =
+  | "personnel"
+  | "reports"
+  | "budget"
+  | "civil-cases"
+  | "fatal-force-incidents"
+  | "liability-costs"
+  | "outcomes-by-income";
 
 export const requireAgencyText = (
   value: unknown,
@@ -23,46 +31,31 @@ export const loadAgencyStaticPaths = async () => {
     return (
       await client.query(
         `select
-           a.id,
-           a.slug,
-           lp.state_or_territory_slug as state,
-           lp.path as location_path
-         from public.agency a
-         join public.location_path lp
-           on lp.location_path_id = a.location_path_id`,
+           payload
+         from public.build_page_payload
+         where page_type = 'agency'`,
       )
     ).rows;
   });
 
-  return agencies.map(
-    (agency: {
-      id: string;
-      slug: string;
-      state?: string | null;
-      location_path: string;
-    }) => {
-      const agencyId = requireAgencyText(agency.id, "id", "unknown");
-      const stateValue = requireAgencyText(
-        agency.state,
-        "state",
-        agencyId,
-      ).toLowerCase();
+  return agencies.map((row: { payload: any }) => {
+    const agency = row.payload?.agency;
+    const agencyId = requireAgencyText(agency?.id, "id", "unknown");
 
-      return {
-        params: {
-          category: stateValue,
-          slug: requireAgencyText(agency.slug, "slug", agencyId),
-        },
-        props: {
-          canonicalAgencyPath: requireAgencyCanonicalPath({
-            id: agencyId,
-            location_path: agency.location_path,
-            slug: agency.slug,
-          }),
-        },
-      };
-    },
-  );
+    return {
+      params: {
+        category: requireAgencyText(agency?.state, "state", agencyId),
+        slug: requireAgencyText(agency?.slug, "slug", agencyId),
+      },
+      props: {
+        canonicalAgencyPath: requireAgencyText(
+          agency?.path,
+          "canonical path",
+          agencyId,
+        ),
+      },
+    };
+  });
 };
 
 export const loadAgencyLocationStaticPaths = async () => {
@@ -70,42 +63,193 @@ export const loadAgencyLocationStaticPaths = async () => {
     return (
       await client.query(
         `select
-           a.id,
-           a.slug,
-           lp.state_or_territory_slug as category,
-           lp.administrative_area_slug as location_administrative_area_slug,
-           lp.place_slug as location_place_slug
-         from public.agency a
-         join public.location_path lp
-           on lp.location_path_id = a.location_path_id`,
+           path,
+           entity_id
+         from public.build_page_payload
+         where page_type = 'agency'
+         order by path`,
       )
     ).rows;
   });
 
   return agencies.map((agency: any) => {
-    const agencyId = requireAgencyText(agency.id, "id", "unknown");
+    const agencyId = requireAgencyText(agency.entity_id, "id", "unknown");
+    const pathParts = requireAgencyText(agency.path, "path", agencyId)
+      .split("/")
+      .filter(Boolean);
+    if (pathParts.length !== 4) {
+      throw new Error(
+        `Agency ${agencyId} has malformed projected canonical path ${agency.path}.`,
+      );
+    }
     return {
       params: {
-        category: requireAgencyText(
-          agency.category,
-          "location state",
-          agencyId,
-        ),
-        administrativeArea: requireAgencyText(
-          agency.location_administrative_area_slug,
-          "location administrative_area_slug",
-          agencyId,
-        ),
-        place: requireAgencyText(
-          agency.location_place_slug,
-          "location place_slug",
-          agencyId,
-        ),
-        agencySlug: requireAgencyText(agency.slug, "slug", agencyId),
+        category: pathParts[0],
+        administrativeArea: pathParts[1],
+        place: pathParts[2],
+        agencySlug: pathParts[3],
       },
-      props: { agencyId },
     };
   });
+};
+
+const agencyLocationStaticPathSelect = `
+  select
+    bpp.path,
+    bpp.entity_id
+  from public.build_page_payload bpp
+`;
+
+const agencyTopicWhereSql = (kind: AgencyScopedTopicKind) => {
+  if (kind === "personnel") {
+    return `
+      where bpp.page_type = 'agency'
+        and exists (
+          select 1
+          from public.agency_officers ao
+          where ao.agency_id = bpp.entity_id
+        )
+    `;
+  }
+
+  if (kind === "reports") {
+    return `
+      where bpp.page_type = 'agency'
+        and exists (
+          select 1
+          from public.agency_officers ao
+          join public.review_officers ro
+            on ro.agency_officer_id = ao.id
+          where ao.agency_id = bpp.entity_id
+        )
+    `;
+  }
+
+  if (kind === "civil-cases") {
+    return `
+      where bpp.page_type = 'agency'
+        and exists (
+          select 1
+          from public.agency_officers target_ao
+          join public.agency_officers case_ao
+            on case_ao.officer_id = target_ao.officer_id
+          join public.civil_case_officers cco
+            on cco.agency_officer_id = case_ao.id
+          where target_ao.agency_id = bpp.entity_id
+        )
+    `;
+  }
+
+  return `
+    where false
+  `;
+};
+
+const toAgencyLocationStaticPath = (agency: {
+  entity_id: string | null;
+  path: string | null;
+}) => {
+  const agencyId = requireAgencyText(agency.entity_id, "id", "unknown");
+  const pathParts = requireAgencyText(agency.path, "path", agencyId)
+    .split("/")
+    .filter(Boolean);
+  if (pathParts.length !== 4) {
+    throw new Error(
+      `Agency ${agencyId} has malformed projected canonical path ${agency.path}.`,
+    );
+  }
+  return {
+    params: {
+      category: pathParts[0],
+      administrativeArea: pathParts[1],
+      place: pathParts[2],
+      agencySlug: pathParts[3],
+    },
+  };
+};
+
+export const loadAgencyLocationStaticPathsForTopic = async (
+  kind: AgencyScopedTopicKind,
+) => {
+  const agencies = await withDb(async (client) => {
+    return (
+      await client.query(
+        `
+          ${agencyLocationStaticPathSelect}
+          ${agencyTopicWhereSql(kind)}
+          order by bpp.path
+        `,
+      )
+    ).rows;
+  });
+
+  return agencies.map(toAgencyLocationStaticPath);
+};
+
+type AgencyRouteParams = {
+  agencySlug?: string | null;
+  administrativeArea?: string | null;
+  category?: string | null;
+  place?: string | null;
+};
+
+const agencyRoutePathFor = (params: AgencyRouteParams) => {
+  const category = requireAgencyText(
+    params.category,
+    "route category",
+    "route",
+  );
+  const administrativeArea = requireAgencyText(
+    params.administrativeArea,
+    "route administrativeArea",
+    "route",
+  );
+  const place = requireAgencyText(params.place, "route place", "route");
+  const agencySlug = requireAgencyText(
+    params.agencySlug,
+    "route agencySlug",
+    "route",
+  );
+
+  return {
+    agencySlug,
+    agencyPath: `/${category}/${administrativeArea}/${place}/${agencySlug}/`,
+    locationPath: `/${category}/${administrativeArea}/${place}/`,
+  };
+};
+
+export const loadAgencyDetailByRouteParams = async (
+  params: AgencyRouteParams,
+) => {
+  const route = agencyRoutePathFor(params);
+  const agencyId = await withDb(async (client) => {
+    return (
+      await client.query(
+        `
+          select a.id
+          from public.agency a
+          join public.location_path lp
+            on lp.location_path_id = a.location_path_id
+          where lp.path = $1
+            and a.slug = $2
+        `,
+        [route.locationPath, route.agencySlug],
+      )
+    ).rows[0]?.id as string | undefined;
+  });
+
+  if (!agencyId) {
+    throw new Error(`Agency route ${route.agencyPath} did not resolve.`);
+  }
+
+  const detail = await loadAgencyDetail(agencyId);
+  if (detail.agencyPath !== route.agencyPath) {
+    throw new Error(
+      `Agency route ${route.agencyPath} resolved to ${detail.agencyPath}.`,
+    );
+  }
+
+  return detail;
 };
 
 const loadAgencyRows = async (agencyId: string) =>
@@ -115,6 +259,7 @@ const loadAgencyRows = async (agencyId: string) =>
         `
           select
             a.*,
+            bpp.path as canonical_path,
             lp.path as location_path,
             lp.state_or_territory_slug as state,
             lp.administrative_area_name as administrative_area,
@@ -124,6 +269,9 @@ const loadAgencyRows = async (agencyId: string) =>
           from public.agency a
           join public.location_path lp
             on lp.location_path_id = a.location_path_id
+          join public.build_page_payload bpp
+            on bpp.page_type = 'agency'
+           and bpp.entity_id = a.id
           where a.id = $1
         `,
         [agencyId],
@@ -199,57 +347,6 @@ const loadAgencyRows = async (agencyId: string) =>
         reportOfficers.map((entry: { review_id: string }) => entry.review_id),
       ),
     ];
-    const reports = reportIds.length
-      ? (
-          await client.query(
-            `
-              select r.*, lp.path as location_path
-              from public.reviews r
-              join public.location_path lp on lp.location_path_id = r.location_path_id
-              where r.id = any($1)
-            `,
-            [reportIds],
-          )
-        ).rows
-      : [];
-    const allReportOfficers = reportIds.length
-      ? (
-          await client.query(
-            "select * from public.review_officers where review_id = any($1)",
-            [reportIds],
-          )
-        ).rows
-      : [];
-    const allReportAgencyOfficerIds = [
-      ...new Set(
-        allReportOfficers.map(
-          (entry: { agency_officer_id: string }) => entry.agency_officer_id,
-        ),
-      ),
-    ];
-    const allReportAgencyOfficers = allReportAgencyOfficerIds.length
-      ? (
-          await client.query(
-            "select * from public.agency_officers where id = any($1)",
-            [allReportAgencyOfficerIds],
-          )
-        ).rows
-      : [];
-    const allReportOfficerIds = [
-      ...new Set(
-        allReportAgencyOfficers.map(
-          (entry: { officer_id: string }) => entry.officer_id,
-        ),
-      ),
-    ];
-    const reportLinkedOfficers = allReportOfficerIds.length
-      ? (
-          await client.query(
-            "select * from public.officers where id = any($1)",
-            [allReportOfficerIds],
-          )
-        ).rows
-      : [];
     const civilCaseIds = (
       await client.query(
         `select distinct cco.civil_case_id
@@ -273,7 +370,7 @@ const loadAgencyRows = async (agencyId: string) =>
     const civilCaseOfficers = civilCaseIds.length
       ? (
           await client.query(
-            `select cco.civil_case_id, ao.officer_id, ao.title
+            `select cco.civil_case_id, ao.officer_id, ao.license_type
              from public.civil_case_officers cco
              join public.agency_officers ao on ao.id = cco.agency_officer_id
              where cco.civil_case_id = any($1)`,
@@ -313,6 +410,7 @@ const loadAgencyRows = async (agencyId: string) =>
                 c.title,
                 c.cause_number,
                 c.filed_date,
+                c.date_terminated,
                 c.court,
                 c.primary_source_url,
                 o.id as officer_id,
@@ -320,12 +418,13 @@ const loadAgencyRows = async (agencyId: string) =>
                 o.first_name,
                 o.last_name,
                 o.suffix,
-                case_ao.title as case_license_type,
+                case_ao.license_type as case_license_type,
                 case_agency.id as case_agency_id,
                 case_agency.name as case_agency_name,
                 case_agency.slug as case_agency_slug,
                 case_location.path as case_agency_location_path,
-                target_ao.title as target_license_type,
+                case_bpp.path as case_agency_canonical_path,
+                target_ao.license_type as target_license_type,
                 target_ao.start_date as target_start_date,
                 target_ao.end_date as target_end_date
               from public.civil_case_officers cco
@@ -339,6 +438,9 @@ const loadAgencyRows = async (agencyId: string) =>
                 on case_agency.id = case_ao.agency_id
               join public.location_path case_location
                 on case_location.location_path_id = case_agency.location_path_id
+              join public.build_page_payload case_bpp
+                on case_bpp.page_type = 'agency'
+               and case_bpp.entity_id = case_agency.id
               join lateral (
                 select *
                 from public.agency_officers target_assignment
@@ -376,10 +478,7 @@ const loadAgencyRows = async (agencyId: string) =>
       federalAgency,
       officers,
       officerStats,
-      reports,
-      allReportOfficers,
-      allReportAgencyOfficers,
-      reportLinkedOfficers,
+      reportIds,
       civilCases,
       civilCaseOfficers,
       civilOfficers,
@@ -387,7 +486,7 @@ const loadAgencyRows = async (agencyId: string) =>
     };
   });
 
-export const loadAgencyDetail = async (agencyId: string) => {
+const buildAgencyDetail = async (agencyId: string) => {
   const data = await loadAgencyRows(agencyId);
   const coverageLinks = await loadCoverageLinksForAgency(agencyId);
 
@@ -443,9 +542,6 @@ export const loadAgencyDetail = async (agencyId: string) => {
 
   const officersById = mapBy(data.officers, "id");
   const officerStatsById = mapBy(data.officerStats, "id");
-  const allReportAgencyOfficersById = mapBy(data.allReportAgencyOfficers, "id");
-  const reportLinkedOfficersById = mapBy(data.reportLinkedOfficers, "id");
-  const reportOfficersByReport = groupBy(data.allReportOfficers, "review_id");
   const civilCaseOfficersByCase = groupBy(
     data.civilCaseOfficers,
     "civil_case_id",
@@ -465,6 +561,7 @@ export const loadAgencyDetail = async (agencyId: string) => {
         officer_id?: string | null;
         start_date?: string | null;
         end_date?: string | null;
+        license_type?: string | null;
       };
       officer?: { first_name?: string | null; last_name?: string | null };
     },
@@ -473,6 +570,7 @@ export const loadAgencyDetail = async (agencyId: string) => {
         officer_id?: string | null;
         start_date?: string | null;
         end_date?: string | null;
+        license_type?: string | null;
       };
       officer?: { first_name?: string | null; last_name?: string | null };
     },
@@ -510,6 +608,7 @@ export const loadAgencyDetail = async (agencyId: string) => {
         badge_number?: string | null;
         start_date?: string | null;
         end_date?: string | null;
+        license_type?: string | null;
       }) => {
         const officer = officersById[entry.officer_id];
         const stats = officerStatsById[entry.officer_id];
@@ -537,16 +636,17 @@ export const loadAgencyDetail = async (agencyId: string) => {
       title?: string | null;
       cause_number?: string | null;
       filed_date: string;
+      date_terminated?: string | null;
       court?: string | null;
       primary_source_url?: string | null;
     }) => {
       const officerLinks = (civilCaseOfficersByCase[record.id] || []).map(
-        (entry: { officer_id: string; title?: string | null }) => {
+        (entry: { officer_id: string; license_type?: string | null }) => {
           const officer = civilOfficersById[entry.officer_id];
           return officer
             ? {
                 ...officer,
-                licenseType: entry.title || null,
+                licenseType: entry.license_type || null,
               }
             : null;
         },
@@ -571,6 +671,7 @@ export const loadAgencyDetail = async (agencyId: string) => {
       title: record.title,
       cause_number: record.cause_number,
       filed_date: record.filed_date,
+      date_terminated: record.date_terminated,
       court: record.court,
       primary_source_url: record.primary_source_url,
       caseUrl: `/civil-cases/${record.slug}/`,
@@ -590,8 +691,7 @@ export const loadAgencyDetail = async (agencyId: string) => {
           location_path: entry.case_agency_location_path,
           canonicalPath: requireAgencyCanonicalPath({
             id: entry.case_agency_id,
-            location_path: entry.case_agency_location_path,
-            slug: entry.case_agency_slug,
+            canonical_path: entry.case_agency_canonical_path,
           }),
         },
         targetAgencyAssignment: {
@@ -604,55 +704,27 @@ export const loadAgencyDetail = async (agencyId: string) => {
     };
   });
 
-  const reportedReports = data.reports
-    .map(
-      (report: {
-        id: string;
-        incident_date: string;
-        location_path: string;
-        slug: string;
-      }) => {
-        const linkedOfficers = (reportOfficersByReport[report.id] || [])
-          .map((entry: { agency_officer_id: string }) => {
-            const agencyOfficer =
-              allReportAgencyOfficersById[entry.agency_officer_id];
-            const officer = agencyOfficer
-              ? reportLinkedOfficersById[agencyOfficer.officer_id]
-              : null;
-            return officer
-              ? {
-                  ...officer,
-                  licenseType: agencyOfficer.title || null,
-                }
-              : null;
-          })
-          .filter(Boolean)
-          .filter(
-            (
-              officer: { slug?: string | null },
-              index: number,
-              officers: { slug?: string | null }[],
-            ) =>
-              index ===
-              officers.findIndex((item) => item.slug === officer.slug),
-          );
-
-        return {
-          ...report,
-          incidentDate: formatShortDate(report.incident_date),
-          url: buildReportCanonicalPath({
-            id: report.id,
-            incidentDate: report.incident_date,
-            locationPath: report.location_path,
-            slug: report.slug,
-          }),
-          officers: linkedOfficers,
-        };
-      },
-    )
+  const reportSummariesById = mapBy(
+    await loadReportSummaryBuildPayloads(),
+    "id",
+  );
+  const reportedReports = data.reportIds
+    .map((reportId: string) => {
+      const report = reportSummariesById[reportId];
+      if (!report) {
+        throw new Error(
+          `Agency ${agencyRequiredId} references report ${reportId}, but that report has no build projection.`,
+        );
+      }
+      return {
+        ...report,
+        url: report.canonicalPath,
+        officers: report.personnel || [],
+      };
+    })
     .sort((a, b) => {
-      const left = new Date(b.incident_date).getTime();
-      const right = new Date(a.incident_date).getTime();
+      const left = new Date(b.incidentDate).getTime();
+      const right = new Date(a.incidentDate).getTime();
       return left - right;
     });
 
@@ -688,4 +760,22 @@ export const loadAgencyDetail = async (agencyId: string) => {
       coverage: coverageLinks.length,
     },
   };
+};
+
+const agencyDetailCache = new Map<
+  string,
+  ReturnType<typeof buildAgencyDetail>
+>();
+
+export const loadAgencyDetail = async (agencyId: string) => {
+  if (process.env.NODE_ENV !== "production") {
+    return buildAgencyDetail(agencyId);
+  }
+
+  let cached = agencyDetailCache.get(agencyId);
+  if (!cached) {
+    cached = buildAgencyDetail(agencyId);
+    agencyDetailCache.set(agencyId, cached);
+  }
+  return cached;
 };

@@ -16,12 +16,17 @@ const { items, className = "mb-3" } = Astro.props;
 
 const siteUrl = getSiteUrl(Astro.site);
 const currentPath = Astro.url?.pathname || "/";
-const normalizedItems = items.map((item, index) => ({
+const homeItem: BreadcrumbItem = { label: "Home", href: "/" };
+const breadcrumbItems =
+  items[0]?.label === homeItem.label && items[0]?.href === homeItem.href
+    ? items
+    : [homeItem, ...items];
+const normalizedItems = breadcrumbItems.map((item, index) => ({
   ...item,
   href:
     item.href ||
-    (item.current || index === items.length - 1 ? currentPath : ""),
-  current: item.current ?? index === items.length - 1,
+    (item.current || index === breadcrumbItems.length - 1 ? currentPath : ""),
+  current: item.current ?? index === breadcrumbItems.length - 1,
 }));
 const currentItemCount = normalizedItems.filter((item) => item.current).length;
 const hasValidLinkedItems = normalizedItems.every(

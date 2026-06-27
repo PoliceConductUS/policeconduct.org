@@ -46,6 +46,12 @@ type ReportDetailQuery = {
 export type ReportDetailModel = {
   report: Record<string, unknown>;
   canonicalPath: string;
+  locationBreadcrumbs: {
+    state: { label: string; href: string };
+    administrativeArea: { label: string; href: string };
+    place: { label: string; href: string };
+    reports: { label: string; href: string };
+  };
   reportWitnesses: Record<string, unknown>[];
   reportAttachments: Record<string, unknown>[];
   tags: string[];
@@ -162,7 +168,15 @@ export const loadReportDetail = async (
     const report = (
       await client.query(
         `
-          select r.*, lp.path as location_path, lp.state_or_territory_slug
+          select
+            r.*,
+            lp.path as location_path,
+            lp.state_or_territory_slug,
+            lp.administrative_area_slug,
+            lp.place_slug,
+            lp.state_or_territory_name,
+            lp.administrative_area_name,
+            lp.place_name
           from public.reviews r
           left join public.location_path lp
             on lp.location_path_id = r.location_path_id
@@ -233,10 +247,13 @@ export const loadReportDetail = async (
     const agencies = (
       await client.query(
         `
-          select a.*, lp.path as location_path
+          select a.*, lp.path as location_path, bpp.path as canonical_path
           from public.agency a
           join public.location_path lp
             on lp.location_path_id = a.location_path_id
+          join public.build_page_payload bpp
+            on bpp.page_type = 'agency'
+           and bpp.entity_id = a.id
         `,
       )
     ).rows;
@@ -267,6 +284,30 @@ export const loadReportDetail = async (
     return null;
   }
   const reportId = assertValue(data.report.id, "Missing id for report row");
+  const locationPath = assertValue(
+    data.report.location_path,
+    `Report ${reportId} is missing location_path.path.`,
+  );
+  const stateSlug = assertValue(
+    data.report.state_or_territory_slug,
+    `Report ${reportId} is missing state_or_territory_slug.`,
+  );
+  const administrativeAreaSlug = assertValue(
+    data.report.administrative_area_slug,
+    `Report ${reportId} is missing administrative_area_slug.`,
+  );
+  const stateName = assertValue(
+    data.report.state_or_territory_name,
+    `Report ${reportId} is missing state_or_territory_name.`,
+  );
+  const administrativeAreaName = assertValue(
+    data.report.administrative_area_name,
+    `Report ${reportId} is missing administrative_area_name.`,
+  );
+  const placeName = assertValue(
+    data.report.place_name,
+    `Report ${reportId} is missing place_name.`,
+  );
 
   const tagsById = mapBy(data.tags, "id");
   const tags = (data.reportTags || [])
@@ -289,12 +330,12 @@ export const loadReportDetail = async (
             civil_case.court,
             civil_case.filed_date,
             civil_case.slug
-          from public.civil_cases civil_case
-          join public.civil_case_officers civil_case_officer
-            on civil_case_officer.civil_case_id = civil_case.id
-          join public.review_officers review_officer
-            on review_officer.agency_officer_id = civil_case_officer.agency_officer_id
-          where review_officer.review_id = $1
+          from public.coverage_link_reports report_link
+          join public.coverage_link_civil_cases civil_case_link
+            on civil_case_link.coverage_link_id = report_link.coverage_link_id
+          join public.civil_cases civil_case
+            on civil_case.id = civil_case_link.civil_case_id
+          where report_link.review_id = $1
           order by civil_case.filed_date desc, civil_case.title
         `,
         [reportId],
@@ -307,9 +348,27 @@ export const loadReportDetail = async (
     canonicalPath: buildReportCanonicalPath({
       id: String(data.report.id),
       incidentDate: data.report.incident_date as string | Date | null,
-      locationPath: data.report.location_path as string | null,
+      locationPath: locationPath as string,
       slug: data.report.slug as string | null,
     }),
+    locationBreadcrumbs: {
+      state: {
+        label: String(stateName),
+        href: `/${stateSlug}/`,
+      },
+      administrativeArea: {
+        label: String(administrativeAreaName),
+        href: `/${stateSlug}/${administrativeAreaSlug}/`,
+      },
+      place: {
+        label: String(placeName),
+        href: String(locationPath),
+      },
+      reports: {
+        label: "Reports",
+        href: `${locationPath}reports/`,
+      },
+    },
     reportWitnesses: data.reportWitnesses ?? [],
     reportAttachments: data.reportAttachments ?? [],
     tags,

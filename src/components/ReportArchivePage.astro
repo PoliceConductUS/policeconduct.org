@@ -1,16 +1,48 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportSummary } from "#src/lib/data/types.js";
+import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
 
 type Props = {
+  breadcrumbs: { label: string; href: string }[];
   pagePath: string;
   reports: ReportSummary[];
   title: string;
 };
 
-const { pagePath, reports, title } = Astro.props as Props;
+const { breadcrumbs, pagePath, reports, title } = Astro.props as Props;
+const formatCount = (value: number) => value.toLocaleString("en-US");
+const metricCards = [
+  {
+    ...metricVisuals.reports,
+    detail: "Published public reports",
+    value: formatCount(reports.length),
+  },
+  {
+    ...metricVisuals.latestRecordedYear,
+    detail: "Latest report year",
+    value: reports[0]!.year,
+  },
+];
+const reportTimeRows = [
+  { label: "2021", value: "--", width: 34 },
+  { label: "2022", value: "--", width: 48 },
+  { label: "2023", value: "--", width: 62 },
+  { label: "2024", value: "--", width: 54 },
+];
+const reportAgencyRows = [
+  { label: "Agency reports", value: "--", width: 58 },
+  { label: "Personnel reports", value: "--", width: 36 },
+  { label: "Civil-case reports", value: "--", width: 26 },
+  { label: "Other reports", value: "--", width: 44 },
+];
 ---
 
 <SiteLayout
@@ -19,43 +51,112 @@ const { pagePath, reports, title } = Astro.props as Props;
   pagePath={pagePath}
   canonicalUrl={pagePath}
 >
-  <main>
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
+  <main class="report-archive-page">
+    <section class="report-archive-main">
       <div class="container">
         <Breadcrumbs
           items={[
-            { label: "Home", href: "/" },
+            ...breadcrumbs,
             { label: title, href: pagePath, current: true },
           ]}
           className="mb-2"
         />
-        <h1 class="display-4 fw-bold">{title}</h1>
-        <p class="lead text-muted mb-0">{reports.length} reports</p>
-      </div>
-    </section>
-    <section class="py-vh-2">
-      <div class="container">
-        <div class="list-group">
-          {
-            reports.map((report) => (
-              <a
-                class="list-group-item list-group-item-action py-3"
-                href={report.canonicalPath}
-              >
-                <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
-                  <h2 class="h5 mb-1">{report.title}</h2>
-                  <span class="text-muted small">
-                    {formatShortDate(report.incidentDate)}
-                  </span>
-                </div>
-                {report.address ? (
-                  <p class="text-muted mb-0">{report.address}</p>
-                ) : null}
-              </a>
-            ))
-          }
+        <EntityPageHeader
+          title={title}
+          description={`Published reports for ${title}.`}
+        >
+          <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={title}
+              sourcePage={pagePath}
+              topic="Reports"
+            />
+          </Fragment>
+        </EntityPageHeader>
+
+        <MetricGrid metrics={metricCards} columns="four" />
+
+        <div class="entity-chart-grid">
+          <DataPanel
+            title="Reports Over Time"
+            description="Published reports by incident year"
+          >
+            <SampleMeasurementChart
+              ariaLabel="Sample reports over time chart"
+              rows={reportTimeRows}
+            />
+          </DataPanel>
+
+          <DataPanel
+            title="Reports by Agency"
+            description="Published reports grouped by agency"
+          >
+            <SampleMeasurementChart
+              ariaLabel="Sample reports by agency chart"
+              rows={reportAgencyRows}
+            />
+          </DataPanel>
+
+          <DataPanel
+            className="entity-table-panel"
+            title={metricLabels.reports}
+            description="Published public reports in this scope"
+          >
+            <div class="report-archive-list">
+              {
+                reports.map((report) => (
+                  <a href={report.canonicalPath}>
+                    <span>{report.title}</span>
+                    <small>{formatShortDate(report.incidentDate)}</small>
+                    {report.address ? <em>{report.address}</em> : null}
+                  </a>
+                ))
+              }
+            </div>
+          </DataPanel>
         </div>
       </div>
     </section>
   </main>
 </SiteLayout>
+
+<style>
+  .report-archive-page {
+    background: #fbfcff;
+    color: #071842;
+  }
+
+  .report-archive-main {
+    padding: 1rem 0 2.5rem;
+  }
+
+  .report-archive-main > .container {
+    max-width: 1240px;
+  }
+
+  .report-archive-list {
+    display: grid;
+  }
+
+  .report-archive-list a {
+    border-top: 1px solid #d9e1ee;
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.85rem 0;
+    text-decoration: none;
+  }
+
+  .report-archive-list span {
+    color: #071842;
+    font-size: 0.95rem;
+    font-weight: 800;
+  }
+
+  .report-archive-list small,
+  .report-archive-list em {
+    color: #33456f;
+    font-size: 0.8125rem;
+    font-style: normal;
+    font-weight: 600;
+  }
+</style>

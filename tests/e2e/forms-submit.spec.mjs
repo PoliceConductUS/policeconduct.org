@@ -8,12 +8,12 @@ const verificationEmailFailedMessage =
 const forms = [
   { path: "/about/contact/", formName: "contact" },
   { path: "/volunteer/", formName: "volunteer" },
-  { path: "/law-enforcement-agency/new/", formName: "agencyNew" },
-  { path: "/law-enforcement-agency/suggest-edit/", formName: "agencyEdit" },
+  { path: "/agency/new/", formName: "agencyNew" },
+  { path: "/agency/suggest-edit/", formName: "agencyEdit" },
   { path: "/personnel/new/", formName: "personnelNew" },
   { path: "/personnel/suggest-edit/", formName: "officerEdit" },
-  { path: "/civil-litigation/new/", formName: "civilLitigationNew" },
-  { path: "/civil-litigation/suggest-edit/", formName: "civilLitigationEdit" },
+  { path: "/civil-cases/new/", formName: "civilLitigationNew" },
+  { path: "/civil-cases/suggest-edit/", formName: "civilLitigationEdit" },
   {
     path: "/legal-notice/data-subject-access-request/",
     formName: "dataSubjectAccessRequest",

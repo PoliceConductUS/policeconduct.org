@@ -1,0 +1,12 @@
+---
+import CivicAgencyHierarchyPage from "#src/components/CivicAgencyHierarchyPage.astro";
+import {
+  buildFederalAgencyTopicIndexModel,
+  loadFederalAgencySummaries,
+} from "#src/lib/data/federal-agencies.js";
+
+const federalAgencies = await loadFederalAgencySummaries();
+const model = buildFederalAgencyTopicIndexModel(federalAgencies, "reports");
+---
+
+<CivicAgencyHierarchyPage model={model} site={Astro.site} />

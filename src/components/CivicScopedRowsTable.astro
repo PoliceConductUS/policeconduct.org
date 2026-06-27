@@ -1,0 +1,139 @@
+---
+import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
+import type {
+  CivicCivilCaseRecord,
+  CivicTopicRecords,
+} from "#src/lib/data/civic-topic-records.js";
+
+const { records } = Astro.props as {
+  records: CivicTopicRecords;
+};
+
+const civilCaseRows: CivicCivilCaseRecord[] =
+  records.kind === "civil-cases" ? records.rows.slice(0, 50) : [];
+const empty = records.rows.length === 0;
+const renderTable = records.kind === "civil-cases";
+
+const formatDate = (value: string) =>
+  new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
+---
+
+{
+  renderTable ? (
+    <div class="civic-scoped-table-wrap">
+      <h2>{records.title}</h2>
+      {empty ? (
+        <p class="civic-scoped-empty">{records.emptyLabel}</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Case</th>
+              <th scope="col">Connection</th>
+              <th scope="col">Filed</th>
+              <th scope="col">Court</th>
+              <th scope="col">Agencies</th>
+              <th scope="col">Personnel</th>
+              <th scope="col">View</th>
+            </tr>
+          </thead>
+          <tbody>
+            {civilCaseRows.map((row) => (
+              <tr data-civic-topic-row data-search-text={row.searchText}>
+                <th scope="row">
+                  <a href={row.href}>{row.title}</a>
+                </th>
+                <td>{row.connectionType}</td>
+                <td>{formatDate(row.filedDate)}</td>
+                <td>{row.court || ""}</td>
+                <td>
+                  <span class="civic-scoped-link-list">
+                    {row.agencies.map((agency) => (
+                      <a href={agency.href}>{agency.name}</a>
+                    ))}
+                  </span>
+                </td>
+                <td>
+                  <span class="civic-scoped-link-list">
+                    {row.personnel.map((person) => (
+                      <a href={person.href}>{person.name}</a>
+                    ))}
+                  </span>
+                </td>
+                <td>
+                  <a href={row.href}>View</a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <CivilCaseScopeNote />
+    </div>
+  ) : null
+}
+
+<style>
+  .civic-scoped-table-wrap {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+    overflow-x: auto;
+    padding: 0;
+  }
+
+  .civic-scoped-table-wrap h2 {
+    margin: 0;
+    padding: 1rem 1.1rem;
+  }
+
+  .civic-scoped-empty {
+    border-top: 1px solid #d9e1ee;
+    color: #53627f;
+    margin: 0;
+    padding: 1rem 1.1rem;
+  }
+
+  .civic-scoped-table-wrap table {
+    border-collapse: collapse;
+    min-width: 760px;
+    width: 100%;
+  }
+
+  .civic-scoped-table-wrap th,
+  .civic-scoped-table-wrap td {
+    border-top: 1px solid #d9e1ee;
+    color: #071842;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    padding: 0.78rem 0.75rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .civic-scoped-table-wrap thead th {
+    background: #f7f9fc;
+    color: #53627f;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .civic-scoped-table-wrap a {
+    color: #064cfb;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .civic-scoped-link-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.55rem;
+  }
+</style>

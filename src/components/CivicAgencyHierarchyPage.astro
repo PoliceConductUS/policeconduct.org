@@ -1,0 +1,317 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
+import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import type { FederalAgencyIndexModel } from "#src/lib/data/federal-agencies.js";
+import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+
+const { model, site } = Astro.props as {
+  model: FederalAgencyIndexModel;
+  site: URL | undefined;
+};
+
+const siteUrl = getSiteUrl(site);
+const pageUrl = new URL(model.pagePath, siteUrl).toString();
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: model.title,
+  description: model.description,
+  type: "CollectionPage",
+});
+const showCivilCaseScopeNote = model.pagePath.includes("/civil-cases/");
+const isFederalTopicPage =
+  /\/(personnel|reports|budget|civil-cases|liability-costs|outcomes-by-income)\/$/.test(
+    model.pagePath,
+  );
+const isOutcomesByIncomePage = model.pagePath.includes("/outcomes-by-income/");
+const outcomesByIncomeHref = `${model.pagePath}outcomes-by-income/`;
+const sampleRows = [
+  { label: "Current", value: "--", width: 62 },
+  { label: "Previous", value: "--", width: 46 },
+  { label: "Reports", value: "--", width: 34 },
+  { label: "Records", value: "--", width: 52 },
+];
+---
+
+<SiteLayout
+  title={model.title}
+  description={model.description}
+  pagePath={model.pagePath}
+  structuredData={structuredData}
+>
+  <main class="civic-dashboard">
+    <section class="civic-dashboard-main">
+      <div class="container">
+        <Breadcrumbs items={model.breadcrumbs} className="mb-2" />
+        <EntityPageHeader title={model.heading} description={model.description}>
+          <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={model.heading}
+              sourcePage={model.pagePath}
+            />
+            <label class="civic-dashboard-jump">
+              <span>{model.searchLabel}</span>
+              <input
+                type="search"
+                placeholder={model.searchPlaceholder}
+                data-civic-hierarchy-filter-input
+              />
+            </label>
+          </Fragment>
+        </EntityPageHeader>
+
+        {
+          model.metrics.length ? (
+            <MetricGrid
+              metrics={model.metrics.map((metric) => ({
+                accent: metric.accent,
+                action:
+                  metric.href && metric.actionLabel
+                    ? {
+                        href: metric.href,
+                        kind: metric.actionKind || "link",
+                        label: metric.actionLabel,
+                      }
+                    : undefined,
+                detail: metric.detail,
+                icon: metric.icon,
+                label: metric.label,
+                value: metric.value,
+              }))}
+              columns="five"
+            />
+          ) : null
+        }
+
+        <div class="entity-chart-grid">
+          {
+            !isFederalTopicPage ? (
+              <OutcomesByIncomePanel href={outcomesByIncomeHref} />
+            ) : null
+          }
+          {
+            isOutcomesByIncomePage ? (
+              <OutcomesByIncomePanel />
+            ) : (
+              model.charts.map((chartTitle) => (
+                <DataPanel
+                  title={chartTitle}
+                  description="Records for this view"
+                >
+                  <SampleMeasurementChart
+                    ariaLabel={`Sample ${chartTitle} chart`}
+                    rows={sampleRows}
+                  />
+                </DataPanel>
+              ))
+            )
+          }
+        </div>
+
+        <section class="civic-row-section" aria-labelledby="civicRowsHeading">
+          <h2 id="civicRowsHeading">{model.rowsLabel}</h2>
+          <div class="civic-row-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  {
+                    model.columns.map((column) => (
+                      <th scope="col">{column.label}</th>
+                    ))
+                  }
+                  <th scope="col">View</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  model.rows.map((row) => (
+                    <tr
+                      data-civic-hierarchy-filter-item
+                      data-civic-hierarchy-filter-text={row.searchText}
+                    >
+                      {model.columns.map((column) => {
+                        const value =
+                          column.key === "label"
+                            ? row.label
+                            : (row.values[column.key] ?? "");
+                        return (
+                          <td>
+                            {column.key === "label" ? (
+                              <a href={row.href}>{row.label}</a>
+                            ) : (
+                              value
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td>
+                        <a href={row.href}>View</a>
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+          {showCivilCaseScopeNote ? <CivilCaseScopeNote /> : null}
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script is:inline>
+    document
+      .querySelectorAll("[data-civic-hierarchy-filter-input]")
+      .forEach((input) => {
+        input.addEventListener("input", () => {
+          const query = input.value.trim().toLowerCase();
+          document
+            .querySelectorAll("[data-civic-hierarchy-filter-item]")
+            .forEach((item) => {
+              const text =
+                item
+                  .getAttribute("data-civic-hierarchy-filter-text")
+                  ?.toLowerCase() || "";
+              item.hidden = Boolean(query) && !text.includes(query);
+            });
+        });
+      });
+  </script>
+</SiteLayout>
+
+<style>
+  .civic-dashboard {
+    background: #fbfcff;
+    color: #071842;
+  }
+
+  .civic-dashboard-main {
+    padding: 1.35rem 0 2rem;
+  }
+
+  .civic-dashboard-main > .container {
+    max-width: 1240px;
+  }
+
+  .civic-dashboard-heading {
+    align-items: start;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  .civic-dashboard-heading h1 {
+    color: #071842;
+    margin: 0 0 0.45rem;
+  }
+
+  .civic-dashboard-heading p {
+    color: #33456f;
+    line-height: 1.55;
+    margin: 0;
+    max-width: 72ch;
+  }
+
+  .civic-dashboard-jump {
+    display: grid;
+    gap: 0.35rem;
+    justify-self: start;
+    min-width: min(100%, 18rem);
+  }
+
+  .civic-dashboard-jump span {
+    color: #53627f;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .civic-dashboard-jump input {
+    background: #fbfcff;
+    border: 1px solid #c9d4e6;
+    border-radius: 0.35rem;
+    color: #071842;
+    font: inherit;
+    font-weight: 600;
+    min-height: 2.6rem;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .civic-row-table-wrap {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+  }
+
+  .civic-row-table-wrap a {
+    color: #064cfb;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .civic-row-section h2 {
+    color: #071842;
+    margin: 0 0 0.25rem;
+  }
+
+  .civic-row-section {
+    margin-top: 1rem;
+  }
+
+  .civic-row-section h2 {
+    margin-bottom: 1rem;
+  }
+
+  .civic-row-table-wrap {
+    overflow-x: auto;
+  }
+
+  .civic-row-table-wrap table {
+    border-collapse: collapse;
+    min-width: 760px;
+    width: 100%;
+  }
+
+  .civic-row-table-wrap th,
+  .civic-row-table-wrap td {
+    border-top: 1px solid #d9e1ee;
+    color: #071842;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    padding: 0.78rem 0.75rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .civic-row-table-wrap thead th {
+    background: #f7f9fc;
+    color: #53627f;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  @media (min-width: 768px) {
+  }
+
+  @media (min-width: 1200px) {
+    .civic-dashboard-heading {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .civic-dashboard-jump {
+      justify-self: end;
+    }
+  }
+</style>

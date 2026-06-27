@@ -23,16 +23,22 @@ export const buildAlphaPageMap = <T>(
     byLetter.set(letter, Math.floor(index / pageSize) + 1);
   });
 
-  return ALPHA_LETTERS.map((letter, index) => {
+  const nextPageByLetter = new Map<string, number | null>();
+  let nextPage: number | null = null;
+
+  for (let index = ALPHA_LETTERS.length - 1; index >= 0; index -= 1) {
+    const letter = ALPHA_LETTERS[index];
+    nextPageByLetter.set(letter, nextPage);
+    nextPage = byLetter.get(letter) ?? nextPage;
+  }
+
+  return ALPHA_LETTERS.map((letter) => {
     const page = byLetter.get(letter) ?? null;
-    const nextPage = ALPHA_LETTERS.slice(index + 1)
-      .map((nextLetter) => byLetter.get(nextLetter) ?? null)
-      .find((value) => value !== null);
+    const followingPage = nextPageByLetter.get(letter) ?? null;
     return {
       letter,
       page,
-      endPage:
-        page === null ? null : nextPage !== undefined ? nextPage - 1 : null,
+      endPage: page === null ? null : followingPage ? followingPage - 1 : null,
     };
   });
 };

@@ -1,0 +1,68 @@
+---
+const { title, description, eyebrow } = Astro.props as {
+  title: string;
+  description?: string;
+  eyebrow?: string;
+};
+---
+
+<div class="entity-page-header">
+  <div class="entity-page-header-copy">
+    {eyebrow ? <p class="entity-page-eyebrow">{eyebrow}</p> : null}
+    <h1 class="ipc-page-title">{title}</h1>
+    {description ? <p class="entity-page-description">{description}</p> : null}
+    <slot />
+  </div>
+  <div class="entity-page-actions">
+    <slot name="actions" />
+  </div>
+</div>
+
+<style>
+  .entity-page-header {
+    align-items: start;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1.25rem;
+  }
+
+  .entity-page-header h1 {
+    color: #071842;
+    margin: 0 0 0.45rem;
+  }
+
+  .entity-page-description {
+    color: #33456f;
+    line-height: 1.55;
+    margin: 0;
+    max-width: 72ch;
+  }
+
+  .entity-page-eyebrow {
+    color: #53627f;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    margin: 0 0 0.4rem;
+    text-transform: uppercase;
+  }
+
+  .entity-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: start;
+  }
+
+  @media (min-width: 1200px) {
+    .entity-page-header {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .entity-page-actions {
+      justify-content: end;
+    }
+  }
+</style>

@@ -43,19 +43,19 @@ const sentryAuthToken = (env.SENTRY_AUTH_TOKEN || "").trim();
 const recaptchaSiteKey = (env.RECAPTCHA_SITE_KEY || "").trim();
 const sentryRelease =
   (process.env.GIT_COMMIT_SHA || env.GIT_COMMIT_SHA || "").trim() || undefined;
+const shouldUploadSentrySourcemaps = Boolean(
+  process.env.CI && sentryOrg && sentryProject && sentryAuthToken,
+);
 const SITEMAP_EXCLUDED_PATHS = new Set([
   "/404/",
   "/about/contact/",
-  "/civil-litigation/",
-  "/civil-litigation/new/",
-  "/civil-litigation/suggest-edit/",
-  "/law-enforcement-agency/",
-  "/law-enforcement-agency/new/",
-  "/law-enforcement-agency/suggest-edit/",
+  "/civil-cases/new/",
+  "/civil-cases/suggest-edit/",
+  "/agency/new/",
+  "/agency/suggest-edit/",
   "/legal-notice/data-subject-access-request/",
   "/personnel/new/",
   "/personnel/suggest-edit/",
-  "/report/",
   "/report/new/",
   "/status/",
   "/volunteer/",
@@ -77,6 +77,16 @@ export default defineConfig({
     inlineStylesheets: "never",
   },
   vite: {
+    optimizeDeps: {
+      include: [
+        "@sentry/astro",
+        "aos",
+        "bootstrap/js/dist/collapse",
+        "bootstrap/js/dist/scrollspy",
+        "bootstrap/js/dist/tab",
+        "leaflet",
+      ],
+    },
     define: {
       "import.meta.env.RECAPTCHA_SITE_KEY": JSON.stringify(recaptchaSiteKey),
       "import.meta.env.PUBLIC_SENTRY_DSN": JSON.stringify(sentryDsn),
@@ -121,12 +131,20 @@ export default defineConfig({
     }),
     sentry({
       telemetry: false,
+      enabled: {
+        client: true,
+        server: false,
+      },
       ...(sentryOrg ? { org: sentryOrg } : {}),
       ...(sentryProject ? { project: sentryProject } : {}),
       ...(sentryAuthToken ? { authToken: sentryAuthToken } : {}),
-      sourcemaps: {
-        assets: ["dist/_astro/**/*", "dist/.prerender/**/*"],
-      },
+      sourcemaps: shouldUploadSentrySourcemaps
+        ? {
+            assets: ["dist/_astro/**/*"],
+          }
+        : {
+            disable: true,
+          },
     }),
   ],
 });

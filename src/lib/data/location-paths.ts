@@ -1,4 +1,6 @@
 type AgencyLocationInput = {
+  canonicalPath?: string | null;
+  canonical_path?: string | null;
   id?: string | null;
   locationPath?: string | null;
   location_path?: string | null;
@@ -11,6 +13,11 @@ export const getAgencyLocationPath = (agency: AgencyLocationInput) =>
   trimText(agency.locationPath ?? agency.location_path) || null;
 
 export const buildAgencyCanonicalPath = (agency: AgencyLocationInput) => {
+  const projectedPath = trimText(agency.canonicalPath ?? agency.canonical_path);
+  if (projectedPath) {
+    return projectedPath;
+  }
+
   const locationPath = getAgencyLocationPath(agency);
   const agencySlug = trimText(agency.slug);
 

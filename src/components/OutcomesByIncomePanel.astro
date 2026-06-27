@@ -1,0 +1,98 @@
+---
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
+import { metricLabels } from "#src/lib/metric-vocabulary.js";
+
+const {
+  href,
+  className = "",
+  variant = "summary",
+} = Astro.props as {
+  href?: string;
+  className?: string;
+  variant?: "summary" | "detail";
+};
+
+const outcomeRows = [
+  { label: "Lower income", segments: [18, 26, 56], value: "--" },
+  { label: "Middle income", segments: [30, 24, 46], value: "--" },
+  { label: "Higher income", segments: [44, 18, 38], value: "--" },
+];
+---
+
+<article
+  class:list={[
+    "outcomes-income-card",
+    variant === "detail" && "outcomes-income-card-detail",
+    className,
+  ]}
+>
+  <div class="outcomes-income-heading">
+    <div>
+      <h2>{metricLabels.outcomesByIncome}</h2>
+      <p>Case outcomes by income band</p>
+    </div>
+    {href ? <a href={href}>View details</a> : null}
+  </div>
+  <SampleMeasurementChart
+    ariaLabel="Sample outcomes by income chart"
+    rows={outcomeRows}
+    legend={["Dismissed", "Plea deal", "Other outcomes"]}
+  />
+</article>
+
+<style>
+  .outcomes-income-card {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+    min-height: 15.8rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .outcomes-income-card-detail {
+    min-height: 22rem;
+  }
+
+  .outcomes-income-heading {
+    align-items: start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+  }
+
+  .outcomes-income-heading h2 {
+    color: #071842;
+    margin: 0 0 0.25rem;
+  }
+
+  .outcomes-income-heading p {
+    color: #33456f;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  .outcomes-income-heading a {
+    color: #064cfb;
+    flex: 0 0 auto;
+    font-size: 0.8125rem;
+    font-weight: 750;
+    line-height: 1.3;
+    text-decoration: none;
+  }
+
+  @media (min-width: 992px) {
+    :global(.entity-chart-grid) .outcomes-income-card,
+    :global(.personnel-section-grid) .outcomes-income-card {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    :global(.outcomes-income-page-grid) .outcomes-income-card {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

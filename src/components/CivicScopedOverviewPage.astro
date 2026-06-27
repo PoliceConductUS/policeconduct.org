@@ -1,0 +1,441 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityActionButton from "#src/components/EntityActionButton.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
+import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
+import type {
+  CivicTopicKind,
+  CivicTopicRecords,
+} from "#src/lib/data/civic-topic-records.js";
+import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
+
+const { model, kind, records } = Astro.props as {
+  model: CivicIndexModel;
+  kind: CivicTopicKind;
+  records?: CivicTopicRecords;
+};
+
+const pageConfig = {
+  personnel: {
+    label: metricLabels.personnel,
+    title: metricLabels.personnel,
+    description: "Personnel records connected to this geography.",
+    value:
+      model.coverage
+        .find((metric) => metric.key === "personnel")
+        ?.value.toLocaleString("en-US") ?? "0",
+  },
+  budget: {
+    label: metricLabels.budget,
+    title: metricLabels.budget,
+    description: "Budget, revenue, spending, forfeiture, and overtime signals.",
+    value: "$--",
+  },
+  "civil-cases": {
+    label: metricLabels.civilCases,
+    title: metricLabels.civilCases,
+    description: "Civil cases connected to this geography.",
+    value:
+      records?.kind === "civil-cases"
+        ? records.totalCount.toLocaleString("en-US")
+        : "0",
+  },
+  "fatal-force-incidents": {
+    label: metricLabels.fatalForceIncidents,
+    title: metricLabels.fatalForceIncidents,
+    description:
+      "Fatal force incidents from the past 5 years, including people under 18, people 18 and older, dogs, and other animals.",
+    value: "0",
+  },
+  "liability-costs": {
+    label: metricLabels.liabilityCosts,
+    title: metricLabels.liabilityCosts,
+    description:
+      "Claims, settlements, judgments, defense costs, and related payments.",
+    value: "$--",
+  },
+  "outcomes-by-income": {
+    label: metricLabels.outcomesByIncome,
+    title: metricLabels.outcomesByIncome,
+    description: "Case outcomes by income band.",
+    value: "$--",
+  },
+}[kind];
+
+const coverageValue = (key: CivicIndexModel["coverage"][number]["key"]) =>
+  model.coverage
+    .find((metric) => metric.key === key)
+    ?.value.toLocaleString("en-US") ?? "0";
+
+const heading =
+  model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
+  model.jurisdictionLabel;
+const pagePath = `${model.pagePath}${kind}/`;
+const pageTitle = `${heading} ${pageConfig.title}`;
+const sampleChartRows = {
+  personnel: [
+    { label: "Current", value: "--", width: 62 },
+    { label: "Former", value: "--", width: 38 },
+    { label: "New records", value: "--", width: 24 },
+    { label: "Updated records", value: "--", width: 48 },
+  ],
+  budget: [
+    { label: "2021", value: "$--", width: 48 },
+    { label: "2022", value: "$--", width: 54 },
+    { label: "2023", value: "$--", width: 62 },
+    { label: "2024", value: "$--", width: 70 },
+  ],
+  "civil-cases": [
+    { label: "Filed", value: "--", width: 46 },
+    { label: "Active", value: "--", width: 34 },
+    { label: "Closed", value: "--", width: 58 },
+    { label: "Personnel-linked", value: "--", width: 28 },
+  ],
+  "fatal-force-incidents": [
+    { label: "Under 18", value: "--", width: 12 },
+    { label: "18 and older", value: "--", width: 58 },
+    { label: "Dogs", value: "--", width: 34 },
+    { label: "Other animals", value: "--", width: 14 },
+  ],
+  "liability-costs": [
+    { label: "Claims", value: "$--", width: 58 },
+    { label: "Defense costs", value: "$--", width: 42 },
+    { label: "Settlements", value: "$--", width: 72 },
+    { label: "Records disputes", value: "$--", width: 18 },
+  ],
+} satisfies Record<
+  Exclude<CivicTopicKind, "outcomes-by-income">,
+  { label: string; value: string; width: number }[]
+>;
+const topicConfig = {
+  personnel: {
+    metrics: [
+      {
+        ...metricVisuals.personnel,
+        value: coverageValue("personnel"),
+        detail: "Personnel connected to this geography",
+      },
+      {
+        ...metricVisuals.personnelRecords,
+        value: coverageValue("personnel"),
+        detail: "Current personnel records in scope",
+      },
+      {
+        ...metricVisuals.reports,
+        action: {
+          href: `${model.pagePath}reports/`,
+          kind: "link",
+          label: "View details",
+        },
+        value: coverageValue("reports"),
+        detail: "Published public reports",
+      },
+      {
+        ...metricVisuals.agencies,
+        value: "$--",
+        detail: "Assignment history by year",
+      },
+      {
+        ...metricVisuals.latestPersonnelUpdate,
+        value: "$--",
+        detail: "Last personnel update",
+      },
+    ],
+    charts: ["Personnel Over Time", "Personnel by Child Area", "Record Mix"],
+  },
+  budget: {
+    metrics: [
+      {
+        ...metricVisuals.budget,
+        value: "$--",
+        detail: "Budget totals by year",
+      },
+      {
+        ...metricVisuals.operatingSpend,
+        value: "$--",
+        detail: "Operating spending by year",
+      },
+      {
+        ...metricVisuals.reports,
+        action: {
+          href: `${model.pagePath}reports/`,
+          kind: "link",
+          label: "View details",
+        },
+        value: coverageValue("reports"),
+        detail: "Published public reports",
+      },
+      {
+        ...metricVisuals.overtime,
+        value: "$--",
+        detail: "Overtime spending by year",
+      },
+      {
+        ...metricVisuals.latestFiscalYear,
+        value: "$--",
+        detail: "Fiscal years listed",
+      },
+    ],
+    charts: [
+      "Budget Over Time",
+      "Revenue Sources Over Time",
+      "Budget Allocation",
+    ],
+  },
+  "civil-cases": {
+    metrics: [
+      {
+        ...metricVisuals.civilCases,
+        value:
+          records?.kind === "civil-cases"
+            ? records.totalCount.toLocaleString("en-US")
+            : "0",
+        detail: "Civil cases connected through agencies and personnel",
+      },
+      {
+        ...metricVisuals.caseTypes,
+        value: "$--",
+        detail: "Cases by type",
+      },
+      {
+        ...metricVisuals.caseOutcomes,
+        value: "$--",
+        detail: "Cases by outcome",
+      },
+      {
+        ...metricVisuals.reports,
+        action: {
+          href: `${model.pagePath}reports/`,
+          kind: "link",
+          label: "View details",
+        },
+        value: coverageValue("reports"),
+        detail: "Published public reports",
+      },
+      {
+        ...metricVisuals.latestCaseActivity,
+        value: "$--",
+        detail: "Latest case activity",
+      },
+    ],
+    charts: ["Civil Cases Over Time", "Case Types", "Cases by Child Area"],
+  },
+  "fatal-force-incidents": {
+    metrics: [
+      {
+        ...metricVisuals.fatalForceIncidents,
+        value: "0",
+        detail: "Fatal force incidents from the past 5 years",
+      },
+      {
+        ...metricVisuals.fatalForceIncidents,
+        value: "--",
+        detail: "People under 18",
+      },
+      {
+        ...metricVisuals.fatalForceIncidents,
+        value: "--",
+        detail: "People 18 and older",
+      },
+      {
+        ...metricVisuals.fatalForceIncidents,
+        value: "--",
+        detail: "Dogs",
+      },
+      {
+        ...metricVisuals.fatalForceIncidents,
+        value: "--",
+        detail: "Other animals",
+      },
+    ],
+    charts: [
+      "Fatal Force Incidents, 5 Years",
+      "Fatal Force Incidents by Age",
+      "Fatal Force Incidents Involving Animals",
+    ],
+  },
+  "liability-costs": {
+    metrics: [
+      {
+        ...metricVisuals.liabilityCosts,
+        value: "$--",
+        detail: "Liability cost totals by year",
+      },
+      {
+        ...metricVisuals.settlements,
+        value: "$--",
+        detail: "Settlement totals by year",
+      },
+      {
+        ...metricVisuals.judgments,
+        value: "$--",
+        detail: "Judgment totals by year",
+      },
+      {
+        ...metricVisuals.reports,
+        action: {
+          href: `${model.pagePath}reports/`,
+          kind: "link",
+          label: "View details",
+        },
+        value: coverageValue("reports"),
+        detail: "Published public reports",
+      },
+      {
+        ...metricVisuals.latestRecordedYear,
+        value: "$--",
+        detail: "Latest liability-cost year",
+      },
+    ],
+    charts: [
+      "Liability Costs Over Time",
+      "Cost Components Over Time",
+      "Payment Source Breakdown",
+    ],
+  },
+  "outcomes-by-income": {
+    metrics: [],
+    charts: [],
+  },
+}[kind];
+---
+
+<SiteLayout
+  title={pageTitle}
+  description={pageConfig.description}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main class="civic-scoped-page">
+    <section class="civic-scoped-overview">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            ...model.breadcrumbs.map((item) => ({ ...item, current: false })),
+            { label: pageConfig.label, href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+        <EntityPageHeader
+          title={pageTitle}
+          description={pageConfig.description}
+        >
+          <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={heading}
+              sourcePage={pagePath}
+              topic={pageConfig.label}
+            />
+            <EntityActionButton>Share</EntityActionButton>
+            <EntityActionButton>Download Report</EntityActionButton>
+          </Fragment>
+        </EntityPageHeader>
+
+        {
+          topicConfig.metrics.length ? (
+            <MetricGrid metrics={topicConfig.metrics} columns="auto" />
+          ) : null
+        }
+
+        {
+          kind === "outcomes-by-income" ? (
+            <div class="entity-chart-grid">
+              <OutcomesByIncomePanel />
+            </div>
+          ) : (
+            <div class="entity-chart-grid">
+              {topicConfig.charts.map((title) => (
+                <DataPanel title={title}>
+                  <SampleMeasurementChart
+                    ariaLabel={`Sample ${title} chart`}
+                    rows={sampleChartRows[kind]}
+                  />
+                </DataPanel>
+              ))}
+            </div>
+          )
+        }
+
+        <slot />
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<style>
+  .civic-scoped-page {
+    background: #fbfcff;
+    color: #071842;
+  }
+
+  .civic-scoped-overview {
+    padding: 1.35rem 0 2rem;
+  }
+
+  .civic-scoped-overview > .container {
+    max-width: 1240px;
+  }
+
+  .civic-scoped-heading {
+    align-items: start;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  .civic-scoped-heading h1 {
+    color: #071842;
+    margin: 0 0 0.45rem;
+  }
+
+  .civic-scoped-heading p {
+    color: #33456f;
+    line-height: 1.55;
+    margin: 0;
+    max-width: 72ch;
+  }
+
+  .civic-scoped-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: start;
+  }
+
+  .civic-scoped-actions button {
+    background: #fbfcff;
+    border: 1px solid #c9d4e6;
+    border-radius: 0.4rem;
+    color: #071842;
+    font-size: 0.88rem;
+    font-weight: 700;
+    min-height: 3rem;
+    padding: 0.72rem 1.05rem;
+  }
+
+  .civic-scoped-actions .civic-scoped-primary {
+    background: #071842;
+    border-color: #071842;
+    color: #f8faff;
+  }
+
+  @media (min-width: 768px) {
+  }
+
+  @media (min-width: 1200px) {
+    .civic-scoped-heading {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .civic-scoped-actions {
+      justify-content: end;
+    }
+  }
+</style>

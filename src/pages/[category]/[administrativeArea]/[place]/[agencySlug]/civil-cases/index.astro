@@ -1,0 +1,462 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
+import Pagination from "#src/components/Pagination.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { buildAgencyCivilCaseRows } from "#src/lib/data/agency-civil-case-rows.js";
+import {
+  loadAgencyDetailByRouteParams,
+  loadAgencyLocationStaticPathsForTopic,
+} from "#src/lib/data/agency-detail.js";
+import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
+
+export async function getStaticPaths() {
+  return loadAgencyLocationStaticPathsForTopic("civil-cases");
+}
+
+const data = await loadAgencyDetailByRouteParams(Astro.params);
+const {
+  agencyName,
+  agencyPath,
+  categoryLabel,
+  categorySlug,
+  administrativeArea,
+  placeLabel,
+  placePath,
+} = data;
+
+const caseRows = buildAgencyCivilCaseRows(data);
+const pageCases = caseRows.slice(0, PAGE_SIZE);
+const totalPages = Math.max(1, Math.ceil(caseRows.length / PAGE_SIZE));
+const pagePath = `${agencyPath}civil-cases/`;
+const reportsIndexPath = `${agencyPath}reports/`;
+const pageTitle = `${agencyName} Civil Cases`;
+const pageDescription = `Civil cases connected to ${agencyName}, including direct agency cases and personnel-linked cases.`;
+const activeCaseCount = caseRows.filter(
+  (caseItem) => !caseItem.date_terminated,
+).length;
+const closedCaseCount = caseRows.length - activeCaseCount;
+const personnelLinkedCaseCount = caseRows.filter((caseItem) =>
+  caseItem.type.includes("Personnel-linked"),
+).length;
+const courtCount = new Set(
+  caseRows.map((caseItem) => caseItem.court).filter(Boolean),
+).size;
+const formatCount = (value: number) => value.toLocaleString("en-US");
+const metricCards = [
+  {
+    ...metricVisuals.civilCases,
+    detail: "Direct and personnel-linked civil cases",
+    value: formatCount(caseRows.length),
+  },
+  {
+    accent: "purple",
+    detail: "No date terminated",
+    icon: "scales",
+    label: metricLabels.activeCases,
+    value: formatCount(activeCaseCount),
+  },
+  {
+    accent: "purple",
+    detail: "Date terminated listed",
+    icon: "calendar",
+    label: metricLabels.closedCases,
+    value: formatCount(closedCaseCount),
+  },
+  {
+    accent: "blue",
+    detail: "Cases linked through personnel",
+    icon: "people",
+    label: metricLabels.personnelLinked,
+    value: formatCount(personnelLinkedCaseCount),
+  },
+  {
+    ...metricVisuals.reports,
+    action: {
+      href: reportsIndexPath,
+      kind: "link",
+      label: "View details",
+    },
+    detail: "Published public reports",
+    value: formatCount(data.counts.reports),
+  },
+  {
+    accent: "purple",
+    detail: "Courts represented",
+    icon: "building",
+    label: metricLabels.courts,
+    value: formatCount(courtCount),
+  },
+];
+const caseTimeRows = [
+  { label: "2021", value: "--", width: 32 },
+  { label: "2022", value: "--", width: 48 },
+  { label: "2023", value: "--", width: 64 },
+  { label: "2024", value: "--", width: 52 },
+];
+const caseStatusRows = [
+  { label: "Active", value: "--", width: 34 },
+  { label: "Closed", value: "--", width: 58 },
+];
+const courtRows = [
+  { label: "Federal", value: "--", width: 44 },
+  { label: "State", value: "--", width: 36 },
+  { label: "Other", value: "--", width: 18 },
+];
+const connectionRows = [
+  { label: "Direct", value: "--", width: 46 },
+  { label: "Personnel-linked", value: "--", width: 28 },
+  { label: "Both", value: "--", width: 18 },
+];
+const liabilityRows = [
+  { label: "Claims", value: "$--", width: 58 },
+  { label: "Defense costs", value: "$--", width: 42 },
+  { label: "Settlements", value: "$--", width: 72 },
+  { label: "Judgments", value: "$--", width: 24 },
+];
+
+const formatDate = (value?: string | null) =>
+  value
+    ? new Intl.DateTimeFormat("en", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(new Date(value))
+    : "";
+---
+
+<SiteLayout
+  title={pageTitle}
+  description={pageDescription}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main class="agency-topic-page">
+    <section class="agency-topic-main">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: categoryLabel, href: `/${categorySlug}/` },
+            {
+              label: administrativeArea,
+              href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+            },
+            { label: placeLabel, href: placePath },
+            { label: agencyName, href: agencyPath },
+            { label: "Civil cases", href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+        <EntityPageHeader title={pageTitle} description={pageDescription}>
+          <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={agencyName}
+              sourcePage={pagePath}
+              topic="Civil cases"
+            />
+          </Fragment>
+        </EntityPageHeader>
+
+        <MetricGrid metrics={metricCards} columns="auto" />
+
+        <div class="entity-chart-grid">
+          <DataPanel
+            title="Civil Cases Over Time"
+            description="Civil cases by filed year"
+          >
+            <SampleMeasurementChart
+              ariaLabel="Sample civil cases over time chart"
+              rows={caseTimeRows}
+            />
+          </DataPanel>
+
+          <DataPanel
+            title="Active vs Closed"
+            description="Civil cases by termination status"
+          >
+            <SampleMeasurementChart
+              ariaLabel="Sample active and closed civil cases chart"
+              rows={caseStatusRows}
+            />
+          </DataPanel>
+
+          <DataPanel
+            title="Cases by Court"
+            description="Civil cases grouped by court"
+          >
+            <SampleMeasurementChart
+              ariaLabel="Sample cases by court chart"
+              rows={courtRows}
+            />
+          </DataPanel>
+
+          <DataPanel
+            title="Cases by Personnel Connection"
+            description="Direct agency cases and personnel-linked cases"
+          >
+            <SampleMeasurementChart
+              ariaLabel="Sample cases by personnel connection chart"
+              rows={connectionRows}
+            />
+          </DataPanel>
+
+          <DataPanel
+            title="Liability Costs Over Time"
+            description="Costs connected to civil cases"
+          >
+            <SampleMeasurementChart
+              ariaLabel="Sample liability costs over time chart"
+              rows={liabilityRows}
+            />
+          </DataPanel>
+
+          <DataPanel
+            className="entity-table-panel"
+            title={metricLabels.civilCases}
+            description="Search and browse civil cases connected to this agency"
+          >
+            <div class="agency-topic-toolbar">
+              <label for="agency-cases-search">Search civil cases</label>
+              <input
+                id="agency-cases-search"
+                type="search"
+                placeholder="Search by title, type, court, cause, or personnel"
+                autocomplete="off"
+                data-agency-cases-search
+              />
+            </div>
+
+            {
+              pageCases.length === 0 ? (
+                <p class="agency-cases-empty">No civil cases listed.</p>
+              ) : (
+                <div class="agency-cases-table-wrap">
+                  <table class="agency-cases-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Case</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Filed</th>
+                        <th scope="col">Court</th>
+                        <th scope="col">Cause</th>
+                        <th scope="col">Personnel</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pageCases.map((caseItem) => {
+                        const personnelText =
+                          caseItem.personnelNames.join(", ");
+                        const searchText = [
+                          caseItem.title,
+                          caseItem.type,
+                          caseItem.filed_date,
+                          caseItem.court,
+                          caseItem.cause_number,
+                          personnelText,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
+                          .toLowerCase();
+
+                        return (
+                          <tr
+                            data-agency-cases-row
+                            data-search-text={searchText}
+                          >
+                            <td>
+                              <a href={caseItem.caseUrl}>
+                                {caseItem.title || "Civil case"}
+                              </a>
+                            </td>
+                            <td>{caseItem.type}</td>
+                            <td>{formatDate(caseItem.filed_date)}</td>
+                            <td>{caseItem.court || ""}</td>
+                            <td>{caseItem.cause_number || ""}</td>
+                            <td>
+                              {caseItem.personnel.map((person, index) => (
+                                <>
+                                  {index > 0 ? ", " : null}
+                                  <a href={person.href}>{person.name}</a>
+                                </>
+                              ))}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            }
+
+            <p class="agency-cases-empty" data-agency-cases-no-results hidden>
+              No civil cases match that search.
+            </p>
+
+            <Pagination
+              basePath={pagePath}
+              currentPage={1}
+              lastPage={totalPages}
+            />
+            <CivilCaseScopeNote />
+          </DataPanel>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<script>
+  const searchInput = document.querySelector<HTMLInputElement>(
+    "[data-agency-cases-search]",
+  );
+  const rows = Array.from(
+    document.querySelectorAll<HTMLTableRowElement>("[data-agency-cases-row]"),
+  );
+  const noResults = document.querySelector<HTMLElement>(
+    "[data-agency-cases-no-results]",
+  );
+
+  searchInput?.addEventListener("input", () => {
+    const query = searchInput.value.trim().toLowerCase();
+    let visibleCount = 0;
+
+    for (const row of rows) {
+      const isVisible = !query || row.dataset.searchText?.includes(query);
+      row.hidden = !isVisible;
+      if (isVisible) visibleCount += 1;
+    }
+
+    if (noResults) {
+      noResults.hidden = visibleCount > 0;
+    }
+  });
+</script>
+
+<style>
+  .agency-topic-page {
+    background: #fbfcff;
+    color: #071842;
+  }
+
+  .agency-topic-main {
+    padding: 1rem 0 2.5rem;
+  }
+
+  .agency-topic-main > .container {
+    max-width: 1240px;
+  }
+
+  .agency-topic-toolbar {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .agency-topic-toolbar label {
+    color: #071942;
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  .agency-topic-toolbar input {
+    border: 1px solid #cdd5e3;
+    border-radius: 6px;
+    color: #071942;
+    max-width: 28rem;
+    padding: 0.65rem 0.75rem;
+    width: 100%;
+  }
+
+  .agency-cases-table-wrap {
+    overflow-x: auto;
+  }
+
+  .agency-cases-table {
+    border-collapse: collapse;
+    color: #071942;
+    font-size: 0.9rem;
+    min-width: 980px;
+    width: 100%;
+  }
+
+  .agency-cases-table th,
+  .agency-cases-table td {
+    border-bottom: 1px solid #e4e8f0;
+    padding: 0.75rem 0.8rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .agency-cases-table th {
+    background: #f7f9fc;
+    color: #53627f;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .agency-cases-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .agency-cases-table a {
+    color: #003bff;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .agency-cases-empty {
+    color: #53627f;
+    margin: 1rem 0 0;
+  }
+
+  .agency-topic-bars {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1rem;
+  }
+
+  .agency-topic-bars div {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(9rem, 0.9fr) minmax(7rem, 2fr) auto;
+  }
+
+  .agency-topic-bars span,
+  .agency-topic-bars strong {
+    color: #071842;
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .agency-topic-bars i {
+    background: #e7edf7;
+    display: block;
+    height: 0.78rem;
+  }
+
+  .agency-topic-bars b {
+    background: #5b2df5;
+    display: block;
+    height: 100%;
+  }
+
+  @media (max-width: 720px) {
+    .agency-topic-toolbar {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  }
+</style>

@@ -1,0 +1,481 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
+import Pagination from "#src/components/Pagination.astro";
+import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { buildAgencyCivilCaseRows } from "#src/lib/data/agency-civil-case-rows.js";
+import {
+  loadAgencyDetailByRouteParams,
+  loadAgencyLocationStaticPathsForTopic,
+} from "#src/lib/data/agency-detail.js";
+import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
+
+export async function getStaticPaths() {
+  return loadAgencyLocationStaticPathsForTopic("personnel");
+}
+
+const data = await loadAgencyDetailByRouteParams(Astro.params);
+const {
+  agencyName,
+  agencyPath,
+  categoryLabel,
+  categorySlug,
+  administrativeArea,
+  placeLabel,
+  placePath,
+  employees,
+} = data;
+
+const pageEmployees = employees.slice(0, PAGE_SIZE);
+const totalPages = Math.max(1, Math.ceil(employees.length / PAGE_SIZE));
+const pagePath = `${agencyPath}personnel/`;
+const reportsIndexPath = `${agencyPath}reports/`;
+const pageTitle = `${agencyName} Personnel`;
+const pageDescription = `Personnel listed for ${agencyName}.`;
+const currentPersonnelCount = employees.filter(
+  (employee) => !employee.entry.end_date,
+).length;
+const formerPersonnelCount = employees.length - currentPersonnelCount;
+const reportCount = employees.reduce(
+  (total, employee) => total + (employee.reportCount || 0),
+  0,
+);
+const civilCaseCount = buildAgencyCivilCaseRows(data).length;
+const formatCount = (value: number) => value.toLocaleString("en-US");
+const metricCards = [
+  {
+    ...metricVisuals.personnel,
+    detail: "Total personnel",
+    value: formatCount(employees.length),
+  },
+  {
+    accent: "blue",
+    detail: "No end date listed",
+    icon: "person",
+    label: metricLabels.currentPersonnel,
+    value: formatCount(currentPersonnelCount),
+  },
+  {
+    accent: "blue",
+    detail: "End date listed",
+    icon: "people",
+    label: metricLabels.formerPersonnel,
+    value: formatCount(formerPersonnelCount),
+  },
+  {
+    ...metricVisuals.reports,
+    action: {
+      href: reportsIndexPath,
+      kind: "link",
+      label: "View details",
+    },
+    detail: "Personnel-linked reports",
+    value: formatCount(reportCount),
+  },
+  {
+    ...metricVisuals.civilCases,
+    detail: "Direct and personnel-linked civil cases",
+    value: formatCount(civilCaseCount),
+  },
+];
+const assignmentRows = [
+  { label: "2021", value: "--", width: 38 },
+  { label: "2022", value: "--", width: 46 },
+  { label: "2023", value: "--", width: 58 },
+  { label: "2024", value: "--", width: 64 },
+];
+const reportRows = [
+  { label: "Reports", value: "--", width: 52 },
+  { label: "Personnel named", value: "--", width: 36 },
+  { label: "Multiple personnel", value: "--", width: 24 },
+  { label: "Unlisted personnel", value: "--", width: 42 },
+];
+const civilCaseRows = [
+  { label: "Filed", value: "--", width: 46 },
+  { label: "Active", value: "--", width: 34 },
+  { label: "Closed", value: "--", width: 58 },
+  { label: "Linked personnel", value: "--", width: 28 },
+];
+const licenseRows = [
+  { label: "Peace Officer", value: "--", width: 64 },
+  { label: "Jailer", value: "--", width: 32 },
+  { label: "Telecommunicator", value: "--", width: 18 },
+  { label: "Other", value: "--", width: 24 },
+];
+const statusRows = [
+  { label: "Current", value: "--", width: 62 },
+  { label: "Former", value: "--", width: 38 },
+];
+
+const getEmployeeName = (employee: (typeof employees)[number]) => {
+  const officer = employee.officer;
+  return officer
+    ? [officer.first_name, officer.last_name].filter(Boolean).join(" ")
+    : "Unknown person";
+};
+
+const formatDate = (value?: string | null) =>
+  value
+    ? new Intl.DateTimeFormat("en", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(new Date(value))
+    : null;
+---
+
+<SiteLayout
+  title={pageTitle}
+  description={pageDescription}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main class="agency-topic-page">
+    <section class="agency-topic-main">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: categoryLabel, href: `/${categorySlug}/` },
+            {
+              label: administrativeArea,
+              href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+            },
+            { label: placeLabel, href: placePath },
+            { label: agencyName, href: agencyPath },
+            { label: "Personnel", href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+        <EntityPageHeader
+          title={pageTitle}
+          description={`Personnel records for ${agencyName}, sorted by name.`}
+        >
+          <Fragment slot="actions">
+            <HelpCollectDataButton
+              context={agencyName}
+              sourcePage={pagePath}
+              topic="Personnel"
+            />
+          </Fragment>
+        </EntityPageHeader>
+
+        <MetricGrid metrics={metricCards} columns="five" />
+
+        <div class="entity-chart-grid">
+          <DataPanel
+            title="Agency Assignments Over Time"
+            description="Personnel assignment records by year"
+          >
+            <SampleMeasurementChart
+              ariaLabel="Sample agency assignments over time chart"
+              rows={assignmentRows}
+            />
+          </DataPanel>
+
+          <DataPanel
+            title="Reports Over Time"
+            description="Personnel-linked report records by year"
+          >
+            <SampleMeasurementChart
+              ariaLabel="Sample reports over time chart"
+              rows={reportRows}
+            />
+          </DataPanel>
+
+          <DataPanel
+            title="Civil Cases Over Time"
+            description="Personnel-linked civil cases by year"
+          >
+            <SampleMeasurementChart
+              ariaLabel="Sample civil cases over time chart"
+              rows={civilCaseRows}
+            />
+          </DataPanel>
+
+          <DataPanel
+            title="License Types"
+            description="Personnel by license type"
+          >
+            <SampleMeasurementChart
+              ariaLabel="Sample license types chart"
+              rows={licenseRows}
+            />
+          </DataPanel>
+
+          <DataPanel
+            title="Status Breakdown"
+            description="Current and former personnel"
+          >
+            <SampleMeasurementChart
+              ariaLabel="Sample status breakdown chart"
+              rows={statusRows}
+            />
+          </DataPanel>
+
+          <DataPanel
+            className="entity-table-panel"
+            title={metricLabels.personnelRecords}
+            description="Search and browse personnel listed for this agency"
+          >
+            <div class="agency-topic-toolbar">
+              <label for="agency-personnel-search">Search personnel</label>
+              <input
+                id="agency-personnel-search"
+                type="search"
+                placeholder="Search by name, status, badge, or license type"
+                autocomplete="off"
+                data-agency-personnel-search
+              />
+            </div>
+
+            {
+              pageEmployees.length === 0 ? (
+                <p class="agency-personnel-empty">No personnel listed.</p>
+              ) : (
+                <div class="agency-personnel-table-wrap">
+                  <table class="agency-personnel-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Badge</th>
+                        <th scope="col">License type</th>
+                        <th scope="col">Start date</th>
+                        <th scope="col">End date</th>
+                        <th scope="col">Reports</th>
+                        <th scope="col">Rating</th>
+                      </tr>
+                    </thead>
+                    <tbody data-agency-personnel-rows>
+                      {pageEmployees.map((employee) => {
+                        const name = getEmployeeName(employee);
+                        const status = employee.entry.end_date
+                          ? "Former"
+                          : "Current";
+                        const endDate =
+                          formatDate(employee.entry.end_date) || "";
+                        const searchText = [
+                          name,
+                          status,
+                          employee.entry.badge_number,
+                          employee.entry.license_type,
+                          formatDate(employee.entry.start_date),
+                          endDate,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
+                          .toLowerCase();
+
+                        return (
+                          <tr
+                            data-agency-personnel-row
+                            data-search-text={searchText}
+                          >
+                            <td>
+                              {employee.officer?.slug ? (
+                                <a
+                                  href={`/personnel/${employee.officer.slug}/`}
+                                >
+                                  {name}
+                                </a>
+                              ) : (
+                                name
+                              )}
+                            </td>
+                            <td>{status}</td>
+                            <td>{employee.entry.badge_number || ""}</td>
+                            <td>{employee.entry.license_type || ""}</td>
+                            <td>
+                              {formatDate(employee.entry.start_date) || ""}
+                            </td>
+                            <td>{endDate}</td>
+                            <td>{employee.reportCount || 0}</td>
+                            <td>
+                              {employee.rating && employee.rating > 0
+                                ? employee.rating.toFixed(1)
+                                : ""}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            }
+
+            <p
+              class="agency-personnel-empty"
+              data-agency-personnel-no-results
+              hidden
+            >
+              No personnel match that search.
+            </p>
+
+            <Pagination
+              basePath={pagePath}
+              currentPage={1}
+              lastPage={totalPages}
+            />
+          </DataPanel>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<script>
+  const searchInput = document.querySelector<HTMLInputElement>(
+    "[data-agency-personnel-search]",
+  );
+  const rows = Array.from(
+    document.querySelectorAll<HTMLTableRowElement>(
+      "[data-agency-personnel-row]",
+    ),
+  );
+  const noResults = document.querySelector<HTMLElement>(
+    "[data-agency-personnel-no-results]",
+  );
+
+  searchInput?.addEventListener("input", () => {
+    const query = searchInput.value.trim().toLowerCase();
+    let visibleCount = 0;
+
+    for (const row of rows) {
+      const isVisible = !query || row.dataset.searchText?.includes(query);
+      row.hidden = !isVisible;
+      if (isVisible) visibleCount += 1;
+    }
+
+    if (noResults) {
+      noResults.hidden = visibleCount > 0;
+    }
+  });
+</script>
+
+<style>
+  .agency-topic-page {
+    background: #fbfcff;
+    color: #071842;
+  }
+
+  .agency-topic-main {
+    padding: 1rem 0 2.5rem;
+  }
+
+  .agency-topic-main > .container {
+    max-width: 1240px;
+  }
+
+  .agency-topic-toolbar {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .agency-topic-toolbar label {
+    color: #071942;
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  .agency-topic-toolbar input {
+    border: 1px solid #cdd5e3;
+    border-radius: 6px;
+    color: #071942;
+    max-width: 24rem;
+    padding: 0.65rem 0.75rem;
+    width: 100%;
+  }
+
+  .agency-personnel-table-wrap {
+    overflow-x: auto;
+  }
+
+  .agency-personnel-table {
+    border-collapse: collapse;
+    color: #071942;
+    font-size: 0.9rem;
+    min-width: 920px;
+    width: 100%;
+  }
+
+  .agency-personnel-table th,
+  .agency-personnel-table td {
+    border-bottom: 1px solid #e4e8f0;
+    padding: 0.75rem 0.8rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .agency-personnel-table th {
+    background: #f7f9fc;
+    color: #53627f;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .agency-personnel-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .agency-personnel-table a {
+    color: #003bff;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .agency-personnel-empty {
+    color: #53627f;
+    margin: 1rem 0 0;
+  }
+
+  .agency-topic-bars {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1rem;
+  }
+
+  .agency-topic-bars div {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(7rem, 0.8fr) minmax(7rem, 2fr) auto;
+  }
+
+  .agency-topic-bars span,
+  .agency-topic-bars strong {
+    color: #071842;
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .agency-topic-bars i {
+    background: #e7edf7;
+    display: block;
+    height: 0.78rem;
+  }
+
+  .agency-topic-bars b {
+    background: #174bff;
+    display: block;
+    height: 100%;
+  }
+
+  @media (max-width: 720px) {
+    .agency-topic-toolbar {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  }
+</style>

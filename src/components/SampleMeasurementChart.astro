@@ -1,0 +1,244 @@
+---
+type ChartRow = {
+  label: string;
+  value: string;
+  width?: number;
+  segments?: number[];
+};
+
+const {
+  ariaLabel,
+  rows,
+  legend = [],
+} = Astro.props as {
+  ariaLabel: string;
+  rows: ChartRow[];
+  legend?: string[];
+};
+
+const allowedWidths = new Set([
+  0, 12, 14, 18, 24, 26, 28, 30, 32, 34, 36, 38, 42, 44, 46, 48, 52, 54, 56, 58,
+  62, 64, 70, 72,
+]);
+const segmentWidthClass = (width = 0) => {
+  if (!allowedWidths.has(width)) {
+    throw new Error(`Unsupported sample measurement width: ${width}`);
+  }
+  return `sample-measurement-width-${width}`;
+};
+---
+
+<div class="sample-measurement-chart disabled" aria-label={ariaLabel}>
+  {
+    rows.map((row) => (
+      <div class="sample-measurement-row">
+        <b>{row.label}</b>
+        <span>
+          {row.segments?.length ? (
+            row.segments.map((segment) => (
+              <i class={segmentWidthClass(segment)} />
+            ))
+          ) : (
+            <i class={segmentWidthClass(row.width)} />
+          )}
+        </span>
+        <em>{row.value}</em>
+      </div>
+    ))
+  }
+</div>
+
+{
+  legend.length ? (
+    <div class="sample-measurement-legend" aria-label="Chart legend">
+      {legend.map((item) => (
+        <span>
+          <i />
+          {item}
+        </span>
+      ))}
+    </div>
+  ) : null
+}
+
+<style>
+  .sample-measurement-chart {
+    background: rgba(7, 24, 66, 0.025);
+    border: 1px solid #d9e1ee;
+    display: grid;
+    gap: 0.68rem;
+    margin-top: 1rem;
+    min-height: 10.1rem;
+    padding: 0.9rem;
+  }
+
+  .sample-measurement-chart.disabled {
+    opacity: 0.72;
+  }
+
+  .sample-measurement-row {
+    align-items: center;
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: minmax(6.5rem, 0.72fr) minmax(0, 1.5fr) 2.6rem;
+  }
+
+  .sample-measurement-row b,
+  .sample-measurement-row em,
+  .sample-measurement-legend span {
+    color: #33456f;
+    font-size: 0.75rem;
+    font-style: normal;
+    font-weight: 750;
+    line-height: 1.2;
+  }
+
+  .sample-measurement-row span {
+    background: #e7edf6;
+    display: flex;
+    height: 1.05rem;
+    overflow: hidden;
+  }
+
+  .sample-measurement-row i {
+    background: #bac7d8;
+    display: block;
+    height: 100%;
+  }
+
+  .sample-measurement-width-0 {
+    width: 0%;
+  }
+
+  .sample-measurement-width-12 {
+    width: 12%;
+  }
+
+  .sample-measurement-width-14 {
+    width: 14%;
+  }
+
+  .sample-measurement-width-18 {
+    width: 18%;
+  }
+
+  .sample-measurement-width-24 {
+    width: 24%;
+  }
+
+  .sample-measurement-width-26 {
+    width: 26%;
+  }
+
+  .sample-measurement-width-28 {
+    width: 28%;
+  }
+
+  .sample-measurement-width-30 {
+    width: 30%;
+  }
+
+  .sample-measurement-width-32 {
+    width: 32%;
+  }
+
+  .sample-measurement-width-34 {
+    width: 34%;
+  }
+
+  .sample-measurement-width-36 {
+    width: 36%;
+  }
+
+  .sample-measurement-width-38 {
+    width: 38%;
+  }
+
+  .sample-measurement-width-42 {
+    width: 42%;
+  }
+
+  .sample-measurement-width-44 {
+    width: 44%;
+  }
+
+  .sample-measurement-width-46 {
+    width: 46%;
+  }
+
+  .sample-measurement-width-48 {
+    width: 48%;
+  }
+
+  .sample-measurement-width-52 {
+    width: 52%;
+  }
+
+  .sample-measurement-width-54 {
+    width: 54%;
+  }
+
+  .sample-measurement-width-56 {
+    width: 56%;
+  }
+
+  .sample-measurement-width-58 {
+    width: 58%;
+  }
+
+  .sample-measurement-width-62 {
+    width: 62%;
+  }
+
+  .sample-measurement-width-64 {
+    width: 64%;
+  }
+
+  .sample-measurement-width-70 {
+    width: 70%;
+  }
+
+  .sample-measurement-width-72 {
+    width: 72%;
+  }
+
+  .sample-measurement-row i:nth-child(1),
+  .sample-measurement-legend span:nth-child(1) i {
+    background: #9fb4ff;
+  }
+
+  .sample-measurement-row i:nth-child(2),
+  .sample-measurement-legend span:nth-child(2) i {
+    background: #8ed0a8;
+  }
+
+  .sample-measurement-row i:nth-child(3),
+  .sample-measurement-legend span:nth-child(3) i {
+    background: #c2ccd9;
+  }
+
+  .sample-measurement-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.75rem;
+    margin-top: 0.72rem;
+  }
+
+  .sample-measurement-legend span {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.35rem;
+  }
+
+  .sample-measurement-legend i {
+    display: inline-block;
+    height: 0.58rem;
+    width: 0.58rem;
+  }
+
+  @media (max-width: 575.98px) {
+    .sample-measurement-row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

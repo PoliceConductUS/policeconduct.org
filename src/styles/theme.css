@@ -51,9 +51,24 @@
   --bs-font-sans-serif:
     "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --ipc-font-display:
-    "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia,
-    serif;
+  --ipc-font-ui: var(--bs-font-sans-serif);
+  --ipc-font-display: var(--ipc-font-ui);
+  --ipc-type-h1: 3rem;
+  --ipc-type-h2: 1.5rem;
+  --ipc-type-h3: 1.1875rem;
+  --ipc-type-h4: 1.0625rem;
+  --ipc-type-h5: 1rem;
+  --ipc-type-h6: 0.875rem;
+  --ipc-type-body: 1rem;
+  --ipc-type-small: 0.875rem;
+  --ipc-type-caption: 0.75rem;
+  --ipc-weight-body: 400;
+  --ipc-weight-label: 650;
+  --ipc-weight-heading: 700;
+  --ipc-leading-h1: 1.05;
+  --ipc-leading-heading: 1.15;
+  --ipc-leading-body: 1.5;
+  --pc-heading-font: var(--ipc-font-ui);
   --bs-font-monospace:
     SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
     monospace;
@@ -62,9 +77,9 @@
     rgba(255, 255, 255, 0.15),
     rgba(255, 255, 255, 0)
   );
-  --bs-body-font-family: var(--bs-font-sans-serif);
+  --bs-body-font-family: var(--ipc-font-ui);
   --bs-body-font-size: 1rem;
-  --bs-body-font-weight: 300;
+  --bs-body-font-weight: var(--ipc-weight-body);
   --bs-body-line-height: 1.5;
   --bs-body-color: #241d18;
   --bs-body-bg: #fbfaf7;
@@ -121,8 +136,8 @@ h3,
 .display-4,
 .display-5,
 .display-6 {
-  font-family: var(--ipc-font-display);
-  letter-spacing: -0.02em;
+  font-family: var(--ipc-font-ui);
+  letter-spacing: 0;
 }
 
 hr {
@@ -147,62 +162,63 @@ h6,
 .h6 {
   margin-top: 0;
   margin-bottom: 0.5rem;
-  font-weight: 500;
-  line-height: 1.2;
+  font-weight: var(--ipc-weight-heading);
+  line-height: var(--ipc-leading-heading);
 }
 
 h1,
 .h1 {
-  font-size: calc(1.375rem + 1.5vw);
+  font-size: var(--ipc-type-h1);
+  line-height: var(--ipc-leading-h1);
 }
 @media (min-width: 1200px) {
   h1,
   .h1 {
-    font-size: 2.5rem;
+    font-size: var(--ipc-type-h1);
   }
 }
 
 h2,
 .h2 {
-  font-size: calc(1.325rem + 0.9vw);
+  font-size: var(--ipc-type-h2);
 }
 @media (min-width: 1200px) {
   h2,
   .h2 {
-    font-size: 2rem;
+    font-size: var(--ipc-type-h2);
   }
 }
 
 h3,
 .h3 {
-  font-size: calc(1.3rem + 0.6vw);
+  font-size: var(--ipc-type-h3);
 }
 @media (min-width: 1200px) {
   h3,
   .h3 {
-    font-size: 1.75rem;
+    font-size: var(--ipc-type-h3);
   }
 }
 
 h4,
 .h4 {
-  font-size: calc(1.275rem + 0.3vw);
+  font-size: var(--ipc-type-h4);
 }
 @media (min-width: 1200px) {
   h4,
   .h4 {
-    font-size: 1.5rem;
+    font-size: var(--ipc-type-h4);
   }
 }
 
 h5,
 .h5 {
-  font-size: 1.25rem;
+  font-size: var(--ipc-type-h5);
 }
 
 h6,
 .h6 {
-  font-size: 1rem;
+  font-size: var(--ipc-type-h6);
 }
 
 p {
@@ -14020,6 +14036,20 @@ body[data-aos-easing="ease-in-out-quart"] [data-aos] {
   padding: 0.75rem 0.875rem;
 }
 
+a[target="_blank"]::after {
+  content: "↗";
+  display: inline-block;
+  font-size: 0.78em;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 0.25rem;
+  text-decoration: none;
+}
+
+a[target="_blank"]:has(svg)::after {
+  content: none;
+}
+
 @media (max-width: 767.98px) {
   .report-new-section-nav {
     position: sticky;
@@ -14029,5 +14059,128 @@ body[data-aos-easing="ease-in-out-quart"] [data-aos] {
 
   .report-new-disclosure > summary {
     padding: 0.8rem 0.9rem;
+  }
+}
+
+textarea#links,
+textarea#pastEmployers,
+textarea#publicSource,
+textarea#sourceLinks,
+textarea#trafficStops,
+textarea#updateSource,
+textarea#useOfForce {
+  min-height: 110px;
+}
+
+textarea#defendants,
+textarea#availability,
+textarea#volunteerBackground {
+  min-height: 120px;
+}
+
+textarea#civilLitigation,
+textarea#reportLinks,
+textarea#summary,
+textarea#updateDetails {
+  min-height: 130px;
+}
+
+textarea#requestDetails {
+  min-height: 140px;
+}
+
+textarea#message {
+  min-height: 150px;
+}
+
+/* Canonical typography system. Keep this after page/component imports so
+   semantic heading levels do not drift when Bootstrap display utilities or
+   page-local heading selectors are used. */
+h1,
+h1.h1,
+h1.display-1,
+h1.display-2,
+h1.display-3,
+h1.display-4,
+h1.display-5,
+h1.display-6,
+.ipc-type-h1,
+.ipc-page-title {
+  font-family: var(--ipc-font-ui) !important;
+  font-size: var(--ipc-type-h1) !important;
+  font-weight: var(--ipc-weight-heading) !important;
+  letter-spacing: 0 !important;
+  line-height: var(--ipc-leading-h1) !important;
+  text-wrap: balance;
+}
+
+h2,
+h2.h2,
+h2.display-1,
+h2.display-2,
+h2.display-3,
+h2.display-4,
+h2.display-5,
+h2.display-6,
+.ipc-type-h2,
+.ipc-section-title {
+  font-family: var(--ipc-font-ui) !important;
+  font-size: var(--ipc-type-h2) !important;
+  font-weight: var(--ipc-weight-heading) !important;
+  letter-spacing: 0 !important;
+  line-height: var(--ipc-leading-heading) !important;
+  text-wrap: balance;
+}
+
+h3,
+h3.h3,
+.ipc-type-h3,
+.ipc-subsection-title {
+  font-family: var(--ipc-font-ui) !important;
+  font-size: var(--ipc-type-h3) !important;
+  font-weight: var(--ipc-weight-heading) !important;
+  letter-spacing: 0 !important;
+  line-height: var(--ipc-leading-heading) !important;
+  text-wrap: balance;
+}
+
+h4,
+h4.h4,
+.ipc-type-h4 {
+  font-family: var(--ipc-font-ui) !important;
+  font-size: var(--ipc-type-h4) !important;
+  font-weight: var(--ipc-weight-heading) !important;
+  letter-spacing: 0 !important;
+  line-height: var(--ipc-leading-heading) !important;
+}
+
+h5,
+h5.h5,
+.ipc-type-h5 {
+  font-family: var(--ipc-font-ui) !important;
+  font-size: var(--ipc-type-h5) !important;
+  font-weight: var(--ipc-weight-heading) !important;
+  letter-spacing: 0 !important;
+  line-height: var(--ipc-leading-heading) !important;
+}
+
+h6,
+h6.h6,
+.ipc-type-h6 {
+  font-family: var(--ipc-font-ui) !important;
+  font-size: var(--ipc-type-h6) !important;
+  font-weight: var(--ipc-weight-heading) !important;
+  letter-spacing: 0 !important;
+  line-height: var(--ipc-leading-heading) !important;
+}
+
+.ipc-eyebrow,
+.text-uppercase {
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 767.98px) {
+  :root {
+    --ipc-type-h1: 2.25rem;
   }
 }

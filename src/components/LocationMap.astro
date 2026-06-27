@@ -15,6 +15,7 @@ type Props = {
   bounds?: LocationMapBounds | null;
   description?: string;
   emptyLabel?: string;
+  showOnMobile?: boolean;
   points: Point[];
   title: string;
 };
@@ -23,15 +24,22 @@ const {
   bounds = null,
   description = "Map of available records.",
   emptyLabel = "No mapped records.",
+  showOnMobile = false,
   points,
   title,
 } = Astro.props as Props;
 const mapData = JSON.stringify({ bounds, points });
 ---
 
-<section class="location-map-panel" aria-label={title}>
+<section
+  class:list={[
+    "location-map-panel",
+    showOnMobile && "location-map-panel-mobile",
+  ]}
+  aria-label={title}
+>
   <div class="location-map-header">
-    <h2 class="h5 mb-1">{title}</h2>
+    <h2 class="ipc-section-title mb-1">{title}</h2>
     <p class="text-muted small mb-0">{description}</p>
   </div>
   {
@@ -208,6 +216,14 @@ const mapData = JSON.stringify({ bounds, points });
   @media (max-width: 767.98px) {
     .location-map-panel {
       display: none;
+    }
+
+    .location-map-panel-mobile {
+      display: grid;
+    }
+
+    .location-map-panel-mobile .location-map {
+      min-height: 20rem;
     }
   }
 </style>

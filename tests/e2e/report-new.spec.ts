@@ -116,6 +116,7 @@ test.describe("report new", () => {
   test("keeps the new flow usable across desktop and mobile widths", async ({
     page,
   }) => {
+    await installRecaptchaMock(page);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/report/new/");
 

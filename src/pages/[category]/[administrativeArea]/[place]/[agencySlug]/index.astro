@@ -1,33 +1,30 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import EntityActionButton from "#src/components/EntityActionButton.astro";
+import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import DisqusComments from "#src/components/DisqusComments.astro";
 import {
-  loadAgencyDetail,
+  loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPaths,
 } from "#src/lib/data/agency-detail.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
-import ProfileTabs from "#src/components/ProfileTabs.astro";
+import {
+  buildTopMetricCards,
+  buildVisitorIntentBands,
+} from "#src/lib/data/civic-index.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
   return loadAgencyLocationStaticPaths();
 }
 
-const { agencyId } = Astro.props;
-const data = await loadAgencyDetail(agencyId);
-
-const agencyRatingPercent =
-  data.agencyStats && data.agencyStats.review_count > 0
-    ? Math.round(Number(data.agencyStats.weighted_average || 0) * 10)
-    : 0;
+const data = await loadAgencyDetailByRouteParams(Astro.params);
 
 const {
   agencyName,
   agencyState,
-  agencySlug,
   categorySlug,
   categoryLabel,
   agencyPath,
@@ -35,82 +32,13 @@ const {
   placeLabel,
   placePath,
   civilCases,
-  personnelLinkedCivilCases,
-  reportedReports,
-  currentEmployees,
-  formerEmployees,
-  coverageLinks,
   counts,
 } = data;
-const agencyLinksSummary = data.agencyLinks
-  .map((link: { url?: string | null; label?: string | null }) =>
-    [link.label || null, link.url || null].filter(Boolean).join(" — "),
-  )
-  .filter(Boolean)
-  .join("\n");
-const primaryWebsite =
-  data.agencyLinks.find((link: { url?: string | null }) =>
-    /^https?:\/\//i.test(link.url || ""),
-  )?.url || "";
-const civilLitigationSummary = civilCases
-  .map((record) => {
-    const segments = [
-      record.title || "Civil case",
-      record.cause_number || null,
-      record.court || null,
-      record.caseUrl,
-    ];
-    return segments.filter(Boolean).join(" — ");
-  })
-  .join("\n");
-const reportLinksSummary = reportedReports
-  .map((report) => report.url)
-  .join("\n");
-const reportNewPrefillPayload = JSON.stringify({
-  officer: {
-    department: agencyName,
-  },
-} satisfies ReportNewPrefill);
-const addCivilCaseHref = "/civil-litigation/new/";
-const addCivilCasePrefillPayload = JSON.stringify({
-  jurisdiction: categorySlug,
-  defendants: agencyName,
-  summary: `${agencyName} agency profile: ${agencyPath}`,
-  links: [
-    agencyPath,
-    ...reportedReports.slice(0, 3).map((report) => report.url),
-  ]
-    .filter(Boolean)
-    .join("\n"),
-});
-const suggestEditHref = "/law-enforcement-agency/suggest-edit/";
-const suggestEditPrefillPayload = JSON.stringify({
-  agencyPath,
-  agencyName,
-  jurisdiction: categorySlug,
-  departmentWebsite: primaryWebsite,
-  departmentHead: data.agency.contact_name || "",
-  socialLinks: agencyLinksSummary,
-  civilLitigation: civilLitigationSummary,
-});
-const suggestPersonnelHref = "/personnel/new/";
-const suggestPersonnelPrefillPayload = JSON.stringify({
-  currentAgency: agencyName,
-  currentAgencyCity: data.agency.city || "",
-  currentAgencyState: agencyState,
-  civilLitigation: civilLitigationSummary,
-  reportLinks: reportLinksSummary,
-});
-const claimProfileHref = "/about/contact/";
-const claimProfilePrefillPayload = JSON.stringify({
-  whoami: "Profile Owner",
-  message: `I would like to claim ownership of this profile.\nProfile path: ${agencyPath}`,
-});
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(agencyPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
-const disqusIdentifier = `agency:${agencySlug}`;
 const pageDescription = `${agencyName} agency profile with contact information, personnel, public reports, and recent civil litigation references.`;
+const civilCaseTotal = counts.civilCases + counts.personnelLinkedCivilCases;
 const addressAvailable =
   data.agency.address ||
   data.agency.city ||
@@ -136,12 +64,158 @@ const contactPoints = data.agencyPhones.map(
 const sameAs = data.agencyLinks
   .map((link: { url?: string | null }) => link.url)
   .filter(Boolean);
+const agencyPrefillName = agencyName.toLocaleUpperCase("en-US");
+const primaryWebsite =
+  data.agencyLinks.find((link: { url?: string | null }) =>
+    /^https?:\/\//i.test(link.url || ""),
+  )?.url || "";
+const agencyLinksSummary = data.agencyLinks
+  .map((link: { label?: string | null; url?: string | null }) =>
+    [link.label, link.url].filter(Boolean).join(": "),
+  )
+  .filter(Boolean)
+  .join("\n");
+const civilLitigationSummary = [
+  ...civilCases.map((record: any) => ({
+    ...record,
+    caseUrl: `/civil-cases/${record.slug}/`,
+  })),
+  ...data.personnelLinkedCivilCases.map((record: any) => ({
+    ...record,
+    caseUrl: `/civil-cases/${record.slug}/`,
+  })),
+]
+  .map((record) => {
+    const segments = [
+      record.title || "Civil case",
+      record.cause_number || null,
+      record.court || null,
+      record.caseUrl,
+    ];
+    return segments.filter(Boolean).join(" — ");
+  })
+  .join("\n");
+const reportLinksSummary = data.reportedReports
+  .map((report: { url: string }) => report.url)
+  .join("\n");
+const reportNewPrefillPayload = JSON.stringify({
+  officer: {
+    department: agencyPrefillName,
+  },
+} satisfies ReportNewPrefill);
+const addCivilCasePrefillPayload = JSON.stringify({
+  jurisdiction: categorySlug,
+  defendants: agencyPrefillName,
+  summary: `${agencyPrefillName} agency profile: ${agencyPath}`,
+  links: [
+    agencyPath,
+    ...data.reportedReports
+      .slice(0, 3)
+      .map((report: { url: string }) => report.url),
+  ]
+    .filter(Boolean)
+    .join("\n"),
+});
+const suggestEditPrefillPayload = JSON.stringify({
+  agencyPath,
+  agencyName: agencyPrefillName,
+  jurisdiction: categorySlug,
+  departmentWebsite: primaryWebsite,
+  departmentHead: data.agency.contact_name || "",
+  socialLinks: agencyLinksSummary,
+  civilLitigation: civilLitigationSummary,
+});
+const suggestPersonnelPrefillPayload = JSON.stringify({
+  currentAgency: agencyPrefillName,
+  currentAgencyCity: data.agency.city || "",
+  currentAgencyState: agencyState,
+  civilLitigation: civilLitigationSummary,
+  reportLinks: reportLinksSummary,
+});
+const subscribePrefillPayload = JSON.stringify({
+  whoami: "Subscriber",
+  message: `Please notify me when this agency page changes: ${agencyPath}`,
+});
+const claimProfilePrefillPayload = JSON.stringify({
+  whoami: "Profile Owner",
+  message: `I would like to claim ownership of this profile.\nProfile path: ${agencyPath}`,
+});
 const federalAgency = data.federalAgency
   ? {
       name: data.federalAgency.name,
       path: `/federal/${data.federalAgency.slug}/`,
     }
   : null;
+const toDisplayName = (value: string) =>
+  value === value.toUpperCase()
+    ? value
+        .toLocaleLowerCase("en-US")
+        .replace(/\b[a-z]/g, (letter) => letter.toLocaleUpperCase("en-US"))
+    : value;
+const agencyDisplayName = toDisplayName(agencyName);
+const agencyCoverage = [
+  { key: "agencies", label: "Agencies", value: 1 },
+  { key: "personnel", label: "Personnel", value: counts.personnel },
+  { key: "reports", label: "Reports", value: counts.reports },
+  { key: "civil_cases", label: "Civil Cases", value: civilCaseTotal },
+] as const;
+const intentBands = buildVisitorIntentBands({
+  coverage: [...agencyCoverage],
+  jurisdictionLabel: agencyDisplayName,
+  pagePath: agencyPath,
+  rowCount: 0,
+  scope: "agency",
+}).map((band, index) => ({ ...band, id: `intent-${index + 1}` }));
+const topMetricCards = buildTopMetricCards({
+  coverage: [...agencyCoverage],
+  jurisdictionLabel: agencyDisplayName,
+  pagePath: agencyPath,
+  rowCount: 0,
+  scope: "agency",
+});
+type SampleRow = {
+  label: string;
+  value: string;
+  width: number;
+};
+const monthSampleRows: SampleRow[] = [
+  { label: "Jan", value: "--", width: 0 },
+  { label: "Apr", value: "--", width: 0 },
+  { label: "Jul", value: "--", width: 0 },
+  { label: "Oct", value: "--", width: 0 },
+];
+const yearSampleRows: SampleRow[] = [
+  { label: "2021", value: "--", width: 0 },
+  { label: "2022", value: "--", width: 0 },
+  { label: "2023", value: "--", width: 0 },
+  { label: "2024", value: "--", width: 0 },
+  { label: "2025", value: "--", width: 0 },
+];
+const fiscalYearSampleRows: SampleRow[] = [
+  { label: "FY 2021", value: "$--", width: 0 },
+  { label: "FY 2022", value: "$--", width: 0 },
+  { label: "FY 2023", value: "$--", width: 0 },
+  { label: "FY 2024", value: "$--", width: 0 },
+  { label: "FY 2025", value: "$--", width: 0 },
+];
+const currentContextSampleRows: SampleRow[] = [
+  { label: "Policy", value: "--", width: 0 },
+  { label: "Safeguard", value: "--", width: 0 },
+  { label: "Outcome", value: "--", width: 0 },
+  { label: "Source", value: "--", width: 0 },
+];
+const sampleRowsForWindow = (window?: string) => {
+  if (window === "Previous 5 fiscal years") {
+    return fiscalYearSampleRows;
+  }
+  if (window === "Previous 5 years") {
+    return yearSampleRows;
+  }
+  if (window === "Current policy context") {
+    return currentContextSampleRows;
+  }
+  return monthSampleRows;
+};
 const organization = {
   "@type": "GovernmentOrganization",
   "@id": `${pageUrl}#organization`,
@@ -188,328 +262,619 @@ const structuredData = {
   structuredData={structuredData}
 >
   <PrefillBootstrap />
-  <main class="flex-grow-1 py-vh-3">
-    <div class="container">
-      <Breadcrumbs
-        items={[
-          { label: "Find Records", href: "/find-records/" },
-          { label: categoryLabel, href: `/${categorySlug}/` },
-          {
-            label: administrativeArea,
-            href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
-          },
-          {
-            label: placeLabel,
-            href: placePath,
-          },
-          { label: agencyName, href: agencyPath, current: true },
-        ]}
-      />
-      <div class="row justify-content-between align-items-start">
-        <div class="col-lg-7">
-          <p class="text-uppercase small text-muted mb-2">Agency profile</p>
-          <h1 class="display-5 fw-bold">{agencyName}</h1>
-          <p class="text-muted">
-            {placeLabel}, {administrativeArea}, {agencyState}
-          </p>
+  <main class="agency-overview-page flex-grow-1">
+    <section class="agency-overview">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: categoryLabel, href: `/${categorySlug}/` },
+            {
+              label: administrativeArea,
+              href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+            },
+            {
+              label: placeLabel,
+              href: placePath,
+            },
+            { label: agencyDisplayName, href: agencyPath, current: true },
+          ]}
+        />
+        <EntityPageHeader
+          title={agencyDisplayName}
+          description={`${placeLabel}, ${administrativeArea}, ${agencyState}`}
+        >
           {
             federalAgency ? (
-              <p class="mb-0">
-                <span class="text-uppercase small text-muted me-2">
-                  Federal agency
-                </span>
+              <p class="agency-overview-federal">
+                <span>Federal agency</span>
                 <a href={federalAgency.path}>{federalAgency.name}</a>
               </p>
             ) : null
           }
-        </div>
-        <div class="col-lg-4">
-          <div class="border p-4 bg-white shadow-sm">
-            <h2 class="h6 text-uppercase text-muted">Address</h2>
-            <p class="mb-1">{data.agency.address || "Not listed"}</p>
-            <p class="mb-0">
-              {placeLabel}, {agencyState},{" "}
-              {data.agency.zip_code || "N/A"}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="row mt-4 g-4">
-        <div class="col-lg-6" data-aos="fade-up">
-          <div class="border p-4 h-100">
-            <h2 class="h6 text-uppercase text-muted">Contact Information</h2>
-            <p class="mb-1">{data.agency.contact_name || "Contact pending"}</p>
-            <p class="mb-2">
-              {
-                data.agency.contact_email ? (
-                  <a href={`mailto:${data.agency.contact_email}`}>
-                    {data.agency.contact_email}
-                  </a>
-                ) : (
-                  "No email listed"
-                )
-              }
-            </p>
-            <h3 class="h6 text-uppercase text-muted mt-3">Phone Numbers</h3>
-            {
-              data.agencyPhones.length ? (
-                data.agencyPhones.map(
-                  (phone: { phone_number: string; label?: string | null }) => (
-                    <p class="mb-1">
-                      {phone.phone_number}{" "}
-                      {phone.label ? `(${phone.label})` : ""}
-                    </p>
-                  ),
-                )
-              ) : (
-                <p class="mb-0">No phone numbers listed.</p>
-              )
-            }
-            {
-              data.agencyLinks.length ? (
-                <>
-                  <h3 class="h6 text-uppercase text-muted mt-3">Links</h3>
-                  {data.agencyLinks.map(
-                    (link: {
-                      url: string;
-                      label: string;
-                      description?: string | null;
-                    }) => (
-                      <p class="mb-1">
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title={link.description || undefined}
-                          aria-label={
-                            link.description
-                              ? `${link.label}: ${link.description}`
-                              : undefined
-                          }
-                        >
-                          {link.label}
-                        </a>
-                      </p>
-                    ),
-                  )}
-                </>
-              ) : null
-            }
-          </div>
-        </div>
-        <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
-          <div class="border p-4 h-100">
-            <h2 class="h6 text-uppercase text-muted">Cumulative ratings</h2>
-            <div
-              class="d-flex flex-column flex-md-row align-items-center gap-4"
+          <Fragment slot="actions">
+            <PrefillNavButton
+              to="/agency/suggest-edit/"
+              payload={suggestEditPrefillPayload}
+              class="entity-action-button"
             >
-              <div
-                class="position-relative"
-                style="width: 160px; height: 160px"
+              Suggest edit
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/report/new/"
+              payload={reportNewPrefillPayload}
+              class="entity-action-button entity-action-primary"
+            >
+              Share your experience
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/civil-cases/new/"
+              payload={addCivilCasePrefillPayload}
+              class="entity-action-button"
+            >
+              Add a civil case
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/personnel/new/"
+              payload={suggestPersonnelPrefillPayload}
+              class="entity-action-button"
+            >
+              Suggest new personnel
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/about/contact/"
+              payload={subscribePrefillPayload}
+              data-testid="agency-subscribe-link"
+              class="entity-action-button"
+            >
+              Notify Me
+            </PrefillNavButton>
+            <PrefillNavButton
+              to="/about/contact/"
+              payload={claimProfilePrefillPayload}
+              data-testid="agency-claim-profile-link"
+              class="entity-action-button"
+            >
+              Claim Profile
+            </PrefillNavButton>
+            <EntityActionButton data-agency-download-report>
+              Download report
+            </EntityActionButton>
+            <span class="agency-coming-soon" data-agency-coming-soon></span>
+          </Fragment>
+        </EntityPageHeader>
+
+        <section
+          class="agency-metric-grid"
+          aria-label={`${agencyDisplayName} Civic Index metrics`}
+        >
+          {
+            topMetricCards.map((metric) => (
+              <article
+                class="agency-metric-card"
+                data-metric-icon={metric.icon}
               >
-                <svg viewBox="0 0 120 120" class="w-100 h-100">
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="48"
-                    fill="none"
-                    stroke="#e5e7eb"
-                    stroke-width="12"></circle>
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="48"
-                    fill="none"
-                    stroke="#111827"
-                    stroke-width="12"
-                    stroke-dasharray={`${agencyRatingPercent * 3.02} 302`}
-                    stroke-linecap="round"
-                    transform="rotate(-90 60 60)"></circle>
-                </svg>
-                <div
-                  class="position-absolute top-50 start-50 translate-middle text-center"
+                <svg
+                  class="agency-metric-icon"
+                  aria-hidden="true"
+                  data-metric-icon={metric.icon}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
                 >
-                  <div class="h4 mb-0">{agencyRatingPercent}%</div>
-                  <div class="small text-muted">Rated</div>
-                </div>
-              </div>
-              <div>
-                {
-                  data.agencyStats && data.agencyStats.review_count > 0 ? (
-                    <p class="mb-2 text-muted">
-                      {data.agencyStats.review_count} reports rated for this
-                      agency.
-                    </p>
+                  {metric.icon === "people" ? (
+                    <>
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </>
+                  ) : metric.icon === "dollar" ? (
+                    <>
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+                      <path d="M12 6v12" />
+                    </>
+                  ) : metric.icon === "file" ? (
+                    <>
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                      <path d="M14 2v6h6" />
+                      <path d="M8 13h8" />
+                      <path d="M8 17h5" />
+                    </>
+                  ) : metric.icon === "scales" ? (
+                    <>
+                      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                      <path d="M7 21h10" />
+                      <path d="M12 3v18" />
+                    </>
                   ) : (
-                    <p class="mb-2 text-muted">
-                      No reports published yet for this agency. Share your
-                      experience to help build a transparent record.
-                    </p>
-                  )
-                }
-                <div class="d-flex flex-wrap gap-2">
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0"
-                    to="/report/new/"
-                    payload={reportNewPrefillPayload}
-                  >
-                    Share your experience
-                  </PrefillNavButton>
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0"
-                    to={addCivilCaseHref}
-                    payload={addCivilCasePrefillPayload}
-                  >
-                    Add a civil case
-                  </PrefillNavButton>
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0"
-                    to={suggestPersonnelHref}
-                    payload={suggestPersonnelPrefillPayload}
-                  >
-                    Suggest new personnel
-                  </PrefillNavButton>
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0"
-                    to={suggestEditHref}
-                    payload={suggestEditPrefillPayload}
-                  >
-                    Suggest edit
-                  </PrefillNavButton>
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
-                    to="/about/contact/"
-                    payload={{
-                      whoami: "Subscriber",
-                      message: `Please notify me when this agency page changes: ${agencyPath}`,
-                    }}
-                    data-testid="agency-subscribe-link"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="lucide lucide-bell"
-                    >
-                      <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
-                      <path
-                        d="M3.262 15a4 4 0 0 0 3.938 3h9.6a4 4 0 0 0 3.938-3"
-                      ></path>
-                      <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
-                    </svg>
-                    <span>Notify me when this agency page changes</span>
-                  </PrefillNavButton>
+                    <>
+                      <path d="M8 7a4 4 0 0 1 8 0" />
+                      <path d="M6.5 7h11l2 13H4.5Z" />
+                      <path d="M10 12h4" />
+                    </>
+                  )}
+                </svg>
+                <div>
+                  <p>{metric.label}</p>
+                  <strong>{metric.value}</strong>
+                  <span>{metric.detail}</span>
+                  {metric.detailHref ? (
+                    <div class="agency-meta">
+                      <a href={metric.detailHref}>View details</a>
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-            </div>
+              </article>
+            ))
+          }
+        </section>
+
+        <div class="agency-intent-layout">
+          <div>
+            {
+              intentBands.map((band) => (
+                <section class="agency-intent-band" id={band.id}>
+                  <header>
+                    <h2>{band.title}</h2>
+                    {band.summary ? <p>{band.summary}</p> : null}
+                  </header>
+                  {band.metrics.length ? (
+                    <div class="agency-band-metrics">
+                      {band.metrics.map((metric) => (
+                        <article>
+                          <p>{metric.label}</p>
+                          <strong>{metric.value}</strong>
+                          <span>{metric.detail}</span>
+                          {metric.detailHref ? (
+                            <div class="agency-meta">
+                              <a href={metric.detailHref}>View details</a>
+                            </div>
+                          ) : null}
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+                  {band.graphs.length ? (
+                    <div class="agency-chart-grid">
+                      {band.graphs.map((graph) => (
+                        <article class="agency-graph-panel">
+                          <header>
+                            <h3>{graph.label}</h3>
+                            <p>{graph.seriesLabel}</p>
+                          </header>
+                          <div
+                            class="agency-sample-chart"
+                            aria-label={`${graph.label}: ${graph.seriesLabel}`}
+                          >
+                            {sampleRowsForWindow(graph.window).map((row) => (
+                              <div class="agency-bar-row">
+                                <b>{row.label}</b>
+                                <div>
+                                  <span />
+                                </div>
+                                <em>{row.value}</em>
+                              </div>
+                            ))}
+                          </div>
+                          {graph.caption ? <p>{graph.caption}</p> : null}
+                          {graph.metadata?.length || graph.detailHref ? (
+                            <div class="agency-meta">
+                              {graph.metadata?.map((item) => (
+                                <span>{item}</span>
+                              ))}
+                              {graph.detailHref ? (
+                                <a href={graph.detailHref}>View details</a>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              ))
+            }
           </div>
         </div>
       </div>
-
-      <div class="mt-5" data-aos="fade-up">
-        <ProfileTabs
-          tabs={[
-            {
-              id: "agency-reports",
-              label: "Reports",
-              badge: counts.reports,
-              tabType: "reports",
-            },
-            {
-              id: "agency-litigation",
-              label: "Direct litigation",
-              badge: counts.civilCases,
-              tabType: "litigation",
-            },
-            {
-              id: "agency-personnel-linked-litigation",
-              label: "Linked litigation",
-              badge: counts.personnelLinkedCivilCases,
-              tabType: "personnelLinkedLitigation",
-            },
-            {
-              id: "agency-coverage",
-              label: "Related Links",
-              badge: counts.coverage,
-              tabType: "coverage",
-            },
-            {
-              id: "agency-current-personnel",
-              label: "Current personnel",
-              badge: counts.currentPersonnel,
-              tabType: "personnel",
-              slotName: "currentPersonnel",
-            },
-            {
-              id: "agency-former-personnel",
-              label: "Former personnel",
-              badge: counts.formerPersonnel,
-              tabType: "personnel",
-              slotName: "formerPersonnel",
-            },
-          ]}
-          extraNavClasses="mb-3"
-          litigation={{
-            cases: civilCases,
-          }}
-          personnelLinkedLitigation={{
-            cases: personnelLinkedCivilCases,
-            helperText:
-              "These cases are not necessarily against this agency. They are shown because current or former personnel associated with this agency are linked to civil litigation from another agency or jurisdiction.",
-          }}
-          reports={{
-            items: reportedReports,
-            layout: "list",
-          }}
-          currentPersonnel={{
-            entries: currentEmployees,
-            emptyMessage: "No current personnel listed yet.",
-          }}
-          formerPersonnel={{
-            entries: formerEmployees,
-            emptyMessage: "No former personnel listed yet.",
-          }}
-          coverage={{
-            links: coverageLinks,
-            helperText: "Links about this agency or personnel connected to it.",
-          }}
-        />
-        <div class="mt-3">
-          <PrefillNavButton
-            class="link-dark small"
-            to={claimProfileHref}
-            payload={claimProfilePrefillPayload}
-            data-testid="agency-claim-profile-link"
-            variant="link"
-          >
-            Claim this profile
-          </PrefillNavButton>
-        </div>
-      </div>
-
-      <div class="mt-5">
-        <h2 class="h5 text-uppercase text-muted">Comments</h2>
-        <DisqusComments pageUrl={pageUrl} disqusIdentifier={disqusIdentifier} />
-      </div>
-    </div>
+    </section>
   </main>
-  <script>
-    import AOS from "aos";
-    import "aos/dist/aos.css";
-
-    if (!document.documentElement.dataset.aosInit) {
-      AOS.init({
-        duration: 800,
-        once: true,
-      });
-      document.documentElement.dataset.aosInit = "1";
+  <style>
+    .agency-overview-page {
+      background: #f7f9fd;
+      color: #071842;
     }
+
+    .agency-overview {
+      background: #fbfcff;
+      border-bottom: 1px solid #d9e1ee;
+      min-height: calc(100vh - 3.25rem);
+      padding: 1.35rem 0 clamp(2.5rem, 5vw, 4rem);
+    }
+
+    .agency-overview > .container {
+      max-width: 1240px;
+    }
+
+    .agency-overview :global(.breadcrumb) {
+      margin-bottom: 1.15rem;
+    }
+
+    .agency-overview-heading {
+      align-items: start;
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: minmax(0, 1fr);
+      margin-bottom: 1.25rem;
+    }
+
+    .agency-overview-heading h1 {
+      color: #071842;
+      margin: 0 0 0.45rem;
+    }
+
+    .agency-overview-heading p {
+      color: #33456f;
+      margin: 0;
+    }
+
+    .agency-overview-federal {
+      align-items: baseline;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 0.75rem;
+    }
+
+    .agency-overview-federal span {
+      color: #5a6684;
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .agency-overview-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: start;
+    }
+
+    .agency-overview-action {
+      align-items: center;
+      background: #fbfcff;
+      border: 1px solid #c9d4e6;
+      border-radius: 0.4rem;
+      color: #071842;
+      display: inline-flex;
+      font-size: 0.95rem;
+      font-weight: 700;
+      gap: 0.6rem;
+      min-height: 3rem;
+      padding: 0.72rem 1.05rem;
+      text-decoration: none;
+    }
+
+    .agency-overview-action svg {
+      height: 1.15rem;
+      width: 1.15rem;
+    }
+
+    .agency-overview-primary {
+      background: #071842;
+      border-color: #071842;
+      color: #f8faff;
+      padding-inline: 1.35rem;
+    }
+
+    .agency-coming-soon {
+      color: #33456f;
+      display: block;
+      flex-basis: 100%;
+      font-size: 0.82rem;
+      font-weight: 700;
+      min-height: 1.15rem;
+      text-align: right;
+    }
+
+    .agency-metric-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .agency-metric-grid {
+      margin-bottom: 1rem;
+    }
+
+    .agency-metric-card {
+      background: #fbfcff;
+      border: 1px solid #d5deeb;
+      border-radius: 0.45rem;
+      box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+    }
+
+    .agency-metric-card {
+      align-items: start;
+      display: grid;
+      gap: 0.65rem;
+      grid-template-columns: 2rem minmax(0, 1fr);
+      min-height: 9.6rem;
+      padding: 1rem 1.15rem;
+    }
+
+    .agency-metric-icon {
+      height: 1.75rem;
+      margin-top: 0.1rem;
+      width: 1.75rem;
+    }
+
+    .agency-metric-card[data-metric-icon="people"] .agency-metric-icon,
+    .agency-metric-card[data-metric-icon="dollar"] .agency-metric-icon {
+      color: #087f3b;
+    }
+
+    .agency-metric-card[data-metric-icon="file"] .agency-metric-icon {
+      color: #174bff;
+    }
+
+    .agency-metric-card[data-metric-icon="scales"] .agency-metric-icon {
+      color: #5b2df5;
+    }
+
+    .agency-metric-card[data-metric-icon="weight"] .agency-metric-icon {
+      color: #b42318;
+    }
+
+    .agency-metric-card p {
+      color: #071842;
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.25;
+      margin: 0;
+    }
+
+    .agency-metric-card strong {
+      color: #071842;
+      display: block;
+      font-size: 1.5rem;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+      margin: 0.25rem 0 0.35rem;
+    }
+
+    .agency-metric-card span {
+      color: #33456f;
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 500;
+    }
+
+    .agency-metric-card a,
+    .agency-meta a,
+    .agency-inline-action,
+    .agency-action-link {
+      color: #064cfb;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .agency-meta {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.15rem;
+    }
+
+    .agency-meta span {
+      color: #34496b;
+      display: inline-flex;
+      font-size: 0.75rem;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .agency-meta span + span::before {
+      color: #9aa8bc;
+      content: "·";
+      margin-right: 0.4rem;
+    }
+
+    .agency-intent-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .agency-intent-band {
+      border-top: 1px solid #d7dfeb;
+      display: grid;
+      gap: 0.875rem;
+      padding: 1.35rem 0;
+    }
+
+    .agency-intent-band h2 {
+      color: #071842;
+      font-size: var(--ipc-type-h2);
+      line-height: var(--ipc-leading-heading);
+      margin: 0;
+    }
+
+    .agency-intent-band header > p {
+      color: #34496b;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      margin: 0.45rem 0 0;
+      max-width: 82ch;
+    }
+
+    .agency-band-metrics,
+    .agency-chart-grid {
+      display: grid;
+      gap: 0.875rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .agency-band-metrics article,
+    .agency-graph-panel {
+      background: #fbfcff;
+      border: 1px solid #d7dfeb;
+      border-radius: 0.5rem;
+      box-shadow: 0 1px 2px rgba(7, 24, 66, 0.035);
+      display: grid;
+      gap: 0.65rem;
+      padding: 0.95rem;
+    }
+
+    .agency-band-metrics p,
+    .agency-graph-panel h3,
+    .agency-graph-panel p {
+      margin: 0;
+    }
+
+    .agency-band-metrics p,
+    .agency-graph-panel header p,
+    .agency-graph-panel > p {
+      color: #34496b;
+      font-size: 0.875rem;
+      line-height: 1.45;
+    }
+
+    .agency-band-metrics strong {
+      color: #071842;
+      font-size: 1.35rem;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .agency-graph-panel h3 {
+      color: #071842;
+      font-size: var(--ipc-type-h3);
+      line-height: 1.25;
+    }
+
+    .agency-sample-chart {
+      background: #f8fafc;
+      border: 1px solid #d8e0eb;
+      border-radius: 0.38rem;
+      display: grid;
+      gap: 0.625rem;
+      min-height: 7.38rem;
+      opacity: 0.74;
+      padding: 0.75rem;
+    }
+
+    .agency-bar-row {
+      align-items: center;
+      display: grid;
+      gap: 0.56rem;
+      grid-template-columns: 5.75rem minmax(0, 1fr) 2.38rem;
+    }
+
+    .agency-bar-row b {
+      color: #071842;
+      font-size: 0.75rem;
+    }
+
+    .agency-bar-row div {
+      background: #e5ebf3;
+      border-radius: 999px;
+      height: 0.56rem;
+      overflow: hidden;
+    }
+
+    .agency-bar-row div span {
+      background: #aebbcf;
+      border-radius: inherit;
+      display: block;
+      height: 100%;
+      width: 0%;
+    }
+
+    .agency-bar-row em {
+      color: #687a96;
+      font-size: 0.75rem;
+      font-style: normal;
+      text-align: right;
+    }
+
+    @media (min-width: 768px) {
+      .agency-metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .agency-overview-heading {
+        align-items: start;
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .agency-overview-actions {
+        justify-content: end;
+      }
+
+      .agency-metric-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 991.98px) {
+      .agency-band-metrics,
+      .agency-chart-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 575.98px) {
+      .agency-overview-action {
+        justify-content: center;
+        width: 100%;
+      }
+
+      .agency-metric-card {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .agency-coming-soon {
+        text-align: left;
+      }
+    }
+  </style>
+  <script>
+    const setComingSoon = (button: Element, message: string) => {
+      const actions = button.closest(".entity-page-actions");
+      const output = actions?.querySelector("[data-agency-coming-soon]");
+      if (output) output.textContent = message;
+    };
+
+    const trackAgencyInterest = (eventName: string) => {
+      window.__IPC_ANALYTICS__?.track?.(eventName, {
+        agency_path: window.location.pathname,
+        page_path: window.location.pathname,
+      });
+    };
+
+    document.querySelectorAll("[data-agency-share]").forEach((button) => {
+      button.addEventListener("click", () => {
+        trackAgencyInterest("agency_share_interest");
+        setComingSoon(button, "Sharing tools are coming soon.");
+      });
+    });
+
+    document
+      .querySelectorAll("[data-agency-download-report]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          trackAgencyInterest("agency_report_download_interest");
+          setComingSoon(button, "Downloadable agency reports are coming soon.");
+        });
+      });
   </script>
 </SiteLayout>

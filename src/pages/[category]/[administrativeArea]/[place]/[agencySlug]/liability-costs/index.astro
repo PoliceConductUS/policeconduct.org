@@ -1,0 +1,854 @@
+---
+import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import DataPanel from "#src/components/DataPanel.astro";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import {
+  loadAgencyDetailByRouteParams,
+  loadAgencyLocationStaticPathsForTopic,
+} from "#src/lib/data/agency-detail.js";
+import { metricVisuals } from "#src/lib/metric-vocabulary.js";
+
+export async function getStaticPaths() {
+  return loadAgencyLocationStaticPathsForTopic("liability-costs");
+}
+
+const data = await loadAgencyDetailByRouteParams(Astro.params);
+const {
+  agencyName,
+  agencyPath,
+  categoryLabel,
+  categorySlug,
+  administrativeArea,
+  placeLabel,
+  placePath,
+  civilCases,
+  personnelLinkedCivilCases,
+  reportedReports,
+} = data;
+
+const pagePath = `${agencyPath}liability-costs/`;
+const reportsIndexPath = `${agencyPath}reports/`;
+const pageTitle = `${agencyName} Liability Costs`;
+const pageDescription = `Claims, settlements, judgments, defense costs, and related payments for ${agencyName}.`;
+const allCaseCount = new Set([
+  ...civilCases.map((caseItem) => caseItem.id),
+  ...personnelLinkedCivilCases.map((caseItem) => caseItem.id),
+]).size;
+
+const metricCards = [
+  {
+    label: metricVisuals.liabilityCosts.label,
+    value: "$0",
+    detail: "Settlements, judgments, defense costs",
+    icon: metricVisuals.liabilityCosts.icon,
+    accent: metricVisuals.liabilityCosts.accent,
+  },
+  {
+    label: "Settlements & Judgments",
+    value: "$0",
+    detail: "Resolved claims",
+    icon: "gavel",
+    accent: "green",
+  },
+  {
+    label: "Defense & Legal Fees",
+    value: "$0",
+    detail: "Outside counsel, experts, court costs",
+    icon: "scales",
+    accent: "purple",
+  },
+  {
+    label: "Active cases",
+    value: "$0",
+    detail: `${allCaseCount.toLocaleString("en")} active or linked matters`,
+    icon: "alert",
+    accent: "orange",
+  },
+  {
+    label: "Insurance / Risk Pool Paid",
+    value: "$0",
+    detail: "Known insurer or pool payments",
+    icon: "shield-check",
+    accent: "teal",
+  },
+  {
+    label: metricVisuals.reports.label,
+    value: reportedReports.length.toLocaleString("en-US"),
+    detail: "Published public reports",
+    icon: metricVisuals.reports.icon,
+    accent: metricVisuals.reports.accent,
+    href: reportsIndexPath,
+  },
+  {
+    label: "Direct Public Payments",
+    value: "$0",
+    detail: "Known city-paid or agency-paid amounts",
+    icon: "people",
+    accent: "pink",
+  },
+];
+
+const years = ["2020", "2021", "2022", "2023", "2024 YTD"];
+const allegationRows = [
+  "Excessive Force",
+  "False Arrest",
+  "Unlawful Search",
+  "Failure to Intervene",
+  "Public Records Disputes",
+  "Employment / Retaliation",
+];
+const categoryRows = [
+  "Settlements & Judgments",
+  "Defense & Legal Fees",
+  "Paid Leave / Overtime",
+  "Public Records Disputes",
+  "Insurance / Risk Pool Paid",
+];
+const recentMatterRows = [
+  ...civilCases.slice(0, 5).map((caseItem) => ({
+    title: caseItem.title || "Civil case",
+    type: "Direct case",
+    date: caseItem.filed_date,
+    href: caseItem.caseUrl,
+  })),
+  ...personnelLinkedCivilCases.slice(0, 5).map((caseItem) => ({
+    title: caseItem.title || "Civil case",
+    type: "Personnel-linked",
+    date: caseItem.filed_date,
+    href: caseItem.caseUrl,
+  })),
+].slice(0, 5);
+
+const formatDate = (value?: string | null) =>
+  value
+    ? new Intl.DateTimeFormat("en", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(new Date(value))
+    : "";
+---
+
+<SiteLayout
+  title={pageTitle}
+  description={pageDescription}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+>
+  <main class="agency-liability-page">
+    <section class="liability-overview">
+      <div class="container">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: categoryLabel, href: `/${categorySlug}/` },
+            {
+              label: administrativeArea,
+              href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+            },
+            { label: placeLabel, href: placePath },
+            { label: agencyName, href: agencyPath },
+            { label: "Liability Costs", href: pagePath, current: true },
+          ]}
+          className="mb-2"
+        />
+
+        <div class="liability-heading">
+          <div>
+            <h1 class="ipc-page-title">{pageTitle}</h1>
+            <p>{pageDescription}</p>
+          </div>
+          <div class="liability-actions">
+            <HelpCollectDataButton
+              context={agencyName}
+              sourcePage={pagePath}
+              topic="Liability costs"
+            />
+            <button type="button" class="liability-action" data-agency-share>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <path d="m8.59 13.51 6.83 3.98"></path>
+                <path d="m15.41 6.51-6.82 3.98"></path>
+              </svg>
+              Share
+            </button>
+            <button
+              type="button"
+              class="liability-action"
+              data-agency-download-report
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <path d="M7 10l5 5 5-5"></path>
+                <path d="M12 15V3"></path>
+              </svg>
+              Download Report
+            </button>
+            <span class="liability-coming-soon" data-agency-coming-soon></span>
+          </div>
+        </div>
+
+        <div class="liability-metric-grid">
+          {
+            metricCards.map((card) => (
+              <article class="liability-metric-card">
+                <div class={`liability-metric-icon liability-${card.accent}`}>
+                  {card.icon === "weight" ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M8 7a4 4 0 0 1 8 0" />
+                      <path d="M6.5 7h11l2 13H4.5Z" />
+                      <path d="M10 12h4" />
+                    </svg>
+                  ) : card.icon === "shield" ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+                    </svg>
+                  ) : card.icon === "gavel" ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="m14 13-7 7" />
+                      <path d="m5 18 2 2" />
+                      <path d="m14 13 5-5" />
+                      <path d="m16 3 5 5" />
+                      <path d="m8 11 5 5" />
+                    </svg>
+                  ) : card.icon === "scales" ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 3v18" />
+                      <path d="M3 7h18" />
+                      <path d="m6 7-3 7h6Z" />
+                      <path d="m18 7-3 7h6Z" />
+                    </svg>
+                  ) : card.icon === "alert" ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                      <path d="M12 9v4" />
+                      <path d="M12 17h.01" />
+                    </svg>
+                  ) : card.icon === "shield-check" ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+                      <path d="m9 12 2 2 4-5" />
+                    </svg>
+                  ) : card.icon === "file" ? (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                      <path d="M14 2v6h6" />
+                      <path d="M8 13h8" />
+                      <path d="M8 17h5" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <p>{card.label}</p>
+                  <strong>{card.value}</strong>
+                  <span>{card.detail}</span>
+                  <a href={card.href || "#liability-details"}>View details</a>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+
+        <div class="entity-chart-grid">
+          <DataPanel
+            title="Liability Costs Over Time"
+            description="Total liability costs (millions)"
+          >
+            <div class="liability-line-chart">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path class="liability-grid-line" d="M8 14H96"></path>
+                <path class="liability-grid-line" d="M8 38H96"></path>
+                <path class="liability-grid-line" d="M8 62H96"></path>
+                <path class="liability-grid-line" d="M8 86H96"></path>
+                <path class="liability-axis-line" d="M8 8V90H96"></path>
+              </svg>
+              <div class="liability-chart-labels">
+                {years.map((year) => <span>{year}</span>)}
+              </div>
+            </div>
+          </DataPanel>
+
+          <DataPanel
+            title="Cost Components Over Time"
+            description="Costs by component (millions)"
+          >
+            <div class="liability-bar-chart">
+              {
+                years.map((year) => (
+                  <i aria-label={year}>
+                    <b />
+                  </i>
+                ))
+              }
+            </div>
+            <div class="liability-chart-labels">
+              {years.map((year) => <span>{year}</span>)}
+            </div>
+          </DataPanel>
+
+          <DataPanel
+            title="Claims and Cases Over Time"
+            description="Number of claims/cases"
+          >
+            <div class="liability-line-chart">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path class="liability-grid-line" d="M8 14H96"></path>
+                <path class="liability-grid-line" d="M8 38H96"></path>
+                <path class="liability-grid-line" d="M8 62H96"></path>
+                <path class="liability-grid-line" d="M8 86H96"></path>
+                <path class="liability-axis-line" d="M8 8V90H96"></path>
+              </svg>
+              <div class="liability-chart-labels">
+                {years.map((year) => <span>{year}</span>)}
+              </div>
+            </div>
+          </DataPanel>
+
+          <DataPanel
+            title="Liability by Allegation Type"
+            description="Costs by allegation type"
+          >
+            <div class="liability-horizontal-bars">
+              {
+                allegationRows.map((label) => (
+                  <div>
+                    <span>{label}</span>
+                    <i>
+                      <b />
+                    </i>
+                    <strong>$0</strong>
+                  </div>
+                ))
+              }
+            </div>
+          </DataPanel>
+
+          <DataPanel
+            className="liability-donut-card"
+            title="Payment Source Breakdown"
+            description="Costs by source"
+          >
+            <div class="liability-donut" aria-hidden="true">
+              <div><strong>$0</strong><span>Total</span></div>
+            </div>
+            <ul class="liability-legend">
+              <li><i class="liability-blue-bg"></i>Direct Public Payment</li>
+              <li><i class="liability-green-bg"></i>Insurance / Risk Pool</li>
+              <li>
+                <i class="liability-gray-bg"></i>Unknown / Not Yet Determined
+              </li>
+            </ul>
+          </DataPanel>
+
+          <DataPanel title="What This Page Shows">
+            <ul>
+              <li>Liability-related costs over time.</li>
+              <li>
+                Costs grouped by component, allegation type, and payment source.
+              </li>
+              <li>Insurance or risk-pool payments when available.</li>
+              <li>Active exposure from open matters.</li>
+              <li>Public agency records connected to liability costs.</li>
+            </ul>
+          </DataPanel>
+
+          <DataPanel
+            className="entity-table-panel"
+            title="Recent Liability Matters"
+          >
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Case / Matter</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Paid By</th>
+                  <th scope="col">Last Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  recentMatterRows.length ? (
+                    recentMatterRows.map((matter) => (
+                      <tr>
+                        <th scope="row">
+                          <a href={matter.href}>{matter.title}</a>
+                        </th>
+                        <td>{matter.type}</td>
+                        <td>$0</td>
+                        <td />
+                        <td>{formatDate(matter.date)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <th scope="row" />
+                      <td />
+                      <td />
+                      <td>$0</td>
+                      <td />
+                      <td />
+                    </tr>
+                  )
+                }
+              </tbody>
+            </table>
+          </DataPanel>
+
+          <DataPanel
+            id="liability-details"
+            className="entity-table-panel"
+            title="Cost Category Details"
+          >
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Category</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Share of Total</th>
+                  <th scope="col">Change vs Prior Year</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  categoryRows.map((label) => (
+                    <tr>
+                      <th scope="row">{label}</th>
+                      <td>$0</td>
+                      <td>0.0%</td>
+                      <td>0.0%</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </DataPanel>
+        </div>
+      </div>
+    </section>
+  </main>
+</SiteLayout>
+
+<script>
+  const setComingSoon = (button: Element, message: string) => {
+    const actions = button.closest(".liability-actions");
+    const output = actions?.querySelector("[data-agency-coming-soon]");
+    if (output) output.textContent = message;
+  };
+
+  const trackAgencyInterest = (eventName: string) => {
+    window.__IPC_ANALYTICS__?.track?.(eventName, {
+      agency_path: window.location.pathname,
+      page_path: window.location.pathname,
+    });
+  };
+
+  document.querySelectorAll("[data-agency-share]").forEach((button) => {
+    button.addEventListener("click", () => {
+      trackAgencyInterest("agency_liability_costs_share_interest");
+      setComingSoon(button, "Sharing tools are coming soon.");
+    });
+  });
+
+  document
+    .querySelectorAll("[data-agency-download-report]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        trackAgencyInterest("agency_liability_costs_report_download_interest");
+        setComingSoon(button, "Downloadable agency reports are coming soon.");
+      });
+    });
+</script>
+
+<style>
+  .agency-liability-page {
+    background: #fbfcff;
+    color: #071842;
+  }
+
+  .liability-overview {
+    padding: 1.35rem 0 2rem;
+  }
+
+  .liability-overview > .container {
+    max-width: 1240px;
+  }
+
+  .liability-heading {
+    align-items: start;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  .liability-heading h1 {
+    color: #071842;
+    margin: 0 0 0.45rem;
+  }
+
+  .liability-heading p {
+    color: #33456f;
+    margin: 0;
+  }
+
+  .liability-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: start;
+  }
+
+  .liability-action {
+    align-items: center;
+    background: #fbfcff;
+    border: 1px solid #c9d4e6;
+    border-radius: 0.4rem;
+    color: #071842;
+    display: inline-flex;
+    font-size: 0.95rem;
+    font-weight: 700;
+    gap: 0.6rem;
+    min-height: 3rem;
+    padding: 0.72rem 1.05rem;
+  }
+
+  .liability-action svg {
+    height: 1.15rem;
+    width: 1.15rem;
+  }
+
+  .liability-action-primary {
+    background: #071842;
+    border-color: #071842;
+    color: #f8faff;
+    padding-inline: 1.35rem;
+  }
+
+  .liability-coming-soon {
+    color: #33456f;
+    flex-basis: 100%;
+    font-size: 0.82rem;
+    font-weight: 700;
+    min-height: 1.15rem;
+    text-align: right;
+  }
+
+  .liability-metric-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .liability-metric-grid {
+    margin-bottom: 1rem;
+  }
+
+  .liability-metric-card {
+    background: #fbfcff;
+    border: 1px solid #d5deeb;
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+  }
+
+  .liability-metric-card {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: 2.35rem minmax(0, 1fr);
+    min-height: 8rem;
+    padding: 1rem 0.85rem;
+  }
+
+  .liability-metric-icon svg {
+    fill: none;
+    height: 2.15rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+    width: 2.15rem;
+  }
+
+  .liability-blue {
+    color: #174bff;
+  }
+
+  .liability-green {
+    color: #087f3b;
+  }
+
+  .liability-purple {
+    color: #5b2df5;
+  }
+
+  .liability-red {
+    color: #b42318;
+  }
+
+  .liability-orange {
+    color: #f97316;
+  }
+
+  .liability-teal {
+    color: #0b8aa0;
+  }
+
+  .liability-pink {
+    color: #db2777;
+  }
+
+  .liability-metric-card p {
+    color: #071842;
+    font-size: 0.84rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  .liability-metric-card strong {
+    color: #071842;
+    display: block;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+    margin: 0.25rem 0 0.3rem;
+  }
+
+  .liability-metric-card span {
+    color: #33456f;
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .liability-metric-card a {
+    color: #064cfb;
+    display: inline-block;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    margin-top: 0.5rem;
+    text-decoration: none;
+  }
+
+  .liability-line-chart,
+  .liability-bar-chart {
+    margin-top: 1rem;
+  }
+
+  .liability-line-chart svg {
+    height: 9.5rem;
+    width: 100%;
+  }
+
+  .liability-grid-line,
+  .liability-axis-line {
+    fill: none;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .liability-grid-line {
+    stroke: #d9e1ee;
+    stroke-width: 1;
+  }
+
+  .liability-axis-line {
+    stroke: #b8c4d8;
+    stroke-width: 1.15;
+  }
+
+  .liability-chart-labels {
+    color: #33456f;
+    display: flex;
+    font-size: 0.75rem;
+    justify-content: space-between;
+    min-height: 1rem;
+  }
+
+  .liability-bar-chart {
+    align-items: end;
+    border-bottom: 1px solid #b8c4d8;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    height: 9.5rem;
+  }
+
+  .liability-bar-chart i {
+    align-items: end;
+    display: flex;
+    height: 100%;
+    justify-content: center;
+  }
+
+  .liability-bar-chart b {
+    background: #d9e1ee;
+    display: block;
+    height: 0;
+    width: 1.85rem;
+  }
+
+  .liability-horizontal-bars {
+    display: grid;
+    gap: 0.6rem;
+    margin-top: 1rem;
+  }
+
+  .liability-horizontal-bars div {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(7rem, 0.9fr) minmax(7rem, 2fr) auto;
+  }
+
+  .liability-horizontal-bars span,
+  .liability-horizontal-bars strong {
+    color: #071842;
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .liability-horizontal-bars i {
+    background: #e7edf7;
+    display: block;
+    height: 0.78rem;
+  }
+
+  .liability-horizontal-bars b {
+    background: #174bff;
+    display: block;
+    height: 100%;
+    width: 0%;
+  }
+
+  .liability-donut-card {
+    align-content: start;
+  }
+
+  .liability-donut {
+    align-items: center;
+    background: conic-gradient(#d9e1ee 0 100%);
+    border-radius: 999px;
+    display: grid;
+    height: 9rem;
+    justify-items: center;
+    margin: 1.2rem auto 1rem;
+    width: 9rem;
+  }
+
+  .liability-donut div {
+    background: #fbfcff;
+    border-radius: 999px;
+    display: grid;
+    height: 5rem;
+    place-items: center;
+    text-align: center;
+    width: 5rem;
+  }
+
+  .liability-donut strong,
+  .liability-donut span {
+    display: block;
+    line-height: 1.1;
+  }
+
+  .liability-legend {
+    color: #071842;
+    display: grid;
+    gap: 0.45rem;
+    margin: 1rem 0 0;
+    padding-left: 1.2rem;
+  }
+
+  .liability-legend {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .liability-legend li {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  .liability-legend i {
+    border-radius: 999px;
+    display: inline-block;
+    height: 0.55rem;
+    margin-right: 0.4rem;
+    width: 0.55rem;
+  }
+
+  .liability-blue-bg {
+    background: #174bff;
+  }
+
+  .liability-green-bg {
+    background: #087f3b;
+  }
+
+  .liability-gray-bg {
+    background: #94a3b8;
+  }
+
+  @media (min-width: 768px) {
+    .liability-metric-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .liability-heading {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .liability-actions {
+      justify-content: end;
+    }
+
+    .liability-metric-grid {
+      grid-template-columns: repeat(6, minmax(10rem, 1fr));
+    }
+  }
+
+  @media (max-width: 991.98px) {
+  }
+
+  @media (max-width: 575.98px) {
+    .liability-action {
+      justify-content: center;
+      width: 100%;
+    }
+
+    .liability-metric-card {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .liability-coming-soon {
+      text-align: left;
+    }
+  }
+</style>

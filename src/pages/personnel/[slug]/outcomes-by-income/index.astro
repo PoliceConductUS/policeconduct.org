@@ -1,0 +1,50 @@
+---
+import OutcomesByIncomePage from "#src/components/OutcomesByIncomePage.astro";
+import { withDb } from "#src/lib/db.js";
+import { metricLabels } from "#src/lib/metric-vocabulary.js";
+
+export async function getStaticPaths() {
+  return [];
+}
+
+const { officerId } = Astro.props;
+const officer = await withDb(async (client) => {
+  return (
+    await client.query(
+      `select id, first_name, middle_name, last_name, suffix, slug
+       from public.officers
+       where id = $1`,
+      [officerId],
+    )
+  ).rows[0];
+});
+
+if (!officer) {
+  throw new Error(`Personnel ${officerId} was not found.`);
+}
+
+const officerName = [
+  officer.first_name,
+  officer.middle_name,
+  officer.last_name,
+  officer.suffix,
+]
+  .filter(Boolean)
+  .join(" ");
+const officerPath = `/personnel/${officer.slug}/`;
+const pagePath = `${officerPath}outcomes-by-income/`;
+const title = `${officerName} ${metricLabels.outcomesByIncome}`;
+const description = `Case outcomes by income band for ${officerName}.`;
+---
+
+<OutcomesByIncomePage
+  title={title}
+  description={description}
+  pagePath={pagePath}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Personnel", href: "/personnel/" },
+    { label: officerName, href: officerPath },
+    { label: metricLabels.outcomesByIncome, href: pagePath, current: true },
+  ]}
+/>

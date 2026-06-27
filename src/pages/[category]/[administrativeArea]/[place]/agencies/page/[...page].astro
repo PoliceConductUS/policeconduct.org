@@ -1,0 +1,55 @@
+---
+import CivicChildIndexPage from "#src/components/CivicChildIndexPage.astro";
+import { buildPlaceCivicIndex } from "#src/lib/data/civic-index.js";
+import {
+  loadPlaceScopedPaths,
+  loadRequiredLocationByPath,
+} from "#src/lib/data/civic-scoped-routes.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
+
+export async function getStaticPaths({ paginate }: { paginate: any }) {
+  const paths = await loadPlaceScopedPaths();
+  const pages: any[] = [];
+
+  for (const path of paths) {
+    const model = await buildPlaceCivicIndex(
+      await loadRequiredLocationByPath(
+        `/${path.params.category}/${path.params.administrativeArea}/${path.params.place}/`,
+        "place",
+      ),
+    );
+    paginate(model.rows, {
+      pageSize: PAGE_SIZE,
+      params: path.params,
+      props: {
+        label: "Agencies",
+        model,
+        pagePath: `${model.pagePath}agencies/`,
+      },
+    })
+      .filter((page: any) => {
+        const pageParam = page.params?.page;
+        if (Array.isArray(pageParam)) {
+          return pageParam.length > 0 && pageParam[0] !== "1";
+        }
+        return (
+          typeof pageParam === "string" &&
+          pageParam.length > 0 &&
+          pageParam !== "1"
+        );
+      })
+      .forEach((page: any) => pages.push(page));
+  }
+
+  return pages;
+}
+
+const { label, model, page, pagePath } = Astro.props;
+---
+
+<CivicChildIndexPage
+  label={label}
+  model={model}
+  page={page}
+  pagePath={pagePath}
+/>
