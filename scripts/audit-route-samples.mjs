@@ -125,13 +125,13 @@ export const collectHtmlRoutes = async (distDir) => {
 };
 
 export const buildAuditRouteSelection = ({ routes, maxRoutes }) => {
+  const routeSet = new Set(sortRoutes(routes));
   const allRoutes = sortRoutes(
     routes.filter(
       (route) =>
         !REDIRECT_ROUTE_PATTERNS.some((pattern) => pattern.test(route)),
     ),
   );
-  const routeSet = new Set(allRoutes);
   const formSet = new Set(FORM_ROUTES);
   const nonFormRoutes = allRoutes.filter((route) => !formSet.has(route));
 
