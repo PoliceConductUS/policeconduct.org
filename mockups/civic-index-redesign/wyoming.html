@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wyoming Civic Index | PoliceConduct.org (mockup)</title>
+    <link rel="stylesheet" href="shared.css" />
+  </head>
+  <body>
+    <div class="variant-banner">
+      Design mockup — sparse-data state variant · see also
+      <a href="texas.html">the populated variant</a>
+    </div>
+
+    <header class="masthead">
+      <div class="container">
+        <a class="masthead-mark" href="#">Police<span>Conduct</span>.org</a>
+        <nav class="masthead-nav">
+          <a class="nav-action nav-action-find" href="#">Find an agency</a>
+          <a class="nav-action nav-action-share" href="#"
+            >Share an interaction</a
+          >
+          <a href="#">Volunteer</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="container">
+        <ol class="crumbs">
+          <li><a href="#">Home</a></li>
+          <li aria-current="page">Wyoming</li>
+        </ol>
+
+        <section class="lede">
+          <p class="kicker">State civic index</p>
+          <h1>Wyoming</h1>
+          <p class="lede-sub">
+            Public records for law enforcement agencies, personnel, reports, and
+            civil litigation across Wyoming's 23 counties.
+          </p>
+        </section>
+
+        <section class="stat-strip" aria-label="Wyoming coverage totals">
+          <div class="stat-cell">
+            <strong class="stat-value tabular">38</strong>
+            <span class="stat-label">Agencies</span>
+            <span class="stat-meta">Statewide</span>
+          </div>
+          <div class="stat-cell">
+            <strong class="stat-value tabular">96</strong>
+            <span class="stat-label">Personnel records</span>
+            <span class="stat-meta">Current &amp; former</span>
+          </div>
+          <div class="stat-cell">
+            <strong class="stat-value tabular">21</strong>
+            <span class="stat-label">Reports</span>
+            <span class="stat-meta">Previous 12 months</span>
+          </div>
+          <div class="stat-cell">
+            <strong class="stat-value tabular">4</strong>
+            <span class="stat-label">Civil cases</span>
+            <span class="stat-meta">Previous 5 years</span>
+          </div>
+          <div class="stat-cell jump-cell">
+            <strong class="stat-value tabular">23</strong>
+            <span class="stat-label">Counties</span>
+            <form class="jump-form" data-jump-form>
+              <label for="county-jump" class="visually-hidden">County</label>
+              <select id="county-jump" class="jump-select" data-jump-select>
+                <option value="" selected disabled>Choose county…</option>
+                <option value="#county-albany" data-county-id="albany">
+                  Albany
+                </option>
+                <option value="#county-campbell" data-county-id="campbell">
+                  Campbell
+                </option>
+                <option value="#county-converse" data-county-id="converse">
+                  Converse
+                </option>
+                <option value="#county-fremont" data-county-id="fremont">
+                  Fremont
+                </option>
+                <option value="#county-laramie" data-county-id="laramie">
+                  Laramie
+                </option>
+                <option value="#county-natrona" data-county-id="natrona">
+                  Natrona
+                </option>
+                <option value="#county-park" data-county-id="park">Park</option>
+                <option value="#county-sheridan" data-county-id="sheridan">
+                  Sheridan
+                </option>
+                <option value="#county-sweetwater" data-county-id="sweetwater">
+                  Sweetwater
+                </option>
+                <option value="#county-uinta" data-county-id="uinta">
+                  Uinta
+                </option>
+              </select>
+              <button class="jump-go" type="submit">Go →</button>
+            </form>
+            <p class="jump-status" data-jump-status aria-live="polite"></p>
+            <p class="jump-browse"><a href="#">Browse all 23 counties →</a></p>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <div>
+              <h2>Look deeper by topic</h2>
+              <p>
+                Populated topics link straight to the full record set. Topics
+                without published source data yet are marked below.
+              </p>
+            </div>
+          </div>
+
+          <ul class="topic-row">
+            <li class="topic-cell" data-role="neutral">
+              <a class="topic-link" href="#">
+                <span class="topic-name">Personnel</span>
+                <span class="topic-value tabular">96</span>
+                <span class="topic-foot"
+                  ><span>Current &amp; former</span><span>→</span></span
+                >
+              </a>
+            </li>
+            <li class="topic-cell" data-role="neutral">
+              <a class="topic-link" href="#">
+                <span class="topic-name">Reports</span>
+                <span class="topic-value tabular">21</span>
+                <span class="topic-foot"
+                  ><span>Previous 12 months</span><span>→</span></span
+                >
+              </a>
+            </li>
+            <li class="topic-cell" data-role="civil">
+              <a class="topic-link" href="#">
+                <span class="topic-name">Civil cases</span>
+                <span class="topic-value tabular">4</span>
+                <span class="topic-foot"
+                  ><span>Previous 5 years</span><span>→</span></span
+                >
+              </a>
+            </li>
+            <li class="topic-cell is-pending" data-role="budget">
+              <a class="topic-link" href="#">
+                <span class="topic-name">Budget</span>
+                <span class="topic-value">Not yet available</span>
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="#">Help collect this →</a></span
+              >
+            </li>
+            <li class="topic-cell is-pending" data-role="liability">
+              <a class="topic-link" href="#">
+                <span class="topic-name">Liability costs</span>
+                <span class="topic-value">Not yet available</span>
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="#">Help collect this →</a></span
+              >
+            </li>
+            <li class="topic-cell is-pending" data-role="neutral">
+              <a class="topic-link" href="#">
+                <span class="topic-name">Fatal force incidents</span>
+                <span class="topic-value">Not yet available</span>
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="#">Help collect this →</a></span
+              >
+            </li>
+            <li class="topic-cell is-pending" data-role="neutral">
+              <a class="topic-link" href="#">
+                <span class="topic-name">Outcomes by income</span>
+                <span class="topic-value">Not yet available</span>
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="#">Help collect this →</a></span
+              >
+            </li>
+          </ul>
+
+          <div class="chart-block">
+            <div class="chart-head">
+              <h3>Reports by month</h3>
+              <span class="chart-updated">Updated Jun 2026</span>
+            </div>
+            <div class="chart-scroll">
+              <div
+                class="bar-chart"
+                role="img"
+                aria-label="Reports by month, previous 12 months, ranging from 0 to 4"
+              >
+                <div class="bar" style="height: 3%">
+                  <span class="bar-value tabular">0</span>
+                </div>
+                <div class="bar" style="height: 25%">
+                  <span class="bar-value tabular">1</span>
+                </div>
+                <div class="bar" style="height: 50%">
+                  <span class="bar-value tabular">2</span>
+                </div>
+                <div class="bar" style="height: 25%">
+                  <span class="bar-value tabular">1</span>
+                </div>
+                <div class="bar" style="height: 75%">
+                  <span class="bar-value tabular">3</span>
+                </div>
+                <div class="bar" style="height: 50%">
+                  <span class="bar-value tabular">2</span>
+                </div>
+                <div class="bar" style="height: 25%">
+                  <span class="bar-value tabular">1</span>
+                </div>
+                <div class="bar" data-peak style="height: 100%">
+                  <span class="bar-value tabular">4</span>
+                </div>
+                <div class="bar" style="height: 50%">
+                  <span class="bar-value tabular">2</span>
+                </div>
+                <div class="bar" style="height: 75%">
+                  <span class="bar-value tabular">3</span>
+                </div>
+                <div class="bar" style="height: 25%">
+                  <span class="bar-value tabular">1</span>
+                </div>
+                <div class="bar" style="height: 25%">
+                  <span class="bar-value tabular">1</span>
+                </div>
+              </div>
+              <div class="bar-chart-labels">
+                <span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span
+                ><span>Nov</span><span>Dec</span> <span>Jan</span
+                ><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span
+                ><span>Jun</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="context-band">
+          <div class="context-head">
+            <h2>Decertification law context</h2>
+            <span class="context-summary"
+              >5 unknown · <a href="#">Report source</a></span
+            >
+          </div>
+          <div
+            class="status-ledger"
+            aria-label="Wyoming decertification report card statuses"
+          >
+            <div class="status-cell status-summary">
+              <h4>Present</h4>
+              <strong class="status-summary-value tabular">2 of 9</strong>
+            </div>
+            <div class="status-cell">
+              <h4>Statewide registry</h4>
+              <span class="status-mark present" aria-label="Present"
+                >Present</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4>Mandatory reporting</h4>
+              <span class="status-mark present" aria-label="Present"
+                >Present</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4>Due process hearing</h4>
+              <span class="status-mark unknown" aria-label="Unknown"
+                >Unknown</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4>Public database</h4>
+              <span class="status-mark absent" aria-label="Absent">Absent</span>
+            </div>
+            <div class="status-cell">
+              <h4>Cross-agency sharing</h4>
+              <span class="status-mark unknown" aria-label="Unknown"
+                >Unknown</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4>Civilian oversight tie-in</h4>
+              <span class="status-mark unknown" aria-label="Unknown"
+                >Unknown</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4>Pre-employment screening</h4>
+              <span class="status-mark unknown" aria-label="Unknown"
+                >Unknown</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4>Certification renewal review</h4>
+              <span class="status-mark absent" aria-label="Absent">Absent</span>
+            </div>
+            <div class="status-cell">
+              <h4>Emergency suspension power</h4>
+              <span class="status-mark unknown" aria-label="Unknown"
+                >Unknown</span
+              >
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
