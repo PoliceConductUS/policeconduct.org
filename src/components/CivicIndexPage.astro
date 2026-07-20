@@ -292,7 +292,10 @@ const statColumns = model.statCells.length + 1;
         </section>
 
         <section
-          class:list={["stat-strip", { "stat-strip--three": statColumns === 4 }]}
+          class:list={[
+            "stat-strip",
+            { "stat-strip--three": statColumns === 4 },
+          ]}
           aria-label={`${heading} coverage totals`}
         >
           {
@@ -352,11 +355,7 @@ const statColumns = model.statCells.length + 1;
               </select>
               <button class="jump-go" type="submit">Go →</button>
             </form>
-            <p
-              class="jump-status"
-              data-civic-jump-status
-              aria-live="polite"
-            >
+            <p class="jump-status" data-civic-jump-status aria-live="polite">
             </p>
             <p class="jump-browse">
               <a href={model.jumpCell.browse.href}>
@@ -407,17 +406,17 @@ const statColumns = model.statCells.length + 1;
               </div>
               <p class="civic-context-copy">
                 The license is what stands between a fired officer and a new
-                badge: researchers call officers who are fired by one
-                department and hired by another{" "}
+                badge: researchers call officers who are fired by one department
+                and hired by another{" "}
                 <a
                   href="https://www.yalelawjournal.org/article/the-wandering-officer"
                   rel="noopener"
                 >
                   "wandering officers,"
                 </a>{" "}
-                and one study found about 3 in 100 working Florida officers
-                had been fired from an earlier policing job. An officer who
-                loses their license cannot wander.
+                and one study found about 3 in 100 working Florida officers had
+                been fired from an earlier policing job. An officer who loses
+                their license cannot wander.
               </p>
               <dl class="fact-list">
                 {licensingPayload.facts.map((fact) => (
@@ -501,5 +500,3 @@ const statColumns = model.statCells.length + 1;
     });
   })();
 </script>
-
-

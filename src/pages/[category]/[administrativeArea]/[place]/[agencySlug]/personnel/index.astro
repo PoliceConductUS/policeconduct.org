@@ -65,7 +65,10 @@ const officerName = (employee: any) =>
           <tr>
             <td>
               {employee.officer?.slug ? (
-                <a class="row-link" href={`/personnel/${employee.officer.slug}/`}>
+                <a
+                  class="row-link"
+                  href={`/personnel/${employee.officer.slug}/`}
+                >
                   {officerName(employee)}
                 </a>
               ) : (
