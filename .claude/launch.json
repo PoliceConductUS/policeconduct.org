@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "-l", "4173", "mockups/civic-index-redesign"],
       "port": 4173
+    },
+    {
+      "name": "astro-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 4321
     }
   ]
 }

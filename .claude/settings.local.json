@@ -49,7 +49,9 @@
       "Bash(sed -i '' 's|<title>Texas Civic Index v3 |<title>Texas Civic Index v4 |' texas-v4.html)",
       "Bash(python3 -)",
       "Bash(cp wyoming-v3.html wyoming-v4.html)",
-      "Bash(sed -i '' 's|<title>Wyoming Civic Index v3 |<title>Wyoming Civic Index v4 |' wyoming-v4.html)"
+      "Bash(sed -i '' 's|<title>Wyoming Civic Index v3 |<title>Wyoming Civic Index v4 |' wyoming-v4.html)",
+      "Bash(cp shared-v2.css shared-v5.css)",
+      "Bash(cp agency-entity-v4.css agency-entity-v5.css)"
     ]
   }
 }

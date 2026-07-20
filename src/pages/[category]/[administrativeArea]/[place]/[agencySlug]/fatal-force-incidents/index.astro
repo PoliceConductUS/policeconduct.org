@@ -1,34 +1,35 @@
 ---
-import FatalForceIncidentsPage from "#src/components/FatalForceIncidentsPage.astro";
+import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
 import {
   loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPathsForTopic,
 } from "#src/lib/data/agency-detail.js";
-import { metricLabels } from "#src/lib/metric-vocabulary.js";
 
 export async function getStaticPaths() {
   return loadAgencyLocationStaticPathsForTopic("fatal-force-incidents");
 }
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
-const pagePath = `${data.agencyPath}fatal-force-incidents/`;
-const title = `${data.agencyName} ${metricLabels.fatalForceIncidents}`;
-const description = `Fatal force incidents from the past 5 years for ${data.agencyName}.`;
+const volunteerHref = `/volunteer/?ref=${encodeURIComponent(`${data.agencyPath}fatal-force-incidents/`)}`;
 ---
 
-<FatalForceIncidentsPage
-  title={title}
-  description={description}
-  pagePath={pagePath}
-  breadcrumbs={[
-    { label: "Home", href: "/" },
-    { label: data.categoryLabel, href: `/${data.categorySlug}/` },
-    {
-      label: data.administrativeArea,
-      href: `/${data.categorySlug}/${data.administrativeAreaSlug}/`,
-    },
-    { label: data.placeLabel, href: data.placePath },
-    { label: data.agencyName, href: data.agencyPath },
-    { label: metricLabels.fatalForceIncidents, href: pagePath, current: true },
-  ]}
-/>
+<AgencyTopicPage
+  data={data}
+  topicLabel="Fatal Force Incidents"
+  topicSlug="fatal-force-incidents"
+  description="Deaths involving police contact connected to this agency, including custody and pursuit deaths."
+>
+  <ul class="topic-row">
+    <li class="topic-cell is-pending" data-role="neutral">
+      <span class="ledger-label">Fatal Force Incidents</span>
+      <span class="topic-value">Not yet available</span>
+      <span class="topic-foot">
+        <a href={volunteerHref}>Help collect this →</a>
+      </span>
+    </li>
+  </ul>
+  <p class="civic-limit-note">
+    These records are not on this site yet. You can help request and review
+    the source records.
+  </p>
+</AgencyTopicPage>

@@ -1,7 +1,7 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import "#src/styles/civic-ledger.css";
 import EntityActionButton from "#src/components/EntityActionButton.astro";
-import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
@@ -10,10 +10,6 @@ import {
   loadAgencyLocationStaticPaths,
 } from "#src/lib/data/agency-detail.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
-import {
-  buildTopMetricCards,
-  buildVisitorIntentBands,
-} from "#src/lib/data/civic-index.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
@@ -75,7 +71,7 @@ const agencyLinksSummary = data.agencyLinks
   )
   .filter(Boolean)
   .join("\n");
-const civilLitigationSummary = [
+const civilLitigationRecords = [
   ...civilCases.map((record: any) => ({
     ...record,
     caseUrl: `/civil-cases/${record.slug}/`,
@@ -84,7 +80,8 @@ const civilLitigationSummary = [
     ...record,
     caseUrl: `/civil-cases/${record.slug}/`,
   })),
-]
+];
+const civilLitigationSummary = civilLitigationRecords
   .map((record) => {
     const segments = [
       record.title || "Civil case",
@@ -153,69 +150,78 @@ const toDisplayName = (value: string) =>
         .replace(/\b[a-z]/g, (letter) => letter.toLocaleUpperCase("en-US"))
     : value;
 const agencyDisplayName = toDisplayName(agencyName);
-const agencyCoverage = [
-  { key: "agencies", label: "Agencies", value: 1 },
-  { key: "personnel", label: "Personnel", value: counts.personnel },
-  { key: "reports", label: "Reports", value: counts.reports },
-  { key: "civil_cases", label: "Civil Cases", value: civilCaseTotal },
-] as const;
-const intentBands = buildVisitorIntentBands({
-  coverage: [...agencyCoverage],
-  jurisdictionLabel: agencyDisplayName,
-  pagePath: agencyPath,
-  rowCount: 0,
-  scope: "agency",
-}).map((band, index) => ({ ...band, id: `intent-${index + 1}` }));
-const topMetricCards = buildTopMetricCards({
-  coverage: [...agencyCoverage],
-  jurisdictionLabel: agencyDisplayName,
-  pagePath: agencyPath,
-  rowCount: 0,
-  scope: "agency",
-});
-type SampleRow = {
-  label: string;
-  value: string;
-  width: number;
+const cityDisplayName = data.agency.city
+  ? toDisplayName(data.agency.city)
+  : null;
+
+const formatCount = (value: number) => value.toLocaleString("en-US");
+const formatDate = (value: string | Date) =>
+  new Date(value).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+
+const addressLine = [
+  data.agency.address,
+  [cityDisplayName, (agencyState || "").toUpperCase()]
+    .filter(Boolean)
+    .join(", ") + (data.agency.zip_code ? ` ${data.agency.zip_code}` : ""),
+]
+  .filter(Boolean)
+  .join(", ");
+const primaryPhone = data.agencyPhones.find(
+  (phone: { description?: string | null }) =>
+    (phone.description || "").toLowerCase() !== "fax",
+);
+const updatedLine = data.agency.updated_at
+  ? `Updated ${formatDate(data.agency.updated_at)}`
+  : null;
+
+const volunteerHref = `/volunteer/?ref=${encodeURIComponent(agencyPath)}`;
+const personnelMeta =
+  counts.currentPersonnel > 0 || counts.formerPersonnel > 0
+    ? `${formatCount(counts.currentPersonnel)} current · ${formatCount(counts.formerPersonnel)} former`
+    : null;
+
+type RecentItem = {
+  href: string;
+  meta: string;
+  title: string;
+  sortDate: number;
 };
-const monthSampleRows: SampleRow[] = [
-  { label: "Jan", value: "--", width: 0 },
-  { label: "Apr", value: "--", width: 0 },
-  { label: "Jul", value: "--", width: 0 },
-  { label: "Oct", value: "--", width: 0 },
-];
-const yearSampleRows: SampleRow[] = [
-  { label: "2021", value: "--", width: 0 },
-  { label: "2022", value: "--", width: 0 },
-  { label: "2023", value: "--", width: 0 },
-  { label: "2024", value: "--", width: 0 },
-  { label: "2025", value: "--", width: 0 },
-];
-const fiscalYearSampleRows: SampleRow[] = [
-  { label: "FY 2021", value: "$--", width: 0 },
-  { label: "FY 2022", value: "$--", width: 0 },
-  { label: "FY 2023", value: "$--", width: 0 },
-  { label: "FY 2024", value: "$--", width: 0 },
-  { label: "FY 2025", value: "$--", width: 0 },
-];
-const currentContextSampleRows: SampleRow[] = [
-  { label: "Policy", value: "--", width: 0 },
-  { label: "Safeguard", value: "--", width: 0 },
-  { label: "Outcome", value: "--", width: 0 },
-  { label: "Source", value: "--", width: 0 },
-];
-const sampleRowsForWindow = (window?: string) => {
-  if (window === "Previous 5 fiscal years") {
-    return fiscalYearSampleRows;
-  }
-  if (window === "Previous 5 years") {
-    return yearSampleRows;
-  }
-  if (window === "Current policy context") {
-    return currentContextSampleRows;
-  }
-  return monthSampleRows;
-};
+
+const recentCaseItems: RecentItem[] = civilLitigationRecords
+  .filter(
+    (record, index, records) =>
+      records.findIndex((entry) => entry.slug === record.slug) === index,
+  )
+  .map((record) => ({
+    href: record.caseUrl,
+    title: record.title || "Civil case",
+    meta: [
+      "Civil case",
+      record.court || null,
+      record.filed_date ? `Filed ${formatDate(record.filed_date)}` : null,
+      record.outcome || null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    sortDate: record.filed_date ? new Date(record.filed_date).getTime() : 0,
+  }));
+const recentReportItems: RecentItem[] = data.reportedReports.map(
+  (report: { incidentDate: string; title?: string; url: string }) => ({
+    href: report.url,
+    title: report.title || "Public report",
+    meta: `Report · Incident ${formatDate(report.incidentDate)}`,
+    sortDate: new Date(report.incidentDate).getTime(),
+  }),
+);
+const recentItems = [...recentCaseItems, ...recentReportItems]
+  .sort((left, right) => right.sortDate - left.sortDate)
+  .slice(0, 6);
+
 const organization = {
   "@type": "GovernmentOrganization",
   "@id": `${pageUrl}#organization`,
@@ -280,577 +286,292 @@ const structuredData = {
             { label: agencyDisplayName, href: agencyPath, current: true },
           ]}
         />
-        <EntityPageHeader
-          title={agencyDisplayName}
-          description={`${placeLabel}, ${administrativeArea}, ${agencyState}`}
-        >
-          {
-            federalAgency ? (
-              <p class="agency-overview-federal">
-                <span>Federal agency</span>
-                <a href={federalAgency.path}>{federalAgency.name}</a>
-              </p>
-            ) : null
-          }
-          <Fragment slot="actions">
-            <PrefillNavButton
-              to="/agency/suggest-edit/"
-              payload={suggestEditPrefillPayload}
-              class="entity-action-button"
-            >
-              Suggest edit
-            </PrefillNavButton>
-            <PrefillNavButton
-              to="/report/new/"
-              payload={reportNewPrefillPayload}
-              class="entity-action-button entity-action-primary"
-            >
-              Share your experience
-            </PrefillNavButton>
-            <PrefillNavButton
-              to="/civil-cases/new/"
-              payload={addCivilCasePrefillPayload}
-              class="entity-action-button"
-            >
-              Add a civil case
-            </PrefillNavButton>
-            <PrefillNavButton
-              to="/personnel/new/"
-              payload={suggestPersonnelPrefillPayload}
-              class="entity-action-button"
-            >
-              Suggest new personnel
-            </PrefillNavButton>
-            <PrefillNavButton
-              to="/about/contact/"
-              payload={subscribePrefillPayload}
-              data-testid="agency-subscribe-link"
-              class="entity-action-button"
-            >
-              Notify Me
-            </PrefillNavButton>
-            <PrefillNavButton
-              to="/about/contact/"
-              payload={claimProfilePrefillPayload}
-              data-testid="agency-claim-profile-link"
-              class="entity-action-button"
-            >
-              Claim Profile
-            </PrefillNavButton>
-            <EntityActionButton data-agency-download-report>
-              Download report
-            </EntityActionButton>
-            <span class="agency-coming-soon" data-agency-coming-soon></span>
-          </Fragment>
-        </EntityPageHeader>
 
-        <section
-          class="agency-metric-grid"
-          aria-label={`${agencyDisplayName} Civic Index metrics`}
-        >
-          {
-            topMetricCards.map((metric) => (
-              <article
-                class="agency-metric-card"
-                data-metric-icon={metric.icon}
-              >
-                <svg
-                  class="agency-metric-icon"
-                  aria-hidden="true"
-                  data-metric-icon={metric.icon}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+        <section class="entity-hero">
+          <div class="entity-hero-grid">
+            <div>
+              <p class="civic-kicker">Department profile</p>
+              <h1>{agencyDisplayName}</h1>
+              {
+                federalAgency ? (
+                  <p class="agency-overview-federal">
+                    <span>Federal agency</span>
+                    <a href={federalAgency.path}>{federalAgency.name}</a>
+                  </p>
+                ) : null
+              }
+              <div class="entity-contact">
+                {
+                  addressLine ? (
+                    <address class="entity-address">{addressLine}</address>
+                  ) : null
+                }
+                {
+                  primaryPhone ||
+                  data.agency.contact_email ||
+                  data.agencyLinks.length ? (
+                    <p class="entity-contact-links">
+                      {primaryPhone ? (
+                        <a href={`tel:${primaryPhone.phone_number}`}>
+                          {primaryPhone.phone_number}
+                        </a>
+                      ) : null}
+                      {data.agency.contact_email ? (
+                        <a href={`mailto:${data.agency.contact_email}`}>
+                          {data.agency.contact_email}
+                        </a>
+                      ) : null}
+                      {data.agencyLinks.map(
+                        (link: {
+                          label?: string | null;
+                          url?: string | null;
+                        }) =>
+                          link.url ? (
+                            <a href={link.url} rel="noopener">
+                              {link.label || link.url}
+                            </a>
+                          ) : null,
+                      )}
+                    </p>
+                  ) : null
+                }
+                {
+                  data.agency.contact_name ? (
+                    <p class="entity-contact-person">
+                      Contact: {toDisplayName(data.agency.contact_name)}
+                    </p>
+                  ) : null
+                }
+              </div>
+              <div class="entity-actions">
+                <PrefillNavButton
+                  to="/report/new/"
+                  payload={reportNewPrefillPayload}
+                  class="entity-action-button entity-action-primary"
                 >
-                  {metric.icon === "people" ? (
-                    <>
-                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </>
-                  ) : metric.icon === "dollar" ? (
-                    <>
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
-                      <path d="M12 6v12" />
-                    </>
-                  ) : metric.icon === "file" ? (
-                    <>
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                      <path d="M14 2v6h6" />
-                      <path d="M8 13h8" />
-                      <path d="M8 17h5" />
-                    </>
-                  ) : metric.icon === "scales" ? (
-                    <>
-                      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-                      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-                      <path d="M7 21h10" />
-                      <path d="M12 3v18" />
-                    </>
-                  ) : (
-                    <>
-                      <path d="M8 7a4 4 0 0 1 8 0" />
-                      <path d="M6.5 7h11l2 13H4.5Z" />
-                      <path d="M10 12h4" />
-                    </>
-                  )}
-                </svg>
-                <div>
-                  <p>{metric.label}</p>
-                  <strong>{metric.value}</strong>
-                  <span>{metric.detail}</span>
-                  {metric.detailHref ? (
-                    <div class="agency-meta">
-                      <a href={metric.detailHref}>View details</a>
-                    </div>
-                  ) : null}
-                </div>
-              </article>
-            ))
-          }
+                  Share an interaction
+                </PrefillNavButton>
+                <PrefillNavButton
+                  to="/agency/suggest-edit/"
+                  payload={suggestEditPrefillPayload}
+                  class="entity-action-button"
+                >
+                  Suggest edit
+                </PrefillNavButton>
+                <PrefillNavButton
+                  to="/civil-cases/new/"
+                  payload={addCivilCasePrefillPayload}
+                  class="entity-action-button"
+                >
+                  Add a civil case
+                </PrefillNavButton>
+              </div>
+              {updatedLine ? <p class="entity-updated">{updatedLine}</p> : null}
+            </div>
+            <aside class="entity-side">
+              <p class="civic-kicker">Help improve this page</p>
+              <h2>Add what is missing</h2>
+              <ul class="entity-side-list">
+                <li>
+                  <span>Add personnel</span>
+                  <PrefillNavButton
+                    to="/personnel/new/"
+                    payload={suggestPersonnelPrefillPayload}
+                    aria-label="Suggest new personnel"
+                    class="entity-side-link"
+                  >
+                    Start
+                  </PrefillNavButton>
+                </li>
+                <li>
+                  <span>Get updates</span>
+                  <PrefillNavButton
+                    to="/about/contact/"
+                    payload={subscribePrefillPayload}
+                    aria-label="Get updates"
+                    data-testid="agency-subscribe-link"
+                    class="entity-side-link"
+                  >
+                    Start
+                  </PrefillNavButton>
+                </li>
+                <li>
+                  <span>Claim this profile</span>
+                  <PrefillNavButton
+                    to="/about/contact/"
+                    payload={claimProfilePrefillPayload}
+                    aria-label="Claim this profile"
+                    data-testid="agency-claim-profile-link"
+                    class="entity-side-link"
+                  >
+                    Start
+                  </PrefillNavButton>
+                </li>
+                <li>
+                  <span>Download report</span>
+                  <EntityActionButton
+                    data-agency-download-report
+                    aria-label="Download report"
+                    class="entity-side-link"
+                  >
+                    Soon
+                  </EntityActionButton>
+                </li>
+              </ul>
+              <span class="agency-coming-soon" data-agency-coming-soon></span>
+            </aside>
+          </div>
         </section>
 
-        <div class="agency-intent-layout">
-          <div>
-            {
-              intentBands.map((band) => (
-                <section class="agency-intent-band" id={band.id}>
-                  <header>
-                    <h2>{band.title}</h2>
-                    {band.summary ? <p>{band.summary}</p> : null}
-                  </header>
-                  {band.metrics.length ? (
-                    <div class="agency-band-metrics">
-                      {band.metrics.map((metric) => (
-                        <article>
-                          <p>{metric.label}</p>
-                          <strong>{metric.value}</strong>
-                          <span>{metric.detail}</span>
-                          {metric.detailHref ? (
-                            <div class="agency-meta">
-                              <a href={metric.detailHref}>View details</a>
-                            </div>
-                          ) : null}
-                        </article>
-                      ))}
-                    </div>
-                  ) : null}
-                  {band.graphs.length ? (
-                    <div class="agency-chart-grid">
-                      {band.graphs.map((graph) => (
-                        <article class="agency-graph-panel">
-                          <header>
-                            <h3>{graph.label}</h3>
-                            <p>{graph.seriesLabel}</p>
-                          </header>
-                          <div
-                            class="agency-sample-chart"
-                            aria-label={`${graph.label}: ${graph.seriesLabel}`}
-                          >
-                            {sampleRowsForWindow(graph.window).map((row) => (
-                              <div class="agency-bar-row">
-                                <b>{row.label}</b>
-                                <div>
-                                  <span />
-                                </div>
-                                <em>{row.value}</em>
-                              </div>
-                            ))}
-                          </div>
-                          {graph.caption ? <p>{graph.caption}</p> : null}
-                          {graph.metadata?.length || graph.detailHref ? (
-                            <div class="agency-meta">
-                              {graph.metadata?.map((item) => (
-                                <span>{item}</span>
-                              ))}
-                              {graph.detailHref ? (
-                                <a href={graph.detailHref}>View details</a>
-                              ) : null}
-                            </div>
-                          ) : null}
-                        </article>
-                      ))}
-                    </div>
-                  ) : null}
-                </section>
-              ))
-            }
+        <section
+          class="stat-strip"
+          aria-label={`${agencyDisplayName} record totals`}
+        >
+          {
+            counts.personnel > 0 ? (
+              <a
+                class="stat-cell stat-cell--link"
+                href={`${agencyPath}personnel/`}
+              >
+                <strong class="ledger-value">
+                  {formatCount(counts.personnel)}
+                </strong>
+                <span class="ledger-label">Personnel Records</span>
+                {personnelMeta ? (
+                  <span class="ledger-meta">{personnelMeta}</span>
+                ) : null}
+                <span class="stat-action">View personnel →</span>
+              </a>
+            ) : (
+              <div class="stat-cell is-pending">
+                <strong class="ledger-value">--</strong>
+                <span class="ledger-label">Personnel Records</span>
+                <span class="stat-action">
+                  <a href={volunteerHref}>Help collect →</a>
+                </span>
+              </div>
+            )
+          }
+          {
+            counts.reports > 0 ? (
+              <a
+                class="stat-cell stat-cell--link"
+                href={`${agencyPath}reports/`}
+              >
+                <strong class="ledger-value">
+                  {formatCount(counts.reports)}
+                </strong>
+                <span class="ledger-label">Reports</span>
+                <span class="ledger-meta">Shared by the public</span>
+                <span class="stat-action">View reports →</span>
+              </a>
+            ) : (
+              <div class="stat-cell is-pending">
+                <strong class="ledger-value">--</strong>
+                <span class="ledger-label">Reports</span>
+                <span class="stat-action">
+                  <a href="/report/new/">Share an interaction →</a>
+                </span>
+              </div>
+            )
+          }
+          {
+            civilCaseTotal > 0 ? (
+              <a
+                class="stat-cell stat-cell--link"
+                data-role="civil"
+                href={`${agencyPath}civil-cases/`}
+              >
+                <strong class="ledger-value">
+                  {formatCount(civilCaseTotal)}
+                </strong>
+                <span class="ledger-label">Civil Cases</span>
+                <span class="ledger-meta">Court records</span>
+                <span class="stat-action">View civil cases →</span>
+              </a>
+            ) : (
+              <div class="stat-cell is-pending" data-role="civil">
+                <strong class="ledger-value">--</strong>
+                <span class="ledger-label">Civil Cases</span>
+                <span class="stat-action">
+                  <a href={volunteerHref}>Help collect →</a>
+                </span>
+              </div>
+            )
+          }
+          <div class="stat-cell is-pending" data-role="budget">
+            <strong class="ledger-value">--</strong>
+            <span class="ledger-label">Budget</span>
+            <span class="stat-action">
+              <a href={volunteerHref}>Help collect this →</a>
+            </span>
           </div>
-        </div>
+          <div class="stat-cell is-pending" data-role="liability">
+            <strong class="ledger-value">--</strong>
+            <span class="ledger-label">Liability Costs</span>
+            <span class="stat-action">
+              <a href={volunteerHref}>Help collect this →</a>
+            </span>
+          </div>
+        </section>
+
+        <section class="civic-section civic-section--last">
+          {
+            recentItems.length ? (
+              <>
+                <div class="civic-section-head">
+                  <div>
+                    <h2>Recent reports and civil cases</h2>
+                    <p>Most recent activity connected to this agency.</p>
+                  </div>
+                </div>
+                <div class="recent-list">
+                  {recentItems.map((item) => (
+                    <a href={item.href}>
+                      <span class="recent-list-title">{item.title}</span>
+                      <span class="recent-list-meta">{item.meta}</span>
+                    </a>
+                  ))}
+                </div>
+              </>
+            ) : null
+          }
+          <p class="civic-limit-note">
+            Counts show items available on this site. They are not a rating.
+          </p>
+        </section>
       </div>
     </section>
   </main>
+
   <style>
-    .agency-overview-page {
-      background: #f7f9fd;
-      color: #071842;
+    /* Page-specific overrides on the shared civic-ledger vocabulary. */
+    .agency-overview :global(.stat-strip) {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 
-    .agency-overview {
-      background: #fbfcff;
-      border-bottom: 1px solid #d9e1ee;
-      min-height: calc(100vh - 3.25rem);
-      padding: 1.35rem 0 clamp(2.5rem, 5vw, 4rem);
-    }
-
-    .agency-overview > .container {
-      max-width: 1240px;
-    }
-
-    .agency-overview :global(.breadcrumb) {
-      margin-bottom: 1.15rem;
-    }
-
-    .agency-overview-heading {
-      align-items: start;
-      display: grid;
-      gap: 1.5rem;
-      grid-template-columns: minmax(0, 1fr);
-      margin-bottom: 1.25rem;
-    }
-
-    .agency-overview-heading h1 {
-      color: #071842;
-      margin: 0 0 0.45rem;
-    }
-
-    .agency-overview-heading p {
-      color: #33456f;
-      margin: 0;
-    }
-
-    .agency-overview-federal {
-      align-items: baseline;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.55rem;
-      margin-top: 0.75rem;
-    }
-
-    .agency-overview-federal span {
-      color: #5a6684;
-      font-size: 0.76rem;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    .agency-overview-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      justify-content: start;
-    }
-
-    .agency-overview-action {
-      align-items: center;
-      background: #fbfcff;
-      border: 1px solid #c9d4e6;
-      border-radius: 0.4rem;
-      color: #071842;
-      display: inline-flex;
-      font-size: 0.95rem;
-      font-weight: 700;
-      gap: 0.6rem;
-      min-height: 3rem;
-      padding: 0.72rem 1.05rem;
-      text-decoration: none;
-    }
-
-    .agency-overview-action svg {
-      height: 1.15rem;
-      width: 1.15rem;
-    }
-
-    .agency-overview-primary {
-      background: #071842;
-      border-color: #071842;
-      color: #f8faff;
-      padding-inline: 1.35rem;
-    }
-
-    .agency-coming-soon {
-      color: #33456f;
-      display: block;
-      flex-basis: 100%;
-      font-size: 0.82rem;
-      font-weight: 700;
-      min-height: 1.15rem;
-      text-align: right;
-    }
-
-    .agency-metric-grid {
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .agency-metric-grid {
-      margin-bottom: 1rem;
-    }
-
-    .agency-metric-card {
-      background: #fbfcff;
-      border: 1px solid #d5deeb;
-      border-radius: 0.45rem;
-      box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
-    }
-
-    .agency-metric-card {
-      align-items: start;
-      display: grid;
-      gap: 0.65rem;
-      grid-template-columns: 2rem minmax(0, 1fr);
-      min-height: 9.6rem;
-      padding: 1rem 1.15rem;
-    }
-
-    .agency-metric-icon {
-      height: 1.75rem;
-      margin-top: 0.1rem;
-      width: 1.75rem;
-    }
-
-    .agency-metric-card[data-metric-icon="people"] .agency-metric-icon,
-    .agency-metric-card[data-metric-icon="dollar"] .agency-metric-icon {
-      color: #087f3b;
-    }
-
-    .agency-metric-card[data-metric-icon="file"] .agency-metric-icon {
-      color: #174bff;
-    }
-
-    .agency-metric-card[data-metric-icon="scales"] .agency-metric-icon {
-      color: #5b2df5;
-    }
-
-    .agency-metric-card[data-metric-icon="weight"] .agency-metric-icon {
-      color: #b42318;
-    }
-
-    .agency-metric-card p {
-      color: #071842;
-      font-size: 0.95rem;
-      font-weight: 700;
-      line-height: 1.25;
-      margin: 0;
-    }
-
-    .agency-metric-card strong {
-      color: #071842;
-      display: block;
-      font-size: 1.5rem;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.1;
-      margin: 0.25rem 0 0.35rem;
-    }
-
-    .agency-metric-card span {
-      color: #33456f;
-      display: block;
-      font-size: 0.88rem;
-      font-weight: 500;
-    }
-
-    .agency-metric-card a,
-    .agency-meta a,
-    .agency-inline-action,
-    .agency-action-link {
-      color: #064cfb;
-      font-weight: 700;
-      text-decoration: none;
-    }
-
-    .agency-meta {
-      align-items: center;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      margin-top: 0.15rem;
-    }
-
-    .agency-meta span {
-      color: #34496b;
-      display: inline-flex;
-      font-size: 0.75rem;
-      font-weight: 750;
-      line-height: 1.35;
-    }
-
-    .agency-meta span + span::before {
-      color: #9aa8bc;
-      content: "·";
-      margin-right: 0.4rem;
-    }
-
-    .agency-intent-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .agency-intent-band {
-      border-top: 1px solid #d7dfeb;
-      display: grid;
-      gap: 0.875rem;
-      padding: 1.35rem 0;
-    }
-
-    .agency-intent-band h2 {
-      color: #071842;
-      font-size: var(--ipc-type-h2);
-      line-height: var(--ipc-leading-heading);
-      margin: 0;
-    }
-
-    .agency-intent-band header > p {
-      color: #34496b;
-      font-size: 0.875rem;
-      line-height: 1.5;
-      margin: 0.45rem 0 0;
-      max-width: 82ch;
-    }
-
-    .agency-band-metrics,
-    .agency-chart-grid {
-      display: grid;
-      gap: 0.875rem;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .agency-band-metrics article,
-    .agency-graph-panel {
-      background: #fbfcff;
-      border: 1px solid #d7dfeb;
-      border-radius: 0.5rem;
-      box-shadow: 0 1px 2px rgba(7, 24, 66, 0.035);
-      display: grid;
-      gap: 0.65rem;
-      padding: 0.95rem;
-    }
-
-    .agency-band-metrics p,
-    .agency-graph-panel h3,
-    .agency-graph-panel p {
-      margin: 0;
-    }
-
-    .agency-band-metrics p,
-    .agency-graph-panel header p,
-    .agency-graph-panel > p {
-      color: #34496b;
-      font-size: 0.875rem;
-      line-height: 1.45;
-    }
-
-    .agency-band-metrics strong {
-      color: #071842;
-      font-size: 1.35rem;
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
-    }
-
-    .agency-graph-panel h3 {
-      color: #071842;
-      font-size: var(--ipc-type-h3);
-      line-height: 1.25;
-    }
-
-    .agency-sample-chart {
-      background: #f8fafc;
-      border: 1px solid #d8e0eb;
-      border-radius: 0.38rem;
-      display: grid;
-      gap: 0.625rem;
-      min-height: 7.38rem;
-      opacity: 0.74;
-      padding: 0.75rem;
-    }
-
-    .agency-bar-row {
-      align-items: center;
-      display: grid;
-      gap: 0.56rem;
-      grid-template-columns: 5.75rem minmax(0, 1fr) 2.38rem;
-    }
-
-    .agency-bar-row b {
-      color: #071842;
-      font-size: 0.75rem;
-    }
-
-    .agency-bar-row div {
-      background: #e5ebf3;
-      border-radius: 999px;
-      height: 0.56rem;
-      overflow: hidden;
-    }
-
-    .agency-bar-row div span {
-      background: #aebbcf;
-      border-radius: inherit;
-      display: block;
-      height: 100%;
-      width: 0%;
-    }
-
-    .agency-bar-row em {
-      color: #687a96;
-      font-size: 0.75rem;
-      font-style: normal;
-      text-align: right;
-    }
-
-    @media (min-width: 768px) {
-      .agency-metric-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (min-width: 1200px) {
-      .agency-overview-heading {
-        align-items: start;
-        grid-template-columns: minmax(0, 1fr) auto;
-      }
-
-      .agency-overview-actions {
-        justify-content: end;
-      }
-
-      .agency-metric-grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+    @media (min-width: 900px) {
+      .agency-overview :global(.entity-hero-grid) {
+        grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.34fr);
       }
     }
 
     @media (max-width: 991.98px) {
-      .agency-band-metrics,
-      .agency-chart-grid {
-        grid-template-columns: minmax(0, 1fr);
+      .agency-overview :global(.stat-strip) {
+        grid-template-columns: repeat(2, 1fr);
       }
     }
 
     @media (max-width: 575.98px) {
-      .agency-overview-action {
-        justify-content: center;
-        width: 100%;
-      }
-
-      .agency-metric-card {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .agency-coming-soon {
-        text-align: left;
+      .agency-overview :global(.stat-strip) {
+        grid-template-columns: 1fr;
       }
     }
   </style>
   <script>
     const setComingSoon = (button: Element, message: string) => {
-      const actions = button.closest(".entity-page-actions");
-      const output = actions?.querySelector("[data-agency-coming-soon]");
+      const side = button.closest(".entity-side");
+      const output = side?.querySelector("[data-agency-coming-soon]");
       if (output) output.textContent = message;
     };
 
@@ -860,13 +581,6 @@ const structuredData = {
         page_path: window.location.pathname,
       });
     };
-
-    document.querySelectorAll("[data-agency-share]").forEach((button) => {
-      button.addEventListener("click", () => {
-        trackAgencyInterest("agency_share_interest");
-        setComingSoon(button, "Sharing tools are coming soon.");
-      });
-    });
 
     document
       .querySelectorAll("[data-agency-download-report]")
