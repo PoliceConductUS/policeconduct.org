@@ -1,10 +1,10 @@
 ## 1. Design Tokens and Foundations
 
-- [ ] 1.1 Inventory mockup tokens (`mockups/civic-index-redesign/shared-v5.css`, `entity-actions.css`) against the canonical `--ipc-*` set; map each mockup token to an existing `--ipc-*` token or add a new canonical token (role accents, teal/interactive, paper/ink neutrals) — no parallel vocabulary.
-- [ ] 1.2 Land the WCAG-driven values on the canonical tokens: neutral faint text at oklch(52% 0.016 258) (≥4.5:1 on paper and teal-wash hover) and fixed rem H1 sizes (3rem desktop / 2.25rem mobile via media query) on `--ipc-type-h1`.
-- [ ] 1.3 Verify every text/background token pair (including faint text, empty states, and hover washes) meets WCAG 2.1 AA contrast; record ratios in the PR description.
-- [ ] 1.4 Self-host Public Sans: build a WOFF2 subset from a glyph inventory, add `@font-face` with `font-display: swap`, and remove any system-fallback-only stack reliance.
-- [ ] 1.5 Self-host icons: standardize on the existing inline-SVG Bootstrap Icons approach via a shared `Icon` component (youtube, chevron-down, and any others used); remove all CDN icon references site-wide.
+- [x] 1.1 Inventory mockup tokens (`mockups/civic-index-redesign/shared-v5.css`, `entity-actions.css`) against the canonical `--ipc-*` set; map each mockup token to an existing `--ipc-*` token or add a new canonical token (role accents, teal/interactive, paper/ink neutrals) — no parallel vocabulary.
+- [x] 1.2 Land the WCAG-driven values on the canonical tokens: neutral faint text at oklch(52% 0.016 258) (≥4.5:1 on paper and teal-wash hover) and fixed rem H1 sizes (3rem desktop / 2.25rem mobile via media query) on `--ipc-type-h1`.
+- [x] 1.3 Verify every text/background token pair (including faint text, empty states, and hover washes) meets WCAG 2.1 AA contrast; record ratios in the PR description.
+- [x] 1.4 Self-host Public Sans: build a WOFF2 subset from a glyph inventory, add `@font-face` with `font-display: swap`, and remove any system-fallback-only stack reliance.
+- [x] 1.5 Self-host icons: standardize on the existing inline-SVG Bootstrap Icons approach via a shared `Icon` component (youtube, chevron-down, and any others used); remove all CDN icon references site-wide.
 - [ ] 1.6 Confirm zero third-party requests on a sample of generated pages (fonts, icons, styles, scripts all same-origin).
 
 ## 2. Shared Chrome Components
