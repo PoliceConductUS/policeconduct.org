@@ -40,7 +40,7 @@
         </form>
         <nav class="masthead-nav">
           <a class="nav-action nav-action-share" href="#">Share an experience</a>
-          <a class="nav-action nav-action-volunteer" href="#">Volunteer</a>
+          <a class="nav-action nav-action-volunteer" href="/volunteer/">Volunteer</a>
         </nav>
       </div>
     </header>
@@ -88,35 +88,28 @@
                 >
                 <a class="entity-action" href="#">Suggest edit</a>
                 <a class="entity-action" href="#">Add a civil case</a>
-                <div class="entity-menu" data-menu>
-                  <button
-                    type="button"
-                    class="entity-action entity-menu-toggle"
-                    aria-haspopup="menu"
-                    aria-expanded="false"
-                    data-menu-toggle
-                  >
+                <details class="entity-menu">
+                  <summary class="entity-action entity-menu-toggle">
                     More actions
                     <i class="bi bi-chevron-down" aria-hidden="true"></i>
-                  </button>
-                  <ul class="entity-menu-list" role="menu" hidden data-menu-list>
-                    <li role="none">
-                      <a class="entity-menu-item" role="menuitem" href="#"
+                  </summary>
+                  <ul class="entity-menu-list">
+                    <li>
+                      <a class="entity-menu-item" href="#"
                         >Copy link</a
                       >
                     </li>
-                    <li role="none">
-                      <a class="entity-menu-item" role="menuitem" href="#"
+                    <li>
+                      <a class="entity-menu-item" href="#"
                         >View sources &amp; methodology</a
                       >
                     </li>
-                    <li role="none">
-                      <a class="entity-menu-item" role="menuitem" href="#"
+                    <li>
+                      <a class="entity-menu-item" href="#"
                         >Report a data problem</a
                       >
                     </li>
-                  </ul>
-                </div>
+                  </ul></details>
               </div>
               <p class="ledger-meta entity-updated">Updated Mar 4, 2025</p>
             </div>
@@ -161,14 +154,14 @@
             <strong class="ledger-value ledger-value--lg tabular">--</strong>
             <span class="ledger-label">Budget</span>
             <span class="ledger-meta"
-              ><a class="help-collect" href="#">Help collect this →</a></span
+              ><a class="help-collect" href="/volunteer/">Help collect this →</a></span
             >
           </div>
           <div class="stat-cell is-pending" data-role="liability">
             <strong class="ledger-value ledger-value--lg tabular">--</strong>
             <span class="ledger-label">Liability costs</span>
             <span class="ledger-meta"
-              ><a class="help-collect" href="#">Help collect this →</a></span
+              ><a class="help-collect" href="/volunteer/">Help collect this →</a></span
             >
           </div>
         </section>
@@ -298,59 +291,5 @@
     </main>
 
     <script src="app.js"></script>
-    <script>
-      // Accessible overflow menu (WAI-ARIA menu-button pattern):
-      // click / Enter / Space / ArrowDown open; Arrow keys + Home/End move;
-      // Esc or click-outside close and restore focus to the toggle.
-      (() => {
-        document.querySelectorAll("[data-menu]").forEach((menu) => {
-          const toggle = menu.querySelector("[data-menu-toggle]");
-          const list = menu.querySelector("[data-menu-list]");
-          if (!toggle || !list) return;
-          const items = Array.from(list.querySelectorAll('[role="menuitem"]'));
-
-          const isOpen = () => toggle.getAttribute("aria-expanded") === "true";
-          const open = (focusIndex = 0) => {
-            toggle.setAttribute("aria-expanded", "true");
-            list.hidden = false;
-            if (items[focusIndex]) items[focusIndex].focus();
-          };
-          const close = (restoreFocus = true) => {
-            toggle.setAttribute("aria-expanded", "false");
-            list.hidden = true;
-            if (restoreFocus) toggle.focus();
-          };
-          const focusBy = (delta) => {
-            const current = items.indexOf(document.activeElement);
-            const next = (current + delta + items.length) % items.length;
-            items[next].focus();
-          };
-
-          toggle.addEventListener("click", () => (isOpen() ? close() : open()));
-          toggle.addEventListener("keydown", (e) => {
-            if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              open(0);
-            } else if (e.key === "ArrowUp") {
-              e.preventDefault();
-              open(items.length - 1);
-            }
-          });
-          list.addEventListener("keydown", (e) => {
-            switch (e.key) {
-              case "ArrowDown": e.preventDefault(); focusBy(1); break;
-              case "ArrowUp": e.preventDefault(); focusBy(-1); break;
-              case "Home": e.preventDefault(); items[0].focus(); break;
-              case "End": e.preventDefault(); items[items.length - 1].focus(); break;
-              case "Escape": e.preventDefault(); close(); break;
-              case "Tab": close(false); break;
-            }
-          });
-          document.addEventListener("click", (e) => {
-            if (isOpen() && !menu.contains(e.target)) close(false);
-          });
-        });
-      })();
-    </script>
   </body>
 </html>

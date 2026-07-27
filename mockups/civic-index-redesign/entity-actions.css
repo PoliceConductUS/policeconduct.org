@@ -74,12 +74,18 @@
   position: relative;
 }
 
-/* the toggle reuses .entity-action styling; reset the native <button> bits */
+/* the toggle is a <summary>; reuse .entity-action styling and hide the native
+   disclosure marker so it reads as a button */
 .entity-menu-toggle {
   background: none;
   cursor: pointer;
   font-family: inherit;
   gap: 0.35rem;
+  list-style: none;
+}
+
+.entity-menu-toggle::-webkit-details-marker {
+  display: none;
 }
 
 .entity-menu-toggle .bi {
@@ -87,7 +93,7 @@
   transition: transform 0.12s ease;
 }
 
-.entity-menu-toggle[aria-expanded="true"] .bi {
+.entity-menu[open] .entity-menu-toggle .bi {
   transform: rotate(180deg);
 }
 
@@ -105,7 +111,7 @@
   z-index: 20;
 }
 
-.entity-menu-list[hidden] {
+.entity-menu:not([open]) .entity-menu-list {
   display: none;
 }
 
