@@ -89,7 +89,7 @@ test.describe("civic index pages", () => {
     ).toHaveCount(0);
 
     // County jump + browse-all.
-    await expect(page.locator("[data-civic-jump] option")).toHaveCount(255);
+    await expect(page.locator("[data-jump-select] option")).toHaveCount(255);
     await expect(
       page.getByRole("link", { name: /Browse all 254 counties/ }),
     ).toHaveAttribute("href", "/tx/counties/");

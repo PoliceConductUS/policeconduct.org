@@ -268,7 +268,7 @@ const structuredData = {
   structuredData={structuredData}
 >
   <PrefillBootstrap />
-  <main class="agency-overview-page flex-grow-1">
+  <main id="main" class="agency-overview-page flex-grow-1">
     <section class="agency-overview">
       <div class="container">
         <Breadcrumbs
@@ -307,18 +307,11 @@ const structuredData = {
                   ) : null
                 }
                 {
-                  primaryPhone ||
-                  data.agency.contact_email ||
-                  data.agencyLinks.length ? (
+                  primaryPhone || data.agencyLinks.length ? (
                     <p class="entity-contact-links">
                       {primaryPhone ? (
                         <a href={`tel:${primaryPhone.phone_number}`}>
                           {primaryPhone.phone_number}
-                        </a>
-                      ) : null}
-                      {data.agency.contact_email ? (
-                        <a href={`mailto:${data.agency.contact_email}`}>
-                          {data.agency.contact_email}
                         </a>
                       ) : null}
                       {data.agencyLinks.map(
@@ -336,9 +329,26 @@ const structuredData = {
                   ) : null
                 }
                 {
-                  data.agency.contact_name ? (
+                  data.agency.contact_name || data.agency.contact_email ? (
+                    // Contact name + email are linked in the data model —
+                    // render as one visual group; phone and website links
+                    // above must not sit between them.
                     <p class="entity-contact-person">
-                      Contact: {toDisplayName(data.agency.contact_name)}
+                      {data.agency.contact_name ? (
+                        <>Contact: {toDisplayName(data.agency.contact_name)}</>
+                      ) : (
+                        "Contact:"
+                      )}
+                      {data.agency.contact_name && data.agency.contact_email ? (
+                        <span class="sep" aria-hidden="true">
+                          ·
+                        </span>
+                      ) : null}
+                      {data.agency.contact_email ? (
+                        <a href={`mailto:${data.agency.contact_email}`}>
+                          {data.agency.contact_email}
+                        </a>
+                      ) : null}
                     </p>
                   ) : null
                 }

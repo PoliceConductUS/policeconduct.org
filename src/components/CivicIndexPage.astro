@@ -280,7 +280,7 @@ const statColumns = model.statCells.length + 1;
   pagePath={model.pagePath}
   structuredData={structuredData}
 >
-  <main class="civic-index-page">
+  <main id="main" class="civic-index-page">
     <section class="civic-index-page-main">
       <div class="container">
         <Breadcrumbs items={model.breadcrumbs} className="mb-2" />
@@ -339,11 +339,11 @@ const statColumns = model.statCells.length + 1;
           <div class="stat-cell jump-cell">
             <strong class="ledger-value">{model.jumpCell.count}</strong>
             <span class="ledger-label">{model.jumpCell.label}</span>
-            <form class="jump-form" data-civic-jump-form>
+            <form class="jump-form" data-jump-form>
               <label for="civic-jump" class="visually-hidden">
                 {model.jumpCell.selectLabel}
               </label>
-              <select id="civic-jump" class="jump-select" data-civic-jump>
+              <select id="civic-jump" class="jump-select" data-jump-select>
                 <option value="" selected disabled>
                   {model.jumpCell.placeholder}
                 </option>
@@ -355,8 +355,7 @@ const statColumns = model.statCells.length + 1;
               </select>
               <button class="jump-go" type="submit">Go →</button>
             </form>
-            <p class="jump-status" data-civic-jump-status aria-live="polite">
-            </p>
+            <p class="jump-status" data-jump-status aria-live="polite"></p>
             <p class="jump-browse">
               <a href={model.jumpCell.browse.href}>
                 {model.jumpCell.browse.label}
@@ -480,23 +479,3 @@ const statColumns = model.statCells.length + 1;
     </section>
   </main>
 </SiteLayout>
-
-<script is:inline>
-  (() => {
-    const form = document.querySelector("[data-civic-jump-form]");
-    const select = document.querySelector("[data-civic-jump]");
-    const status = document.querySelector("[data-civic-jump-status]");
-    if (!form || !select) return;
-
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const option = select.options[select.selectedIndex];
-      if (!option || !option.value) {
-        if (status) status.textContent = "Choose one first.";
-        return;
-      }
-      if (status) status.textContent = `Opening ${option.textContent.trim()} →`;
-      window.location.href = option.value;
-    });
-  })();
-</script>
