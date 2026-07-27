@@ -13,20 +13,20 @@
 - [x] 2.2 Add the skip-to-content link as the first focusable element in the layout, targeting `<main id="main">`; ensure every page's main content is inside that landmark.
 - [ ] 2.3 Create/update a shared `Breadcrumb` component wrapping trails in `<nav aria-label="Breadcrumb">` with `aria-current="page"` on the final crumb; adopt it on all entity and geography pages.
 - [x] 2.4 Create the shared `EntityActionBar` component with the native `<details>/<summary>` "More actions" menu (no JS, marker hidden, chevron rotates on `[open]`, visible `:focus` ring on items); include only actions with working destinations: Copy link (shared script, clipboard with fallback), View sources & methodology → `/data-and-methods/`.
-- [ ] 2.5 Create the shared social-link pattern (icon + `aria-label` "<Entity> on <Platform>", `aria-hidden` glyph, brand tint on hover/focus) and adopt it wherever entities have social links.
+- [x] 2.5 Create the shared social-link pattern (icon + `aria-label` "<Entity> on <Platform>", `aria-hidden` glyph, brand tint on hover/focus) and adopt it wherever entities have social links.
 - [x] 2.6 Group contact identity: where an entity's contact person and email are linked in the data model, render name + email as one visual group, not separated by unrelated links (phone, social).
 - [x] 2.7 Consolidate all shared client behavior (copy-link, county jump enhancement) into one shared script; remove any per-page inline scripts; keep all styles in external stylesheets.
 
 ## 3. Civic Index and Entity Page Surfaces
 
-- [ ] 3.1 Create the shared `StatStrip`/`StatCell` components matching the redesign (ledger values, labels, meta, role accents via `data-role`, muted accents + neutral `--` when empty).
-- [ ] 3.2 Add the drill-down "Start here" cell variant for geography landing pages: teal-washed first cell with eyebrow, child-entity count, jump select + Go (working form submission without JS), and "Browse all →" link to the existing scoped child sub-page; apply to state, administrative-area, and place pages.
-- [ ] 3.3 Replace hedging missing-data copy site-wide with the neutral pattern: `--`/`$--` value, muted role accent, plain-language gloss under unfamiliar labels (e.g. "Outcomes by income" → "Case results by neighborhood income"), and a subtle `Help collect this →` link to `/volunteer/` carrying source-path and scope query context.
-- [ ] 3.4 Split every combined records surface: agency (state/local and federal) and any other page renders "Recent experience reports" (public accounts) and "Recent civil cases" (court records) as separate sections; verify no surface mixes the two classes.
-- [ ] 3.5 Apply the shared components to the agency profile template (state/local), including the entity hero, action bar, stat strip, and split record sections.
-- [ ] 3.6 Apply the same shared components to federal agency pages, adding the uniform "Field offices" table (record-table pattern) fed by manual data; replace all placeholder office names/counts with real values sourced per repo data rules (explicit seed or database values, no silent fallbacks).
-- [ ] 3.7 Apply the shared components to personnel and civil-case detail templates (action bar, split sections, table-scroll wrappers).
-- [ ] 3.8 Wrap all wide `record-table` instances in the shared `TableScroll` component (`overflow-x: auto`) so tables scroll instead of breaking mobile layout; add `scope="col"` to column headers.
+- [x] 3.1 Create the shared `StatStrip`/`StatCell` components matching the redesign (ledger values, labels, meta, role accents via `data-role`, muted accents + neutral `--` when empty).
+- [x] 3.2 Add the drill-down "Start here" cell variant for geography landing pages: teal-washed first cell with eyebrow, child-entity count, jump select + Go (working form submission without JS), and "Browse all →" link to the existing scoped child sub-page; apply to state, administrative-area, and place pages.
+- [x] 3.3 Replace hedging missing-data copy site-wide with the neutral pattern: `--`/`$--` value, muted role accent, plain-language gloss under unfamiliar labels (e.g. "Outcomes by income" → "Case results by neighborhood income"), and a subtle `Help collect this →` link to `/volunteer/` carrying source-path and scope query context.
+- [x] 3.4 Split every combined records surface: agency (state/local and federal) and any other page renders "Recent experience reports" (public accounts) and "Recent civil cases" (court records) as separate sections; verify no surface mixes the two classes.
+- [x] 3.5 Apply the shared components to the agency profile template (state/local), including the entity hero, action bar, stat strip, and split record sections.
+- [x] 3.6 Apply the same shared components to federal agency pages, adding the uniform "Field offices" table (record-table pattern) fed by manual data; replace all placeholder office names/counts with real values sourced per repo data rules (explicit seed or database values, no silent fallbacks).
+- [x] 3.7 Apply the shared components to personnel and civil-case detail templates (action bar, split sections, table-scroll wrappers).
+- [x] 3.8 Wrap all wide `record-table` instances in the shared `TableScroll` component (`overflow-x: auto`) so tables scroll instead of breaking mobile layout; add `scope="col"` to column headers.
 
 ## 4. Site Search (Pagefind)
 
