@@ -374,6 +374,13 @@ const initSiteSearch = () => {
     input.setAttribute("aria-expanded", "false");
     input.removeAttribute("aria-activedescendant");
     activeIndex = -1;
+    // Clear results (not just hide the panel) so a stale result set can't
+    // be reactivated: without this, ArrowDown after Escape would still see
+    // results.length > 0 and move an aria-activedescendant onto an option
+    // inside a hidden panel. Clearing here makes ArrowDown a no-op until
+    // the next search runs.
+    results = [];
+    listbox.innerHTML = "";
   };
 
   const navigateToResult = (result) => {
@@ -545,6 +552,20 @@ const initSiteSearch = () => {
     if (event.target instanceof Node && !form.contains(event.target)) {
       closePanel();
     }
+  });
+
+  // Tab-away (or any focus loss to something outside the search form)
+  // closes the panel. This does not race the option mousedown+preventDefault
+  // pattern above: preventDefault on mousedown stops the browser's default
+  // focus-shift, so the input never blurs and this focusout handler never
+  // fires for an option click — navigateToResult already runs synchronously
+  // inside the mousedown handler.
+  form.addEventListener("focusout", (event) => {
+    const nextFocusTarget = event.relatedTarget;
+    if (nextFocusTarget instanceof Node && form.contains(nextFocusTarget)) {
+      return;
+    }
+    closePanel();
   });
 };
 
