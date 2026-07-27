@@ -1,10 +1,13 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import "#src/styles/civic-ledger.css";
-import EntityActionButton from "#src/components/EntityActionButton.astro";
+import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
+import StatCell from "#src/components/StatCell.astro";
+import StatStrip from "#src/components/StatStrip.astro";
+import { buildHelpCollectHref } from "#src/lib/data/civic-index.js";
 import {
   loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPaths,
@@ -179,7 +182,15 @@ const updatedLine = data.agency.updated_at
   ? `Updated ${formatDate(data.agency.updated_at)}`
   : null;
 
-const volunteerHref = `/volunteer/?ref=${encodeURIComponent(agencyPath)}`;
+const agencySlugSegment = agencyPath.split("/").filter(Boolean).pop();
+if (!agencySlugSegment) {
+  throw new Error(`Agency path ${agencyPath} is missing a slug segment.`);
+}
+const volunteerHref = buildHelpCollectHref(
+  agencyPath,
+  "agency",
+  agencySlugSegment,
+);
 const personnelMeta =
   counts.currentPersonnel > 0 || counts.formerPersonnel > 0
     ? `${formatCount(counts.currentPersonnel)} current · ${formatCount(counts.formerPersonnel)} former`
@@ -218,9 +229,14 @@ const recentReportItems: RecentItem[] = data.reportedReports.map(
     sortDate: new Date(report.incidentDate).getTime(),
   }),
 );
-const recentItems = [...recentCaseItems, ...recentReportItems]
-  .sort((left, right) => right.sortDate - left.sortDate)
-  .slice(0, 6);
+// Experience reports (public accounts) and civil cases (court records) are
+// always rendered as separate sections — never merged into one combined
+// list (openspec redesign-civic-index-to-production, "Separate
+// record-class surfaces").
+const sortRecent = (items: RecentItem[]) =>
+  [...items].sort((left, right) => right.sortDate - left.sortDate).slice(0, 6);
+const recentReports = sortRecent(recentReportItems);
+const recentCases = sortRecent(recentCaseItems);
 
 const organization = {
   "@type": "GovernmentOrganization",
@@ -271,7 +287,7 @@ const structuredData = {
   <main id="main" class="agency-overview-page flex-grow-1">
     <section class="agency-overview">
       <div class="container">
-        <Breadcrumbs
+        <Breadcrumb
           items={[
             { label: "Home", href: "/" },
             { label: categoryLabel, href: `/${categorySlug}/` },
@@ -283,7 +299,7 @@ const structuredData = {
               label: placeLabel,
               href: placePath,
             },
-            { label: agencyDisplayName, href: agencyPath, current: true },
+            { label: agencyDisplayName, href: agencyPath },
           ]}
         />
 
@@ -353,29 +369,37 @@ const structuredData = {
                   ) : null
                 }
               </div>
-              <div class="entity-actions">
+              {
+                /* No `primary`/`actions` props: these three buttons carry
+                   a PrefillNavButton sessionStorage payload, a shape
+                   EntityActionBar's plain {label, href} props can't
+                   express (see EntityActionBar.astro's frontmatter
+                   comment). Slotting them in still gets the shared
+                   `.entity-actions` row and native "More actions" menu. */
+              }
+              <EntityActionBar>
                 <PrefillNavButton
                   to="/report/new/"
                   payload={reportNewPrefillPayload}
-                  class="entity-action-button entity-action-primary"
+                  class="entity-action entity-action-primary"
                 >
                   Share an interaction
                 </PrefillNavButton>
                 <PrefillNavButton
                   to="/agency/suggest-edit/"
                   payload={suggestEditPrefillPayload}
-                  class="entity-action-button"
+                  class="entity-action"
                 >
                   Suggest edit
                 </PrefillNavButton>
                 <PrefillNavButton
                   to="/civil-cases/new/"
                   payload={addCivilCasePrefillPayload}
-                  class="entity-action-button"
+                  class="entity-action"
                 >
                   Add a civil case
                 </PrefillNavButton>
-              </div>
+              </EntityActionBar>
               {updatedLine ? <p class="entity-updated">{updatedLine}</p> : null}
             </div>
             <aside class="entity-side">
@@ -419,13 +443,14 @@ const structuredData = {
                 </li>
                 <li>
                   <span>Download report</span>
-                  <EntityActionButton
+                  <button
+                    type="button"
                     data-agency-download-report
                     aria-label="Download report"
-                    class="entity-side-link"
+                    class="entity-action entity-side-link"
                   >
                     Soon
-                  </EntityActionButton>
+                  </button>
                 </li>
               </ul>
               <span class="agency-coming-soon" data-agency-coming-soon></span>
@@ -433,119 +458,93 @@ const structuredData = {
           </div>
         </section>
 
-        <section
-          class="stat-strip"
-          aria-label={`${agencyDisplayName} record totals`}
+        <StatStrip
+          ariaLabel={`${agencyDisplayName} record totals`}
+          columns="five"
         >
-          {
-            counts.personnel > 0 ? (
-              <a
-                class="stat-cell stat-cell--link"
-                href={`${agencyPath}personnel/`}
-              >
-                <strong class="ledger-value">
-                  {formatCount(counts.personnel)}
-                </strong>
-                <span class="ledger-label">Personnel Records</span>
-                {personnelMeta ? (
-                  <span class="ledger-meta">{personnelMeta}</span>
-                ) : null}
-                <span class="stat-action">View personnel →</span>
-              </a>
-            ) : (
-              <div class="stat-cell is-pending">
-                <strong class="ledger-value">--</strong>
-                <span class="ledger-label">Personnel Records</span>
-                <span class="stat-action">
-                  <a href={volunteerHref}>Help collect →</a>
-                </span>
+          <StatCell
+            label="Personnel Records"
+            value={counts.personnel > 0 ? formatCount(counts.personnel) : null}
+            meta={personnelMeta || undefined}
+            href={counts.personnel > 0 ? `${agencyPath}personnel/` : undefined}
+            actionLabel="View personnel →"
+            helpCollectHref={volunteerHref}
+          />
+          <StatCell
+            label="Reports"
+            value={counts.reports > 0 ? formatCount(counts.reports) : null}
+            meta="Shared by the public"
+            href={counts.reports > 0 ? `${agencyPath}reports/` : undefined}
+            actionLabel="View reports →"
+            helpCollectHref="/report/new/"
+            helpCollectLabel="Share an interaction →"
+          />
+          <StatCell
+            label="Civil Cases"
+            value={civilCaseTotal > 0 ? formatCount(civilCaseTotal) : null}
+            meta="Court records"
+            href={civilCaseTotal > 0 ? `${agencyPath}civil-cases/` : undefined}
+            actionLabel="View civil cases →"
+            role="civil"
+            helpCollectHref={volunteerHref}
+          />
+          <StatCell
+            label="Budget"
+            empty
+            role="budget"
+            helpCollectHref={volunteerHref}
+          />
+          <StatCell
+            label="Liability Costs"
+            empty
+            role="liability"
+            helpCollectHref={volunteerHref}
+          />
+        </StatStrip>
+
+        {
+          recentReports.length ? (
+            <section class="civic-section">
+              <div class="civic-section-head">
+                <div>
+                  <h2>Recent experience reports</h2>
+                  <p>Public accounts shared about this agency.</p>
+                </div>
               </div>
-            )
-          }
-          {
-            counts.reports > 0 ? (
-              <a
-                class="stat-cell stat-cell--link"
-                href={`${agencyPath}reports/`}
-              >
-                <strong class="ledger-value">
-                  {formatCount(counts.reports)}
-                </strong>
-                <span class="ledger-label">Reports</span>
-                <span class="ledger-meta">Shared by the public</span>
-                <span class="stat-action">View reports →</span>
-              </a>
-            ) : (
-              <div class="stat-cell is-pending">
-                <strong class="ledger-value">--</strong>
-                <span class="ledger-label">Reports</span>
-                <span class="stat-action">
-                  <a href="/report/new/">Share an interaction →</a>
-                </span>
+              <div class="recent-list">
+                {recentReports.map((item) => (
+                  <a href={item.href}>
+                    <span class="recent-list-title">{item.title}</span>
+                    <span class="recent-list-meta">{item.meta}</span>
+                  </a>
+                ))}
               </div>
-            )
-          }
-          {
-            civilCaseTotal > 0 ? (
-              <a
-                class="stat-cell stat-cell--link"
-                data-role="civil"
-                href={`${agencyPath}civil-cases/`}
-              >
-                <strong class="ledger-value">
-                  {formatCount(civilCaseTotal)}
-                </strong>
-                <span class="ledger-label">Civil Cases</span>
-                <span class="ledger-meta">Court records</span>
-                <span class="stat-action">View civil cases →</span>
-              </a>
-            ) : (
-              <div class="stat-cell is-pending" data-role="civil">
-                <strong class="ledger-value">--</strong>
-                <span class="ledger-label">Civil Cases</span>
-                <span class="stat-action">
-                  <a href={volunteerHref}>Help collect →</a>
-                </span>
+            </section>
+          ) : null
+        }
+
+        {
+          recentCases.length ? (
+            <section class="civic-section">
+              <div class="civic-section-head">
+                <div>
+                  <h2>Recent civil cases</h2>
+                  <p>Court records connected to this agency.</p>
+                </div>
               </div>
-            )
-          }
-          <div class="stat-cell is-pending" data-role="budget">
-            <strong class="ledger-value">--</strong>
-            <span class="ledger-label">Budget</span>
-            <span class="stat-action">
-              <a href={volunteerHref}>Help collect this →</a>
-            </span>
-          </div>
-          <div class="stat-cell is-pending" data-role="liability">
-            <strong class="ledger-value">--</strong>
-            <span class="ledger-label">Liability Costs</span>
-            <span class="stat-action">
-              <a href={volunteerHref}>Help collect this →</a>
-            </span>
-          </div>
-        </section>
+              <div class="recent-list">
+                {recentCases.map((item) => (
+                  <a href={item.href}>
+                    <span class="recent-list-title">{item.title}</span>
+                    <span class="recent-list-meta">{item.meta}</span>
+                  </a>
+                ))}
+              </div>
+            </section>
+          ) : null
+        }
 
         <section class="civic-section civic-section--last">
-          {
-            recentItems.length ? (
-              <>
-                <div class="civic-section-head">
-                  <div>
-                    <h2>Recent reports and civil cases</h2>
-                    <p>Most recent activity connected to this agency.</p>
-                  </div>
-                </div>
-                <div class="recent-list">
-                  {recentItems.map((item) => (
-                    <a href={item.href}>
-                      <span class="recent-list-title">{item.title}</span>
-                      <span class="recent-list-meta">{item.meta}</span>
-                    </a>
-                  ))}
-                </div>
-              </>
-            ) : null
-          }
           <p class="civic-limit-note">
             Counts show items available on this site. They are not a rating.
           </p>
@@ -555,26 +554,14 @@ const structuredData = {
   </main>
 
   <style>
-    /* Page-specific overrides on the shared civic-ledger vocabulary. */
-    .agency-overview :global(.stat-strip) {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-
+    /* Page-specific overrides on the shared civic-ledger vocabulary.
+       The 5-up stat strip and its responsive collapse now come from
+       <StatStrip columns="five"> (.stat-strip--equal5) and
+       civic-ledger.css's shared .stat-strip breakpoints — no page-local
+       override needed for those anymore. */
     @media (min-width: 900px) {
       .agency-overview :global(.entity-hero-grid) {
         grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.34fr);
-      }
-    }
-
-    @media (max-width: 991.98px) {
-      .agency-overview :global(.stat-strip) {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 575.98px) {
-      .agency-overview :global(.stat-strip) {
-        grid-template-columns: 1fr;
       }
     }
   </style>

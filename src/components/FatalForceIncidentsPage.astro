@@ -1,7 +1,6 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import EntityActionButton from "#src/components/EntityActionButton.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
@@ -9,6 +8,7 @@ import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { metricVisuals } from "#src/lib/metric-vocabulary.js";
 import type { MetricCardItem } from "#src/components/metric-card-types.js";
+import "#src/styles/civic-ledger.css";
 
 const { breadcrumbs, description, pagePath, title } = Astro.props as {
   breadcrumbs: { current?: boolean; href: string; label: string }[];
@@ -75,8 +75,12 @@ const sampleRows = [
               sourcePage={pagePath}
               topic="Fatal Force Incidents"
             />
-            <EntityActionButton>Share</EntityActionButton>
-            <EntityActionButton>Download report</EntityActionButton>
+            <button type="button" class="entity-action">
+              Share
+            </button>
+            <button type="button" class="entity-action">
+              Download report
+            </button>
           </Fragment>
         </EntityPageHeader>
 

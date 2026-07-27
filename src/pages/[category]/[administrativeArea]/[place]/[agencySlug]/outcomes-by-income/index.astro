@@ -1,5 +1,7 @@
 ---
 import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
+import StatCell from "#src/components/StatCell.astro";
+import { buildHelpCollectHref } from "#src/lib/data/civic-index.js";
 import {
   loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPathsForTopic,
@@ -10,7 +12,12 @@ export async function getStaticPaths() {
 }
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
-const volunteerHref = `/volunteer/?ref=${encodeURIComponent(`${data.agencyPath}outcomes-by-income/`)}`;
+const agencySlug = data.agencyPath.split("/").filter(Boolean).pop() || "";
+const volunteerHref = buildHelpCollectHref(
+  `${data.agencyPath}outcomes-by-income/`,
+  "agency",
+  agencySlug,
+);
 ---
 
 <AgencyTopicPage
@@ -20,16 +27,13 @@ const volunteerHref = `/volunteer/?ref=${encodeURIComponent(`${data.agencyPath}o
   description="Case outcomes grouped by income for this agency, where source data exists."
 >
   <ul class="topic-row">
-    <li class="topic-cell is-pending" data-role="neutral">
-      <span class="ledger-label">Outcomes by Income</span>
-      <span class="topic-value">Not yet available</span>
-      <span class="topic-foot">
-        <a href={volunteerHref}>Help collect this →</a>
-      </span>
-    </li>
+    <StatCell
+      variant="topic"
+      label="Outcomes by Income"
+      gloss="Case results by neighborhood income"
+      role="neutral"
+      empty
+      helpCollectHref={volunteerHref}
+    />
   </ul>
-  <p class="civic-limit-note">
-    These records are not on this site yet. You can help request and review the
-    source records.
-  </p>
 </AgencyTopicPage>

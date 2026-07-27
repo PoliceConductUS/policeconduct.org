@@ -1,5 +1,5 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import "#src/styles/civic-ledger.css";
 
@@ -37,7 +37,7 @@ const pagePath = `${data.agencyPath}${topicSlug}/`;
   <main id="main" class="civic-index-page">
     <section class="civic-index-page-main">
       <div class="container">
-        <Breadcrumbs
+        <Breadcrumb
           items={[
             { label: "Home", href: "/" },
             { label: data.categoryLabel, href: `/${data.categorySlug}/` },
@@ -47,9 +47,8 @@ const pagePath = `${data.agencyPath}${topicSlug}/`;
             },
             { label: data.placeLabel, href: data.placePath },
             { label: agencyDisplayName, href: data.agencyPath },
-            { label: topicLabel, href: pagePath, current: true },
+            { label: topicLabel, href: pagePath },
           ]}
-          className="mb-2"
         />
 
         <section class="civic-lede">

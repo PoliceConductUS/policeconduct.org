@@ -76,6 +76,15 @@ export type FederalAgencyIndexModel = {
   pagePath: string;
   rows: FederalAgencyIndexRow[];
   rowsLabel: string;
+  /**
+   * True only for a single federal agency's own detail page, where `rows`
+   * are that agency's field offices (`FederalAgencyBranch[]`), not a
+   * browse/hierarchy listing of other federal agency groups. Distinguishes
+   * the "Field offices" record-table + TableScroll rendering (task 3)
+   * from the generic hierarchy table shared by the top-level federal list
+   * and federal topic pages, which this flag leaves untouched.
+   */
+  isFieldOfficesTable?: boolean;
   searchLabel: string;
   searchPlaceholder: string;
   title: string;
@@ -585,7 +594,7 @@ export const buildFederalCivicIndex = (
       title: "",
     },
     pagePath,
-    pendingTopics: buildPendingTopics(pagePath),
+    pendingTopics: buildPendingTopics(pagePath, "federal", "federal"),
     locationReports: [],
     rows,
     statCells: [
@@ -718,7 +727,7 @@ export const buildFederalAgencyDetailIndexModel = (
   ],
   charts: generalFederalCharts,
   columns: [
-    { key: "label", label: "Child agency" },
+    { key: "label", label: "Field office" },
     { key: "location", label: "Location" },
     { key: "personnel", label: metricLabels.personnel, numeric: true },
     { key: "reports", label: metricLabels.reports, numeric: true },
@@ -785,9 +794,10 @@ export const buildFederalAgencyDetailIndexModel = (
       reports: branch.reportCount,
     },
   })),
-  rowsLabel: "Child agencies",
+  rowsLabel: "Field offices",
+  isFieldOfficesTable: true,
   searchLabel: "Jump to",
-  searchPlaceholder: "Search child agencies",
+  searchPlaceholder: "Search field offices",
   title: `${federalAgency.name} Civic Index | PoliceConduct.org`,
 });
 

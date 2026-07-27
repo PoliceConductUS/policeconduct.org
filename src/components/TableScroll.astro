@@ -1,0 +1,19 @@
+---
+// Horizontal-scroll wrapper for wide `record-table` (and similar) tables,
+// so a table with more columns than a narrow viewport scrolls inside its
+// own box instead of breaking the page's mobile layout. Port of
+// mockups/civic-index-redesign/shared-v5.css (.table-scroll).
+//
+// Purely structural: no props. Wrap the <table> itself, not surrounding
+// prose (`<TableScroll><table class="record-table">...</table></TableScroll>`).
+---
+
+<div class="table-scroll">
+  <slot />
+</div>
+
+<style>
+  .table-scroll {
+    overflow-x: auto;
+  }
+</style>

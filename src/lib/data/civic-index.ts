@@ -37,6 +37,50 @@ export type CivicCoverageMetric = {
 export type CivicTopicRole = "budget" | "liability" | "civil" | "neutral";
 
 /**
+ * Scope vocabulary for the volunteer contribution link's query context
+ * (openspec redesign-civic-index-to-production, "Metric availability
+ * states": "the contribution link includes ... the source page path and
+ * the applicable scope type such as state, county, place, agency, or
+ * personnel"). Mirrors this codebase's own level/topic vocabulary rather
+ * than the spec's illustrative "county" (this repo calls it
+ * `administrative_area`, since not every such area is a county).
+ */
+export type VolunteerScope =
+  | "state"
+  | "administrative_area"
+  | "place"
+  | "agency"
+  | "personnel"
+  | "federal";
+
+const lastPathSegment = (path: string) => {
+  const segment = path.split("/").filter(Boolean).pop();
+  if (!segment) {
+    throw new Error(`Expected a non-empty path segment in ${path}.`);
+  }
+  return segment;
+};
+
+/**
+ * Builds the `/volunteer/` contribution link for an empty metric, with
+ * enough query context for the volunteer page to eventually prefill the
+ * related geography, agency, or personnel record: the page the visitor was
+ * on (`source`), the scope type, and an entity identifier keyed by that
+ * same scope name (e.g. `scope=agency&agency=hpd-tx`).
+ */
+export const buildHelpCollectHref = (
+  pagePath: string,
+  scope: VolunteerScope,
+  entitySlug: string,
+) => {
+  const params = new URLSearchParams();
+  params.set("source", pagePath);
+  params.set("scope", scope);
+  params.set(scope, entitySlug);
+  return `/volunteer/?${params.toString()}`;
+};
+
+/**
  * One cell in the merged stat band. A cell is either populated data
  * (value set; href when the count drills down), or pending (value null)
  * with a visible contribution path. Personnel is never linked at
@@ -63,6 +107,7 @@ export type CivicJumpCell = {
 };
 
 export type CivicPendingTopic = {
+  gloss: string;
   help: { href: string; label: string };
   key: string;
   label: string;
@@ -293,9 +338,6 @@ const scopedDetailHref = (pagePath: string, slug: string) =>
 
 const formatMetricValue = (value: number) => value.toLocaleString("en-US");
 
-const volunteerHref = (pagePath: string) =>
-  `/volunteer/?ref=${encodeURIComponent(pagePath)}`;
-
 const buildCoverageFromPayload = (
   location: LocationPagePayload,
 ): CivicCoverageMetric[] => [
@@ -325,6 +367,7 @@ type StatCellsInput = {
   coverage: CivicCoverageMetric[];
   pagePath: string;
   scope: Exclude<CivicIndexScope, "agency">;
+  entitySlug: string;
 };
 
 /**
@@ -337,12 +380,16 @@ export const buildStatCells = ({
   coverage,
   pagePath,
   scope,
+  entitySlug,
 }: StatCellsInput): CivicStatCell[] => {
   const agencies = getCoverageCount(coverage, "agencies");
   const personnel = getCoverageCount(coverage, "personnel");
   const reports = getCoverageCount(coverage, "reports");
   const civilCases = getCoverageCount(coverage, "civil_cases");
-  const help = { href: volunteerHref(pagePath), label: "Help collect →" };
+  const help = {
+    href: buildHelpCollectHref(pagePath, scope, entitySlug),
+    label: "Help collect this →",
+  };
 
   const cells: CivicStatCell[] = [];
 
@@ -424,29 +471,42 @@ export const buildStatCells = ({
   return cells;
 };
 
-export const buildPendingTopics = (pagePath: string): CivicPendingTopic[] => {
+export const buildPendingTopics = (
+  pagePath: string,
+  scope: VolunteerScope,
+  entitySlug: string,
+): CivicPendingTopic[] => {
   const help = {
-    href: volunteerHref(pagePath),
+    href: buildHelpCollectHref(pagePath, scope, entitySlug),
     label: "Help collect this →",
   };
 
   return [
-    { key: "budget", label: metricLabels.budget, role: "budget", help },
+    {
+      key: "budget",
+      label: metricLabels.budget,
+      gloss: "Yearly department spending",
+      role: "budget",
+      help,
+    },
     {
       key: "liability-costs",
       label: metricLabels.liabilityCosts,
+      gloss: "Payouts in police-conduct cases",
       role: "liability",
       help,
     },
     {
       key: "fatal-force-incidents",
       label: metricLabels.fatalForceIncidents,
+      gloss: "Deaths involving police",
       role: "neutral",
       help,
     },
     {
       key: "outcomes-by-income",
       label: metricLabels.outcomesByIncome,
+      gloss: "Case results by neighborhood income",
       role: "neutral",
       help,
     },
@@ -487,6 +547,7 @@ export const buildStateCivicIndex = async (
   const coverage = buildCoverageFromPayload(state);
   const rows = buildChildRows(children, "places", "place");
   const drilldownLabel = `${state.stateLabel} records`;
+  const stateSlug = getStateSlug(state);
   return {
     breadcrumbs: [
       { label: "Home", href: "/" },
@@ -520,13 +581,14 @@ export const buildStateCivicIndex = async (
       title: `${state.stateLabel} ${areaPlural}`,
     },
     pagePath: state.path,
-    pendingTopics: buildPendingTopics(state.path),
+    pendingTopics: buildPendingTopics(state.path, "state", stateSlug),
     locationReports: state.locationReports || [],
     rows,
     statCells: buildStatCells({
       coverage,
       pagePath: state.path,
       scope: "state",
+      entitySlug: stateSlug,
     }),
     title: `${state.stateLabel} Civic Index | PoliceConduct.org`,
   };
@@ -540,6 +602,7 @@ export const buildAdministrativeAreaCivicIndex = async (
   const coverage = buildCoverageFromPayload(area);
   const rows = buildChildRows(children, "agencies", "agency");
   const drilldownLabel = `${area.administrativeArea} records`;
+  const areaSlug = lastPathSegment(area.path);
   return {
     breadcrumbs: [
       { label: "Home", href: "/" },
@@ -574,13 +637,18 @@ export const buildAdministrativeAreaCivicIndex = async (
       title: `${area.administrativeArea} places`,
     },
     pagePath: area.path,
-    pendingTopics: buildPendingTopics(area.path),
+    pendingTopics: buildPendingTopics(
+      area.path,
+      "administrative_area",
+      areaSlug,
+    ),
     locationReports: area.locationReports || [],
     rows,
     statCells: buildStatCells({
       coverage,
       pagePath: area.path,
       scope: "administrative_area",
+      entitySlug: areaSlug,
     }),
     title: `${area.administrativeArea}, ${area.stateLabel} Civic Index | PoliceConduct.org`,
   };
@@ -594,6 +662,7 @@ export const buildPlaceCivicIndex = async (
   const coverage = buildCoverageFromPayload(place);
   const rows = buildAgencyRows(agencies);
   const drilldownLabel = `${place.displayName} records`;
+  const placeSlug = lastPathSegment(place.path);
   return {
     breadcrumbs: [
       { label: "Home", href: "/" },
@@ -629,13 +698,14 @@ export const buildPlaceCivicIndex = async (
       title: `${place.displayName} agencies`,
     },
     pagePath: place.path,
-    pendingTopics: buildPendingTopics(place.path),
+    pendingTopics: buildPendingTopics(place.path, "place", placeSlug),
     locationReports: place.locationReports || [],
     rows,
     statCells: buildStatCells({
       coverage,
       pagePath: place.path,
       scope: "place",
+      entitySlug: placeSlug,
     }),
     title: `${place.displayName}, ${place.administrativeArea} Civic Index | PoliceConduct.org`,
   };

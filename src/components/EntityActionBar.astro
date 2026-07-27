@@ -1,12 +1,25 @@
 ---
+import "#src/styles/civic-ledger.css";
 // Shared action row for entity profiles (agency, personnel, civil case, …):
 // a primary CTA, optional secondary actions, and a native <details>/<summary>
 // "More actions" overflow menu (no JS required to open/close it).
 //
 // The overflow menu always carries exactly two items — Copy link and View
 // sources & methodology — per the approved redesign decision. `more` exists
-// for callers that need additional overflow items beyond those two; none do
-// yet.
+// for callers that need additional overflow items beyond those two.
+//
+// `primary` is optional, and a default <slot /> renders between the
+// prop-driven actions and the "More actions" menu: some entity templates
+// (e.g. the agency profile) drive their primary/secondary actions through
+// PrefillNavButton, which stores a sessionStorage prefill payload before
+// navigating — a shape EntityActionBar's plain {label, href} props can't
+// express. Those callers pass no `primary`/`actions` and instead slot in
+// their own `.entity-action`/`.entity-action-primary`-classed markup,
+// still getting the shared `.entity-actions` row and native details menu.
+//
+// `.entity-action`/`.entity-menu*` styling lives in src/styles/civic-ledger.css
+// (global, not scoped here) precisely so slotted markup from the parent
+// template picks it up too.
 //
 // Port of mockups/civic-index-redesign/agency-entity-v8.html
 // (.entity-actions / .entity-menu) + entity-actions.css.
@@ -16,7 +29,7 @@ interface ActionItem {
 }
 
 interface Props {
-  primary: ActionItem;
+  primary?: ActionItem;
   actions?: ActionItem[];
   more?: ActionItem[];
 }
@@ -31,9 +44,13 @@ const currentPath = Astro.url?.pathname || "/";
 ---
 
 <div class="entity-actions">
-  <a class="entity-action entity-action-primary" href={primary.href}>
-    {primary.label}
-  </a>
+  {
+    primary ? (
+      <a class="entity-action entity-action-primary" href={primary.href}>
+        {primary.label}
+      </a>
+    ) : null
+  }
   {
     actions.map((action) => (
       <a class="entity-action" href={action.href}>
@@ -41,6 +58,7 @@ const currentPath = Astro.url?.pathname || "/";
       </a>
     ))
   }
+  <slot />
   <details class="entity-menu">
     <summary class="entity-action entity-menu-toggle">
       More actions
@@ -76,122 +94,3 @@ const currentPath = Astro.url?.pathname || "/";
     </ul>
   </details>
 </div>
-
-<style>
-  /* .entity-actions layout is defined once, globally, in
-     src/styles/civic-ledger.css (imported by every page that renders this
-     component). Do not re-declare it here — that global rule is the single
-     authoritative definition. */
-
-  .entity-action {
-    align-items: center;
-    border: 1px solid var(--ipc-color-rule-strong);
-    color: var(--ipc-color-ink);
-    display: inline-flex;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    gap: 0.35rem;
-    min-height: 2.25rem;
-    padding: 0.45rem 0.7rem;
-    text-decoration: none;
-  }
-
-  .entity-action:hover {
-    background: var(--ipc-color-teal-wash);
-    border-color: var(--ipc-color-teal-ink);
-  }
-
-  .entity-action:focus-visible {
-    outline: 2px solid var(--ipc-color-teal-ink);
-    outline-offset: 2px;
-  }
-
-  .entity-action-primary {
-    background: var(--ipc-color-deep-red);
-    border-color: var(--ipc-color-deep-red);
-    color: var(--ipc-color-paper);
-  }
-
-  .entity-action-primary:hover {
-    background: var(--ipc-color-ink);
-    border-color: var(--ipc-color-ink);
-  }
-
-  /* ---- "More actions" overflow menu ---- */
-  .entity-menu {
-    display: inline-flex;
-    position: relative;
-  }
-
-  /* The toggle is a <summary>; reuse .entity-action styling and hide the
-     native disclosure marker so it reads as a button. */
-  .entity-menu-toggle {
-    background: none;
-    cursor: pointer;
-    font-family: inherit;
-    list-style: none;
-  }
-
-  .entity-menu-toggle::-webkit-details-marker {
-    display: none;
-  }
-
-  .entity-menu-toggle::marker {
-    content: "";
-  }
-
-  .entity-menu-chevron {
-    height: 0.7rem;
-    transition: transform 0.12s ease;
-    width: 0.7rem;
-  }
-
-  .entity-menu[open] .entity-menu-chevron {
-    transform: rotate(180deg);
-  }
-
-  .entity-menu-list {
-    background: var(--ipc-color-paper-raised);
-    border: 1px solid var(--ipc-color-rule-strong);
-    box-shadow: 0 6px 20px -12px
-      color-mix(in oklab, var(--ipc-color-ink) 45%, transparent);
-    left: 0;
-    list-style: none;
-    margin: 0;
-    min-width: 15rem;
-    padding: 0.3rem 0;
-    position: absolute;
-    top: calc(100% + 0.3rem);
-    z-index: 20;
-  }
-
-  .entity-menu:not([open]) .entity-menu-list {
-    display: none;
-  }
-
-  .entity-menu-item {
-    color: var(--ipc-color-ink);
-    display: block;
-    font-size: var(--ipc-type-small);
-    font-weight: 600;
-    padding: 0.5rem 0.9rem;
-    text-decoration: none;
-  }
-
-  .entity-menu-item:hover {
-    background: var(--ipc-color-teal-wash);
-    color: var(--ipc-color-teal-ink);
-  }
-
-  /* Keyboard focus needs a real, high-contrast indicator (WCAG 2.4.11), not
-     just the hover wash — and NOT --ipc-color-rule*, which fails 3:1
-     non-text contrast. Use :focus (not :focus-visible): a future roving
-     arrow-key implementation would move focus programmatically, which
-     :focus-visible would not reliably match in every browser. */
-  .entity-menu-item:focus {
-    background: var(--ipc-color-teal-wash);
-    color: var(--ipc-color-teal-ink);
-    outline: 2px solid var(--ipc-color-teal-ink);
-    outline-offset: -2px;
-  }
-</style>

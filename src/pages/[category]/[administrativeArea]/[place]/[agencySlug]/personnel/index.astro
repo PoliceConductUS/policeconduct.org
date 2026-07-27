@@ -1,5 +1,6 @@
 ---
 import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
+import TableScroll from "#src/components/TableScroll.astro";
 import {
   loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPathsForTopic,
@@ -49,47 +50,49 @@ const officerName = (employee: any) =>
       }
     </span>
   </div>
-  <table class="record-table">
-    <thead>
-      <tr>
-        <th scope="col">Name</th>
-        <th scope="col">Role</th>
-        <th scope="col">Started</th>
-        <th scope="col">Ended</th>
-        <th scope="col" class="num">Reports</th>
-      </tr>
-    </thead>
-    <tbody>
-      {
-        pageEmployees.map((employee: any) => (
-          <tr>
-            <td>
-              {employee.officer?.slug ? (
-                <a
-                  class="row-link"
-                  href={`/personnel/${employee.officer.slug}/`}
-                >
-                  {officerName(employee)}
-                </a>
-              ) : (
-                officerName(employee)
-              )}
-            </td>
-            <td>{employee.entry.license_type || ""}</td>
-            <td>{formatMonth(employee.entry.start_date)}</td>
-            <td>
-              {employee.entry.end_date ? (
-                formatMonth(employee.entry.end_date)
-              ) : (
-                <span class="muted">Current</span>
-              )}
-            </td>
-            <td class="num">{employee.reportCount || 0}</td>
-          </tr>
-        ))
-      }
-    </tbody>
-  </table>
+  <TableScroll>
+    <table class="record-table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Role</th>
+          <th scope="col">Started</th>
+          <th scope="col">Ended</th>
+          <th scope="col" class="num">Reports</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          pageEmployees.map((employee: any) => (
+            <tr>
+              <td>
+                {employee.officer?.slug ? (
+                  <a
+                    class="row-link"
+                    href={`/personnel/${employee.officer.slug}/`}
+                  >
+                    {officerName(employee)}
+                  </a>
+                ) : (
+                  officerName(employee)
+                )}
+              </td>
+              <td>{employee.entry.license_type || ""}</td>
+              <td>{formatMonth(employee.entry.start_date)}</td>
+              <td>
+                {employee.entry.end_date ? (
+                  formatMonth(employee.entry.end_date)
+                ) : (
+                  <span class="muted">Current</span>
+                )}
+              </td>
+              <td class="num">{employee.reportCount || 0}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </TableScroll>
   <p class="civic-limit-note">
     Personnel records come from state licensing data. A listing here is
     employment history, not an allegation.

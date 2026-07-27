@@ -1,6 +1,7 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import "#src/styles/civic-ledger.css";
+import EntityActionBar from "#src/components/EntityActionBar.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { withDb } from "#src/lib/db.js";
 import { loadCivilCaseDetailBySlug } from "#src/lib/data/civil-litigation-detail.js";
@@ -168,13 +169,12 @@ const structuredData = {
   <main id="main" class="civic-index-page">
     <section class="civic-index-page-main">
       <div class="container">
-        <Breadcrumbs
+        <Breadcrumb
           items={[
             { label: "Home", href: "/" },
             { label: "Civil cases", href: "/civil-cases/" },
-            { label: caseTitle, href: casePath, current: true },
+            { label: caseTitle, href: casePath },
           ]}
-          className="mb-2"
         />
 
         <section class="civic-lede">
@@ -183,6 +183,11 @@ const structuredData = {
           <p class="civic-lede-sub">
             {truncateText(collapseWhitespace(data.civilCase.claims_summary), 180)}
           </p>
+          <EntityActionBar
+            actions={[
+              { label: "Suggest edit", href: "/civil-cases/suggest-edit/" },
+            ]}
+          />
         </section>
 
         <section class="civic-section">

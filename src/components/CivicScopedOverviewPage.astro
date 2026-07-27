@@ -1,7 +1,11 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
+import StatCell from "#src/components/StatCell.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
+import {
+  buildHelpCollectHref,
+  type CivicIndexModel,
+} from "#src/lib/data/civic-index.js";
 import type {
   CivicTopicKind,
   CivicTopicRecords,
@@ -23,33 +27,39 @@ const pageConfig = {
     title: metricLabels.personnel,
     description: `Personnel records connected to this geography.`,
     role: null,
+    gloss: undefined,
   },
   budget: {
     title: metricLabels.budget,
     description: "Budget, revenue, spending, forfeiture, and overtime records.",
-    role: "budget",
+    role: "budget" as const,
+    gloss: "Yearly department spending",
   },
   "civil-cases": {
     title: metricLabels.civilCases,
     description: "Civil cases connected to this geography, from court records.",
-    role: "civil",
+    role: "civil" as const,
+    gloss: undefined,
   },
   "fatal-force-incidents": {
     title: metricLabels.fatalForceIncidents,
     description:
       "Deaths involving police contact, including custody and pursuit deaths.",
-    role: "neutral",
+    role: "neutral" as const,
+    gloss: "Deaths involving police",
   },
   "liability-costs": {
     title: metricLabels.liabilityCosts,
     description:
       "Claims, settlements, judgments, defense costs, and related payments.",
-    role: "liability",
+    role: "liability" as const,
+    gloss: "Payouts in police-conduct cases",
   },
   "outcomes-by-income": {
     title: metricLabels.outcomesByIncome,
     description: "Case outcomes grouped by income, where source data exists.",
-    role: "neutral",
+    role: "neutral" as const,
+    gloss: "Case results by neighborhood income",
   },
 }[kind];
 
@@ -58,7 +68,8 @@ const heading =
   model.jurisdictionLabel;
 const pagePath = `${model.pagePath}${kind}/`;
 const pageTitle = `${heading} ${pageConfig.title}`;
-const volunteerHref = `/volunteer/?ref=${encodeURIComponent(pagePath)}`;
+const entitySlug = model.pagePath.split("/").filter(Boolean).pop() || "";
+const volunteerHref = buildHelpCollectHref(pagePath, model.level, entitySlug);
 
 const hasRows = records ? records.rows.length > 0 : false;
 const personnelCount = coverageValue("personnel");
@@ -72,12 +83,11 @@ const personnelCount = coverageValue("personnel");
   <main id="main" class="civic-index-page">
     <section class="civic-index-page-main">
       <div class="container">
-        <Breadcrumbs
+        <Breadcrumb
           items={[
             ...model.breadcrumbs.map((item) => ({ ...item, current: false })),
-            { label: pageConfig.title, href: pagePath, current: true },
+            { label: pageConfig.title, href: pagePath },
           ]}
-          className="mb-2"
         />
 
         <section class="civic-lede">
@@ -117,18 +127,15 @@ const personnelCount = coverageValue("personnel");
           ) : (
             <section class="civic-section civic-section--last">
               <ul class="topic-row">
-                <li class="topic-cell is-pending" data-role={pageConfig.role}>
-                  <span class="ledger-label">{pageConfig.title}</span>
-                  <span class="topic-value">Not yet available</span>
-                  <span class="topic-foot">
-                    <a href={volunteerHref}>Help collect this →</a>
-                  </span>
-                </li>
+                <StatCell
+                  variant="topic"
+                  label={pageConfig.title}
+                  gloss={pageConfig.gloss}
+                  role={pageConfig.role ?? undefined}
+                  empty
+                  helpCollectHref={volunteerHref}
+                />
               </ul>
-              <p class="civic-limit-note">
-                These records are not on this site yet. You can help request and
-                review the source records.
-              </p>
             </section>
           )
         }

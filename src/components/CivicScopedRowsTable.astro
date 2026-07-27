@@ -1,5 +1,6 @@
 ---
 import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
+import TableScroll from "#src/components/TableScroll.astro";
 import type {
   CivicCivilCaseRecord,
   CivicTopicRecords,
@@ -33,41 +34,43 @@ const formatDate = (value: string) =>
             : ""}
         </span>
       </div>
-      <table class="record-table">
-        <thead>
-          <tr>
-            <th scope="col">Case</th>
-            <th scope="col">Court</th>
-            <th scope="col">Filed</th>
-            <th scope="col">Connection</th>
-            <th scope="col">Agencies</th>
-          </tr>
-        </thead>
-        <tbody>
-          {civilCaseRows.map((row) => (
+      <TableScroll>
+        <table class="record-table">
+          <thead>
             <tr>
-              <td>
-                <a class="row-link" href={row.href}>
-                  {row.title}
-                </a>
-              </td>
-              <td>{row.court || ""}</td>
-              <td>{formatDate(row.filedDate)}</td>
-              <td>{row.connectionType}</td>
-              <td>
-                {row.agencies.map((agency, index) => (
-                  <>
-                    {index > 0 ? ", " : ""}
-                    <a class="row-link" href={agency.href}>
-                      {agency.name}
-                    </a>
-                  </>
-                ))}
-              </td>
+              <th scope="col">Case</th>
+              <th scope="col">Court</th>
+              <th scope="col">Filed</th>
+              <th scope="col">Connection</th>
+              <th scope="col">Agencies</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {civilCaseRows.map((row) => (
+              <tr>
+                <td>
+                  <a class="row-link" href={row.href}>
+                    {row.title}
+                  </a>
+                </td>
+                <td>{row.court || ""}</td>
+                <td>{formatDate(row.filedDate)}</td>
+                <td>{row.connectionType}</td>
+                <td>
+                  {row.agencies.map((agency, index) => (
+                    <>
+                      {index > 0 ? ", " : ""}
+                      <a class="row-link" href={agency.href}>
+                        {agency.name}
+                      </a>
+                    </>
+                  ))}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableScroll>
       <div class="list-foot">
         <span>Sorted by filing date, newest first</span>
         <CivilCaseScopeNote />

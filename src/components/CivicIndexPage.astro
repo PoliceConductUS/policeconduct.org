@@ -1,5 +1,7 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
+import StatCell from "#src/components/StatCell.astro";
+import StatStrip from "#src/components/StatStrip.astro";
 import "#src/styles/civic-ledger.css";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
@@ -283,7 +285,7 @@ const statColumns = model.statCells.length + 1;
   <main id="main" class="civic-index-page">
     <section class="civic-index-page-main">
       <div class="container">
-        <Breadcrumbs items={model.breadcrumbs} className="mb-2" />
+        <Breadcrumb items={model.breadcrumbs} />
 
         <section class="civic-lede">
           <p class="civic-kicker">{model.jurisdictionLabel}</p>
@@ -291,99 +293,50 @@ const statColumns = model.statCells.length + 1;
           <p class="civic-lede-sub">{model.description}</p>
         </section>
 
-        <section
-          class:list={[
-            "stat-strip",
-            { "stat-strip--three": statColumns === 4 },
-          ]}
-          aria-label={`${heading} coverage totals`}
+        <StatStrip
+          ariaLabel={`${heading} coverage totals`}
+          drillFirst
+          columns={statColumns === 4 ? "three-plus-jump" : "four-plus-jump"}
         >
           {
-            model.statCells.map((cell) =>
-              cell.href ? (
-                <a
-                  class="stat-cell stat-cell--link"
-                  data-role={cell.role}
-                  href={cell.href}
-                >
-                  <strong class="ledger-value">{cell.value}</strong>
-                  <span class="ledger-label">{cell.label}</span>
-                  {cell.meta ? (
-                    <span class="ledger-meta">{cell.meta}</span>
-                  ) : null}
-                  {cell.actionLabel ? (
-                    <span class="stat-action">{cell.actionLabel}</span>
-                  ) : null}
-                </a>
-              ) : (
-                <div
-                  class:list={["stat-cell", { "is-pending": !cell.value }]}
-                  data-role={cell.role}
-                >
-                  <strong class="ledger-value">{cell.value ?? "--"}</strong>
-                  <span class="ledger-label">{cell.label}</span>
-                  {cell.meta ? (
-                    <span class="ledger-meta">{cell.meta}</span>
-                  ) : null}
-                  {cell.pendingHelp ? (
-                    <span class="stat-action">
-                      <a href={cell.pendingHelp.href}>
-                        {cell.pendingHelp.label}
-                      </a>
-                    </span>
-                  ) : null}
-                </div>
-              ),
-            )
+            model.statCells.map((cell) => (
+              <StatCell
+                label={cell.label}
+                value={cell.value}
+                meta={cell.meta}
+                href={cell.href}
+                actionLabel={cell.actionLabel}
+                role={cell.role}
+                helpCollectHref={cell.pendingHelp?.href}
+                helpCollectLabel={cell.pendingHelp?.label}
+              />
+            ))
           }
-          <div class="stat-cell jump-cell">
-            <strong class="ledger-value">{model.jumpCell.count}</strong>
-            <span class="ledger-label">{model.jumpCell.label}</span>
-            <form class="jump-form" data-jump-form>
-              <label for="civic-jump" class="visually-hidden">
-                {model.jumpCell.selectLabel}
-              </label>
-              <select id="civic-jump" class="jump-select" data-jump-select>
-                <option value="" selected disabled>
-                  {model.jumpCell.placeholder}
-                </option>
-                {
-                  model.jumpCell.options.map((option) => (
-                    <option value={option.href}>{option.label}</option>
-                  ))
-                }
-              </select>
-              <button class="jump-go" type="submit">Go →</button>
-            </form>
-            <p class="jump-status" data-jump-status aria-live="polite"></p>
-            <p class="jump-browse">
-              <a href={model.jumpCell.browse.href}>
-                {model.jumpCell.browse.label}
-              </a>
-            </p>
-          </div>
-        </section>
+          <StatCell
+            drill
+            childCount={model.jumpCell.count}
+            childLabel={model.jumpCell.label}
+            jumpOptions={model.jumpCell.options}
+            placeholder={model.jumpCell.placeholder}
+            selectLabel={model.jumpCell.selectLabel}
+            browseHref={model.jumpCell.browse.href}
+            browseLabel={model.jumpCell.browse.label}
+          />
+        </StatStrip>
 
         <section class="civic-section">
-          <div class="civic-section-head">
-            <div>
-              <h2>Not yet collected</h2>
-              <p>
-                These record types are not on this site yet. You can help
-                request and review the source records.
-              </p>
-            </div>
-          </div>
           <ul class="topic-row">
             {
               model.pendingTopics.map((topic) => (
-                <li class="topic-cell is-pending" data-role={topic.role}>
-                  <span class="ledger-label">{topic.label}</span>
-                  <span class="topic-value">Not yet available</span>
-                  <span class="topic-foot">
-                    <a href={topic.help.href}>{topic.help.label}</a>
-                  </span>
-                </li>
+                <StatCell
+                  variant="topic"
+                  label={topic.label}
+                  gloss={topic.gloss}
+                  role={topic.role}
+                  empty
+                  helpCollectHref={topic.help.href}
+                  helpCollectLabel={topic.help.label}
+                />
               ))
             }
           </ul>

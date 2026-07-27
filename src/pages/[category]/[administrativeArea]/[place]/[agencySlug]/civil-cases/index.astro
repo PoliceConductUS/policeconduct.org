@@ -1,5 +1,6 @@
 ---
 import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
+import TableScroll from "#src/components/TableScroll.astro";
 import { buildAgencyCivilCaseRows } from "#src/lib/data/agency-civil-case-rows.js";
 import {
   loadAgencyDetailByRouteParams,
@@ -29,34 +30,36 @@ const formatDate = (value?: string | null) =>
   topicSlug="civil-cases"
   description={`${rows.length.toLocaleString("en-US")} civil cases linked to this agency through court and personnel records.`}
 >
-  <table class="record-table">
-    <thead>
-      <tr>
-        <th scope="col">Case</th>
-        <th scope="col">Cause number</th>
-        <th scope="col">Court</th>
-        <th scope="col">Filed</th>
-        <th scope="col">Outcome</th>
-      </tr>
-    </thead>
-    <tbody>
-      {
-        rows.map((row: any) => (
-          <tr>
-            <td>
-              <a class="row-link" href={row.href}>
-                {row.title || "Civil case"}
-              </a>
-            </td>
-            <td class="muted">{row.cause_number || ""}</td>
-            <td>{row.court || ""}</td>
-            <td>{formatDate(row.filed_date)}</td>
-            <td>{row.outcome || ""}</td>
-          </tr>
-        ))
-      }
-    </tbody>
-  </table>
+  <TableScroll>
+    <table class="record-table">
+      <thead>
+        <tr>
+          <th scope="col">Case</th>
+          <th scope="col">Cause number</th>
+          <th scope="col">Court</th>
+          <th scope="col">Filed</th>
+          <th scope="col">Outcome</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          rows.map((row: any) => (
+            <tr>
+              <td>
+                <a class="row-link" href={row.href}>
+                  {row.title || "Civil case"}
+                </a>
+              </td>
+              <td class="muted">{row.cause_number || ""}</td>
+              <td>{row.court || ""}</td>
+              <td>{formatDate(row.filed_date)}</td>
+              <td>{row.outcome || ""}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </TableScroll>
   <p class="civic-limit-note">
     Case records come from court dockets. A pending case is an allegation, not a
     finding. A dismissal is a court outcome, not a statement that no misconduct

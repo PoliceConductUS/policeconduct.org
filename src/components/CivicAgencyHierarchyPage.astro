@@ -1,5 +1,5 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import DataPanel from "#src/components/DataPanel.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
@@ -7,9 +7,11 @@ import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
+import TableScroll from "#src/components/TableScroll.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import type { FederalAgencyIndexModel } from "#src/lib/data/federal-agencies.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+import "#src/styles/civic-ledger.css";
 
 const { model, site } = Astro.props as {
   model: FederalAgencyIndexModel;
@@ -49,7 +51,7 @@ const sampleRows = [
   <main id="main" class="civic-dashboard">
     <section class="civic-dashboard-main">
       <div class="container">
-        <Breadcrumbs items={model.breadcrumbs} className="mb-2" />
+        <Breadcrumb items={model.breadcrumbs} />
         <EntityPageHeader title={model.heading} description={model.description}>
           <Fragment slot="actions">
             <HelpCollectDataButton
@@ -115,53 +117,106 @@ const sampleRows = [
           }
         </div>
 
-        <section class="civic-row-section" aria-labelledby="civicRowsHeading">
-          <h2 id="civicRowsHeading">{model.rowsLabel}</h2>
-          <div class="civic-row-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  {
-                    model.columns.map((column) => (
-                      <th scope="col">{column.label}</th>
-                    ))
-                  }
-                  <th scope="col">View</th>
-                </tr>
-              </thead>
-              <tbody>
-                {
-                  model.rows.map((row) => (
-                    <tr
-                      data-civic-hierarchy-filter-item
-                      data-civic-hierarchy-filter-text={row.searchText}
-                    >
-                      {model.columns.map((column) => {
-                        const value =
-                          column.key === "label"
-                            ? row.label
-                            : (row.values[column.key] ?? "");
-                        return (
-                          <td>
-                            {column.key === "label" ? (
-                              <a href={row.href}>{row.label}</a>
-                            ) : (
-                              value
-                            )}
-                          </td>
-                        );
-                      })}
-                      <td>
-                        <a href={row.href}>View</a>
-                      </td>
+        {
+          model.isFieldOfficesTable ? (
+            // Field offices: render only when the agency has real branch
+            // data (src/lib/data/federal-agencies.ts FederalAgencyBranch,
+            // sourced from the database — never mockup placeholder office
+            // names/counts). No section at all when there are none.
+            model.rows.length > 0 ? (
+              <section
+                class="civic-row-section"
+                aria-labelledby="civicRowsHeading"
+              >
+                <h2 id="civicRowsHeading">{model.rowsLabel}</h2>
+                <TableScroll>
+                  <table class="record-table">
+                    <thead>
+                      <tr>
+                        {model.columns.map((column) => (
+                          <th scope="col">{column.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {model.rows.map((row) => (
+                        <tr
+                          data-civic-hierarchy-filter-item
+                          data-civic-hierarchy-filter-text={row.searchText}
+                        >
+                          {model.columns.map((column) => {
+                            const value =
+                              column.key === "label"
+                                ? row.label
+                                : (row.values[column.key] ?? "");
+                            return (
+                              <td>
+                                {column.key === "label" ? (
+                                  <a class="row-link" href={row.href}>
+                                    {row.label}
+                                  </a>
+                                ) : (
+                                  value
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </TableScroll>
+              </section>
+            ) : null
+          ) : (
+            <section
+              class="civic-row-section"
+              aria-labelledby="civicRowsHeading"
+            >
+              <h2 id="civicRowsHeading">{model.rowsLabel}</h2>
+              <div class="civic-row-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      {model.columns.map((column) => (
+                        <th scope="col">{column.label}</th>
+                      ))}
+                      <th scope="col">View</th>
                     </tr>
-                  ))
-                }
-              </tbody>
-            </table>
-          </div>
-          {showCivilCaseScopeNote ? <CivilCaseScopeNote /> : null}
-        </section>
+                  </thead>
+                  <tbody>
+                    {model.rows.map((row) => (
+                      <tr
+                        data-civic-hierarchy-filter-item
+                        data-civic-hierarchy-filter-text={row.searchText}
+                      >
+                        {model.columns.map((column) => {
+                          const value =
+                            column.key === "label"
+                              ? row.label
+                              : (row.values[column.key] ?? "");
+                          return (
+                            <td>
+                              {column.key === "label" ? (
+                                <a href={row.href}>{row.label}</a>
+                              ) : (
+                                value
+                              )}
+                            </td>
+                          );
+                        })}
+                        <td>
+                          <a href={row.href}>View</a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {showCivilCaseScopeNote ? <CivilCaseScopeNote /> : null}
+            </section>
+          )
+        }
       </div>
     </section>
   </main>

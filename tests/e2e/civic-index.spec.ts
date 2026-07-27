@@ -94,18 +94,25 @@ test.describe("civic index pages", () => {
       page.getByRole("link", { name: /Browse all 254 counties/ }),
     ).toHaveAttribute("href", "/tx/counties/");
 
-    // Not-yet-collected topics carry contribution paths.
-    await expect(
-      page.getByRole("heading", { name: "Not yet collected" }),
-    ).toBeVisible();
+    // Unavailable topics render a neutral "--", never hedging copy, and
+    // carry a "Help collect this" contribution link with query context.
     for (const topic of [
       "Budget",
       "Liability Costs",
       "Fatal Force Incidents",
       "Outcomes by Income",
     ]) {
-      await expect(page.getByText(topic, { exact: true })).toBeVisible();
+      const cell = page
+        .locator(".topic-cell")
+        .filter({ has: page.getByText(topic, { exact: true }) });
+      await expect(cell).toHaveCount(1);
+      await expect(cell.getByText("--", { exact: true })).toBeVisible();
+      await expect(
+        cell.getByRole("link", { name: "Help collect this →" }),
+      ).toHaveAttribute("href", /^\/volunteer\/\?source=%2Ftx%2F&scope=state&state=tx$/);
     }
+    await expect(page.getByText("Not yet collected")).toHaveCount(0);
+    await expect(page.getByText("not on this site yet")).toHaveCount(0);
 
     await expectNoOldSurfaces(page);
   });
