@@ -22,6 +22,8 @@
       breadcrumb and the "Field offices" section differ · previous: none
     </div>
 
+    <a class="skip-link" href="#main">Skip to main content</a>
+
     <header class="masthead">
       <div class="container">
         <a class="masthead-mark" href="#">Police<span>Conduct</span>.org</a>
@@ -43,13 +45,15 @@
       </div>
     </header>
 
-    <main>
+    <main id="main">
       <div class="container">
-        <ol class="crumbs">
-          <li><a href="#">Home</a></li>
-          <li><a href="federal-index.html">Federal agencies</a></li>
-          <li aria-current="page">U.S. Customs and Border Protection</li>
-        </ol>
+        <nav aria-label="Breadcrumb">
+          <ol class="crumbs">
+                  <li><a href="#">Home</a></li>
+                  <li><a href="federal-index.html">Federal agencies</a></li>
+                  <li aria-current="page">U.S. Customs and Border Protection</li>
+                </ol>
+        </nav>
 
         <section class="entity-hero">
           <div class="entity-hero-grid">
@@ -179,58 +183,60 @@
               </p>
             </div>
           </div>
-          <table class="record-table">
-            <thead>
-              <tr>
-                <th>Field office</th>
-                <th>Location</th>
-                <th class="num">Personnel</th>
-                <th class="num">Civil cases</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <a class="row-link" href="#">Baltimore Field Office</a>
-                </td>
-                <td>Baltimore, MD</td>
-                <td class="num tabular">312</td>
-                <td class="num tabular">9</td>
-              </tr>
-              <tr>
-                <td><a class="row-link" href="#">Buffalo Field Office</a></td>
-                <td>Buffalo, NY</td>
-                <td class="num tabular">274</td>
-                <td class="num tabular">6</td>
-              </tr>
-              <tr>
-                <td><a class="row-link" href="#">El Paso Field Office</a></td>
-                <td>El Paso, TX</td>
-                <td class="num tabular">488</td>
-                <td class="num tabular">14</td>
-              </tr>
-              <tr>
-                <td><a class="row-link" href="#">Laredo Field Office</a></td>
-                <td>Laredo, TX</td>
-                <td class="num tabular">401</td>
-                <td class="num tabular">11</td>
-              </tr>
-              <tr>
-                <td>
-                  <a class="row-link" href="#">Los Angeles Field Office</a>
-                </td>
-                <td>Los Angeles, CA</td>
-                <td class="num tabular">357</td>
-                <td class="num tabular">5</td>
-              </tr>
-              <tr>
-                <td><a class="row-link" href="#">Miami Field Office</a></td>
-                <td>Miami, FL</td>
-                <td class="num tabular">318</td>
-                <td class="num tabular">2</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-scroll">
+            <table class="record-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Field office</th>
+                          <th scope="col">Location</th>
+                          <th class="num" scope="col">Personnel</th>
+                          <th class="num" scope="col">Civil cases</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>
+                            <a class="row-link" href="#">Baltimore Field Office</a>
+                          </td>
+                          <td>Baltimore, MD</td>
+                          <td class="num tabular">312</td>
+                          <td class="num tabular">9</td>
+                        </tr>
+                        <tr>
+                          <td><a class="row-link" href="#">Buffalo Field Office</a></td>
+                          <td>Buffalo, NY</td>
+                          <td class="num tabular">274</td>
+                          <td class="num tabular">6</td>
+                        </tr>
+                        <tr>
+                          <td><a class="row-link" href="#">El Paso Field Office</a></td>
+                          <td>El Paso, TX</td>
+                          <td class="num tabular">488</td>
+                          <td class="num tabular">14</td>
+                        </tr>
+                        <tr>
+                          <td><a class="row-link" href="#">Laredo Field Office</a></td>
+                          <td>Laredo, TX</td>
+                          <td class="num tabular">401</td>
+                          <td class="num tabular">11</td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <a class="row-link" href="#">Los Angeles Field Office</a>
+                          </td>
+                          <td>Los Angeles, CA</td>
+                          <td class="num tabular">357</td>
+                          <td class="num tabular">5</td>
+                        </tr>
+                        <tr>
+                          <td><a class="row-link" href="#">Miami Field Office</a></td>
+                          <td>Miami, FL</td>
+                          <td class="num tabular">318</td>
+                          <td class="num tabular">2</td>
+                        </tr>
+                      </tbody>
+                    </table>
+          </div>
         </section>
 
         <section class="section">

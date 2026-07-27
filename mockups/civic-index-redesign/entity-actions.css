@@ -94,7 +94,7 @@
 .entity-menu-list {
   background: var(--paper-raised);
   border: 1px solid var(--rule-strong);
-  box-shadow: 0 6px 20px -12px rgb(0 0 0 / 0.35);
+  box-shadow: 0 6px 20px -12px oklch(21% 0.03 258 / 0.45); /* tinted navy, not pure black */
   left: 0;
   list-style: none;
   margin: 0;
@@ -118,9 +118,17 @@
   text-decoration: none;
 }
 
-.entity-menu-item:hover,
-.entity-menu-item:focus-visible {
+.entity-menu-item:hover {
   background: var(--teal-wash);
   color: var(--teal-ink);
-  outline: none;
+}
+
+/* Keyboard focus needs a real, high-contrast indicator (WCAG 2.4.11), not just
+   the hover wash. Use :focus (not :focus-visible) because the menu moves focus
+   programmatically via roving arrow-keys — :focus-visible wouldn't match. */
+.entity-menu-item:focus {
+  background: var(--teal-wash);
+  color: var(--teal-ink);
+  outline: 2px solid var(--teal-ink);
+  outline-offset: -2px;
 }

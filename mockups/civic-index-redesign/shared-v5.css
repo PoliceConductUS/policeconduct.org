@@ -119,6 +119,28 @@ h3 {
 
 /* ---- minimal masthead (context only — real site header lives elsewhere) ---- */
 
+/* Skip link — first focusable element; off-screen until focused (WCAG 2.4.1). */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  z-index: 100;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.5rem 0.9rem;
+  font-size: var(--small);
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-150%);
+  transition: transform 0.15s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 2px solid var(--teal-ink);
+  outline-offset: 2px;
+}
+
 .masthead {
   border-bottom: 1px solid var(--rule);
   padding-block: 0.85rem;
@@ -927,10 +949,21 @@ a.stat-cell {
   font-weight: 600;
 }
 
+/* Wide tables scroll inside their own box instead of overflowing the page. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .record-table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--small);
+}
+
+/* keep columns readable rather than crushing them on narrow screens */
+.table-scroll .record-table {
+  min-width: 34rem;
 }
 
 .record-table th {
