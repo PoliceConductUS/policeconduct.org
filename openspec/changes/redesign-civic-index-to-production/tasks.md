@@ -38,8 +38,8 @@
 
 ## 5. Terminology Rename
 
-- [ ] 5.1 Rename "interaction" → "experience" in all public-facing copy across templates, components, and content (chrome actions, buttons, prose).
-- [ ] 5.2 Rename analytics event names and structured-data fields to "experience" wording; list the old→new event names in the PR for downstream dashboard updates.
+- [x] 5.1 Rename "interaction" → "experience" in all public-facing copy across templates, components, and content (chrome actions, buttons, prose).
+- [x] 5.2 Rename analytics event names and structured-data fields to "experience" wording; list the old→new event names in the PR for downstream dashboard updates.
 - [ ] 5.3 Verify zero "interaction" occurrences remain in generated public output (grep the `dist` HTML); confirm no route or slug changes occurred (no redirect work expected).
 
 ## 6. Validation and Release Gates
