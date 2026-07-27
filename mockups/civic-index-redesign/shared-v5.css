@@ -999,6 +999,59 @@ a.stat-cell {
   }
 }
 
+/* ---- profile header (personnel profile pages) ---- */
+
+.profile-head {
+  align-items: start;
+  display: grid;
+  gap: clamp(1rem, 0.5rem + 2vw, 1.75rem);
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.profile-photo {
+  aspect-ratio: 1;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule-strong);
+  height: clamp(5.5rem, 4rem + 6vw, 8rem);
+  object-fit: cover;
+  width: clamp(5.5rem, 4rem + 6vw, 8rem);
+}
+
+.profile-monogram {
+  align-items: center;
+  aspect-ratio: 1;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule-strong);
+  color: var(--ink-faint);
+  display: flex;
+  font-size: clamp(1.75rem, 1rem + 3vw, 2.75rem);
+  font-weight: 800;
+  height: clamp(5.5rem, 4rem + 6vw, 8rem);
+  justify-content: center;
+  letter-spacing: 0.02em;
+  width: clamp(5.5rem, 4rem + 6vw, 8rem);
+}
+
+.profile-photo-note {
+  color: var(--ink-faint);
+  font-size: var(--caption);
+  margin: 0.4rem 0 0;
+  text-align: center;
+  max-width: clamp(5.5rem, 4rem + 6vw, 8rem);
+}
+
+.profile-head .lede {
+  border-bottom: 0;
+  padding-block: 0;
+}
+
+@media (max-width: 560px) {
+  .profile-head {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+}
+
 /* ---- variant banner (mockup-only chrome, not part of the design) ---- */
 
 .variant-banner {

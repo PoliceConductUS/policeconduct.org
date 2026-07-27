@@ -1,3 +1,8 @@
+import {
+  buildPendingTopics,
+  civicIndexCollator,
+  type CivicIndexModel,
+} from "#src/lib/data/civic-index.js";
 import { withDb } from "#src/lib/db.js";
 import {
   metricLabels,
@@ -521,6 +526,97 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
     ),
     slug: String(row.slug),
   } satisfies FederalAgencyDetail;
+};
+
+
+export const buildFederalCivicIndex = (
+  federalAgencies: FederalAgencySummary[],
+): CivicIndexModel => {
+  const pagePath = "/federal/";
+  const totals = federalAgencies.reduce(
+    (accumulator, agency) => ({
+      civilCases: accumulator.civilCases + agency.civilCaseCount,
+      personnel: accumulator.personnel + agency.personnelCount,
+      reports: accumulator.reports + agency.reportCount,
+    }),
+    { civilCases: 0, personnel: 0, reports: 0 },
+  );
+  const count = (value: number) => value.toLocaleString("en-US");
+  const rows = federalAgencies
+    .map((agency) => ({
+      href: agency.path,
+      label: agency.name,
+      searchText: agency.name,
+      values: {},
+    }))
+    .sort((a, b) => civicIndexCollator.compare(a.label, b.label));
+
+  return {
+    breadcrumbs: [
+      { label: "Home", href: "/" },
+      { label: "Federal", href: pagePath, current: true },
+    ],
+    columns: [{ key: "label", label: "Federal agency" }],
+    coverage: [
+      { key: "agencies", label: metricLabels.agencies, value: federalAgencies.length },
+      { key: "personnel", label: metricLabels.personnel, value: totals.personnel },
+      { key: "reports", label: metricLabels.reports, value: totals.reports },
+      { key: "civil_cases", label: metricLabels.civilCases, value: totals.civilCases },
+    ],
+    description:
+      "Public records for federal law enforcement agencies, their personnel, reports, and civil litigation.",
+    drilldownLabel: "Federal records",
+    indexLabel: "Federal agencies",
+    jumpCell: {
+      browse: { href: `${pagePath}agencies/`, label: `Browse all ${rows.length} agencies →` },
+      count: count(rows.length),
+      label: metricLabels.agencies,
+      options: rows.map((row) => ({ href: row.href, label: row.label })),
+      placeholder: "Choose agency…",
+      selectLabel: "Agency",
+    },
+    jurisdictionLabel: "Federal civic index",
+    level: "place",
+    map: {
+      bounds: null,
+      description: "",
+      emptyLabel: "",
+      points: [],
+      title: "",
+    },
+    pagePath,
+    pendingTopics: buildPendingTopics(pagePath),
+    locationReports: [],
+    rows,
+    statCells: [
+      {
+        key: "personnel",
+        label: metricLabels.personnelRecords,
+        value: count(totals.personnel),
+        meta: "Current & former",
+        href: totals.personnel > 0 ? `${pagePath}personnel/` : undefined,
+        actionLabel: totals.personnel > 0 ? "View personnel →" : undefined,
+      },
+      {
+        key: "reports",
+        label: metricLabels.reports,
+        value: count(totals.reports),
+        meta: "Shared by the public",
+        href: totals.reports > 0 ? `${pagePath}reports/` : undefined,
+        actionLabel: totals.reports > 0 ? "View reports →" : undefined,
+      },
+      {
+        key: "civil_cases",
+        label: metricLabels.civilCases,
+        value: count(totals.civilCases),
+        meta: "Court records",
+        role: "civil",
+        href: totals.civilCases > 0 ? `${pagePath}civil-cases/` : undefined,
+        actionLabel: totals.civilCases > 0 ? "View civil cases →" : undefined,
+      },
+    ],
+    title: "Federal Civic Index | PoliceConduct.org",
+  };
 };
 
 export const buildFederalAgencyIndexModel = (

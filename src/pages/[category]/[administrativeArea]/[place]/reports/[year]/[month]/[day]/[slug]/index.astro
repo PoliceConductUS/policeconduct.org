@@ -1,5 +1,6 @@
 ---
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import "#src/styles/civic-ledger.css";
 import DisqusComments from "#src/components/DisqusComments.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
@@ -230,11 +231,11 @@ const structuredData = {
                 { label: reportTitle, href: pagePath, current: true },
               ]}
             />
-            <p class="text-uppercase small text-muted mb-2">Published report</p>
-            <h1 class="ipc-page-title">{data.report.title}</h1>
-            <p class="lead">
-              Submitted by anonymous user on{" "}
-              {formatLongDate(data.report.created_at)}.
+            <p class="civic-kicker">Public report</p>
+            <h1>{data.report.title}</h1>
+            <p class="civic-lede-sub">
+              A first-party account shared by the public and reviewed before
+              publication on {formatLongDate(data.report.created_at)}.
             </p>
             <div class="d-flex flex-wrap gap-2">
               <PrefillNavButton
@@ -274,28 +275,25 @@ const structuredData = {
       <div class="container">
         <div class="row justify-content-center">
           <article class="col-12 col-lg-10 col-xl-8">
-            <h2 class="ipc-section-title text-uppercase text-muted mt-4">
-              Incident basics
-            </h2>
-            <dl class="row">
-              <dt class="col-sm-4">Incident date</dt>
-              <dd class="col-sm-8">
-                {formatLongDate(data.report.incident_date)}
-              </dd>
+            <dl class="fact-list">
+              <div>
+                <dt>Incident date</dt>
+                <dd>{formatLongDate(data.report.incident_date)}</dd>
+              </div>
               {
                 reportAddress ? (
-                  <>
-                    <dt class="col-sm-4">Location</dt>
-                    <dd class="col-sm-8">{reportAddress}</dd>
-                  </>
+                  <div>
+                    <dt>Location</dt>
+                    <dd>{reportAddress}</dd>
+                  </div>
                 ) : null
               }
               {
                 data.report.charges ? (
-                  <>
-                    <dt class="col-sm-4">Charges or allegations</dt>
-                    <dd class="col-sm-8">{data.report.charges}</dd>
-                  </>
+                  <div>
+                    <dt>Charges or allegations</dt>
+                    <dd>{data.report.charges}</dd>
+                  </div>
                 ) : null
               }
             </dl>
