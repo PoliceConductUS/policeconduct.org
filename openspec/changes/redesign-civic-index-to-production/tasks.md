@@ -9,13 +9,13 @@
 
 ## 2. Shared Chrome Components
 
-- [ ] 2.1 Update `src/layouts/SiteLayout.astro` masthead to the redesign chrome: wordmark, persistent labelled search input (`role="search"`), "Share an experience" primary action, "Volunteer" ghost action → `/volunteer/`; remove "Find an agency" (folds into search).
-- [ ] 2.2 Add the skip-to-content link as the first focusable element in the layout, targeting `<main id="main">`; ensure every page's main content is inside that landmark.
+- [x] 2.1 Update `src/layouts/SiteLayout.astro` masthead to the redesign chrome: wordmark, persistent labelled search input (`role="search"`), "Share an experience" primary action, "Volunteer" ghost action → `/volunteer/`; remove "Find an agency" (folds into search).
+- [x] 2.2 Add the skip-to-content link as the first focusable element in the layout, targeting `<main id="main">`; ensure every page's main content is inside that landmark.
 - [ ] 2.3 Create/update a shared `Breadcrumb` component wrapping trails in `<nav aria-label="Breadcrumb">` with `aria-current="page"` on the final crumb; adopt it on all entity and geography pages.
-- [ ] 2.4 Create the shared `EntityActionBar` component with the native `<details>/<summary>` "More actions" menu (no JS, marker hidden, chevron rotates on `[open]`, visible `:focus` ring on items); include only actions with working destinations: Copy link (shared script, clipboard with fallback), View sources & methodology → `/data-and-methods/`.
+- [x] 2.4 Create the shared `EntityActionBar` component with the native `<details>/<summary>` "More actions" menu (no JS, marker hidden, chevron rotates on `[open]`, visible `:focus` ring on items); include only actions with working destinations: Copy link (shared script, clipboard with fallback), View sources & methodology → `/data-and-methods/`.
 - [ ] 2.5 Create the shared social-link pattern (icon + `aria-label` "<Entity> on <Platform>", `aria-hidden` glyph, brand tint on hover/focus) and adopt it wherever entities have social links.
-- [ ] 2.6 Group contact identity: where an entity's contact person and email are linked in the data model, render name + email as one visual group, not separated by unrelated links (phone, social).
-- [ ] 2.7 Consolidate all shared client behavior (copy-link, county jump enhancement) into one shared script; remove any per-page inline scripts; keep all styles in external stylesheets.
+- [x] 2.6 Group contact identity: where an entity's contact person and email are linked in the data model, render name + email as one visual group, not separated by unrelated links (phone, social).
+- [x] 2.7 Consolidate all shared client behavior (copy-link, county jump enhancement) into one shared script; remove any per-page inline scripts; keep all styles in external stylesheets.
 
 ## 3. Civic Index and Entity Page Surfaces
 
