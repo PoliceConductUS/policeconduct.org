@@ -1,11 +1,30 @@
 ---
-// Shell only: a plain, working `role="search"` form that submits to
-// /find-records/. Task 4 wires Pagefind's live-results API onto this same
-// markup; until then, submitting the form (Enter key or no-JS) is the full,
-// functional search experience.
+// A plain, working `role="search"` form that submits to /find-records/ —
+// that GET submission (Enter key, or no-JS entirely) is the full, functional
+// search experience regardless of what follows.
+//
+// On top of that shell, src/lib/client/site.js progressively enhances the
+// input with Pagefind's self-hosted, statically-built index
+// (/pagefind/pagefind.js, produced by `npx pagefind --site dist` in the
+// `build` script — see package.json). Pagefind's JS is loaded lazily, on
+// first focus/input, so the other ~100k pages that never touch search pay
+// nothing for it. If that dynamic import fails (e.g. in `astro dev`, where
+// no /pagefind/ output exists), the enhancement is a no-op and the plain
+// form submission above remains the entire experience.
+//
+// `data-pagefind-ignore` keeps this chrome (present on every page) out of
+// Pagefind's own index; entity/geography page templates opt their main
+// content region in with `data-pagefind-body` instead.
 ---
 
-<form class="masthead-search" role="search" action="/find-records/" method="get">
+<form
+  class="masthead-search"
+  role="search"
+  action="/find-records/"
+  method="get"
+  data-site-search
+  data-pagefind-ignore
+>
   <label for="site-search" class="visually-hidden">Search records</label>
   <input
     id="site-search"
@@ -14,7 +33,34 @@
     name="q"
     placeholder="Search agencies, officers, or cases…"
     autocomplete="off"
+    role="combobox"
+    aria-expanded="false"
+    aria-controls="site-search-listbox"
+    aria-autocomplete="list"
+    data-site-search-input
   />
+  <div
+    class="masthead-search-panel"
+    id="site-search-panel"
+    data-site-search-panel
+    hidden
+  >
+    <ul
+      class="masthead-search-listbox"
+      id="site-search-listbox"
+      role="listbox"
+      aria-label="Search results"
+      data-site-search-listbox
+    >
+    </ul>
+  </div>
+  <p
+    class="visually-hidden"
+    role="status"
+    aria-live="polite"
+    data-site-search-status
+  >
+  </p>
 </form>
 
 <style>
@@ -22,6 +68,7 @@
     flex: 1 1 20rem;
     margin: 0;
     max-width: 30rem;
+    position: relative;
   }
 
   .masthead-search-input {
@@ -45,5 +92,53 @@
     border-color: var(--ipc-color-teal-ink);
     box-shadow: 0 0 0 2px var(--ipc-color-teal-ink);
     outline: none;
+  }
+
+  .masthead-search-panel {
+    background: var(--ipc-color-paper-raised);
+    border: 1px solid var(--ipc-color-rule-strong);
+    box-shadow: 0 0.5rem 1rem oklch(21% 0.03 258 / 0.16);
+    left: 0;
+    margin-top: 0.35rem;
+    max-height: 22rem;
+    overflow-y: auto;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 40;
+  }
+
+  .masthead-search-panel[hidden] {
+    display: none;
+  }
+
+  .masthead-search-listbox {
+    list-style: none;
+    margin: 0;
+    padding: 0.3rem;
+  }
+
+  .masthead-search-option {
+    border-radius: 0.2rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.45rem 0.6rem;
+  }
+
+  .masthead-search-option.is-active {
+    background: var(--ipc-color-teal-wash);
+  }
+
+  .masthead-search-option-title {
+    color: var(--ipc-color-ink);
+    font-size: var(--ipc-type-small);
+    font-weight: 700;
+  }
+
+  .masthead-search-option-path {
+    color: var(--ipc-color-ink-faint);
+    font-size: var(--ipc-type-caption);
   }
 </style>

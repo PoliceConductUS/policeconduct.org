@@ -306,9 +306,252 @@ const initJumpForms = () => {
   });
 };
 
+// Masthead search (MastheadSearch.astro): progressively enhances the plain
+// `role="search"` GET form (action="/find-records/") with Pagefind's
+// self-hosted, statically-built index. Pagefind's JS lives at
+// /pagefind/pagefind.js only in the built site (produced post-`astro build`
+// by `npx pagefind --site dist`, see package.json's `build` script) — it is
+// absent in `astro dev` and would 404 there. That failure (and any other
+// load/search failure) is swallowed: the plain form submission above is
+// always the fallback, so degrading to it is silent and harmless.
+//
+// Loaded lazily on first focus/input of the field, not at page load, since
+// every one of the site's ~100k pages renders this same masthead.
+const PAGEFIND_MODULE_URL = "/pagefind/pagefind.js";
+const SEARCH_DEBOUNCE_MS = 150;
+const MAX_SEARCH_RESULTS = 8;
+
+const initSiteSearch = () => {
+  const form = document.querySelector("[data-site-search]");
+  if (!(form instanceof HTMLFormElement)) {
+    return;
+  }
+
+  const input = form.querySelector("[data-site-search-input]");
+  const panel = form.querySelector("[data-site-search-panel]");
+  const listbox = form.querySelector("[data-site-search-listbox]");
+  const status = form.querySelector("[data-site-search-status]");
+  if (
+    !(input instanceof HTMLInputElement) ||
+    !(panel instanceof HTMLElement) ||
+    !(listbox instanceof HTMLElement) ||
+    !(status instanceof HTMLElement)
+  ) {
+    return;
+  }
+
+  let pagefindApi = null;
+  let pagefindLoadPromise = null;
+  let results = [];
+  let activeIndex = -1;
+  let requestId = 0;
+  let debounceTimer = null;
+
+  const loadPagefind = () => {
+    if (!pagefindLoadPromise) {
+      pagefindLoadPromise = import(/* @vite-ignore */ PAGEFIND_MODULE_URL)
+        .then(async (module) => {
+          pagefindApi = module;
+          await module.init?.();
+          return module;
+        })
+        .catch(() => {
+          // No built index available (e.g. dev server, or the asset
+          // failed to load) — leave pagefindApi null so search is a
+          // silent no-op and the plain form submission keeps working.
+          pagefindApi = null;
+        });
+    }
+    return pagefindLoadPromise;
+  };
+
+  const setStatus = (text) => {
+    status.textContent = text;
+  };
+
+  const closePanel = () => {
+    panel.hidden = true;
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+    activeIndex = -1;
+  };
+
+  const navigateToResult = (result) => {
+    if (!result?.path) {
+      return;
+    }
+    window.location.href = result.path;
+  };
+
+  const updateActiveDescendant = () => {
+    if (activeIndex < 0) {
+      input.removeAttribute("aria-activedescendant");
+    } else {
+      input.setAttribute(
+        "aria-activedescendant",
+        `site-search-option-${activeIndex}`,
+      );
+    }
+
+    Array.from(listbox.children).forEach((child, index) => {
+      const isActive = index === activeIndex;
+      child.classList.toggle("is-active", isActive);
+      child.setAttribute("aria-selected", isActive ? "true" : "false");
+      if (isActive && child instanceof HTMLElement) {
+        child.scrollIntoView({ block: "nearest" });
+      }
+    });
+  };
+
+  const renderResults = () => {
+    listbox.innerHTML = "";
+
+    results.forEach((result, index) => {
+      const option = document.createElement("li");
+      option.id = `site-search-option-${index}`;
+      option.className = "masthead-search-option";
+      option.setAttribute("role", "option");
+      option.setAttribute("aria-selected", "false");
+
+      const titleEl = document.createElement("span");
+      titleEl.className = "masthead-search-option-title";
+      titleEl.textContent = result.title;
+
+      const pathEl = document.createElement("span");
+      pathEl.className = "masthead-search-option-path";
+      pathEl.textContent = result.path;
+
+      option.append(titleEl, pathEl);
+      // mousedown (not click) fires before the input blurs, so we can
+      // preventDefault to keep focus on the input and navigate without
+      // racing a blur-triggered panel close.
+      option.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        navigateToResult(result);
+      });
+
+      listbox.appendChild(option);
+    });
+
+    if (results.length > 0) {
+      panel.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+    } else {
+      closePanel();
+    }
+  };
+
+  const runSearch = async (term) => {
+    const currentRequestId = ++requestId;
+
+    if (!term) {
+      results = [];
+      activeIndex = -1;
+      renderResults();
+      setStatus("");
+      return;
+    }
+
+    await loadPagefind();
+    if (currentRequestId !== requestId || !pagefindApi?.search) {
+      return;
+    }
+
+    try {
+      const search = await pagefindApi.search(term);
+      if (currentRequestId !== requestId) {
+        return;
+      }
+
+      const entries = await Promise.all(
+        search.results
+          .slice(0, MAX_SEARCH_RESULTS)
+          .map((entry) => entry.data()),
+      );
+      if (currentRequestId !== requestId) {
+        return;
+      }
+
+      results = entries.map((entry) => ({
+        title: entry.meta?.title || entry.url,
+        path: entry.url,
+      }));
+      activeIndex = -1;
+      renderResults();
+      setStatus(
+        results.length === 0
+          ? "No results"
+          : results.length === 1
+            ? "1 result"
+            : `${results.length} results`,
+      );
+    } catch (_error) {
+      // Search failed after the module loaded (e.g. a malformed index) —
+      // stay silent; the plain form submission remains available.
+    }
+  };
+
+  const debouncedSearch = (term) => {
+    if (debounceTimer) {
+      window.clearTimeout(debounceTimer);
+    }
+    debounceTimer = window.setTimeout(
+      () => runSearch(term),
+      SEARCH_DEBOUNCE_MS,
+    );
+  };
+
+  input.addEventListener("focus", loadPagefind, { once: true });
+  input.addEventListener("input", () => {
+    debouncedSearch(input.value.trim());
+  });
+
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (results.length === 0) {
+        return;
+      }
+      activeIndex = (activeIndex + 1) % results.length;
+      updateActiveDescendant();
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (results.length === 0) {
+        return;
+      }
+      activeIndex = (activeIndex - 1 + results.length) % results.length;
+      updateActiveDescendant();
+      return;
+    }
+
+    if (event.key === "Enter") {
+      if (activeIndex >= 0 && results[activeIndex]) {
+        event.preventDefault();
+        navigateToResult(results[activeIndex]);
+      }
+      return;
+    }
+
+    if (event.key === "Escape" && !panel.hidden) {
+      event.preventDefault();
+      closePanel();
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (event.target instanceof Node && !form.contains(event.target)) {
+      closePanel();
+    }
+  });
+};
+
 initBetaBanner();
 initHeaderScroll();
 initAnalyticsClicks();
 initMapAnalyticsClicks();
 initCopyLink();
 initJumpForms();
+initSiteSearch();

@@ -578,7 +578,7 @@ const structuredData = {
   structuredData={structuredData}
 >
   <PrefillBootstrap />
-  <main id="main" class="personnel-dashboard">
+  <main id="main" class="personnel-dashboard" data-pagefind-body>
     <section class="personnel-profile-surface">
       <div class="container personnel-profile-container">
         <div class="personnel-topbar">
@@ -589,7 +589,7 @@ const structuredData = {
               { label: officerName, href: officerPath },
             ]}
           />
-          <div class="personnel-actions">
+          <div class="personnel-actions" data-pagefind-ignore>
             <HelpCollectDataButton
               context={officerName}
               sourcePage={officerPath}
@@ -623,7 +623,7 @@ const structuredData = {
                   aria-hidden="true"
                   focusable="false"
                 >
-                  <path fill="currentColor" d="M4 6l4 4 4-4z" />
+                  <path fill="currentColor" d="M4 6l4 4 4-4z"></path>
                 </svg>
               </summary>
               <ul class="entity-menu-list">

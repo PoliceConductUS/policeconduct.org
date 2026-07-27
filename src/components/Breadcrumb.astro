@@ -21,7 +21,7 @@ const { items } = Astro.props;
 const lastIndex = items.length - 1;
 ---
 
-<nav aria-label="Breadcrumb">
+<nav aria-label="Breadcrumb" data-pagefind-ignore>
   <ol class="crumbs">
     {
       items.map((item, index) => {

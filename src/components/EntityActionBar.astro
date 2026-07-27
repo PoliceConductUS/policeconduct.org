@@ -43,7 +43,7 @@ const { primary, actions = [], more = [] } = Astro.props;
 const currentPath = Astro.url?.pathname || "/";
 ---
 
-<div class="entity-actions">
+<div class="entity-actions" data-pagefind-ignore>
   {
     primary ? (
       <a class="entity-action entity-action-primary" href={primary.href}>
@@ -68,7 +68,7 @@ const currentPath = Astro.url?.pathname || "/";
         aria-hidden="true"
         focusable="false"
       >
-        <path fill="currentColor" d="M4 6l4 4 4-4z" />
+        <path fill="currentColor" d="M4 6l4 4 4-4z"></path>
       </svg>
     </summary>
     <ul class="entity-menu-list">

@@ -166,7 +166,7 @@ const structuredData = {
   canonicalUrl={casePath}
   structuredData={structuredData}
 >
-  <main id="main" class="civic-index-page">
+  <main id="main" class="civic-index-page" data-pagefind-body>
     <section class="civic-index-page-main">
       <div class="container">
         <Breadcrumb
@@ -181,7 +181,12 @@ const structuredData = {
           <p class="civic-kicker">Civil case</p>
           <h1>{caseTitle}</h1>
           <p class="civic-lede-sub">
-            {truncateText(collapseWhitespace(data.civilCase.claims_summary), 180)}
+            {
+              truncateText(
+                collapseWhitespace(data.civilCase.claims_summary),
+                180,
+              )
+            }
           </p>
           <EntityActionBar
             actions={[
@@ -225,7 +230,11 @@ const structuredData = {
                 <div>
                   <dt>{item.label}</dt>
                   <dd>
-                    <a href={item.href} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       {item.value}
                     </a>
                   </dd>
@@ -301,7 +310,11 @@ const structuredData = {
                   <h3>Related links</h3>
                   {coverageLinks.map((link) => (
                     <p>
-                      <a href={link.url} target="_blank" rel="noopener noreferrer">
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         {link.title}
                       </a>
                     </p>
