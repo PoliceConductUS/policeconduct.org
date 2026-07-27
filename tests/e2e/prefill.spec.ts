@@ -267,7 +267,7 @@ const profileSenderCases: SenderCase[] = [
         department: "IRVING POLICE DEPARTMENT",
       },
     },
-    locator: { kind: "role", value: "Share an interaction" },
+    locator: { kind: "role", value: "Share an experience" },
     targetPath: "/report/new/",
   },
   {

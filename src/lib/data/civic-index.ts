@@ -443,7 +443,7 @@ export const buildStatCells = ({
           value: null,
           pendingHelp: {
             href: "/report/new/",
-            label: "Share an interaction →",
+            label: "Share an experience →",
           },
         },
   );
