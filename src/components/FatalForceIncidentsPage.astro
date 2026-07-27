@@ -1,5 +1,5 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import DataPanel from "#src/components/DataPanel.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
@@ -16,6 +16,11 @@ const { breadcrumbs, description, pagePath, title } = Astro.props as {
   pagePath: string;
   title: string;
 };
+
+const breadcrumbItems = breadcrumbs.map(({ href, label }) => ({
+  label,
+  href,
+}));
 
 const metricCards: MetricCardItem[] = [
   {
@@ -67,7 +72,7 @@ const sampleRows = [
   <main id="main" class="fatal-force-page">
     <section class="fatal-force-overview">
       <div class="container">
-        <Breadcrumbs items={breadcrumbs} className="mb-2" />
+        <Breadcrumb items={breadcrumbItems} />
         <EntityPageHeader title={title} description={description}>
           <Fragment slot="actions">
             <HelpCollectDataButton
