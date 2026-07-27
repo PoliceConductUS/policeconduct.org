@@ -30,11 +30,11 @@
 
 ## 4. Site Search (Pagefind)
 
-- [ ] 4.1 Add Pagefind to the build: post-`astro build` indexing step in the `build` script; scope indexing with `data-pagefind-body` to meaningful content regions and exclude chrome (masthead, breadcrumbs, action labels).
-- [ ] 4.2 Build the masthead search UI on Pagefind's API: labelled input, results with titles/paths, keyboard operability, `aria-live` result count announcements; styles from the site's tokens (no default third-party look).
-- [ ] 4.3 Implement the no-JS fallback: the search form submits to `/find-records/`.
+- [x] 4.1 Add Pagefind to the build: post-`astro build` indexing step in the `build` script; scope indexing with `data-pagefind-body` to meaningful content regions and exclude chrome (masthead, breadcrumbs, action labels).
+- [x] 4.2 Build the masthead search UI on Pagefind's API: labelled input, results with titles/paths, keyboard operability, `aria-live` result count announcements; styles from the site's tokens (no default third-party look).
+- [x] 4.3 Implement the no-JS fallback: the search form submits to `/find-records/`.
 - [ ] 4.4 Verify all Pagefind assets are self-hosted and measure the indexing step's build-time impact on the full page set; record the numbers in the PR.
-- [ ] 4.5 Add an e2e test covering: search from an entity page returns a known agency and navigates to it; fallback navigation works with JS disabled.
+- [x] 4.5 Add an e2e test covering: search from an entity page returns a known agency and navigates to it; fallback navigation works with JS disabled.
 
 ## 5. Terminology Rename
 
