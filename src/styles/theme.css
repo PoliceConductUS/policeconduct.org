@@ -1,3 +1,9 @@
+/* Self-hosted Public Sans (latin subset, weights actually used site-wide).
+   Ships its own @font-face rules with font-display: swap. */
+@import "@fontsource/public-sans/latin-400.css";
+@import "@fontsource/public-sans/latin-600.css";
+@import "@fontsource/public-sans/latin-700.css";
+@import "@fontsource/public-sans/latin-800.css";
 @import "bootstrap/dist/css/bootstrap.min.css";
 /*!
    * Bootstrap  v5.2.2 (https://getbootstrap.com/)
@@ -51,8 +57,37 @@
   --bs-font-sans-serif:
     "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --ipc-font-ui: var(--bs-font-sans-serif);
+  --ipc-font-ui: "Public Sans", var(--bs-font-sans-serif);
   --ipc-font-display: var(--ipc-font-ui);
+
+  /* ---- Civic index redesign palette (oklch, tinted off pure black/white).
+     Source of truth: mockups/civic-index-redesign/shared-v5.css :root.
+     Do not add page-local color literals for these roles; use these tokens. ---- */
+  --ipc-color-paper: oklch(98.2% 0.006 88);
+  --ipc-color-paper-raised: oklch(99.4% 0.003 88);
+  --ipc-color-ink: oklch(21% 0.03 258);
+  --ipc-color-ink-soft: oklch(34% 0.028 258);
+  --ipc-color-ink-muted: oklch(50% 0.022 258);
+  /* WCAG AA everywhere: >=4.5:1 on --ipc-color-paper and on --ipc-color-teal-wash hover. */
+  --ipc-color-ink-faint: oklch(52% 0.016 258);
+  --ipc-color-rule: oklch(85% 0.012 258);
+  --ipc-color-rule-strong: oklch(72% 0.018 258);
+
+  /* interactive / trust accent */
+  --ipc-color-teal: oklch(46% 0.075 195);
+  --ipc-color-teal-ink: oklch(30% 0.06 195);
+  --ipc-color-teal-wash: oklch(94% 0.02 195);
+
+  /* urgent action */
+  --ipc-color-deep-red: oklch(42% 0.16 26);
+
+  /* fixed topic-role accents (DESIGN.md: budget/income green, liability/debt
+     red, civil cases/legal uncertainty purple, neutral metadata muted ink) */
+  --ipc-role-budget: oklch(46% 0.11 152);
+  --ipc-role-liability: oklch(45% 0.17 25);
+  --ipc-role-civil: oklch(43% 0.14 300);
+  --ipc-role-neutral: var(--ipc-color-ink-faint);
+
   --ipc-type-h1: 3rem;
   --ipc-type-h2: 1.5rem;
   --ipc-type-h3: 1.1875rem;
@@ -14179,7 +14214,8 @@ h6.h6,
   letter-spacing: 0.06em;
 }
 
-@media (max-width: 767.98px) {
+/* DESIGN.md: H1 is a fixed rem step down at <=560px, not a viewport clamp. */
+@media (max-width: 560px) {
   :root {
     --ipc-type-h1: 2.25rem;
   }
