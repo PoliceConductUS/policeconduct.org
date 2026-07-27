@@ -44,6 +44,17 @@
   border-color: var(--ink);
 }
 
+.entity-action-text {
+  border-color: transparent;
+  color: var(--teal-ink);
+  padding-inline: 0.25rem;
+}
+
+.entity-action-text:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+
 /* ---- social links: platform logo via Bootstrap Icons, kept accessible ----
    Icon-only links; accessible name from the anchor's aria-label, the <i> glyph
    aria-hidden. Add a .social-link--<platform> modifier per network. */
