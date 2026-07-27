@@ -21,7 +21,7 @@ also uses `agency-entity-v5.css`; all but personnel-profile use `app.js`):
 | State & County Index  | Counties            | counties-v5.html            |
 | State & County Index  | County Detail       | county-v6.html              |
 | State & County Index  | Place               | place-v6.html               |
-| Agency                | Agency Profile      | agency-entity-v5.html       |
+| Agency                | Agency Profile      | agency-entity-v6.html       |
 | Agency                | Agency Civil Cases  | agency-civil-cases-v5.html  |
 | Agency                | Agency Personnel    | agency-personnel-v5.html    |
 | Records               | Personnel Profile   | personnel-profile-v7.html   |
@@ -49,3 +49,9 @@ re-run the sync into project `6141647b-d0aa-4124-9ebc-628b0fd47be3`.
 - `Public Sans` (`--font-ui`) is referenced but **not bundled**; falls back to system fonts.
 - `DESIGN.md` is referenced in CSS comments but does not exist in the repo.
 - Cards are inlined/self-contained so they render without the relative `shared-v5.css` link.
+- **Bootstrap Icons**: mockup source uses `<i class="bi bi-*">` + the bootstrap-icons CDN
+  stylesheet. The project CSP blocks that CDN, so the card build keeps the `<i>` tag and
+  swaps the CDN `<link>` for an inline `@font-face` (bootstrap-icons.woff2 as a data URI) +
+  the used-glyph `::before` rules (see `BI_CODEPOINTS` / `biInlineStyle` in build.mjs). When
+  a new `bi-*` icon is used in a synced page, add its codepoint to `BI_CODEPOINTS`. The
+  woff2/codepoint came from bootstrap-icons@1.11.3 (bi-youtube = `\f62b`).
