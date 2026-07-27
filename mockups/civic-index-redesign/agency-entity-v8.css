@@ -67,6 +67,22 @@
   color: var(--ink-muted);
 }
 
+/* Contact name + email are linked in the data model — render as one visual
+   group (the email travels with the person, not the agency links row). */
+.entity-contact-person a {
+  color: var(--teal-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.entity-contact-person a:hover {
+  text-decoration: underline;
+}
+
+.entity-contact-person .sep {
+  color: var(--rule-strong);
+}
+
 .entity-updated {
   margin-top: 0.9rem;
 }
