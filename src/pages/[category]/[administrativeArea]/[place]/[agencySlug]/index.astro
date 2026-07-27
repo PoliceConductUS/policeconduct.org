@@ -5,6 +5,9 @@ import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
+import SocialLink, {
+  type SocialPlatform,
+} from "#src/components/SocialLink.astro";
 import StatCell from "#src/components/StatCell.astro";
 import StatStrip from "#src/components/StatStrip.astro";
 import { buildHelpCollectHref } from "#src/lib/data/civic-index.js";
@@ -74,6 +77,32 @@ const agencyLinksSummary = data.agencyLinks
   )
   .filter(Boolean)
   .join("\n");
+// Recognized social platforms for the agency links list — hostnames map to
+// the SocialPlatform ids SocialLink.astro already has icons for. Anything
+// else (department websites, PDFs, etc.) falls back to a plain text link.
+const SOCIAL_PLATFORM_HOSTS: Array<[RegExp, SocialPlatform]> = [
+  [/(^|\.)youtube\.com$/, "youtube"],
+  [/(^|\.)youtu\.be$/, "youtube"],
+  [/(^|\.)facebook\.com$/, "facebook"],
+  [/(^|\.)x\.com$/, "twitter"],
+  [/(^|\.)twitter\.com$/, "twitter"],
+  [/(^|\.)instagram\.com$/, "instagram"],
+  [/(^|\.)linkedin\.com$/, "linkedin"],
+  [/(^|\.)tiktok\.com$/, "tiktok"],
+  [/(^|\.)reddit\.com$/, "reddit"],
+];
+const detectSocialPlatform = (url: string): SocialPlatform | null => {
+  let hostname: string;
+  try {
+    hostname = new URL(url).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+  const match = SOCIAL_PLATFORM_HOSTS.find(([pattern]) =>
+    pattern.test(hostname),
+  );
+  return match ? match[1] : null;
+};
 const civilLitigationRecords = [
   ...civilCases.map((record: any) => ({
     ...record,
@@ -334,12 +363,21 @@ const structuredData = {
                         (link: {
                           label?: string | null;
                           url?: string | null;
-                        }) =>
-                          link.url ? (
+                        }) => {
+                          if (!link.url) return null;
+                          const platform = detectSocialPlatform(link.url);
+                          return platform ? (
+                            <SocialLink
+                              platform={platform}
+                              href={link.url}
+                              entityName={agencyDisplayName}
+                            />
+                          ) : (
                             <a href={link.url} rel="noopener">
                               {link.label || link.url}
                             </a>
-                          ) : null,
+                          );
+                        },
                       )}
                     </p>
                   ) : null

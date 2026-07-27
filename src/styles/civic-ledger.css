@@ -176,7 +176,7 @@ a.stat-cell {
 }
 
 .stat-cell.is-pending .ledger-value {
-  color: #8d9bb4;
+  color: var(--ipc-color-ink-faint);
 }
 
 .ledger-label {
@@ -188,7 +188,7 @@ a.stat-cell {
 }
 
 .stat-cell.is-pending .ledger-label {
-  color: #8d9bb4;
+  color: var(--ipc-color-ink-faint);
 }
 
 .ledger-meta {
@@ -413,7 +413,7 @@ a.stat-cell {
 }
 
 .topic-cell .ledger-label {
-  color: #8d9bb4;
+  color: var(--ipc-color-ink-faint);
   margin-top: 0;
 }
 
@@ -429,7 +429,7 @@ a.stat-cell {
 }
 
 .topic-value {
-  color: #8d9bb4;
+  color: var(--ipc-color-ink-faint);
   display: block;
   font-size: var(--ipc-type-small);
   font-weight: 600;
@@ -528,7 +528,7 @@ a.stat-cell {
 }
 
 .status-mark.unknown {
-  color: #8d9bb4;
+  color: var(--ipc-color-ink-faint);
 }
 
 .civic-limit-note {
@@ -825,7 +825,9 @@ a.stat-cell {
 }
 
 .entity-updated {
-  color: #687a96;
+  /* #687a96 measured ~4.14:1 on --ipc-color-paper (fails AA); migrated to
+     --ipc-color-ink-faint, which is guaranteed >=4.5:1 on paper. */
+  color: var(--ipc-color-ink-faint);
   font-size: var(--ipc-type-caption);
   margin: 0.9rem 0 0;
 }
@@ -929,7 +931,7 @@ a.stat-cell {
 
 .alpha-group h2 {
   border-bottom: 1px solid #d7dfeb;
-  color: #8d9bb4;
+  color: var(--ipc-color-ink-faint);
   font-size: var(--ipc-type-caption);
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1020,7 +1022,7 @@ a.stat-cell {
 }
 
 .record-table .muted {
-  color: #8d9bb4;
+  color: var(--ipc-color-ink-faint);
 }
 
 .list-foot {
