@@ -25,8 +25,8 @@ also uses `agency-entity-v5.css`; all but personnel-profile use `app.js`):
 | Agency                | Agency Profile (federal)     | federal-agency-v1.html |
 | Agency                | Agency Civil Cases  | agency-civil-cases-v5.html  |
 | Agency                | Agency Personnel    | agency-personnel-v5.html    |
-| Records               | Personnel Profile   | personnel-profile-v7.html   |
-| Records               | Civil Case Detail   | civil-case-detail-v5.html   |
+| Records               | Personnel Profile   | personnel-profile-v8.html   |
+| Records               | Civil Case Detail   | civil-case-detail-v6.html   |
 | Records               | Report Detail       | report-detail-v5.html       |
 
 ## Build procedure (to re-sync after editing mockups)

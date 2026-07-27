@@ -1,0 +1,115 @@
+/* ==========================================================================
+   PoliceConduct.org — shared entity action bar
+   The action row, "More actions" overflow menu, and social-media icon links,
+   extracted so EVERY entity profile (agency, personnel, civil case, …) renders
+   them identically. Load alongside shared-v5.css. Pairs with the WAI-ARIA
+   menu-button script that ships inline on each page.
+   (agency-entity-v8.css still carries its own copies for now; new pages use
+   this shared file. Agency can migrate to it in a later pass.)
+   ========================================================================== */
+
+/* ---- action row ---- */
+.entity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1.1rem;
+}
+
+.entity-action {
+  align-items: center;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink);
+  display: inline-flex;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.7rem;
+  text-decoration: none;
+}
+
+.entity-action:hover {
+  background: var(--teal-wash);
+  border-color: var(--teal-ink);
+}
+
+.entity-action-primary {
+  background: var(--deep-red);
+  border-color: var(--deep-red);
+  color: var(--paper);
+}
+
+.entity-action-primary:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+/* ---- social links: platform logo via Bootstrap Icons, kept accessible ----
+   Icon-only links; accessible name from the anchor's aria-label, the <i> glyph
+   aria-hidden. Add a .social-link--<platform> modifier per network. */
+.social-link .bi {
+  font-size: 1.15rem;
+  vertical-align: -0.15em;
+}
+
+.social-link--youtube:hover,
+.social-link--youtube:focus-visible {
+  color: #f00;
+}
+
+/* ---- "More actions" overflow menu ---- */
+.entity-menu {
+  display: inline-flex;
+  position: relative;
+}
+
+/* the toggle reuses .entity-action styling; reset the native <button> bits */
+.entity-menu-toggle {
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  gap: 0.35rem;
+}
+
+.entity-menu-toggle .bi {
+  font-size: 0.8rem;
+  transition: transform 0.12s ease;
+}
+
+.entity-menu-toggle[aria-expanded="true"] .bi {
+  transform: rotate(180deg);
+}
+
+.entity-menu-list {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule-strong);
+  box-shadow: 0 6px 20px -12px rgb(0 0 0 / 0.35);
+  left: 0;
+  list-style: none;
+  margin: 0;
+  min-width: 15rem;
+  padding: 0.3rem 0;
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  z-index: 20;
+}
+
+.entity-menu-list[hidden] {
+  display: none;
+}
+
+.entity-menu-item {
+  color: var(--ink);
+  display: block;
+  font-size: var(--small);
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  text-decoration: none;
+}
+
+.entity-menu-item:hover,
+.entity-menu-item:focus-visible {
+  background: var(--teal-wash);
+  color: var(--teal-ink);
+  outline: none;
+}
