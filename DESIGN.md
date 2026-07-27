@@ -82,7 +82,7 @@ Components
 - Do not copy/paste page-local versions of heading or metric styles.
 - Generated HTML must not contain inline CSS. Do not use `style` attributes for one-off values, and do not allow Astro to inline component styles into HTML. CSS must ship through external stylesheets because the site generates hundreds of thousands of pages.
 - No nested cards.
-- No placeholder copy that explains missing data. Use neutral empty values such as `--` only where explicitly approved.
+- No hedging copy that announces missing data ("not yet collected", "not yet available", "not on this site yet"). Where a metric is unavailable, show a neutral empty value (`--`/`$--`) paired with a subtle `Help collect this →` recruiting link. This is the standard everywhere data is missing; keep it quiet — a subtle request for help, never a heading or section that overpowers the page.
 
 Verification
 

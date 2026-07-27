@@ -523,6 +523,50 @@ a.stat-cell {
   font-weight: 600;
 }
 
+/* ---- drill-down emphasis ----
+   On geography pages the ideal next action is drilling into child entities
+   (counties → places → agencies). That cell leads the strip (via order) and
+   carries a quiet teal wash + eyebrow so it reads as "start here" without
+   shouting. Teal = go here, consistent with the rest of the system. */
+.stat-strip--drill-first {
+  grid-template-columns: minmax(18rem, 1.4fr) repeat(4, minmax(0, 1fr));
+}
+
+.stat-strip--drill-first.stat-strip--three {
+  grid-template-columns: minmax(18rem, 1.4fr) repeat(3, minmax(0, 1fr));
+}
+
+.stat-cell--drill {
+  order: -1;
+  background: var(--teal-wash);
+  border-left: none;
+}
+
+/* the DOM-first data cell is no longer the visual first — restore its divider */
+.stat-strip--drill-first .stat-cell:first-child {
+  border-left: 1px solid var(--rule);
+  padding-left: clamp(1.1rem, 1rem + 1vw, 1.75rem);
+}
+
+.stat-drill-eyebrow {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: var(--caption);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--teal-ink);
+}
+
+.stat-cell--drill .ledger-label {
+  color: var(--teal-ink);
+}
+
+.stat-cell--drill .jump-browse a {
+  color: var(--teal-ink);
+  font-weight: 700;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
