@@ -104,6 +104,11 @@ const icon = PLATFORMS[platform];
     outline-offset: 2px;
   }
 
+  /* Intentional, documented exception to the --ipc-*-token-only rule: these
+     are platform brand colors (YouTube red, Facebook blue, etc.), not
+     design-system colors, so they are not represented as --ipc-* tokens.
+     Scope is deliberately narrow — hover/focus tint only, never used for
+     text or other UI chrome. */
   .social-link--youtube:hover,
   .social-link--youtube:focus-visible {
     color: #ff0000;

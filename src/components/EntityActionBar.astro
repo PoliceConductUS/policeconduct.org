@@ -78,12 +78,10 @@ const currentPath = Astro.url?.pathname || "/";
 </div>
 
 <style>
-  .entity-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem;
-    margin-top: 1.1rem;
-  }
+  /* .entity-actions layout is defined once, globally, in
+     src/styles/civic-ledger.css (imported by every page that renders this
+     component). Do not re-declare it here — that global rule is the single
+     authoritative definition. */
 
   .entity-action {
     align-items: center;
@@ -155,7 +153,8 @@ const currentPath = Astro.url?.pathname || "/";
   .entity-menu-list {
     background: var(--ipc-color-paper-raised);
     border: 1px solid var(--ipc-color-rule-strong);
-    box-shadow: 0 6px 20px -12px oklch(21% 0.03 258 / 0.45);
+    box-shadow: 0 6px 20px -12px
+      color-mix(in oklab, var(--ipc-color-ink) 45%, transparent);
     left: 0;
     list-style: none;
     margin: 0;
