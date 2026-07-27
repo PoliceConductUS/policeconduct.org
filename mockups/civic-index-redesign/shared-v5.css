@@ -40,7 +40,7 @@
   --role-neutral: var(--ink-faint);
 
   /* type scale, anchored to DESIGN.md rem tokens */
-  --h1: clamp(2.25rem, 1.9rem + 1.4vw, 3rem);
+  --h1: 3rem; /* DESIGN.md: fixed rem, not viewport-scaled (mobile override below) */
   --h2: 1.5rem;
   --h3: 1.1875rem;
   --h4: 1.0625rem;
@@ -126,9 +126,10 @@ h3 {
 
 .masthead .container {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1rem 1.25rem;
+  flex-wrap: wrap;
 }
 
 .masthead-mark {
@@ -186,6 +187,48 @@ h3 {
 .nav-action-share:hover {
   background: var(--ink);
   border-color: var(--ink);
+}
+
+/* Volunteer: a quiet ghost action — lifted above plain text, below the red
+   primary, so a core civic loop is not the least-visible thing in the bar. */
+.nav-action-volunteer {
+  color: var(--teal-ink) !important;
+  border-color: var(--rule-strong);
+}
+
+.nav-action-volunteer:hover {
+  background: var(--teal-wash);
+  border-color: var(--teal-ink);
+}
+
+/* Persistent site search — fast lookup for researchers, on every page. */
+.masthead-search {
+  flex: 1 1 20rem;
+  max-width: 30rem;
+  margin: 0;
+}
+
+.masthead-search-input {
+  width: 100%;
+  border: 1px solid var(--rule-strong);
+  background: var(--paper-raised)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2334496b' stroke-width='1.4'%3E%3Ccircle cx='7' cy='7' r='4.3'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E")
+    no-repeat left 0.7rem center;
+  background-size: 0.95rem;
+  font-family: var(--font-ui);
+  font-size: var(--small);
+  padding: 0.5rem 0.8rem 0.5rem 2.25rem;
+  color: var(--ink);
+}
+
+.masthead-search-input::placeholder {
+  color: var(--ink-faint);
+}
+
+.masthead-search-input:focus {
+  outline: none;
+  border-color: var(--teal-ink);
+  box-shadow: 0 0 0 1px var(--teal-ink);
 }
 
 /* ---- breadcrumbs ---- */
@@ -338,6 +381,12 @@ h3 {
 
 [data-role="neutral"]::before {
   background: transparent;
+}
+
+/* Mute the role accent while a metric is unavailable — color should mark real
+   data, not draw the eye to an empty cell. The role color returns with a value. */
+.is-pending[data-role]::before {
+  background: var(--rule);
 }
 
 /* Interactive tile modifier — hover wash, suppressed while pending. */
@@ -565,6 +614,16 @@ a.stat-cell {
 .stat-cell--drill .jump-browse a {
   color: var(--teal-ink);
   font-weight: 700;
+}
+
+/* Plain-language gloss under a metric label — keeps unfamiliar terms
+   ("outcomes by income") legible and tells volunteers what a cell will hold. */
+.topic-gloss {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: var(--caption);
+  font-weight: 400;
+  color: var(--ink-faint);
 }
 
 .visually-hidden {
@@ -1093,6 +1152,10 @@ a.stat-cell {
   .profile-head {
     grid-template-columns: 1fr;
     justify-items: start;
+  }
+
+  :root {
+    --h1: 2.25rem; /* DESIGN.md mobile H1 token */
   }
 }
 

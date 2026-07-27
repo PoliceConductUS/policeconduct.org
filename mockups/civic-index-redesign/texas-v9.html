@@ -18,12 +18,20 @@
     <header class="masthead">
       <div class="container">
         <a class="masthead-mark" href="#">Police<span>Conduct</span>.org</a>
+        <form class="masthead-search" role="search" action="#">
+          <label for="site-search" class="visually-hidden">Search records</label>
+          <input
+            id="site-search"
+            class="masthead-search-input"
+            type="search"
+            name="q"
+            placeholder="Search agencies, officers, or cases…"
+            autocomplete="off"
+          />
+        </form>
         <nav class="masthead-nav">
-          <a class="nav-action nav-action-find" href="#">Find an agency</a>
-          <a class="nav-action nav-action-share" href="#"
-            >Share an experience</a
-          >
-          <a href="#">Volunteer</a>
+          <a class="nav-action nav-action-share" href="#">Share an experience</a>
+          <a class="nav-action nav-action-volunteer" href="#">Volunteer</a>
         </nav>
       </div>
     </header>
@@ -351,6 +359,7 @@
               <a class="topic-link" href="#">
                 <span class="ledger-label">Budget</span>
                 <span class="ledger-value">--</span>
+                <span class="ledger-meta topic-gloss">Yearly department spending</span>
               </a>
               <span class="topic-foot"
                 ><a class="help-collect" href="#">Help collect this →</a></span
@@ -363,6 +372,7 @@
               <a class="topic-link" href="#">
                 <span class="ledger-label">Liability costs</span>
                 <span class="ledger-value">--</span>
+                <span class="ledger-meta topic-gloss">Payouts in police-conduct cases</span>
               </a>
               <span class="topic-foot"
                 ><a class="help-collect" href="#">Help collect this →</a></span
@@ -375,6 +385,7 @@
               <a class="topic-link" href="#">
                 <span class="ledger-label">Fatal force incidents</span>
                 <span class="ledger-value">--</span>
+                <span class="ledger-meta topic-gloss">Deaths involving police</span>
               </a>
               <span class="topic-foot"
                 ><a class="help-collect" href="#">Help collect this →</a></span
@@ -387,6 +398,7 @@
               <a class="topic-link" href="#">
                 <span class="ledger-label">Outcomes by income</span>
                 <span class="ledger-value">--</span>
+                <span class="ledger-meta topic-gloss">Case results by neighborhood income</span>
               </a>
               <span class="topic-foot"
                 ><a class="help-collect" href="#">Help collect this →</a></span
