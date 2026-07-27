@@ -21,7 +21,7 @@ also uses `agency-entity-v5.css`; all but personnel-profile use `app.js`):
 | State & County Index  | Counties            | counties-v5.html            |
 | State & County Index  | County Detail       | county-v6.html              |
 | State & County Index  | Place               | place-v6.html               |
-| Agency                | Agency Profile      | agency-entity-v6.html       |
+| Agency                | Agency Profile      | agency-entity-v7.html       |
 | Agency                | Agency Civil Cases  | agency-civil-cases-v5.html  |
 | Agency                | Agency Personnel    | agency-personnel-v5.html    |
 | Records               | Personnel Profile   | personnel-profile-v7.html   |
@@ -54,4 +54,5 @@ re-run the sync into project `6141647b-d0aa-4124-9ebc-628b0fd47be3`.
   swaps the CDN `<link>` for an inline `@font-face` (bootstrap-icons.woff2 as a data URI) +
   the used-glyph `::before` rules (see `BI_CODEPOINTS` / `biInlineStyle` in build.mjs). When
   a new `bi-*` icon is used in a synced page, add its codepoint to `BI_CODEPOINTS`. The
-  woff2/codepoint came from bootstrap-icons@1.11.3 (bi-youtube = `\f62b`).
+  woff2/codepoints came from bootstrap-icons@1.11.3 (bi-youtube = `\f62b`,
+  bi-chevron-down = `\f282`).
