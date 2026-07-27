@@ -1,0 +1,49 @@
+---
+// Shell only: a plain, working `role="search"` form that submits to
+// /find-records/. Task 4 wires Pagefind's live-results API onto this same
+// markup; until then, submitting the form (Enter key or no-JS) is the full,
+// functional search experience.
+---
+
+<form class="masthead-search" role="search" action="/find-records/" method="get">
+  <label for="site-search" class="visually-hidden">Search records</label>
+  <input
+    id="site-search"
+    class="masthead-search-input"
+    type="search"
+    name="q"
+    placeholder="Search agencies, officers, or cases…"
+    autocomplete="off"
+  />
+</form>
+
+<style>
+  .masthead-search {
+    flex: 1 1 20rem;
+    margin: 0;
+    max-width: 30rem;
+  }
+
+  .masthead-search-input {
+    background: var(--ipc-color-paper-raised)
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2334496b' stroke-width='1.4'%3E%3Ccircle cx='7' cy='7' r='4.3'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E")
+      no-repeat left 0.7rem center;
+    background-size: 0.95rem;
+    border: 1px solid var(--ipc-color-rule-strong);
+    color: var(--ipc-color-ink);
+    font-family: var(--ipc-font-ui);
+    font-size: var(--ipc-type-small);
+    padding: 0.5rem 0.8rem 0.5rem 2.25rem;
+    width: 100%;
+  }
+
+  .masthead-search-input::placeholder {
+    color: var(--ipc-color-ink-faint);
+  }
+
+  .masthead-search-input:focus {
+    border-color: var(--ipc-color-teal-ink);
+    box-shadow: 0 0 0 2px var(--ipc-color-teal-ink);
+    outline: none;
+  }
+</style>

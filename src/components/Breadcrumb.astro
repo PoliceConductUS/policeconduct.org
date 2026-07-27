@@ -1,0 +1,85 @@
+---
+// Shared civic-index-redesign breadcrumb trail. Renders exactly the items
+// given — no automatic "Home" injection, no structured data — the last item
+// is always treated as the current page (aria-current="page", no link),
+// matching mockups/civic-index-redesign/shared-v5.css (.crumbs) and every
+// texas-v9.html / agency-entity-v8.html breadcrumb instance.
+//
+// This is intentionally a separate, leaner component from the existing
+// src/components/Breadcrumbs.astro (plural), which auto-injects "Home" and
+// emits BreadcrumbList JSON-LD for legacy templates.
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+interface Props {
+  items: BreadcrumbItem[];
+}
+
+const { items } = Astro.props;
+const lastIndex = items.length - 1;
+---
+
+<nav aria-label="Breadcrumb">
+  <ol class="crumbs">
+    {
+      items.map((item, index) => {
+        const isCurrent = index === lastIndex;
+        return (
+          <li aria-current={isCurrent ? "page" : undefined}>
+            {!isCurrent && item.href ? (
+              <a href={item.href}>{item.label}</a>
+            ) : (
+              item.label
+            )}
+          </li>
+        );
+      })
+    }
+  </ol>
+</nav>
+
+<style>
+  .crumbs {
+    color: var(--ipc-color-ink-faint);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: var(--ipc-type-caption);
+    font-weight: 600;
+    gap: 0.4rem;
+    letter-spacing: 0.02em;
+    list-style: none;
+    margin: 1.35rem 0 0;
+    padding: 0;
+    text-transform: uppercase;
+  }
+
+  .crumbs li::after {
+    color: var(--ipc-color-rule-strong);
+    content: "/";
+    margin-left: 0.4rem;
+  }
+
+  .crumbs li:last-child::after {
+    content: "";
+  }
+
+  .crumbs a {
+    color: var(--ipc-color-ink-muted);
+    text-decoration: none;
+  }
+
+  .crumbs a:hover {
+    color: var(--ipc-color-ink);
+  }
+
+  .crumbs a:focus-visible {
+    outline: 2px solid var(--ipc-color-teal-ink);
+    outline-offset: 2px;
+  }
+
+  .crumbs [aria-current] {
+    color: var(--ipc-color-ink);
+  }
+</style>

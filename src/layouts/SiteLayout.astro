@@ -1,6 +1,7 @@
 ---
 import "#src/styles/theme.css";
 import GoogleAnalytics from "#src/components/GoogleAnalytics.astro";
+import MastheadSearch from "#src/components/MastheadSearch.astro";
 
 const {
   title,
@@ -52,26 +53,6 @@ const structuredDataEntries = structuredData
 const serializeStructuredData = (value: unknown) =>
   JSON.stringify(value).replace(/</g, "\\u003c");
 
-const navItems = [
-  {
-    label: "Find an Agency",
-    href: "/find-records/",
-    title: "Find an agency by place or name",
-  },
-  {
-    label: "News",
-    href: "/news/",
-    title: "News and updates from PoliceConduct.org",
-  },
-  {
-    label: "About",
-    href: "/about/",
-    title: "About PoliceConduct.org",
-  },
-];
-
-const isActivePath = (href: string) =>
-  resolvedPath === href || (href !== "/" && resolvedPath.startsWith(href));
 ---
 
 <!doctype html>
@@ -140,139 +121,23 @@ const isActivePath = (href: string) =>
     <title>{title}</title>
     <GoogleAnalytics />
   </head>
-  <body data-bs-spy="scroll" data-bs-target="#navScroll">
-    <nav id="navScroll" class="navbar navbar-expand-lg navbar-light sticky-top">
-      <div class="container">
-        <a class="navbar-brand pe-4 fs-4" href="/">
-          <span class="ms-1 fw-bolder">PoliceConduct.org</span>
-        </a>
-        <div class="primary-nav d-none d-lg-flex align-items-center">
-          {
-            navItems.map((item) => (
-              <a
-                class:list={[
-                  "nav-link",
-                  "primary-nav-link",
-                  { "is-active": isActivePath(item.href) },
-                ]}
-                href={item.href}
-                title={item.title}
-              >
-                {item.label}
-              </a>
-            ))
-          }
-        </div>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
 
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarSupportedContent"
-          aria-controls="navbarSupportedContent"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <div
-            class="primary-nav d-flex d-lg-none align-items-center flex-wrap"
-          >
-            {
-              navItems.map((item) => (
-                <a
-                  class:list={[
-                    "nav-link",
-                    "primary-nav-link",
-                    { "is-active": isActivePath(item.href) },
-                  ]}
-                  href={item.href}
-                  title={item.title}
-                >
-                  {item.label}
-                </a>
-              ))
-            }
-          </div>
-          <div
-            class="d-flex gap-2 align-items-stretch align-items-lg-center mt-3 mt-lg-0 flex-column flex-lg-row w-100 nav-cta justify-content-lg-end ms-lg-auto"
-          >
-            <a
-              class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
-              href="/donate/"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="lucide lucide-heart"
-              >
-                <path
-                  d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3.41.81-4.5 2.09A6 6 0 0 0 7.5 3 5.5 5.5 0 0 0 2 8.5c0 2.29 1.5 4.04 3 5.5l7 7Z"
-                ></path>
-              </svg>
-              <span>Donate</span>
-            </a>
-            <a
-              class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
-              href="/volunteer/"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="lucide lucide-users"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
-              <span>Volunteer</span>
-            </a>
-            <a
-              class="btn btn-dark rounded-0 d-flex align-items-center gap-2"
-              href="/report/new/"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="lucide lucide-file-text"
-              >
-                <path
-                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                ></path>
-                <path d="M14 2v6h6"></path>
-                <path d="M16 13H8"></path>
-                <path d="M16 17H8"></path>
-                <path d="M10 9H8"></path>
-              </svg>
-              <span>Share an Interaction</span>
-            </a>
-          </div>
-        </div>
+    <header class="masthead">
+      <div class="container">
+        <a class="masthead-mark" href="/">Police<span>Conduct</span>.org</a>
+        <MastheadSearch />
+        <nav class="masthead-nav" aria-label="Primary">
+          <a class="nav-action nav-action-share" href="/report/new/">
+            Share an experience
+          </a>
+          <a class="nav-action nav-action-volunteer" href="/volunteer/">
+            Volunteer
+          </a>
+        </nav>
       </div>
-    </nav>
+    </header>
 
     <slot />
 
@@ -733,6 +598,121 @@ const isActivePath = (href: string) =>
         </div>
       </div>
     </footer>
+
+    <style>
+      /* Port of mockups/civic-index-redesign/shared-v5.css
+         (.skip-link / .masthead*) onto the canonical --ipc-* tokens. */
+      .skip-link {
+        background: var(--ipc-color-ink);
+        color: var(--ipc-color-paper);
+        font-size: var(--ipc-type-small);
+        font-weight: 700;
+        left: 0.5rem;
+        padding: 0.5rem 0.9rem;
+        position: absolute;
+        text-decoration: none;
+        top: 0.5rem;
+        transform: translateY(-150%);
+        transition: transform 0.15s ease;
+        z-index: 100;
+      }
+
+      .skip-link:focus {
+        outline: 2px solid var(--ipc-color-teal-ink);
+        outline-offset: 2px;
+        transform: translateY(0);
+      }
+
+      .masthead {
+        border-bottom: 1px solid var(--ipc-color-rule);
+        padding-block: 0.85rem;
+      }
+
+      .masthead .container {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 1.25rem;
+        justify-content: space-between;
+        max-width: 76rem;
+      }
+
+      .masthead-mark {
+        color: var(--ipc-color-ink);
+        font-size: 0.95rem;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+        text-decoration: none;
+      }
+
+      .masthead-mark span {
+        color: var(--ipc-color-teal-ink);
+      }
+
+      .masthead-mark:focus-visible {
+        outline: 2px solid var(--ipc-color-teal-ink);
+        outline-offset: 2px;
+      }
+
+      .masthead-nav {
+        align-items: center;
+        display: flex;
+        gap: 0.6rem;
+        font-size: var(--ipc-type-small);
+        font-weight: 600;
+      }
+
+      .nav-action {
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        font-weight: 700;
+        padding: 0.45rem 0.9rem;
+        text-decoration: none;
+      }
+
+      .nav-action:focus-visible {
+        outline: 2px solid var(--ipc-color-teal-ink);
+        outline-offset: 2px;
+      }
+
+      .nav-action-share {
+        background: var(--ipc-color-deep-red);
+        border-color: var(--ipc-color-deep-red);
+        color: var(--ipc-color-paper) !important;
+      }
+
+      .nav-action-share:hover {
+        background: var(--ipc-color-ink);
+        border-color: var(--ipc-color-ink);
+      }
+
+      /* Volunteer: a quiet ghost action — lifted above plain text, below the
+         red primary, so a core civic loop is not the least-visible thing in
+         the bar. */
+      .nav-action-volunteer {
+        border-color: var(--ipc-color-rule-strong);
+        color: var(--ipc-color-teal-ink) !important;
+      }
+
+      .nav-action-volunteer:hover {
+        background: var(--ipc-color-teal-wash);
+        border-color: var(--ipc-color-teal-ink);
+      }
+
+      @media (max-width: 767.98px) {
+        .masthead .container {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 0.6rem;
+        }
+
+        .masthead-nav {
+          flex-wrap: wrap;
+          gap: 0.6rem 0.9rem;
+        }
+      }
+    </style>
 
     <script>
       import "#src/lib/client/site.js";
