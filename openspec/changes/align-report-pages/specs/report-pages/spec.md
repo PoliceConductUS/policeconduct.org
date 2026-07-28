@@ -32,8 +32,7 @@ verified storage path.
 #### Scenario: Contextual facts render when present
 
 - **WHEN** an approved report has stored values for incident time, interaction
-  type, setting, purpose, complaint filed, case number, bodycam requested, or
-  records requested
+  type, setting, complaint filed, case number, or bodycam requested
 - **THEN** each present value renders as a fact-list row
 - **AND** absent values render no row, placeholder, or fabricated content
 

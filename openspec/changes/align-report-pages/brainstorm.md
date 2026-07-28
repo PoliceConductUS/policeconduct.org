@@ -29,9 +29,10 @@ contract, the detail template, and the mockup):
 | how it felt | ✓ (spec-required prompt) | verify column | ✓ **labeled subjective section** (owner ruling) |
 | interaction type | ✓ | verify column | ✓ fact-list, when present |
 | setting | ✓ | verify column | ✓ fact-list, when present |
-| purpose | ✓ | verify column | ✓ fact-list, when present |
+| purpose | ✗ (no distinct form field) | n/a | **not collected — removed from display set (owner ruling)** |
 | complaint filed / case number | ✓ | verify columns | ✓ fact-list, when present |
-| bodycam requested / records requested | ✓ | verify columns | ✓ fact-list, when present |
+| bodycam requested | ✓ | verify column | ✓ fact-list, when present |
+| records requested | ✗ (no distinct form field) | n/a | **not collected — removed from display set (owner ruling)** |
 | charge outcome | ✗ (post-submission reality) | `charges`/outcome fields | ✓ fact-list — **editor-added post-approval** (provenance codified) |
 | desired outcome | ✓ (`reportPurpose`) | `desired_outcome` | ✓ when present |
 | reporter name/email/phone/contact pref/consent | ✓ | internal | **never displayed** (privacy) |

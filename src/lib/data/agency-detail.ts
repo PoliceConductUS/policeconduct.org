@@ -312,9 +312,11 @@ const loadAgencyRows = async (agencyId: string) =>
         [agencyId],
       )
     ).rows[0];
-    const officerIds = agencyOfficers.map(
-      (entry: { officer_id: string }) => entry.officer_id,
-    );
+    const officerIds = [
+      ...new Set(
+        agencyOfficers.map((entry: { officer_id: string }) => entry.officer_id),
+      ),
+    ];
     const officers = officerIds.length
       ? (
           await client.query(

@@ -222,17 +222,13 @@ const requiredTables = {
       "longitude",
       "created_at",
       "updated_at",
-      // Collection-to-display parity fields (align-report-pages). Nullable:
-      // historical reports predate these columns and submitters may leave
-      // them blank.
-      "submitter_relationship",
-      "interaction_type",
-      "setting",
-      "case_number",
-      "complaint_filed",
-      "bodycam_requested",
-      "feelings",
-      "incident_time",
+      // Collection-to-display parity fields (align-report-pages) are
+      // pending the PoliceConductUS/intake migration and intentionally
+      // NOT yet in this contract: submitter_relationship, interaction_type,
+      // setting, case_number, complaint_filed, bodycam_requested, feelings,
+      // incident_time. See openspec/changes/align-report-pages/tasks report
+      // for the full migration SQL. The report-detail loader (`select r.*`
+      // + nullable-string coercion) tolerates their absence today.
     ],
     notNull: ["id", "slug", "title"],
     uniqueColumnSets: [["slug"]],
