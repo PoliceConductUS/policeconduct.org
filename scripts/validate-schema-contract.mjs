@@ -222,6 +222,17 @@ const requiredTables = {
       "longitude",
       "created_at",
       "updated_at",
+      // Collection-to-display parity fields (align-report-pages). Nullable:
+      // historical reports predate these columns and submitters may leave
+      // them blank.
+      "submitter_relationship",
+      "interaction_type",
+      "setting",
+      "case_number",
+      "complaint_filed",
+      "bodycam_requested",
+      "feelings",
+      "incident_time",
     ],
     notNull: ["id", "slug", "title"],
     uniqueColumnSets: [["slug"]],

@@ -331,6 +331,20 @@ const loadAgencyRows = async (agencyId: string) =>
           )
         ).rows
       : [];
+    // Live report counts, not the officers_stats.review_count projection
+    // (which can be stale/unpopulated). Same join shape as personnel.ts.
+    const reportCounts = officerIds.length
+      ? (
+          await client.query(
+            `select ao.officer_id, count(distinct ro.review_id) as report_count
+             from public.review_officers ro
+             join public.agency_officers ao on ao.id = ro.agency_officer_id
+             where ao.officer_id = any($1)
+             group by ao.officer_id`,
+            [officerIds],
+          )
+        ).rows
+      : [];
     const agencyOfficerIds = agencyOfficers.map(
       (entry: { id: string }) => entry.id,
     );
@@ -478,6 +492,7 @@ const loadAgencyRows = async (agencyId: string) =>
       federalAgency,
       officers,
       officerStats,
+      reportCounts,
       reportIds,
       civilCases,
       civilCaseOfficers,
@@ -542,6 +557,7 @@ const buildAgencyDetail = async (agencyId: string) => {
 
   const officersById = mapBy(data.officers, "id");
   const officerStatsById = mapBy(data.officerStats, "id");
+  const reportCountsByOfficerId = mapBy(data.reportCounts, "officer_id");
   const civilCaseOfficersByCase = groupBy(
     data.civilCaseOfficers,
     "civil_case_id",
@@ -612,10 +628,11 @@ const buildAgencyDetail = async (agencyId: string) => {
       }) => {
         const officer = officersById[entry.officer_id];
         const stats = officerStatsById[entry.officer_id];
+        const reportCountRow = reportCountsByOfficerId[entry.officer_id];
         return {
           entry,
           officer,
-          reportCount: stats?.review_count ?? 0,
+          reportCount: reportCountRow ? Number(reportCountRow.report_count) : 0,
           rating: stats?.weighted_average ?? null,
         };
       },
