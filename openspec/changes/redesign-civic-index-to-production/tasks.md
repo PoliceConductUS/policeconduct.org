@@ -48,4 +48,4 @@
 - [ ] 6.2 Run `npm run build` and confirm `validate:no-inline-css` passes over the generated output, projections refresh cleanly, and the Pagefind index builds.
 - [ ] 6.3 Run `npm run audit` (`audit:seo` + `audit:a11y`) on generated pages; fix all reported violations, including contrast on de-emphasized text and focus indicators.
 - [ ] 6.4 Manual verification pass: keyboard-only walkthrough (skip link, search, details menu, drill jump), a mobile-width check of table scrolling and the 9-cell metric band, and a spot-check that every page type renders the uniform chrome.
-- [ ] 6.5 Run `openspec validate --all`; confirm this change's deltas apply cleanly against the `civic-index-pages` baseline (after `preview-civic-index-data-experience` archives).
+- [x] 6.5 Run `openspec validate --all`; confirm this change's deltas apply cleanly against the `civic-index-pages` baseline (after `preview-civic-index-data-experience` archives).
