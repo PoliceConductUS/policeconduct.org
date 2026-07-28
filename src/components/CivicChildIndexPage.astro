@@ -24,6 +24,8 @@ const childLabel =
     : model.level === "administrative_area"
       ? "place"
       : "agency";
+const canonicalPath =
+  page.currentPage > 1 ? `${pagePath}page/${page.currentPage}/` : pagePath;
 const pageTitle = `${heading} ${label.toLowerCase()}`;
 const description =
   model.level === "place"
@@ -43,7 +45,7 @@ for (const row of page.data) {
   title={`${heading} ${label}`}
   description={`${label} within ${heading}.`}
   pagePath={pagePath}
-  canonicalUrl={pagePath}
+  canonicalUrl={canonicalPath}
 >
   <main id="main" class="civic-index-page">
     <section class="civic-index-page-main">

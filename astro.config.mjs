@@ -58,6 +58,7 @@ const SITEMAP_EXCLUDED_PATHS = new Set([
   "/personnel/suggest-edit/",
   "/report/new/",
   "/status/",
+  "/verify/",
   "/volunteer/",
 ]);
 let sitemapLastmodMapPromise;
