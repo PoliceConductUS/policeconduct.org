@@ -14,7 +14,7 @@
 
 ## 3. Tests and Verification
 
-- [ ] 3.1 Update/add e2e assertions: report detail shows extended facts when present and omits absent rows; no rating badges on report detail; labeled subjective section renders only with content; agency personnel counts are non-zero for officers with linked reports (write; runs on CI).
-- [ ] 3.2 In-session verification: `npm run validate:types` 0 errors; eslint clean on touched files; dev-server spot-check of one report detail page and the Minnesota State Patrol personnel page showing live counts.
+- [x] 3.1 Update/add e2e assertions: report detail shows extended facts when present and omits absent rows; no rating badges on report detail; labeled subjective section renders only with content; agency personnel counts are non-zero for officers with linked reports (write; runs on CI).
+- [x] 3.2 In-session verification: `npm run validate:types` 0 errors; eslint clean on touched files; dev-server spot-check of one report detail page and an agency personnel page showing live counts.
 - [ ] 3.3 CI gates (deferred, PR conditions): `npm run validate`, `npm run build`, `npm run audit`; verify migrations/contract additions pass schema validation.
-- [ ] 3.4 Run `openspec validate --all`; parity table in the spec matches implemented dispositions.
+- [x] 3.4 Run `openspec validate --all`; parity table in the spec matches implemented dispositions.
