@@ -22,6 +22,7 @@
     "lint": "npm run lint:es && npm run lint:sql",
     "lint:es": "eslint .",
     "lint:sql": "mise exec -- uvx sqlfluff==4.1.0 lint --dialect postgres --processes 1 --disable-progress-bar .",
+    "ocr": "ocr",
     "openspec": "openspec",
     "openspec:status": "node scripts/openspec-status.mjs",
     "preview": "astro preview",
