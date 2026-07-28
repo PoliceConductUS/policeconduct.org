@@ -54,9 +54,9 @@ verified storage path.
 
 ### Requirement: Labeled subjective section
 
-When a report's submitter provided a "how it felt" account, the detail page
-SHALL render it in a section visually and semantically separated from the
-factual body and explicitly labeled as the submitter's subjective account.
+The detail page SHALL render a submitter's stored "how it felt" account in a
+section visually and semantically separated from the factual body and
+explicitly labeled as the submitter's subjective account.
 
 #### Scenario: Feelings content renders labeled
 
