@@ -7,10 +7,10 @@
 
 ## 2. Report Detail Template Port
 
-- [ ] 2.1 Port the report detail template to the `report-detail-v5.html` structure using shared components (Breadcrumb, fact-list, detail-layout, tokens only, no inline CSS/JS); keep the route and `data-pagefind-body` tagging.
-- [ ] 2.2 Remove per-officer rating sections/RatingBadges from report detail (personnel/agency surfaces untouched).
-- [ ] 2.3 Render the extended fact-list rows when-present per the parity spec, including "Submitted by" and editor-added "Charge outcome"; never render reporter identity/contact fields.
-- [ ] 2.4 Add the labeled subjective section for stored feelings content, and rewrite the aside copy to explain the facts/feelings separation (8th-grade, non-hedging, "experience" wording).
+- [x] 2.1 Port the report detail template to the `report-detail-v5.html` structure using shared components (Breadcrumb, fact-list, detail-layout, tokens only, no inline CSS/JS); keep the route and `data-pagefind-body` tagging.
+- [x] 2.2 Remove per-officer rating sections/RatingBadges from report detail (personnel/agency surfaces untouched).
+- [x] 2.3 Render the extended fact-list rows when-present per the parity spec, including "Submitted by" and editor-added "Charge outcome"; never render reporter identity/contact fields.
+- [x] 2.4 Add the labeled subjective section for stored feelings content, and rewrite the aside copy to explain the facts/feelings separation (8th-grade, non-hedging, "experience" wording).
 
 ## 3. Tests and Verification
 
