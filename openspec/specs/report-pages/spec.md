@@ -1,0 +1,79 @@
+# report-pages Specification
+
+## Purpose
+TBD - created by archiving change align-report-pages. Update Purpose after archive.
+## Requirements
+### Requirement: Report detail presentation
+
+Experience-report detail pages SHALL render the approved editorial structure:
+kicker, title, lede, fact-list, a factual "What happened" body, and an aside
+explaining how reports work — built from the shared component library and
+design tokens.
+
+#### Scenario: Report detail page is rendered
+
+- **WHEN** an approved experience report's detail page renders
+- **THEN** the page uses the shared Breadcrumb, fact-list, and detail-layout
+  structure styled with canonical tokens
+- **AND** the factual account renders as the "What happened" body from the
+  report's stored description
+
+#### Scenario: Ratings are absent from report detail
+
+- **WHEN** a report detail page renders for a report whose officers have
+  rating data
+- **THEN** the page does not render per-officer ratings or rating badges
+- **AND** rating data remains stored and no site surface currently renders
+  it (re-surfacing it elsewhere is a future product decision)
+
+### Requirement: Collection-to-display parity
+
+Every field collected by the report submission flow SHALL have exactly one
+codified disposition — displayed post-approval, internal-only, or
+editor-added — and the detail page MUST NOT display a field that lacks a
+verified storage path.
+
+#### Scenario: Contextual facts render when present
+
+- **WHEN** an approved report has stored values for incident time, interaction
+  type, setting, complaint filed, case number, or bodycam requested
+- **THEN** each present value renders as a fact-list row
+- **AND** absent values render no row, placeholder, or fabricated content
+
+#### Scenario: Submitted-by relationship renders
+
+- **WHEN** an approved report has a stored submitter relationship
+- **THEN** the fact-list shows a "Submitted by" row with the relationship
+  wording (for example "Person directly involved")
+- **AND** no reporter name, email, phone, or contact preference ever renders
+
+#### Scenario: Editor-added charge outcome
+
+- **WHEN** an approved report has stored submitter-provided charges or
+  allegations text
+- **THEN** the fact-list shows a "Charges" row with that text
+- **AND** the submission form does not collect a charge outcome (it is a
+  future editor-added field, distinct from submitter-provided charges, that
+  will render only once editorial data exists via the pending intake
+  migration)
+
+### Requirement: Labeled subjective section
+
+The detail page SHALL render a submitter's stored "how it felt" account in a
+section visually and semantically separated from the factual body and
+explicitly labeled as the submitter's subjective account.
+
+#### Scenario: Feelings content renders labeled
+
+- **WHEN** an approved report has stored feelings content
+- **THEN** it renders in its own titled section, distinct from "What
+  happened", with framing copy identifying it as the submitter's account of
+  how the experience felt
+- **AND** the page's aside copy explains the separation between factual
+  observations and the labeled subjective account without hedging language
+
+#### Scenario: No feelings content
+
+- **WHEN** a report has no stored feelings content
+- **THEN** the subjective section does not render at all
+
