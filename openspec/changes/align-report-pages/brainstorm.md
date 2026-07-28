@@ -33,7 +33,7 @@ contract, the detail template, and the mockup):
 | complaint filed / case number | ✓ | verify columns | ✓ fact-list, when present |
 | bodycam requested | ✓ | verify column | ✓ fact-list, when present |
 | records requested | ✗ (no distinct form field) | n/a | **not collected — removed from display set (owner ruling)** |
-| charge outcome | ✗ (post-submission reality) | `charges`/outcome fields | ✓ fact-list — **editor-added post-approval** (provenance codified) |
+| charges / charge outcome | charges: ✗ (submitter-provided, pre-existing column); outcome: ✗ (post-submission reality) | charges: `reviews.charges`; outcome: no column yet | charges: submitter-provided, displayed as "Charges"; charge outcome: future editor-added (pending intake migration) |
 | desired outcome | ✓ (`reportPurpose`) | `desired_outcome` | ✓ when present |
 | reporter name/email/phone/contact pref/consent | ✓ | internal | **never displayed** (privacy) |
 | per-officer ratings | ✗ (spec forbids initial scoring) | `review_officers.rating_overall` | **removed from report detail** (owner ruling; stays on personnel/agency surfaces) |
@@ -78,12 +78,16 @@ is about fields, not the form's visual design.
 
 ## Key Decisions
 
-1. Ratings removed from report detail; personnel/agency surfaces unchanged.
+1. Ratings removed from report detail; rating data remains stored but no
+   site surface currently renders it (re-surfacing it elsewhere is a future
+   product decision).
 2. Feelings displayed post-approval in a clearly-labeled subjective section;
    the "Facts, not feelings" aside copy is rewritten to explain the
    facts/feelings separation instead of denying feelings display.
 3. Fact-list extended to every collected contextual field, rendered only when
-   present; charge outcome codified as editor-added post-approval data.
+   present; submitter-provided charges render as a "Charges" fact, while
+   charge outcome is codified as a future editor-added field pending the
+   intake migration.
 4. Reporter identity/contact/consent are internal-only, never rendered.
 5. Every displayed field must have a verified storage path; genuinely missing
    columns get migrations + schema-contract entries (repo data rules: explicit

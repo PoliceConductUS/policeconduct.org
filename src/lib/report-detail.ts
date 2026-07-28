@@ -45,8 +45,10 @@ type ReportDetailQuery = {
 
 // Parity fields collected by /report/new that the mockup displays
 // post-approval, mapped from their storage columns and rendered only when
-// present (see openspec/changes/align-report-pages/brainstorm.md). Charge
-// outcome is editor-added post-approval data, not submitter-collected.
+// present (see openspec/changes/align-report-pages/brainstorm.md). `charges`
+// holds submitter-entered charges/allegations text (`reviews.charges`); true
+// charge OUTCOME is editor-added data pending the intake migration and has
+// no storage column yet (see scripts/validate-schema-contract.mjs).
 export type ReportDetailFacts = {
   submitterRelationship: string | null;
   interactionType: string | null;
@@ -56,7 +58,7 @@ export type ReportDetailFacts = {
   bodycamRequested: string | null;
   incidentTime: string | null;
   feelings: string | null;
-  chargeOutcome: string | null;
+  charges: string | null;
 };
 
 const nullableText = (value: unknown): string | null =>
@@ -73,7 +75,7 @@ const buildReportFacts = (
   bodycamRequested: nullableText(report.bodycam_requested),
   incidentTime: nullableText(report.incident_time),
   feelings: nullableText(report.feelings),
-  chargeOutcome: nullableText(report.charges),
+  charges: nullableText(report.charges),
 });
 
 export type ReportDetailModel = {

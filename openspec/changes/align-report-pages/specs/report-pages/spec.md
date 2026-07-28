@@ -20,7 +20,8 @@ design tokens.
 - **WHEN** a report detail page renders for a report whose officers have
   rating data
 - **THEN** the page does not render per-officer ratings or rating badges
-- **AND** rating surfaces remain available on personnel and agency pages
+- **AND** rating data remains stored and no site surface currently renders
+  it (re-surfacing it elsewhere is a future product decision)
 
 ### Requirement: Collection-to-display parity
 
@@ -45,11 +46,13 @@ verified storage path.
 
 #### Scenario: Editor-added charge outcome
 
-- **WHEN** moderation or editorial review has recorded a charge outcome for a
-  report
-- **THEN** the fact-list shows the charge outcome
-- **AND** the submission form does not collect charge outcomes (they are
-  post-approval, editor-added data)
+- **WHEN** an approved report has stored submitter-provided charges or
+  allegations text
+- **THEN** the fact-list shows a "Charges" row with that text
+- **AND** the submission form does not collect a charge outcome (it is a
+  future editor-added field, distinct from submitter-provided charges, that
+  will render only once editorial data exists via the pending intake
+  migration)
 
 ### Requirement: Labeled subjective section
 

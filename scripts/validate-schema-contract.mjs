@@ -226,9 +226,13 @@ const requiredTables = {
       // pending the PoliceConductUS/intake migration and intentionally
       // NOT yet in this contract: submitter_relationship, interaction_type,
       // setting, case_number, complaint_filed, bodycam_requested, feelings,
-      // incident_time. See openspec/changes/align-report-pages/tasks report
-      // for the full migration SQL. The report-detail loader (`select r.*`
-      // + nullable-string coercion) tolerates their absence today.
+      // incident_time. Also pending: charge_outcome — a future editor-added
+      // column, distinct from the pre-existing submitter-entered `charges`
+      // column (already live in the database; not required by this contract
+      // either, but tolerated the same way). See
+      // openspec/changes/align-report-pages/tasks report for the full
+      // migration SQL. The report-detail loader (`select r.*` + nullable-
+      // string coercion) tolerates their absence today.
     ],
     notNull: ["id", "slug", "title"],
     uniqueColumnSets: [["slug"]],
