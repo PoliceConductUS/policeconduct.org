@@ -35,8 +35,10 @@ terminology, no full builds in-session, repo data rules.
    separates subjective content from the factual body; aside copy rewritten to
    explain the separation. Rationale: owner ruling superseding the mockup's
    facts-only aside.
-3. **Charge outcome = editor-added post-approval** — provenance stated in the
-   spec; rendered only when moderation/editorial data exists.
+3. **Charges are submitter-provided; charge outcome is future editor-added** —
+   charges render as a "Charges" fact when present; a true charge-outcome
+   column is pending the intake migration and renders only once editorial
+   data exists.
 4. **Ratings removed from report detail only** — `review_officers` data and
    personnel/agency surfaces untouched.
 5. **Counts via live join** — reuse `personnel.ts`'s
