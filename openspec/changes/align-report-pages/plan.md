@@ -38,7 +38,7 @@
 - Modify: `src/pages/[category]/[administrativeArea]/[place]/reports/[year]/[month]/[day]/[slug]/index.astro` (+ its stylesheet home, `civic-ledger.css` or equivalent)
 
 - [ ] **Step 1: Structure port** — kicker/title/lede, fact-list, detail-layout body ("What happened") + aside, shared Breadcrumb, tokens only; keep `data-pagefind-body` and the terminology rules.
-- [ ] **Step 2: Rulings** — remove RatingBadge/rating sections; extended when-present fact rows incl. "Submitted by" + editor-added "Charge outcome"; labeled subjective section (own `h2`, framing copy) rendered only with content; aside copy rewritten (8th-grade, explains facts/feelings separation).
+- [ ] **Step 2: Rulings** — remove RatingBadge/rating sections; extended when-present fact rows incl. "Submitted by" and submitter-provided "Charges" (charge outcome pending intake migration); labeled subjective section (own `h2`, framing copy) rendered only with content; aside copy rewritten (8th-grade, explains facts/feelings separation).
 - [ ] **Step 3: Verify + commit** — types/eslint clean; dev-server render of a report page: structure present, no ratings, no reporter identity, absent fields produce no rows. Commit `feat(report-detail): …`.
 
 ## Task 3: Tests + closeout (tasks.md §3)
