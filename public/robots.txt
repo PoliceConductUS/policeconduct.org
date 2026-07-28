@@ -8,7 +8,7 @@ Allow: /
 # prefill form permutations; 1 "blocked by 4xx" = the form API endpoint).
 Disallow: /api/
 Disallow: /about/contact
-Disallow: /volunteer/
+Disallow: /volunteer/?
 Disallow: /report/new/
 Disallow: /personnel/new/
 Disallow: /personnel/suggest-edit/
