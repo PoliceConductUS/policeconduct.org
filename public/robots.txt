@@ -7,6 +7,7 @@ Allow: /
 # (Search Console 2026-07-28: ~32k "excluded by noindex" URLs, almost all
 # prefill form permutations; 1 "blocked by 4xx" = the form API endpoint).
 Disallow: /api/
+Disallow: /issue/
 Disallow: /about/contact
 Disallow: /volunteer/?
 Disallow: /report/new/

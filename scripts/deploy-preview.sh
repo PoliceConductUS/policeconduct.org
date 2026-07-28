@@ -19,6 +19,11 @@ SITE_URL="https://pr-${PR_NUMBER}.preview.policeconduct.org"
 export SITE_URL
 npm run build
 
+# Previews must never be crawlable: Google has indexed pr-N.preview URLs and
+# reported them as duplicate canonicals against production (Search Console
+# 2026-07-28). Deny all crawling on the preview host.
+printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+
 aws s3 sync dist/ "s3://${S3_BUCKET_PREVIEW}/pr-${PR_NUMBER}/" --delete
 aws cloudfront create-invalidation --distribution-id "${CLOUDFRONT_DIST_PREVIEW}" --paths "/pr-${PR_NUMBER}/*"
 

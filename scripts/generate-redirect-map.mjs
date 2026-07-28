@@ -242,6 +242,24 @@ const redirects = await withDb(async (client) => {
       source: "root collection route retired",
     },
     {
+      from: normalizePath("/privacy-policy/"),
+      to: normalizePath("/legal-notice/privacy/"),
+      status: 301,
+      source: "legacy static route (Search Console 404 export)",
+    },
+    {
+      from: normalizePath("/partner/prosecutor/"),
+      to: normalizePath("/partner/"),
+      status: 301,
+      source: "legacy static route (Search Console 404 export)",
+    },
+    {
+      from: normalizePath("/partner/peace-officer-standards-and-training/"),
+      to: normalizePath("/partner/"),
+      status: 301,
+      source: "legacy static route (Search Console 404 export)",
+    },
+    {
       from: normalizePath("/law-enforcement-agency/"),
       to: normalizePath("/find-records/"),
       status: 301,
