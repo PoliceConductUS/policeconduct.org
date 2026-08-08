@@ -561,7 +561,7 @@ export const buildStateCivicIndex = async (
       { key: "civilCases", label: metricLabels.civilCases, numeric: true },
     ],
     coverage,
-    description: `Public records for law enforcement agencies, personnel, reports, and civil litigation across ${state.stateLabel}'s ${formatMetricValue(rows.length)} ${areaPlural.toLowerCase()}.`,
+    description: `Public records of police conduct in ${state.stateLabel} — ${formatMetricValue(rows.length)} ${areaPlural.toLowerCase()}, with agencies, personnel, experience reports, and civil cases. All Conduct, not just misconduct.`,
     drilldownLabel,
     indexLabel: `Counties within ${state.stateLabel}`,
     jumpCell: buildJumpCell({
@@ -571,7 +571,7 @@ export const buildStateCivicIndex = async (
       singular: "county",
       plural: areaPlural,
     }),
-    jurisdictionLabel: "State civic index",
+    jurisdictionLabel: "Police conduct",
     level: "state",
     map: {
       bounds: state.mapBounds,
@@ -590,7 +590,7 @@ export const buildStateCivicIndex = async (
       scope: "state",
       entitySlug: stateSlug,
     }),
-    title: `${state.stateLabel} Civic Index | PoliceConduct.org`,
+    title: `${state.stateLabel} Police Records | PoliceConduct.org`,
   };
 };
 
@@ -617,7 +617,7 @@ export const buildAdministrativeAreaCivicIndex = async (
       { key: "civilCases", label: metricLabels.civilCases, numeric: true },
     ],
     coverage,
-    description: `Public records for law enforcement agencies, personnel, reports, and civil litigation across ${area.administrativeArea}'s ${formatMetricValue(rows.length)} places.`,
+    description: `Public records of police conduct across ${area.administrativeArea}, ${area.stateLabel} — ${formatMetricValue(rows.length)} places, with agencies, personnel, experience reports, and civil cases.`,
     drilldownLabel,
     indexLabel: `Places within ${area.administrativeArea}`,
     jumpCell: buildJumpCell({
@@ -627,7 +627,7 @@ export const buildAdministrativeAreaCivicIndex = async (
       singular: "place",
       plural: "Places",
     }),
-    jurisdictionLabel: `${area.administrativeAreaKind || "Administrative area"} civic index`,
+    jurisdictionLabel: "Police conduct",
     level: "administrative_area",
     map: {
       bounds: area.mapBounds,
@@ -650,7 +650,7 @@ export const buildAdministrativeAreaCivicIndex = async (
       scope: "administrative_area",
       entitySlug: areaSlug,
     }),
-    title: `${area.administrativeArea}, ${area.stateLabel} Civic Index | PoliceConduct.org`,
+    title: `${area.administrativeArea}, ${area.stateLabel} Police Records | PoliceConduct.org`,
   };
 };
 
@@ -663,6 +663,7 @@ export const buildPlaceCivicIndex = async (
   const rows = buildAgencyRows(agencies);
   const drilldownLabel = `${place.displayName} records`;
   const placeSlug = lastPathSegment(place.path);
+  const stateCode = getStateSlug(place).toUpperCase();
   return {
     breadcrumbs: [
       { label: "Home", href: "/" },
@@ -678,7 +679,7 @@ export const buildPlaceCivicIndex = async (
       { key: "civilCases", label: metricLabels.civilCases, numeric: true },
     ],
     coverage,
-    description: `Public records for the ${formatMetricValue(rows.length)} law enforcement ${rows.length === 1 ? "agency" : "agencies"} serving ${place.displayName}, and their personnel, reports, and civil litigation.`,
+    description: `Public records of police conduct in ${place.displayName}, ${place.administrativeArea}, ${place.stateLabel} — ${formatMetricValue(rows.length)} law enforcement ${rows.length === 1 ? "agency" : "agencies"} and their personnel, experience reports, and civil cases.`,
     drilldownLabel,
     indexLabel: `Agencies within ${place.displayName}`,
     jumpCell: buildJumpCell({
@@ -688,7 +689,7 @@ export const buildPlaceCivicIndex = async (
       singular: "agency",
       plural: "Agencies",
     }),
-    jurisdictionLabel: "Place civic index",
+    jurisdictionLabel: "Police conduct",
     level: "place",
     map: {
       bounds: place.mapBounds,
@@ -707,6 +708,6 @@ export const buildPlaceCivicIndex = async (
       scope: "place",
       entitySlug: placeSlug,
     }),
-    title: `${place.displayName}, ${place.administrativeArea} Civic Index | PoliceConduct.org`,
+    title: `${place.displayName}, ${place.administrativeArea}, ${stateCode} Police Records | PoliceConduct.org`,
   };
 };

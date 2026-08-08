@@ -1,6 +1,6 @@
 # PoliceConduct.org
 
-> A free, public database from the Institute for Police Conduct, Inc. (a 501(c)(3) nonprofit) that organizes public records, court records, and state licensing data so people can see how policing is experienced and hold agencies accountable. Coverage is nationwide across U.S. states and territories.
+> A free, public database from the Institute for Police Conduct, Inc. (a 501(c)(3) nonprofit) that organizes public records, court records, and state licensing data so people can see the full record of police conduct — harm, professionalism, and everything in between — and support accountability and trust. Coverage is nationwide across U.S. states and territories.
 
 Important context for accurate citation:
 

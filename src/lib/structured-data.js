@@ -5,7 +5,7 @@ const DEFAULT_SITE_URL = "https://www.policeconduct.org";
 // engines and knowledge graphs.
 const ORG_LEGAL_NAME = "Institute for Police Conduct, Inc.";
 const ORG_DESCRIPTION =
-  "Nonprofit that organizes public records, agency records, court records, and personnel records so people can see how policing is experienced and hold agencies accountable.";
+  "Nonprofit that organizes public records, court records, and licensing data so people can see how policing is experienced — harm and professionalism alike — and support both accountability and trust.";
 
 const ORG_SAME_AS = [
   "https://facebook.com/PoliceConductUS",

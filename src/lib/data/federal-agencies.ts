@@ -598,7 +598,7 @@ export const buildFederalCivicIndex = (
       placeholder: "Choose agency…",
       selectLabel: "Agency",
     },
-    jurisdictionLabel: "Federal civic index",
+    jurisdictionLabel: "Police conduct",
     level: "place",
     map: {
       bounds: null,
@@ -638,7 +638,7 @@ export const buildFederalCivicIndex = (
         actionLabel: totals.civilCases > 0 ? "View civil cases →" : undefined,
       },
     ],
-    title: "Federal Civic Index | PoliceConduct.org",
+    title: "Federal Police Records | PoliceConduct.org",
   };
 };
 
@@ -727,7 +727,7 @@ export const buildFederalAgencyIndexModel = (
     rowsLabel: "Federal agencies",
     searchLabel: "Jump to",
     searchPlaceholder: "Search federal agencies",
-    title: "Federal Civic Index | PoliceConduct.org",
+    title: "Federal Police Records | PoliceConduct.org",
   };
 };
 
@@ -812,7 +812,7 @@ export const buildFederalAgencyDetailIndexModel = (
   isFieldOfficesTable: true,
   searchLabel: "Jump to",
   searchPlaceholder: "Search field offices",
-  title: `${federalAgency.name} Civic Index | PoliceConduct.org`,
+  title: `${federalAgency.name} Police Records | PoliceConduct.org`,
 });
 
 export const buildFederalAgencyTopicIndexModel = (
