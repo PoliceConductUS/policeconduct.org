@@ -370,7 +370,7 @@ const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
     display: grid;
   }
 
-  .finder-result {
+  :global(.finder-result) {
     align-items: baseline;
     border-bottom: 1px solid var(--bs-border-color);
     color: var(--bs-dark);
@@ -382,19 +382,19 @@ const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
     text-underline-offset: 0.18em;
   }
 
-  .finder-result small {
+  :global(.finder-result small) {
     color: var(--bs-secondary-color);
     text-align: right;
   }
 
   @media (max-width: 767.98px) {
-    .finder-result {
+    :global(.finder-result) {
       align-items: flex-start;
       flex-direction: column;
       gap: 0.15rem;
     }
 
-    .finder-result small {
+    :global(.finder-result small) {
       text-align: left;
     }
   }
