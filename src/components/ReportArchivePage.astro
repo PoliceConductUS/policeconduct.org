@@ -9,6 +9,7 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportSummary } from "#src/lib/data/types.js";
 import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
+import { buildCollectionPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 type Props = {
   breadcrumbs: { label: string; href: string }[];
@@ -43,6 +44,17 @@ const reportAgencyRows = [
   { label: "Civil-case reports", value: "--", width: 26 },
   { label: "Other reports", value: "--", width: 44 },
 ];
+const siteUrl = getSiteUrl(Astro.site);
+const structuredData = buildCollectionPage({
+  siteUrl,
+  pageUrl: new URL(pagePath, siteUrl).toString(),
+  name: `${title} | PoliceConduct.org`,
+  description: `Published reports for ${title}.`,
+  items: reports.map((report) => ({
+    href: report.canonicalPath,
+    name: report.title,
+  })),
+});
 ---
 
 <SiteLayout
@@ -50,6 +62,7 @@ const reportAgencyRows = [
   description={`Published reports for ${title}.`}
   pagePath={pagePath}
   canonicalUrl={pagePath}
+  structuredData={structuredData}
 >
   <main id="main" class="report-archive-page">
     <section class="report-archive-main">

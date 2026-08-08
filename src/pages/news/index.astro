@@ -9,17 +9,31 @@ import {
   PAGE_SIZE,
   newsBadgeClassName,
 } from "#src/lib/news.js";
+import { buildCollectionPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const articles = loadNewsArticles();
 const pageArticles = articles.slice(0, PAGE_SIZE);
 const totalPages = Math.max(1, Math.ceil(articles.length / PAGE_SIZE));
 const nextUrl = totalPages > 1 ? "/news/page/2/" : null;
+
+const siteUrl = getSiteUrl(Astro.site);
+const structuredData = buildCollectionPage({
+  siteUrl,
+  pageUrl: new URL("/news/", siteUrl).toString(),
+  name: "News",
+  description: "News and updates from PoliceConduct.org.",
+  items: pageArticles.map((article) => ({
+    href: article.href,
+    name: article.title,
+  })),
+});
 ---
 
 <SiteLayout
   title="News | PoliceConduct.org"
   description="News and updates from PoliceConduct.org."
   pagePath="/news/"
+  structuredData={structuredData}
 >
   <PrefillBootstrap />
   <main id="main" class="">

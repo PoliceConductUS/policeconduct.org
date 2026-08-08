@@ -17,10 +17,11 @@ import {
 } from "#src/lib/data/agency-detail.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import {
+  buildContentPageNode,
+  buildGovernmentOrganizationNode,
   buildPublisherOrganization,
   buildWebSite,
   getSiteUrl,
-  organizationId,
 } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
@@ -279,36 +280,33 @@ const sortRecent = (items: RecentItem[]) =>
 const recentReports = sortRecent(recentReportItems);
 const recentCases = sortRecent(recentCaseItems);
 
-const organization = {
-  "@type": "GovernmentOrganization",
-  "@id": `${pageUrl}#organization`,
-  name: agencyName,
+const organization = buildGovernmentOrganizationNode({
+  siteUrl,
   url: pageUrl,
-  mainEntityOfPage: { "@id": profilePageId },
-  ...(address ? { address } : {}),
-  ...(data.agency.contact_email ? { email: data.agency.contact_email } : {}),
-  ...(contactPoints.length ? { contactPoint: contactPoints } : {}),
-  ...(sameAs.length ? { sameAs } : {}),
+  name: agencyName,
+  mainEntityOfPageId: profilePageId,
+  address: address || undefined,
+  email: data.agency.contact_email || undefined,
+  contactPoint: contactPoints,
+  sameAs,
   areaServed: { "@type": "AdministrativeArea", name: agencyState },
-};
-const websiteId = new URL("/", siteUrl).toString();
+});
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
     buildWebSite(siteUrl),
-    {
-      "@type": "ProfilePage",
-      "@id": profilePageId,
-      url: pageUrl,
+    buildContentPageNode({
+      siteUrl,
+      type: "ProfilePage",
+      id: profilePageId,
+      pageUrl,
       name: `${agencyName} | PoliceConduct.org`,
       description: pageDescription,
-      isPartOf: { "@id": websiteId },
-      publisher: { "@id": organizationId(siteUrl) },
-      mainEntity: { "@id": organization["@id"] },
-      ...(data.agency.updated_at
-        ? { dateModified: String(data.agency.updated_at) }
-        : {}),
-    },
+      mainEntityId: organization["@id"],
+      dateModified: data.agency.updated_at
+        ? String(data.agency.updated_at)
+        : undefined,
+    }),
     buildPublisherOrganization(siteUrl),
     organization,
   ],

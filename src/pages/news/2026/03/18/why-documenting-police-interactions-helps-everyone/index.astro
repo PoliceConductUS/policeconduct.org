@@ -1,6 +1,7 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import { buildNewsArticle, getSiteUrl } from "#src/lib/structured-data.js";
 
 export const newsMeta = {
   badge: "New",
@@ -10,12 +11,22 @@ export const newsMeta = {
   href: "/news/2026/03/18/why-documenting-police-interactions-helps-everyone/",
   title: "Why Documenting Police Experiences Helps Everyone",
 };
+
+const siteUrl = getSiteUrl(Astro.site);
+const structuredData = buildNewsArticle({
+  siteUrl,
+  pageUrl: new URL(newsMeta.href, siteUrl).toString(),
+  headline: newsMeta.title,
+  description: newsMeta.description,
+  datePublished: newsMeta.date,
+});
 ---
 
 <SiteLayout
   title="Why Documenting Police Experiences Helps Everyone"
   description="Documenting police experiences—positive and negative—helps create a more complete public record, supports accountability, and gives communities a clearer picture of how policing is experienced in real life."
   pagePath="/news/2026/03/18/why-documenting-police-interactions-helps-everyone/"
+  structuredData={structuredData}
 >
   <main id="main" class="">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">

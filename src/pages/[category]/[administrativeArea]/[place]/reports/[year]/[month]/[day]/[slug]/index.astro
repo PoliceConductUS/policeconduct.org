@@ -12,6 +12,7 @@ import { parseLocationPathParts } from "#src/lib/data/report-paths.js";
 import { formatLongDate } from "#src/lib/format.js";
 import { loadReportDetail } from "#src/lib/report-detail.js";
 import {
+  buildContentPageNode,
   buildPublisherOrganization,
   buildWebSite,
   getSiteUrl,
@@ -109,7 +110,21 @@ const reportDescriptionSource =
   typeof data.report.description === "string" ? data.report.description : "";
 const reportDescription = reportDescriptionSource
   ? stripHtml(reportDescriptionSource)
-  : "";
+  : `Public record of a reported police interaction: ${reportTitle}. Includes linked agencies and personnel, sources, and the current status of the report.`;
+// Report narratives can run to thousands of characters; the full text stays on
+// the Report entity, but the page <meta description> and WebPage node use a
+// search-length summary (~160 chars, trimmed to a word boundary).
+const truncateForMeta = (text: string, max = 160) => {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length <= max) {
+    return normalized;
+  }
+  const slice = normalized.slice(0, max - 1);
+  const lastSpace = slice.lastIndexOf(" ");
+  const trimmed = lastSpace > 40 ? slice.slice(0, lastSpace) : slice;
+  return `${trimmed.replace(/[.,;:!?\s-]+$/, "")}…`;
+};
+const metaDescription = truncateForMeta(reportDescription);
 const reportAddress =
   typeof data.report.address === "string" ? data.report.address : "";
 const createdAtIso = normalizeIsoDate(
@@ -206,21 +221,18 @@ const reportEntity = {
       }
     : {}),
 };
-const websiteId = new URL("/", siteUrl).toString();
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
     buildWebSite(siteUrl),
-    {
-      "@type": "WebPage",
-      "@id": webpageId,
-      url: pageUrl,
+    buildContentPageNode({
+      siteUrl,
+      id: webpageId,
+      pageUrl,
       name: `${reportTitle} | PoliceConduct.org`,
-      description: reportDescription,
-      isPartOf: { "@id": websiteId },
-      publisher: { "@id": organizationId(siteUrl) },
-      mainEntity: { "@id": reportEntity["@id"] },
-    },
+      description: metaDescription,
+      mainEntityId: reportEntity["@id"],
+    }),
     buildPublisherOrganization(siteUrl),
     ...agencyEntities,
     ...officerEntities,
@@ -231,7 +243,7 @@ const structuredData = {
 
 <SiteLayout
   title={`${reportTitle} | PoliceConduct.org`}
-  description={reportDescription}
+  description={metaDescription}
   pagePath={pagePath}
   canonicalUrl={pagePath}
   structuredData={structuredData}

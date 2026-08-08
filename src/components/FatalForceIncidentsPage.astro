@@ -8,6 +8,7 @@ import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { metricVisuals } from "#src/lib/metric-vocabulary.js";
 import type { MetricCardItem } from "#src/components/metric-card-types.js";
+import { buildCollectionPage, getSiteUrl } from "#src/lib/structured-data.js";
 import "#src/styles/civic-ledger.css";
 
 const { breadcrumbs, description, pagePath, title } = Astro.props as {
@@ -21,6 +22,14 @@ const breadcrumbItems = breadcrumbs.map(({ href, label }) => ({
   label,
   href,
 }));
+
+const siteUrl = getSiteUrl(Astro.site);
+const structuredData = buildCollectionPage({
+  siteUrl,
+  pageUrl: new URL(pagePath, siteUrl).toString(),
+  name: `${title} | PoliceConduct.org`,
+  description,
+});
 
 const metricCards: MetricCardItem[] = [
   {
@@ -64,10 +73,11 @@ const sampleRows = [
 ---
 
 <SiteLayout
-  title={title}
+  title={`${title} | PoliceConduct.org`}
   description={description}
   pagePath={pagePath}
   canonicalUrl={pagePath}
+  structuredData={structuredData}
 >
   <main id="main" class="fatal-force-page">
     <section class="fatal-force-overview">

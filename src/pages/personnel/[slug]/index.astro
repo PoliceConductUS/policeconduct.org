@@ -17,10 +17,12 @@ import { getPersonnelImageById } from "#src/lib/entity-images.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import {
+  buildContentPageNode,
+  buildGovernmentOrganizationNode,
+  buildPersonNode,
   buildPublisherOrganization,
   buildWebSite,
   getSiteUrl,
-  organizationId,
 } from "#src/lib/structured-data.js";
 import type { MetricCardItem } from "#src/components/metric-card-types.js";
 
@@ -251,7 +253,7 @@ const deceasedPublicMessage =
 const assignmentStatusLabel = hasCurrentAssignment
   ? "Current agency"
   : "Last known agency";
-const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${data.officer.first_name} ${data.officer.last_name} | ${hasCurrentAssignment ? currentAgency!.name : `Last known: ${currentAgency!.name}`}`;
+const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${data.officer.first_name} ${data.officer.last_name} | ${hasCurrentAssignment ? currentAgency!.name : `Last known: ${currentAgency!.name}`} | PoliceConduct.org`;
 const pageDescription = isDeceased
   ? `${officerName} personnel profile with agency assignments, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
   : `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}, agency assignments, public reports, coverage, and civil litigation records.`;
@@ -532,40 +534,37 @@ const agencyUrl = currentAgency
   : null;
 const organization =
   currentAgency && agencyUrl
-    ? {
-        "@type": "GovernmentOrganization",
-        "@id": `${agencyUrl}#organization`,
-        name: currentAgency.name,
+    ? buildGovernmentOrganizationNode({
+        siteUrl,
         url: agencyUrl,
-      }
+        name: currentAgency.name,
+      })
     : null;
-const person = {
-  "@type": "Person",
-  "@id": `${pageUrl}#person`,
-  name: officerName,
+const person = buildPersonNode({
+  siteUrl,
   url: pageUrl,
-  ...(hasMappedPersonnelImage
-    ? { image: new URL(personnelImageSrc, siteUrl).toString() }
-    : {}),
-  mainEntityOfPage: { "@id": profilePageId },
-  ...(isDeceased ? { deathDate: String(deceasedOnValue) } : {}),
-  ...(organization ? { worksFor: { "@id": organization["@id"] } } : {}),
-};
+  name: officerName,
+  image: hasMappedPersonnelImage
+    ? new URL(personnelImageSrc, siteUrl).toString()
+    : undefined,
+  mainEntityOfPageId: profilePageId,
+  deathDate: isDeceased ? String(deceasedOnValue) : undefined,
+  worksForId: organization ? organization["@id"] : undefined,
+});
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
     buildWebSite(siteUrl),
-    {
-      "@type": "ProfilePage",
-      "@id": profilePageId,
-      url: pageUrl,
+    buildContentPageNode({
+      siteUrl,
+      type: "ProfilePage",
+      id: profilePageId,
+      pageUrl,
       name: pageTitle,
       description: pageDescription,
-      isPartOf: { "@id": new URL("/", siteUrl).toString() },
-      publisher: { "@id": organizationId(siteUrl) },
-      mainEntity: { "@id": person["@id"] },
+      mainEntityId: person["@id"],
       dateModified: String(data.officer.updated_at),
-    },
+    }),
     buildPublisherOrganization(siteUrl),
     ...(organization ? [organization] : []),
     person,

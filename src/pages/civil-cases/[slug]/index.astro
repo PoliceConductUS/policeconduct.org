@@ -7,10 +7,12 @@ import { withDb } from "#src/lib/db.js";
 import { loadCivilCaseDetailBySlug } from "#src/lib/data/civil-litigation-detail.js";
 import { formatLongDate } from "#src/lib/format.js";
 import {
+  buildContentPageNode,
+  buildGovernmentOrganizationNode,
+  buildPersonNode,
   buildPublisherOrganization,
   buildWebSite,
   getSiteUrl,
-  organizationId,
 } from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
@@ -96,27 +98,22 @@ const pageDescription = truncateText(
   pageDescriptionParts.filter(Boolean).join(" "),
   280,
 );
-const websiteId = new URL("/", siteUrl).toString();
 const webpageId = `${pageUrl}#webpage`;
 const legalCaseId = `${pageUrl}#legalcase`;
-const officerEntities = data.officers.map((officer) => {
-  const officerUrl = new URL(`/personnel/${officer.slug}/`, siteUrl).toString();
-  return {
-    "@type": "Person",
-    "@id": `${officerUrl}#person`,
+const officerEntities = data.officers.map((officer) =>
+  buildPersonNode({
+    siteUrl,
+    path: `/personnel/${officer.slug}/`,
     name: `${officer.first_name} ${officer.last_name}`,
-    url: officerUrl,
-  };
-});
-const agencyEntities = data.agencies.map((agency) => {
-  const agencyUrl = new URL(agency.canonicalPath, siteUrl).toString();
-  return {
-    "@type": "GovernmentOrganization",
-    "@id": `${agencyUrl}#organization`,
+  }),
+);
+const agencyEntities = data.agencies.map((agency) =>
+  buildGovernmentOrganizationNode({
+    siteUrl,
+    path: agency.canonicalPath,
     name: agency.name,
-    url: agencyUrl,
-  };
-});
+  }),
+);
 const legalCaseEntity: Record<string, any> = {
   "@type": "LegalCase",
   "@id": legalCaseId,
@@ -143,16 +140,14 @@ const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
     buildWebSite(siteUrl),
-    {
-      "@type": "WebPage",
-      "@id": webpageId,
-      url: pageUrl,
+    buildContentPageNode({
+      siteUrl,
+      id: webpageId,
+      pageUrl,
       name: `${caseTitle} | PoliceConduct.org`,
       description: pageDescription,
-      isPartOf: { "@id": websiteId },
-      publisher: { "@id": organizationId(siteUrl) },
-      mainEntity: { "@id": legalCaseId },
-    },
+      mainEntityId: legalCaseId,
+    }),
     buildPublisherOrganization(siteUrl),
     ...agencyEntities,
     ...officerEntities,

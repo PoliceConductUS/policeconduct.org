@@ -1,6 +1,7 @@
 ---
 import Breadcrumb from "#src/components/Breadcrumb.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
+import { buildCollectionPage, getSiteUrl } from "#src/lib/structured-data.js";
 import "#src/styles/civic-ledger.css";
 
 const { data, topicLabel, topicSlug, description } = Astro.props as {
@@ -27,12 +28,20 @@ const toDisplayName = (value: string) =>
     : value;
 const agencyDisplayName = toDisplayName(data.agencyName);
 const pagePath = `${data.agencyPath}${topicSlug}/`;
+const siteUrl = getSiteUrl(Astro.site);
+const structuredData = buildCollectionPage({
+  siteUrl,
+  pageUrl: new URL(pagePath, siteUrl).toString(),
+  name: `${agencyDisplayName} ${topicLabel} | PoliceConduct.org`,
+  description,
+});
 ---
 
 <SiteLayout
   title={`${agencyDisplayName} ${topicLabel} | PoliceConduct.org`}
   description={description}
   pagePath={pagePath}
+  structuredData={structuredData}
 >
   <main id="main" class="civic-index-page">
     <section class="civic-index-page-main">

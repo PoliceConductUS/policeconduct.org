@@ -49,6 +49,68 @@ const extract = (html, regex) => {
   return match ? match[1] : null;
 };
 
+const JSON_LD_BLOCK_RE =
+  /<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+
+// Pure validator: given a page's HTML, return the JSON-LD findings as
+// { level, message } objects without touching shared state. A block must be
+// parseable JSON and carry a recognizable schema.org shape (a top-level @type,
+// or an @graph of typed nodes). Parse failures and untyped payloads are errors;
+// a missing top-level @context is a warning (valid when the node is a graph
+// member). The caller decides what to do with the findings.
+const collectJsonLdFindings = (html, route) => {
+  const findings = [];
+  const err = (message) => findings.push({ level: "error", message });
+  const warn = (message) => findings.push({ level: "warning", message });
+
+  JSON_LD_BLOCK_RE.lastIndex = 0;
+  let match;
+  let index = 0;
+  while ((match = JSON_LD_BLOCK_RE.exec(html)) !== null) {
+    index += 1;
+    const raw = match[1].trim();
+    if (!raw) {
+      err(`Empty JSON-LD block (#${index}) on ${route}`);
+      continue;
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (error) {
+      err(
+        `Invalid JSON-LD (#${index}) on ${route}: ${error?.message || error}`,
+      );
+      continue;
+    }
+    const nodes = Array.isArray(parsed) ? parsed : [parsed];
+    for (const node of nodes) {
+      if (!node || typeof node !== "object") {
+        err(`JSON-LD (#${index}) on ${route} is not an object`);
+        continue;
+      }
+      const graph = Array.isArray(node["@graph"]) ? node["@graph"] : null;
+      if (graph) {
+        if (graph.length === 0) {
+          err(`JSON-LD @graph (#${index}) on ${route} is empty`);
+        }
+        for (const member of graph) {
+          if (!member || typeof member !== "object" || !member["@type"]) {
+            err(
+              `JSON-LD @graph member (#${index}) on ${route} is missing @type`,
+            );
+          }
+        }
+      } else if (!node["@type"]) {
+        err(`JSON-LD (#${index}) on ${route} is missing @type`);
+      }
+      if (!node["@context"]) {
+        warn(`JSON-LD (#${index}) on ${route} is missing @context`);
+      }
+    }
+  }
+  return findings;
+};
+
 const ensureRobotsAndSitemap = async () => {
   const robotsPath = path.join(DIST_DIR, "robots.txt");
   const robots = await readText(robotsPath);
@@ -183,6 +245,10 @@ const auditHtml = async () => {
       if (!robots || !/noindex\s*,\s*follow/i.test(robots)) {
         addError(`Expected noindex,follow on form page ${normalizedRoute}`);
       }
+    }
+
+    for (const finding of collectJsonLdFindings(html, normalizedRoute)) {
+      (finding.level === "error" ? addError : addWarning)(finding.message);
     }
   }
 };

@@ -8,6 +8,7 @@ import {
   newsBadgeClassName,
   type NewsMeta,
 } from "#src/lib/news.js";
+import { buildCollectionPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 type PaginatedNewsPage = {
   data: NewsMeta[];
@@ -38,6 +39,18 @@ const title = page.currentPage > 1 ? `News – Page ${page.currentPage}` : "News
 const pagePath = `/news/page/${page.currentPage}/`;
 const prevUrl = page.currentPage === 2 ? "/news/" : page.url.prev?.toString();
 const nextUrl = page.url.next?.toString() || null;
+
+const siteUrl = getSiteUrl(Astro.site);
+const structuredData = buildCollectionPage({
+  siteUrl,
+  pageUrl: new URL(pagePath, siteUrl).toString(),
+  name: title,
+  description: "News and updates from PoliceConduct.org.",
+  items: page.data.map((article) => ({
+    href: article.href,
+    name: article.title,
+  })),
+});
 ---
 
 <SiteLayout
@@ -45,6 +58,7 @@ const nextUrl = page.url.next?.toString() || null;
   description="News and updates from PoliceConduct.org."
   pagePath={pagePath}
   canonicalUrl={pagePath}
+  structuredData={structuredData}
 >
   <main id="main" class="">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
