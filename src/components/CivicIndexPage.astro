@@ -1,5 +1,6 @@
 ---
 import Breadcrumb from "#src/components/Breadcrumb.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import StatCell from "#src/components/StatCell.astro";
 import StatStrip from "#src/components/StatStrip.astro";
 import "#src/styles/civic-ledger.css";
@@ -25,6 +26,28 @@ const structuredData = buildWebPage({
 const heading =
   model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
   model.jurisdictionLabel;
+
+// Prefill payloads for the "Add what is missing" CTAs. Keys match the target
+// forms' input `name` attributes (agency/new, civil-cases/new, about/contact).
+// `category`/`jurisdiction` want the lowercase state code (first path segment);
+// the agency `state` field wants the full state name.
+const stateName = model.breadcrumbs[1]?.label ?? "";
+const stateCode = model.pagePath.split("/").filter(Boolean)[0] ?? "";
+const cityName = model.level === "place" ? heading : "";
+const addAgencyPrefill = {
+  category: stateCode,
+  state: stateName,
+  ...(cityName ? { city: cityName } : {}),
+};
+const addCivilCasePrefill = {
+  jurisdiction: stateCode,
+  summary: `Civil case connected to ${heading}.`,
+  links: model.pagePath,
+};
+const getUpdatesPrefill = {
+  whoami: "Subscriber",
+  message: `Please notify me about updates for ${heading}: ${model.pagePath}`,
+};
 
 const assertString = (value: unknown, field: string, reportId: string) => {
   if (typeof value !== "string" || !value.trim()) {
@@ -288,7 +311,6 @@ const statColumns = model.statCells.length + 1;
         <Breadcrumb items={model.breadcrumbs} />
 
         <section class="civic-lede">
-          <p class="civic-kicker">{model.jurisdictionLabel}</p>
           <h1>{heading}</h1>
           <p class="civic-lede-sub">{model.description}</p>
         </section>
@@ -384,7 +406,7 @@ const statColumns = model.statCells.length + 1;
 
         {
           decertificationReport && decertificationPayload ? (
-            <section class="civic-section civic-section--last">
+            <section class="civic-section">
               <div class="civic-section-head">
                 <div>
                   <h2>{decertificationReport.title}</h2>
@@ -428,6 +450,49 @@ const statColumns = model.statCells.length + 1;
             </section>
           ) : null
         }
+
+        <section class="civic-section civic-section--last">
+          <aside class="entity-side">
+            <p class="civic-kicker">Help improve this page</p>
+            <h2>Add what is missing</h2>
+            <ul class="entity-side-list">
+              <li>
+                <span>Share an experience</span>
+                <a class="entity-side-link" href="/report/new/">Start</a>
+              </li>
+              <li>
+                <span>Add an agency</span>
+                <PrefillNavButton
+                  to="/agency/new/"
+                  payload={addAgencyPrefill}
+                  class="entity-side-link"
+                >
+                  Start
+                </PrefillNavButton>
+              </li>
+              <li>
+                <span>Add a civil case</span>
+                <PrefillNavButton
+                  to="/civil-cases/new/"
+                  payload={addCivilCasePrefill}
+                  class="entity-side-link"
+                >
+                  Start
+                </PrefillNavButton>
+              </li>
+              <li>
+                <span>Get updates</span>
+                <PrefillNavButton
+                  to="/about/contact/"
+                  payload={getUpdatesPrefill}
+                  class="entity-side-link"
+                >
+                  Start
+                </PrefillNavButton>
+              </li>
+            </ul>
+          </aside>
+        </section>
       </div>
     </section>
   </main>

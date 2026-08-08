@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 ---
 
 <SiteLayout
@@ -7,6 +8,7 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
   pagePath="/agency/new/"
   robots="noindex,follow"
 >
+  <PrefillBootstrap />
   <main id="main" class="">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
@@ -286,6 +288,13 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
     if (!form) {
       showFormLoadError({ formName: "agencyNew", shell });
     } else {
+      const prefill = window.__IPC_PREFILL__;
+      if (prefill?.prefillFields) {
+        prefill.prefillFields({
+          key: window.location.pathname,
+          root: form,
+        });
+      }
       initRecaptcha();
       form.addEventListener("submit", async function (event) {
         await submitJsonForm({
