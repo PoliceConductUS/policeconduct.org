@@ -165,7 +165,7 @@ locals {
     "frame-ancestors 'self';",
     "form-action 'self';",
     "img-src 'self' data: blob: https://tile.openstreetmap.org https://i.ytimg.com https://www.google-analytics.com https://stats.g.doubleclick.net https://c.disquscdn.com https://*.disqus.com https://www.gstatic.com https://www.google.com;",
-    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com;",
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com;",
     "style-src 'self' 'unsafe-inline';",
     "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com https://*.ingest.us.sentry.io https://*.sentry.io;",
     "font-src 'self' data:;",

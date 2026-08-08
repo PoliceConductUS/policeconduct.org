@@ -22,9 +22,9 @@ Totals: 5 passed, 0 failed
 
 11/12 checked. Open box:
 
-| Open box | Reason | Blocks archive? |
-|---|---|---|
-| 3.3 CI gates (`validate`, `build`, `audit`, migration/schema validation) | full build >1hr, owner-deferred; PR release conditions | No — CI |
+| Open box                                                                 | Reason                                                 | Blocks archive? |
+| ------------------------------------------------------------------------ | ------------------------------------------------------ | --------------- |
+| 3.3 CI gates (`validate`, `build`, `audit`, migration/schema validation) | full build >1hr, owner-deferred; PR release conditions | No — CI         |
 
 ---
 
@@ -58,6 +58,7 @@ Totals: 5 passed, 0 failed
   Approved; two owner decisions (collapse rows; self-contained PR) recorded.
 
 **Known caveats for CI/owner (non-blocking):**
+
 1. Present-side parity rendering has no e2e exercise (dev seed data all-null);
    follow-up: unit-test `buildReportFacts` or grow seed data.
 2. The new e2e spec queries Postgres in `beforeAll` — confirm CI provisions

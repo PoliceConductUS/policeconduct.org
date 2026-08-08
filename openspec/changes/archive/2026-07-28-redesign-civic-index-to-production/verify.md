@@ -27,16 +27,16 @@ Totals: 3 passed, 0 failed
 owner's explicit no-full-build instruction (site build >1 hour). None block archive; the
 PR carries them as the CI gate list.
 
-| Open box | Reason | Blocks archive? |
-|---|---|---|
-| 1.6 zero third-party requests on generated pages | needs `dist` (full build) | No — CI |
-| 2.3 Breadcrumb adopted on ALL entity/geography pages | new component adopted on 8 primary templates; ~40 secondary templates still use the landmark-compliant legacy `Breadcrumbs` — spec requirement satisfied (landmark + aria-current everywhere); full visual migration is triaged follow-up | No — follow-up |
-| 4.4 Pagefind asset verification + build-time measurement | needs `dist` | No — CI |
-| 5.3 zero "interaction" in generated output | needs `dist`; source-level equivalent verified (residuals: 4 generic-legal boilerplate uses + justified identifiers/slug) | No — CI |
-| 6.1 `npm run validate` | full gate incl. e2e | No — CI |
-| 6.2 `npm run build` + no-inline-css + projections + index | full build | No — CI |
-| 6.3 `npm run audit` (seo + a11y) | needs `dist` | No — CI |
-| 6.4 manual keyboard/mobile walkthrough | needs built/preview site | No — owner/CI preview |
+| Open box                                                  | Reason                                                                                                                                                                                                                                    | Blocks archive?       |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| 1.6 zero third-party requests on generated pages          | needs `dist` (full build)                                                                                                                                                                                                                 | No — CI               |
+| 2.3 Breadcrumb adopted on ALL entity/geography pages      | new component adopted on 8 primary templates; ~40 secondary templates still use the landmark-compliant legacy `Breadcrumbs` — spec requirement satisfied (landmark + aria-current everywhere); full visual migration is triaged follow-up | No — follow-up        |
+| 4.4 Pagefind asset verification + build-time measurement  | needs `dist`                                                                                                                                                                                                                              | No — CI               |
+| 5.3 zero "interaction" in generated output                | needs `dist`; source-level equivalent verified (residuals: 4 generic-legal boilerplate uses + justified identifiers/slug)                                                                                                                 | No — CI               |
+| 6.1 `npm run validate`                                    | full gate incl. e2e                                                                                                                                                                                                                       | No — CI               |
+| 6.2 `npm run build` + no-inline-css + projections + index | full build                                                                                                                                                                                                                                | No — CI               |
+| 6.3 `npm run audit` (seo + a11y)                          | needs `dist`                                                                                                                                                                                                                              | No — CI               |
+| 6.4 manual keyboard/mobile walkthrough                    | needs built/preview site                                                                                                                                                                                                                  | No — owner/CI preview |
 
 (6.5 `openspec validate --all` against the post-`preview` baseline: **done** — preview
 archived earlier; validation passes, box checked during verify.)

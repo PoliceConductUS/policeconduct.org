@@ -3,7 +3,9 @@
 ## Purpose
 
 Define the shared Civic Index landing-page pattern for state, administrative-area, place, and agency pages so jurisdiction pages present neutral civic indicator summaries, availability states, detail-page links, and scoped volunteer paths while preserving database-backed routing conventions.
+
 ## Requirements
+
 ### Requirement: Shared Civic Index pattern
 
 The system SHALL render state, administrative-area, place, and agency landing pages with a shared Civic Index page pattern.
@@ -546,4 +548,3 @@ zero when source records exist.
   linked reports
 - **AND** a stale or unpopulated statistics projection cannot cause the count
   to render as zero
-

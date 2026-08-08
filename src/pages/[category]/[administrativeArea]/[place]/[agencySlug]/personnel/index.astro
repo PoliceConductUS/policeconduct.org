@@ -11,12 +11,15 @@ export async function getStaticPaths() {
   return loadAgencyLocationStaticPathsForTopic("personnel");
 }
 
+type AgencyDetail = Awaited<ReturnType<typeof loadAgencyDetailByRouteParams>>;
+type Employee = AgencyDetail["employees"][number];
+
 const data = await loadAgencyDetailByRouteParams(Astro.params);
 const { employees } = data;
 
 const pageEmployees = employees.slice(0, PAGE_SIZE);
 const currentCount = employees.filter(
-  (employee: any) => !employee.entry.end_date,
+  (employee: Employee) => !employee.entry.end_date,
 ).length;
 const formerCount = employees.length - currentCount;
 const formatCount = (value: number) => value.toLocaleString("en-US");
@@ -28,7 +31,7 @@ const formatMonth = (value?: string | null) =>
         timeZone: "UTC",
       })
     : "";
-const officerName = (employee: any) =>
+const officerName = (employee: Employee) =>
   [employee.officer?.last_name, employee.officer?.first_name]
     .filter(Boolean)
     .join(", ") || "Unnamed record";
@@ -63,7 +66,7 @@ const officerName = (employee: any) =>
       </thead>
       <tbody>
         {
-          pageEmployees.map((employee: any) => (
+          pageEmployees.map((employee: Employee) => (
             <tr>
               <td>
                 {employee.officer?.slug ? (

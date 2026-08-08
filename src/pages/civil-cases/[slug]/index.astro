@@ -6,7 +6,12 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { withDb } from "#src/lib/db.js";
 import { loadCivilCaseDetailBySlug } from "#src/lib/data/civil-litigation-detail.js";
 import { formatLongDate } from "#src/lib/format.js";
-import { getSiteUrl } from "#src/lib/structured-data.js";
+import {
+  buildPublisherOrganization,
+  buildWebSite,
+  getSiteUrl,
+  organizationId,
+} from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
   const civilCases = await withDb(async (client) => {
@@ -137,12 +142,7 @@ if (officerEntities.length || agencyEntities.length) {
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": websiteId,
-      url: websiteId,
-      name: "PoliceConduct.org",
-    },
+    buildWebSite(siteUrl),
     {
       "@type": "WebPage",
       "@id": webpageId,
@@ -150,8 +150,10 @@ const structuredData = {
       name: `${caseTitle} | PoliceConduct.org`,
       description: pageDescription,
       isPartOf: { "@id": websiteId },
+      publisher: { "@id": organizationId(siteUrl) },
       mainEntity: { "@id": legalCaseId },
     },
+    buildPublisherOrganization(siteUrl),
     ...agencyEntities,
     ...officerEntities,
     legalCaseEntity,

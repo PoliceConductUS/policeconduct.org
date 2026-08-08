@@ -127,6 +127,7 @@ const formatDate = (value?: string | null) =>
                 <th scope="col">Type</th>
                 <th scope="col">Filed</th>
                 <th scope="col">Court</th>
+                <th scope="col">Outcome</th>
                 <th scope="col">Cause</th>
                 <th scope="col">Personnel</th>
               </tr>
@@ -143,6 +144,7 @@ const formatDate = (value?: string | null) =>
                     <td>{caseItem.type}</td>
                     <td>{formatDate(caseItem.filed_date)}</td>
                     <td>{caseItem.court || ""}</td>
+                    <td>{caseItem.outcome}</td>
                     <td>{caseItem.cause_number || ""}</td>
                     <td>
                       {caseItem.personnel.map((person, index) => (

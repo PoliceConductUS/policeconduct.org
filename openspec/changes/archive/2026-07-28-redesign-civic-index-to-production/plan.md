@@ -53,10 +53,12 @@
 ## Task 1: Token Mapping and Foundations (tasks.md §1)
 
 **Files:**
+
 - Modify: global stylesheet / token file (locate first), `src/layouts/SiteLayout.astro`
 - Create: `public/fonts/public-sans-*.woff2`
 
 **Interfaces:**
+
 - Produces: canonical tokens later tasks style against — `--ipc-color-paper`, `--ipc-color-ink`, `--ipc-color-ink-faint`, `--ipc-color-teal`, `--ipc-color-teal-wash`, `--ipc-color-deep-red`, `--ipc-role-budget|liability|civil`, `--ipc-type-h1` (exact names confirmed/extended in Step 2 — reuse existing `--ipc-*` names wherever they exist).
 
 - [ ] **Step 1: Inspect current tokens and styles**
@@ -95,11 +97,13 @@ git add -A && git commit -m "feat(tokens): map redesign tokens onto --ipc-*, sel
 ## Task 2: Shared Chrome Components (tasks.md §2)
 
 **Files:**
+
 - Modify: `src/layouts/SiteLayout.astro`
 - Create: `src/components/MastheadSearch.astro`, `src/components/EntityActionBar.astro`, `src/components/SocialLink.astro`; create/modify `src/components/Breadcrumb.astro`
 - Create: one shared client script (e.g. `src/scripts/site.ts`) for copy-link + jump enhancement
 
 **Interfaces:**
+
 - Produces: `<EntityActionBar primary={{label, href}} actions={[{label, href}]} more={[{label, href}]} />`; `<Breadcrumb items={[{label, href?}]} />` (last item current); `<SocialLink platform="youtube" href entityName />`; `<TableScroll>` slot wrapper.
 - Consumes: Task 1 tokens.
 
@@ -134,10 +138,12 @@ git add -A && git commit -m "feat(chrome): shared masthead, skip link, action ba
 ## Task 3: Entity and Geography Surfaces (tasks.md §3)
 
 **Files:**
+
 - Create: `src/components/StatStrip.astro`, `src/components/StatCell.astro`, `src/components/TableScroll.astro`
 - Modify: `src/components/CivicIndexPage.astro`; agency template(s) under `src/pages/[category]/**` and `src/pages/federal/**`; personnel and civil-case templates
 
 **Interfaces:**
+
 - Produces: `<StatCell value label meta? href? role? empty? gloss? helpCollectHref?>`; drill variant `<StatCell drill childCount childLabel jumpOptions browseHref>`.
 - Consumes: Task 1 tokens, Task 2 components.
 
@@ -178,10 +184,12 @@ git add -A && git commit -m "feat(surfaces): shared stat strip, drill cell, spli
 ## Task 4: Pagefind Search (tasks.md §4)
 
 **Files:**
+
 - Modify: `package.json` (devDependency `pagefind`; build script), `src/components/MastheadSearch.astro`, `src/layouts/SiteLayout.astro` (indexing attributes)
 - Create: `tests/e2e/site-search.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `<MastheadSearch />` shell from Task 2.
 - Produces: `/pagefind/` assets in `dist`; search UI on every page.
 
@@ -218,6 +226,7 @@ git add -A && git commit -m "feat(search): self-hosted Pagefind index and masthe
 ## Task 5: Terminology Rename (tasks.md §5)
 
 **Files:**
+
 - Modify: templates/components/content with "interaction" wording; analytics event definitions; structured-data builders
 
 - [ ] **Step 1: Inventory**

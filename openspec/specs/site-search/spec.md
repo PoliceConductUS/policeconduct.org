@@ -1,8 +1,11 @@
 # site-search Specification
 
 ## Purpose
+
 TBD - created by archiving change redesign-civic-index-to-production. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Self-hosted static search index
 
 The system SHALL build a static full-text search index (Pagefind) over the
@@ -51,4 +54,3 @@ The search experience SHALL degrade gracefully when JavaScript is disabled.
 - **WHEN** a user with JavaScript disabled submits the masthead search form
 - **THEN** the user lands on the existing `/find-records/` browse page as the
   fallback lookup path
-

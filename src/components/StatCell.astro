@@ -122,20 +122,28 @@ const props = Astro.props as Props;
 
       return variant === "topic" ? (
         <li
-          class:list={["topic-cell", "ledger-interactive", { "is-pending": empty }]}
+          class:list={[
+            "topic-cell",
+            "ledger-interactive",
+            { "is-pending": empty },
+          ]}
           data-role={role}
         >
           {isLink ? (
             <a class="topic-link" href={href}>
               <span class="ledger-label">{label}</span>
               <span class="topic-value">{displayValue}</span>
-              {gloss ? <span class="ledger-meta topic-gloss">{gloss}</span> : null}
+              {gloss ? (
+                <span class="ledger-meta topic-gloss">{gloss}</span>
+              ) : null}
             </a>
           ) : (
             <div class="topic-link">
               <span class="ledger-label">{label}</span>
               <span class="topic-value">{displayValue}</span>
-              {gloss ? <span class="ledger-meta topic-gloss">{gloss}</span> : null}
+              {gloss ? (
+                <span class="ledger-meta topic-gloss">{gloss}</span>
+              ) : null}
             </div>
           )}
           {empty && helpCollectHref ? (
@@ -152,7 +160,10 @@ const props = Astro.props as Props;
           {actionLabel ? <span class="stat-action">{actionLabel}</span> : null}
         </a>
       ) : (
-        <div class:list={["stat-cell", { "is-pending": empty }]} data-role={role}>
+        <div
+          class:list={["stat-cell", { "is-pending": empty }]}
+          data-role={role}
+        >
           <strong class="ledger-value">{displayValue}</strong>
           <span class="ledger-label">{label}</span>
           {!empty && meta ? <span class="ledger-meta">{meta}</span> : null}

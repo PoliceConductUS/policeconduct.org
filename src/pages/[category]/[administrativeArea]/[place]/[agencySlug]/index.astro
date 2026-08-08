@@ -16,11 +16,21 @@ import {
   loadAgencyLocationStaticPaths,
 } from "#src/lib/data/agency-detail.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
-import { getSiteUrl } from "#src/lib/structured-data.js";
+import {
+  buildPublisherOrganization,
+  buildWebSite,
+  getSiteUrl,
+  organizationId,
+} from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
   return loadAgencyLocationStaticPaths();
 }
+
+type AgencyDetail = Awaited<ReturnType<typeof loadAgencyDetailByRouteParams>>;
+type CivilCaseRecord = AgencyDetail["civilCases"][number];
+type PersonnelLinkedCivilCaseRecord =
+  AgencyDetail["personnelLinkedCivilCases"][number];
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
 
@@ -104,14 +114,16 @@ const detectSocialPlatform = (url: string): SocialPlatform | null => {
   return match ? match[1] : null;
 };
 const civilLitigationRecords = [
-  ...civilCases.map((record: any) => ({
+  ...civilCases.map((record: CivilCaseRecord) => ({
     ...record,
     caseUrl: `/civil-cases/${record.slug}/`,
   })),
-  ...data.personnelLinkedCivilCases.map((record: any) => ({
-    ...record,
-    caseUrl: `/civil-cases/${record.slug}/`,
-  })),
+  ...data.personnelLinkedCivilCases.map(
+    (record: PersonnelLinkedCivilCaseRecord) => ({
+      ...record,
+      caseUrl: `/civil-cases/${record.slug}/`,
+    }),
+  ),
 ];
 const civilLitigationSummary = civilLitigationRecords
   .map((record) => {
@@ -283,12 +295,7 @@ const websiteId = new URL("/", siteUrl).toString();
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": websiteId,
-      url: websiteId,
-      name: "PoliceConduct.org",
-    },
+    buildWebSite(siteUrl),
     {
       "@type": "ProfilePage",
       "@id": profilePageId,
@@ -296,11 +303,13 @@ const structuredData = {
       name: `${agencyName} | PoliceConduct.org`,
       description: pageDescription,
       isPartOf: { "@id": websiteId },
+      publisher: { "@id": organizationId(siteUrl) },
       mainEntity: { "@id": organization["@id"] },
       ...(data.agency.updated_at
         ? { dateModified: String(data.agency.updated_at) }
         : {}),
     },
+    buildPublisherOrganization(siteUrl),
     organization,
   ],
 };

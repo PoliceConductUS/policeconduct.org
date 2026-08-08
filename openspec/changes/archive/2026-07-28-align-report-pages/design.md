@@ -12,6 +12,7 @@ terminology, no full builds in-session, repo data rules.
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Report detail page renders the mockup structure with the three owner-ruled
   amendments (no ratings; labeled subjective feelings section; extended
   fact-list with when-present rendering).
@@ -20,6 +21,7 @@ terminology, no full builds in-session, repo data rules.
 - Agency personnel report counts always reflect live records.
 
 **Non-Goals:**
+
 - No visual restyle of `/report/new` (no mockup exists; separate change).
 - No modification of `interaction-submission-flow` requirements.
 - No destructive schema changes; no display of reporter identity/contact.

@@ -13,8 +13,11 @@ interface Props {
   columns?: "four-plus-jump" | "three-plus-jump" | "five" | "four";
 }
 
-const { ariaLabel, drillFirst = false, columns = "four-plus-jump" } =
-  Astro.props;
+const {
+  ariaLabel,
+  drillFirst = false,
+  columns = "four-plus-jump",
+} = Astro.props;
 ---
 
 <section

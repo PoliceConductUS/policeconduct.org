@@ -72,24 +72,24 @@ eb424d7 chore(openspec): align tasks 2.x complete
 
 ## 3. Plan deviations
 
-| Plan task | What changed | Why |
-|-----------|--------------|-----|
-| 1.2 migrations | No in-repo migration; SQL documented for the intake repo; contract entries added then removed (owner: self-contained PR) | Schema ownership lives in `PoliceConductUS/intake` |
-| 1.3 field set | `purpose`/`records requested` collapsed from display set | Owner ruling — not actually collected by the form |
-| 2.x charge outcome | "Charge outcome" → "Charges" (submitter-provided); outcome deferred to pending intake column | Provenance truth caught in T2 review |
-| 3.x tests | DB-driven fixtures via `pg` instead of hardcoded slugs | Brittleness constraint in the brief |
+| Plan task          | What changed                                                                                                             | Why                                                |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- |
+| 1.2 migrations     | No in-repo migration; SQL documented for the intake repo; contract entries added then removed (owner: self-contained PR) | Schema ownership lives in `PoliceConductUS/intake` |
+| 1.3 field set      | `purpose`/`records requested` collapsed from display set                                                                 | Owner ruling — not actually collected by the form  |
+| 2.x charge outcome | "Charge outcome" → "Charges" (submitter-provided); outcome deferred to pending intake column                             | Provenance truth caught in T2 review               |
+| 3.x tests          | DB-driven fixtures via `pg` instead of hardcoded slugs                                                                   | Brittleness constraint in the brief                |
 
 ## 4. Skill / workflow compliance
 
-| Skill | Used |
-|---|---|
-| superpowers:brainstorming | ✅ (matrix-first; three owner rulings gathered up front, two more mid-cycle) |
-| superpowers:writing-plans | ✅ (compact plan; repo-precedent style) |
-| superpowers:using-git-worktrees | ✅ (same repo-convention worktree, continuing branch) |
-| superpowers:subagent-driven-development | ✅ (7 dispatches, ledger-tracked) |
-| (transitive) test-driven-development | ⚠️ partial — e2e written not run (owner no-build rule); dev-server evidence substituted |
-| (transitive) requesting-code-review | ✅ (3 task reviews, 1 fix re-proof) |
-| superpowers:finishing-a-development-branch | pending (PR is the next action) |
+| Skill                                      | Used                                                                                    |
+| ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| superpowers:brainstorming                  | ✅ (matrix-first; three owner rulings gathered up front, two more mid-cycle)            |
+| superpowers:writing-plans                  | ✅ (compact plan; repo-precedent style)                                                 |
+| superpowers:using-git-worktrees            | ✅ (same repo-convention worktree, continuing branch)                                   |
+| superpowers:subagent-driven-development    | ✅ (7 dispatches, ledger-tracked)                                                       |
+| (transitive) test-driven-development       | ⚠️ partial — e2e written not run (owner no-build rule); dev-server evidence substituted |
+| (transitive) requesting-code-review        | ✅ (3 task reviews, 1 fix re-proof)                                                     |
+| superpowers:finishing-a-development-branch | pending (PR is the next action)                                                         |
 
 ## 5. Follow-ups
 

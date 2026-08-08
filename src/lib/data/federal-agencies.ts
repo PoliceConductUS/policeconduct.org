@@ -537,7 +537,6 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
   } satisfies FederalAgencyDetail;
 };
 
-
 export const buildFederalCivicIndex = (
   federalAgencies: FederalAgencySummary[],
 ): CivicIndexModel => {
@@ -567,17 +566,32 @@ export const buildFederalCivicIndex = (
     ],
     columns: [{ key: "label", label: "Federal agency" }],
     coverage: [
-      { key: "agencies", label: metricLabels.agencies, value: federalAgencies.length },
-      { key: "personnel", label: metricLabels.personnel, value: totals.personnel },
+      {
+        key: "agencies",
+        label: metricLabels.agencies,
+        value: federalAgencies.length,
+      },
+      {
+        key: "personnel",
+        label: metricLabels.personnel,
+        value: totals.personnel,
+      },
       { key: "reports", label: metricLabels.reports, value: totals.reports },
-      { key: "civil_cases", label: metricLabels.civilCases, value: totals.civilCases },
+      {
+        key: "civil_cases",
+        label: metricLabels.civilCases,
+        value: totals.civilCases,
+      },
     ],
     description:
       "Public records for federal law enforcement agencies, their personnel, reports, and civil litigation.",
     drilldownLabel: "Federal records",
     indexLabel: "Federal agencies",
     jumpCell: {
-      browse: { href: `${pagePath}agencies/`, label: `Browse all ${rows.length} agencies →` },
+      browse: {
+        href: `${pagePath}agencies/`,
+        label: `Browse all ${rows.length} agencies →`,
+      },
       count: count(rows.length),
       label: metricLabels.agencies,
       options: rows.map((row) => ({ href: row.href, label: row.label })),

@@ -1,8 +1,11 @@
 # entity-page-chrome Specification
 
 ## Purpose
+
 TBD - created by archiving change redesign-civic-index-to-production. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Shared masthead
 
 Every page SHALL render the shared masthead containing the site wordmark, the
@@ -133,4 +136,3 @@ covering de-emphasized captions, metadata, glosses, and empty-state values.
 
 - **WHEN** `npm run audit:a11y` runs against generated pages
 - **THEN** no contrast violations are reported for any text tier
-

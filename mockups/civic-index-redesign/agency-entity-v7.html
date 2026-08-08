@@ -88,7 +88,12 @@
                     More actions
                     <i class="bi bi-chevron-down" aria-hidden="true"></i>
                   </button>
-                  <ul class="entity-menu-list" role="menu" hidden data-menu-list>
+                  <ul
+                    class="entity-menu-list"
+                    role="menu"
+                    hidden
+                    data-menu-list
+                  >
                     <li role="none">
                       <a class="entity-menu-item" role="menuitem" href="#"
                         >Copy link</a
@@ -277,12 +282,29 @@
           });
           list.addEventListener("keydown", (e) => {
             switch (e.key) {
-              case "ArrowDown": e.preventDefault(); focusBy(1); break;
-              case "ArrowUp": e.preventDefault(); focusBy(-1); break;
-              case "Home": e.preventDefault(); items[0].focus(); break;
-              case "End": e.preventDefault(); items[items.length - 1].focus(); break;
-              case "Escape": e.preventDefault(); close(); break;
-              case "Tab": close(false); break;
+              case "ArrowDown":
+                e.preventDefault();
+                focusBy(1);
+                break;
+              case "ArrowUp":
+                e.preventDefault();
+                focusBy(-1);
+                break;
+              case "Home":
+                e.preventDefault();
+                items[0].focus();
+                break;
+              case "End":
+                e.preventDefault();
+                items[items.length - 1].focus();
+                break;
+              case "Escape":
+                e.preventDefault();
+                close();
+                break;
+              case "Tab":
+                close(false);
+                break;
             }
           });
           document.addEventListener("click", (e) => {

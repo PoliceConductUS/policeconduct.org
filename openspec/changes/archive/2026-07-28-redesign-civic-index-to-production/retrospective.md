@@ -47,41 +47,41 @@ cb12323 feat(copy): rename interaction to experience site-wide
 - [evidence: d7ff4e4; task-1 review "contrast computation independently reproduced"] Token port landed exactly on spec values (`--ipc-color-ink-faint` at the mandated oklch(52%…), fixed-rem H1) and the reviewer reproduced every contrast ratio from scratch — the WCAG work done in the mockup phase transferred losslessly.
 - [evidence: 848a26f; task-2 review "60/60 covered, no duplicates"] The skip-link sweep adapted the plan (pages own `<main>`, so wrapping the slot would have produced invalid nested landmarks) and the reviewer independently verified all 60 files — a plan-deviation done right: disclosed, justified, verified.
 - [evidence: 7773d7c; dev-server spot checks in task-3 report] The largest task (24 files, +1104/−661) shipped with live-rendered verification of five page types despite the no-build constraint — dev-server spot-checks proved the drill cell, split sections, and empty-state pattern on real pages.
-- [evidence: review trail 578f1fe→2db0aea] The two-tier review structure earned its cost: per-task reviews caught 8 Important findings, and the final whole-branch review caught 2 more that were *invisible per-task* (dead `SocialLink` component, `#8d9bb4` empty-state contrast) — exactly the cross-task class of defect the final gate exists for.
+- [evidence: review trail 578f1fe→2db0aea] The two-tier review structure earned its cost: per-task reviews caught 8 Important findings, and the final whole-branch review caught 2 more that were _invisible per-task_ (dead `SocialLink` component, `#8d9bb4` empty-state contrast) — exactly the cross-task class of defect the final gate exists for.
 - [evidence: cb12323; task-5 review "scope discipline is real"] The rename respected data contracts precisely: display strings renamed with grammar fixes, `interactionType` form field and slugs untouched — zero route/contract drift, confirmed by the reviewer's identifier scan.
 - [evidence: 43b820a scratch-run in task-4 report] The implementer validated Pagefind's real export surface and output shape (no `.html` emitted → `validate:no-inline-css` ordering safe) via a scratch run instead of assuming — de-risking the CI-deferred build step.
 
 ## 2. Misses
 
-- 🟡 [painful | evidence: task-4 review finding #1] The Task 4 implementer's report claimed federal coverage was handled "via CivicIndexPage" — but federal *entity* pages use `CivicAgencyHierarchyPage`, which was unindexed. The task reviewer caught the misclaim by checking the actual template. Lesson: coverage claims that enumerate templates need the enumeration verified, not narrated.
-- 🟡 [painful | evidence: b9e4c04, 2db0aea] Token discipline leaked twice (raw `oklch()` shadow literal; legacy `#8d9bb4` untouched by Task 1's sweep despite task 1.3's completion mark). The Task 1 sweep migrated the `:root` palette but not all *consumers* of legacy hexes — a "define tokens" vs "migrate usages" scope seam that cost two fix rounds.
+- 🟡 [painful | evidence: task-4 review finding #1] The Task 4 implementer's report claimed federal coverage was handled "via CivicIndexPage" — but federal _entity_ pages use `CivicAgencyHierarchyPage`, which was unindexed. The task reviewer caught the misclaim by checking the actual template. Lesson: coverage claims that enumerate templates need the enumeration verified, not narrated.
+- 🟡 [painful | evidence: b9e4c04, 2db0aea] Token discipline leaked twice (raw `oklch()` shadow literal; legacy `#8d9bb4` untouched by Task 1's sweep despite task 1.3's completion mark). The Task 1 sweep migrated the `:root` palette but not all _consumers_ of legacy hexes — a "define tokens" vs "migrate usages" scope seam that cost two fix rounds.
 - 🟡 [painful | evidence: task-2/task-3 carry-forwards; final review Important #1] Components built in one task but wired in a later one (`SocialLink`, `EntityActionBar`) repeatedly drifted toward dead code — `SocialLink` reached the final review with zero callers because its consumer data wasn't platform-typed. Building a component and its first consumer in the same task would have surfaced the data-model gap immediately.
 - 📌 [nit | evidence: final-review-fixes.md controller correction] Two subagent reports contained arithmetic slips (19 vs 21 remaining rename hits; "3" vs 5 extra migrated selectors). Neither affected code correctness; both were caught by reviewers. Counts in reports need the same verification as claims.
 - 📌 [nit | evidence: ledger "Task 2 rev killed"] One reviewer dispatch was killed by the user mid-run and re-dispatched verbatim after confirmation — a pause-signal ambiguity; no work lost.
 
 ## 3. Plan deviations
 
-| Plan task | What changed | Why |
-|-----------|--------------|-----|
-| 1 (fonts) | `@fontsource/public-sans` npm package instead of hand-subsetted WOFF2 in `public/fonts/` | Avoids raw file downloads; per-weight files approximate subsetting; approved substitute in dispatch |
-| 2 (skip link) | `id="main"` added to 60 page-owned `<main>`s instead of layout wrapping `<slot/>` | Pages already own `<main>`; literal plan would produce invalid nested landmarks |
-| 2 (script path) | `src/lib/client/site.js` (existing shared script) instead of plan's `src/scripts/site.ts` example | Repo convention wins over plan example |
-| 2 (masthead) | News/About/Donate retained as quiet links (mockup omitted them) | Owner decision (option B) during implementation |
-| 3 (field offices) | Render only when real `FederalAgencyBranch` rows exist; no seed of mockup placeholder values | Owner decision: no fabricated data, no silent fallbacks |
-| 4 (measurement) | Build-time/index-size measurement deferred to CI with documented commands | Owner's no-full-build instruction (>1hr) |
-| all (verification) | `npm run build`/full e2e replaced by `astro check` + eslint + dev-server spot-checks + source greps | Owner's explicit instruction; full gates ride the PR as CI conditions |
+| Plan task          | What changed                                                                                        | Why                                                                                                 |
+| ------------------ | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1 (fonts)          | `@fontsource/public-sans` npm package instead of hand-subsetted WOFF2 in `public/fonts/`            | Avoids raw file downloads; per-weight files approximate subsetting; approved substitute in dispatch |
+| 2 (skip link)      | `id="main"` added to 60 page-owned `<main>`s instead of layout wrapping `<slot/>`                   | Pages already own `<main>`; literal plan would produce invalid nested landmarks                     |
+| 2 (script path)    | `src/lib/client/site.js` (existing shared script) instead of plan's `src/scripts/site.ts` example   | Repo convention wins over plan example                                                              |
+| 2 (masthead)       | News/About/Donate retained as quiet links (mockup omitted them)                                     | Owner decision (option B) during implementation                                                     |
+| 3 (field offices)  | Render only when real `FederalAgencyBranch` rows exist; no seed of mockup placeholder values        | Owner decision: no fabricated data, no silent fallbacks                                             |
+| 4 (measurement)    | Build-time/index-size measurement deferred to CI with documented commands                           | Owner's no-full-build instruction (>1hr)                                                            |
+| all (verification) | `npm run build`/full e2e replaced by `astro check` + eslint + dev-server spot-checks + source greps | Owner's explicit instruction; full gates ride the PR as CI conditions                               |
 
 ## 4. Skill / workflow compliance
 
-| Skill                                            | Used |
-|--------------------------------------------------|------|
-| superpowers:brainstorming                        | ✅ (brainstorm.md; exploration pre-completed in mockup phase, one open question — search architecture — resolved with user) |
-| superpowers:writing-plans                        | ✅ (plan.md in repo's established plan style) |
-| superpowers:using-git-worktrees                  | ✅ (pre-existing repo-convention worktree `.worktrees/redesign-civic-index-pages`; no nested worktree created) |
-| superpowers:subagent-driven-development          | ✅ (20 dispatches; briefs/reports/diffs as files; ledger at `.git/worktrees/…/sdd/progress.md`) |
+| Skill                                            | Used                                                                                                                                                                                       |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| superpowers:brainstorming                        | ✅ (brainstorm.md; exploration pre-completed in mockup phase, one open question — search architecture — resolved with user)                                                                |
+| superpowers:writing-plans                        | ✅ (plan.md in repo's established plan style)                                                                                                                                              |
+| superpowers:using-git-worktrees                  | ✅ (pre-existing repo-convention worktree `.worktrees/redesign-civic-index-pages`; no nested worktree created)                                                                             |
+| superpowers:subagent-driven-development          | ✅ (20 dispatches; briefs/reports/diffs as files; ledger at `.git/worktrees/…/sdd/progress.md`)                                                                                            |
 | (transitive) superpowers:test-driven-development | ⚠️ partial — e2e specs written/updated with behavior assertions, but red-green cycles were not executable in-session (no-build constraint); verification substituted per owner instruction |
-| (transitive) superpowers:requesting-code-review  | ✅ (5 task reviews + 4 re-reviews + final whole-branch review on the most capable model) |
-| superpowers:finishing-a-development-branch       | pending (runs after archive, per apply sequence) |
+| (transitive) superpowers:requesting-code-review  | ✅ (5 task reviews + 4 re-reviews + final whole-branch review on the most capable model)                                                                                                   |
+| superpowers:finishing-a-development-branch       | pending (runs after archive, per apply sequence)                                                                                                                                           |
 
 ## 5. Follow-ups (triaged, non-blocking)
 

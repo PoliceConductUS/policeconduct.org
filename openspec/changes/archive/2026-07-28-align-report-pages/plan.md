@@ -22,6 +22,7 @@
 ## Task 1: Data layer — storage verification, loader, counts (tasks.md §1)
 
 **Files:**
+
 - Inspect: `src/pages/report/new/index.astro` (draft endpoint), `supabase/migrations/`, `scripts/validate-schema-contract.mjs`
 - Modify: report-detail loader (locate via the detail template's data import), `src/lib/data/agency-detail.ts`
 - Create (only if verification finds missing columns): additive migration + contract entries
@@ -35,6 +36,7 @@
 ## Task 2: Report detail template port (tasks.md §2)
 
 **Files:**
+
 - Modify: `src/pages/[category]/[administrativeArea]/[place]/reports/[year]/[month]/[day]/[slug]/index.astro` (+ its stylesheet home, `civic-ledger.css` or equivalent)
 
 - [ ] **Step 1: Structure port** — kicker/title/lede, fact-list, detail-layout body ("What happened") + aside, shared Breadcrumb, tokens only; keep `data-pagefind-body` and the terminology rules.
@@ -44,6 +46,7 @@
 ## Task 3: Tests + closeout (tasks.md §3)
 
 **Files:**
+
 - Modify/create: relevant e2e spec under `tests/e2e/`
 
 - [ ] **Step 1: e2e assertions** (written; CI-run): parity rendering, no-ratings, labeled-section conditionality, live personnel counts.

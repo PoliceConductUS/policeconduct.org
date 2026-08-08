@@ -4,7 +4,12 @@ import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import { loadLocationBuildPayloads } from "#src/lib/data/build-payloads.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
-import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+import {
+  buildDataset,
+  buildPublisherOrganization,
+  buildWebPage,
+  getSiteUrl,
+} from "#src/lib/structured-data.js";
 
 const pagePath = "/";
 const pageDescription =
@@ -56,41 +61,20 @@ const categoryCoverageStats = US_STATE_TILES.map((state) => {
         : `${state.name}: no entries yet`,
   };
 });
-const organization = {
-  "@type": "NonprofitOrganization",
-  "@id": `${pageUrl}#organization`,
-  name: "Institute for Police Conduct, Inc.",
-  alternateName: "PoliceConduct.org",
-  url: pageUrl,
-  description: pageDescription,
-  taxID: "99-3296620",
-  nonprofitStatus: "https://schema.org/Nonprofit501c3",
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: "8 The Green #11026",
-    addressLocality: "Dover",
-    addressRegion: "DE",
-    postalCode: "19901",
-    addressCountry: "US",
-  },
-  sameAs: [
-    "https://facebook.com/PoliceConductUS",
-    "https://twitter.com/PoliceConductUS",
-    "https://instagram.com/PoliceConductUS",
-    "https://www.tiktok.com/@policeconductus",
-    "https://linkedin.com/company/PoliceConductUS",
-    "https://youtube.com/@PoliceConductUS",
-    "https://www.reddit.com/user/PoliceConductUS/",
-    "https://github.com/PoliceConductUS",
-  ],
-};
-const structuredData = buildWebPage({
+const organization = buildPublisherOrganization(siteUrl);
+const webPage = buildWebPage({
   siteUrl,
   pageUrl,
   name: "Institute for Police Conduct, Inc.",
   description: pageDescription,
 });
-structuredData.mainEntity = organization;
+webPage.mainEntity = { "@id": organization["@id"] };
+const schemaContext = "https://schema.org";
+const structuredData = [
+  webPage,
+  { "@context": schemaContext, ...organization },
+  { "@context": schemaContext, ...buildDataset(siteUrl, { pageUrl }) },
+];
 ---
 
 <SiteLayout

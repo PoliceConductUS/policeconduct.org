@@ -93,7 +93,11 @@ test.beforeAll(async () => {
         limit 1
       `)
     ).rows[0] as
-      | { agency_path: string; first_name: string | null; last_name: string | null }
+      | {
+          agency_path: string;
+          first_name: string | null;
+          last_name: string | null;
+        }
       | undefined;
 
     if (personnelRow) {
@@ -128,7 +132,7 @@ test.describe("report detail page", () => {
     );
   });
 
-  test("renders the factual account under \"What happened\"", async ({
+  test('renders the factual account under "What happened"', async ({
     page,
   }) => {
     await page.goto(reportFixture!.path);

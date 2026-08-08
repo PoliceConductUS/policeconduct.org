@@ -322,6 +322,13 @@ const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
       }
     };
 
+    // Seed from the masthead search form's GET submission (?q=…), the
+    // no-JS / no-Pagefind fallback path, so arriving here runs the search.
+    const initialQuery = new URLSearchParams(window.location.search).get("q");
+    if (input && initialQuery) {
+      input.value = initialQuery;
+    }
+
     input?.addEventListener("input", updateResults);
     updateResults();
   </script>

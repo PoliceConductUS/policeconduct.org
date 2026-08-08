@@ -1,8 +1,11 @@
 # report-pages Specification
 
 ## Purpose
+
 TBD - created by archiving change align-report-pages. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Report detail presentation
 
 Experience-report detail pages SHALL render the approved editorial structure:
@@ -76,4 +79,3 @@ explicitly labeled as the submitter's subjective account.
 
 - **WHEN** a report has no stored feelings content
 - **THEN** the subjective section does not render at all
-

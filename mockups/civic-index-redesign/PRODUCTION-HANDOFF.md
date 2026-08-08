@@ -8,6 +8,7 @@ generating 100k+ pages, so several things must change on the way in.
 Decisions below were made with the site owner; treat them as the spec.
 
 ## Design-system integration
+
 - [ ] **Map mockup tokens → the canonical `--ipc-*` system** (DESIGN.md). The
       mockups use ad-hoc tokens (`--ink`, `--teal`, `--h1`, `--ink-faint@52%`);
       do not ship a second vocabulary. Fold the fixed H1 (3rem/2.25rem) onto
@@ -22,6 +23,7 @@ Decisions below were made with the site owner; treat them as the spec.
       not per-page.
 
 ## Features to build (not just styling)
+
 - [ ] **Search is required for release.** The masthead search is a mockup form
       to `#`; production needs a real search index/endpoint + accessible results
       experience. Scope this into the release.
@@ -33,6 +35,7 @@ Decisions below were made with the site owner; treat them as the spec.
       Claim this profile, Get updates).
 
 ## Data
+
 - [ ] Field offices: **manual data is acceptable for now** (placeholder CBP
       names/counts in the mockup must be replaced with real values before ship).
 - [ ] Reports vs civil cases are **already split** in the data model — keep the
@@ -42,6 +45,7 @@ Decisions below were made with the site owner; treat them as the spec.
       `Help collect this →` (per DESIGN.md / .impeccable.md — no hedging copy).
 
 ## Assets & privacy
+
 - [ ] **Self-host everything currently on a CDN.** Subset/self-host Bootstrap
       Icons (the mockup loads the whole font from jsdelivr for 2 glyphs — a
       third-party request that leaks visitor IPs; the site already uses
@@ -49,6 +53,7 @@ Decisions below were made with the site owner; treat them as the spec.
       `font-display`) instead of the system fallback. No other CDN calls.
 
 ## Accessibility (WCAG 2.1 AA — now codified in DESIGN.md + .impeccable.md)
+
 - [ ] Carry the mockup fixes into the components: AA contrast (incl. faint/empty
       states), skip-to-content link, breadcrumb `<nav>`, `th scope`, wrapped
       scrollable tables, visible keyboard focus on all controls, `<details>`
@@ -60,6 +65,7 @@ Decisions below were made with the site owner; treat them as the spec.
       editorial rules — keep the "allegations, not findings" framing on cases.
 
 ## Rollout mechanics
+
 - [ ] **"experience" not "interaction" — site-wide.** The rename must cover
       copy, any routes/slugs (+ `generate-redirect-map`), analytics event names,
       structured data, and existing content — and remove leftover "experience"
@@ -74,6 +80,7 @@ Decisions below were made with the site owner; treat them as the spec.
       without JS.
 
 ## Gates (must pass before release)
+
 - [ ] `npm run validate` — format, lint, `astro check` (types), schema, openspec, e2e
 - [ ] `npm run build` — env/schema validation, projections, `validate:no-inline-css`, redirect map
 - [ ] `npm run audit` — `audit:seo` + `audit:a11y`

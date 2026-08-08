@@ -11,7 +11,12 @@ import { loadReportSummaries } from "#src/lib/data/summaries.js";
 import { parseLocationPathParts } from "#src/lib/data/report-paths.js";
 import { formatLongDate } from "#src/lib/format.js";
 import { loadReportDetail } from "#src/lib/report-detail.js";
-import { getSiteUrl } from "#src/lib/structured-data.js";
+import {
+  buildPublisherOrganization,
+  buildWebSite,
+  getSiteUrl,
+  organizationId,
+} from "#src/lib/structured-data.js";
 
 export async function getStaticPaths() {
   const reports = await loadReportSummaries();
@@ -188,11 +193,7 @@ const reportEntity = {
     "@type": "Person",
     name: "Anonymous",
   },
-  publisher: {
-    "@type": "Organization",
-    name: "Institute for Police Conduct, Inc.",
-    url: new URL("/", siteUrl).toString(),
-  },
+  publisher: { "@id": organizationId(siteUrl) },
   ...(tags.length ? { keywords: tags.join(", ") } : {}),
   ...(reportAddress
     ? { contentLocation: { "@type": "Place", name: reportAddress } }
@@ -209,12 +210,7 @@ const websiteId = new URL("/", siteUrl).toString();
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": websiteId,
-      url: websiteId,
-      name: "PoliceConduct.org",
-    },
+    buildWebSite(siteUrl),
     {
       "@type": "WebPage",
       "@id": webpageId,
@@ -222,8 +218,10 @@ const structuredData = {
       name: `${reportTitle} | PoliceConduct.org`,
       description: reportDescription,
       isPartOf: { "@id": websiteId },
+      publisher: { "@id": organizationId(siteUrl) },
       mainEntity: { "@id": reportEntity["@id"] },
     },
+    buildPublisherOrganization(siteUrl),
     ...agencyEntities,
     ...officerEntities,
     reportEntity,

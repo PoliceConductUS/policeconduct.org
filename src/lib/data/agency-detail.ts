@@ -428,6 +428,7 @@ const loadAgencyRows = async (agencyId: string) =>
                 c.filed_date,
                 c.date_terminated,
                 c.court,
+                c.outcome,
                 c.primary_source_url,
                 o.id as officer_id,
                 o.slug as officer_slug,
@@ -657,6 +658,7 @@ const buildAgencyDetail = async (agencyId: string) => {
       filed_date: string;
       date_terminated?: string | null;
       court?: string | null;
+      outcome?: string | null;
       primary_source_url?: string | null;
     }) => {
       const officerLinks = (civilCaseOfficersByCase[record.id] || []).map(
@@ -692,6 +694,7 @@ const buildAgencyDetail = async (agencyId: string) => {
       filed_date: record.filed_date,
       date_terminated: record.date_terminated,
       court: record.court,
+      outcome: record.outcome,
       primary_source_url: record.primary_source_url,
       caseUrl: `/civil-cases/${record.slug}/`,
       links: entries.map((entry) => ({

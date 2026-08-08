@@ -16,7 +16,12 @@ import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
 import { getPersonnelImageById } from "#src/lib/entity-images.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
-import { getSiteUrl } from "#src/lib/structured-data.js";
+import {
+  buildPublisherOrganization,
+  buildWebSite,
+  getSiteUrl,
+  organizationId,
+} from "#src/lib/structured-data.js";
 import type { MetricCardItem } from "#src/components/metric-card-types.js";
 
 export async function getStaticPaths() {
@@ -549,12 +554,7 @@ const person = {
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": new URL("/", siteUrl).toString(),
-      url: new URL("/", siteUrl).toString(),
-      name: "PoliceConduct.org",
-    },
+    buildWebSite(siteUrl),
     {
       "@type": "ProfilePage",
       "@id": profilePageId,
@@ -562,9 +562,11 @@ const structuredData = {
       name: pageTitle,
       description: pageDescription,
       isPartOf: { "@id": new URL("/", siteUrl).toString() },
+      publisher: { "@id": organizationId(siteUrl) },
       mainEntity: { "@id": person["@id"] },
       dateModified: String(data.officer.updated_at),
     },
+    buildPublisherOrganization(siteUrl),
     ...(organization ? [organization] : []),
     person,
   ],

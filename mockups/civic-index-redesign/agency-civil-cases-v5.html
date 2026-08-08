@@ -21,7 +21,9 @@
       <div class="container">
         <a class="masthead-mark" href="#">Police<span>Conduct</span>.org</a>
         <form class="masthead-search" role="search" action="#">
-          <label for="site-search" class="visually-hidden">Search records</label>
+          <label for="site-search" class="visually-hidden"
+            >Search records</label
+          >
           <input
             id="site-search"
             class="masthead-search-input"
@@ -32,8 +34,12 @@
           />
         </form>
         <nav class="masthead-nav">
-          <a class="nav-action nav-action-share" href="#">Share an experience</a>
-          <a class="nav-action nav-action-volunteer" href="/volunteer/">Volunteer</a>
+          <a class="nav-action nav-action-share" href="#"
+            >Share an experience</a
+          >
+          <a class="nav-action nav-action-volunteer" href="/volunteer/"
+            >Volunteer</a
+          >
         </nav>
       </div>
     </header>
@@ -42,13 +48,15 @@
       <div class="container">
         <nav aria-label="Breadcrumb">
           <ol class="crumbs">
-                  <li><a href="#">Home</a></li>
-                  <li><a href="texas-v5.html">Texas</a></li>
-                  <li><a href="county-v5.html">Dallas County</a></li>
-                  <li><a href="place-v5.html">Irving</a></li>
-                  <li><a href="agency-entity-v5.html">Irving Police Department</a></li>
-                  <li aria-current="page">Civil cases</li>
-                </ol>
+            <li><a href="#">Home</a></li>
+            <li><a href="texas-v5.html">Texas</a></li>
+            <li><a href="county-v5.html">Dallas County</a></li>
+            <li><a href="place-v5.html">Irving</a></li>
+            <li>
+              <a href="agency-entity-v5.html">Irving Police Department</a>
+            </li>
+            <li aria-current="page">Civil cases</li>
+          </ol>
         </nav>
 
         <section class="lede">
@@ -73,433 +81,342 @@
           </div>
 
           <div class="table-scroll">
-
             <table class="record-table">
+              <thead>
+                <tr>
+                  <th scope="col">Case</th>
 
-                      <thead>
+                  <th scope="col">Cause number</th>
 
-                        <tr>
+                  <th scope="col">Court</th>
 
-                          <th scope="col">Case</th>
+                  <th scope="col">Filed</th>
 
-                          <th scope="col">Cause number</th>
+                  <th scope="col">Outcome</th>
+                </tr>
+              </thead>
 
-                          <th scope="col">Court</th>
+              <tbody data-list-rows>
+                <tr>
+                  <td>
+                    <a class="row-link" href="civil-case-detail-v5.html"
+                      >Nix et al v. City of Irving</a
+                    >
+                  </td>
 
-                          <th scope="col">Filed</th>
+                  <td class="muted">3:26-cv-01228-N</td>
 
-                          <th scope="col">Outcome</th>
+                  <td>N.D. Tex.</td>
 
-                        </tr>
+                  <td>Apr 16, 2026</td>
 
-                      </thead>
+                  <td>Pending</td>
+                </tr>
 
-                      <tbody data-list-rows>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#"
+                      >Womack et al v. City of Irving</a
+                    >
+                  </td>
 
-                        <tr>
+                  <td class="muted">3:26-cv-01107-E</td>
 
-                          <td>
+                  <td>N.D. Tex.</td>
 
-                            <a class="row-link" href="civil-case-detail-v5.html"
+                  <td>Apr 7, 2026</td>
 
-                              >Nix et al v. City of Irving</a
+                  <td>Pending</td>
+                </tr>
 
-                            >
+                <tr>
+                  <td>
+                    <a class="row-link" href="#"
+                      >Lotts v. City of Irving et al</a
+                    >
+                  </td>
 
-                          </td>
+                  <td class="muted">3:25-CV-03329-S-BN</td>
 
-                          <td class="muted">3:26-cv-01228-N</td>
+                  <td>N.D. Tex.</td>
 
-                          <td>N.D. Tex.</td>
+                  <td>Dec 4, 2025</td>
 
-                          <td>Apr 16, 2026</td>
+                  <td>Pending</td>
+                </tr>
 
-                          <td>Pending</td>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#"
+                      >Barrera v. City of Irving et al</a
+                    >
+                  </td>
 
-                        </tr>
+                  <td class="muted">3:25-cv-03160</td>
 
-                        <tr>
+                  <td>N.D. Tex.</td>
 
-                          <td>
+                  <td>Nov 18, 2025</td>
 
-                            <a class="row-link" href="#"
+                  <td>Pending</td>
+                </tr>
 
-                              >Womack et al v. City of Irving</a
+                <tr>
+                  <td>
+                    <a class="row-link" href="#"
+                      >Young v. City of Irving et al</a
+                    >
+                  </td>
 
-                            >
+                  <td class="muted">3:23-cv-01423</td>
 
-                          </td>
+                  <td>N.D. Tex.</td>
 
-                          <td class="muted">3:26-cv-01107-E</td>
+                  <td>Jun 26, 2023</td>
 
-                          <td>N.D. Tex.</td>
+                  <td>
+                    City of Irving and Sgt. Phillips dismissed with prejudice
+                    March 21, 2025; case fully dismissed July 30, 2025
+                  </td>
+                </tr>
 
-                          <td>Apr 7, 2026</td>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#"
+                      >Ellis v. Police Dept of Irving et al</a
+                    >
+                  </td>
 
-                          <td>Pending</td>
+                  <td class="muted">3:22-cv-00265-B-BN</td>
 
-                        </tr>
+                  <td>N.D. Tex.</td>
 
-                        <tr>
+                  <td>Feb 3, 2022</td>
 
-                          <td>
+                  <td>Dismissed with prejudice on February 28, 2022</td>
+                </tr>
 
-                            <a class="row-link" href="#">Lotts v. City of Irving et al</a>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#">Duke v. City of Irving TX</a>
+                  </td>
 
-                          </td>
+                  <td class="muted">3:20-cv-00116-K</td>
 
-                          <td class="muted">3:25-CV-03329-S-BN</td>
+                  <td>N.D. Tex.</td>
 
-                          <td>N.D. Tex.</td>
+                  <td>Jan 15, 2020</td>
 
-                          <td>Dec 4, 2025</td>
+                  <td>Dismissed as frivolous</td>
+                </tr>
 
-                          <td>Pending</td>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#"
+                      >Williams v. City of Irving, Texas et al</a
+                    >
+                  </td>
 
-                        </tr>
+                  <td class="muted">3:15-CV-1701-L</td>
 
-                        <tr>
+                  <td>N.D. Tex.</td>
 
-                          <td>
+                  <td>May 29, 2015</td>
 
-                            <a class="row-link" href="#"
+                  <td>Dismissed with prejudice in 2018</td>
+                </tr>
 
-                              >Barrera v. City of Irving et al</a
+                <tr>
+                  <td>
+                    <a class="row-link" href="#"
+                      >Wallis v. The City of Irving</a
+                    >
+                  </td>
 
-                            >
+                  <td class="muted">3:07-cv-01483</td>
 
-                          </td>
+                  <td>N.D. Tex.</td>
 
-                          <td class="muted">3:25-cv-03160</td>
+                  <td>Aug 30, 2007</td>
 
-                          <td>N.D. Tex.</td>
+                  <td>Dismissed</td>
+                </tr>
 
-                          <td>Nov 18, 2025</td>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#"
+                      >House v. City of Irving, Texas</a
+                    >
+                  </td>
 
-                          <td>Pending</td>
+                  <td class="muted">3:03-cv-02524</td>
 
-                        </tr>
+                  <td>N.D. Tex.</td>
 
-                        <tr>
+                  <td>Oct 17, 2003</td>
 
-                          <td>
+                  <td>Dismissed</td>
+                </tr>
 
-                            <a class="row-link" href="#">Young v. City of Irving et al</a>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#"
+                      >Howie v. City of Irving Texas</a
+                    >
+                  </td>
 
-                          </td>
+                  <td class="muted">3:00-cv-02094</td>
 
-                          <td class="muted">3:23-cv-01423</td>
+                  <td>N.D. Tex.</td>
 
-                          <td>N.D. Tex.</td>
+                  <td>Sep 25, 2000</td>
 
-                          <td>Jun 26, 2023</td>
+                  <td>Dismissed</td>
+                </tr>
 
-                          <td>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#">Alrawaziq v. City of Irving</a>
+                  </td>
 
-                            City of Irving and Sgt. Phillips dismissed with prejudice
+                  <td class="muted">3:99-cv-00970</td>
 
-                            March 21, 2025; case fully dismissed July 30, 2025
+                  <td>N.D. Tex.</td>
 
-                          </td>
+                  <td>Apr 29, 1999</td>
 
-                        </tr>
+                  <td>Dismissed</td>
+                </tr>
 
-                        <tr>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#">Papke v. City of Irving</a>
+                  </td>
 
-                          <td>
+                  <td class="muted">3:98-cv-00941</td>
 
-                            <a class="row-link" href="#"
+                  <td>N.D. Tex.</td>
 
-                              >Ellis v. Police Dept of Irving et al</a
+                  <td>Apr 16, 1998</td>
 
-                            >
+                  <td>Dismissed</td>
+                </tr>
 
-                          </td>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#">Davis v. City of Irving</a>
+                  </td>
 
-                          <td class="muted">3:22-cv-00265-B-BN</td>
+                  <td class="muted">3:97-cv-02512</td>
 
-                          <td>N.D. Tex.</td>
+                  <td>N.D. Tex.</td>
 
-                          <td>Feb 3, 2022</td>
+                  <td>Oct 14, 1997</td>
 
-                          <td>Dismissed with prejudice on February 28, 2022</td>
+                  <td>Dismissed</td>
+                </tr>
 
-                        </tr>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#">Caba v. City of Irving</a>
+                  </td>
 
-                        <tr>
+                  <td class="muted">3:96-cv-00249</td>
 
-                          <td>
+                  <td>N.D. Tex.</td>
 
-                            <a class="row-link" href="#">Duke v. City of Irving TX</a>
+                  <td>Jan 26, 1996</td>
 
-                          </td>
+                  <td>Dismissed</td>
+                </tr>
 
-                          <td class="muted">3:20-cv-00116-K</td>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#">Papke v. City of Irving</a>
+                  </td>
 
-                          <td>N.D. Tex.</td>
+                  <td class="muted">3:95-cv-02644</td>
 
-                          <td>Jan 15, 2020</td>
+                  <td>N.D. Tex.</td>
 
-                          <td>Dismissed as frivolous</td>
+                  <td>Nov 3, 1995</td>
 
-                        </tr>
+                  <td>Dismissed</td>
+                </tr>
 
-                        <tr>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#"
+                      >Raper v. City of Irving Texas</a
+                    >
+                  </td>
 
-                          <td>
+                  <td class="muted">3:95-cv-01275</td>
 
-                            <a class="row-link" href="#"
+                  <td>N.D. Tex.</td>
 
-                              >Williams v. City of Irving, Texas et al</a
+                  <td>Jun 23, 1995</td>
 
-                            >
+                  <td>Dismissed</td>
+                </tr>
 
-                          </td>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#">Ivatury v. City of Irving</a>
+                  </td>
 
-                          <td class="muted">3:15-CV-1701-L</td>
+                  <td class="muted">3:94-cv-01556</td>
 
-                          <td>N.D. Tex.</td>
+                  <td>N.D. Tex.</td>
 
-                          <td>May 29, 2015</td>
+                  <td>Jul 22, 1994</td>
 
-                          <td>Dismissed with prejudice in 2018</td>
+                  <td>Dismissed</td>
+                </tr>
 
-                        </tr>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#">Hill v. City of Irving</a>
+                  </td>
 
-                        <tr>
+                  <td class="muted">3:91-cv-01190</td>
 
-                          <td>
+                  <td>N.D. Tex.</td>
 
-                            <a class="row-link" href="#">Wallis v. The City of Irving</a>
+                  <td>Jun 20, 1991</td>
 
-                          </td>
+                  <td>Dismissed</td>
+                </tr>
 
-                          <td class="muted">3:07-cv-01483</td>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#">Edwards v. City of Irving</a>
+                  </td>
 
-                          <td>N.D. Tex.</td>
+                  <td class="muted">3:90-cv-02603</td>
 
-                          <td>Aug 30, 2007</td>
+                  <td>N.D. Tex.</td>
 
-                          <td>Dismissed</td>
+                  <td>Nov 9, 1990</td>
 
-                        </tr>
+                  <td>Dismissed</td>
+                </tr>
 
-                        <tr>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#">Nichols v. City of Irving</a>
+                  </td>
 
-                          <td>
+                  <td class="muted">3:86-cv-02848</td>
 
-                            <a class="row-link" href="#"
+                  <td>N.D. Tex.</td>
 
-                              >House v. City of Irving, Texas</a
+                  <td>Nov 13, 1986</td>
 
-                            >
-
-                          </td>
-
-                          <td class="muted">3:03-cv-02524</td>
-
-                          <td>N.D. Tex.</td>
-
-                          <td>Oct 17, 2003</td>
-
-                          <td>Dismissed</td>
-
-                        </tr>
-
-                        <tr>
-
-                          <td>
-
-                            <a class="row-link" href="#">Howie v. City of Irving Texas</a>
-
-                          </td>
-
-                          <td class="muted">3:00-cv-02094</td>
-
-                          <td>N.D. Tex.</td>
-
-                          <td>Sep 25, 2000</td>
-
-                          <td>Dismissed</td>
-
-                        </tr>
-
-                        <tr>
-
-                          <td>
-
-                            <a class="row-link" href="#">Alrawaziq v. City of Irving</a>
-
-                          </td>
-
-                          <td class="muted">3:99-cv-00970</td>
-
-                          <td>N.D. Tex.</td>
-
-                          <td>Apr 29, 1999</td>
-
-                          <td>Dismissed</td>
-
-                        </tr>
-
-                        <tr>
-
-                          <td>
-
-                            <a class="row-link" href="#">Papke v. City of Irving</a>
-
-                          </td>
-
-                          <td class="muted">3:98-cv-00941</td>
-
-                          <td>N.D. Tex.</td>
-
-                          <td>Apr 16, 1998</td>
-
-                          <td>Dismissed</td>
-
-                        </tr>
-
-                        <tr>
-
-                          <td>
-
-                            <a class="row-link" href="#">Davis v. City of Irving</a>
-
-                          </td>
-
-                          <td class="muted">3:97-cv-02512</td>
-
-                          <td>N.D. Tex.</td>
-
-                          <td>Oct 14, 1997</td>
-
-                          <td>Dismissed</td>
-
-                        </tr>
-
-                        <tr>
-
-                          <td><a class="row-link" href="#">Caba v. City of Irving</a></td>
-
-                          <td class="muted">3:96-cv-00249</td>
-
-                          <td>N.D. Tex.</td>
-
-                          <td>Jan 26, 1996</td>
-
-                          <td>Dismissed</td>
-
-                        </tr>
-
-                        <tr>
-
-                          <td>
-
-                            <a class="row-link" href="#">Papke v. City of Irving</a>
-
-                          </td>
-
-                          <td class="muted">3:95-cv-02644</td>
-
-                          <td>N.D. Tex.</td>
-
-                          <td>Nov 3, 1995</td>
-
-                          <td>Dismissed</td>
-
-                        </tr>
-
-                        <tr>
-
-                          <td>
-
-                            <a class="row-link" href="#">Raper v. City of Irving Texas</a>
-
-                          </td>
-
-                          <td class="muted">3:95-cv-01275</td>
-
-                          <td>N.D. Tex.</td>
-
-                          <td>Jun 23, 1995</td>
-
-                          <td>Dismissed</td>
-
-                        </tr>
-
-                        <tr>
-
-                          <td>
-
-                            <a class="row-link" href="#">Ivatury v. City of Irving</a>
-
-                          </td>
-
-                          <td class="muted">3:94-cv-01556</td>
-
-                          <td>N.D. Tex.</td>
-
-                          <td>Jul 22, 1994</td>
-
-                          <td>Dismissed</td>
-
-                        </tr>
-
-                        <tr>
-
-                          <td><a class="row-link" href="#">Hill v. City of Irving</a></td>
-
-                          <td class="muted">3:91-cv-01190</td>
-
-                          <td>N.D. Tex.</td>
-
-                          <td>Jun 20, 1991</td>
-
-                          <td>Dismissed</td>
-
-                        </tr>
-
-                        <tr>
-
-                          <td>
-
-                            <a class="row-link" href="#">Edwards v. City of Irving</a>
-
-                          </td>
-
-                          <td class="muted">3:90-cv-02603</td>
-
-                          <td>N.D. Tex.</td>
-
-                          <td>Nov 9, 1990</td>
-
-                          <td>Dismissed</td>
-
-                        </tr>
-
-                        <tr>
-
-                          <td>
-
-                            <a class="row-link" href="#">Nichols v. City of Irving</a>
-
-                          </td>
-
-                          <td class="muted">3:86-cv-02848</td>
-
-                          <td>N.D. Tex.</td>
-
-                          <td>Nov 13, 1986</td>
-
-                          <td>Dismissed</td>
-
-                        </tr>
-
-                      </tbody>
-
-                    </table>
-
+                  <td>Dismissed</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
           <div class="list-foot">

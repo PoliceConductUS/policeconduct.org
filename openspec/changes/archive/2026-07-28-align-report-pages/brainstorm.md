@@ -18,29 +18,30 @@ experience-report surfaces. Three deliverables, one PR:
 The alignment matrix (evidence-gathered from the form's controls, the schema
 contract, the detail template, and the mockup):
 
-| Field | Collected (`/report/new`) | Stored | Displayed post-approval (ruling) |
-|---|---|---|---|
-| incident date | ✓ | `reviews.incident_date` | ✓ fact-list |
-| incident time | ✓ | verify column | ✓ with date, when present |
-| location | ✓ | `address`/`location_path_id` | ✓ fact-list |
-| agency | ✓ | via location/agency link | ✓ fact-list (linked) |
-| submitter relationship | ✓ | verify column | ✓ "Submitted by" fact |
-| what happened / story | ✓ | `description` | ✓ "What happened" body |
-| how it felt | ✓ (spec-required prompt) | verify column | ✓ **labeled subjective section** (owner ruling) |
-| interaction type | ✓ | verify column | ✓ fact-list, when present |
-| setting | ✓ | verify column | ✓ fact-list, when present |
-| purpose | ✗ (no distinct form field) | n/a | **not collected — removed from display set (owner ruling)** |
-| complaint filed / case number | ✓ | verify columns | ✓ fact-list, when present |
-| bodycam requested | ✓ | verify column | ✓ fact-list, when present |
-| records requested | ✗ (no distinct form field) | n/a | **not collected — removed from display set (owner ruling)** |
-| charges / charge outcome | charges: ✗ (submitter-provided, pre-existing column); outcome: ✗ (post-submission reality) | charges: `reviews.charges`; outcome: no column yet | charges: submitter-provided, displayed as "Charges"; charge outcome: future editor-added (pending intake migration) |
-| desired outcome | ✓ (`reportPurpose`) | `desired_outcome` | ✓ when present |
-| reporter name/email/phone/contact pref/consent | ✓ | internal | **never displayed** (privacy) |
-| per-officer ratings | ✗ (spec forbids initial scoring) | `review_officers.rating_overall` | **removed from report detail** (owner ruling; stays on personnel/agency surfaces) |
+| Field                                          | Collected (`/report/new`)                                                                  | Stored                                             | Displayed post-approval (ruling)                                                                                    |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| incident date                                  | ✓                                                                                          | `reviews.incident_date`                            | ✓ fact-list                                                                                                         |
+| incident time                                  | ✓                                                                                          | verify column                                      | ✓ with date, when present                                                                                           |
+| location                                       | ✓                                                                                          | `address`/`location_path_id`                       | ✓ fact-list                                                                                                         |
+| agency                                         | ✓                                                                                          | via location/agency link                           | ✓ fact-list (linked)                                                                                                |
+| submitter relationship                         | ✓                                                                                          | verify column                                      | ✓ "Submitted by" fact                                                                                               |
+| what happened / story                          | ✓                                                                                          | `description`                                      | ✓ "What happened" body                                                                                              |
+| how it felt                                    | ✓ (spec-required prompt)                                                                   | verify column                                      | ✓ **labeled subjective section** (owner ruling)                                                                     |
+| interaction type                               | ✓                                                                                          | verify column                                      | ✓ fact-list, when present                                                                                           |
+| setting                                        | ✓                                                                                          | verify column                                      | ✓ fact-list, when present                                                                                           |
+| purpose                                        | ✗ (no distinct form field)                                                                 | n/a                                                | **not collected — removed from display set (owner ruling)**                                                         |
+| complaint filed / case number                  | ✓                                                                                          | verify columns                                     | ✓ fact-list, when present                                                                                           |
+| bodycam requested                              | ✓                                                                                          | verify column                                      | ✓ fact-list, when present                                                                                           |
+| records requested                              | ✗ (no distinct form field)                                                                 | n/a                                                | **not collected — removed from display set (owner ruling)**                                                         |
+| charges / charge outcome                       | charges: ✗ (submitter-provided, pre-existing column); outcome: ✗ (post-submission reality) | charges: `reviews.charges`; outcome: no column yet | charges: submitter-provided, displayed as "Charges"; charge outcome: future editor-added (pending intake migration) |
+| desired outcome                                | ✓ (`reportPurpose`)                                                                        | `desired_outcome`                                  | ✓ when present                                                                                                      |
+| reporter name/email/phone/contact pref/consent | ✓                                                                                          | internal                                           | **never displayed** (privacy)                                                                                       |
+| per-officer ratings                            | ✗ (spec forbids initial scoring)                                                           | `review_officers.rating_overall`                   | **removed from report detail** (owner ruling; stays on personnel/agency surfaces)                                   |
 
 ## Alternatives Considered
 
 ### Option A: Display-only port (mockup verbatim)
+
 - **Approach**: Port report-detail-v5 exactly; leave the form and data flow alone.
 - **Pros**: Smallest diff; pure port like the other templates.
 - **Cons**: Leaves collected-but-never-displayed fields undocumented and the
@@ -50,6 +51,7 @@ contract, the detail template, and the mockup):
   not a visual port.
 
 ### Option B: Full parity with owner-ruled dispositions (chosen)
+
 - **Approach**: Port the detail page with the three rulings applied (ratings
   removed, feelings in a labeled subjective section, fact-list extended);
   verify a storage path for every displayed field (migrations/contract updates
@@ -62,6 +64,7 @@ contract, the detail template, and the mockup):
 - **Why chosen**: It is the stated requirement for this PR.
 
 ### Option C: Trim collection to the mockup's display set
+
 - **Approach**: Stop collecting anything the mockup doesn't display.
 - **Pros**: Parity by subtraction; no storage verification needed.
 - **Cons**: Deletes spec-required prompts (feelings) and moderation-valuable

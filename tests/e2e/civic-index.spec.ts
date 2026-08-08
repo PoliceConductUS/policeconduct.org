@@ -109,7 +109,10 @@ test.describe("civic index pages", () => {
       await expect(cell.getByText("--", { exact: true })).toBeVisible();
       await expect(
         cell.getByRole("link", { name: "Help collect this →" }),
-      ).toHaveAttribute("href", /^\/volunteer\/\?source=%2Ftx%2F&scope=state&state=tx$/);
+      ).toHaveAttribute(
+        "href",
+        /^\/volunteer\/\?source=%2Ftx%2F&scope=state&state=tx$/,
+      );
     }
     await expect(page.getByText("Not yet collected")).toHaveCount(0);
     await expect(page.getByText("not on this site yet")).toHaveCount(0);

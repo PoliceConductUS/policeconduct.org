@@ -14,20 +14,20 @@ Per an explicit user decision, we sync the **civic-index redesign mockups** in
 The **latest version** of each distinct page type (all link `shared-v5.css`; agency profile
 also uses `agency-entity-v5.css`; all but personnel-profile use `app.js`):
 
-| Group                 | Card                | Source mockup               |
-|-----------------------|---------------------|-----------------------------|
-| State & County Index  | Texas               | texas-v9.html               |
-| State & County Index  | Wyoming             | wyoming-v5.html             |
-| State & County Index  | Counties            | counties-v5.html            |
-| State & County Index  | County Detail       | county-v6.html              |
-| State & County Index  | Place               | place-v6.html               |
-| Agency                | Agency Profile (state/local) | agency-entity-v8.html |
-| Agency                | Agency Profile (federal)     | federal-agency-v1.html |
-| Agency                | Agency Civil Cases  | agency-civil-cases-v5.html  |
-| Agency                | Agency Personnel    | agency-personnel-v5.html    |
-| Records               | Personnel Profile   | personnel-profile-v8.html   |
-| Records               | Civil Case Detail   | civil-case-detail-v6.html   |
-| Records               | Report Detail       | report-detail-v5.html       |
+| Group                | Card                         | Source mockup              |
+| -------------------- | ---------------------------- | -------------------------- |
+| State & County Index | Texas                        | texas-v9.html              |
+| State & County Index | Wyoming                      | wyoming-v5.html            |
+| State & County Index | Counties                     | counties-v5.html           |
+| State & County Index | County Detail                | county-v6.html             |
+| State & County Index | Place                        | place-v6.html              |
+| Agency               | Agency Profile (state/local) | agency-entity-v8.html      |
+| Agency               | Agency Profile (federal)     | federal-agency-v1.html     |
+| Agency               | Agency Civil Cases           | agency-civil-cases-v5.html |
+| Agency               | Agency Personnel             | agency-personnel-v5.html   |
+| Records              | Personnel Profile            | personnel-profile-v8.html  |
+| Records              | Civil Case Detail            | civil-case-detail-v6.html  |
+| Records              | Report Detail                | report-detail-v5.html      |
 
 ## Build procedure (to re-sync after editing mockups)
 

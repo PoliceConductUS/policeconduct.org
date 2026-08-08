@@ -62,13 +62,8 @@ const currentPath = Astro.url?.pathname || "/";
   <details class="entity-menu">
     <summary class="entity-action entity-menu-toggle">
       More actions
-      <svg
-        class="entity-menu-chevron"
-        viewBox="0 0 16 16"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <path fill="currentColor" d="M4 6l4 4 4-4z"></path>
+      <svg class="entity-menu-chevron" aria-hidden="true" focusable="false">
+        <use href="/icons.svg#chevron-down"></use>
       </svg>
     </summary>
     <ul class="entity-menu-list">

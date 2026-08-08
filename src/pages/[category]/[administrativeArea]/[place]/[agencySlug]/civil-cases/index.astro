@@ -1,7 +1,10 @@
 ---
 import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
 import TableScroll from "#src/components/TableScroll.astro";
-import { buildAgencyCivilCaseRows } from "#src/lib/data/agency-civil-case-rows.js";
+import {
+  buildAgencyCivilCaseRows,
+  type CivilCaseRow,
+} from "#src/lib/data/agency-civil-case-rows.js";
 import {
   loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPathsForTopic,
@@ -43,17 +46,17 @@ const formatDate = (value?: string | null) =>
       </thead>
       <tbody>
         {
-          rows.map((row: any) => (
+          rows.map((row: CivilCaseRow) => (
             <tr>
               <td>
-                <a class="row-link" href={row.href}>
+                <a class="row-link" href={row.caseUrl}>
                   {row.title || "Civil case"}
                 </a>
               </td>
               <td class="muted">{row.cause_number || ""}</td>
               <td>{row.court || ""}</td>
               <td>{formatDate(row.filed_date)}</td>
-              <td>{row.outcome || ""}</td>
+              <td>{row.outcome}</td>
             </tr>
           ))
         }

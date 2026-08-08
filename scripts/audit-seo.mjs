@@ -225,7 +225,9 @@ const collectSitemapUrls = async function* () {
       try {
         fileName = path.basename(new URL(childUrl).pathname);
       } catch {
-        addError(`sitemap-index.xml has an unparseable sitemap URL: ${childUrl}`);
+        addError(
+          `sitemap-index.xml has an unparseable sitemap URL: ${childUrl}`,
+        );
         continue;
       }
       const childPath = path.join(DIST_DIR, fileName);
@@ -333,9 +335,7 @@ const auditSitemapHygiene = async () => {
       const head = await readHeadChunk(fileHandle);
 
       const hasHtmlTag = /<html[\s>]/i.test(head);
-      const hasMetaRefresh = /<meta[^>]+http-equiv=["']refresh["']/i.test(
-        head,
-      );
+      const hasMetaRefresh = /<meta[^>]+http-equiv=["']refresh["']/i.test(head);
       if (!hasHtmlTag || hasMetaRefresh) {
         recordViolation("redirectStub", rawUrl);
       }
@@ -379,7 +379,11 @@ const auditSitemapHygiene = async () => {
     );
   };
 
-  reportGroup("noFile", "have no built page (sitemap URL has no built page)", violations.noFile);
+  reportGroup(
+    "noFile",
+    "have no built page (sitemap URL has no built page)",
+    violations.noFile,
+  );
   reportGroup(
     "redirectStub",
     "are redirect stubs (sitemap URL is a redirect stub)",
