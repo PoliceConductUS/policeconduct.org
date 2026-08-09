@@ -110,7 +110,7 @@ const reportDescriptionSource =
   typeof data.report.description === "string" ? data.report.description : "";
 const reportDescription = reportDescriptionSource
   ? stripHtml(reportDescriptionSource)
-  : `Public record of a reported police interaction: ${reportTitle}. Includes linked agencies and personnel, sources, and the current status of the report.`;
+  : `Public record of a reported police experience: ${reportTitle}. Includes linked agencies and personnel, sources, and the current status of the report.`;
 // Report narratives can run to thousands of characters; the full text stays on
 // the Report entity, but the page <meta description> and WebPage node use a
 // search-length summary (~160 chars, trimmed to a word boundary).
@@ -323,7 +323,7 @@ const structuredData = {
             {
               facts.interactionType ? (
                 <div>
-                  <dt>Interaction type</dt>
+                  <dt>Experience type</dt>
                   <dd>{facts.interactionType}</dd>
                 </div>
               ) : null
@@ -365,14 +365,6 @@ const structuredData = {
                 <div>
                   <dt>Charges</dt>
                   <dd>{facts.charges}</dd>
-                </div>
-              ) : null
-            }
-            {
-              data.report.desired_outcome ? (
-                <div>
-                  <dt>Desired outcome</dt>
-                  <dd>{data.report.desired_outcome}</dd>
                 </div>
               ) : null
             }

@@ -1,5 +1,6 @@
 ---
 import Breadcrumb from "#src/components/Breadcrumb.astro";
+import EntityActionBar from "#src/components/EntityActionBar.astro";
 import "#src/styles/civic-ledger.css";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
@@ -590,7 +591,7 @@ const structuredData = {
               { label: officerName, href: officerPath },
             ]}
           />
-          <div class="personnel-actions" data-pagefind-ignore>
+          <EntityActionBar>
             <HelpCollectDataButton
               context={officerName}
               sourcePage={officerPath}
@@ -610,37 +611,7 @@ const structuredData = {
             >
               Share your experience
             </PrefillNavButton>
-            {
-              /* Native no-JS "More actions" disclosure, per the shared
-                 entity-page-chrome contract — .entity-menu* styling is
-                 global (src/styles/civic-ledger.css), imported above. */
-            }
-            <details class="entity-menu">
-              <summary class="personnel-action entity-menu-toggle">
-                More actions
-                <svg
-                  class="entity-menu-chevron"
-                  viewBox="0 0 16 16"
-                  aria-hidden="true"
-                  focusable="false"
-                >
-                  <path fill="currentColor" d="M4 6l4 4 4-4z"></path>
-                </svg>
-              </summary>
-              <ul class="entity-menu-list">
-                <li>
-                  <a class="entity-menu-item" href={officerPath} data-copy-link>
-                    Copy link
-                  </a>
-                </li>
-                <li>
-                  <a class="entity-menu-item" href="/data-and-methods/">
-                    View sources &amp; methodology
-                  </a>
-                </li>
-              </ul>
-            </details>
-          </div>
+          </EntityActionBar>
         </div>
 
         <div class="personnel-profile-hero">
@@ -1637,10 +1608,10 @@ const structuredData = {
     margin-bottom: 0;
   }
 
-  .personnel-topbar .personnel-actions {
-    display: flex;
+  .personnel-topbar :global(.entity-actions) {
     gap: 0.55rem;
     justify-content: flex-end;
+    margin-top: 0;
   }
 
   .personnel-profile-hero {
@@ -1732,7 +1703,7 @@ const structuredData = {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    .personnel-topbar .personnel-actions {
+    .personnel-topbar :global(.entity-actions) {
       justify-content: flex-start;
     }
   }

@@ -59,7 +59,8 @@ const uniquePersonnel = (personnel: CivilCasePersonnelRef[]) => {
 
 // Prefer the recorded disposition. Absent one, a case with no termination date
 // is still in litigation ("Ongoing"); a terminated case whose disposition we
-// never captured is "Unknown".
+// never captured has missing data, shown as the neutral "--" placeholder
+// (never a fabricated "Unknown").
 const getOutcomeLabel = (caseItem: {
   outcome?: string | null;
   date_terminated?: string | null;
@@ -67,7 +68,7 @@ const getOutcomeLabel = (caseItem: {
   const text =
     typeof caseItem.outcome === "string" ? caseItem.outcome.trim() : "";
   if (text) return text;
-  return caseItem.date_terminated ? "Unknown" : "Ongoing";
+  return caseItem.date_terminated ? "--" : "Ongoing";
 };
 
 const isPersonnelRef = (
