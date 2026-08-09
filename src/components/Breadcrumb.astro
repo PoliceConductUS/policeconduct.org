@@ -1,47 +1,55 @@
 ---
 import { getSiteUrl } from "#src/lib/structured-data.js";
 
-// Shared civic-index-redesign breadcrumb trail. Renders exactly the items
-// given — no automatic "Home" injection — the last item is always treated as
-// the current page (aria-current="page", no link), matching
-// mockups/civic-index-redesign/shared-v5.css (.crumbs) and every
-// texas-v9.html / agency-entity-v8.html breadcrumb instance.
+// The single site-wide breadcrumb component. Renders the redesign `.crumbs`
+// trail (mockups/civic-index-redesign/shared-v5.css) and emits BreadcrumbList
+// JSON-LD so every page exposes its hierarchy to search and AI answer engines.
 //
-// This is intentionally a separate, leaner component from the existing
-// src/components/Breadcrumbs.astro (plural), which auto-injects "Home".
-// Like the plural component, it emits BreadcrumbList JSON-LD so the deep
-// entity/geographic pages that use this trail expose their hierarchy to
-// search and AI answer engines.
+// - "Home" is auto-injected when the caller does not already start the trail
+//   with it, so callers can pass either a bare or a Home-prefixed trail.
+// - The current page is the item flagged `current`, or the last item when none
+//   is flagged; it renders as plain text (aria-current="page", no link).
 interface BreadcrumbItem {
   label: string;
   href?: string;
+  current?: boolean;
 }
 
 interface Props {
   items: BreadcrumbItem[];
+  className?: string;
 }
 
-const { items } = Astro.props;
-const lastIndex = items.length - 1;
+const { items, className } = Astro.props;
 
-// Emit BreadcrumbList JSON-LD only for a well-formed trail: at least two
-// items, and every item except the current (last) one has an href. The
-// current item resolves to this page's own URL.
+const homeItem: BreadcrumbItem = { label: "Home", href: "/" };
+const withHome =
+  items[0]?.label === homeItem.label && items[0]?.href === homeItem.href
+    ? items
+    : [homeItem, ...items];
+const lastIndex = withHome.length - 1;
+const normalizedItems = withHome.map((item, index) => ({
+  label: item.label,
+  href: item.href,
+  current: item.current ?? index === lastIndex,
+}));
+
+// Emit BreadcrumbList JSON-LD only for a well-formed trail: at least two items,
+// and every non-current item has an href. The current item resolves to this
+// page's own URL.
 const siteUrl = getSiteUrl(Astro.site);
 const currentPath = Astro.url?.pathname || "/";
 const hasValidTrail =
-  items.length >= 2 &&
-  items.every((item, index) => index === lastIndex || Boolean(item.href));
+  normalizedItems.length >= 2 &&
+  normalizedItems.every((item) => item.current || Boolean(item.href));
 const breadcrumbData = hasValidTrail
   ? {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
-      itemListElement: items.map((item, index) => ({
+      itemListElement: normalizedItems.map((item, index) => ({
         "@type": "ListItem",
         position: index + 1,
         name: item.label,
-        // hasValidTrail guarantees every non-current item has an href; the
-        // current (last) item falls back to this page's own path.
         item: new URL(item.href || currentPath, siteUrl).toString(),
       })),
     }
@@ -52,20 +60,17 @@ const serializedBreadcrumbData = breadcrumbData
 ---
 
 <nav aria-label="Breadcrumb" data-pagefind-ignore>
-  <ol class="crumbs">
+  <ol class:list={["crumbs", className]}>
     {
-      items.map((item, index) => {
-        const isCurrent = index === lastIndex;
-        return (
-          <li aria-current={isCurrent ? "page" : undefined}>
-            {!isCurrent && item.href ? (
-              <a href={item.href}>{item.label}</a>
-            ) : (
-              item.label
-            )}
-          </li>
-        );
-      })
+      normalizedItems.map((item) => (
+        <li aria-current={item.current ? "page" : undefined}>
+          {!item.current && item.href ? (
+            <a href={item.href}>{item.label}</a>
+          ) : (
+            item.label
+          )}
+        </li>
+      ))
     }
   </ol>
 </nav>

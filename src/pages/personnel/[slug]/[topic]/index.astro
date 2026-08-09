@@ -1,5 +1,5 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import DataPanel from "#src/components/DataPanel.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
@@ -191,7 +191,7 @@ const fallbackChart =
   <main id="main" class="personnel-topic-page" data-pagefind-body>
     <section class="personnel-topic-main">
       <div class="container">
-        <Breadcrumbs
+        <Breadcrumb
           items={[
             { label: "Personnel", href: "/personnel/" },
             { label: officerName, href: `/personnel/${slug}/` },

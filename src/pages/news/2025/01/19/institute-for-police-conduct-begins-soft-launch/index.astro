@@ -1,6 +1,6 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import { buildNewsArticle, getSiteUrl } from "#src/lib/structured-data.js";
 
 export const newsMeta = {
@@ -31,7 +31,7 @@ const structuredData = buildNewsArticle({
   <main id="main" class="">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
-        <Breadcrumbs
+        <Breadcrumb
           items={[
             { label: "News", href: "/news/" },
             {

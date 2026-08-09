@@ -1,5 +1,5 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { loadAgencyFinderResults } from "#src/lib/data/agencies.js";
 import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
@@ -101,7 +101,7 @@ const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
   <main id="main">
     <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
       <div class="container">
-        <Breadcrumbs
+        <Breadcrumb
           items={[
             { label: "Home", href: "/" },
             { label: "Find Records", href: pagePath, current: true },

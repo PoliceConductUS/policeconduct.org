@@ -1,5 +1,5 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
   formatNewsDate,
@@ -65,7 +65,7 @@ const structuredData = buildCollectionPage({
       <div class="container">
         <div class="row">
           <div class="col-12 col-lg-10">
-            <Breadcrumbs
+            <Breadcrumb
               items={[
                 { label: "Home", href: "/" },
                 { label: "News", href: "/news/" },

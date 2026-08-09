@@ -1,5 +1,5 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import DataPanel from "#src/components/DataPanel.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
@@ -19,6 +19,11 @@ type Props = {
 };
 
 const { breadcrumbs, pagePath, reports, title } = Astro.props as Props;
+// `title` is already "Reports for <location>"; derive the location so the
+// description reads "Published reports for <location>." (not the doubled
+// "Published reports for Reports for <location>.").
+const locationLabel = title.replace(/^Reports for /, "");
+const pageDescription = `Published reports for ${locationLabel}.`;
 const formatCount = (value: number) => value.toLocaleString("en-US");
 const metricCards = [
   {
@@ -49,7 +54,7 @@ const structuredData = buildCollectionPage({
   siteUrl,
   pageUrl: new URL(pagePath, siteUrl).toString(),
   name: `${title} | PoliceConduct.org`,
-  description: `Published reports for ${title}.`,
+  description: pageDescription,
   items: reports.map((report) => ({
     href: report.canonicalPath,
     name: report.title,
@@ -59,7 +64,7 @@ const structuredData = buildCollectionPage({
 
 <SiteLayout
   title={`${title} | PoliceConduct.org`}
-  description={`Published reports for ${title}.`}
+  description={pageDescription}
   pagePath={pagePath}
   canonicalUrl={pagePath}
   structuredData={structuredData}
@@ -67,17 +72,8 @@ const structuredData = buildCollectionPage({
   <main id="main" class="report-archive-page">
     <section class="report-archive-main">
       <div class="container">
-        <Breadcrumbs
-          items={[
-            ...breadcrumbs,
-            { label: title, href: pagePath, current: true },
-          ]}
-          className="mb-2"
-        />
-        <EntityPageHeader
-          title={title}
-          description={`Published reports for ${title}.`}
-        >
+        <Breadcrumb items={breadcrumbs} className="mb-2" />
+        <EntityPageHeader title={title} description={pageDescription}>
           <Fragment slot="actions">
             <HelpCollectDataButton
               context={title}

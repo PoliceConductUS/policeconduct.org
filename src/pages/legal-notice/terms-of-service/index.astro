@@ -1,6 +1,6 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/legal-notice/terms-of-service/";
@@ -24,7 +24,7 @@ const structuredData = buildWebPage({
 >
   <main id="main" class="flex-grow-1 py-vh-3">
     <div class="container">
-      <Breadcrumbs
+      <Breadcrumb
         items={[
           { label: "Legal Notice", href: "/legal-notice/" },
           { label: "Terms of Service", href: pagePath, current: true },

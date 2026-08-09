@@ -1,5 +1,5 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import Pagination from "#src/components/Pagination.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
@@ -50,7 +50,7 @@ for (const row of page.data) {
   <main id="main" class="civic-index-page">
     <section class="civic-index-page-main">
       <div class="container">
-        <Breadcrumbs
+        <Breadcrumb
           items={[
             ...model.breadcrumbs.map((item) => ({ ...item, current: false })),
             { label, href: pagePath, current: true },

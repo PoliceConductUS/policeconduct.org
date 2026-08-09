@@ -1,6 +1,6 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 ---
 
 <SiteLayout
@@ -16,7 +16,7 @@ import Breadcrumbs from "#src/components/Breadcrumbs.astro";
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-lg-8">
-          <Breadcrumbs
+          <Breadcrumb
             items={[
               { label: "Legal Notice", href: "/legal-notice/" },
               {

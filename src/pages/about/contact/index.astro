@@ -1,6 +1,6 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 ---
 
@@ -14,7 +14,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-lg-8">
-          <Breadcrumbs
+          <Breadcrumb
             items={[
               { label: "About", href: "/about/" },
               { label: "Contact", href: "/about/contact/", current: true },

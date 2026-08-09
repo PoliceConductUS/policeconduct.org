@@ -1,6 +1,6 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/frequently-asked-questions/";
@@ -261,7 +261,7 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
 >
   <main id="main" class="flex-grow-1 py-vh-3">
     <div class="container">
-      <Breadcrumbs
+      <Breadcrumb
         items={[
           { label: "Home", href: "/" },
           {

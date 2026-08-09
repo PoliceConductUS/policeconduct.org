@@ -1,5 +1,5 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import Pagination from "#src/components/Pagination.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { timeBuildStep } from "#src/lib/build-timing.js";
@@ -83,7 +83,7 @@ const formatDate = (value?: string | null) =>
   <main id="main">
     <section class="agency-personnel-hero">
       <div class="container">
-        <Breadcrumbs
+        <Breadcrumb
           items={[
             { label: "Home", href: "/" },
             { label: categoryLabel, href: `/${categorySlug}/` },

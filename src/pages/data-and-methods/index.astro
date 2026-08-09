@@ -1,5 +1,5 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
@@ -25,7 +25,7 @@ const structuredData = buildWebPage({
   <main id="main" class="data-methods-page">
     <section class="data-methods-hero">
       <div class="container">
-        <Breadcrumbs
+        <Breadcrumb
           items={[
             { label: "Home", href: "/" },
             { label: "Data and Methods", href: pagePath, current: true },

@@ -1,5 +1,5 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
 import DataPanel from "#src/components/DataPanel.astro";
 import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
@@ -47,7 +47,7 @@ const tableOutcomes = ["Dismissed", "Reduced", "Plea", "Convicted", "Jail"];
   <main id="main" class="outcomes-income-page">
     <section class="outcomes-income-main">
       <div class="container">
-        <Breadcrumbs items={breadcrumbs} className="mb-2" />
+        <Breadcrumb items={breadcrumbs} className="mb-2" />
         <EntityPageHeader title={title} description={description}>
           <Fragment slot="actions">
             <HelpCollectDataButton
