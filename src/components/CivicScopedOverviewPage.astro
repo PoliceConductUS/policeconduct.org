@@ -1,5 +1,6 @@
 ---
 import Breadcrumb from "#src/components/Breadcrumb.astro";
+import PageHeader from "#src/components/PageHeader.astro";
 import StatCell from "#src/components/StatCell.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import {
@@ -90,11 +91,11 @@ const personnelCount = coverageValue("personnel");
           ]}
         />
 
-        <section class="civic-lede">
-          <p class="civic-kicker">{heading}</p>
-          <h1>{pageConfig.title}</h1>
-          <p class="civic-lede-sub">{pageConfig.description}</p>
-        </section>
+        <PageHeader
+          eyebrow={heading}
+          title={pageConfig.title}
+          description={pageConfig.description}
+        />
 
         {
           kind === "personnel" ? (

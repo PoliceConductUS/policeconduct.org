@@ -79,8 +79,8 @@ const sampleRows = [
   canonicalUrl={pagePath}
   structuredData={structuredData}
 >
-  <main id="main" class="fatal-force-page">
-    <section class="fatal-force-overview">
+  <main id="main" class="civic-index-page">
+    <section class="civic-index-page-main">
       <div class="container">
         <Breadcrumb items={breadcrumbItems} />
         <PageHeader title={title} description={description}>
@@ -115,18 +115,3 @@ const sampleRows = [
     </section>
   </main>
 </SiteLayout>
-
-<style>
-  .fatal-force-page {
-    background: #fbfcff;
-    color: #071842;
-  }
-
-  .fatal-force-overview {
-    padding: 1.35rem 0 2rem;
-  }
-
-  .fatal-force-overview > .container {
-    max-width: 1240px;
-  }
-</style>

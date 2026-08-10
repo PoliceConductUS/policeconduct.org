@@ -44,8 +44,8 @@ const tableOutcomes = ["Dismissed", "Reduced", "Plea", "Convicted", "Jail"];
   pagePath={pagePath}
   canonicalUrl={pagePath}
 >
-  <main id="main" class="outcomes-income-page">
-    <section class="outcomes-income-main">
+  <main id="main" class="civic-index-page">
+    <section class="civic-index-page-main">
       <div class="container">
         <Breadcrumb items={breadcrumbs} className="mb-2" />
         <PageHeader title={title} description={description}>
@@ -137,19 +137,6 @@ const tableOutcomes = ["Dismissed", "Reduced", "Plea", "Convicted", "Jail"];
 </SiteLayout>
 
 <style>
-  .outcomes-income-page {
-    background: #f7f9fd;
-    color: #071842;
-  }
-
-  .outcomes-income-main {
-    padding: 1rem 0 2.5rem;
-  }
-
-  .outcomes-income-main > .container {
-    max-width: 1240px;
-  }
-
   .outcomes-income-filters {
     background: #fbfcff;
     border: 1px solid #d5deeb;

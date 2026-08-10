@@ -48,8 +48,8 @@ const sampleRows = [
   pagePath={model.pagePath}
   structuredData={structuredData}
 >
-  <main id="main" class="civic-dashboard" data-pagefind-body>
-    <section class="civic-dashboard-main">
+  <main id="main" class="civic-index-page" data-pagefind-body>
+    <section class="civic-index-page-main">
       <div class="container">
         <Breadcrumb items={model.breadcrumbs} />
         <PageHeader title={model.heading} description={model.description}>
@@ -242,19 +242,6 @@ const sampleRows = [
 </SiteLayout>
 
 <style>
-  .civic-dashboard {
-    background: #fbfcff;
-    color: #071842;
-  }
-
-  .civic-dashboard-main {
-    padding: 1.35rem 0 2rem;
-  }
-
-  .civic-dashboard-main > .container {
-    max-width: 1240px;
-  }
-
   .civic-dashboard-heading {
     align-items: start;
     display: grid;

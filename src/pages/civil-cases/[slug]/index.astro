@@ -1,5 +1,6 @@
 ---
 import Breadcrumb from "#src/components/Breadcrumb.astro";
+import PageHeader from "#src/components/PageHeader.astro";
 import "#src/styles/civic-ledger.css";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
@@ -174,9 +175,7 @@ const structuredData = {
           ]}
         />
 
-        <section class="civic-lede">
-          <p class="civic-kicker">Civil case</p>
-          <h1>{caseTitle}</h1>
+        <PageHeader eyebrow="Civil case" title={caseTitle}>
           <p class="civic-lede-sub">
             {
               truncateText(
@@ -190,7 +189,7 @@ const structuredData = {
               { label: "Suggest edit", href: "/civil-cases/suggest-edit/" },
             ]}
           />
-        </section>
+        </PageHeader>
 
         <section class="civic-section">
           <dl class="fact-list">

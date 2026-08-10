@@ -1,5 +1,6 @@
 ---
 import Breadcrumb from "#src/components/Breadcrumb.astro";
+import PageHeader from "#src/components/PageHeader.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { buildCollectionPage, getSiteUrl } from "#src/lib/structured-data.js";
 import "#src/styles/civic-ledger.css";
@@ -60,11 +61,11 @@ const structuredData = buildCollectionPage({
           ]}
         />
 
-        <section class="civic-lede">
-          <p class="civic-kicker">{agencyDisplayName}</p>
-          <h1>{topicLabel}</h1>
-          <p class="civic-lede-sub">{description}</p>
-        </section>
+        <PageHeader
+          eyebrow={agencyDisplayName}
+          title={topicLabel}
+          description={description}
+        />
 
         <section class="civic-section civic-section--last">
           <slot />

@@ -1,5 +1,6 @@
 ---
 import Breadcrumb from "#src/components/Breadcrumb.astro";
+import PageHeader from "#src/components/PageHeader.astro";
 import Pagination from "#src/components/Pagination.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
@@ -58,11 +59,11 @@ for (const row of page.data) {
           className="mb-2"
         />
 
-        <section class="civic-lede">
-          <p class="civic-kicker">{model.jurisdictionLabel}</p>
-          <h1>{pageTitle}</h1>
-          <p class="civic-lede-sub">{description}</p>
-        </section>
+        <PageHeader
+          eyebrow={model.jurisdictionLabel}
+          title={pageTitle}
+          description={description}
+        />
 
         <section class="civic-section civic-section--last">
           <div class="alpha-nav">

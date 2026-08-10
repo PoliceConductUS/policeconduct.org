@@ -1,5 +1,6 @@
 ---
 import Breadcrumb from "#src/components/Breadcrumb.astro";
+import PageHeader from "#src/components/PageHeader.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import StatCell from "#src/components/StatCell.astro";
 import StatStrip from "#src/components/StatStrip.astro";
@@ -310,10 +311,7 @@ const statColumns = model.statCells.length + 1;
       <div class="container">
         <Breadcrumb items={model.breadcrumbs} />
 
-        <section class="civic-lede">
-          <h1>{heading}</h1>
-          <p class="civic-lede-sub">{model.description}</p>
-        </section>
+        <PageHeader title={heading} description={model.description} />
 
         <StatStrip
           ariaLabel={`${heading} coverage totals`}

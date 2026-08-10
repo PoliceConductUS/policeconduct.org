@@ -1,5 +1,6 @@
 ---
 import Breadcrumb from "#src/components/Breadcrumb.astro";
+import PageHeader from "#src/components/PageHeader.astro";
 import "#src/styles/civic-ledger.css";
 import DisqusComments from "#src/components/DisqusComments.astro";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
@@ -266,9 +267,7 @@ const structuredData = {
           ]}
         />
 
-        <section class="civic-lede">
-          <p class="civic-kicker">Public report</p>
-          <h1>{reportTitle}</h1>
+        <PageHeader eyebrow="Public report" title={reportTitle}>
           <p class="civic-lede-sub">
             A first-party account of an experience shared by the public and
             reviewed before publication on {
@@ -287,7 +286,7 @@ const structuredData = {
               Notify me when this report changes
             </PrefillNavButton>
           </EntityActionBar>
-        </section>
+        </PageHeader>
 
         <section class="civic-section">
           <dl class="fact-list">
