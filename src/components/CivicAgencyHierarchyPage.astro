@@ -2,7 +2,7 @@
 import Breadcrumb from "#src/components/Breadcrumb.astro";
 import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import PageHeader from "#src/components/PageHeader.astro";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
@@ -52,7 +52,7 @@ const sampleRows = [
     <section class="civic-dashboard-main">
       <div class="container">
         <Breadcrumb items={model.breadcrumbs} />
-        <EntityPageHeader title={model.heading} description={model.description}>
+        <PageHeader title={model.heading} description={model.description}>
           <Fragment slot="actions">
             <HelpCollectDataButton
               context={model.heading}
@@ -67,7 +67,7 @@ const sampleRows = [
               />
             </label>
           </Fragment>
-        </EntityPageHeader>
+        </PageHeader>
 
         {
           model.metrics.length ? (

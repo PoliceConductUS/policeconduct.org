@@ -45,6 +45,13 @@
   max-width: 54ch;
 }
 
+.civic-lede-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+
 /* ---- merged stat band ---- */
 
 .stat-strip {

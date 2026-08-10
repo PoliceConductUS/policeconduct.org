@@ -1,7 +1,7 @@
 ---
 import Breadcrumb from "#src/components/Breadcrumb.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import EntityPageHeader from "#src/components/EntityPageHeader.astro";
+import PageHeader from "#src/components/PageHeader.astro";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
@@ -83,7 +83,7 @@ const sampleRows = [
     <section class="fatal-force-overview">
       <div class="container">
         <Breadcrumb items={breadcrumbItems} />
-        <EntityPageHeader title={title} description={description}>
+        <PageHeader title={title} description={description}>
           <Fragment slot="actions">
             <HelpCollectDataButton
               context={title}
@@ -95,7 +95,7 @@ const sampleRows = [
               Download report
             </button>
           </Fragment>
-        </EntityPageHeader>
+        </PageHeader>
 
         <MetricGrid metrics={metricCards} columns="auto" />
 
