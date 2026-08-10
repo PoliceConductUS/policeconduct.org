@@ -771,19 +771,9 @@ progress {
   .container-sm,
   .container-md,
   .container-lg,
-  .container-xl {
-    max-width: 1140px;
-  }
-}
-
-@media (min-width: 1680px) {
-  .container,
-  .container-sm,
-  .container-md,
-  .container-lg,
   .container-xl,
   .container-xxl {
-    max-width: 1600px;
+    max-width: 1240px;
   }
 }
 
