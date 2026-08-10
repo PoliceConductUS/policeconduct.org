@@ -1,8 +1,8 @@
 ---
-import Breadcrumb from "#src/components/Breadcrumb.astro";
 import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
+import EntityActionBar from "#src/components/EntityActionBar.astro";
 import Pagination from "#src/components/Pagination.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import {
   CIVIL_CASES_PAGE_SIZE,
   loadCivilCaseList,
@@ -60,136 +60,56 @@ const structuredData = {
 };
 ---
 
-<SiteLayout
+<PageShell
   title={`${pageTitle} | PoliceConduct.org`}
   description={pageDescription}
   pagePath={pagePath}
   canonicalUrl={pagePath}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Civil cases", href: pagePath, current: true },
+  ]}
+  heading="Civil cases"
+  lede={pageDescription}
 >
-  <main id="main" class="civic-cases-page">
-    <section class="civic-cases-hero">
-      <div class="container">
-        <div class="civic-cases-heading">
-          <div>
-            <Breadcrumb
-              items={[
-                { label: "Home", href: "/" },
-                { label: "Civil cases", href: pagePath, current: true },
-              ]}
-              className="mb-2"
-            />
-            <h1 class="ipc-page-title">Civil cases</h1>
-            <p>{pageDescription}</p>
-          </div>
-          <div class="civic-cases-actions">
-            <a href="/civil-cases/new/">Submit civil case</a>
-            <span>Page 1 of {totalPages}</span>
-          </div>
-        </div>
-      </div>
-    </section>
+  <Fragment slot="actions">
+    <EntityActionBar
+      actions={[{ label: "Submit civil case", href: "/civil-cases/new/" }]}
+    />
+  </Fragment>
 
-    <section class="civic-cases-list-section">
-      <div class="container">
-        <div class="profile-record-list">
-          {
-            pageCases.map((caseItem) => (
-              <article class="profile-record">
-                <div class="profile-record-meta">
-                  <span>{formatLongDate(caseItem.filed_date)}</span>
-                  {caseItem.court ? <span>{caseItem.court}</span> : null}
-                </div>
-                <div class="profile-record-body">
-                  <h2 class="profile-record-title">
-                    <a href={`/civil-cases/${caseItem.slug}/`}>
-                      {caseItem.title}
-                    </a>
-                  </h2>
-                  <div class="profile-record-detail">
-                    {caseItem.cause_number ? (
-                      <span>{caseItem.cause_number}</span>
-                    ) : null}
-                    {caseItem.claims_summary ? (
-                      <span>{caseItem.claims_summary}</span>
-                    ) : null}
-                  </div>
-                </div>
-              </article>
-            ))
-          }
-        </div>
-        <Pagination basePath={pagePath} currentPage={1} lastPage={totalPages} />
-        <CivilCaseScopeNote />
-      </div>
-    </section>
-  </main>
-</SiteLayout>
+  <section class="civic-section civic-section--last">
+    <div class="profile-record-list">
+      {
+        pageCases.map((caseItem) => (
+          <article class="profile-record">
+            <div class="profile-record-meta">
+              <span>{formatLongDate(caseItem.filed_date)}</span>
+              {caseItem.court ? <span>{caseItem.court}</span> : null}
+            </div>
+            <div class="profile-record-body">
+              <h2 class="profile-record-title">
+                <a href={`/civil-cases/${caseItem.slug}/`}>{caseItem.title}</a>
+              </h2>
+              <div class="profile-record-detail">
+                {caseItem.cause_number ? (
+                  <span>{caseItem.cause_number}</span>
+                ) : null}
+                {caseItem.claims_summary ? (
+                  <span>{caseItem.claims_summary}</span>
+                ) : null}
+              </div>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+    <Pagination basePath={pagePath} currentPage={1} lastPage={totalPages} />
+    <CivilCaseScopeNote />
+  </section>
+</PageShell>
 <style>
-  .civic-cases-page {
-    background: #fbfcff;
-    color: #071842;
-  }
-
-  .civic-cases-hero {
-    padding: 1.35rem 0 1rem;
-  }
-
-  .civic-cases-list-section {
-    padding: 0 0 2rem;
-  }
-
-  .civic-cases-hero > .container,
-  .civic-cases-list-section > .container {
-    max-width: 1240px;
-  }
-
-  .civic-cases-heading {
-    align-items: start;
-    display: grid;
-    gap: 1.5rem;
-    grid-template-columns: minmax(0, 1fr);
-    margin-bottom: 1rem;
-  }
-
-  .civic-cases-heading h1 {
-    color: #071842;
-    margin: 0 0 0.45rem;
-    max-width: 100%;
-    overflow-wrap: anywhere;
-  }
-
-  .civic-cases-heading p {
-    color: #33456f;
-    margin: 0;
-  }
-
-  .civic-cases-actions {
-    align-items: flex-start;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    justify-content: start;
-  }
-
-  .civic-cases-actions a {
-    background: #071842;
-    border: 1px solid #071842;
-    border-radius: 0.4rem;
-    color: #f8faff;
-    font-weight: 800;
-    min-height: 3rem;
-    padding: 0.72rem 1.05rem;
-    text-decoration: none;
-  }
-
-  .civic-cases-actions span {
-    color: #33456f;
-    font-size: 0.82rem;
-    font-weight: 700;
-    line-height: 3rem;
-  }
-
   .profile-record-list {
     background: #fbfcff;
     border: 1px solid #d5deeb;
@@ -296,16 +216,6 @@ const structuredData = {
       display: flex;
       flex-direction: column;
       gap: 0.15rem;
-    }
-  }
-
-  @media (min-width: 1200px) {
-    .civic-cases-heading {
-      grid-template-columns: minmax(0, 1fr) auto;
-    }
-
-    .civic-cases-actions {
-      justify-content: end;
     }
   }
 </style>
