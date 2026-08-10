@@ -1,13 +1,11 @@
 ---
-import Breadcrumb from "#src/components/Breadcrumb.astro";
-import PageHeader from "#src/components/PageHeader.astro";
 import "#src/styles/civic-ledger.css";
 import DisqusComments from "#src/components/DisqusComments.astro";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import ReportDisclaimer from "#src/components/ReportDisclaimer.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import { loadReportSummaries } from "#src/lib/data/summaries.js";
 import { parseLocationPathParts } from "#src/lib/data/report-paths.js";
 import { formatLongDate } from "#src/lib/format.js";
@@ -242,302 +240,284 @@ const structuredData = {
 };
 ---
 
-<SiteLayout
+<PageShell
   title={`${reportTitle} | PoliceConduct.org`}
   description={metaDescription}
   pagePath={pagePath}
   canonicalUrl={pagePath}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    data.locationBreadcrumbs.state,
+    data.locationBreadcrumbs.administrativeArea,
+    data.locationBreadcrumbs.place,
+    data.locationBreadcrumbs.reports,
+    { label: String(year), href: yearPath },
+    { label: String(month), href: monthPath },
+    { label: String(day), href: dayPath },
+    { label: reportTitle, href: pagePath },
+  ]}
+  eyebrow="Public report"
+  heading={reportTitle}
 >
   <PrefillBootstrap />
-  <main id="main" class="civic-index-page" data-pagefind-body>
-    <section class="civic-index-page-main">
-      <div class="container">
-        <Breadcrumb
-          items={[
-            { label: "Home", href: "/" },
-            data.locationBreadcrumbs.state,
-            data.locationBreadcrumbs.administrativeArea,
-            data.locationBreadcrumbs.place,
-            data.locationBreadcrumbs.reports,
-            { label: String(year), href: yearPath },
-            { label: String(month), href: monthPath },
-            { label: String(day), href: dayPath },
-            { label: reportTitle, href: pagePath },
-          ]}
-        />
+  <Fragment slot="header">
+    <p class="civic-lede-sub">
+      A first-party account of an experience shared by the public and reviewed
+      before publication on {formatLongDate(data.report.created_at)}.
+    </p>
+    <EntityActionBar>
+      <PrefillNavButton
+        class="entity-action"
+        to="/about/contact/"
+        payload={{
+          whoami: "Subscriber",
+          message: `Please notify me when this report changes: ${pagePath}`,
+        }}
+      >
+        Notify me when this report changes
+      </PrefillNavButton>
+    </EntityActionBar>
+  </Fragment>
 
-        <PageHeader eyebrow="Public report" title={reportTitle}>
-          <p class="civic-lede-sub">
-            A first-party account of an experience shared by the public and
-            reviewed before publication on {
-              formatLongDate(data.report.created_at)
-            }.
-          </p>
-          <EntityActionBar>
-            <PrefillNavButton
-              class="entity-action"
-              to="/about/contact/"
-              payload={{
-                whoami: "Subscriber",
-                message: `Please notify me when this report changes: ${pagePath}`,
-              }}
-            >
-              Notify me when this report changes
-            </PrefillNavButton>
-          </EntityActionBar>
-        </PageHeader>
-
-        <section class="civic-section">
-          <dl class="fact-list">
-            <div>
-              <dt>Incident date</dt>
-              <dd>
-                {formatLongDate(data.report.incident_date)}
-                {incidentTimeDisplay ? ` at ${incidentTimeDisplay}` : ""}
-              </dd>
-            </div>
-            {
-              reportAddress ? (
-                <div>
-                  <dt>Location</dt>
-                  <dd>{reportAddress}</dd>
-                </div>
-              ) : null
-            }
-            <div>
-              <dt>Agency</dt>
-              <dd>
-                <a href={primaryAgencyPath}>{primaryAgencyName}</a>
-              </dd>
-            </div>
-            {
-              facts.submitterRelationship ? (
-                <div>
-                  <dt>Submitted by</dt>
-                  <dd>{facts.submitterRelationship}</dd>
-                </div>
-              ) : null
-            }
-            {
-              facts.interactionType ? (
-                <div>
-                  <dt>Experience type</dt>
-                  <dd>{facts.interactionType}</dd>
-                </div>
-              ) : null
-            }
-            {
-              facts.setting ? (
-                <div>
-                  <dt>Setting</dt>
-                  <dd>{facts.setting}</dd>
-                </div>
-              ) : null
-            }
-            {
-              facts.complaintFiled ? (
-                <div>
-                  <dt>Complaint filed</dt>
-                  <dd>{facts.complaintFiled}</dd>
-                </div>
-              ) : null
-            }
-            {
-              facts.caseNumber ? (
-                <div>
-                  <dt>Case number</dt>
-                  <dd>{facts.caseNumber}</dd>
-                </div>
-              ) : null
-            }
-            {
-              facts.bodycamRequested ? (
-                <div>
-                  <dt>Bodycam requested</dt>
-                  <dd>{facts.bodycamRequested}</dd>
-                </div>
-              ) : null
-            }
-            {
-              facts.charges ? (
-                <div>
-                  <dt>Charges</dt>
-                  <dd>{facts.charges}</dd>
-                </div>
-              ) : null
-            }
-          </dl>
-        </section>
-
-        <div class="detail-layout civic-section civic-section--last">
-          <article class="detail-body">
-            <h2>What happened</h2>
-            <div set:html={data.report.description!} />
-
-            {
-              facts.feelings ? (
-                <>
-                  <h2>How it felt</h2>
-                  <p>
-                    This is the submitter's own account of how the experience
-                    felt to them. It is their perspective, not a verified fact.
-                  </p>
-                  <p>{facts.feelings}</p>
-                </>
-              ) : null
-            }
-
-            {
-              officers.length ? (
-                <>
-                  <h3>People involved</h3>
-                  {officers.map((entry) => (
-                    <p>
-                      <a href={entry.path}>
-                        {entry.officer!.first_name} {entry.officer!.last_name}
-                        {entry.officer!.suffix
-                          ? ` ${entry.officer!.suffix}`
-                          : ""}
-                      </a>
-                      {entry.agencyOfficer.license_type
-                        ? ` — ${entry.agencyOfficer.license_type}`
-                        : ""}
-                      {entry.badge ? ` — Badge ${entry.badge}` : ""}
-                      {" · "}
-                      <a
-                        href={
-                          (
-                            entry.agency as typeof entry.agency & {
-                              canonicalPath: string;
-                            }
-                          ).canonicalPath
-                        }
-                      >
-                        {entry.agency!.name}
-                      </a>
-                    </p>
-                  ))}
-                </>
-              ) : null
-            }
-
-            {
-              evidenceLinks.length ? (
-                <>
-                  <h3>Records and evidence</h3>
-                  {evidenceLinks.map((link) => (
-                    <p>
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {link.title}
-                      </a>
-                    </p>
-                  ))}
-                </>
-              ) : null
-            }
-
-            {
-              civilCases.length ? (
-                <>
-                  <h3>Related civil litigation</h3>
-                  <div class="recent-list">
-                    {civilCases.map((civilCase) => (
-                      <a href={civilCase.path}>
-                        <span class="recent-list-title">{civilCase.title}</span>
-                        <span class="recent-list-meta">
-                          {civilCase.causeNumber}
-                          {civilCase.filedDate
-                            ? ` · Filed ${formatLongDate(civilCase.filedDate)}`
-                            : ""}
-                        </span>
-                      </a>
-                    ))}
-                  </div>
-                </>
-              ) : null
-            }
-
-            {
-              tags.length ? (
-                <>
-                  <h3>Tags</h3>
-                  <p>{tags.join(", ")}</p>
-                </>
-              ) : null
-            }
-
-            {
-              data.reportWitnesses.length ? (
-                <>
-                  <h3>Witnesses</h3>
-                  {data.reportWitnesses.map((witness) => (
-                    <p>{witness.statement}</p>
-                  ))}
-                </>
-              ) : null
-            }
-
-            {
-              data.reportAttachments.length ? (
-                <>
-                  <h3>Attachments</h3>
-                  {data.reportAttachments.map((attachment) => (
-                    <p>
-                      {attachment.file_name} ({attachment.content_type})
-                    </p>
-                  ))}
-                </>
-              ) : null
-            }
-
-            <p class="civic-limit-note">
-              This report is a processed version of a submitted first-party
-              account. It reflects the submitter's account and any linked public
-              records. Publication is not a court finding.
-            </p>
-          </article>
-
-          <aside class="detail-aside">
-            <p class="civic-kicker">How reports work</p>
-            <h2>Facts and feelings, kept separate</h2>
-            <ul>
-              <li>
-                "What happened" holds facts: what was said and done, dates, and
-                any linked records.
-              </li>
-              <li>
-                "How it felt," when a submitter shares it, holds their own words
-                about the experience. It is clearly labeled so you know it is
-                their account, not a verified fact.
-              </li>
-              <li>
-                Every report is reviewed before publication and stays connected
-                to the agency and personnel records it names.
-              </li>
-            </ul>
-            <p class="jump-browse">
-              <a href="/report/new/">Share your own experience →</a>
-            </p>
-          </aside>
-        </div>
-
-        <section class="civic-section">
-          <h2>Comments</h2>
-          <DisqusComments
-            pageUrl={pageUrl}
-            disqusIdentifier={disqusIdentifier}
-          />
-        </section>
-
-        <section class="civic-section civic-section--last">
-          <ReportDisclaimer />
-        </section>
+  <section class="civic-section">
+    <dl class="fact-list">
+      <div>
+        <dt>Incident date</dt>
+        <dd>
+          {formatLongDate(data.report.incident_date)}
+          {incidentTimeDisplay ? ` at ${incidentTimeDisplay}` : ""}
+        </dd>
       </div>
-    </section>
-  </main>
-</SiteLayout>
+      {
+        reportAddress ? (
+          <div>
+            <dt>Location</dt>
+            <dd>{reportAddress}</dd>
+          </div>
+        ) : null
+      }
+      <div>
+        <dt>Agency</dt>
+        <dd>
+          <a href={primaryAgencyPath}>{primaryAgencyName}</a>
+        </dd>
+      </div>
+      {
+        facts.submitterRelationship ? (
+          <div>
+            <dt>Submitted by</dt>
+            <dd>{facts.submitterRelationship}</dd>
+          </div>
+        ) : null
+      }
+      {
+        facts.interactionType ? (
+          <div>
+            <dt>Experience type</dt>
+            <dd>{facts.interactionType}</dd>
+          </div>
+        ) : null
+      }
+      {
+        facts.setting ? (
+          <div>
+            <dt>Setting</dt>
+            <dd>{facts.setting}</dd>
+          </div>
+        ) : null
+      }
+      {
+        facts.complaintFiled ? (
+          <div>
+            <dt>Complaint filed</dt>
+            <dd>{facts.complaintFiled}</dd>
+          </div>
+        ) : null
+      }
+      {
+        facts.caseNumber ? (
+          <div>
+            <dt>Case number</dt>
+            <dd>{facts.caseNumber}</dd>
+          </div>
+        ) : null
+      }
+      {
+        facts.bodycamRequested ? (
+          <div>
+            <dt>Bodycam requested</dt>
+            <dd>{facts.bodycamRequested}</dd>
+          </div>
+        ) : null
+      }
+      {
+        facts.charges ? (
+          <div>
+            <dt>Charges</dt>
+            <dd>{facts.charges}</dd>
+          </div>
+        ) : null
+      }
+    </dl>
+  </section>
+
+  <div class="detail-layout civic-section civic-section--last">
+    <article class="detail-body">
+      <h2>What happened</h2>
+      <div set:html={data.report.description!} />
+
+      {
+        facts.feelings ? (
+          <>
+            <h2>How it felt</h2>
+            <p>
+              This is the submitter's own account of how the experience felt to
+              them. It is their perspective, not a verified fact.
+            </p>
+            <p>{facts.feelings}</p>
+          </>
+        ) : null
+      }
+
+      {
+        officers.length ? (
+          <>
+            <h3>People involved</h3>
+            {officers.map((entry) => (
+              <p>
+                <a href={entry.path}>
+                  {entry.officer!.first_name} {entry.officer!.last_name}
+                  {entry.officer!.suffix ? ` ${entry.officer!.suffix}` : ""}
+                </a>
+                {entry.agencyOfficer.license_type
+                  ? ` — ${entry.agencyOfficer.license_type}`
+                  : ""}
+                {entry.badge ? ` — Badge ${entry.badge}` : ""}
+                {" · "}
+                <a
+                  href={
+                    (
+                      entry.agency as typeof entry.agency & {
+                        canonicalPath: string;
+                      }
+                    ).canonicalPath
+                  }
+                >
+                  {entry.agency!.name}
+                </a>
+              </p>
+            ))}
+          </>
+        ) : null
+      }
+
+      {
+        evidenceLinks.length ? (
+          <>
+            <h3>Records and evidence</h3>
+            {evidenceLinks.map((link) => (
+              <p>
+                <a href={link.url} target="_blank" rel="noopener noreferrer">
+                  {link.title}
+                </a>
+              </p>
+            ))}
+          </>
+        ) : null
+      }
+
+      {
+        civilCases.length ? (
+          <>
+            <h3>Related civil litigation</h3>
+            <div class="recent-list">
+              {civilCases.map((civilCase) => (
+                <a href={civilCase.path}>
+                  <span class="recent-list-title">{civilCase.title}</span>
+                  <span class="recent-list-meta">
+                    {civilCase.causeNumber}
+                    {civilCase.filedDate
+                      ? ` · Filed ${formatLongDate(civilCase.filedDate)}`
+                      : ""}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </>
+        ) : null
+      }
+
+      {
+        tags.length ? (
+          <>
+            <h3>Tags</h3>
+            <p>{tags.join(", ")}</p>
+          </>
+        ) : null
+      }
+
+      {
+        data.reportWitnesses.length ? (
+          <>
+            <h3>Witnesses</h3>
+            {data.reportWitnesses.map((witness) => (
+              <p>{witness.statement}</p>
+            ))}
+          </>
+        ) : null
+      }
+
+      {
+        data.reportAttachments.length ? (
+          <>
+            <h3>Attachments</h3>
+            {data.reportAttachments.map((attachment) => (
+              <p>
+                {attachment.file_name} ({attachment.content_type})
+              </p>
+            ))}
+          </>
+        ) : null
+      }
+
+      <p class="civic-limit-note">
+        This report is a processed version of a submitted first-party account.
+        It reflects the submitter's account and any linked public records.
+        Publication is not a court finding.
+      </p>
+    </article>
+
+    <aside class="detail-aside">
+      <p class="civic-kicker">How reports work</p>
+      <h2>Facts and feelings, kept separate</h2>
+      <ul>
+        <li>
+          "What happened" holds facts: what was said and done, dates, and any
+          linked records.
+        </li>
+        <li>
+          "How it felt," when a submitter shares it, holds their own words about
+          the experience. It is clearly labeled so you know it is their account,
+          not a verified fact.
+        </li>
+        <li>
+          Every report is reviewed before publication and stays connected to the
+          agency and personnel records it names.
+        </li>
+      </ul>
+      <p class="jump-browse">
+        <a href="/report/new/">Share your own experience →</a>
+      </p>
+    </aside>
+  </div>
+
+  <section class="civic-section">
+    <h2>Comments</h2>
+    <DisqusComments pageUrl={pageUrl} disqusIdentifier={disqusIdentifier} />
+  </section>
+
+  <section class="civic-section civic-section--last">
+    <ReportDisclaimer />
+  </section>
+</PageShell>

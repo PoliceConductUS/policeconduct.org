@@ -1,9 +1,7 @@
 ---
-import Breadcrumb from "#src/components/Breadcrumb.astro";
-import PageHeader from "#src/components/PageHeader.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import "#src/styles/civic-ledger.css";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
 import { withDb } from "#src/lib/db.js";
 import { loadCivilCaseDetailBySlug } from "#src/lib/data/civil-litigation-detail.js";
 import { formatLongDate } from "#src/lib/format.js";
@@ -157,194 +155,170 @@ const structuredData = {
 };
 ---
 
-<SiteLayout
+<PageShell
   title={`${caseTitle} | PoliceConduct.org`}
   description={pageDescription}
   pagePath={casePath}
   canonicalUrl={casePath}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Civil cases", href: "/civil-cases/" },
+    { label: caseTitle, href: casePath },
+  ]}
+  eyebrow="Civil case"
+  heading={caseTitle}
 >
-  <main id="main" class="civic-index-page" data-pagefind-body>
-    <section class="civic-index-page-main">
-      <div class="container">
-        <Breadcrumb
-          items={[
-            { label: "Home", href: "/" },
-            { label: "Civil cases", href: "/civil-cases/" },
-            { label: caseTitle, href: casePath },
-          ]}
-        />
+  <Fragment slot="header">
+    <p class="civic-lede-sub">
+      {truncateText(collapseWhitespace(data.civilCase.claims_summary), 180)}
+    </p>
+    <EntityActionBar
+      actions={[{ label: "Suggest edit", href: "/civil-cases/suggest-edit/" }]}
+    />
+  </Fragment>
 
-        <PageHeader eyebrow="Civil case" title={caseTitle}>
-          <p class="civic-lede-sub">
-            {
-              truncateText(
-                collapseWhitespace(data.civilCase.claims_summary),
-                180,
-              )
-            }
-          </p>
-          <EntityActionBar
-            actions={[
-              { label: "Suggest edit", href: "/civil-cases/suggest-edit/" },
-            ]}
-          />
-        </PageHeader>
-
-        <section class="civic-section">
-          <dl class="fact-list">
-            {
-              data.civilCase.cause_number ? (
-                <div>
-                  <dt>Cause number</dt>
-                  <dd>{data.civilCase.cause_number}</dd>
-                </div>
-              ) : null
-            }
-            {
-              data.civilCase.court ? (
-                <div>
-                  <dt>Court</dt>
-                  <dd>{data.civilCase.court}</dd>
-                </div>
-              ) : null
-            }
-            <div>
-              <dt>Filed</dt>
-              <dd>{formatLongDate(data.civilCase.filed_date)}</dd>
-            </div>
-            {
-              data.civilCase.outcome ? (
-                <div>
-                  <dt>Outcome</dt>
-                  <dd>{data.civilCase.outcome}</dd>
-                </div>
-              ) : null
-            }
-            {
-              caseMetaItems.map((item) => (
-                <div>
-                  <dt>{item.label}</dt>
-                  <dd>
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {item.value}
-                    </a>
-                  </dd>
-                </div>
-              ))
-            }
-          </dl>
-        </section>
-
-        <div class="detail-layout civic-section civic-section--last">
-          <article class="detail-body">
-            <h2>What the complaint says</h2>
-            <p>{data.civilCase.claims_summary}</p>
-
-            {
-              data.officers.length ? (
-                <>
-                  <h3>Personnel named in this case</h3>
-                  {data.officers.map((officer) => (
-                    <p>
-                      <a href={`/personnel/${officer.slug}/`}>
-                        {officer.first_name} {officer.last_name}
-                      </a>
-                      {officer.license_type ? ` — ${officer.license_type}` : ""}
-                    </p>
-                  ))}
-                </>
-              ) : null
-            }
-
-            {
-              data.agencies.length ? (
-                <>
-                  <h3>Agencies</h3>
-                  {data.agencies.map((agency) => (
-                    <p>
-                      <a href={agency.canonicalPath}>{agency.name}</a>
-                      {agency.city || agency.state
-                        ? ` — ${[agency.city, agency.state]
-                            .filter(Boolean)
-                            .join(", ")}`
-                        : ""}
-                    </p>
-                  ))}
-                </>
-              ) : null
-            }
-
-            {
-              data.reports.length ? (
-                <>
-                  <h3>Related reports</h3>
-                  <div class="recent-list">
-                    {data.reports.map((report) => (
-                      <a href={report.path}>
-                        <span class="recent-list-title">{report.title}</span>
-                        {report.incident_date ? (
-                          <span class="recent-list-meta">
-                            Report · Incident{" "}
-                            {formatLongDate(report.incident_date)}
-                          </span>
-                        ) : null}
-                      </a>
-                    ))}
-                  </div>
-                </>
-              ) : null
-            }
-
-            {
-              coverageLinks.length ? (
-                <>
-                  <h3>Related links</h3>
-                  {coverageLinks.map((link) => (
-                    <p>
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {link.title}
-                      </a>
-                    </p>
-                  ))}
-                </>
-              ) : null
-            }
-
-            <p class="civic-limit-note">
-              The summary above describes allegations and outcomes from court
-              filings. A pending case is an allegation, not a finding.
-            </p>
-          </article>
-
-          <aside class="detail-aside">
-            <p class="civic-kicker">Court records</p>
-            <h2>Follow this case</h2>
-            <ul>
-              <li>
-                The full docket, complaint, and exhibits are public court
-                records.
-              </li>
-              <li>
-                This page updates as new filings connect to the agency and
-                personnel records it names.
-              </li>
-              <li>
-                Know something about this case?
-                <a href="/civil-cases/suggest-edit/">Suggest an edit →</a>
-              </li>
-            </ul>
-          </aside>
-        </div>
+  <section class="civic-section">
+    <dl class="fact-list">
+      {
+        data.civilCase.cause_number ? (
+          <div>
+            <dt>Cause number</dt>
+            <dd>{data.civilCase.cause_number}</dd>
+          </div>
+        ) : null
+      }
+      {
+        data.civilCase.court ? (
+          <div>
+            <dt>Court</dt>
+            <dd>{data.civilCase.court}</dd>
+          </div>
+        ) : null
+      }
+      <div>
+        <dt>Filed</dt>
+        <dd>{formatLongDate(data.civilCase.filed_date)}</dd>
       </div>
-    </section>
-  </main>
-</SiteLayout>
+      {
+        data.civilCase.outcome ? (
+          <div>
+            <dt>Outcome</dt>
+            <dd>{data.civilCase.outcome}</dd>
+          </div>
+        ) : null
+      }
+      {
+        caseMetaItems.map((item) => (
+          <div>
+            <dt>{item.label}</dt>
+            <dd>
+              <a href={item.href} target="_blank" rel="noopener noreferrer">
+                {item.value}
+              </a>
+            </dd>
+          </div>
+        ))
+      }
+    </dl>
+  </section>
+
+  <div class="detail-layout civic-section civic-section--last">
+    <article class="detail-body">
+      <h2>What the complaint says</h2>
+      <p>{data.civilCase.claims_summary}</p>
+
+      {
+        data.officers.length ? (
+          <>
+            <h3>Personnel named in this case</h3>
+            {data.officers.map((officer) => (
+              <p>
+                <a href={`/personnel/${officer.slug}/`}>
+                  {officer.first_name} {officer.last_name}
+                </a>
+                {officer.license_type ? ` — ${officer.license_type}` : ""}
+              </p>
+            ))}
+          </>
+        ) : null
+      }
+
+      {
+        data.agencies.length ? (
+          <>
+            <h3>Agencies</h3>
+            {data.agencies.map((agency) => (
+              <p>
+                <a href={agency.canonicalPath}>{agency.name}</a>
+                {agency.city || agency.state
+                  ? ` — ${[agency.city, agency.state]
+                      .filter(Boolean)
+                      .join(", ")}`
+                  : ""}
+              </p>
+            ))}
+          </>
+        ) : null
+      }
+
+      {
+        data.reports.length ? (
+          <>
+            <h3>Related reports</h3>
+            <div class="recent-list">
+              {data.reports.map((report) => (
+                <a href={report.path}>
+                  <span class="recent-list-title">{report.title}</span>
+                  {report.incident_date ? (
+                    <span class="recent-list-meta">
+                      Report · Incident {formatLongDate(report.incident_date)}
+                    </span>
+                  ) : null}
+                </a>
+              ))}
+            </div>
+          </>
+        ) : null
+      }
+
+      {
+        coverageLinks.length ? (
+          <>
+            <h3>Related links</h3>
+            {coverageLinks.map((link) => (
+              <p>
+                <a href={link.url} target="_blank" rel="noopener noreferrer">
+                  {link.title}
+                </a>
+              </p>
+            ))}
+          </>
+        ) : null
+      }
+
+      <p class="civic-limit-note">
+        The summary above describes allegations and outcomes from court filings.
+        A pending case is an allegation, not a finding.
+      </p>
+    </article>
+
+    <aside class="detail-aside">
+      <p class="civic-kicker">Court records</p>
+      <h2>Follow this case</h2>
+      <ul>
+        <li>
+          The full docket, complaint, and exhibits are public court records.
+        </li>
+        <li>
+          This page updates as new filings connect to the agency and personnel
+          records it names.
+        </li>
+        <li>
+          Know something about this case?
+          <a href="/civil-cases/suggest-edit/">Suggest an edit →</a>
+        </li>
+      </ul>
+    </aside>
+  </div>
+</PageShell>
