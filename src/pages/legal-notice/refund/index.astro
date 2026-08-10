@@ -1,6 +1,7 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumb from "#src/components/Breadcrumb.astro";
+import PageHeader from "#src/components/PageHeader.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/legal-notice/refund/";
@@ -22,35 +23,36 @@ const structuredData = buildWebPage({
   pagePath={pagePath}
   structuredData={structuredData}
 >
-  <main id="main" class="flex-grow-1 py-vh-3">
-    <div class="container">
-      <Breadcrumb
-        items={[
-          { label: "Legal Notice", href: "/legal-notice/" },
-          { label: "Refund Policy", href: pagePath, current: true },
-        ]}
-      />
-      <h1 class="ipc-page-title">REFUND POLICY</h1>
-      <p>
-        <strong>Last updated</strong>
-        <strong>January 14, 2026</strong>
-      </p>
-      <section>
-        <h2>REFUNDS</h2>
-        <p>All sales are final and no refund will be issued.</p>
-      </section>
-      <section>
-        <h2>QUESTIONS</h2>
+  <main id="main" class="civic-index-page">
+    <section class="civic-index-page-main">
+      <div class="container">
+        <Breadcrumb
+          items={[
+            { label: "Legal Notice", href: "/legal-notice/" },
+            { label: "Refund Policy", href: pagePath, current: true },
+          ]}
+        />
+        <PageHeader title="REFUND POLICY" />
         <p>
-          If you have any questions concerning our return policy, please contact
-          us at:
+          <strong>Last updated:</strong> January 14, 2026
         </p>
-        <p>
-          <a href="mailto:support@policeconduct.org"
-            >support@policeconduct.org</a
-          >
-        </p>
-      </section>
-    </div>
+        <section>
+          <h2>REFUNDS</h2>
+          <p>All sales are final and no refund will be issued.</p>
+        </section>
+        <section>
+          <h2>QUESTIONS</h2>
+          <p>
+            If you have any questions concerning our return policy, please
+            contact us at:
+          </p>
+          <p>
+            <a href="mailto:support@policeconduct.org"
+              >support@policeconduct.org</a
+            >
+          </p>
+        </section>
+      </div>
+    </section>
   </main>
 </SiteLayout>
