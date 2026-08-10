@@ -1,0 +1,68 @@
+---
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
+import PageHeader from "#src/components/PageHeader.astro";
+
+// The shared content shell for every standard page: SiteLayout (masthead /
+// footer / <head>) wrapping the `.civic-index-page` shell, the breadcrumb, the
+// PageHeader, and a body slot. Pages declare their meta, breadcrumb trail, and
+// header via props and slot in their body — no page repeats the shell markup.
+//
+// - `breadcrumbs` is the trail ("Home" is auto-injected by Breadcrumb).
+// - `heading` is the <h1>; `eyebrow` an optional uppercase kicker; `lede` an
+//   optional header sub-line (or pass rich sub content via the `header` slot).
+// - The `actions` slot holds page-level header actions (e.g. "Help collect
+//   data"); the default slot is the page body.
+interface Props {
+  // SiteLayout passthrough
+  title: string;
+  description?: string;
+  pagePath?: string;
+  canonicalUrl?: string;
+  robots?: string;
+  socialImage?: string;
+  structuredData?: unknown;
+  // Shell + header
+  breadcrumbs: { label: string; href?: string; current?: boolean }[];
+  heading: string;
+  eyebrow?: string;
+  lede?: string;
+}
+
+const {
+  title,
+  description,
+  pagePath,
+  canonicalUrl,
+  robots,
+  socialImage,
+  structuredData,
+  breadcrumbs,
+  heading,
+  eyebrow,
+  lede,
+} = Astro.props;
+---
+
+<SiteLayout
+  title={title}
+  description={description}
+  pagePath={pagePath}
+  canonicalUrl={canonicalUrl}
+  robots={robots}
+  socialImage={socialImage}
+  structuredData={structuredData}
+>
+  <main id="main" class="civic-index-page" data-pagefind-body>
+    <section class="civic-index-page-main">
+      <div class="container">
+        <Breadcrumb items={breadcrumbs} className="mb-2" />
+        <PageHeader eyebrow={eyebrow} title={heading} description={lede}>
+          <slot name="header" slot="default" />
+          <slot name="actions" slot="actions" />
+        </PageHeader>
+        <slot />
+      </div>
+    </section>
+  </main>
+</SiteLayout>
