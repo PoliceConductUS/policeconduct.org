@@ -1,11 +1,9 @@
 ---
-import Breadcrumb from "#src/components/Breadcrumb.astro";
-import PageHeader from "#src/components/PageHeader.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import StatCell from "#src/components/StatCell.astro";
 import StatStrip from "#src/components/StatStrip.astro";
 import "#src/styles/civic-ledger.css";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
@@ -300,198 +298,191 @@ const licensingPayload = licensingReport
 const statColumns = model.statCells.length + 1;
 ---
 
-<SiteLayout
+<PageShell
   title={model.title}
   description={model.description}
   pagePath={model.pagePath}
   structuredData={structuredData}
+  breadcrumbs={model.breadcrumbs}
+  heading={heading}
+  lede={model.description}
 >
-  <main id="main" class="civic-index-page" data-pagefind-body>
-    <section class="civic-index-page-main">
-      <div class="container">
-        <Breadcrumb items={model.breadcrumbs} />
+  <StatStrip
+    ariaLabel={`${heading} coverage totals`}
+    drillFirst
+    columns={statColumns === 4 ? "three-plus-jump" : "four-plus-jump"}
+  >
+    {
+      model.statCells.map((cell) => (
+        <StatCell
+          label={cell.label}
+          value={cell.value}
+          meta={cell.meta}
+          href={cell.href}
+          actionLabel={cell.actionLabel}
+          role={cell.role}
+          helpCollectHref={cell.pendingHelp?.href}
+          helpCollectLabel={cell.pendingHelp?.label}
+        />
+      ))
+    }
+    <StatCell
+      drill
+      childCount={model.jumpCell.count}
+      childLabel={model.jumpCell.label}
+      jumpOptions={model.jumpCell.options}
+      placeholder={model.jumpCell.placeholder}
+      selectLabel={model.jumpCell.selectLabel}
+      browseHref={model.jumpCell.browse.href}
+      browseLabel={model.jumpCell.browse.label}
+    />
+  </StatStrip>
 
-        <PageHeader title={heading} description={model.description} />
-
-        <StatStrip
-          ariaLabel={`${heading} coverage totals`}
-          drillFirst
-          columns={statColumns === 4 ? "three-plus-jump" : "four-plus-jump"}
-        >
-          {
-            model.statCells.map((cell) => (
-              <StatCell
-                label={cell.label}
-                value={cell.value}
-                meta={cell.meta}
-                href={cell.href}
-                actionLabel={cell.actionLabel}
-                role={cell.role}
-                helpCollectHref={cell.pendingHelp?.href}
-                helpCollectLabel={cell.pendingHelp?.label}
-              />
-            ))
-          }
+  <section class="civic-section" aria-label="Additional civic metrics">
+    <ul class="topic-row">
+      {
+        model.pendingTopics.map((topic) => (
           <StatCell
-            drill
-            childCount={model.jumpCell.count}
-            childLabel={model.jumpCell.label}
-            jumpOptions={model.jumpCell.options}
-            placeholder={model.jumpCell.placeholder}
-            selectLabel={model.jumpCell.selectLabel}
-            browseHref={model.jumpCell.browse.href}
-            browseLabel={model.jumpCell.browse.label}
+            variant="topic"
+            label={topic.label}
+            gloss={topic.gloss}
+            role={topic.role}
+            empty
+            helpCollectHref={topic.help.href}
+            helpCollectLabel={topic.help.label}
           />
-        </StatStrip>
+        ))
+      }
+    </ul>
+  </section>
 
-        <section class="civic-section" aria-label="Additional civic metrics">
-          <ul class="topic-row">
-            {
-              model.pendingTopics.map((topic) => (
-                <StatCell
-                  variant="topic"
-                  label={topic.label}
-                  gloss={topic.gloss}
-                  role={topic.role}
-                  empty
-                  helpCollectHref={topic.help.href}
-                  helpCollectLabel={topic.help.label}
-                />
-              ))
-            }
-          </ul>
-        </section>
+  {
+    licensingReport && licensingPayload ? (
+      <section class="civic-section">
+        <div class="civic-section-head">
+          <div>
+            <h2>{licensingReport.title}</h2>
+            <p>{licensingReport.summary}</p>
+          </div>
+          <p class="civic-section-link">
+            <a href={licensingPayload.organization.url} rel="noopener">
+              {licensingPayload.organization.name} →
+            </a>
+          </p>
+        </div>
+        <p class="civic-context-copy">
+          The license is what stands between a fired officer and a new badge:
+          researchers call officers who are fired by one department and hired by
+          another{" "}
+          <a
+            href="https://www.yalelawjournal.org/article/the-wandering-officer"
+            rel="noopener"
+          >
+            "wandering officers,"
+          </a>{" "}
+          and one study found about 3 in 100 working Florida officers had been
+          fired from an earlier policing job. An officer who loses their license
+          cannot wander.
+        </p>
+        <dl class="fact-list">
+          {licensingPayload.facts.map((fact) => (
+            <div>
+              <dt>{fact.label}</dt>
+              <dd>{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+    ) : null
+  }
 
-        {
-          licensingReport && licensingPayload ? (
-            <section class="civic-section">
-              <div class="civic-section-head">
-                <div>
-                  <h2>{licensingReport.title}</h2>
-                  <p>{licensingReport.summary}</p>
-                </div>
-                <p class="civic-section-link">
-                  <a href={licensingPayload.organization.url} rel="noopener">
-                    {licensingPayload.organization.name} →
-                  </a>
-                </p>
-              </div>
-              <p class="civic-context-copy">
-                The license is what stands between a fired officer and a new
-                badge: researchers call officers who are fired by one department
-                and hired by another{" "}
-                <a
-                  href="https://www.yalelawjournal.org/article/the-wandering-officer"
-                  rel="noopener"
-                >
-                  "wandering officers,"
-                </a>{" "}
-                and one study found about 3 in 100 working Florida officers had
-                been fired from an earlier policing job. An officer who loses
-                their license cannot wander.
-              </p>
-              <dl class="fact-list">
-                {licensingPayload.facts.map((fact) => (
-                  <div>
-                    <dt>{fact.label}</dt>
-                    <dd>{fact.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          ) : null
-        }
+  {
+    decertificationReport && decertificationPayload ? (
+      <section class="civic-section">
+        <div class="civic-section-head">
+          <div>
+            <h2>{decertificationReport.title}</h2>
+            <p>{decertificationReport.summary}</p>
+          </div>
+          {decertificationSource ? (
+            <p class="civic-section-link">
+              <span>
+                {decertificationMissingCount} missing
+                {decertificationUnknownCount > 0
+                  ? ` · ${decertificationUnknownCount} unknown`
+                  : ""}
+                {" · "}
+              </span>
+              <a href={decertificationSource.url} rel="noopener">
+                Report source
+              </a>
+            </p>
+          ) : null}
+        </div>
+        <div
+          class="status-ledger"
+          aria-label={`${heading} decertification report card statuses`}
+        >
+          <div class="status-cell status-summary">
+            <h3 class="status-heading">Present</h3>
+            <strong class="status-summary-value">
+              {decertificationPresentCount} of {decertificationTotal}
+            </strong>
+          </div>
+          {decertificationPayload.columns.map((column) => (
+            <div class="status-cell">
+              <h3 class="status-heading">{column.label}</h3>
+              <span class:list={["status-mark", column.status]}>
+                {statusLabel(column.status)}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p class="civic-limit-note">{decertificationPayload.note}</p>
+      </section>
+    ) : null
+  }
 
-        {
-          decertificationReport && decertificationPayload ? (
-            <section class="civic-section">
-              <div class="civic-section-head">
-                <div>
-                  <h2>{decertificationReport.title}</h2>
-                  <p>{decertificationReport.summary}</p>
-                </div>
-                {decertificationSource ? (
-                  <p class="civic-section-link">
-                    <span>
-                      {decertificationMissingCount} missing
-                      {decertificationUnknownCount > 0
-                        ? ` · ${decertificationUnknownCount} unknown`
-                        : ""}
-                      {" · "}
-                    </span>
-                    <a href={decertificationSource.url} rel="noopener">
-                      Report source
-                    </a>
-                  </p>
-                ) : null}
-              </div>
-              <div
-                class="status-ledger"
-                aria-label={`${heading} decertification report card statuses`}
-              >
-                <div class="status-cell status-summary">
-                  <h3 class="status-heading">Present</h3>
-                  <strong class="status-summary-value">
-                    {decertificationPresentCount} of {decertificationTotal}
-                  </strong>
-                </div>
-                {decertificationPayload.columns.map((column) => (
-                  <div class="status-cell">
-                    <h3 class="status-heading">{column.label}</h3>
-                    <span class:list={["status-mark", column.status]}>
-                      {statusLabel(column.status)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <p class="civic-limit-note">{decertificationPayload.note}</p>
-            </section>
-          ) : null
-        }
-
-        <section class="civic-section civic-section--last">
-          <aside class="entity-side">
-            <p class="civic-kicker">Help improve this page</p>
-            <h2>Add what is missing</h2>
-            <ul class="entity-side-list">
-              <li>
-                <span>Share an experience</span>
-                <a class="entity-side-link" href="/report/new/">Start</a>
-              </li>
-              <li>
-                <span>Add an agency</span>
-                <PrefillNavButton
-                  to="/agency/new/"
-                  payload={addAgencyPrefill}
-                  class="entity-side-link"
-                >
-                  Start
-                </PrefillNavButton>
-              </li>
-              <li>
-                <span>Add a civil case</span>
-                <PrefillNavButton
-                  to="/civil-cases/new/"
-                  payload={addCivilCasePrefill}
-                  class="entity-side-link"
-                >
-                  Start
-                </PrefillNavButton>
-              </li>
-              <li>
-                <span>Get updates</span>
-                <PrefillNavButton
-                  to="/about/contact/"
-                  payload={getUpdatesPrefill}
-                  class="entity-side-link"
-                >
-                  Start
-                </PrefillNavButton>
-              </li>
-            </ul>
-          </aside>
-        </section>
-      </div>
-    </section>
-  </main>
-</SiteLayout>
+  <section class="civic-section civic-section--last">
+    <aside class="entity-side">
+      <p class="civic-kicker">Help improve this page</p>
+      <h2>Add what is missing</h2>
+      <ul class="entity-side-list">
+        <li>
+          <span>Share an experience</span>
+          <a class="entity-side-link" href="/report/new/">Start</a>
+        </li>
+        <li>
+          <span>Add an agency</span>
+          <PrefillNavButton
+            to="/agency/new/"
+            payload={addAgencyPrefill}
+            class="entity-side-link"
+          >
+            Start
+          </PrefillNavButton>
+        </li>
+        <li>
+          <span>Add a civil case</span>
+          <PrefillNavButton
+            to="/civil-cases/new/"
+            payload={addCivilCasePrefill}
+            class="entity-side-link"
+          >
+            Start
+          </PrefillNavButton>
+        </li>
+        <li>
+          <span>Get updates</span>
+          <PrefillNavButton
+            to="/about/contact/"
+            payload={getUpdatesPrefill}
+            class="entity-side-link"
+          >
+            Start
+          </PrefillNavButton>
+        </li>
+      </ul>
+    </aside>
+  </section>
+</PageShell>

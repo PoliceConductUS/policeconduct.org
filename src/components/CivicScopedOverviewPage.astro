@@ -1,8 +1,6 @@
 ---
-import Breadcrumb from "#src/components/Breadcrumb.astro";
-import PageHeader from "#src/components/PageHeader.astro";
 import StatCell from "#src/components/StatCell.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import {
   buildHelpCollectHref,
   type CivicIndexModel,
@@ -76,71 +74,59 @@ const hasRows = records ? records.rows.length > 0 : false;
 const personnelCount = coverageValue("personnel");
 ---
 
-<SiteLayout
+<PageShell
   title={`${pageTitle} | PoliceConduct.org`}
   description={pageConfig.description}
   pagePath={pagePath}
+  breadcrumbs={[
+    ...model.breadcrumbs.map((item) => ({ ...item, current: false })),
+    { label: pageConfig.title, href: pagePath },
+  ]}
+  eyebrow={heading}
+  heading={pageConfig.title}
+  lede={pageConfig.description}
 >
-  <main id="main" class="civic-index-page">
-    <section class="civic-index-page-main">
-      <div class="container">
-        <Breadcrumb
-          items={[
-            ...model.breadcrumbs.map((item) => ({ ...item, current: false })),
-            { label: pageConfig.title, href: pagePath },
-          ]}
-        />
-
-        <PageHeader
-          eyebrow={heading}
-          title={pageConfig.title}
-          description={pageConfig.description}
-        />
-
-        {
-          kind === "personnel" ? (
-            <section class="civic-section civic-section--last">
-              <dl class="fact-list">
-                <div>
-                  <dt>Personnel records</dt>
-                  <dd>{personnelCount.toLocaleString("en-US")}</dd>
-                </div>
-                <div>
-                  <dt>Rosters</dt>
-                  <dd>Browsable on each agency page</dd>
-                </div>
-              </dl>
-              <p class="civic-limit-note">
-                Personnel records come from state licensing data and are listed
-                on each agency's page.
-                <a href="/find-records/">Find an agency →</a>
-              </p>
-            </section>
-          ) : hasRows ? (
-            <section class="civic-section civic-section--last">
-              <slot />
-              <p class="civic-limit-note">
-                Case records come from court dockets. A pending case is an
-                allegation, not a finding. A dismissal is a court outcome, not a
-                statement that no misconduct occurred.
-              </p>
-            </section>
-          ) : (
-            <section class="civic-section civic-section--last">
-              <ul class="topic-row">
-                <StatCell
-                  variant="topic"
-                  label={pageConfig.title}
-                  gloss={pageConfig.gloss}
-                  role={pageConfig.role ?? undefined}
-                  empty
-                  helpCollectHref={volunteerHref}
-                />
-              </ul>
-            </section>
-          )
-        }
-      </div>
-    </section>
-  </main>
-</SiteLayout>
+  {
+    kind === "personnel" ? (
+      <section class="civic-section civic-section--last">
+        <dl class="fact-list">
+          <div>
+            <dt>Personnel records</dt>
+            <dd>{personnelCount.toLocaleString("en-US")}</dd>
+          </div>
+          <div>
+            <dt>Rosters</dt>
+            <dd>Browsable on each agency page</dd>
+          </div>
+        </dl>
+        <p class="civic-limit-note">
+          Personnel records come from state licensing data and are listed on
+          each agency's page.
+          <a href="/find-records/">Find an agency →</a>
+        </p>
+      </section>
+    ) : hasRows ? (
+      <section class="civic-section civic-section--last">
+        <slot />
+        <p class="civic-limit-note">
+          Case records come from court dockets. A pending case is an allegation,
+          not a finding. A dismissal is a court outcome, not a statement that no
+          misconduct occurred.
+        </p>
+      </section>
+    ) : (
+      <section class="civic-section civic-section--last">
+        <ul class="topic-row">
+          <StatCell
+            variant="topic"
+            label={pageConfig.title}
+            gloss={pageConfig.gloss}
+            role={pageConfig.role ?? undefined}
+            empty
+            helpCollectHref={volunteerHref}
+          />
+        </ul>
+      </section>
+    )
+  }
+</PageShell>

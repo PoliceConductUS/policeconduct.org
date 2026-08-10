@@ -1,8 +1,6 @@
 ---
-import Breadcrumb from "#src/components/Breadcrumb.astro";
-import PageHeader from "#src/components/PageHeader.astro";
 import Pagination from "#src/components/Pagination.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
 import "#src/styles/civic-ledger.css";
 
@@ -42,57 +40,44 @@ for (const row of page.data) {
 }
 ---
 
-<SiteLayout
+<PageShell
   title={`${heading} ${label} | PoliceConduct.org`}
   description={`${label} within ${heading}.`}
   pagePath={pagePath}
   canonicalUrl={canonicalPath}
+  breadcrumbs={[
+    ...model.breadcrumbs.map((item) => ({ ...item, current: false })),
+    { label, href: pagePath, current: true },
+  ]}
+  eyebrow={model.jurisdictionLabel}
+  heading={pageTitle}
+  lede={description}
 >
-  <main id="main" class="civic-index-page">
-    <section class="civic-index-page-main">
-      <div class="container">
-        <Breadcrumb
-          items={[
-            ...model.breadcrumbs.map((item) => ({ ...item, current: false })),
-            { label, href: pagePath, current: true },
-          ]}
-          className="mb-2"
+  <section class="civic-section civic-section--last">
+    <div class="alpha-nav">
+      {
+        [...alphaGroups.entries()].map(([letter, rows]) => (
+          <section class="alpha-group">
+            <h2>{letter}</h2>
+            <ul>
+              {rows.map((row) => (
+                <li>
+                  <a href={row.href}>{row.label}</a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+    </div>
+    {
+      page.lastPage > 1 ? (
+        <Pagination
+          basePath={pagePath}
+          currentPage={page.currentPage}
+          lastPage={page.lastPage}
         />
-
-        <PageHeader
-          eyebrow={model.jurisdictionLabel}
-          title={pageTitle}
-          description={description}
-        />
-
-        <section class="civic-section civic-section--last">
-          <div class="alpha-nav">
-            {
-              [...alphaGroups.entries()].map(([letter, rows]) => (
-                <section class="alpha-group">
-                  <h2>{letter}</h2>
-                  <ul>
-                    {rows.map((row) => (
-                      <li>
-                        <a href={row.href}>{row.label}</a>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))
-            }
-          </div>
-          {
-            page.lastPage > 1 ? (
-              <Pagination
-                basePath={pagePath}
-                currentPage={page.currentPage}
-                lastPage={page.lastPage}
-              />
-            ) : null
-          }
-        </section>
-      </div>
-    </section>
-  </main>
-</SiteLayout>
+      ) : null
+    }
+  </section>
+</PageShell>

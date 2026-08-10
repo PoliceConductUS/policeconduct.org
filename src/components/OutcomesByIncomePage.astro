@@ -1,10 +1,8 @@
 ---
-import Breadcrumb from "#src/components/Breadcrumb.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import PageHeader from "#src/components/PageHeader.astro";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 
 const { breadcrumbs, description, pagePath, title } = Astro.props as {
   breadcrumbs: { current?: boolean; href: string; label: string }[];
@@ -38,103 +36,97 @@ const tableRows = ["All charges", "DWI", "Drug", "Traffic", "Public order"];
 const tableOutcomes = ["Dismissed", "Reduced", "Plea", "Convicted", "Jail"];
 ---
 
-<SiteLayout
+<PageShell
   title={`${title} | PoliceConduct.org`}
   description={description}
   pagePath={pagePath}
   canonicalUrl={pagePath}
+  breadcrumbs={breadcrumbs}
+  heading={title}
+  lede={description}
 >
-  <main id="main" class="civic-index-page">
-    <section class="civic-index-page-main">
-      <div class="container">
-        <Breadcrumb items={breadcrumbs} className="mb-2" />
-        <PageHeader title={title} description={description}>
-          <Fragment slot="actions">
-            <HelpCollectDataButton
-              context={title}
-              sourcePage={pagePath}
-              topic="Outcomes by income"
-            />
-          </Fragment>
-        </PageHeader>
-        <div class="entity-chart-grid outcomes-income-page-grid">
-          <form
-            class="outcomes-income-filters"
-            aria-label="Outcomes by income filters"
-          >
-            <label>
-              <span>Charge category</span>
-              <select name="charge">
-                {chargeCategories.map((option) => <option>{option}</option>)}
-              </select>
-            </label>
-            <label>
-              <span>Outcome set</span>
-              <select name="outcome">
-                {outcomeSets.map((option) => <option>{option}</option>)}
-              </select>
-            </label>
-            <label>
-              <span>Measure</span>
-              <select name="measure">
-                {measures.map((option) => <option>{option}</option>)}
-              </select>
-            </label>
-            <label>
-              <span>Income source</span>
-              <select name="income-source">
-                {incomeSources.map((option) => <option>{option}</option>)}
-              </select>
-            </label>
-            <label>
-              <span>Time period</span>
-              <select name="time-period">
-                {timePeriods.map((option) => <option>{option}</option>)}
-              </select>
-            </label>
-          </form>
+  <Fragment slot="actions">
+    <HelpCollectDataButton
+      context={title}
+      sourcePage={pagePath}
+      topic="Outcomes by income"
+    />
+  </Fragment>
+  <div class="entity-chart-grid outcomes-income-page-grid">
+    <form
+      class="outcomes-income-filters"
+      aria-label="Outcomes by income filters"
+    >
+      <label>
+        <span>Charge category</span>
+        <select name="charge">
+          {chargeCategories.map((option) => <option>{option}</option>)}
+        </select>
+      </label>
+      <label>
+        <span>Outcome set</span>
+        <select name="outcome">
+          {outcomeSets.map((option) => <option>{option}</option>)}
+        </select>
+      </label>
+      <label>
+        <span>Measure</span>
+        <select name="measure">
+          {measures.map((option) => <option>{option}</option>)}
+        </select>
+      </label>
+      <label>
+        <span>Income source</span>
+        <select name="income-source">
+          {incomeSources.map((option) => <option>{option}</option>)}
+        </select>
+      </label>
+      <label>
+        <span>Time period</span>
+        <select name="time-period">
+          {timePeriods.map((option) => <option>{option}</option>)}
+        </select>
+      </label>
+    </form>
 
-          <OutcomesByIncomePanel variant="detail" />
+    <OutcomesByIncomePanel variant="detail" />
 
-          <DataPanel
-            className="entity-table-panel"
-            title="Outcome Values"
-            description="Exact values for the selected view"
-          >
-            <div class="outcomes-income-table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">Charge</th>
-                    <th scope="col">Outcome</th>
-                    <th scope="col">Lower income</th>
-                    <th scope="col">Middle income</th>
-                    <th scope="col">Higher income</th>
-                    <th scope="col">Records</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {
-                    tableRows.map((charge, index) => (
-                      <tr>
-                        <th scope="row">{charge}</th>
-                        <td>{tableOutcomes[index]}</td>
-                        <td />
-                        <td />
-                        <td />
-                        <td />
-                      </tr>
-                    ))
-                  }
-                </tbody>
-              </table>
-            </div>
-          </DataPanel>
-        </div>
+    <DataPanel
+      className="entity-table-panel"
+      title="Outcome Values"
+      description="Exact values for the selected view"
+    >
+      <div class="outcomes-income-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Charge</th>
+              <th scope="col">Outcome</th>
+              <th scope="col">Lower income</th>
+              <th scope="col">Middle income</th>
+              <th scope="col">Higher income</th>
+              <th scope="col">Records</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              tableRows.map((charge, index) => (
+                <tr>
+                  <th scope="row">{charge}</th>
+                  <td>{tableOutcomes[index]}</td>
+                  <td />
+                  <td />
+                  <td />
+                  <td />
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
       </div>
-    </section>
-  </main>
-</SiteLayout>
+    </DataPanel>
+  </div>
+</PageShell>
 
 <style>
   .outcomes-income-filters {

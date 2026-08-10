@@ -1,11 +1,9 @@
 ---
-import Breadcrumb from "#src/components/Breadcrumb.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import PageHeader from "#src/components/PageHeader.astro";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import { metricVisuals } from "#src/lib/metric-vocabulary.js";
 import type { MetricCardItem } from "#src/components/metric-card-types.js";
 import { buildCollectionPage, getSiteUrl } from "#src/lib/structured-data.js";
@@ -72,46 +70,38 @@ const sampleRows = [
 ];
 ---
 
-<SiteLayout
+<PageShell
   title={`${title} | PoliceConduct.org`}
   description={description}
   pagePath={pagePath}
   canonicalUrl={pagePath}
   structuredData={structuredData}
+  breadcrumbs={breadcrumbItems}
+  heading={title}
+  lede={description}
 >
-  <main id="main" class="civic-index-page">
-    <section class="civic-index-page-main">
-      <div class="container">
-        <Breadcrumb items={breadcrumbItems} />
-        <PageHeader title={title} description={description}>
-          <Fragment slot="actions">
-            <HelpCollectDataButton
-              context={title}
-              sourcePage={pagePath}
-              topic="Fatal Force Incidents"
-            />
-            <button type="button" class="entity-action"> Share </button>
-            <button type="button" class="entity-action">
-              Download report
-            </button>
-          </Fragment>
-        </PageHeader>
+  <Fragment slot="actions">
+    <HelpCollectDataButton
+      context={title}
+      sourcePage={pagePath}
+      topic="Fatal Force Incidents"
+    />
+    <button type="button" class="entity-action"> Share </button>
+    <button type="button" class="entity-action"> Download report </button>
+  </Fragment>
 
-        <MetricGrid metrics={metricCards} columns="auto" />
+  <MetricGrid metrics={metricCards} columns="auto" />
 
-        <div class="entity-chart-grid">
-          {
-            chartTitles.map((chartTitle) => (
-              <DataPanel title={chartTitle}>
-                <SampleMeasurementChart
-                  ariaLabel={`Sample ${chartTitle} chart`}
-                  rows={sampleRows}
-                />
-              </DataPanel>
-            ))
-          }
-        </div>
-      </div>
-    </section>
-  </main>
-</SiteLayout>
+  <div class="entity-chart-grid">
+    {
+      chartTitles.map((chartTitle) => (
+        <DataPanel title={chartTitle}>
+          <SampleMeasurementChart
+            ariaLabel={`Sample ${chartTitle} chart`}
+            rows={sampleRows}
+          />
+        </DataPanel>
+      ))
+    }
+  </div>
+</PageShell>
