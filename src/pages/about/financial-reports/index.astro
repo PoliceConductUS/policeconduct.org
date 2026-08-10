@@ -1,6 +1,5 @@
 ---
-import SiteLayout from "#src/layouts/SiteLayout.astro";
-import Breadcrumb from "#src/components/Breadcrumb.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/about/financial-reports/";
@@ -16,22 +15,17 @@ const structuredData = buildWebPage({
 });
 ---
 
-<SiteLayout
+<PageShell
   title="Financial Reports | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
+  canonicalUrl={pagePath}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "About", href: "/about/" },
+    { label: "Financial Reports", href: pagePath, current: true },
+  ]}
+  heading="Financial Reports"
 >
-  <main id="main" class="flex-grow-1 py-vh-3">
-    <div class="container">
-      <Breadcrumb
-        items={[
-          { label: "About", href: "/about/" },
-          { label: "Financial Reports", href: pagePath, current: true },
-        ]}
-      />
-      <h1 class="ipc-page-title">Financial Reports</h1>
-      <p class="lead text-muted">Content coming soon.</p>
-    </div>
-  </main>
-</SiteLayout>
+  <p class="lead text-muted">Content coming soon.</p>
+</PageShell>

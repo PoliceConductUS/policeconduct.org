@@ -1,6 +1,5 @@
 ---
-import SiteLayout from "#src/layouts/SiteLayout.astro";
-import Breadcrumb from "#src/components/Breadcrumb.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
@@ -18,168 +17,142 @@ const structuredData = buildWebPage({
 });
 ---
 
-<SiteLayout
+<PageShell
   title="Partnerships for Nonprofits and Advocacy Coalitions | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
+  canonicalUrl={pagePath}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Partner", href: "/partner/" },
+    { label: "Nonprofit", href: pagePath, current: true },
+  ]}
+  heading="For Nonprofits and Advocacy Coalitions"
+  lede="Use PoliceConduct.org in community education, issue-focused advocacy, and public accountability work built around documented records rather than slogans."
 >
   <PrefillBootstrap />
-  <main id="main" class="flex-grow-1">
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
-      <div class="container">
-        <Breadcrumb
-          items={[
-            { label: "Partner", href: "/partner/" },
-            { label: "Nonprofit", href: pagePath, current: true },
-          ]}
-        />
-        <div class="row g-4 align-items-end">
-          <div class="col-12 col-lg-8">
-            <p class="text-uppercase small text-muted mb-2">Partnership</p>
-            <h1 class="ipc-page-title">
-              For Nonprofits and Advocacy Coalitions
-            </h1>
-            <p class="lead text-muted mb-0">
-              Use PoliceConduct.org in community education, issue-focused
-              advocacy, and public accountability work built around documented
-              records rather than slogans.
-            </p>
-          </div>
-          <div class="col-12 col-lg-4">
-            <div class="card shadow-sm rounded-0 border-dark">
-              <div class="card-body d-flex flex-column gap-2">
-                <div class="text-uppercase small text-muted">
-                  What we can do now
-                </div>
-                <div class="fw-semibold">
-                  Support public-facing accountability work
-                </div>
-                <div class="text-muted small">
-                  We can help nonprofits use the public record in community
-                  education, case intake, and issue-focused advocacy.
-                </div>
-              </div>
+  <div class="mb-4">
+    <div class="card shadow-sm rounded-0 border-dark">
+      <div class="card-body d-flex flex-column gap-2">
+        <div class="text-uppercase small text-muted">What we can do now</div>
+        <div class="fw-semibold">Support public-facing accountability work</div>
+        <div class="text-muted small">
+          We can help nonprofits use the public record in community education,
+          case intake, and issue-focused advocacy.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="py-vh-2">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-12 col-lg-7">
+          <h2 class="ipc-section-title">How We Can Help</h2>
+          <p class="text-muted mb-0">
+            We can help a nonprofit turn scattered public records and site
+            entries into a focused brief around one issue area, agency, or
+            campaign question.
+          </p>
+        </div>
+        <div class="col-12 col-lg-5">
+          <div class="card shadow-sm rounded-0 border-dark h-100">
+            <div class="card-body d-flex flex-column gap-3">
+              <div class="text-uppercase small text-muted">Good fit</div>
+              <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
+                <li>
+                  Community organizations working on a defined local issue.
+                </li>
+                <li>
+                  Groups that need a public brief, intake workflow, or record
+                  summary.
+                </li>
+                <li>
+                  Advocacy teams that want evidence without overstating what the
+                  record shows.
+                </li>
+              </ul>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="py-vh-2">
-      <div class="container">
-        <div class="row g-4">
-          <div class="col-12 col-lg-7">
-            <h2 class="ipc-section-title">How We Can Help</h2>
-            <p class="text-muted mb-0">
-              We can help a nonprofit turn scattered public records and site
-              entries into a focused brief around one issue area, agency, or
-              campaign question.
-            </p>
+  <section class="py-vh-2 bg-light border-top border-bottom border-dark">
+    <div class="container">
+      <h2 class="ipc-section-title mb-3">What we can help with now</h2>
+      <p class="text-muted">
+        The most credible work is usually narrow: gather the public record,
+        organize it around a question, and show community members what is
+        documented and what still is not.
+      </p>
+      <div class="row g-4">
+        <div class="col-12 col-lg-6">
+          <div class="card shadow-sm rounded-0 border-dark h-100">
+            <div class="card-body d-flex flex-column gap-2">
+              <p class="text-uppercase small text-muted mb-1">Public brief</p>
+              <h3 class="ipc-subsection-title">Issue-focused summary</h3>
+              <p class="mb-0">
+                Prepare a scoped summary around one agency, officer, civil case
+                cluster, or local accountability issue.
+              </p>
+            </div>
           </div>
-          <div class="col-12 col-lg-5">
-            <div class="card shadow-sm rounded-0 border-dark h-100">
-              <div class="card-body d-flex flex-column gap-3">
-                <div class="text-uppercase small text-muted">Good fit</div>
-                <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
-                  <li>
-                    Community organizations working on a defined local issue.
-                  </li>
-                  <li>
-                    Groups that need a public brief, intake workflow, or record
-                    summary.
-                  </li>
-                  <li>
-                    Advocacy teams that want evidence without overstating what
-                    the record shows.
-                  </li>
-                </ul>
-              </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="card shadow-sm rounded-0 border-dark h-100">
+            <div class="card-body d-flex flex-column gap-2">
+              <p class="text-uppercase small text-muted mb-1">Intake support</p>
+              <h3 class="ipc-subsection-title">Community reporting workflow</h3>
+              <p class="mb-0">
+                Use reporting forms and public pages to help community members
+                document experiences in a more organized way.
+              </p>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="py-vh-2 bg-light border-top border-bottom border-dark">
-      <div class="container">
-        <h2 class="ipc-section-title mb-3">What we can help with now</h2>
-        <p class="text-muted">
-          The most credible work is usually narrow: gather the public record,
-          organize it around a question, and show community members what is
-          documented and what still is not.
-        </p>
-        <div class="row g-4">
-          <div class="col-12 col-lg-6">
-            <div class="card shadow-sm rounded-0 border-dark h-100">
-              <div class="card-body d-flex flex-column gap-2">
-                <p class="text-uppercase small text-muted mb-1">Public brief</p>
-                <h3 class="ipc-subsection-title">Issue-focused summary</h3>
-                <p class="mb-0">
-                  Prepare a scoped summary around one agency, officer, civil
-                  case cluster, or local accountability issue.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div class="col-12 col-lg-6">
-            <div class="card shadow-sm rounded-0 border-dark h-100">
-              <div class="card-body d-flex flex-column gap-2">
-                <p class="text-uppercase small text-muted mb-1">
-                  Intake support
-                </p>
-                <h3 class="ipc-subsection-title">
-                  Community reporting workflow
-                </h3>
-                <p class="mb-0">
-                  Use reporting forms and public pages to help community members
-                  document experiences in a more organized way.
-                </p>
-              </div>
-            </div>
-          </div>
+  <section class="py-vh-2">
+    <div class="container">
+      <h2 class="ipc-section-title mb-3">What partnership looks like</h2>
+      <p class="text-muted mb-0">
+        We start with a defined topic, geography, and time frame. Then we
+        identify what public records and site data we can help organize. The
+        output is a practical working brief, not an inflated product promise.
+      </p>
+    </div>
+  </section>
+
+  <section class="py-vh-2">
+    <div class="container">
+      <div
+        class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3"
+      >
+        <div>
+          <h2 class="ipc-section-title mb-1">
+            Ready to build a community data partnership?
+          </h2>
+          <p class="text-muted mb-0">
+            Tell us the issue, geography, and audience. We will respond with a
+            scoped partnership proposal if there is a credible fit.
+          </p>
         </div>
-      </div>
-    </section>
-
-    <section class="py-vh-2">
-      <div class="container">
-        <h2 class="ipc-section-title mb-3">What partnership looks like</h2>
-        <p class="text-muted mb-0">
-          We start with a defined topic, geography, and time frame. Then we
-          identify what public records and site data we can help organize. The
-          output is a practical working brief, not an inflated product promise.
-        </p>
-      </div>
-    </section>
-
-    <section class="py-vh-2">
-      <div class="container">
-        <div
-          class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3"
+        <PrefillNavButton
+          class="btn btn-dark rounded-0"
+          to="/about/contact/"
+          payload={{
+            whoami: "Partner",
+            message:
+              "I am interested in a scoped nonprofit partnership proposal.",
+          }}
         >
-          <div>
-            <h2 class="ipc-section-title mb-1">
-              Ready to build a community data partnership?
-            </h2>
-            <p class="text-muted mb-0">
-              Tell us the issue, geography, and audience. We will respond with a
-              scoped partnership proposal if there is a credible fit.
-            </p>
-          </div>
-          <PrefillNavButton
-            class="btn btn-dark rounded-0"
-            to="/about/contact/"
-            payload={{
-              whoami: "Partner",
-              message:
-                "I am interested in a scoped nonprofit partnership proposal.",
-            }}
-          >
-            Request the partnership proposal
-          </PrefillNavButton>
-        </div>
+          Request the partnership proposal
+        </PrefillNavButton>
       </div>
-    </section>
-  </main>
-</SiteLayout>
+    </div>
+  </section>
+</PageShell>
