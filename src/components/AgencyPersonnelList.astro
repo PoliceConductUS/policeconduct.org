@@ -1,0 +1,46 @@
+---
+import "#src/styles/civic-ledger.css";
+
+// A simple A–Z roster list for an agency's personnel, matching the child-index
+// (counties/places) `.alpha-nav` treatment. Personnel are only listed at the
+// agency level; this renders one page's slice, already sorted by last name.
+type EmployeeLike = {
+  officer?: {
+    first_name?: string | null;
+    last_name?: string | null;
+    slug?: string | null;
+  } | null;
+};
+type RosterRow = { label: string; href: string | null };
+
+const { employees } = Astro.props as { employees: EmployeeLike[] };
+
+const alphaGroups = new Map<string, RosterRow[]>();
+for (const employee of employees) {
+  const lastName = employee.officer?.last_name || "";
+  const firstName = employee.officer?.first_name || "";
+  const label = [lastName, firstName].filter(Boolean).join(", ") || "Unnamed";
+  const href = employee.officer?.slug
+    ? `/personnel/${employee.officer.slug}/`
+    : null;
+  const letter = (lastName[0] || label[0] || "#").toUpperCase();
+  const group = alphaGroups.get(letter) || [];
+  group.push({ label, href });
+  alphaGroups.set(letter, group);
+}
+---
+
+<div class="alpha-nav">
+  {
+    [...alphaGroups.entries()].map(([letter, rows]) => (
+      <section class="alpha-group">
+        <h2>{letter}</h2>
+        <ul>
+          {rows.map((row) => (
+            <li>{row.href ? <a href={row.href}>{row.label}</a> : row.label}</li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</div>

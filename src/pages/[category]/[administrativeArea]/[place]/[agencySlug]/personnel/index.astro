@@ -1,6 +1,7 @@
 ---
+import AgencyPersonnelList from "#src/components/AgencyPersonnelList.astro";
 import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
-import TableScroll from "#src/components/TableScroll.astro";
+import Pagination from "#src/components/Pagination.astro";
 import {
   loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPathsForTopic,
@@ -11,91 +12,31 @@ export async function getStaticPaths() {
   return loadAgencyLocationStaticPathsForTopic("personnel");
 }
 
-type AgencyDetail = Awaited<ReturnType<typeof loadAgencyDetailByRouteParams>>;
-type Employee = AgencyDetail["employees"][number];
-
 const data = await loadAgencyDetailByRouteParams(Astro.params);
 const { employees } = data;
 
 const pageEmployees = employees.slice(0, PAGE_SIZE);
-const currentCount = employees.filter(
-  (employee: Employee) => !employee.entry.end_date,
-).length;
-const formerCount = employees.length - currentCount;
+const lastPage = Math.max(1, Math.ceil(employees.length / PAGE_SIZE));
+const personnelIndexPath = `${data.agencyPath}personnel/`;
 const formatCount = (value: number) => value.toLocaleString("en-US");
-const formatMonth = (value?: string | null) =>
-  value
-    ? new Date(value).toLocaleDateString("en-US", {
-        month: "short",
-        year: "numeric",
-        timeZone: "UTC",
-      })
-    : "";
-const officerName = (employee: Employee) =>
-  [employee.officer?.last_name, employee.officer?.first_name]
-    .filter(Boolean)
-    .join(", ") || "Unnamed record";
 ---
 
 <AgencyTopicPage
   data={data}
   topicLabel="Personnel"
   topicSlug="personnel"
-  description={`${formatCount(employees.length)} current and former personnel records for this agency, from state licensing data.`}
+  description={`${formatCount(employees.length)} current and former personnel records for this agency, sorted by name, from state licensing data.`}
 >
-  <div class="list-tools">
-    <span class="list-count">
-      {formatCount(currentCount)} current · {formatCount(formerCount)} former
-      {
-        employees.length > pageEmployees.length
-          ? ` · showing 1–${formatCount(pageEmployees.length)} of ${formatCount(employees.length)}`
-          : ""
-      }
-    </span>
-  </div>
-  <TableScroll>
-    <table class="record-table">
-      <thead>
-        <tr>
-          <th scope="col">Name</th>
-          <th scope="col">Role</th>
-          <th scope="col">Started</th>
-          <th scope="col">Ended</th>
-          <th scope="col" class="num">Reports</th>
-        </tr>
-      </thead>
-      <tbody>
-        {
-          pageEmployees.map((employee: Employee) => (
-            <tr>
-              <td>
-                {employee.officer?.slug ? (
-                  <a
-                    class="row-link"
-                    href={`/personnel/${employee.officer.slug}/`}
-                  >
-                    {officerName(employee)}
-                  </a>
-                ) : (
-                  officerName(employee)
-                )}
-              </td>
-              <td>{employee.entry.license_type || ""}</td>
-              <td>{formatMonth(employee.entry.start_date)}</td>
-              <td>
-                {employee.entry.end_date ? (
-                  formatMonth(employee.entry.end_date)
-                ) : (
-                  <span class="muted">Current</span>
-                )}
-              </td>
-              <td class="num">{employee.reportCount || 0}</td>
-            </tr>
-          ))
-        }
-      </tbody>
-    </table>
-  </TableScroll>
+  <AgencyPersonnelList employees={pageEmployees} />
+  {
+    lastPage > 1 ? (
+      <Pagination
+        basePath={personnelIndexPath}
+        currentPage={1}
+        lastPage={lastPage}
+      />
+    ) : null
+  }
   <p class="civic-limit-note">
     Personnel records come from state licensing data. A listing here is
     employment history, not an allegation.
