@@ -617,8 +617,6 @@ export const buildFederalCivicIndex = (
         label: metricLabels.personnelRecords,
         value: count(totals.personnel),
         meta: "Current & former",
-        href: totals.personnel > 0 ? `${pagePath}personnel/` : undefined,
-        actionLabel: totals.personnel > 0 ? "View personnel →" : undefined,
       },
       {
         key: "reports",
@@ -700,8 +698,6 @@ export const buildFederalAgencyIndexModel = (
       {
         ...metricVisuals.personnel,
         detail: "Active linked personnel",
-        href: `${pagePath}personnel/`,
-        actionLabel: "View details",
         key: "personnel",
         value: formatCount(totals.personnel),
       },
