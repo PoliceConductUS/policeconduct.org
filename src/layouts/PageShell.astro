@@ -13,6 +13,9 @@ import PageHeader from "#src/components/PageHeader.astro";
 //   optional header sub-line (or pass rich sub content via the `header` slot).
 // - The `actions` slot holds page-level header actions (e.g. "Help collect
 //   data"); the default slot is the page body.
+// - The optional `aside` slot turns the header into a two-column hero (header
+//   on the left, aside rail on the right) matching the entity profile pages.
+//   Omit it for the standard single-column header.
 interface Props {
   // SiteLayout passthrough
   title: string;
@@ -42,6 +45,7 @@ const {
   eyebrow,
   lede,
 } = Astro.props;
+const hasAside = Astro.slots.has("aside");
 ---
 
 <SiteLayout
@@ -57,10 +61,15 @@ const {
     <section class="civic-index-page-main">
       <div class="container">
         <Breadcrumb items={breadcrumbs} className="mb-2" />
-        <PageHeader eyebrow={eyebrow} title={heading} description={lede}>
-          <slot name="header" slot="default" />
-          <slot name="actions" slot="actions" />
-        </PageHeader>
+        <div class:list={[{ "entity-hero": hasAside }]}>
+          <div class:list={[{ "entity-hero-grid page-hero-grid": hasAside }]}>
+            <PageHeader eyebrow={eyebrow} title={heading} description={lede}>
+              <slot name="header" slot="default" />
+              <slot name="actions" slot="actions" />
+            </PageHeader>
+            {hasAside ? <slot name="aside" /> : null}
+          </div>
+        </div>
         <slot />
       </div>
     </section>

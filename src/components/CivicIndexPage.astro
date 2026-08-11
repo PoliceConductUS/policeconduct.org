@@ -443,46 +443,44 @@ const statColumns = model.statCells.length + 1;
     ) : null
   }
 
-  <section class="civic-section civic-section--last">
-    <aside class="entity-side">
-      <p class="civic-kicker">Help improve this page</p>
-      <h2>Add what is missing</h2>
-      <ul class="entity-side-list">
-        <li>
-          <span>Share an experience</span>
-          <a class="entity-side-link" href="/report/new/">Start</a>
-        </li>
-        <li>
-          <span>Add an agency</span>
-          <PrefillNavButton
-            to="/agency/new/"
-            payload={addAgencyPrefill}
-            class="entity-side-link"
-          >
-            Start
-          </PrefillNavButton>
-        </li>
-        <li>
-          <span>Add a civil case</span>
-          <PrefillNavButton
-            to="/civil-cases/new/"
-            payload={addCivilCasePrefill}
-            class="entity-side-link"
-          >
-            Start
-          </PrefillNavButton>
-        </li>
-        <li>
-          <span>Get updates</span>
-          <PrefillNavButton
-            to="/about/contact/"
-            payload={getUpdatesPrefill}
-            class="entity-side-link"
-          >
-            Start
-          </PrefillNavButton>
-        </li>
-      </ul>
-    </aside>
-  </section>
+  <aside class="entity-side" slot="aside">
+    <p class="civic-kicker">Help improve this page</p>
+    <h2>Add what is missing</h2>
+    <ul class="entity-side-list">
+      <li>
+        <span>Share an experience</span>
+        <a class="entity-side-link" href="/report/new/">Start</a>
+      </li>
+      <li>
+        <span>Add an agency</span>
+        <PrefillNavButton
+          to="/agency/new/"
+          payload={addAgencyPrefill}
+          class="entity-side-link"
+        >
+          Start
+        </PrefillNavButton>
+      </li>
+      <li>
+        <span>Add a civil case</span>
+        <PrefillNavButton
+          to="/civil-cases/new/"
+          payload={addCivilCasePrefill}
+          class="entity-side-link"
+        >
+          Start
+        </PrefillNavButton>
+      </li>
+      <li>
+        <span>Get updates</span>
+        <PrefillNavButton
+          to="/about/contact/"
+          payload={getUpdatesPrefill}
+          class="entity-side-link"
+        >
+          Start
+        </PrefillNavButton>
+      </li>
+    </ul>
+  </aside>
 </PageShell>

@@ -300,6 +300,13 @@ a.stat-cell {
   border-bottom: none;
 }
 
+/* The last civic section in a shell body drops its divider automatically, so
+   pages with a conditional final section don't have to hand-place
+   civic-section--last on it. */
+.civic-index-page-main .civic-section:last-of-type {
+  border-bottom: none;
+}
+
 .civic-section-head {
   align-items: flex-end;
   display: flex;
@@ -623,6 +630,15 @@ a.stat-cell {
   display: grid;
   gap: 1.5rem;
   grid-template-columns: minmax(0, 1fr);
+}
+
+/* Two-column hero (header + right-hand aside rail), shared by the entity
+   profile pages and PageShell's optional `aside` slot. Single column on
+   narrow viewports; splits at the same breakpoint as the profile hero. */
+@media (min-width: 900px) {
+  .page-hero-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.34fr);
+  }
 }
 
 .entity-hero h1 {
