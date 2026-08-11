@@ -20,7 +20,6 @@
 /* ---- lede ---- */
 
 .civic-lede {
-  border-bottom: 1px solid var(--ipc-color-rule);
   padding-bottom: 1.6rem;
 }
 
@@ -621,7 +620,6 @@ a.stat-cell {
 }
 
 .entity-hero {
-  border-bottom: 1px solid var(--ipc-color-rule);
   padding-bottom: 1.6rem;
 }
 
