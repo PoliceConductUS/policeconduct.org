@@ -1,5 +1,4 @@
 ---
-import Breadcrumb from "#src/components/Breadcrumb.astro";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import "#src/styles/civic-ledger.css";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
@@ -8,7 +7,7 @@ import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { formatShortDate } from "#src/lib/format.js";
@@ -573,361 +572,351 @@ const structuredData = {
 };
 ---
 
-<SiteLayout
+<PageShell
   title={pageTitle}
   description={pageDescription}
   pagePath={`/personnel/${data.officer.slug}/`}
+  canonicalUrl={`/personnel/${data.officer.slug}/`}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Personnel", href: "/personnel/" },
+    { label: officerName, href: officerPath },
+  ]}
+  heading={officerName}
 >
   <PrefillBootstrap />
-  <main id="main" class="personnel-dashboard" data-pagefind-body>
-    <section class="personnel-profile-surface">
-      <div class="container personnel-profile-container">
-        <div class="personnel-topbar">
-          <Breadcrumb
-            items={[
-              { label: "Home", href: "/" },
-              { label: "Personnel", href: "/personnel/" },
-              { label: officerName, href: officerPath },
-            ]}
-          />
-          <EntityActionBar>
-            <HelpCollectDataButton
-              context={officerName}
-              sourcePage={officerPath}
-              topic="Personnel"
-            />
-            <PrefillNavButton
-              to={suggestEditHref}
-              payload={suggestEditPrefillPayload}
-              class="personnel-action"
-            >
-              Suggest edit
-            </PrefillNavButton>
-            <PrefillNavButton
-              to="/report/new/"
-              payload={reportNewPrefillPayload}
-              class="personnel-action personnel-action-primary"
-            >
-              Share your experience
-            </PrefillNavButton>
-          </EntityActionBar>
-        </div>
+  <Fragment slot="actions">
+    <EntityActionBar>
+      <HelpCollectDataButton
+        context={officerName}
+        sourcePage={officerPath}
+        topic="Personnel"
+      />
+      <PrefillNavButton
+        to={suggestEditHref}
+        payload={suggestEditPrefillPayload}
+        class="personnel-action"
+      >
+        Suggest edit
+      </PrefillNavButton>
+      <PrefillNavButton
+        to="/report/new/"
+        payload={reportNewPrefillPayload}
+        class="personnel-action personnel-action-primary"
+      >
+        Share your experience
+      </PrefillNavButton>
+    </EntityActionBar>
+  </Fragment>
 
-        <div class="personnel-profile-hero">
-          <div class="personnel-profile-title">
-            <h1 class="ipc-page-title">{officerName}</h1>
-            <p class="personnel-current-line">
-              Current agency: <a href={currentAgencyPath}
-                >{currentAgency!.name}</a
-              >
-              <span aria-hidden="true"> · </span>
-              {currentAgencyLocation}
-            </p>
-            <p class="personnel-profile-note">
-              Combined career data aggregated across all known agencies.
-            </p>
-            {
-              isDeceased ? (
-                <div class="personnel-status-note" role="status">
-                  <strong>Status: Deceased.</strong>
-                  <span>{deceasedPublicMessage}</span>
-                </div>
-              ) : null
-            }
+  <div class="personnel-profile-hero">
+    <div class="personnel-profile-title">
+      <p class="personnel-current-line">
+        Current agency: <a href={currentAgencyPath}>{currentAgency!.name}</a>
+        <span aria-hidden="true"> · </span>
+        {currentAgencyLocation}
+      </p>
+      <p class="personnel-profile-note">
+        Combined career data aggregated across all known agencies.
+      </p>
+      {
+        isDeceased ? (
+          <div class="personnel-status-note" role="status">
+            <strong>Status: Deceased.</strong>
+            <span>{deceasedPublicMessage}</span>
           </div>
+        ) : null
+      }
+    </div>
 
-          <figure class="personnel-portrait">
-            <img
-              src={personnelImageSrc}
-              alt={`Portrait of ${data.officer.first_name} ${data.officer.last_name}`}
-            />
-          </figure>
+    <figure class="personnel-portrait">
+      <img
+        src={personnelImageSrc}
+        alt={`Portrait of ${data.officer.first_name} ${data.officer.last_name}`}
+      />
+    </figure>
 
-          <aside class="personnel-profile-aside" aria-label="Personnel summary">
-            <dl>
-              <div>
-                <dt>License Type</dt>
-                <dd>{currentLicenseType}</dd>
-              </div>
-              <div>
-                <dt>Status</dt>
-                <dd>
-                  <span class="personnel-status-pill">{statusLabel}</span>
-                </dd>
-              </div>
-              <div>
-                <dt>{metricLabels.totalTimeAsOfficer}</dt>
-                <dd>{totalTimeAsOfficer}</dd>
-              </div>
-              {
-                currentBadge ? (
-                  <div>
-                    <dt>Badge Number</dt>
-                    <dd>{currentBadge}</dd>
-                  </div>
-                ) : null
-              }
-              <div>
-                <dt>{assignmentStatusLabel}</dt>
-                <dd><a href={currentAgencyPath}>{currentAgency!.name}</a></dd>
-              </div>
-              <div>
-                <dt>Updated</dt>
-                <dd>{formatShortDate(data.officer.updated_at)}</dd>
-              </div>
-            </dl>
-          </aside>
+    <aside class="personnel-profile-aside" aria-label="Personnel summary">
+      <dl>
+        <div>
+          <dt>License Type</dt>
+          <dd>{currentLicenseType}</dd>
         </div>
-
-        <MetricGrid metrics={personnelMetricCards} />
-
-        <div class="personnel-section-grid">
-          <OutcomesByIncomePanel />
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>1. Salary History</h2>
-              <p>Annual base salary, Previous 5 years</p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample salary history chart"
-              rows={sampleRows.salary}
-            />
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>2. Arrests Over Time</h2>
-              <p>Low-level arrests and other arrests, Previous 12 months</p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample arrests over time chart, Previous 12 months"
-              rows={sampleRows.arrests}
-            />
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>3. Liability Costs Over Time</h2>
-              <p>Total liability costs, Previous 5 years</p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample liability costs over time chart, Previous 5 years"
-              rows={sampleRows.liability}
-            />
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>4. Civil Cases and Claims Over Time</h2>
-              <p>Active and historical cases, Previous 5 years</p>
-            </div>
-            {
-              civilCaseYears.length ? (
-                <div class="personnel-year-bars">
-                  {civilCaseYears.map((row) => (
-                    <div>
-                      <span>{row.year}</span>
-                      <meter
-                        min="0"
-                        max="100"
-                        value={civilCaseYearBarValue(row.count)}
-                        aria-label={`${row.year} civil case count`}
-                      >
-                        {row.count}
-                      </meter>
-                      <strong>{row.count}</strong>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <SampleMeasurementChart
-                  ariaLabel="Sample civil cases and claims chart"
-                  rows={sampleRows.civilCases}
-                />
-              )
-            }
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>5. {metricLabels.racialBreakdownStopsArrests}</h2>
-              <p>
-                Stops and arrests by recorded race or ethnicity, Previous 12
-                months
-              </p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample stops by ethnicity chart"
-              rows={sampleRows.stopsEthnicity}
-            />
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>6. {metricLabels.daylightNighttimeStops}</h2>
-              <p>Stops by time of day and recorded race, Previous 12 months</p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample stops by time of day chart"
-              rows={sampleRows.dayNight}
-            />
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>7. {metricLabels.topChargeCategories}</h2>
-              <p>Arrest charge categories, Previous 12 months</p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample top charge categories chart"
-              rows={sampleRows.charges}
-            />
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>8. Fatal Force Incidents, Previous 5 years</h2>
-              <p>People by age group, dogs and other animals</p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample fatal force incidents chart"
-              rows={sampleRows.fatalForce}
-            />
-          </section>
-
-          <section class="personnel-panel personnel-panel-wide">
-            <div class="personnel-panel-heading">
-              <h2>9. Civil Cases</h2>
-              <p>Cases connected through agency assignments.</p>
-            </div>
-            {
-              civilCasesWithPaths.length ? (
-                <div class="personnel-table-wrap">
-                  <table class="personnel-mini-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Case Name</th>
-                        <th scope="col">Filed</th>
-                        <th scope="col">Court</th>
-                        <th scope="col">Cause</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {civilCasesWithPaths.slice(0, 4).map((caseItem) => (
-                        <tr>
-                          <th scope="row">
-                            <a href={caseItem.caseUrl}>
-                              {caseItem.title || "Civil case"}
-                            </a>
-                          </th>
-                          <td>
-                            {caseItem.filed_date
-                              ? formatShortDate(caseItem.filed_date)
-                              : ""}
-                          </td>
-                          <td>{caseItem.court || ""}</td>
-                          <td>{caseItem.cause_number || ""}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : null
-            }
-          </section>
-
-          <section class="personnel-panel personnel-panel-wide">
-            <div class="personnel-panel-heading">
-              <h2>10. {metricLabels.agencies}</h2>
-              <p>Known agency assignments linked to this profile.</p>
-            </div>
-            {
-              assignmentHistory.length ? (
-                <div class="personnel-table-wrap">
-                  <table class="personnel-mini-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Agency</th>
-                        <th scope="col">License Type</th>
-                        <th scope="col">Start Date</th>
-                        <th scope="col">End Date</th>
-                        <th scope="col">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {assignmentHistory.map((entry) => (
-                        <tr>
-                          <th scope="row">
-                            <a href={requireAgencyCanonicalPath(entry.agency)}>
-                              {entry.agency.name}
-                            </a>
-                          </th>
-                          <td>{entry.license_type || currentLicenseType}</td>
-                          <td>
-                            {entry.start_date
-                              ? formatShortDate(entry.start_date)
-                              : ""}
-                          </td>
-                          <td>
-                            {entry.end_date
-                              ? formatShortDate(entry.end_date)
-                              : "Present"}
-                          </td>
-                          <td>
-                            <span class="personnel-status-pill">
-                              {entry.end_date ? "Completed" : "Active"}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : null
-            }
-          </section>
+        <div>
+          <dt>Status</dt>
+          <dd>
+            <span class="personnel-status-pill">{statusLabel}</span>
+          </dd>
         </div>
-
-        <div class="personnel-footer-actions">
-          <PrefillNavButton
-            to={addCivilCaseHref}
-            payload={addCivilCasePrefillPayload}
-            class="personnel-action"
-          >
-            Add a civil case
-          </PrefillNavButton>
-          <PrefillNavButton
-            to={pastEmployerHref}
-            payload={pastEmployerPrefillPayload}
-            class="personnel-action"
-          >
-            Submit past employer
-          </PrefillNavButton>
-          <PrefillNavButton
-            to="/about/contact/"
-            payload={{
-              whoami: "Subscriber",
-              message: `Please notify me when this profile changes: /personnel/${data.officer.slug}/`,
-            }}
-            data-testid="personnel-subscribe-link"
-            class="personnel-action"
-          >
-            Notify Me
-          </PrefillNavButton>
-          <PrefillNavButton
-            to={claimProfileHref}
-            payload={claimProfilePrefillPayload}
-            data-testid="personnel-claim-profile-link"
-            class="personnel-action"
-          >
-            Claim Profile
-          </PrefillNavButton>
+        <div>
+          <dt>{metricLabels.totalTimeAsOfficer}</dt>
+          <dd>{totalTimeAsOfficer}</dd>
         </div>
+        {
+          currentBadge ? (
+            <div>
+              <dt>Badge Number</dt>
+              <dd>{currentBadge}</dd>
+            </div>
+          ) : null
+        }
+        <div>
+          <dt>{assignmentStatusLabel}</dt>
+          <dd><a href={currentAgencyPath}>{currentAgency!.name}</a></dd>
+        </div>
+        <div>
+          <dt>Updated</dt>
+          <dd>{formatShortDate(data.officer.updated_at)}</dd>
+        </div>
+      </dl>
+    </aside>
+  </div>
+
+  <MetricGrid metrics={personnelMetricCards} />
+
+  <div class="personnel-section-grid">
+    <OutcomesByIncomePanel />
+    <section class="personnel-panel">
+      <div class="personnel-panel-heading">
+        <h2>1. Salary History</h2>
+        <p>Annual base salary, Previous 5 years</p>
       </div>
+      <SampleMeasurementChart
+        ariaLabel="Sample salary history chart"
+        rows={sampleRows.salary}
+      />
     </section>
-  </main>
-</SiteLayout>
+
+    <section class="personnel-panel">
+      <div class="personnel-panel-heading">
+        <h2>2. Arrests Over Time</h2>
+        <p>Low-level arrests and other arrests, Previous 12 months</p>
+      </div>
+      <SampleMeasurementChart
+        ariaLabel="Sample arrests over time chart, Previous 12 months"
+        rows={sampleRows.arrests}
+      />
+    </section>
+
+    <section class="personnel-panel">
+      <div class="personnel-panel-heading">
+        <h2>3. Liability Costs Over Time</h2>
+        <p>Total liability costs, Previous 5 years</p>
+      </div>
+      <SampleMeasurementChart
+        ariaLabel="Sample liability costs over time chart, Previous 5 years"
+        rows={sampleRows.liability}
+      />
+    </section>
+
+    <section class="personnel-panel">
+      <div class="personnel-panel-heading">
+        <h2>4. Civil Cases and Claims Over Time</h2>
+        <p>Active and historical cases, Previous 5 years</p>
+      </div>
+      {
+        civilCaseYears.length ? (
+          <div class="personnel-year-bars">
+            {civilCaseYears.map((row) => (
+              <div>
+                <span>{row.year}</span>
+                <meter
+                  min="0"
+                  max="100"
+                  value={civilCaseYearBarValue(row.count)}
+                  aria-label={`${row.year} civil case count`}
+                >
+                  {row.count}
+                </meter>
+                <strong>{row.count}</strong>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <SampleMeasurementChart
+            ariaLabel="Sample civil cases and claims chart"
+            rows={sampleRows.civilCases}
+          />
+        )
+      }
+    </section>
+
+    <section class="personnel-panel">
+      <div class="personnel-panel-heading">
+        <h2>5. {metricLabels.racialBreakdownStopsArrests}</h2>
+        <p>
+          Stops and arrests by recorded race or ethnicity, Previous 12 months
+        </p>
+      </div>
+      <SampleMeasurementChart
+        ariaLabel="Sample stops by ethnicity chart"
+        rows={sampleRows.stopsEthnicity}
+      />
+    </section>
+
+    <section class="personnel-panel">
+      <div class="personnel-panel-heading">
+        <h2>6. {metricLabels.daylightNighttimeStops}</h2>
+        <p>Stops by time of day and recorded race, Previous 12 months</p>
+      </div>
+      <SampleMeasurementChart
+        ariaLabel="Sample stops by time of day chart"
+        rows={sampleRows.dayNight}
+      />
+    </section>
+
+    <section class="personnel-panel">
+      <div class="personnel-panel-heading">
+        <h2>7. {metricLabels.topChargeCategories}</h2>
+        <p>Arrest charge categories, Previous 12 months</p>
+      </div>
+      <SampleMeasurementChart
+        ariaLabel="Sample top charge categories chart"
+        rows={sampleRows.charges}
+      />
+    </section>
+
+    <section class="personnel-panel">
+      <div class="personnel-panel-heading">
+        <h2>8. Fatal Force Incidents, Previous 5 years</h2>
+        <p>People by age group, dogs and other animals</p>
+      </div>
+      <SampleMeasurementChart
+        ariaLabel="Sample fatal force incidents chart"
+        rows={sampleRows.fatalForce}
+      />
+    </section>
+
+    <section class="personnel-panel personnel-panel-wide">
+      <div class="personnel-panel-heading">
+        <h2>9. Civil Cases</h2>
+        <p>Cases connected through agency assignments.</p>
+      </div>
+      {
+        civilCasesWithPaths.length ? (
+          <div class="personnel-table-wrap">
+            <table class="personnel-mini-table">
+              <thead>
+                <tr>
+                  <th scope="col">Case Name</th>
+                  <th scope="col">Filed</th>
+                  <th scope="col">Court</th>
+                  <th scope="col">Cause</th>
+                </tr>
+              </thead>
+              <tbody>
+                {civilCasesWithPaths.slice(0, 4).map((caseItem) => (
+                  <tr>
+                    <th scope="row">
+                      <a href={caseItem.caseUrl}>
+                        {caseItem.title || "Civil case"}
+                      </a>
+                    </th>
+                    <td>
+                      {caseItem.filed_date
+                        ? formatShortDate(caseItem.filed_date)
+                        : ""}
+                    </td>
+                    <td>{caseItem.court || ""}</td>
+                    <td>{caseItem.cause_number || ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null
+      }
+    </section>
+
+    <section class="personnel-panel personnel-panel-wide">
+      <div class="personnel-panel-heading">
+        <h2>10. {metricLabels.agencies}</h2>
+        <p>Known agency assignments linked to this profile.</p>
+      </div>
+      {
+        assignmentHistory.length ? (
+          <div class="personnel-table-wrap">
+            <table class="personnel-mini-table">
+              <thead>
+                <tr>
+                  <th scope="col">Agency</th>
+                  <th scope="col">License Type</th>
+                  <th scope="col">Start Date</th>
+                  <th scope="col">End Date</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assignmentHistory.map((entry) => (
+                  <tr>
+                    <th scope="row">
+                      <a href={requireAgencyCanonicalPath(entry.agency)}>
+                        {entry.agency.name}
+                      </a>
+                    </th>
+                    <td>{entry.license_type || currentLicenseType}</td>
+                    <td>
+                      {entry.start_date
+                        ? formatShortDate(entry.start_date)
+                        : ""}
+                    </td>
+                    <td>
+                      {entry.end_date
+                        ? formatShortDate(entry.end_date)
+                        : "Present"}
+                    </td>
+                    <td>
+                      <span class="personnel-status-pill">
+                        {entry.end_date ? "Completed" : "Active"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null
+      }
+    </section>
+  </div>
+
+  <div class="personnel-footer-actions">
+    <PrefillNavButton
+      to={addCivilCaseHref}
+      payload={addCivilCasePrefillPayload}
+      class="personnel-action"
+    >
+      Add a civil case
+    </PrefillNavButton>
+    <PrefillNavButton
+      to={pastEmployerHref}
+      payload={pastEmployerPrefillPayload}
+      class="personnel-action"
+    >
+      Submit past employer
+    </PrefillNavButton>
+    <PrefillNavButton
+      to="/about/contact/"
+      payload={{
+        whoami: "Subscriber",
+        message: `Please notify me when this profile changes: /personnel/${data.officer.slug}/`,
+      }}
+      data-testid="personnel-subscribe-link"
+      class="personnel-action"
+    >
+      Notify Me
+    </PrefillNavButton>
+    <PrefillNavButton
+      to={claimProfileHref}
+      payload={claimProfilePrefillPayload}
+      data-testid="personnel-claim-profile-link"
+      class="personnel-action"
+    >
+      Claim Profile
+    </PrefillNavButton>
+  </div>
+</PageShell>
 
 <style>
   .personnel-dashboard {
