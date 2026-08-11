@@ -1,6 +1,5 @@
 ---
-import Breadcrumb from "#src/components/Breadcrumb.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import {
   formatNewsDate,
   loadNewsArticles,
@@ -53,89 +52,72 @@ const structuredData = buildCollectionPage({
 });
 ---
 
-<SiteLayout
+<PageShell
   title={`${title} | PoliceConduct.org`}
   description="News and updates from PoliceConduct.org."
   pagePath={pagePath}
   canonicalUrl={pagePath}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "News", href: "/news/" },
+    {
+      label: `Page ${page.currentPage}`,
+      href: pagePath,
+      current: true,
+    },
+  ]}
+  heading={title}
+  lede="Product updates, policy notes, and community announcements."
 >
-  <main id="main" class="">
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
-      <div class="container">
-        <div class="row">
-          <div class="col-12 col-lg-10">
-            <Breadcrumb
-              items={[
-                { label: "Home", href: "/" },
-                { label: "News", href: "/news/" },
-                {
-                  label: `Page ${page.currentPage}`,
-                  href: pagePath,
-                  current: true,
-                },
-              ]}
-              className="mb-2"
-            />
-            <p class="text-uppercase small text-muted mb-2">News</p>
-            <h1 class="ipc-page-title">{title}</h1>
-            <p class="lead mb-0">
-              Product updates, policy notes, and community announcements.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-vh-2">
-      <div class="container">
-        <div class="list-group shadow-sm">
-          {
-            page.data.map((article: NewsMeta) => (
-              <a
-                class="list-group-item list-group-item-action"
-                href={article.href}
-              >
-                <div class="row g-2 align-items-start">
-                  <div class="col">
-                    <div class="text-uppercase small text-muted">
-                      {formatNewsDate(article.date)}
-                    </div>
-                    <div class="fw-semibold">{article.title}</div>
-                    <p class="mb-1 text-muted">{article.description}</p>
+  <section class="py-vh-2">
+    <div class="container">
+      <div class="list-group shadow-sm">
+        {
+          page.data.map((article: NewsMeta) => (
+            <a
+              class="list-group-item list-group-item-action"
+              href={article.href}
+            >
+              <div class="row g-2 align-items-start">
+                <div class="col">
+                  <div class="text-uppercase small text-muted">
+                    {formatNewsDate(article.date)}
                   </div>
-                  {article.badge ? (
-                    <div class="col-auto">
-                      <span class={newsBadgeClassName(article.badge)}>
-                        {article.badge}
-                      </span>
-                    </div>
-                  ) : null}
+                  <div class="fw-semibold">{article.title}</div>
+                  <p class="mb-1 text-muted">{article.description}</p>
                 </div>
-              </a>
-            ))
-          }
-        </div>
-
-        <div class="d-flex justify-content-between gap-2 mt-3">
-          {
-            prevUrl ? (
-              <a class="btn btn-outline-dark rounded-0" href={prevUrl}>
-                Newer News
-              </a>
-            ) : (
-              <span />
-            )
-          }
-          {
-            nextUrl ? (
-              <a class="btn btn-outline-dark rounded-0" href={nextUrl}>
-                Older News
-              </a>
-            ) : null
-          }
-        </div>
+                {article.badge ? (
+                  <div class="col-auto">
+                    <span class={newsBadgeClassName(article.badge)}>
+                      {article.badge}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            </a>
+          ))
+        }
       </div>
-    </section>
-  </main>
-</SiteLayout>
+
+      <div class="d-flex justify-content-between gap-2 mt-3">
+        {
+          prevUrl ? (
+            <a class="btn btn-outline-dark rounded-0" href={prevUrl}>
+              Newer News
+            </a>
+          ) : (
+            <span />
+          )
+        }
+        {
+          nextUrl ? (
+            <a class="btn btn-outline-dark rounded-0" href={nextUrl}>
+              Older News
+            </a>
+          ) : null
+        }
+      </div>
+    </div>
+  </section>
+</PageShell>
