@@ -1,10 +1,9 @@
 ---
-import Breadcrumb from "#src/components/Breadcrumb.astro";
 import "#src/styles/civic-ledger.css";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import SocialLink, {
   type SocialPlatform,
 } from "#src/components/SocialLink.astro";
@@ -313,324 +312,288 @@ const structuredData = {
 };
 ---
 
-<SiteLayout
+<PageShell
   title={`${agencyName} | PoliceConduct.org`}
   description={pageDescription}
   pagePath={agencyPath}
+  canonicalUrl={agencyPath}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: categoryLabel, href: `/${categorySlug}/` },
+    {
+      label: administrativeArea,
+      href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+    },
+    {
+      label: placeLabel,
+      href: placePath,
+    },
+    { label: agencyDisplayName, href: agencyPath },
+  ]}
+  eyebrow="Department profile"
+  heading={agencyDisplayName}
 >
   <PrefillBootstrap />
-  <main id="main" class="agency-overview-page flex-grow-1" data-pagefind-body>
-    <section class="agency-overview">
-      <div class="container">
-        <Breadcrumb
-          items={[
-            { label: "Home", href: "/" },
-            { label: categoryLabel, href: `/${categorySlug}/` },
-            {
-              label: administrativeArea,
-              href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
-            },
-            {
-              label: placeLabel,
-              href: placePath,
-            },
-            { label: agencyDisplayName, href: agencyPath },
-          ]}
-        />
-
-        <section class="entity-hero">
-          <div class="entity-hero-grid">
-            <div>
-              <p class="civic-kicker">Department profile</p>
-              <h1>{agencyDisplayName}</h1>
-              {
-                federalAgency ? (
-                  <p class="agency-overview-federal">
-                    <span>Federal agency</span>
-                    <a href={federalAgency.path}>{federalAgency.name}</a>
-                  </p>
-                ) : null
-              }
-              <div class="entity-contact">
-                {
-                  addressLine ? (
-                    <address class="entity-address">{addressLine}</address>
-                  ) : null
-                }
-                {
-                  primaryPhone || data.agencyLinks.length ? (
-                    <p class="entity-contact-links">
-                      {primaryPhone ? (
-                        <a href={`tel:${primaryPhone.phone_number}`}>
-                          {primaryPhone.phone_number}
-                        </a>
-                      ) : null}
-                      {data.agencyLinks.map(
-                        (link: {
-                          label?: string | null;
-                          url?: string | null;
-                        }) => {
-                          if (!link.url) return null;
-                          const platform = detectSocialPlatform(link.url);
-                          return platform ? (
-                            <SocialLink
-                              platform={platform}
-                              href={link.url}
-                              entityName={agencyDisplayName}
-                            />
-                          ) : (
-                            <a href={link.url} rel="noopener">
-                              {link.label || link.url}
-                            </a>
-                          );
-                        },
-                      )}
-                    </p>
-                  ) : null
-                }
-                {
-                  data.agency.contact_name || data.agency.contact_email ? (
-                    // Contact name + email are linked in the data model —
-                    // render as one visual group; phone and website links
-                    // above must not sit between them.
-                    <p class="entity-contact-person">
-                      {data.agency.contact_name ? (
-                        <>Contact: {toDisplayName(data.agency.contact_name)}</>
-                      ) : (
-                        "Contact:"
-                      )}
-                      {data.agency.contact_name && data.agency.contact_email ? (
-                        <span class="sep" aria-hidden="true">
-                          ·
-                        </span>
-                      ) : null}
-                      {data.agency.contact_email ? (
-                        <a href={`mailto:${data.agency.contact_email}`}>
-                          {data.agency.contact_email}
-                        </a>
-                      ) : null}
-                    </p>
-                  ) : null
-                }
-              </div>
-              {
-                /* No `primary`/`actions` props: these three buttons carry
-                   a PrefillNavButton sessionStorage payload, a shape
-                   EntityActionBar's plain {label, href} props can't
-                   express (see EntityActionBar.astro's frontmatter
-                   comment). Slotting them in still gets the shared
-                   `.entity-actions` row and native "More actions" menu. */
-              }
-              <EntityActionBar>
-                <PrefillNavButton
-                  to="/report/new/"
-                  payload={reportNewPrefillPayload}
-                  class="entity-action entity-action-primary"
-                >
-                  Share an experience
-                </PrefillNavButton>
-                <PrefillNavButton
-                  to="/agency/suggest-edit/"
-                  payload={suggestEditPrefillPayload}
-                  class="entity-action"
-                >
-                  Suggest edit
-                </PrefillNavButton>
-                <PrefillNavButton
-                  to="/civil-cases/new/"
-                  payload={addCivilCasePrefillPayload}
-                  class="entity-action"
-                >
-                  Add a civil case
-                </PrefillNavButton>
-              </EntityActionBar>
-              {updatedLine ? <p class="entity-updated">{updatedLine}</p> : null}
-            </div>
-            <aside class="entity-side">
-              <p class="civic-kicker">Help improve this page</p>
-              <h2>Add what is missing</h2>
-              <ul class="entity-side-list">
-                <li>
-                  <span>Add personnel</span>
-                  <PrefillNavButton
-                    to="/personnel/new/"
-                    payload={suggestPersonnelPrefillPayload}
-                    aria-label="Suggest new personnel"
-                    class="entity-side-link"
-                  >
-                    Start
-                  </PrefillNavButton>
-                </li>
-                <li>
-                  <span>Get updates</span>
-                  <PrefillNavButton
-                    to="/about/contact/"
-                    payload={subscribePrefillPayload}
-                    aria-label="Get updates"
-                    data-testid="agency-subscribe-link"
-                    class="entity-side-link"
-                  >
-                    Start
-                  </PrefillNavButton>
-                </li>
-                <li>
-                  <span>Claim this profile</span>
-                  <PrefillNavButton
-                    to="/about/contact/"
-                    payload={claimProfilePrefillPayload}
-                    aria-label="Claim this profile"
-                    data-testid="agency-claim-profile-link"
-                    class="entity-side-link"
-                  >
-                    Start
-                  </PrefillNavButton>
-                </li>
-                <li>
-                  <span>Download report</span>
-                  <button
-                    type="button"
-                    data-agency-download-report
-                    aria-label="Download report"
-                    class="entity-action entity-side-link"
-                  >
-                    Soon
-                  </button>
-                </li>
-              </ul>
-              <span class="agency-coming-soon" data-agency-coming-soon></span>
-            </aside>
-          </div>
-        </section>
-
-        <StatStrip
-          ariaLabel={`${agencyDisplayName} record totals`}
-          columns="five"
-        >
-          <StatCell
-            label="Personnel Records"
-            value={counts.personnel > 0 ? formatCount(counts.personnel) : null}
-            meta={personnelMeta || undefined}
-            href={counts.personnel > 0 ? `${agencyPath}personnel/` : undefined}
-            actionLabel="View personnel →"
-            helpCollectHref={volunteerHref}
-          />
-          <StatCell
-            label="Reports"
-            value={counts.reports > 0 ? formatCount(counts.reports) : null}
-            meta="Shared by the public"
-            href={counts.reports > 0 ? `${agencyPath}reports/` : undefined}
-            actionLabel="View reports →"
-            helpCollectHref="/report/new/"
-            helpCollectLabel="Share an experience →"
-          />
-          <StatCell
-            label="Civil Cases"
-            value={civilCaseTotal > 0 ? formatCount(civilCaseTotal) : null}
-            meta="Court records"
-            href={civilCaseTotal > 0 ? `${agencyPath}civil-cases/` : undefined}
-            actionLabel="View civil cases →"
-            role="civil"
-            helpCollectHref={volunteerHref}
-          />
-          <StatCell
-            label="Budget"
-            empty
-            role="budget"
-            helpCollectHref={volunteerHref}
-          />
-          <StatCell
-            label="Liability Costs"
-            empty
-            role="liability"
-            helpCollectHref={volunteerHref}
-          />
-        </StatStrip>
-
-        {
-          recentReports.length ? (
-            <section class="civic-section">
-              <div class="civic-section-head">
-                <div>
-                  <h2>Recent experience reports</h2>
-                  <p>Public accounts shared about this agency.</p>
-                </div>
-              </div>
-              <div class="recent-list">
-                {recentReports.map((item) => (
-                  <a href={item.href}>
-                    <span class="recent-list-title">{item.title}</span>
-                    <span class="recent-list-meta">{item.meta}</span>
-                  </a>
-                ))}
-              </div>
-            </section>
-          ) : null
-        }
-
-        {
-          recentCases.length ? (
-            <section class="civic-section">
-              <div class="civic-section-head">
-                <div>
-                  <h2>Recent civil cases</h2>
-                  <p>Court records connected to this agency.</p>
-                </div>
-              </div>
-              <div class="recent-list">
-                {recentCases.map((item) => (
-                  <a href={item.href}>
-                    <span class="recent-list-title">{item.title}</span>
-                    <span class="recent-list-meta">{item.meta}</span>
-                  </a>
-                ))}
-              </div>
-            </section>
-          ) : null
-        }
-
-        <section class="civic-section civic-section--last">
-          <p class="civic-limit-note">
-            Counts show items available on this site. They are not a rating.
-          </p>
-        </section>
-      </div>
-    </section>
-  </main>
-
-  <style>
-    /* Page-specific overrides on the shared civic-ledger vocabulary.
-       The 5-up stat strip and its responsive collapse now come from
-       <StatStrip columns="five"> (.stat-strip--equal5) and
-       civic-ledger.css's shared .stat-strip breakpoints — no page-local
-       override needed for those anymore. */
-    @media (min-width: 900px) {
-      .agency-overview :global(.entity-hero-grid) {
-        grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.34fr);
-      }
+  <Fragment slot="header">
+    {
+      federalAgency ? (
+        <p class="agency-overview-federal">
+          <span>Federal agency</span>
+          <a href={federalAgency.path}>{federalAgency.name}</a>
+        </p>
+      ) : null
     }
-  </style>
-  <script>
-    const setComingSoon = (button: Element, message: string) => {
-      const side = button.closest(".entity-side");
-      const output = side?.querySelector("[data-agency-coming-soon]");
-      if (output) output.textContent = message;
-    };
+    <div class="entity-contact">
+      {
+        addressLine ? (
+          <address class="entity-address">{addressLine}</address>
+        ) : null
+      }
+      {
+        primaryPhone || data.agencyLinks.length ? (
+          <p class="entity-contact-links">
+            {primaryPhone ? (
+              <a href={`tel:${primaryPhone.phone_number}`}>
+                {primaryPhone.phone_number}
+              </a>
+            ) : null}
+            {data.agencyLinks.map(
+              (link: { label?: string | null; url?: string | null }) => {
+                if (!link.url) return null;
+                const platform = detectSocialPlatform(link.url);
+                return platform ? (
+                  <SocialLink
+                    platform={platform}
+                    href={link.url}
+                    entityName={agencyDisplayName}
+                  />
+                ) : (
+                  <a href={link.url} rel="noopener">
+                    {link.label || link.url}
+                  </a>
+                );
+              },
+            )}
+          </p>
+        ) : null
+      }
+      {
+        data.agency.contact_name || data.agency.contact_email ? (
+          // Contact name + email are linked in the data model —
+          // render as one visual group; phone and website links
+          // above must not sit between them.
+          <p class="entity-contact-person">
+            {data.agency.contact_name ? (
+              <>Contact: {toDisplayName(data.agency.contact_name)}</>
+            ) : (
+              "Contact:"
+            )}
+            {data.agency.contact_name && data.agency.contact_email ? (
+              <span class="sep" aria-hidden="true">
+                ·
+              </span>
+            ) : null}
+            {data.agency.contact_email ? (
+              <a href={`mailto:${data.agency.contact_email}`}>
+                {data.agency.contact_email}
+              </a>
+            ) : null}
+          </p>
+        ) : null
+      }
+    </div>
+    {updatedLine ? <p class="entity-updated">{updatedLine}</p> : null}
+  </Fragment>
+  <Fragment slot="actions">
+    <EntityActionBar>
+      <PrefillNavButton
+        to="/report/new/"
+        payload={reportNewPrefillPayload}
+        class="entity-action entity-action-primary"
+      >
+        Share an experience
+      </PrefillNavButton>
+      <PrefillNavButton
+        to="/agency/suggest-edit/"
+        payload={suggestEditPrefillPayload}
+        class="entity-action"
+      >
+        Suggest edit
+      </PrefillNavButton>
+      <PrefillNavButton
+        to="/civil-cases/new/"
+        payload={addCivilCasePrefillPayload}
+        class="entity-action"
+      >
+        Add a civil case
+      </PrefillNavButton>
+    </EntityActionBar>
+  </Fragment>
+  <aside class="entity-side" slot="aside">
+    <p class="civic-kicker">Help improve this page</p>
+    <h2>Add what is missing</h2>
+    <ul class="entity-side-list">
+      <li>
+        <span>Add personnel</span>
+        <PrefillNavButton
+          to="/personnel/new/"
+          payload={suggestPersonnelPrefillPayload}
+          aria-label="Suggest new personnel"
+          class="entity-side-link"
+        >
+          Start
+        </PrefillNavButton>
+      </li>
+      <li>
+        <span>Get updates</span>
+        <PrefillNavButton
+          to="/about/contact/"
+          payload={subscribePrefillPayload}
+          aria-label="Get updates"
+          data-testid="agency-subscribe-link"
+          class="entity-side-link"
+        >
+          Start
+        </PrefillNavButton>
+      </li>
+      <li>
+        <span>Claim this profile</span>
+        <PrefillNavButton
+          to="/about/contact/"
+          payload={claimProfilePrefillPayload}
+          aria-label="Claim this profile"
+          data-testid="agency-claim-profile-link"
+          class="entity-side-link"
+        >
+          Start
+        </PrefillNavButton>
+      </li>
+      <li>
+        <span>Download report</span>
+        <button
+          type="button"
+          data-agency-download-report
+          aria-label="Download report"
+          class="entity-action entity-side-link"
+        >
+          Soon
+        </button>
+      </li>
+    </ul>
+    <span class="agency-coming-soon" data-agency-coming-soon></span>
+  </aside>
 
-    const trackAgencyInterest = (eventName: string) => {
-      window.__IPC_ANALYTICS__?.track?.(eventName, {
-        agency_path: window.location.pathname,
-        page_path: window.location.pathname,
-      });
-    };
+  <StatStrip ariaLabel={`${agencyDisplayName} record totals`} columns="five">
+    <StatCell
+      label="Personnel Records"
+      value={counts.personnel > 0 ? formatCount(counts.personnel) : null}
+      meta={personnelMeta || undefined}
+      href={counts.personnel > 0 ? `${agencyPath}personnel/` : undefined}
+      actionLabel="View personnel →"
+      helpCollectHref={volunteerHref}
+    />
+    <StatCell
+      label="Reports"
+      value={counts.reports > 0 ? formatCount(counts.reports) : null}
+      meta="Shared by the public"
+      href={counts.reports > 0 ? `${agencyPath}reports/` : undefined}
+      actionLabel="View reports →"
+      helpCollectHref="/report/new/"
+      helpCollectLabel="Share an experience →"
+    />
+    <StatCell
+      label="Civil Cases"
+      value={civilCaseTotal > 0 ? formatCount(civilCaseTotal) : null}
+      meta="Court records"
+      href={civilCaseTotal > 0 ? `${agencyPath}civil-cases/` : undefined}
+      actionLabel="View civil cases →"
+      role="civil"
+      helpCollectHref={volunteerHref}
+    />
+    <StatCell
+      label="Budget"
+      empty
+      role="budget"
+      helpCollectHref={volunteerHref}
+    />
+    <StatCell
+      label="Liability Costs"
+      empty
+      role="liability"
+      helpCollectHref={volunteerHref}
+    />
+  </StatStrip>
 
-    document
-      .querySelectorAll("[data-agency-download-report]")
-      .forEach((button) => {
-        button.addEventListener("click", () => {
-          trackAgencyInterest("agency_report_download_interest");
-          setComingSoon(button, "Downloadable agency reports are coming soon.");
-        });
+  {
+    recentReports.length ? (
+      <section class="civic-section">
+        <div class="civic-section-head">
+          <div>
+            <h2>Recent experience reports</h2>
+            <p>Public accounts shared about this agency.</p>
+          </div>
+        </div>
+        <div class="recent-list">
+          {recentReports.map((item) => (
+            <a href={item.href}>
+              <span class="recent-list-title">{item.title}</span>
+              <span class="recent-list-meta">{item.meta}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    ) : null
+  }
+
+  {
+    recentCases.length ? (
+      <section class="civic-section">
+        <div class="civic-section-head">
+          <div>
+            <h2>Recent civil cases</h2>
+            <p>Court records connected to this agency.</p>
+          </div>
+        </div>
+        <div class="recent-list">
+          {recentCases.map((item) => (
+            <a href={item.href}>
+              <span class="recent-list-title">{item.title}</span>
+              <span class="recent-list-meta">{item.meta}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    ) : null
+  }
+
+  <section class="civic-section civic-section--last">
+    <p class="civic-limit-note">
+      Counts show items available on this site. They are not a rating.
+    </p>
+  </section>
+</PageShell>
+
+<script>
+  const setComingSoon = (button: Element, message: string) => {
+    const side = button.closest(".entity-side");
+    const output = side?.querySelector("[data-agency-coming-soon]");
+    if (output) output.textContent = message;
+  };
+
+  const trackAgencyInterest = (eventName: string) => {
+    window.__IPC_ANALYTICS__?.track?.(eventName, {
+      agency_path: window.location.pathname,
+      page_path: window.location.pathname,
+    });
+  };
+
+  document
+    .querySelectorAll("[data-agency-download-report]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        trackAgencyInterest("agency_report_download_interest");
+        setComingSoon(button, "Downloadable agency reports are coming soon.");
       });
-  </script>
-</SiteLayout>
+    });
+</script>
