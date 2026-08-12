@@ -490,7 +490,7 @@ const structuredData = {
 
   <StatStrip ariaLabel={`${agencyDisplayName} record totals`} columns="five">
     <StatCell
-      label="Personnel Records"
+      label="Personnel"
       value={counts.personnel > 0 ? formatCount(counts.currentPersonnel) : null}
       meta={personnelMeta || undefined}
       href={counts.personnel > 0 ? `${agencyPath}personnel/` : undefined}
