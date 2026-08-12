@@ -1,46 +1,195 @@
 ---
 import "#src/styles/civic-ledger.css";
 
-// A simple A–Z roster list for an agency's personnel, matching the child-index
-// (counties/places) `.alpha-nav` treatment. Personnel are only listed at the
-// agency level; this renders one page's slice, already sorted by last name.
+// The full agency roster on one page: every officer, sorted A–Z, in a dense
+// multi-column directory (reuses `.alpha-nav`), with a client-side filter box
+// so any name is one keystroke away. Personnel are only listed at the agency
+// level. Handles rosters from ~10 to several thousand without pagination.
 type EmployeeLike = {
+  entry?: { end_date?: string | null } | null;
   officer?: {
     first_name?: string | null;
     last_name?: string | null;
     slug?: string | null;
   } | null;
 };
-type RosterRow = { label: string; href: string | null };
+type RosterRow = {
+  label: string;
+  href: string | null;
+  isFormer: boolean;
+  search: string;
+  letter: string;
+  sortKey: string;
+};
 
 const { employees } = Astro.props as { employees: EmployeeLike[] };
 
+const rows: RosterRow[] = employees.map((employee) => {
+  const lastName = (employee.officer?.last_name || "").trim();
+  const firstName = (employee.officer?.first_name || "").trim();
+  // Fall back to the first name when a record has no surname, so it sorts and
+  // groups by its own initial instead of collapsing to the top of the list.
+  const label = lastName
+    ? [lastName, firstName].filter(Boolean).join(", ")
+    : firstName || "Unnamed record";
+  const sortKey = (lastName || firstName || "~").toLocaleLowerCase("en-US");
+  const letter = (label[0] || "#").toLocaleUpperCase("en-US");
+  return {
+    label,
+    href: employee.officer?.slug
+      ? `/personnel/${employee.officer.slug}/`
+      : null,
+    isFormer: Boolean(employee.entry?.end_date),
+    search: label.toLocaleLowerCase("en-US"),
+    letter,
+    sortKey,
+  };
+});
+rows.sort(
+  (a, b) =>
+    a.sortKey.localeCompare(b.sortKey, "en") ||
+    a.label.localeCompare(b.label, "en"),
+);
+
+const total = rows.length;
+const formerCount = rows.filter((row) => row.isFormer).length;
+const currentCount = total - formerCount;
+const formatCount = (value: number) => value.toLocaleString("en-US");
+
 const alphaGroups = new Map<string, RosterRow[]>();
-for (const employee of employees) {
-  const lastName = employee.officer?.last_name || "";
-  const firstName = employee.officer?.first_name || "";
-  const label = [lastName, firstName].filter(Boolean).join(", ") || "Unnamed";
-  const href = employee.officer?.slug
-    ? `/personnel/${employee.officer.slug}/`
-    : null;
-  const letter = (lastName[0] || label[0] || "#").toUpperCase();
-  const group = alphaGroups.get(letter) || [];
-  group.push({ label, href });
-  alphaGroups.set(letter, group);
+for (const row of rows) {
+  const group = alphaGroups.get(row.letter) || [];
+  group.push(row);
+  alphaGroups.set(row.letter, group);
 }
+const groups = [...alphaGroups.entries()].sort(([a], [b]) =>
+  a.localeCompare(b, "en"),
+);
 ---
 
-<div class="alpha-nav">
-  {
-    [...alphaGroups.entries()].map(([letter, rows]) => (
-      <section class="alpha-group">
-        <h2>{letter}</h2>
-        <ul>
-          {rows.map((row) => (
-            <li>{row.href ? <a href={row.href}>{row.label}</a> : row.label}</li>
-          ))}
-        </ul>
-      </section>
-    ))
-  }
+<div class="roster" data-roster>
+  <div class="roster-tools">
+    <label class="roster-search">
+      <span class="visually-hidden">Filter personnel by name</span>
+      <input
+        type="search"
+        placeholder="Filter by name…"
+        autocomplete="off"
+        data-roster-input
+      />
+    </label>
+    <p class="roster-count">
+      <strong>{formatCount(total)}</strong> personnel · {
+        formatCount(currentCount)
+      } current · {formatCount(formerCount)} former
+    </p>
+  </div>
+
+  <div class="alpha-nav" data-roster-list>
+    {
+      groups.map(([letter, groupRows]) => (
+        <section class="alpha-group" data-roster-group>
+          <h2>{letter}</h2>
+          <ul>
+            {groupRows.map((row) => (
+              <li data-roster-item data-name={row.search}>
+                {row.href ? <a href={row.href}>{row.label}</a> : row.label}
+                {row.isFormer ? (
+                  <span class="roster-former"> · former</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+
+  <p class="roster-empty" data-roster-empty hidden>
+    No personnel match that name.
+  </p>
 </div>
+
+<script>
+  for (const root of document.querySelectorAll("[data-roster]")) {
+    const input = root.querySelector<HTMLInputElement>("[data-roster-input]");
+    const items = [...root.querySelectorAll<HTMLElement>("[data-roster-item]")];
+    const groups = [
+      ...root.querySelectorAll<HTMLElement>("[data-roster-group]"),
+    ];
+    const empty = root.querySelector<HTMLElement>("[data-roster-empty]");
+    if (!input) continue;
+
+    let frame = 0;
+    const apply = () => {
+      frame = 0;
+      const query = input.value.trim().toLowerCase();
+      let visible = 0;
+      for (const item of items) {
+        const match = !query || (item.dataset.name || "").includes(query);
+        item.hidden = !match;
+        if (match) visible += 1;
+      }
+      for (const group of groups) {
+        group.hidden = !group.querySelector("[data-roster-item]:not([hidden])");
+      }
+      if (empty) empty.hidden = visible !== 0;
+    };
+
+    input.addEventListener("input", () => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(apply);
+    });
+  }
+</script>
+
+<style>
+  .roster-tools {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+
+  .roster-search {
+    flex: 1 1 16rem;
+    max-width: 26rem;
+  }
+
+  .roster-search input {
+    border: 1px solid var(--ipc-color-rule-strong);
+    border-radius: 0.4rem;
+    font-size: 1rem;
+    padding: 0.55rem 0.8rem;
+    width: 100%;
+  }
+
+  .roster-search input:focus-visible {
+    border-color: var(--ipc-color-teal);
+    outline: 2px solid var(--ipc-color-teal-wash);
+  }
+
+  .roster-count {
+    color: var(--ipc-color-ink-muted);
+    font-size: var(--ipc-type-small);
+    margin: 0;
+  }
+
+  .roster-count strong {
+    color: var(--ipc-color-ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .roster-former {
+    color: var(--ipc-color-ink-faint);
+    font-size: var(--ipc-type-caption);
+    font-weight: 600;
+  }
+
+  .roster-empty {
+    color: var(--ipc-color-ink-muted);
+    margin: 0.5rem 0 0;
+  }
+</style>

@@ -1,12 +1,10 @@
 ---
 import AgencyPersonnelList from "#src/components/AgencyPersonnelList.astro";
 import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
-import Pagination from "#src/components/Pagination.astro";
 import {
   loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPathsForTopic,
 } from "#src/lib/data/agency-detail.js";
-import { PAGE_SIZE } from "#src/lib/pagination.js";
 
 export async function getStaticPaths() {
   return loadAgencyLocationStaticPathsForTopic("personnel");
@@ -14,10 +12,6 @@ export async function getStaticPaths() {
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
 const { employees } = data;
-
-const pageEmployees = employees.slice(0, PAGE_SIZE);
-const lastPage = Math.max(1, Math.ceil(employees.length / PAGE_SIZE));
-const personnelIndexPath = `${data.agencyPath}personnel/`;
 const formatCount = (value: number) => value.toLocaleString("en-US");
 ---
 
@@ -27,16 +21,7 @@ const formatCount = (value: number) => value.toLocaleString("en-US");
   topicSlug="personnel"
   description={`${formatCount(employees.length)} current and former personnel records for this agency, sorted by name, from state licensing data.`}
 >
-  <AgencyPersonnelList employees={pageEmployees} />
-  {
-    lastPage > 1 ? (
-      <Pagination
-        basePath={personnelIndexPath}
-        currentPage={1}
-        lastPage={lastPage}
-      />
-    ) : null
-  }
+  <AgencyPersonnelList employees={employees} />
   <p class="civic-limit-note">
     Personnel records come from state licensing data. A listing here is
     employment history, not an allegation.
