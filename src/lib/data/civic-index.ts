@@ -412,7 +412,7 @@ export const buildStatCells = ({
           key: "personnel",
           label: metricLabels.personnelRecords,
           value: formatMetricValue(personnel),
-          meta: "Current & former",
+          meta: "Currently serving",
         }
       : {
           key: "personnel",

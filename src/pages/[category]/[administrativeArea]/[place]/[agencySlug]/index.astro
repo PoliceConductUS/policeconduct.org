@@ -232,10 +232,14 @@ const volunteerHref = buildHelpCollectHref(
   "agency",
   agencySlugSegment,
 );
+// The headline personnel count is currently-serving officers; note any former
+// officers still on record (browsable via the roster's status filter).
 const personnelMeta =
-  counts.currentPersonnel > 0 || counts.formerPersonnel > 0
-    ? `${formatCount(counts.currentPersonnel)} current · ${formatCount(counts.formerPersonnel)} former`
-    : null;
+  counts.formerPersonnel > 0
+    ? `${formatCount(counts.formerPersonnel)} former on record`
+    : counts.currentPersonnel > 0
+      ? "Currently serving"
+      : null;
 
 type RecentItem = {
   href: string;
@@ -487,7 +491,7 @@ const structuredData = {
   <StatStrip ariaLabel={`${agencyDisplayName} record totals`} columns="five">
     <StatCell
       label="Personnel Records"
-      value={counts.personnel > 0 ? formatCount(counts.personnel) : null}
+      value={counts.personnel > 0 ? formatCount(counts.currentPersonnel) : null}
       meta={personnelMeta || undefined}
       href={counts.personnel > 0 ? `${agencyPath}personnel/` : undefined}
       actionLabel="View personnel →"

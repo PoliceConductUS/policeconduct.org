@@ -616,7 +616,7 @@ export const buildFederalCivicIndex = (
         key: "personnel",
         label: metricLabels.personnelRecords,
         value: count(totals.personnel),
-        meta: "Current & former",
+        meta: "Currently serving",
       },
       {
         key: "reports",

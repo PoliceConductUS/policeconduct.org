@@ -109,10 +109,9 @@ const showTools = total >= 15;
 
 <div class="roster" data-roster>
   <div class="roster-summary" data-roster-summary aria-live="polite">
-    <strong>{formatCount(total)}</strong> personnel · {
-      formatCount(currentCount)
+    <strong>{formatCount(total)}</strong>{
+      ` personnel · ${formatCount(currentCount)} current · ${formatCount(formerCount)} former`
     }
-    current · {formatCount(formerCount)} former
   </div>
 
   {

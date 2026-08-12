@@ -620,7 +620,12 @@ await withDb(async (client) => {
               where ao.agency_id = a.id
             )
           ),
-          active_counts as (
+          personnel_counts as (
+            -- Currently-serving officers only (no end_date). Every displayed
+            -- personnel count is "active force size": it stays meaningful over
+            -- time instead of growing unbounded as officers separate. The
+            -- agency roster page still lists all officers (current + former)
+            -- with a status filter; only the counts are active-only.
             select
               ao.agency_id,
               count(distinct ao.officer_id) as personnel_count
@@ -691,7 +696,7 @@ await withDb(async (client) => {
             a.longitude,
             a.created_at,
             a.updated_at,
-            coalesce(active_counts.personnel_count, 0) as personnel_count,
+            coalesce(personnel_counts.personnel_count, 0) as personnel_count,
             coalesce(report_counts.report_count, 0) as report_count,
             coalesce(civil_case_counts.civil_case_count, 0) as civil_case_count
           from eligible_agencies a
@@ -703,8 +708,8 @@ await withDb(async (client) => {
           join public.location_path state_lp
             on state_lp.location_path_id = area_lp.parent_location_path_id
            and state_lp.level = 'state'
-          left join active_counts
-            on active_counts.agency_id = a.id
+          left join personnel_counts
+            on personnel_counts.agency_id = a.id
           left join report_counts
             on report_counts.agency_id = a.id
           left join civil_case_counts
