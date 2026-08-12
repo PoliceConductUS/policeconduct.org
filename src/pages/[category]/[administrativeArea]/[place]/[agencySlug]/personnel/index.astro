@@ -12,14 +12,13 @@ export async function getStaticPaths() {
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
 const { employees } = data;
-const formatCount = (value: number) => value.toLocaleString("en-US");
 ---
 
 <AgencyTopicPage
   data={data}
   topicLabel="Personnel"
   topicSlug="personnel"
-  description={`${formatCount(employees.length)} current and former personnel records for this agency, sorted by name, from state licensing data.`}
+  description="Current and former officers linked to this agency, from state licensing data."
 >
   <AgencyPersonnelList employees={employees} />
   <p class="civic-limit-note">

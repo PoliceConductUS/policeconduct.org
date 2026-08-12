@@ -1,22 +1,29 @@
 ---
 import "#src/styles/civic-ledger.css";
 
-// The full agency roster on one page: every officer, sorted A–Z, in a dense
-// multi-column directory (reuses `.alpha-nav`), with a client-side filter box
-// so any name is one keystroke away. Personnel are only listed at the agency
-// level. Handles rosters from ~10 to several thousand without pagination.
+// The full agency roster on one page — a scannable research surface, not a bare
+// phone book. Every officer shows a quiet context line (status · rank · tenure ·
+// reports); a status facet, a name filter, and an A–Z jump rail make a
+// several-thousand-name roster navigable without pagination. Personnel are only
+// listed at the agency level.
 type EmployeeLike = {
-  entry?: { end_date?: string | null } | null;
+  entry?: {
+    end_date?: string | null;
+    start_date?: string | null;
+    license_type?: string | null;
+  } | null;
   officer?: {
     first_name?: string | null;
     last_name?: string | null;
     slug?: string | null;
   } | null;
+  reportCount?: number | null;
 };
 type RosterRow = {
   label: string;
   href: string | null;
   isFormer: boolean;
+  meta: string;
   search: string;
   letter: string;
   sortKey: string;
@@ -24,25 +31,51 @@ type RosterRow = {
 
 const { employees } = Astro.props as { employees: EmployeeLike[] };
 
+const year = (value?: string | null) =>
+  value ? new Date(value).getUTCFullYear() : null;
+
 const rows: RosterRow[] = employees.map((employee) => {
   const lastName = (employee.officer?.last_name || "").trim();
   const firstName = (employee.officer?.first_name || "").trim();
-  // Fall back to the first name when a record has no surname, so it sorts and
-  // groups by its own initial instead of collapsing to the top of the list.
   const label = lastName
     ? [lastName, firstName].filter(Boolean).join(", ")
     : firstName || "Unnamed record";
-  const sortKey = (lastName || firstName || "~").toLocaleLowerCase("en-US");
-  const letter = (label[0] || "#").toLocaleUpperCase("en-US");
+  const isFormer = Boolean(employee.entry?.end_date);
+  const startYear = year(employee.entry?.start_date);
+  const endYear = year(employee.entry?.end_date);
+  const tenure = isFormer
+    ? startYear && endYear
+      ? `${startYear}–${endYear}`
+      : endYear
+        ? `until ${endYear}`
+        : startYear
+          ? `from ${startYear}`
+          : null
+    : startYear
+      ? `${startYear}–present`
+      : null;
+  const rank = (employee.entry?.license_type || "").trim() || null;
+  const reportCount = Number(employee.reportCount || 0);
+  const reports =
+    reportCount > 0
+      ? `${reportCount} report${reportCount === 1 ? "" : "s"}`
+      : null;
+  const meta = [isFormer ? "Former" : "Current", rank, tenure, reports]
+    .filter(Boolean)
+    .join(" · ");
+
   return {
     label,
     href: employee.officer?.slug
       ? `/personnel/${employee.officer.slug}/`
       : null,
-    isFormer: Boolean(employee.entry?.end_date),
+    isFormer,
+    meta,
+    // Fall back to the first name when a record has no surname, so it sorts and
+    // groups by its own initial instead of collapsing to the top of the list.
+    sortKey: (lastName || firstName || "~").toLocaleLowerCase("en-US"),
+    letter: (label[0] || "#").toLocaleUpperCase("en-US"),
     search: label.toLocaleLowerCase("en-US"),
-    letter,
-    sortKey,
   };
 });
 rows.sort(
@@ -65,38 +98,102 @@ for (const row of rows) {
 const groups = [...alphaGroups.entries()].sort(([a], [b]) =>
   a.localeCompare(b, "en"),
 );
+const groupId = (letter: string) =>
+  letter === "#" ? "roster-hash" : `roster-${letter.toLowerCase()}`;
+const presentLetters = new Set(groups.map(([letter]) => letter));
+const alphabet = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+
+// Below this size the search/facets/jump apparatus is more chrome than help.
+const showTools = total >= 15;
 ---
 
 <div class="roster" data-roster>
-  <div class="roster-tools">
-    <label class="roster-search">
-      <span class="visually-hidden">Filter personnel by name</span>
-      <input
-        type="search"
-        placeholder="Filter by name…"
-        autocomplete="off"
-        data-roster-input
-      />
-    </label>
-    <p class="roster-count">
-      <strong>{formatCount(total)}</strong> personnel · {
-        formatCount(currentCount)
-      } current · {formatCount(formerCount)} former
-    </p>
+  <div class="roster-summary" data-roster-summary aria-live="polite">
+    <strong>{formatCount(total)}</strong> personnel · {
+      formatCount(currentCount)
+    }
+    current · {formatCount(formerCount)} former
   </div>
 
-  <div class="alpha-nav" data-roster-list>
+  {
+    showTools ? (
+      <div class="roster-controls">
+        <div class="roster-facets" role="group" aria-label="Filter by status">
+          <button type="button" data-facet="all" aria-pressed="true">
+            All
+          </button>
+          <button type="button" data-facet="current" aria-pressed="false">
+            Current
+          </button>
+          <button type="button" data-facet="former" aria-pressed="false">
+            Former
+          </button>
+        </div>
+        <div class="roster-search">
+          <label class="visually-hidden" for="roster-filter">
+            Find an officer by name
+          </label>
+          <input
+            id="roster-filter"
+            type="search"
+            placeholder="Find an officer…"
+            autocomplete="off"
+            data-roster-input
+          />
+          <button
+            type="button"
+            class="roster-search-clear"
+            data-roster-clear
+            aria-label="Clear filter"
+            hidden
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    ) : null
+  }
+
+  {
+    showTools ? (
+      <nav class="roster-jump" aria-label="Jump to letter">
+        {alphabet.map((letter) =>
+          presentLetters.has(letter) ? (
+            <a href={`#${groupId(letter)}`} data-jump={letter}>
+              {letter}
+            </a>
+          ) : (
+            <span data-jump={letter} aria-hidden="true">
+              {letter}
+            </span>
+          ),
+        )}
+      </nav>
+    ) : null
+  }
+
+  <div class="roster-list">
     {
       groups.map(([letter, groupRows]) => (
-        <section class="alpha-group" data-roster-group>
+        <section class="roster-letter" id={groupId(letter)} data-roster-group>
           <h2>{letter}</h2>
           <ul>
             {groupRows.map((row) => (
-              <li data-roster-item data-name={row.search}>
-                {row.href ? <a href={row.href}>{row.label}</a> : row.label}
-                {row.isFormer ? (
-                  <span class="roster-former"> · former</span>
-                ) : null}
+              <li
+                data-roster-item
+                data-name={row.search}
+                data-status={row.isFormer ? "former" : "current"}
+              >
+                {row.href ? (
+                  <a class="roster-name" href={row.href}>
+                    {row.label}
+                  </a>
+                ) : (
+                  <span class="roster-name roster-name--inert">
+                    {row.label}
+                  </span>
+                )}
+                <span class="roster-meta">{row.meta}</span>
               </li>
             ))}
           </ul>
@@ -106,63 +203,162 @@ const groups = [...alphaGroups.entries()].sort(([a], [b]) =>
   </div>
 
   <p class="roster-empty" data-roster-empty hidden>
-    No personnel match that name.
+    No personnel match that filter.
   </p>
 </div>
 
 <script>
-  for (const root of document.querySelectorAll("[data-roster]")) {
+  for (const root of document.querySelectorAll<HTMLElement>("[data-roster]")) {
     const input = root.querySelector<HTMLInputElement>("[data-roster-input]");
+    const clear = root.querySelector<HTMLButtonElement>("[data-roster-clear]");
+    const facetButtons = [
+      ...root.querySelectorAll<HTMLButtonElement>("[data-facet]"),
+    ];
+    const summary = root.querySelector<HTMLElement>("[data-roster-summary]");
     const items = [...root.querySelectorAll<HTMLElement>("[data-roster-item]")];
     const groups = [
       ...root.querySelectorAll<HTMLElement>("[data-roster-group]"),
     ];
+    const jumps = [...root.querySelectorAll<HTMLElement>("[data-jump]")];
     const empty = root.querySelector<HTMLElement>("[data-roster-empty]");
-    if (!input) continue;
+    const total = items.length;
+    const summaryHtml = summary?.innerHTML ?? "";
 
+    let facet = "all";
     let frame = 0;
+
     const apply = () => {
       frame = 0;
-      const query = input.value.trim().toLowerCase();
+      const query = (input?.value ?? "").trim().toLowerCase();
+      const present = new Set<string>();
       let visible = 0;
+
       for (const item of items) {
-        const match = !query || (item.dataset.name || "").includes(query);
-        item.hidden = !match;
-        if (match) visible += 1;
+        const matchName = !query || (item.dataset.name || "").includes(query);
+        const matchFacet = facet === "all" || item.dataset.status === facet;
+        const show = matchName && matchFacet;
+        item.hidden = !show;
+        if (show) {
+          visible += 1;
+          present.add((item.dataset.name || "#")[0].toUpperCase());
+        }
       }
+
       for (const group of groups) {
         group.hidden = !group.querySelector("[data-roster-item]:not([hidden])");
       }
+      for (const jump of jumps) {
+        if (jump.tagName === "A") {
+          jump.classList.toggle(
+            "is-empty",
+            !present.has(jump.dataset.jump || ""),
+          );
+        }
+      }
+
+      if (clear) clear.hidden = !query;
       if (empty) empty.hidden = visible !== 0;
+      if (summary) {
+        const filtering = query !== "" || facet !== "all";
+        summary.innerHTML = filtering
+          ? `Showing <strong>${visible.toLocaleString("en-US")}</strong> of ${total.toLocaleString("en-US")}`
+          : summaryHtml;
+      }
     };
 
-    input.addEventListener("input", () => {
+    const schedule = () => {
       if (frame) cancelAnimationFrame(frame);
       frame = requestAnimationFrame(apply);
+    };
+
+    input?.addEventListener("input", schedule);
+    clear?.addEventListener("click", () => {
+      if (input) input.value = "";
+      input?.focus();
+      apply();
     });
+    for (const button of facetButtons) {
+      button.addEventListener("click", () => {
+        facet = button.dataset.facet || "all";
+        for (const other of facetButtons) {
+          other.setAttribute(
+            "aria-pressed",
+            other === button ? "true" : "false",
+          );
+        }
+        apply();
+      });
+    }
   }
 </script>
 
 <style>
-  .roster-tools {
-    align-items: baseline;
+  .roster-summary {
+    color: var(--ipc-color-ink-muted);
+    font-size: var(--ipc-type-small);
+    margin: 0 0 1rem;
+  }
+
+  .roster-summary strong {
+    color: var(--ipc-color-ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .roster-controls {
+    align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    justify-content: space-between;
-    margin-bottom: 1.25rem;
+    gap: 0.75rem 1rem;
+    margin-bottom: 0.85rem;
+  }
+
+  /* Segmented status facet — quiet by default, the active option fills. */
+  .roster-facets {
+    display: inline-flex;
+    border: 1px solid var(--ipc-color-rule-strong);
+    border-radius: 0.4rem;
+    overflow: hidden;
+  }
+
+  .roster-facets button {
+    background: transparent;
+    border: 0;
+    border-left: 1px solid var(--ipc-color-rule);
+    color: var(--ipc-color-ink-soft);
+    cursor: pointer;
+    font: inherit;
+    font-size: var(--ipc-type-small);
+    font-weight: 600;
+    padding: 0.4rem 0.85rem;
+  }
+
+  .roster-facets button:first-child {
+    border-left: 0;
+  }
+
+  .roster-facets button[aria-pressed="true"] {
+    background: var(--ipc-color-teal-wash);
+    color: var(--ipc-color-teal-ink);
+  }
+
+  .roster-facets button:focus-visible {
+    outline: 2px solid var(--ipc-color-teal);
+    outline-offset: -2px;
   }
 
   .roster-search {
-    flex: 1 1 16rem;
-    max-width: 26rem;
+    align-items: center;
+    display: flex;
+    flex: 1 1 15rem;
+    max-width: 24rem;
+    position: relative;
   }
 
   .roster-search input {
     border: 1px solid var(--ipc-color-rule-strong);
     border-radius: 0.4rem;
-    font-size: 1rem;
-    padding: 0.55rem 0.8rem;
+    font: inherit;
+    padding: 0.45rem 2rem 0.45rem 0.75rem;
     width: 100%;
   }
 
@@ -171,21 +367,99 @@ const groups = [...alphaGroups.entries()].sort(([a], [b]) =>
     outline: 2px solid var(--ipc-color-teal-wash);
   }
 
-  .roster-count {
+  .roster-search-clear {
+    background: transparent;
+    border: 0;
     color: var(--ipc-color-ink-muted);
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    padding: 0 0.4rem;
+    position: absolute;
+    right: 0.15rem;
+  }
+
+  .roster-jump {
+    border-top: 1px solid var(--ipc-color-rule);
+    border-bottom: 1px solid var(--ipc-color-rule);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.1rem 0.35rem;
+    margin-bottom: 1.4rem;
+    padding: 0.5rem 0;
+    position: sticky;
+    top: 0;
+    background: var(--ipc-color-paper);
+    z-index: 1;
+  }
+
+  .roster-jump a,
+  .roster-jump span {
     font-size: var(--ipc-type-small);
+    font-weight: 700;
+    min-width: 1.1rem;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .roster-jump a {
+    color: var(--ipc-color-teal);
+  }
+
+  .roster-jump a:hover {
+    text-decoration: underline;
+  }
+
+  .roster-jump a.is-empty,
+  .roster-jump span {
+    color: var(--ipc-color-rule-strong);
+    pointer-events: none;
+  }
+
+  .roster-letter {
+    margin-bottom: 1.75rem;
+    scroll-margin-top: 3.5rem;
+  }
+
+  .roster-letter h2 {
+    border-bottom: 1px solid var(--ipc-color-rule);
+    color: var(--ipc-color-ink-soft);
+    font-size: var(--ipc-type-h4);
+    font-weight: 800;
+    margin: 0 0 0.6rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .roster-letter ul {
+    display: grid;
+    gap: 0.85rem 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    list-style: none;
     margin: 0;
+    padding: 0;
   }
 
-  .roster-count strong {
-    color: var(--ipc-color-ink);
-    font-variant-numeric: tabular-nums;
+  .roster-name {
+    color: var(--ipc-color-teal);
+    display: block;
+    font-weight: 700;
+    text-decoration: none;
   }
 
-  .roster-former {
-    color: var(--ipc-color-ink-faint);
-    font-size: var(--ipc-type-caption);
+  .roster-name:hover {
+    text-decoration: underline;
+  }
+
+  .roster-name--inert {
+    color: var(--ipc-color-ink-soft);
     font-weight: 600;
+  }
+
+  .roster-meta {
+    color: var(--ipc-color-ink-muted);
+    display: block;
+    font-size: var(--ipc-type-caption);
+    margin-top: 0.1rem;
   }
 
   .roster-empty {
