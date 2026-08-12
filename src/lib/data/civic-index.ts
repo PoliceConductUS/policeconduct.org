@@ -20,7 +20,6 @@ export type CivicIndexScope =
   | "agency";
 
 export type CivicScopedTopicKind =
-  | "personnel"
   | "reports"
   | "budget"
   | "civil-cases"
@@ -318,10 +317,6 @@ export const hasCivicScopedTopicData = (
   coverage: LocationPagePayload["coverage"],
   kind: CivicScopedTopicKind,
 ) => {
-  if (kind === "personnel") {
-    return coverage.personnel > 0;
-  }
-
   if (kind === "reports") {
     return coverage.reports > 0;
   }

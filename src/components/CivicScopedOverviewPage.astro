@@ -18,16 +18,7 @@ const { model, kind, records } = Astro.props as {
   records?: CivicTopicRecords;
 };
 
-const coverageValue = (key: CivicIndexModel["coverage"][number]["key"]) =>
-  model.coverage.find((metric) => metric.key === key)?.value ?? 0;
-
 const pageConfig = {
-  personnel: {
-    title: metricLabels.personnel,
-    description: `Personnel records connected to this geography.`,
-    role: null,
-    gloss: undefined,
-  },
   budget: {
     title: metricLabels.budget,
     description: "Budget, revenue, spending, forfeiture, and overtime records.",
@@ -71,7 +62,6 @@ const entitySlug = model.pagePath.split("/").filter(Boolean).pop() || "";
 const volunteerHref = buildHelpCollectHref(pagePath, model.level, entitySlug);
 
 const hasRows = records ? records.rows.length > 0 : false;
-const personnelCount = coverageValue("personnel");
 ---
 
 <PageShell
@@ -87,25 +77,7 @@ const personnelCount = coverageValue("personnel");
   lede={pageConfig.description}
 >
   {
-    kind === "personnel" ? (
-      <section class="civic-section civic-section--last">
-        <dl class="fact-list">
-          <div>
-            <dt>Personnel records</dt>
-            <dd>{personnelCount.toLocaleString("en-US")}</dd>
-          </div>
-          <div>
-            <dt>Rosters</dt>
-            <dd>Browsable on each agency page</dd>
-          </div>
-        </dl>
-        <p class="civic-limit-note">
-          Personnel records come from state licensing data and are listed on
-          each agency's page.
-          <a href="/find-records/">Find an agency →</a>
-        </p>
-      </section>
-    ) : hasRows ? (
+    hasRows ? (
       <section class="civic-section civic-section--last">
         <slot />
         <p class="civic-limit-note">

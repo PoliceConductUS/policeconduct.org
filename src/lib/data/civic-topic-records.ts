@@ -4,7 +4,6 @@ import type { CivicIndexModel } from "./civic-index.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
 
 export type CivicTopicKind =
-  | "personnel"
   | "budget"
   | "civil-cases"
   | "fatal-force-incidents"
@@ -43,13 +42,6 @@ export type CivicTopicRecords =
       rows: CivicCivilCaseRecord[];
       title: string;
       totalCount: number;
-    }
-  | {
-      emptyLabel: string;
-      kind: "personnel";
-      rows: [];
-      title: string;
-      totalCount: null;
     }
   | {
       emptyLabel: string;
@@ -277,17 +269,6 @@ export const loadCivicTopicRecords = async (
 ): Promise<CivicTopicRecords> => {
   if (kind === "civil-cases") {
     return loadCivilCaseRecords(model);
-  }
-
-  if (kind === "personnel") {
-    return {
-      emptyLabel:
-        "Personnel lists are available on individual agency pages for this scope.",
-      kind: "personnel",
-      rows: [],
-      title: "Personnel",
-      totalCount: null,
-    };
   }
 
   return {
