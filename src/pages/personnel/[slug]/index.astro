@@ -583,95 +583,94 @@ const structuredData = {
     { label: "Personnel", href: "/personnel/" },
     { label: officerName, href: officerPath },
   ]}
-  heading={officerName}
 >
   <PrefillBootstrap />
-  <Fragment slot="actions">
-    <EntityActionBar>
-      <HelpCollectDataButton
-        context={officerName}
-        sourcePage={officerPath}
-        topic="Personnel"
-      />
-      <PrefillNavButton
-        to={suggestEditHref}
-        payload={suggestEditPrefillPayload}
-        class="personnel-action"
-      >
-        Suggest edit
-      </PrefillNavButton>
-      <PrefillNavButton
-        to="/report/new/"
-        payload={reportNewPrefillPayload}
-        class="personnel-action personnel-action-primary"
-      >
-        Share your experience
-      </PrefillNavButton>
-    </EntityActionBar>
-  </Fragment>
-
-  <div class="personnel-profile-hero">
-    <div class="personnel-profile-title">
-      <p class="personnel-current-line">
-        Current agency: <a href={currentAgencyPath}>{currentAgency!.name}</a>
-        <span aria-hidden="true"> · </span>
-        {currentAgencyLocation}
-      </p>
-      <p class="personnel-profile-note">
-        Combined career data aggregated across all known agencies.
-      </p>
-      {
-        isDeceased ? (
-          <div class="personnel-status-note" role="status">
-            <strong>Status: Deceased.</strong>
-            <span>{deceasedPublicMessage}</span>
-          </div>
-        ) : null
-      }
-    </div>
-
-    <figure class="personnel-portrait">
-      <img
-        src={personnelImageSrc}
-        alt={`Portrait of ${data.officer.first_name} ${data.officer.last_name}`}
-      />
-    </figure>
-
-    <aside class="personnel-profile-aside" aria-label="Personnel summary">
-      <dl>
-        <div>
-          <dt>License Type</dt>
-          <dd>{currentLicenseType}</dd>
-        </div>
-        <div>
-          <dt>Status</dt>
-          <dd>
-            <span class="personnel-status-pill">{statusLabel}</span>
-          </dd>
-        </div>
-        <div>
-          <dt>{metricLabels.totalTimeAsOfficer}</dt>
-          <dd>{totalTimeAsOfficer}</dd>
-        </div>
+  <Fragment slot="hero">
+    <div class="personnel-profile-hero">
+      <div class="personnel-profile-title">
+        <h1 class="ipc-page-title">{officerName}</h1>
+        <p class="personnel-current-line">
+          Current agency: <a href={currentAgencyPath}>{currentAgency!.name}</a>
+          <span aria-hidden="true"> · </span>
+          {currentAgencyLocation}
+        </p>
+        <p class="personnel-profile-note">
+          Combined career data aggregated across all known agencies.
+        </p>
         {
-          currentBadge ? (
-            <div>
-              <dt>Badge Number</dt>
-              <dd>{currentBadge}</dd>
+          isDeceased ? (
+            <div class="personnel-status-note" role="status">
+              <strong>Status: Deceased.</strong>
+              <span>{deceasedPublicMessage}</span>
             </div>
           ) : null
         }
-        <div>
-          <dt>{assignmentStatusLabel}</dt>
-          <dd><a href={currentAgencyPath}>{currentAgency!.name}</a></dd>
-        </div>
-        <div>
-          <dt>Updated</dt>
-          <dd>{formatShortDate(data.officer.updated_at)}</dd>
-        </div>
-      </dl>
-    </aside>
-  </div>
+        <EntityActionBar>
+          <HelpCollectDataButton
+            context={officerName}
+            sourcePage={officerPath}
+            topic="Personnel"
+          />
+          <PrefillNavButton
+            to={suggestEditHref}
+            payload={suggestEditPrefillPayload}
+            class="personnel-action"
+          >
+            Suggest edit
+          </PrefillNavButton>
+          <PrefillNavButton
+            to="/report/new/"
+            payload={reportNewPrefillPayload}
+            class="personnel-action personnel-action-primary"
+          >
+            Share your experience
+          </PrefillNavButton>
+        </EntityActionBar>
+      </div>
+
+      <figure class="personnel-portrait">
+        <img
+          src={personnelImageSrc}
+          alt={`Portrait of ${data.officer.first_name} ${data.officer.last_name}`}
+        />
+      </figure>
+
+      <aside class="personnel-profile-aside" aria-label="Personnel summary">
+        <dl>
+          <div>
+            <dt>License Type</dt>
+            <dd>{currentLicenseType}</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>
+              <span class="personnel-status-pill">{statusLabel}</span>
+            </dd>
+          </div>
+          <div>
+            <dt>{metricLabels.totalTimeAsOfficer}</dt>
+            <dd>{totalTimeAsOfficer}</dd>
+          </div>
+          {
+            currentBadge ? (
+              <div>
+                <dt>Badge Number</dt>
+                <dd>{currentBadge}</dd>
+              </div>
+            ) : null
+          }
+          <div>
+            <dt>{assignmentStatusLabel}</dt>
+            <dd><a href={currentAgencyPath}>{currentAgency!.name}</a></dd>
+          </div>
+          <div>
+            <dt>Updated</dt>
+            <dd>{formatShortDate(data.officer.updated_at)}</dd>
+          </div>
+        </dl>
+      </aside>
+    </div>
+  </Fragment>
 
   <MetricGrid metrics={personnelMetricCards} />
 
@@ -965,7 +964,7 @@ const structuredData = {
   .personnel-heading a,
   .personnel-panel a,
   .personnel-detail-card a {
-    color: #064cfb;
+    color: var(--ipc-color-teal);
     font-weight: 750;
     text-decoration: none;
   }
@@ -1127,7 +1126,7 @@ const structuredData = {
   }
 
   .personnel-blue {
-    color: #174bff;
+    color: var(--ipc-color-teal);
   }
 
   .personnel-green {
@@ -1633,7 +1632,7 @@ const structuredData = {
 
   .personnel-current-line a,
   .personnel-profile-aside a {
-    color: #064cfb;
+    color: var(--ipc-color-teal);
     font-weight: 750;
     text-decoration: none;
   }
