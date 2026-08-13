@@ -3,10 +3,8 @@ import EntityActionBar from "#src/components/EntityActionBar.astro";
 import "#src/styles/civic-ledger.css";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
-import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
-import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
@@ -389,23 +387,6 @@ const totalAssignmentMonths = assignmentHistory.reduce(
 const totalTimeAsOfficer = totalAssignmentMonths
   ? formatMonthsDuration(totalAssignmentMonths)
   : unavailableValue;
-const civilCaseYears = Object.entries(
-  civilCasesWithPaths.reduce<Record<string, number>>((counts, caseItem) => {
-    if (!caseItem.filed_date) {
-      return counts;
-    }
-    const year = String(new Date(caseItem.filed_date).getFullYear());
-    if (year === "NaN") {
-      return counts;
-    }
-    counts[year] = (counts[year] || 0) + 1;
-    return counts;
-  }, {}),
-)
-  .map(([year, count]) => ({ count, year }))
-  .sort((left, right) => left.year.localeCompare(right.year));
-const civilCaseYearBarValue = (count: number) =>
-  Math.min(100, Math.max(12, count * 18));
 const personnelMetricCards: MetricCardItem[] = [
   {
     ...(associatedAgencyCount > 1
@@ -472,60 +453,6 @@ const personnelMetricCards: MetricCardItem[] = [
     value: formatCount(reportItems.length),
   },
 ];
-const sampleRows = {
-  salary: [
-    { label: "2021", value: "$--", width: 0 },
-    { label: "2022", value: "$--", width: 0 },
-    { label: "2023", value: "$--", width: 0 },
-    { label: "2024", value: "$--", width: 0 },
-    { label: "2025", value: "$--", width: 0 },
-  ],
-  arrests: [
-    { label: "Jan", value: "--", width: 0 },
-    { label: "Apr", value: "--", width: 0 },
-    { label: "Jul", value: "--", width: 0 },
-    { label: "Oct", value: "--", width: 0 },
-  ],
-  liability: [
-    { label: "2021", value: "$--", width: 0 },
-    { label: "2022", value: "$--", width: 0 },
-    { label: "2023", value: "$--", width: 0 },
-    { label: "2024", value: "$--", width: 0 },
-    { label: "2025", value: "$--", width: 0 },
-  ],
-  civilCases: [
-    { label: "2021", value: "--", width: 0 },
-    { label: "2022", value: "--", width: 0 },
-    { label: "2023", value: "--", width: 0 },
-    { label: "2024", value: "--", width: 0 },
-    { label: "2025", value: "--", width: 0 },
-  ],
-  stopsEthnicity: [
-    { label: "Jan", value: "--", width: 0 },
-    { label: "Apr", value: "--", width: 0 },
-    { label: "Jul", value: "--", width: 0 },
-    { label: "Oct", value: "--", width: 0 },
-  ],
-  dayNight: [
-    { label: "Jan", value: "--", width: 0 },
-    { label: "Apr", value: "--", width: 0 },
-    { label: "Jul", value: "--", width: 0 },
-    { label: "Oct", value: "--", width: 0 },
-  ],
-  charges: [
-    { label: "Jan", value: "--", width: 0 },
-    { label: "Apr", value: "--", width: 0 },
-    { label: "Jul", value: "--", width: 0 },
-    { label: "Oct", value: "--", width: 0 },
-  ],
-  fatalForce: [
-    { label: "2021", value: "--", width: 0 },
-    { label: "2022", value: "--", width: 0 },
-    { label: "2023", value: "--", width: 0 },
-    { label: "2024", value: "--", width: 0 },
-    { label: "2025", value: "--", width: 0 },
-  ],
-};
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(officerPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
@@ -671,121 +598,9 @@ const structuredData = {
   <MetricGrid metrics={personnelMetricCards} />
 
   <div class="personnel-section-grid">
-    <OutcomesByIncomePanel />
-    <section class="personnel-panel">
-      <div class="personnel-panel-heading">
-        <h2>1. Salary History</h2>
-        <p>Annual base salary, Previous 5 years</p>
-      </div>
-      <SampleMeasurementChart
-        ariaLabel="Sample salary history chart"
-        rows={sampleRows.salary}
-      />
-    </section>
-
-    <section class="personnel-panel">
-      <div class="personnel-panel-heading">
-        <h2>2. Arrests Over Time</h2>
-        <p>Low-level arrests and other arrests, Previous 12 months</p>
-      </div>
-      <SampleMeasurementChart
-        ariaLabel="Sample arrests over time chart, Previous 12 months"
-        rows={sampleRows.arrests}
-      />
-    </section>
-
-    <section class="personnel-panel">
-      <div class="personnel-panel-heading">
-        <h2>3. Liability Costs Over Time</h2>
-        <p>Total liability costs, Previous 5 years</p>
-      </div>
-      <SampleMeasurementChart
-        ariaLabel="Sample liability costs over time chart, Previous 5 years"
-        rows={sampleRows.liability}
-      />
-    </section>
-
-    <section class="personnel-panel">
-      <div class="personnel-panel-heading">
-        <h2>4. Civil Cases and Claims Over Time</h2>
-        <p>Active and historical cases, Previous 5 years</p>
-      </div>
-      {
-        civilCaseYears.length ? (
-          <div class="personnel-year-bars">
-            {civilCaseYears.map((row) => (
-              <div>
-                <span>{row.year}</span>
-                <meter
-                  min="0"
-                  max="100"
-                  value={civilCaseYearBarValue(row.count)}
-                  aria-label={`${row.year} civil case count`}
-                >
-                  {row.count}
-                </meter>
-                <strong>{row.count}</strong>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <SampleMeasurementChart
-            ariaLabel="Sample civil cases and claims chart"
-            rows={sampleRows.civilCases}
-          />
-        )
-      }
-    </section>
-
-    <section class="personnel-panel">
-      <div class="personnel-panel-heading">
-        <h2>5. {metricLabels.racialBreakdownStopsArrests}</h2>
-        <p>
-          Stops and arrests by recorded race or ethnicity, Previous 12 months
-        </p>
-      </div>
-      <SampleMeasurementChart
-        ariaLabel="Sample stops by ethnicity chart"
-        rows={sampleRows.stopsEthnicity}
-      />
-    </section>
-
-    <section class="personnel-panel">
-      <div class="personnel-panel-heading">
-        <h2>6. {metricLabels.daylightNighttimeStops}</h2>
-        <p>Stops by time of day and recorded race, Previous 12 months</p>
-      </div>
-      <SampleMeasurementChart
-        ariaLabel="Sample stops by time of day chart"
-        rows={sampleRows.dayNight}
-      />
-    </section>
-
-    <section class="personnel-panel">
-      <div class="personnel-panel-heading">
-        <h2>7. {metricLabels.topChargeCategories}</h2>
-        <p>Arrest charge categories, Previous 12 months</p>
-      </div>
-      <SampleMeasurementChart
-        ariaLabel="Sample top charge categories chart"
-        rows={sampleRows.charges}
-      />
-    </section>
-
-    <section class="personnel-panel">
-      <div class="personnel-panel-heading">
-        <h2>8. Fatal Force Incidents, Previous 5 years</h2>
-        <p>People by age group, dogs and other animals</p>
-      </div>
-      <SampleMeasurementChart
-        ariaLabel="Sample fatal force incidents chart"
-        rows={sampleRows.fatalForce}
-      />
-    </section>
-
     <section class="personnel-panel personnel-panel-wide">
       <div class="personnel-panel-heading">
-        <h2>9. Civil Cases</h2>
+        <h2>Civil Cases</h2>
         <p>Cases connected through agency assignments.</p>
       </div>
       {
@@ -826,7 +641,7 @@ const structuredData = {
 
     <section class="personnel-panel personnel-panel-wide">
       <div class="personnel-panel-heading">
-        <h2>10. {metricLabels.agencies}</h2>
+        <h2>{metricLabels.agencies}</h2>
         <p>Known agency assignments linked to this profile.</p>
       </div>
       {
@@ -1031,52 +846,6 @@ const structuredData = {
   .personnel-panel h2 {
     color: var(--ipc-color-ink);
     margin: 0 0 0.25rem;
-  }
-
-  .personnel-year-bars {
-    display: grid;
-    gap: 0.7rem;
-    margin-top: 1rem;
-  }
-
-  .personnel-year-bars div {
-    align-items: center;
-    display: grid;
-    gap: 0.65rem;
-    grid-template-columns: minmax(5.5rem, 8rem) minmax(0, 1fr) auto;
-  }
-
-  .personnel-year-bars span,
-  .personnel-year-bars strong {
-    color: var(--ipc-color-ink);
-    font-size: 0.75rem;
-    font-weight: 750;
-    line-height: 1.25;
-  }
-
-  .personnel-year-bars meter {
-    appearance: none;
-    background: var(--ipc-color-teal);
-    border-radius: 0.1rem;
-    display: block;
-    height: 0.85rem;
-    width: 100%;
-  }
-
-  .personnel-year-bars meter::-webkit-meter-bar {
-    background: var(--ipc-color-rule);
-    border: 0;
-    border-radius: 0.1rem;
-  }
-
-  .personnel-year-bars meter::-webkit-meter-optimum-value {
-    background: var(--ipc-color-teal);
-    border-radius: 0.1rem;
-  }
-
-  .personnel-year-bars meter::-moz-meter-bar {
-    background: var(--ipc-color-teal);
-    border-radius: 0.1rem;
   }
 
   .personnel-table-wrap {
