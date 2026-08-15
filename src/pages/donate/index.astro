@@ -3,6 +3,7 @@ import PageShell from "#src/layouts/PageShell.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+import { ORG_ADDRESS_LINE, ORG_EIN, ORG_LEGAL_NAME } from "#src/lib/org.js";
 
 type DonationFrequency = "monthly" | "oneTime";
 type PresetAmountKey =
@@ -76,7 +77,7 @@ const donatePageConfiguration: DonatePageConfiguration = {
   pageTitle: "Donate",
   pageSubtitle:
     "Your support powers report review, privacy protection, and a transparent public record of police experiences nationwide.",
-  ein: "99-3296620",
+  ein: ORG_EIN,
   financialReportsPath: "/about/financial-reports",
   presetAmounts: [
     { key: "amount10", label: "$10" },
@@ -210,7 +211,7 @@ const donatePageCopy: DonationPageCopy = {
   otherWays: [
     {
       title: "Donate by check",
-      body: "Make checks payable to Institute for Police Conduct, Inc. Mail to: 8 The Green #11026, Dover, DE 19901.",
+      body: `Make checks payable to ${ORG_LEGAL_NAME} Mail to: ${ORG_ADDRESS_LINE}.`,
     },
     {
       title: "Employer match",
@@ -309,8 +310,7 @@ const validateStripeHostnames = (links: StripeLinkEntry[]) => {
 
 validateStripeHostnames(collectStripeLinks(donatePageConfiguration));
 const pagePath = "/donate/";
-const pageDescription =
-  "Support the Institute for Police Conduct, Inc. with a donation to fund public accountability records, reporting infrastructure, and transparency work.";
+const pageDescription = `Support the ${ORG_LEGAL_NAME} with a donation to fund public accountability records, reporting infrastructure, and transparency work.`;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const structuredData = buildWebPage({

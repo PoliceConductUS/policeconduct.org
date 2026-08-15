@@ -112,7 +112,7 @@ export const getEntityImageById = (
     map = scanType(type);
     cacheByType.set(type, map);
   }
-  return map[id] || null;
+  return Object.hasOwn(map, id) ? map[id] : null;
 };
 
 export const getPersonnelImageById = (personnelId: string): string | null =>

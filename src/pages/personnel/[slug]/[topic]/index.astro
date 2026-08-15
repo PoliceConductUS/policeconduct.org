@@ -201,115 +201,117 @@ const fallbackChart =
       topic={topicConfig.label}
     />
   </Fragment>
-  <MetricGrid metrics={metricCards} columns="four" />
+  <section class="civic-section civic-section--last">
+    <MetricGrid metrics={metricCards} columns="four" />
 
-  <div class="entity-chart-grid">
-    {
-      topicKey === "agencies" ? (
-        <DataPanel title={topicConfig.label} className="entity-table-panel">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Agency</th>
-                <th scope="col">License Type</th>
-                <th scope="col">Start Date</th>
-                <th scope="col">End Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.assignments.map((assignment) => (
+    <div class="entity-chart-grid">
+      {
+        topicKey === "agencies" ? (
+          <DataPanel title={topicConfig.label} className="entity-table-panel">
+            <table>
+              <thead>
                 <tr>
-                  <th scope="row">
-                    <a
-                      href={requireAgencyCanonicalPath({
-                        canonicalPath: assignment.canonical_path,
-                      })}
-                    >
-                      {assignment.agency_name}
-                    </a>
-                  </th>
-                  <td>{assignment.title}</td>
-                  <td>
-                    {assignment.start_date
-                      ? formatShortDate(assignment.start_date)
-                      : ""}
-                  </td>
-                  <td>
-                    {assignment.end_date
-                      ? formatShortDate(assignment.end_date)
-                      : ""}
-                  </td>
+                  <th scope="col">Agency</th>
+                  <th scope="col">License Type</th>
+                  <th scope="col">Start Date</th>
+                  <th scope="col">End Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </DataPanel>
-      ) : topicKey === "reports" ? (
-        <DataPanel title={topicConfig.label} className="entity-table-panel">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Report</th>
-                <th scope="col">Incident Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.reports.map((report) => (
+              </thead>
+              <tbody>
+                {data.assignments.map((assignment) => (
+                  <tr>
+                    <th scope="row">
+                      <a
+                        href={requireAgencyCanonicalPath({
+                          canonicalPath: assignment.canonical_path,
+                        })}
+                      >
+                        {assignment.agency_name}
+                      </a>
+                    </th>
+                    <td>{assignment.title}</td>
+                    <td>
+                      {assignment.start_date
+                        ? formatShortDate(assignment.start_date)
+                        : ""}
+                    </td>
+                    <td>
+                      {assignment.end_date
+                        ? formatShortDate(assignment.end_date)
+                        : ""}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </DataPanel>
+        ) : topicKey === "reports" ? (
+          <DataPanel title={topicConfig.label} className="entity-table-panel">
+            <table>
+              <thead>
                 <tr>
-                  <th scope="row">
-                    <a
-                      href={buildReportCanonicalPath({
-                        id: report.id,
-                        incidentDate: report.incident_date,
-                        locationPath: report.location_path,
-                        slug: report.slug,
-                      })}
-                    >
-                      {report.title}
-                    </a>
-                  </th>
-                  <td>{formatShortDate(report.incident_date)}</td>
+                  <th scope="col">Report</th>
+                  <th scope="col">Incident Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </DataPanel>
-      ) : topicKey === "civil-cases" ? (
-        <DataPanel title={topicConfig.label} className="entity-table-panel">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Case</th>
-                <th scope="col">Filed</th>
-                <th scope="col">Court</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.civilCases.map((civilCase) => (
+              </thead>
+              <tbody>
+                {data.reports.map((report) => (
+                  <tr>
+                    <th scope="row">
+                      <a
+                        href={buildReportCanonicalPath({
+                          id: report.id,
+                          incidentDate: report.incident_date,
+                          locationPath: report.location_path,
+                          slug: report.slug,
+                        })}
+                      >
+                        {report.title}
+                      </a>
+                    </th>
+                    <td>{formatShortDate(report.incident_date)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </DataPanel>
+        ) : topicKey === "civil-cases" ? (
+          <DataPanel title={topicConfig.label} className="entity-table-panel">
+            <table>
+              <thead>
                 <tr>
-                  <th scope="row">
-                    <a href={`/civil-cases/${civilCase.slug}/`}>
-                      {civilCase.title}
-                    </a>
-                  </th>
-                  <td>{formatShortDate(civilCase.filed_date)}</td>
-                  <td>{civilCase.court || ""}</td>
+                  <th scope="col">Case</th>
+                  <th scope="col">Filed</th>
+                  <th scope="col">Court</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </DataPanel>
-      ) : (
-        <DataPanel
-          title={fallbackChart.title}
-          description={fallbackChart.description}
-        >
-          <SampleMeasurementChart
-            ariaLabel={`Sample ${topicConfig.label} chart`}
-            rows={fallbackChart.rows}
-          />
-        </DataPanel>
-      )
-    }
-  </div>
+              </thead>
+              <tbody>
+                {data.civilCases.map((civilCase) => (
+                  <tr>
+                    <th scope="row">
+                      <a href={`/civil-cases/${civilCase.slug}/`}>
+                        {civilCase.title}
+                      </a>
+                    </th>
+                    <td>{formatShortDate(civilCase.filed_date)}</td>
+                    <td>{civilCase.court || ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </DataPanel>
+        ) : (
+          <DataPanel
+            title={fallbackChart.title}
+            description={fallbackChart.description}
+          >
+            <SampleMeasurementChart
+              ariaLabel={`Sample ${topicConfig.label} chart`}
+              rows={fallbackChart.rows}
+            />
+          </DataPanel>
+        )
+      }
+    </div>
+  </section>
 </PageShell>

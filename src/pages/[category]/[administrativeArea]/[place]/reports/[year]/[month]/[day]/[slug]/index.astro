@@ -69,10 +69,13 @@ const formatIncidentTime = (value: string | null) => {
     return null;
   }
   const hour24 = Number(match[1]);
-  const minutes = match[2];
+  const minutes = Number(match[2]);
+  if (hour24 > 23 || minutes > 59) {
+    return null;
+  }
   const period = hour24 >= 12 ? "PM" : "AM";
   const hour12 = hour24 % 12 || 12;
-  return `${hour12}:${minutes} ${period}`;
+  return `${hour12}:${match[2]} ${period}`;
 };
 const incidentTimeDisplay = formatIncidentTime(facts.incidentTime);
 const pagePath = data.canonicalPath;

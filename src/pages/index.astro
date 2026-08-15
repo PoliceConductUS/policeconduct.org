@@ -10,6 +10,7 @@ import {
   buildWebPage,
   getSiteUrl,
 } from "#src/lib/structured-data.js";
+import { ORG_LEGAL_NAME } from "#src/lib/org.js";
 
 const pagePath = "/";
 const pageDescription =
@@ -65,7 +66,7 @@ const organization = buildPublisherOrganization(siteUrl);
 const webPage = buildWebPage({
   siteUrl,
   pageUrl,
-  name: "Institute for Police Conduct, Inc.",
+  name: ORG_LEGAL_NAME,
   description: pageDescription,
 });
 webPage.mainEntity = { "@id": organization["@id"] };

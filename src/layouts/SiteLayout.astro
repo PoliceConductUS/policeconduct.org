@@ -2,6 +2,12 @@
 import "#src/styles/theme.css";
 import GoogleAnalytics from "#src/components/GoogleAnalytics.astro";
 import MastheadSearch from "#src/components/MastheadSearch.astro";
+import {
+  ORG_ADDRESS,
+  ORG_EIN,
+  ORG_LEGAL_NAME,
+  ORG_SOCIAL_LINKS,
+} from "#src/lib/org.js";
 
 const {
   title,
@@ -85,7 +91,7 @@ const serializeStructuredData = (value: unknown) =>
     <link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt" />
     {description ? <meta name="description" content={description} /> : null}
     <meta name="robots" content={robotsContent} />
-    <meta name="author" content="Institute for Police Conduct, Inc." />
+    <meta name="author" content={ORG_LEGAL_NAME} />
     {title ? <meta property="og:title" content={title} /> : null}
     {
       description ? (
@@ -148,94 +154,21 @@ const serializeStructuredData = (value: unknown) =>
         <div
           class="d-flex justify-content-center align-items-center gap-4 mb-4"
         >
-          <a
-            href="https://facebook.com/PoliceConductUS"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-muted"
-          >
-            <svg width="24" height="24" aria-hidden="true">
-              <use href="/icons.svg#social-facebook"></use>
-            </svg>
-            <span class="visually-hidden">Facebook</span>
-          </a>
-          <a
-            href="https://twitter.com/PoliceConductUS"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-muted"
-          >
-            <svg width="24" height="24" aria-hidden="true">
-              <use href="/icons.svg#social-twitter"></use>
-            </svg>
-            <span class="visually-hidden">X (formerly Twitter)</span>
-          </a>
-          <a
-            href="https://instagram.com/PoliceConductUS"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-muted"
-          >
-            <svg width="24" height="24" aria-hidden="true">
-              <use href="/icons.svg#social-instagram"></use>
-            </svg>
-            <span class="visually-hidden">Instagram</span>
-          </a>
-          <a
-            href="https://www.tiktok.com/@policeconductus"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-muted"
-          >
-            <svg width="24" height="24" aria-hidden="true">
-              <use href="/icons.svg#social-tiktok"></use>
-            </svg>
-            <span class="visually-hidden">TikTok</span>
-          </a>
-          <a
-            href="https://linkedin.com/company/PoliceConductUS"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-muted"
-          >
-            <svg width="24" height="24" aria-hidden="true">
-              <use href="/icons.svg#social-linkedin"></use>
-            </svg>
-            <span class="visually-hidden">LinkedIn</span>
-          </a>
-          <a
-            href="https://youtube.com/@PoliceConductUS"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-muted"
-          >
-            <svg width="24" height="24" aria-hidden="true">
-              <use href="/icons.svg#social-youtube"></use>
-            </svg>
-            <span class="visually-hidden">YouTube</span>
-          </a>
-          <a
-            href="https://www.reddit.com/user/PoliceConductUS/"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-muted"
-          >
-            <svg width="24" height="24" aria-hidden="true">
-              <use href="/icons.svg#social-reddit"></use>
-            </svg>
-            <span class="visually-hidden">Reddit</span>
-          </a>
-          <a
-            href="https://github.com/PoliceConductUS"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-muted"
-          >
-            <svg width="24" height="24" aria-hidden="true">
-              <use href="/icons.svg#social-github"></use>
-            </svg>
-            <span class="visually-hidden">GitHub</span>
-          </a>
+          {
+            ORG_SOCIAL_LINKS.map((social) => (
+              <a
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-muted"
+              >
+                <svg width="24" height="24" aria-hidden="true">
+                  <use href={`/icons.svg#${social.iconId}`} />
+                </svg>
+                <span class="visually-hidden">{social.label}</span>
+              </a>
+            ))
+          }
         </div>
         <div class="row g-4 mb-4">
           <div class="col-12 col-md">
@@ -291,7 +224,7 @@ const serializeStructuredData = (value: unknown) =>
               law.
             </p>
             <p class="text-muted small mt-2 mb-0">
-              Federal Tax ID (EIN): 99-3296620
+              Federal Tax ID (EIN): {ORG_EIN}
             </p>
           </div>
           <div class="col-12 col-md">
@@ -487,9 +420,12 @@ const serializeStructuredData = (value: unknown) =>
             community submitted information. Information is deemed reliable but
             is not guaranteed.
           </p>
-          <p class="mb-1">Institute for Police Conduct, Inc.</p>
-          <p class="mb-1">8 The Green #11026</p>
-          <p class="mb-1">Dover, DE 19901, United States</p>
+          <p class="mb-1">{ORG_LEGAL_NAME}</p>
+          <p class="mb-1">{ORG_ADDRESS.streetAddress}</p>
+          <p class="mb-1">
+            {ORG_ADDRESS.addressLocality}, {ORG_ADDRESS.addressRegion}{" "}
+            {ORG_ADDRESS.postalCode}, United States
+          </p>
           <p class="mb-1">
             <a
               class="text-muted text-decoration-none"
@@ -498,7 +434,7 @@ const serializeStructuredData = (value: unknown) =>
             >
           </p>
           <p class="mb-0">
-            © 2026 Institute for Police Conduct, Inc. All rights reserved.
+            © 2026 {ORG_LEGAL_NAME} All rights reserved.
           </p>
         </div>
       </div>

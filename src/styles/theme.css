@@ -1,6 +1,8 @@
 /* Self-hosted Public Sans (latin subset, weights actually used site-wide).
    Ships its own @font-face rules with font-display: swap. */
+@import "@fontsource/public-sans/latin-300.css";
 @import "@fontsource/public-sans/latin-400.css";
+@import "@fontsource/public-sans/latin-500.css";
 @import "@fontsource/public-sans/latin-600.css";
 @import "@fontsource/public-sans/latin-700.css";
 @import "@fontsource/public-sans/latin-800.css";

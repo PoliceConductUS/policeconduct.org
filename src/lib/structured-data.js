@@ -1,22 +1,12 @@
+import {
+  ORG_ADDRESS,
+  ORG_DESCRIPTION,
+  ORG_EIN,
+  ORG_LEGAL_NAME,
+  ORG_SAME_AS,
+} from "#src/lib/org.js";
+
 const DEFAULT_SITE_URL = "https://www.policeconduct.org";
-
-// Stable, factual description of the publishing organization. Kept here as the
-// single source of truth so every page emits the same entity for AI answer
-// engines and knowledge graphs.
-const ORG_LEGAL_NAME = "Institute for Police Conduct, Inc.";
-const ORG_DESCRIPTION =
-  "Nonprofit that organizes public records, court records, and licensing data so people can see how policing is experienced — harm and professionalism alike — and support both accountability and trust.";
-
-const ORG_SAME_AS = [
-  "https://facebook.com/PoliceConductUS",
-  "https://twitter.com/PoliceConductUS",
-  "https://instagram.com/PoliceConductUS",
-  "https://www.tiktok.com/@policeconductus",
-  "https://linkedin.com/company/PoliceConductUS",
-  "https://youtube.com/@PoliceConductUS",
-  "https://www.reddit.com/user/PoliceConductUS/",
-  "https://github.com/PoliceConductUS",
-];
 
 /**
  * @param {URL | string | undefined | null} site
@@ -59,15 +49,11 @@ export const buildPublisherOrganization = (siteUrl) => {
     url,
     description: ORG_DESCRIPTION,
     logo: new URL("/img/apple-touch-icon.png", siteUrl).toString(),
-    taxID: "99-3296620",
+    taxID: ORG_EIN,
     nonprofitStatus: "https://schema.org/Nonprofit501c3",
     address: {
       "@type": "PostalAddress",
-      streetAddress: "8 The Green #11026",
-      addressLocality: "Dover",
-      addressRegion: "DE",
-      postalCode: "19901",
-      addressCountry: "US",
+      ...ORG_ADDRESS,
     },
     sameAs: ORG_SAME_AS,
   };
@@ -237,6 +223,9 @@ export const buildPersonNode = ({
   deathDate,
   worksForId,
 }) => {
+  if (!url && !path) {
+    throw new Error("buildPersonNode requires either `url` or `path`");
+  }
   const personUrl = url || new URL(path, siteUrl).toString();
   /** @type {Record<string, any>} */
   const data = {
@@ -279,6 +268,11 @@ export const buildGovernmentOrganizationNode = ({
   sameAs,
   areaServed,
 }) => {
+  if (!url && !path) {
+    throw new Error(
+      "buildGovernmentOrganizationNode requires either `url` or `path`",
+    );
+  }
   const orgUrl = url || new URL(path, siteUrl).toString();
   /** @type {Record<string, any>} */
   const data = {
@@ -336,12 +330,14 @@ export const buildCollectionPage = ({
   if (description) {
     data.description = description;
   }
-  const itemListElement = (items || []).map((item, index) => ({
-    "@type": "ListItem",
-    position: index + 1,
-    url: new URL(item.href, siteUrl).toString(),
-    name: item.name,
-  }));
+  const itemListElement = (items || [])
+    .filter((item) => item && item.href && item.name)
+    .map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: new URL(item.href, siteUrl).toString(),
+      name: item.name,
+    }));
   if (itemListElement.length > 0) {
     data.mainEntity = { "@type": "ItemList", itemListElement };
   }

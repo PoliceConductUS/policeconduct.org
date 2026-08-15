@@ -209,9 +209,14 @@ const formatDate = (value: string | Date) =>
 
 const addressLine = [
   data.agency.address,
-  [cityDisplayName, (agencyState || "").toUpperCase()]
+  [
+    [cityDisplayName, (agencyState || "").toUpperCase()]
+      .filter(Boolean)
+      .join(", "),
+    data.agency.zip_code || "",
+  ]
     .filter(Boolean)
-    .join(", ") + (data.agency.zip_code ? ` ${data.agency.zip_code}` : ""),
+    .join(" "),
 ]
   .filter(Boolean)
   .join(", ");
@@ -491,7 +496,9 @@ const structuredData = {
   <StatStrip ariaLabel={`${agencyDisplayName} record totals`} columns="five">
     <StatCell
       label="Personnel"
-      value={counts.personnel > 0 ? formatCount(counts.currentPersonnel) : null}
+      value={counts.currentPersonnel > 0
+        ? formatCount(counts.currentPersonnel)
+        : null}
       meta={personnelMeta || undefined}
       href={counts.personnel > 0 ? `${agencyPath}personnel/` : undefined}
       actionLabel="View personnel →"
