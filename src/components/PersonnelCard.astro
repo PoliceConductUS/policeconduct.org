@@ -3,7 +3,10 @@ import type { PersonnelSummary } from "#src/lib/data/types.js";
 
 const { person } = Astro.props as { person: PersonnelSummary };
 
-const fullName = `${person.lastName}, ${person.firstName}${
+const nameCore = person.lastName
+  ? `${person.lastName}, ${person.firstName}`
+  : person.firstName;
+const fullName = `${nameCore}${
   person.nameSuffix ? ` ${person.nameSuffix}` : ""
 }`;
 const initials =
@@ -26,9 +29,9 @@ const reportLabel = `${person.reportCount} reports`;
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
           <span class="badge bg-dark rounded-0">Active</span>
           {
-            person.licenseType ? (
+            person.title ? (
               <span class="badge bg-light text-dark border rounded-0">
-                License type: {person.licenseType}
+                Role: {person.title}
               </span>
             ) : null
           }

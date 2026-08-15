@@ -103,7 +103,7 @@ export type ReportSummaryPayload = {
   month: string;
   pageType: "reportSummary";
   personnel?: {
-    licenseType?: string | null;
+    title?: string | null;
     name: string;
     slug?: string | null;
   }[];

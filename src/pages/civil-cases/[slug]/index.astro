@@ -75,8 +75,8 @@ const formatLabelList = (values: string[]) => {
   }
   return `${values.slice(0, -1).join(", ")}, and ${values[values.length - 1]}`;
 };
-const officerNames = data.officers.map(
-  (officer) => `${officer.first_name} ${officer.last_name}`,
+const officerNames = data.officers.map((officer) =>
+  [officer.first_name, officer.last_name].filter(Boolean).join(" "),
 );
 const agencyNames = data.agencies.map((agency) => agency.name);
 const pageDescriptionParts = [
@@ -103,7 +103,7 @@ const officerEntities = data.officers.map((officer) =>
   buildPersonNode({
     siteUrl,
     path: `/personnel/${officer.slug}/`,
-    name: `${officer.first_name} ${officer.last_name}`,
+    name: [officer.first_name, officer.last_name].filter(Boolean).join(" "),
   }),
 );
 const agencyEntities = data.agencies.map((agency) =>

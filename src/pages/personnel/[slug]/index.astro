@@ -170,7 +170,7 @@ if (!currentAssignment) {
 }
 const hasCurrentAssignment = Boolean(activeAssignment);
 const currentBadge = currentAssignment?.badge_number || null;
-const currentLicenseType =
+const currentTitle =
   typeof currentAssignment?.title === "string"
     ? currentAssignment.title.trim()
     : "";
@@ -187,7 +187,7 @@ const isPlaceholderPersonnel =
   data.officer.slug === "unknown-personnel-935d1d" ||
   (data.officer.first_name === "Unknown" &&
     data.officer.last_name === "Personnel");
-if (!isPlaceholderPersonnel && !currentLicenseType) {
+if (!isPlaceholderPersonnel && !currentTitle) {
   throw new Error(
     `Personnel ${data.officer.slug} is missing required title on agency_officers ${currentAssignment?.id || "unknown"}`,
   );
@@ -234,8 +234,9 @@ const reportItems = data.reports.map(
 );
 
 const officerPath = `/personnel/${data.officer.slug}/`;
-const officerName =
-  `${data.officer.first_name} ${data.officer.last_name}`.trim();
+const officerName = [data.officer.first_name, data.officer.last_name]
+  .filter(Boolean)
+  .join(" ");
 const deceasedOnValue = data.officer.deceased_on;
 const isDeceased = Boolean(deceasedOnValue);
 const deceasedOnDisplay = deceasedOnValue
@@ -251,7 +252,7 @@ const deceasedPublicMessage =
 const assignmentStatusLabel = hasCurrentAssignment
   ? "Current agency"
   : "Last known agency";
-const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${data.officer.first_name} ${data.officer.last_name} | ${hasCurrentAssignment ? currentAgency!.name : `Last known: ${currentAgency!.name}`} | PoliceConduct.org`;
+const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${hasCurrentAssignment ? currentAgency!.name : `Last known: ${currentAgency!.name}`} | PoliceConduct.org`;
 const pageDescription = isDeceased
   ? `${officerName} personnel profile with agency assignments, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
   : `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}, agency assignments, public reports, coverage, and civil litigation records.`;
@@ -292,7 +293,7 @@ const reportLinksSummary = reportItems.map((report) => report.url).join("\n");
 const reportNewPrefillPayload = JSON.stringify({
   officer: {
     department: currentAgencyPrefillName,
-    name: `${data.officer.first_name} ${data.officer.last_name}`,
+    name: officerName,
   },
 } satisfies ReportNewPrefill);
 const addCivilCaseHref = "/civil-cases/new/";
@@ -557,10 +558,7 @@ const structuredData = {
       </div>
 
       <figure class="personnel-portrait">
-        <img
-          src={personnelImageSrc}
-          alt={`Portrait of ${data.officer.first_name} ${data.officer.last_name}`}
-        />
+        <img src={personnelImageSrc} alt={`Portrait of ${officerName}`} />
       </figure>
 
       <aside class="personnel-profile-aside" aria-label="Personnel summary">
@@ -652,7 +650,7 @@ const structuredData = {
               <thead>
                 <tr>
                   <th scope="col">Agency</th>
-                  <th scope="col">License Type</th>
+                  <th scope="col">Role</th>
                   <th scope="col">Start Date</th>
                   <th scope="col">End Date</th>
                   <th scope="col">Status</th>
@@ -666,7 +664,7 @@ const structuredData = {
                         {entry.agency.name}
                       </a>
                     </th>
-                    <td>{entry.title || currentLicenseType}</td>
+                    <td>{entry.title || currentTitle}</td>
                     <td>
                       {entry.start_date
                         ? formatShortDate(entry.start_date)

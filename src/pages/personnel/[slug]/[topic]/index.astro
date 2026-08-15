@@ -133,8 +133,9 @@ const data = await withDb(async (client) => {
   return { assignments, civilCases, officer, reports };
 });
 
-const officerName =
-  `${data.officer.first_name} ${data.officer.last_name}`.trim();
+const officerName = [data.officer.first_name, data.officer.last_name]
+  .filter(Boolean)
+  .join(" ");
 const pagePath = `/personnel/${slug}/${topicKey}/`;
 const pageTitle = `${officerName} ${topicConfig.label}`;
 const countValue =
@@ -212,7 +213,7 @@ const fallbackChart =
               <thead>
                 <tr>
                   <th scope="col">Agency</th>
-                  <th scope="col">License Type</th>
+                  <th scope="col">Role</th>
                   <th scope="col">Start Date</th>
                   <th scope="col">End Date</th>
                 </tr>

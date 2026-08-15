@@ -3,8 +3,8 @@ import { withDb } from "#src/lib/db.js";
 export type CoverageOfficerRef = {
   slug: string;
   first_name: string;
-  last_name: string;
-  licenseType?: string | null;
+  last_name: string | null;
+  title?: string | null;
 };
 
 export type CoverageLink = {
@@ -53,7 +53,7 @@ const hydrateCoverageLinks = async (rows: any[]): Promise<CoverageLink[]> => {
       slug: officer.slug,
       first_name: officer.first_name,
       last_name: officer.last_name,
-      licenseType: officer.title || null,
+      title: officer.title || null,
     });
     officersByLink.set(officer.coverage_link_id, list);
   }

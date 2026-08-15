@@ -142,11 +142,10 @@ export const loadPersonnelSummaries = async (
       return {
         id: officer.id,
         slug: officer.slug,
-        lastName: officer.last_name,
+        lastName: officer.last_name || "",
         firstName: officer.first_name,
         nameSuffix: officer.suffix || null,
-        licenseType: eligibleAssignment?.title || null,
-        roleTitle: eligibleAssignment?.title || null,
+        title: eligibleAssignment?.title || null,
         agencyName: agency.name,
         agencyState: String(agency.state || "").toLowerCase(),
         agencyCanonicalPath: requireAgencyCanonicalPath(agency),

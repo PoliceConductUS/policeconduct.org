@@ -937,7 +937,7 @@ await withDb(async (client) => {
         );
         if (!personnelBySlug.has(slug)) {
           personnelBySlug.set(slug, {
-            licenseType: entry.title || null,
+            title: entry.title || null,
             name: `${entry.first_name || ""} ${entry.last_name || ""}${entry.suffix ? ` ${entry.suffix}` : ""}`.trim(),
             slug,
           });

@@ -667,7 +667,7 @@ const buildAgencyDetail = async (agencyId: string) => {
           return officer
             ? {
                 ...officer,
-                licenseType: entry.title || null,
+                title: entry.title || null,
               }
             : null;
         },
@@ -704,7 +704,7 @@ const buildAgencyDetail = async (agencyId: string) => {
           first_name: entry.first_name,
           last_name: entry.last_name,
           suffix: entry.suffix,
-          licenseType: entry.case_title || null,
+          title: entry.case_title || null,
         },
         caseAgency: {
           id: entry.case_agency_id,
@@ -717,7 +717,7 @@ const buildAgencyDetail = async (agencyId: string) => {
           }),
         },
         targetAgencyAssignment: {
-          licenseType: entry.target_title || null,
+          title: entry.target_title || null,
           startDate: entry.target_start_date || null,
           endDate: entry.target_end_date || null,
           relationship: entry.target_end_date ? "former" : "current",

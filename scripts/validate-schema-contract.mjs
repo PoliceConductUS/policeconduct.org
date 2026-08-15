@@ -179,7 +179,7 @@ const requiredTables = {
   },
   officers: {
     columns: ["id", "slug", "first_name", "middle_name", "last_name", "suffix"],
-    notNull: ["id", "slug", "first_name", "last_name"],
+    notNull: ["id", "slug", "first_name"],
     uniqueColumnSets: [["slug"]],
   },
   officers_stats: {

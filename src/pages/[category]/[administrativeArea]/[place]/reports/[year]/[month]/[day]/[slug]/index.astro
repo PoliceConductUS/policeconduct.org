@@ -143,8 +143,13 @@ const officerEntities = Array.from(
         if (!entry.officer || !entry.path) {
           return null;
         }
-        const officerName =
-          `${entry.officer.first_name} ${entry.officer.last_name}${entry.officer.suffix ? ` ${entry.officer.suffix}` : ""}`.trim();
+        const officerName = [
+          entry.officer.first_name,
+          entry.officer.last_name,
+          entry.officer.suffix,
+        ]
+          .filter(Boolean)
+          .join(" ");
         const officerUrl = new URL(entry.path, siteUrl).toString();
         return [
           `${officerUrl}#person`,
