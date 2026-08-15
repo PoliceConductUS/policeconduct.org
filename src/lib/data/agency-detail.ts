@@ -386,7 +386,7 @@ const loadAgencyRows = async (agencyId: string) =>
     const civilCaseOfficers = civilCaseIds.length
       ? (
           await client.query(
-            `select cco.civil_case_id, ao.officer_id, ao.license_type
+            `select cco.civil_case_id, ao.officer_id, ao.title
              from public.civil_case_officers cco
              join public.agency_officers ao on ao.id = cco.agency_officer_id
              where cco.civil_case_id = any($1)`,
@@ -435,13 +435,13 @@ const loadAgencyRows = async (agencyId: string) =>
                 o.first_name,
                 o.last_name,
                 o.suffix,
-                case_ao.license_type as case_license_type,
+                case_ao.title as case_title,
                 case_agency.id as case_agency_id,
                 case_agency.name as case_agency_name,
                 case_agency.slug as case_agency_slug,
                 case_location.path as case_agency_location_path,
                 case_bpp.path as case_agency_canonical_path,
-                target_ao.license_type as target_license_type,
+                target_ao.title as target_title,
                 target_ao.start_date as target_start_date,
                 target_ao.end_date as target_end_date
               from public.civil_case_officers cco
@@ -580,7 +580,7 @@ const buildAgencyDetail = async (agencyId: string) => {
         officer_id?: string | null;
         start_date?: string | null;
         end_date?: string | null;
-        license_type?: string | null;
+        title?: string | null;
       };
       officer?: { first_name?: string | null; last_name?: string | null };
     },
@@ -589,7 +589,7 @@ const buildAgencyDetail = async (agencyId: string) => {
         officer_id?: string | null;
         start_date?: string | null;
         end_date?: string | null;
-        license_type?: string | null;
+        title?: string | null;
       };
       officer?: { first_name?: string | null; last_name?: string | null };
     },
@@ -627,7 +627,7 @@ const buildAgencyDetail = async (agencyId: string) => {
         badge_number?: string | null;
         start_date?: string | null;
         end_date?: string | null;
-        license_type?: string | null;
+        title?: string | null;
       }) => {
         const officer = officersById[entry.officer_id];
         const stats = officerStatsById[entry.officer_id];
@@ -662,12 +662,12 @@ const buildAgencyDetail = async (agencyId: string) => {
       primary_source_url?: string | null;
     }) => {
       const officerLinks = (civilCaseOfficersByCase[record.id] || []).map(
-        (entry: { officer_id: string; license_type?: string | null }) => {
+        (entry: { officer_id: string; title?: string | null }) => {
           const officer = civilOfficersById[entry.officer_id];
           return officer
             ? {
                 ...officer,
-                licenseType: entry.license_type || null,
+                licenseType: entry.title || null,
               }
             : null;
         },
@@ -704,7 +704,7 @@ const buildAgencyDetail = async (agencyId: string) => {
           first_name: entry.first_name,
           last_name: entry.last_name,
           suffix: entry.suffix,
-          licenseType: entry.case_license_type || null,
+          licenseType: entry.case_title || null,
         },
         caseAgency: {
           id: entry.case_agency_id,
@@ -717,7 +717,7 @@ const buildAgencyDetail = async (agencyId: string) => {
           }),
         },
         targetAgencyAssignment: {
-          licenseType: entry.target_license_type || null,
+          licenseType: entry.target_title || null,
           startDate: entry.target_start_date || null,
           endDate: entry.target_end_date || null,
           relationship: entry.target_end_date ? "former" : "current",

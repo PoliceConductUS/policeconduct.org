@@ -10,7 +10,7 @@ type EmployeeLike = {
   entry?: {
     end_date?: string | null;
     start_date?: string | null;
-    license_type?: string | null;
+    title?: string | null;
   } | null;
   officer?: {
     first_name?: string | null;
@@ -54,7 +54,7 @@ const rows: RosterRow[] = employees.map((employee) => {
     : startYear
       ? `${startYear}–present`
       : null;
-  const rank = (employee.entry?.license_type || "").trim() || null;
+  const rank = (employee.entry?.title || "").trim() || null;
   const reportCount = Number(employee.reportCount || 0);
   const reports =
     reportCount > 0

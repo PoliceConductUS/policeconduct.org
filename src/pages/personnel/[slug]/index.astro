@@ -171,8 +171,8 @@ if (!currentAssignment) {
 const hasCurrentAssignment = Boolean(activeAssignment);
 const currentBadge = currentAssignment?.badge_number || null;
 const currentLicenseType =
-  typeof currentAssignment?.license_type === "string"
-    ? currentAssignment.license_type.trim()
+  typeof currentAssignment?.title === "string"
+    ? currentAssignment.title.trim()
     : "";
 const currentAgency = currentAssignment
   ? agenciesById[currentAssignment.agency_id]
@@ -189,7 +189,7 @@ const isPlaceholderPersonnel =
     data.officer.last_name === "Personnel");
 if (!isPlaceholderPersonnel && !currentLicenseType) {
   throw new Error(
-    `Personnel ${data.officer.slug} is missing required license_type on agency_officers ${currentAssignment?.id || "unknown"}`,
+    `Personnel ${data.officer.slug} is missing required title on agency_officers ${currentAssignment?.id || "unknown"}`,
   );
 }
 
@@ -666,7 +666,7 @@ const structuredData = {
                         {entry.agency.name}
                       </a>
                     </th>
-                    <td>{entry.license_type || currentLicenseType}</td>
+                    <td>{entry.title || currentLicenseType}</td>
                     <td>
                       {entry.start_date
                         ? formatShortDate(entry.start_date)

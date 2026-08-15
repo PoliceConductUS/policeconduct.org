@@ -32,7 +32,7 @@ const hydrateCoverageLinks = async (rows: any[]): Promise<CoverageLink[]> => {
             officer.slug,
             officer.first_name,
             officer.last_name,
-            agency_officer.license_type
+            agency_officer.title
           from public.coverage_link_agency_officers coverage_officer
           join public.agency_officers agency_officer
             on agency_officer.id = coverage_officer.agency_officer_id
@@ -53,7 +53,7 @@ const hydrateCoverageLinks = async (rows: any[]): Promise<CoverageLink[]> => {
       slug: officer.slug,
       first_name: officer.first_name,
       last_name: officer.last_name,
-      licenseType: officer.license_type || null,
+      licenseType: officer.title || null,
     });
     officersByLink.set(officer.coverage_link_id, list);
   }

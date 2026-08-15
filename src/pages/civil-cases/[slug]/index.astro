@@ -237,7 +237,7 @@ const structuredData = {
                 <a href={`/personnel/${officer.slug}/`}>
                   {officer.first_name} {officer.last_name}
                 </a>
-                {officer.license_type ? ` — ${officer.license_type}` : ""}
+                {officer.title ? ` — ${officer.title}` : ""}
               </p>
             ))}
           </>

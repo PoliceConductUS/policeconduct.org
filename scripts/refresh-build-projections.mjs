@@ -885,7 +885,7 @@ await withDb(async (client) => {
             report_location.path as location_path,
             ro.id as review_officer_id,
             ao.agency_id,
-            ao.license_type,
+            ao.title,
             o.first_name,
             o.last_name,
             o.suffix,
@@ -937,7 +937,7 @@ await withDb(async (client) => {
         );
         if (!personnelBySlug.has(slug)) {
           personnelBySlug.set(slug, {
-            licenseType: entry.license_type || null,
+            licenseType: entry.title || null,
             name: `${entry.first_name || ""} ${entry.last_name || ""}${entry.suffix ? ` ${entry.suffix}` : ""}`.trim(),
             slug,
           });
