@@ -1,0 +1,262 @@
+/* ==========================================================================
+   PoliceConduct.org — Agency/entity page (v7)
+   Fork of agency-entity-v6.css. Change: "More actions" is now a real overflow
+   dropdown menu (WAI-ARIA menu-button pattern) holding lower-frequency utility
+   actions. Keeps v6's social-link icons.
+   Loads alongside shared-v5.css.
+   ========================================================================== */
+
+.entity-hero {
+  border-bottom: 1px solid var(--rule);
+  padding-block: 0.9rem 1.6rem;
+}
+
+.entity-hero-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+.entity-hero h1 {
+  max-width: 34ch;
+}
+
+/* Contact as hero text: no rules, no boxes — the same quiet register as
+   the lede paragraph on index pages. */
+.entity-contact {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.4rem;
+  max-width: 54rem;
+}
+
+.entity-contact address {
+  color: var(--ink-soft);
+  font-size: 1.0625rem;
+  font-style: normal;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.entity-contact-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.6rem;
+  font-size: var(--small);
+}
+
+.entity-contact-links a {
+  color: var(--teal-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.entity-contact-links a:hover {
+  text-decoration: underline;
+}
+
+.entity-contact-links .sep {
+  color: var(--rule-strong);
+}
+
+.entity-contact-person {
+  font-size: var(--small);
+  color: var(--ink-muted);
+}
+
+/* ---- social links: platform logo via Bootstrap Icons, kept accessible ----
+   Icon-only links that sit inline among the other contact links — no box, no
+   layout change. The accessible name comes from the anchor's aria-label
+   ("<Agency> on <Platform>"); the <i> glyph is aria-hidden, so assistive tech
+   reads one labelled link, not a graphic. The icon inherits the teal contact
+   color; a .social-link--<platform> modifier tints it the brand color on
+   hover/focus. Reusable: add one modifier per network. */
+.social-link .bi {
+  font-size: 1.15rem;
+  vertical-align: -0.15em;
+}
+
+.social-link--youtube:hover,
+.social-link--youtube:focus-visible {
+  color: #f00;
+}
+
+/* ---- "More actions" overflow menu ---- */
+.entity-menu {
+  display: inline-flex;
+  position: relative;
+}
+
+/* the toggle reuses .entity-action styling; reset the native <button> bits */
+.entity-menu-toggle {
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  gap: 0.35rem;
+}
+
+.entity-menu-toggle .bi {
+  font-size: 0.8rem;
+  transition: transform 0.12s ease;
+}
+
+.entity-menu-toggle[aria-expanded="true"] .bi {
+  transform: rotate(180deg);
+}
+
+.entity-menu-list {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule-strong);
+  box-shadow: 0 6px 20px -12px rgb(0 0 0 / 0.35);
+  left: 0;
+  list-style: none;
+  margin: 0;
+  min-width: 15rem;
+  padding: 0.3rem 0;
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  z-index: 20;
+}
+
+.entity-menu-list[hidden] {
+  display: none;
+}
+
+.entity-menu-item {
+  color: var(--ink);
+  display: block;
+  font-size: var(--small);
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  text-decoration: none;
+}
+
+.entity-menu-item:hover,
+.entity-menu-item:focus-visible {
+  background: var(--teal-wash);
+  color: var(--teal-ink);
+  outline: none;
+}
+
+.entity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1.1rem;
+}
+
+.entity-action {
+  align-items: center;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink);
+  display: inline-flex;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.7rem;
+  text-decoration: none;
+}
+
+.entity-action:hover {
+  background: var(--teal-wash);
+  border-color: var(--teal-ink);
+}
+
+.entity-action-primary {
+  background: var(--deep-red);
+  border-color: var(--deep-red);
+  color: var(--paper);
+}
+
+.entity-action-primary:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.entity-action-text {
+  border-color: transparent;
+  color: var(--teal-ink);
+  padding-inline: 0.25rem;
+}
+
+.entity-action-text:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+
+.entity-updated {
+  margin-top: 0.9rem;
+}
+
+.entity-side {
+  border: 1px solid var(--rule);
+  background: var(--paper-raised);
+  padding: 1.1rem 1.25rem;
+  align-self: start;
+}
+
+.entity-side h2 {
+  font-size: var(--h4);
+  margin-top: 0.15rem;
+}
+
+.entity-side-list {
+  display: grid;
+  gap: 0;
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.entity-side-list li {
+  align-items: center;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding-block: 0.6rem;
+}
+
+.entity-side-list a {
+  font-size: var(--small);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* ---- recent activity feed ---- */
+
+.recent-list {
+  display: grid;
+}
+
+.recent-list a {
+  border-top: 1px solid var(--rule);
+  color: var(--ink);
+  display: grid;
+  gap: 0.25rem;
+  padding-block: 0.75rem;
+  text-decoration: none;
+}
+
+.recent-list a:hover .recent-list-title {
+  text-decoration: underline;
+}
+
+.recent-list-title {
+  font-size: var(--small);
+  font-weight: 700;
+  color: var(--teal-ink);
+}
+
+.recent-list-meta {
+  color: var(--ink-faint);
+  font-size: var(--caption);
+}
+
+@media (min-width: 900px) {
+  .entity-hero-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.34fr);
+  }
+}

@@ -1,0 +1,159 @@
+/* ==========================================================================
+   PoliceConduct.org — Agency/entity page (v8)
+   Agency-profile-SPECIFIC styles only (hero, contact block, side rail, recent
+   activity). The action row, "More actions" overflow menu, and social-media
+   icon links now come from the shared entity-actions.css — load it too, before
+   this file. Used by BOTH state/local and federal agency pages.
+   Loads alongside shared-v5.css + entity-actions.css.
+   ========================================================================== */
+
+.entity-hero {
+  border-bottom: 1px solid var(--rule);
+  padding-block: 0.9rem 1.6rem;
+}
+
+.entity-hero-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+.entity-hero h1 {
+  max-width: 34ch;
+}
+
+/* Contact as hero text: no rules, no boxes — the same quiet register as
+   the lede paragraph on index pages. */
+.entity-contact {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.4rem;
+  max-width: 54rem;
+}
+
+.entity-contact address {
+  color: var(--ink-soft);
+  font-size: 1.0625rem;
+  font-style: normal;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.entity-contact-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.6rem;
+  font-size: var(--small);
+}
+
+.entity-contact-links a {
+  color: var(--teal-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.entity-contact-links a:hover {
+  text-decoration: underline;
+}
+
+.entity-contact-links .sep {
+  color: var(--rule-strong);
+}
+
+.entity-contact-person {
+  font-size: var(--small);
+  color: var(--ink-muted);
+}
+
+/* Contact name + email are linked in the data model — render as one visual
+   group (the email travels with the person, not the agency links row). */
+.entity-contact-person a {
+  color: var(--teal-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.entity-contact-person a:hover {
+  text-decoration: underline;
+}
+
+.entity-contact-person .sep {
+  color: var(--rule-strong);
+}
+
+.entity-updated {
+  margin-top: 0.9rem;
+}
+
+.entity-side {
+  border: 1px solid var(--rule);
+  background: var(--paper-raised);
+  padding: 1.1rem 1.25rem;
+  align-self: start;
+}
+
+.entity-side h2 {
+  font-size: var(--h4);
+  margin-top: 0.15rem;
+}
+
+.entity-side-list {
+  display: grid;
+  gap: 0;
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.entity-side-list li {
+  align-items: center;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding-block: 0.6rem;
+}
+
+.entity-side-list a {
+  font-size: var(--small);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* ---- recent activity feed ---- */
+
+.recent-list {
+  display: grid;
+}
+
+.recent-list a {
+  border-top: 1px solid var(--rule);
+  color: var(--ink);
+  display: grid;
+  gap: 0.25rem;
+  padding-block: 0.75rem;
+  text-decoration: none;
+}
+
+.recent-list a:hover .recent-list-title {
+  text-decoration: underline;
+}
+
+.recent-list-title {
+  font-size: var(--small);
+  font-weight: 700;
+  color: var(--teal-ink);
+}
+
+.recent-list-meta {
+  color: var(--ink-faint);
+  font-size: var(--caption);
+}
+
+@media (min-width: 900px) {
+  .entity-hero-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.34fr);
+  }
+}

@@ -1,6 +1,5 @@
 ---
-import SiteLayout from "#src/layouts/SiteLayout.astro";
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/about/";
@@ -16,210 +15,191 @@ const structuredData = buildWebPage({
 });
 ---
 
-<SiteLayout
+<PageShell
   title="Why PoliceConduct.org Exists | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
+  canonicalUrl={pagePath}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "About", href: pagePath, current: true },
+  ]}
+  heading="Why PoliceConduct.org exists"
 >
-  <main class="flex-grow-1 about-brief">
-    <section class="about-brief-hero py-vh-3 border-bottom border-dark">
-      <div class="container">
-        <div class="row g-4 align-items-end">
-          <div class="col-12 col-xl-7" data-aos="fade-right">
-            <Breadcrumbs
-              items={[
-                { label: "Home", href: "/" },
-                { label: "About", href: pagePath, current: true },
-              ]}
-              className="mb-2"
-            />
-            <p class="about-brief-kicker mb-3">About</p>
-            <h1 class="ipc-page-title about-brief-title mb-3">
-              Why PoliceConduct.org exists
-            </h1>
-            <p class="about-brief-lead mb-3">
-              PoliceConduct.org exists to help people document interactions with
-              law enforcement and review the public record around agencies,
-              officers, and civil cases.
-            </p>
-            <p class="about-brief-summary mb-0">
-              The project began with a personal experience, but its purpose is
-              broader: to make public information easier to preserve, organize,
-              and review so accountability and recognition do not depend on
-              money, status, or luck.
-            </p>
-            <div
-              class="about-brief-actions d-flex flex-column flex-sm-row gap-2 mt-4"
-            >
-              <a class="btn btn-dark rounded-0" href="/report/new/">
-                Share your experience
-              </a>
-              <a class="btn btn-outline-dark rounded-0" href="/find-records/">
-                Find Records
-              </a>
-            </div>
-          </div>
-          <div class="col-12 col-xl-4 offset-xl-1" data-aos="fade-left">
-            <aside class="about-brief-aside" aria-label="Public brief summary">
-              <p class="about-brief-aside-label mb-3">Public brief</p>
-              <div class="about-brief-aside-list">
-                <p>Public record</p>
-                <p>Accountability</p>
-                <p>Recognition</p>
-              </div>
-              <p class="about-brief-aside-note mb-0">
-                A durable record should make serious concerns easier to review
-                and good conduct easier to recognize.
-              </p>
-            </aside>
+  <Fragment slot="actions">
+    <a class="btn btn-dark rounded-0" href="/report/new/">
+      Share your experience
+    </a>
+    <a class="btn btn-outline-dark rounded-0" href="/find-records/">
+      Find Records
+    </a>
+  </Fragment>
+  <Fragment slot="header">
+    <p class="civic-lede-sub">
+      PoliceConduct.org exists to help people document experiences with law
+      enforcement and review the public record around agencies, officers, and
+      civil cases.
+    </p>
+    <p class="civic-lede-sub">
+      The project began with a personal experience, but its purpose is broader:
+      to make public information easier to preserve, organize, and review so
+      accountability and recognition do not depend on money, status, or luck.
+    </p>
+  </Fragment>
+  <aside class="about-brief-aside" aria-label="Public brief summary">
+    <p class="about-brief-aside-label mb-3">Public brief</p>
+    <div class="about-brief-aside-list">
+      <p>Public record</p>
+      <p>Accountability</p>
+      <p>Recognition</p>
+    </div>
+    <p class="about-brief-aside-note mb-0">
+      A durable record should make serious concerns easier to review and good
+      conduct easier to recognize.
+    </p>
+  </aside>
+
+  <section class="about-brief-section py-vh-2">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-12 col-xl-7" data-aos="fade-up">
+          <p class="about-brief-section-label mb-2">Approach</p>
+          <h2 class="about-brief-section-title mb-3">
+            How we approach the record
+          </h2>
+          <p class="about-brief-body">
+            PoliceConduct.org is built around a narrow premise: public
+            accountability works better when relevant information is easier to
+            find, compare, and review.
+          </p>
+          <p class="about-brief-body mb-0">
+            The site documents both concerning and commendable conduct. It is
+            not meant to replace courts, internal affairs, or formal oversight
+            bodies. It is meant to make public reporting and public records more
+            usable for the public.
+          </p>
+        </div>
+        <div
+          class="col-12 col-xl-4 offset-xl-1"
+          data-aos="fade-up"
+          data-aos-delay="100"
+        >
+          <div class="about-brief-note">
+            <p class="about-brief-note-label mb-3">Operating posture</p>
+            <ol class="about-brief-note-list mb-0">
+              <li>
+                Preserve reports and connect them to public records where
+                possible.
+              </li>
+              <li>
+                Show context rather than treating every allegation as proof.
+              </li>
+              <li>Make room for recognition, not only criticism.</li>
+              <li>Focus on durability, traceability, and public access.</li>
+            </ol>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="about-brief-section py-vh-2">
-      <div class="container">
-        <div class="row g-4">
-          <div class="col-12 col-xl-7" data-aos="fade-up">
-            <p class="about-brief-section-label mb-2">Approach</p>
-            <h2 class="about-brief-section-title mb-3">
-              How we approach the record
-            </h2>
-            <p class="about-brief-body">
-              PoliceConduct.org is built around a narrow premise: public
-              accountability works better when relevant information is easier to
-              find, compare, and review.
-            </p>
-            <p class="about-brief-body mb-0">
-              The site documents both concerning and commendable conduct. It is
-              not meant to replace courts, internal affairs, or formal oversight
-              bodies. It is meant to make public reporting and public records
-              more usable for the public.
+  <section
+    class="about-brief-statement py-vh-2 border-top border-bottom border-dark"
+  >
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-12 col-xl-9" data-aos="fade-up">
+          <p class="about-brief-section-label mb-2">Statement</p>
+          <h2 class="about-brief-section-title mb-3">
+            Fairness matters in both directions
+          </h2>
+          <p class="about-brief-body">
+            Public accountability is not served by exaggeration, and it is not
+            served by secrecy. Serious concerns should not remain buried because
+            records are scattered or difficult to access. At the same time,
+            isolated allegations should not be presented without context when
+            the record does not support a broader conclusion.
+          </p>
+          <p class="about-brief-body mb-0">
+            Good policing should be visible too. Officers and agencies that act
+            with restraint, dignity, and professionalism deserve recognition in
+            the public record just as serious concerns deserve scrutiny.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-brief-origin py-vh-2">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-12 col-xl-3" data-aos="fade-right">
+          <div class="about-brief-origin-marker">
+            <p class="about-brief-note-label mb-2">Case origin</p>
+            <p class="about-brief-origin-caption mb-0">
+              The founder story is part of the record, but not the whole reason
+              this project exists.
             </p>
           </div>
+        </div>
+        <div class="col-12 col-xl-8" data-aos="fade-up">
+          <h2 class="about-brief-section-title mb-3">
+            What led me to build it
+          </h2>
+          <p class="about-brief-body">
+            This project started with an arrest that I do not think should have
+            happened.
+          </p>
+          <p class="about-brief-body">
+            What stuck with me was not just my own case. It was seeing the other
+            people being booked and realizing how much worse an arrest could be
+            for them than for me. Missing one day of work could cost someone
+            their job. Even when a charge is weak, clearing it can take money,
+            time, and stability that many people do not have.
+          </p>
+          <p class="about-brief-body mb-0">
+            That changed how I think about police accountability. My arresting
+            officer seemed to care about compliance and submission, not the
+            long-term damage a false arrest can do to a person's life.
+            PoliceConduct.org exists in part because those consequences are
+            real, and because they fall hardest on people with the fewest
+            resources.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-brief-cta py-vh-2 border-top border-dark">
+    <div class="container">
+      <div class="row g-4 align-items-center">
+        <div class="col-12 col-xl-8" data-aos="fade-up">
+          <p class="about-brief-section-label mb-2">Next step</p>
+          <h2 class="about-brief-section-title mb-2">
+            Help build the public record
+          </h2>
+          <p class="about-brief-body mb-0">
+            If you want to document an experience, review local records, or
+            understand how this project works in practice, start there. The
+            record gets stronger when more people can use it.
+          </p>
+        </div>
+        <div class="col-12 col-xl-4" data-aos="fade-left">
           <div
-            class="col-12 col-xl-4 offset-xl-1"
-            data-aos="fade-up"
-            data-aos-delay="100"
+            class="about-brief-actions d-grid gap-2 d-sm-flex justify-content-xl-end"
           >
-            <div class="about-brief-note">
-              <p class="about-brief-note-label mb-3">Operating posture</p>
-              <ol class="about-brief-note-list mb-0">
-                <li>
-                  Preserve reports and connect them to public records where
-                  possible.
-                </li>
-                <li>
-                  Show context rather than treating every allegation as proof.
-                </li>
-                <li>Make room for recognition, not only criticism.</li>
-                <li>Focus on durability, traceability, and public access.</li>
-              </ol>
-            </div>
+            <a class="btn btn-dark rounded-0" href="/report/new/">
+              Share your experience
+            </a>
+            <a class="btn btn-outline-dark rounded-0" href="/find-records/">
+              Find Records
+            </a>
           </div>
         </div>
       </div>
-    </section>
-
-    <section
-      class="about-brief-statement py-vh-2 border-top border-bottom border-dark"
-    >
-      <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-12 col-xl-9" data-aos="fade-up">
-            <p class="about-brief-section-label mb-2">Statement</p>
-            <h2 class="about-brief-section-title mb-3">
-              Fairness matters in both directions
-            </h2>
-            <p class="about-brief-body">
-              Public accountability is not served by exaggeration, and it is not
-              served by secrecy. Serious concerns should not remain buried
-              because records are scattered or difficult to access. At the same
-              time, isolated allegations should not be presented without context
-              when the record does not support a broader conclusion.
-            </p>
-            <p class="about-brief-body mb-0">
-              Good policing should be visible too. Officers and agencies that
-              act with restraint, dignity, and professionalism deserve
-              recognition in the public record just as serious concerns deserve
-              scrutiny.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="about-brief-origin py-vh-2">
-      <div class="container">
-        <div class="row g-4">
-          <div class="col-12 col-xl-3" data-aos="fade-right">
-            <div class="about-brief-origin-marker">
-              <p class="about-brief-note-label mb-2">Case origin</p>
-              <p class="about-brief-origin-caption mb-0">
-                The founder story is part of the record, but not the whole
-                reason this project exists.
-              </p>
-            </div>
-          </div>
-          <div class="col-12 col-xl-8" data-aos="fade-up">
-            <h2 class="about-brief-section-title mb-3">
-              What led me to build it
-            </h2>
-            <p class="about-brief-body">
-              This project started with an arrest that I do not think should
-              have happened.
-            </p>
-            <p class="about-brief-body">
-              What stuck with me was not just my own case. It was seeing the
-              other people being booked and realizing how much worse an arrest
-              could be for them than for me. Missing one day of work could cost
-              someone their job. Even when a charge is weak, clearing it can
-              take money, time, and stability that many people do not have.
-            </p>
-            <p class="about-brief-body mb-0">
-              That changed how I think about police accountability. My arresting
-              officer seemed to care about compliance and submission, not the
-              long-term damage a false arrest can do to a person's life.
-              PoliceConduct.org exists in part because those consequences are
-              real, and because they fall hardest on people with the fewest
-              resources.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="about-brief-cta py-vh-2 border-top border-dark">
-      <div class="container">
-        <div class="row g-4 align-items-center">
-          <div class="col-12 col-xl-8" data-aos="fade-up">
-            <p class="about-brief-section-label mb-2">Next step</p>
-            <h2 class="about-brief-section-title mb-2">
-              Help build the public record
-            </h2>
-            <p class="about-brief-body mb-0">
-              If you want to document an interaction, review local records, or
-              understand how this project works in practice, start there. The
-              record gets stronger when more people can use it.
-            </p>
-          </div>
-          <div class="col-12 col-xl-4" data-aos="fade-left">
-            <div
-              class="about-brief-actions d-grid gap-2 d-sm-flex justify-content-xl-end"
-            >
-              <a class="btn btn-dark rounded-0" href="/report/new/">
-                Share your experience
-              </a>
-              <a class="btn btn-outline-dark rounded-0" href="/find-records/">
-                Find Records
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
+    </div>
+  </section>
   <script>
     import AOS from "aos";
     import "aos/dist/aos.css";
@@ -232,4 +212,4 @@ const structuredData = buildWebPage({
       document.documentElement.dataset.aosInit = "1";
     }
   </script>
-</SiteLayout>
+</PageShell>

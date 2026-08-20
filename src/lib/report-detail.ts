@@ -43,8 +43,44 @@ type ReportDetailQuery = {
   rubrics: any[];
 };
 
+// Parity fields collected by /report/new that the mockup displays
+// post-approval, mapped from their storage columns and rendered only when
+// present (see openspec/changes/align-report-pages/brainstorm.md). `charges`
+// holds submitter-entered charges/allegations text (`reviews.charges`); true
+// charge OUTCOME is editor-added data pending the intake migration and has
+// no storage column yet (see scripts/validate-schema-contract.mjs).
+export type ReportDetailFacts = {
+  submitterRelationship: string | null;
+  interactionType: string | null;
+  setting: string | null;
+  caseNumber: string | null;
+  complaintFiled: string | null;
+  bodycamRequested: string | null;
+  incidentTime: string | null;
+  feelings: string | null;
+  charges: string | null;
+};
+
+const nullableText = (value: unknown): string | null =>
+  typeof value === "string" && value.trim().length > 0 ? value : null;
+
+const buildReportFacts = (
+  report: Record<string, unknown>,
+): ReportDetailFacts => ({
+  submitterRelationship: nullableText(report.submitter_relationship),
+  interactionType: nullableText(report.interaction_type),
+  setting: nullableText(report.setting),
+  caseNumber: nullableText(report.case_number),
+  complaintFiled: nullableText(report.complaint_filed),
+  bodycamRequested: nullableText(report.bodycam_requested),
+  incidentTime: nullableText(report.incident_time),
+  feelings: nullableText(report.feelings),
+  charges: nullableText(report.charges),
+});
+
 export type ReportDetailModel = {
   report: Record<string, unknown>;
+  facts: ReportDetailFacts;
   canonicalPath: string;
   locationBreadcrumbs: {
     state: { label: string; href: string };
@@ -345,6 +381,7 @@ export const loadReportDetail = async (
 
   return {
     report: data.report,
+    facts: buildReportFacts(data.report),
     canonicalPath: buildReportCanonicalPath({
       id: String(data.report.id),
       incidentDate: data.report.incident_date as string | Date | null,

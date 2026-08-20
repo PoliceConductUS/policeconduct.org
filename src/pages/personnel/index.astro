@@ -1,6 +1,5 @@
 ---
-import SiteLayout from "#src/layouts/SiteLayout.astro";
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import { loadPersonnelSummaries } from "#src/lib/data/summaries.js";
 import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
@@ -63,75 +62,52 @@ if (personnelItemList) {
 }
 ---
 
-<SiteLayout
+<PageShell
   title="Personnel"
   description="Personnel profiles currently listed on PoliceConduct.org."
   pagePath={pagePath}
+  canonicalUrl={pagePath}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Personnel", href: pagePath, current: true },
+  ]}
+  heading="Personnel"
+  lede="Profiles of law enforcement personnel with listed agencies."
 >
-  <main>
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
-      <div class="container">
-        <div class="row g-4 align-items-end">
-          <div class="col-12 col-lg-8">
-            <Breadcrumbs
-              items={[
-                { label: "Home", href: "/" },
-                { label: "Personnel", href: pagePath, current: true },
-              ]}
-              className="mb-2"
-            />
-            <h1 class="ipc-page-title">Personnel</h1>
-            <p class="lead text-muted mb-0">
-              Profiles of law enforcement personnel with listed agencies.
-            </p>
-            <div class="ipc-hero-summary ipc-hero-summary-mobile mt-3">
-              <span class="badge bg-light text-dark border rounded-0">
-                {totalPersonnel} personnel
-              </span>
-              <span class="badge bg-light text-dark border rounded-0">
-                {statesWithPersonnel} states covered
-              </span>
-            </div>
-          </div>
-          <div class="col-12 col-lg-4 d-none d-lg-flex justify-content-lg-end">
-            <div class="ipc-hero-summary" aria-label="Personnel summary">
-              <span class="badge bg-light text-dark border rounded-0">
-                {totalPersonnel} personnel
-              </span>
-              <span class="badge bg-light text-dark border rounded-0">
-                {statesWithPersonnel} states covered
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <section class="py-vh-2">
-      <div class="container">
-        <UsaChoroplethMap
-          stats={stateStats}
-          title="States"
-          subtitle="Select a state to browse available records by place."
-          emptyLabel="No personnel yet"
-          interactionLabel="Hover for counts; click a state to browse available records."
-          headerAction={{
-            href: suggestPersonnelHref,
-            label: "Suggest new person",
-            target: "_self",
-          }}
-          federalPanel={{
-            title: "Federal agencies",
-            value: federalAgencies.length,
-            description: "Federal agencies with listed personnel.",
-            items: federalAgencies.map((agency) => ({
-              label: agency.name,
-              href: agency.path,
-              badgeText: `${agency.branchCount} locations`,
-            })),
-          }}
-        />
-      </div>
-    </section>
-  </main>
-</SiteLayout>
+  <Fragment slot="header">
+    <div class="ipc-hero-summary mt-3" aria-label="Personnel summary">
+      <span class="badge bg-light text-dark border rounded-0">
+        {totalPersonnel} personnel
+      </span>
+      <span class="badge bg-light text-dark border rounded-0">
+        {statesWithPersonnel} states covered
+      </span>
+    </div>
+  </Fragment>
+
+  <section class="civic-section civic-section--last">
+    <UsaChoroplethMap
+      stats={stateStats}
+      title="States"
+      subtitle="Select a state to browse available records by place."
+      emptyLabel="No personnel yet"
+      interactionLabel="Hover for counts; click a state to browse available records."
+      headerAction={{
+        href: suggestPersonnelHref,
+        label: "Suggest new person",
+        target: "_self",
+      }}
+      federalPanel={{
+        title: "Federal agencies",
+        value: federalAgencies.length,
+        description: "Federal agencies with listed personnel.",
+        items: federalAgencies.map((agency) => ({
+          label: agency.name,
+          href: agency.path,
+          badgeText: `${agency.branchCount} locations`,
+        })),
+      }}
+    />
+  </section>
+</PageShell>

@@ -41,3 +41,15 @@ upgrade.log
 test-results/
 .deploy-cache/
 rollback.json
+
+# Entity images (per-type subfolders under public/img) are sourced at build
+# time from ENTITY_IMAGES_DIR, not committed. Keep each folder's `default.*`
+# fallback tracked. Other committed assets in public/img are unaffected.
+/public/img/personnel/*
+/public/img/report/*
+/public/img/state/*
+/public/img/city/*
+/public/img/county/*
+/public/img/place/*
+/public/img/agency/*
+!/public/img/*/default.webp

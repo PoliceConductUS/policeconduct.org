@@ -1,6 +1,5 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import { loadAgencyFinderResults } from "#src/lib/data/agencies.js";
 import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import { loadLocationBuildPayloads } from "#src/lib/data/build-payloads.js";
@@ -92,97 +91,82 @@ const finderGroups = [
 const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
 ---
 
-<SiteLayout
+<PageShell
   title="Find Records | PoliceConduct.org"
   description={description}
   pagePath={pagePath}
+  canonicalUrl={pagePath}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Find Records", href: pagePath, current: true },
+  ]}
+  heading="Find records by place or agency"
+  lede="Enter a place or law enforcement agency to see what PoliceConduct.org has in the record."
 >
-  <main>
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
-      <div class="container">
-        <Breadcrumbs
-          items={[
-            { label: "Home", href: "/" },
-            { label: "Find Records", href: pagePath, current: true },
-          ]}
-          className="mb-2"
-        />
-        <h1 class="ipc-page-title mb-3">Find records by place or agency</h1>
-        <p class="lead text-muted mb-0">
-          Enter a place or law enforcement agency to see what PoliceConduct.org
-          has in the record.
-        </p>
-      </div>
-    </section>
+  <section class="py-vh-2">
+    <div class="container">
+      <div class="finder-shell" data-record-finder>
+        <div class="finder-search-panel">
+          <label class="form-label fw-semibold" for="recordFinder">
+            Place or agency
+          </label>
+          <input
+            class="form-control form-control-lg rounded-0"
+            id="recordFinder"
+            type="search"
+            placeholder="Irving, Dallas County, Texas, or Irving Police Department"
+            data-record-finder-input
+            autocomplete="off"
+            aria-describedby="recordFinderStatus"
+          />
+          <p
+            class="finder-status text-muted small mb-0"
+            id="recordFinderStatus"
+            data-finder-status
+            role="status"
+            aria-live="polite"
+          >
+            Type a place or agency name to show matching records.
+          </p>
+        </div>
 
-    <section class="py-vh-2">
-      <div class="container">
-        <div class="finder-shell" data-record-finder>
-          <div class="finder-search-panel">
-            <label class="form-label fw-semibold" for="recordFinder">
-              Place or agency
-            </label>
-            <input
-              class="form-control form-control-lg rounded-0"
-              id="recordFinder"
-              type="search"
-              placeholder="Irving, Dallas County, Texas, or Irving Police Department"
-              data-record-finder-input
-              autocomplete="off"
-              aria-describedby="recordFinderStatus"
-            />
-            <p
-              class="finder-status text-muted small mb-0"
-              id="recordFinderStatus"
-              data-finder-status
-              role="status"
-              aria-live="polite"
-            >
-              Type a place or agency name to show matching records.
-            </p>
-          </div>
+        <div class="finder-empty-state" data-finder-start>
+          <h2 class="ipc-section-title">Start with a place or agency.</h2>
+          <p class="text-muted mb-0">
+            Search results will focus on places, law enforcement agencies, and
+            federal agencies. Open a result to see connected personnel, reports,
+            civil cases, and other records.
+          </p>
+        </div>
 
-          <div class="finder-empty-state" data-finder-start>
-            <h2 class="ipc-section-title">Start with a place or agency.</h2>
-            <p class="text-muted mb-0">
-              Search results will focus on places, law enforcement agencies, and
-              federal agencies. Open a result to see connected personnel,
-              reports, civil cases, and other records.
-            </p>
-          </div>
+        <div class="finder-empty-state d-none" data-finder-no-results>
+          <h2 class="ipc-section-title">
+            We do not have records for that search yet.
+          </h2>
+          <p class="text-muted mb-0">
+            We use searches with no results to understand which places and
+            agencies people are looking for.
+          </p>
+        </div>
 
-          <div class="finder-empty-state d-none" data-finder-no-results>
-            <h2 class="ipc-section-title">
-              We do not have records for that search yet.
-            </h2>
-            <p class="text-muted mb-0">
-              We use searches with no results to understand which places and
-              agencies people are looking for.
-            </p>
-          </div>
-
-          <div class="finder-result-groups d-none" data-finder-results>
-            {
-              finderGroups.map((group) => (
-                <section
-                  class="finder-result-group"
-                  data-result-group={group.type}
-                  hidden
-                >
-                  <h2 class="ipc-section-title">{group.label}</h2>
-                  <div
-                    class="finder-result-list"
-                    data-result-list={group.type}
-                  />
-                </section>
-              ))
-            }
-          </div>
+        <div class="finder-result-groups d-none" data-finder-results>
+          {
+            finderGroups.map((group) => (
+              <section
+                class="finder-result-group"
+                data-result-group={group.type}
+                hidden
+              >
+                <h2 class="ipc-section-title">{group.label}</h2>
+                <div class="finder-result-list" data-result-list={group.type} />
+              </section>
+            ))
+          }
         </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
 
   <script
     id="recordFinderData"
@@ -322,10 +306,17 @@ const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
       }
     };
 
+    // Seed from the masthead search form's GET submission (?q=…), the
+    // no-JS / no-Pagefind fallback path, so arriving here runs the search.
+    const initialQuery = new URLSearchParams(window.location.search).get("q");
+    if (input && initialQuery) {
+      input.value = initialQuery;
+    }
+
     input?.addEventListener("input", updateResults);
     updateResults();
   </script>
-</SiteLayout>
+</PageShell>
 
 <style>
   .finder-shell {
@@ -363,7 +354,7 @@ const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
     display: grid;
   }
 
-  .finder-result {
+  :global(.finder-result) {
     align-items: baseline;
     border-bottom: 1px solid var(--bs-border-color);
     color: var(--bs-dark);
@@ -375,19 +366,19 @@ const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
     text-underline-offset: 0.18em;
   }
 
-  .finder-result small {
+  :global(.finder-result small) {
     color: var(--bs-secondary-color);
     text-align: right;
   }
 
   @media (max-width: 767.98px) {
-    .finder-result {
+    :global(.finder-result) {
       align-items: flex-start;
       flex-direction: column;
       gap: 0.15rem;
     }
 
-    .finder-result small {
+    :global(.finder-result small) {
       text-align: left;
     }
   }

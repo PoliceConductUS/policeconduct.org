@@ -1,0 +1,91 @@
+---
+import "#src/styles/civic-ledger.css";
+// Shared action row for entity profiles (agency, personnel, civil case, …):
+// a primary CTA, optional secondary actions, and a native <details>/<summary>
+// "More actions" overflow menu (no JS required to open/close it).
+//
+// The overflow menu always carries exactly two items — Copy link and View
+// sources & methodology — per the approved redesign decision. `more` exists
+// for callers that need additional overflow items beyond those two.
+//
+// `primary` is optional, and a default <slot /> renders between the
+// prop-driven actions and the "More actions" menu: some entity templates
+// (e.g. the agency profile) drive their primary/secondary actions through
+// PrefillNavButton, which stores a sessionStorage prefill payload before
+// navigating — a shape EntityActionBar's plain {label, href} props can't
+// express. Those callers pass no `primary`/`actions` and instead slot in
+// their own `.entity-action`/`.entity-action-primary`-classed markup,
+// still getting the shared `.entity-actions` row and native details menu.
+//
+// `.entity-action`/`.entity-menu*` styling lives in src/styles/civic-ledger.css
+// (global, not scoped here) precisely so slotted markup from the parent
+// template picks it up too.
+//
+// Port of mockups/civic-index-redesign/agency-entity-v8.html
+// (.entity-actions / .entity-menu) + entity-actions.css.
+interface ActionItem {
+  label: string;
+  href: string;
+}
+
+interface Props {
+  primary?: ActionItem;
+  actions?: ActionItem[];
+  more?: ActionItem[];
+}
+
+const { primary, actions = [], more = [] } = Astro.props;
+
+// No-JS fallback target for "Copy link": the current page itself, so the
+// link is always a real, working anchor even if the shared script never
+// runs. The shared script (src/lib/client/site.js) intercepts the click,
+// copies window.location.href, and prevents the navigation.
+const currentPath = Astro.url?.pathname || "/";
+---
+
+<div class="entity-actions" data-pagefind-ignore>
+  {
+    primary ? (
+      <a class="entity-action entity-action-primary" href={primary.href}>
+        {primary.label}
+      </a>
+    ) : null
+  }
+  {
+    actions.map((action) => (
+      <a class="entity-action" href={action.href}>
+        {action.label}
+      </a>
+    ))
+  }
+  <slot />
+  <details class="entity-menu">
+    <summary class="entity-action entity-menu-toggle">
+      More actions
+      <svg class="entity-menu-chevron" aria-hidden="true" focusable="false">
+        <use href="/icons.svg#chevron-down"></use>
+      </svg>
+    </summary>
+    <ul class="entity-menu-list">
+      <li>
+        <a class="entity-menu-item" href={currentPath} data-copy-link>
+          Copy link
+        </a>
+      </li>
+      <li>
+        <a class="entity-menu-item" href="/data-and-methods/">
+          View sources &amp; methodology
+        </a>
+      </li>
+      {
+        more.map((item) => (
+          <li>
+            <a class="entity-menu-item" href={item.href}>
+              {item.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </details>
+</div>

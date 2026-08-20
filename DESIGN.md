@@ -65,6 +65,16 @@ Color
   - Neutral metadata: muted ink.
 - Do not use decorative gradients, glassmorphism, neon palettes, or purple-blue gradient themes.
 
+Accessibility
+
+- The site must meet WCAG 2.1 AA. Accessibility is part of the trust model, not an add-on.
+- Text contrast: at least `4.5:1` for normal text and `3:1` for large text (`>=24px`, or `>=18.66px` bold). Verify every new text/background pair against these minimums before shipping — including de-emphasized text such as captions, metadata, glosses, and disabled/empty states. "Faint" is not an exemption.
+- Non-text contrast: interactive component boundaries, focus indicators, and meaningful graphics need at least `3:1` against adjacent colors.
+- Never convey meaning by color alone. Role accents (budget/liability/civil) must always be paired with a text label; status must not depend on color only.
+- Every interactive control must be keyboard operable and show a visible focus indicator. Do not remove focus outlines without replacing them with an equivalent visible state.
+- Every control needs an accessible name: real `<label>`s for inputs, `aria-label` for icon-only controls, and meaningful link text (not "click here").
+- Honor `prefers-reduced-motion`: gate non-essential motion behind it.
+
 Copy
 
 - Public-facing copy must target an 8th-grade reading level.
@@ -82,7 +92,7 @@ Components
 - Do not copy/paste page-local versions of heading or metric styles.
 - Generated HTML must not contain inline CSS. Do not use `style` attributes for one-off values, and do not allow Astro to inline component styles into HTML. CSS must ship through external stylesheets because the site generates hundreds of thousands of pages.
 - No nested cards.
-- No placeholder copy that explains missing data. Use neutral empty values such as `--` only where explicitly approved.
+- No hedging copy that announces missing data ("not yet collected", "not yet available", "not on this site yet"). Where a metric is unavailable, show a neutral empty value (`--`/`$--`) paired with a subtle `Help collect this →` recruiting link. This is the standard everywhere data is missing; keep it quiet — a subtle request for help, never a heading or section that overpowers the page.
 
 Verification
 

@@ -1,42 +1,34 @@
 ---
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 ---
 
-<SiteLayout
+<PageShell
   title="Page Not Found | PoliceConduct.org"
   description="PoliceConduct.org page not found."
   pagePath="/404/"
+  canonicalUrl="/404/"
   robots="noindex,follow"
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Page not found", href: "/404/", current: true },
+  ]}
+  heading="Page not found"
+  lede="We could not find that page. The link may have changed, or the page may no longer be available."
 >
-  <main class="flex-grow-1">
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8">
-            <p class="text-uppercase small text-muted mb-2">404 NOT FOUND</p>
-            <h1 class="ipc-page-title mb-3">Page not found</h1>
-            <p class="text-muted">
-              We could not find that page. The link may have changed, or the
-              page may no longer be available.
-            </p>
-            <div class="d-flex flex-wrap gap-2 mt-4">
-              <a class="btn btn-dark rounded-0" href="/">Go home</a>
-              <a class="btn btn-outline-dark rounded-0" href="/find-records/">
-                Find Records
-              </a>
-              <a
-                class="btn btn-outline-dark rounded-0"
-                href="#report-issue"
-                id="report-issue-link"
-              >
-                Report a site issue
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
+  <Fragment slot="actions">
+    <a class="btn btn-dark rounded-0" href="/">Go home</a>
+    <a class="btn btn-outline-dark rounded-0" href="/find-records/">
+      Find Records
+    </a>
+    <a
+      class="btn btn-outline-dark rounded-0"
+      href="#report-issue"
+      id="report-issue-link"
+    >
+      Report a site issue
+    </a>
+  </Fragment>
+
   <script is:inline>
     (function () {
       const link = document.getElementById("report-issue-link");
@@ -47,4 +39,4 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
       link.setAttribute("data-issue-message", message);
     })();
   </script>
-</SiteLayout>
+</PageShell>

@@ -1,21 +1,27 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import EntityActionBar from "#src/components/EntityActionBar.astro";
+import "#src/styles/civic-ledger.css";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
-import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
-import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
-import { getPersonnelImageById } from "#src/lib/personnel-images.js";
+import { getPersonnelImageById } from "#src/lib/entity-images.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
-import { getSiteUrl } from "#src/lib/structured-data.js";
+import {
+  buildContentPageNode,
+  buildGovernmentOrganizationNode,
+  buildPersonNode,
+  buildPublisherOrganization,
+  buildWebSite,
+  getSiteUrl,
+} from "#src/lib/structured-data.js";
 import type { MetricCardItem } from "#src/components/metric-card-types.js";
 
 export async function getStaticPaths() {
@@ -164,9 +170,9 @@ if (!currentAssignment) {
 }
 const hasCurrentAssignment = Boolean(activeAssignment);
 const currentBadge = currentAssignment?.badge_number || null;
-const currentLicenseType =
-  typeof currentAssignment?.license_type === "string"
-    ? currentAssignment.license_type.trim()
+const currentTitle =
+  typeof currentAssignment?.title === "string"
+    ? currentAssignment.title.trim()
     : "";
 const currentAgency = currentAssignment
   ? agenciesById[currentAssignment.agency_id]
@@ -181,9 +187,9 @@ const isPlaceholderPersonnel =
   data.officer.slug === "unknown-personnel-935d1d" ||
   (data.officer.first_name === "Unknown" &&
     data.officer.last_name === "Personnel");
-if (!isPlaceholderPersonnel && !currentLicenseType) {
+if (!isPlaceholderPersonnel && !currentTitle) {
   throw new Error(
-    `Personnel ${data.officer.slug} is missing required license_type on agency_officers ${currentAssignment?.id || "unknown"}`,
+    `Personnel ${data.officer.slug} is missing required title on agency_officers ${currentAssignment?.id || "unknown"}`,
   );
 }
 
@@ -228,8 +234,9 @@ const reportItems = data.reports.map(
 );
 
 const officerPath = `/personnel/${data.officer.slug}/`;
-const officerName =
-  `${data.officer.first_name} ${data.officer.last_name}`.trim();
+const officerName = [data.officer.first_name, data.officer.last_name]
+  .filter(Boolean)
+  .join(" ");
 const deceasedOnValue = data.officer.deceased_on;
 const isDeceased = Boolean(deceasedOnValue);
 const deceasedOnDisplay = deceasedOnValue
@@ -245,7 +252,7 @@ const deceasedPublicMessage =
 const assignmentStatusLabel = hasCurrentAssignment
   ? "Current agency"
   : "Last known agency";
-const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${data.officer.first_name} ${data.officer.last_name} | ${hasCurrentAssignment ? currentAgency!.name : `Last known: ${currentAgency!.name}`}`;
+const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${hasCurrentAssignment ? currentAgency!.name : `Last known: ${currentAgency!.name}`} | PoliceConduct.org`;
 const pageDescription = isDeceased
   ? `${officerName} personnel profile with agency assignments, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
   : `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}, agency assignments, public reports, coverage, and civil litigation records.`;
@@ -286,7 +293,7 @@ const reportLinksSummary = reportItems.map((report) => report.url).join("\n");
 const reportNewPrefillPayload = JSON.stringify({
   officer: {
     department: currentAgencyPrefillName,
-    name: `${data.officer.first_name} ${data.officer.last_name}`,
+    name: officerName,
   },
 } satisfies ReportNewPrefill);
 const addCivilCaseHref = "/civil-cases/new/";
@@ -381,23 +388,6 @@ const totalAssignmentMonths = assignmentHistory.reduce(
 const totalTimeAsOfficer = totalAssignmentMonths
   ? formatMonthsDuration(totalAssignmentMonths)
   : unavailableValue;
-const civilCaseYears = Object.entries(
-  civilCasesWithPaths.reduce<Record<string, number>>((counts, caseItem) => {
-    if (!caseItem.filed_date) {
-      return counts;
-    }
-    const year = String(new Date(caseItem.filed_date).getFullYear());
-    if (year === "NaN") {
-      return counts;
-    }
-    counts[year] = (counts[year] || 0) + 1;
-    return counts;
-  }, {}),
-)
-  .map(([year, count]) => ({ count, year }))
-  .sort((left, right) => left.year.localeCompare(right.year));
-const civilCaseYearBarValue = (count: number) =>
-  Math.min(100, Math.max(12, count * 18));
 const personnelMetricCards: MetricCardItem[] = [
   {
     ...(associatedAgencyCount > 1
@@ -464,60 +454,6 @@ const personnelMetricCards: MetricCardItem[] = [
     value: formatCount(reportItems.length),
   },
 ];
-const sampleRows = {
-  salary: [
-    { label: "2021", value: "$--", width: 0 },
-    { label: "2022", value: "$--", width: 0 },
-    { label: "2023", value: "$--", width: 0 },
-    { label: "2024", value: "$--", width: 0 },
-    { label: "2025", value: "$--", width: 0 },
-  ],
-  arrests: [
-    { label: "Jan", value: "--", width: 0 },
-    { label: "Apr", value: "--", width: 0 },
-    { label: "Jul", value: "--", width: 0 },
-    { label: "Oct", value: "--", width: 0 },
-  ],
-  liability: [
-    { label: "2021", value: "$--", width: 0 },
-    { label: "2022", value: "$--", width: 0 },
-    { label: "2023", value: "$--", width: 0 },
-    { label: "2024", value: "$--", width: 0 },
-    { label: "2025", value: "$--", width: 0 },
-  ],
-  civilCases: [
-    { label: "2021", value: "--", width: 0 },
-    { label: "2022", value: "--", width: 0 },
-    { label: "2023", value: "--", width: 0 },
-    { label: "2024", value: "--", width: 0 },
-    { label: "2025", value: "--", width: 0 },
-  ],
-  stopsEthnicity: [
-    { label: "Jan", value: "--", width: 0 },
-    { label: "Apr", value: "--", width: 0 },
-    { label: "Jul", value: "--", width: 0 },
-    { label: "Oct", value: "--", width: 0 },
-  ],
-  dayNight: [
-    { label: "Jan", value: "--", width: 0 },
-    { label: "Apr", value: "--", width: 0 },
-    { label: "Jul", value: "--", width: 0 },
-    { label: "Oct", value: "--", width: 0 },
-  ],
-  charges: [
-    { label: "Jan", value: "--", width: 0 },
-    { label: "Apr", value: "--", width: 0 },
-    { label: "Jul", value: "--", width: 0 },
-    { label: "Oct", value: "--", width: 0 },
-  ],
-  fatalForce: [
-    { label: "2021", value: "--", width: 0 },
-    { label: "2022", value: "--", width: 0 },
-    { label: "2023", value: "--", width: 0 },
-    { label: "2024", value: "--", width: 0 },
-    { label: "2025", value: "--", width: 0 },
-  ],
-};
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(officerPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
@@ -526,472 +462,284 @@ const agencyUrl = currentAgency
   : null;
 const organization =
   currentAgency && agencyUrl
-    ? {
-        "@type": "GovernmentOrganization",
-        "@id": `${agencyUrl}#organization`,
-        name: currentAgency.name,
+    ? buildGovernmentOrganizationNode({
+        siteUrl,
         url: agencyUrl,
-      }
+        name: currentAgency.name,
+      })
     : null;
-const person = {
-  "@type": "Person",
-  "@id": `${pageUrl}#person`,
-  name: officerName,
+const person = buildPersonNode({
+  siteUrl,
   url: pageUrl,
-  ...(hasMappedPersonnelImage
-    ? { image: new URL(personnelImageSrc, siteUrl).toString() }
-    : {}),
-  mainEntityOfPage: { "@id": profilePageId },
-  ...(isDeceased ? { deathDate: String(deceasedOnValue) } : {}),
-  ...(organization ? { worksFor: { "@id": organization["@id"] } } : {}),
-};
+  name: officerName,
+  image: hasMappedPersonnelImage
+    ? new URL(personnelImageSrc, siteUrl).toString()
+    : undefined,
+  mainEntityOfPageId: profilePageId,
+  deathDate: isDeceased ? String(deceasedOnValue) : undefined,
+  worksForId: organization ? organization["@id"] : undefined,
+});
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": new URL("/", siteUrl).toString(),
-      url: new URL("/", siteUrl).toString(),
-      name: "PoliceConduct.org",
-    },
-    {
-      "@type": "ProfilePage",
-      "@id": profilePageId,
-      url: pageUrl,
+    buildWebSite(siteUrl),
+    buildContentPageNode({
+      siteUrl,
+      type: "ProfilePage",
+      id: profilePageId,
+      pageUrl,
       name: pageTitle,
       description: pageDescription,
-      isPartOf: { "@id": new URL("/", siteUrl).toString() },
-      mainEntity: { "@id": person["@id"] },
+      mainEntityId: person["@id"],
       dateModified: String(data.officer.updated_at),
-    },
+    }),
+    buildPublisherOrganization(siteUrl),
     ...(organization ? [organization] : []),
     person,
   ],
 };
 ---
 
-<SiteLayout
+<PageShell
   title={pageTitle}
   description={pageDescription}
   pagePath={`/personnel/${data.officer.slug}/`}
+  canonicalUrl={`/personnel/${data.officer.slug}/`}
   structuredData={structuredData}
+  searchable={false}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Personnel", href: "/personnel/" },
+    { label: officerName, href: officerPath },
+  ]}
 >
   <PrefillBootstrap />
-  <main class="personnel-dashboard">
-    <section class="personnel-profile-surface">
-      <div class="container personnel-profile-container">
-        <div class="personnel-topbar">
-          <Breadcrumbs
-            items={[
-              { label: "Personnel", href: "/personnel/" },
-              { label: officerName, href: officerPath, current: true },
-            ]}
-            className="personnel-breadcrumbs"
+  <Fragment slot="hero">
+    <div class="personnel-profile-hero">
+      <div class="personnel-profile-title">
+        <h1 class="ipc-page-title">{officerName}</h1>
+        <p class="personnel-current-line">
+          Current agency: <a href={currentAgencyPath}>{currentAgency!.name}</a>
+          <span aria-hidden="true"> · </span>
+          {currentAgencyLocation}
+        </p>
+        <p class="personnel-profile-note">
+          Combined career data aggregated across all known agencies.
+        </p>
+        {
+          isDeceased ? (
+            <div class="personnel-status-note" role="status">
+              <strong>Status: Deceased.</strong>
+              <span>{deceasedPublicMessage}</span>
+            </div>
+          ) : null
+        }
+        <EntityActionBar>
+          <HelpCollectDataButton
+            context={officerName}
+            sourcePage={officerPath}
+            topic="Personnel"
           />
-          <div class="personnel-actions">
-            <HelpCollectDataButton
-              context={officerName}
-              sourcePage={officerPath}
-              topic="Personnel"
-            />
-            <PrefillNavButton
-              to={suggestEditHref}
-              payload={suggestEditPrefillPayload}
-              class="personnel-action"
-            >
-              Suggest edit
-            </PrefillNavButton>
-            <PrefillNavButton
-              to="/report/new/"
-              payload={reportNewPrefillPayload}
-              class="personnel-action personnel-action-primary"
-            >
-              Share your experience
-            </PrefillNavButton>
-          </div>
-        </div>
-
-        <div class="personnel-profile-hero">
-          <div class="personnel-profile-title">
-            <h1 class="ipc-page-title">{officerName}</h1>
-            <p class="personnel-current-line">
-              Current agency: <a href={currentAgencyPath}
-                >{currentAgency!.name}</a
-              >
-              <span aria-hidden="true"> · </span>
-              {currentAgencyLocation}
-            </p>
-            <p class="personnel-profile-note">
-              Combined career data aggregated across all known agencies.
-            </p>
-            {
-              isDeceased ? (
-                <div class="personnel-status-note" role="status">
-                  <strong>Status: Deceased.</strong>
-                  <span>{deceasedPublicMessage}</span>
-                </div>
-              ) : null
-            }
-          </div>
-
-          <figure class="personnel-portrait">
-            <img
-              src={personnelImageSrc}
-              alt={`Portrait of ${data.officer.first_name} ${data.officer.last_name}`}
-            />
-          </figure>
-
-          <aside class="personnel-profile-aside" aria-label="Personnel summary">
-            <dl>
-              <div>
-                <dt>License Type</dt>
-                <dd>{currentLicenseType}</dd>
-              </div>
-              <div>
-                <dt>Status</dt>
-                <dd>
-                  <span class="personnel-status-pill">{statusLabel}</span>
-                </dd>
-              </div>
-              <div>
-                <dt>{metricLabels.totalTimeAsOfficer}</dt>
-                <dd>{totalTimeAsOfficer}</dd>
-              </div>
-              {
-                currentBadge ? (
-                  <div>
-                    <dt>Badge Number</dt>
-                    <dd>{currentBadge}</dd>
-                  </div>
-                ) : null
-              }
-              <div>
-                <dt>{assignmentStatusLabel}</dt>
-                <dd><a href={currentAgencyPath}>{currentAgency!.name}</a></dd>
-              </div>
-              <div>
-                <dt>Updated</dt>
-                <dd>{formatShortDate(data.officer.updated_at)}</dd>
-              </div>
-            </dl>
-          </aside>
-        </div>
-
-        <MetricGrid metrics={personnelMetricCards} />
-
-        <div class="personnel-section-grid">
-          <OutcomesByIncomePanel />
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>1. Salary History</h2>
-              <p>Annual base salary, Previous 5 years</p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample salary history chart"
-              rows={sampleRows.salary}
-            />
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>2. Arrests Over Time</h2>
-              <p>Low-level arrests and other arrests, Previous 12 months</p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample arrests over time chart, Previous 12 months"
-              rows={sampleRows.arrests}
-            />
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>3. Liability Costs Over Time</h2>
-              <p>Total liability costs, Previous 5 years</p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample liability costs over time chart, Previous 5 years"
-              rows={sampleRows.liability}
-            />
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>4. Civil Cases and Claims Over Time</h2>
-              <p>Active and historical cases, Previous 5 years</p>
-            </div>
-            {
-              civilCaseYears.length ? (
-                <div class="personnel-year-bars">
-                  {civilCaseYears.map((row) => (
-                    <div>
-                      <span>{row.year}</span>
-                      <meter
-                        min="0"
-                        max="100"
-                        value={civilCaseYearBarValue(row.count)}
-                        aria-label={`${row.year} civil case count`}
-                      >
-                        {row.count}
-                      </meter>
-                      <strong>{row.count}</strong>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <SampleMeasurementChart
-                  ariaLabel="Sample civil cases and claims chart"
-                  rows={sampleRows.civilCases}
-                />
-              )
-            }
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>5. {metricLabels.racialBreakdownStopsArrests}</h2>
-              <p>
-                Stops and arrests by recorded race or ethnicity, Previous 12
-                months
-              </p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample stops by ethnicity chart"
-              rows={sampleRows.stopsEthnicity}
-            />
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>6. {metricLabels.daylightNighttimeStops}</h2>
-              <p>Stops by time of day and recorded race, Previous 12 months</p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample stops by time of day chart"
-              rows={sampleRows.dayNight}
-            />
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>7. {metricLabels.topChargeCategories}</h2>
-              <p>Arrest charge categories, Previous 12 months</p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample top charge categories chart"
-              rows={sampleRows.charges}
-            />
-          </section>
-
-          <section class="personnel-panel">
-            <div class="personnel-panel-heading">
-              <h2>8. Fatal Force Incidents, Previous 5 years</h2>
-              <p>People by age group, dogs and other animals</p>
-            </div>
-            <SampleMeasurementChart
-              ariaLabel="Sample fatal force incidents chart"
-              rows={sampleRows.fatalForce}
-            />
-          </section>
-
-          <section class="personnel-panel personnel-panel-wide">
-            <div class="personnel-panel-heading">
-              <h2>9. Civil Cases</h2>
-              <p>Cases connected through agency assignments.</p>
-            </div>
-            {
-              civilCasesWithPaths.length ? (
-                <div class="personnel-table-wrap">
-                  <table class="personnel-mini-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Case Name</th>
-                        <th scope="col">Filed</th>
-                        <th scope="col">Court</th>
-                        <th scope="col">Cause</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {civilCasesWithPaths.slice(0, 4).map((caseItem) => (
-                        <tr>
-                          <th scope="row">
-                            <a href={caseItem.caseUrl}>
-                              {caseItem.title || "Civil case"}
-                            </a>
-                          </th>
-                          <td>
-                            {caseItem.filed_date
-                              ? formatShortDate(caseItem.filed_date)
-                              : ""}
-                          </td>
-                          <td>{caseItem.court || ""}</td>
-                          <td>{caseItem.cause_number || ""}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : null
-            }
-          </section>
-
-          <section class="personnel-panel personnel-panel-wide">
-            <div class="personnel-panel-heading">
-              <h2>10. {metricLabels.agencies}</h2>
-              <p>Known agency assignments linked to this profile.</p>
-            </div>
-            {
-              assignmentHistory.length ? (
-                <div class="personnel-table-wrap">
-                  <table class="personnel-mini-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Agency</th>
-                        <th scope="col">License Type</th>
-                        <th scope="col">Start Date</th>
-                        <th scope="col">End Date</th>
-                        <th scope="col">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {assignmentHistory.map((entry) => (
-                        <tr>
-                          <th scope="row">
-                            <a href={requireAgencyCanonicalPath(entry.agency)}>
-                              {entry.agency.name}
-                            </a>
-                          </th>
-                          <td>{entry.license_type || currentLicenseType}</td>
-                          <td>
-                            {entry.start_date
-                              ? formatShortDate(entry.start_date)
-                              : ""}
-                          </td>
-                          <td>
-                            {entry.end_date
-                              ? formatShortDate(entry.end_date)
-                              : "Present"}
-                          </td>
-                          <td>
-                            <span class="personnel-status-pill">
-                              {entry.end_date ? "Completed" : "Active"}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : null
-            }
-          </section>
-        </div>
-
-        <div class="personnel-footer-actions">
           <PrefillNavButton
-            to={addCivilCaseHref}
-            payload={addCivilCasePrefillPayload}
+            to={suggestEditHref}
+            payload={suggestEditPrefillPayload}
             class="personnel-action"
           >
-            Add a civil case
+            Suggest edit
           </PrefillNavButton>
           <PrefillNavButton
-            to={pastEmployerHref}
-            payload={pastEmployerPrefillPayload}
-            class="personnel-action"
+            to="/report/new/"
+            payload={reportNewPrefillPayload}
+            class="personnel-action personnel-action-primary"
           >
-            Submit past employer
+            Share your experience
           </PrefillNavButton>
-          <PrefillNavButton
-            to="/about/contact/"
-            payload={{
-              whoami: "Subscriber",
-              message: `Please notify me when this profile changes: /personnel/${data.officer.slug}/`,
-            }}
-            data-testid="personnel-subscribe-link"
-            class="personnel-action"
-          >
-            Notify Me
-          </PrefillNavButton>
-          <PrefillNavButton
-            to={claimProfileHref}
-            payload={claimProfilePrefillPayload}
-            data-testid="personnel-claim-profile-link"
-            class="personnel-action"
-          >
-            Claim Profile
-          </PrefillNavButton>
-        </div>
+        </EntityActionBar>
       </div>
+
+      <figure class="personnel-portrait">
+        <img src={personnelImageSrc} alt={`Portrait of ${officerName}`} />
+      </figure>
+
+      <aside class="personnel-profile-aside" aria-label="Personnel summary">
+        <dl>
+          <div>
+            <dt>Status</dt>
+            <dd>
+              <span class="personnel-status-pill">{statusLabel}</span>
+            </dd>
+          </div>
+          <div>
+            <dt>{metricLabels.totalTimeAsOfficer}</dt>
+            <dd>{totalTimeAsOfficer}</dd>
+          </div>
+          {
+            currentBadge ? (
+              <div>
+                <dt>Badge Number</dt>
+                <dd>{currentBadge}</dd>
+              </div>
+            ) : null
+          }
+          <div>
+            <dt>{assignmentStatusLabel}</dt>
+            <dd><a href={currentAgencyPath}>{currentAgency!.name}</a></dd>
+          </div>
+          <div>
+            <dt>Updated</dt>
+            <dd>{formatShortDate(data.officer.updated_at)}</dd>
+          </div>
+        </dl>
+      </aside>
+    </div>
+  </Fragment>
+
+  <MetricGrid metrics={personnelMetricCards} />
+
+  <div class="personnel-section-grid">
+    <section class="personnel-panel personnel-panel-wide">
+      <div class="personnel-panel-heading">
+        <h2>Civil Cases</h2>
+        <p>Cases connected through agency assignments.</p>
+      </div>
+      {
+        civilCasesWithPaths.length ? (
+          <div class="personnel-table-wrap">
+            <table class="personnel-mini-table">
+              <thead>
+                <tr>
+                  <th scope="col">Case Name</th>
+                  <th scope="col">Filed</th>
+                  <th scope="col">Court</th>
+                  <th scope="col">Cause</th>
+                </tr>
+              </thead>
+              <tbody>
+                {civilCasesWithPaths.slice(0, 4).map((caseItem) => (
+                  <tr>
+                    <th scope="row">
+                      <a href={caseItem.caseUrl}>
+                        {caseItem.title || "Civil case"}
+                      </a>
+                    </th>
+                    <td>
+                      {caseItem.filed_date
+                        ? formatShortDate(caseItem.filed_date)
+                        : ""}
+                    </td>
+                    <td>{caseItem.court || ""}</td>
+                    <td>{caseItem.cause_number || ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null
+      }
     </section>
-  </main>
-</SiteLayout>
+
+    <section class="personnel-panel personnel-panel-wide">
+      <div class="personnel-panel-heading">
+        <h2>{metricLabels.agencies}</h2>
+        <p>Known agency assignments linked to this profile.</p>
+      </div>
+      {
+        assignmentHistory.length ? (
+          <div class="personnel-table-wrap">
+            <table class="personnel-mini-table">
+              <thead>
+                <tr>
+                  <th scope="col">Agency</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Start Date</th>
+                  <th scope="col">End Date</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assignmentHistory.map((entry) => (
+                  <tr>
+                    <th scope="row">
+                      <a href={requireAgencyCanonicalPath(entry.agency)}>
+                        {entry.agency.name}
+                      </a>
+                    </th>
+                    <td>{entry.title || currentTitle}</td>
+                    <td>
+                      {entry.start_date
+                        ? formatShortDate(entry.start_date)
+                        : ""}
+                    </td>
+                    <td>
+                      {entry.end_date
+                        ? formatShortDate(entry.end_date)
+                        : "Present"}
+                    </td>
+                    <td>
+                      <span class="personnel-status-pill">
+                        {entry.end_date ? "Completed" : "Active"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null
+      }
+    </section>
+  </div>
+
+  <div class="personnel-footer-actions">
+    <PrefillNavButton
+      to={addCivilCaseHref}
+      payload={addCivilCasePrefillPayload}
+      class="personnel-action"
+    >
+      Add a civil case
+    </PrefillNavButton>
+    <PrefillNavButton
+      to={pastEmployerHref}
+      payload={pastEmployerPrefillPayload}
+      class="personnel-action"
+    >
+      Submit past employer
+    </PrefillNavButton>
+    <PrefillNavButton
+      to="/about/contact/"
+      payload={{
+        whoami: "Subscriber",
+        message: `Please notify me when this profile changes: /personnel/${data.officer.slug}/`,
+      }}
+      data-testid="personnel-subscribe-link"
+      class="personnel-action"
+    >
+      Notify Me
+    </PrefillNavButton>
+    <PrefillNavButton
+      to={claimProfileHref}
+      payload={claimProfilePrefillPayload}
+      data-testid="personnel-claim-profile-link"
+      class="personnel-action"
+    >
+      Claim Profile
+    </PrefillNavButton>
+  </div>
+</PageShell>
 
 <style>
-  .personnel-dashboard {
-    background: #f7f9fd;
-    color: #071842;
-  }
-
-  .personnel-dashboard-main {
-    padding: 1.25rem 0 2.5rem;
-  }
-
-  .personnel-dashboard-main > .container {
-    max-width: 1240px;
-  }
-
-  .personnel-heading {
-    align-items: flex-start;
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: minmax(0, 1fr) auto;
-    margin-bottom: 1rem;
-  }
-
-  .personnel-kicker {
-    color: #33456f;
-    font-size: 0.8125rem;
-    font-weight: 750;
-    letter-spacing: 0.04em;
-    line-height: 1.3;
-    margin: 0 0 0.35rem;
-    text-transform: uppercase;
-  }
-
-  .personnel-heading h1 {
-    color: #071842;
-    margin: 0;
-  }
-
-  .personnel-heading p {
-    color: #071842;
-    font-size: 1rem;
-    line-height: 1.5;
-    margin: 0.55rem 0 0;
-  }
-
-  .personnel-heading a,
-  .personnel-panel a,
-  .personnel-detail-card a {
-    color: #064cfb;
+  .personnel-panel a {
+    color: var(--ipc-color-teal);
     font-weight: 750;
     text-decoration: none;
   }
 
-  .personnel-actions,
-  .personnel-secondary-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-    justify-content: flex-end;
-  }
-
   .personnel-action {
     align-items: center;
-    background: #fbfcff;
-    border: 1px solid #d5deeb;
+    background: var(--ipc-color-paper);
+    border: 1px solid var(--ipc-color-rule);
     border-radius: 0.35rem;
-    color: #071842;
+    color: var(--ipc-color-ink);
     display: inline-flex;
     font-size: 0.8125rem;
     font-weight: 750;
@@ -1003,16 +751,16 @@ const structuredData = {
   }
 
   .personnel-action-primary {
-    background: #071842;
-    border-color: #071842;
-    color: #f8faff;
+    background: var(--ipc-color-ink);
+    border-color: var(--ipc-color-ink);
+    color: var(--ipc-color-paper);
   }
 
   .personnel-status-note {
-    background: #fbfcff;
-    border: 1px solid #d5deeb;
+    background: var(--ipc-color-paper);
+    border: 1px solid var(--ipc-color-rule);
     border-radius: 0.45rem;
-    color: #33456f;
+    color: var(--ipc-color-ink-muted);
     font-size: 0.875rem;
     line-height: 1.5;
     margin-top: 0.85rem;
@@ -1024,22 +772,14 @@ const structuredData = {
     display: block;
   }
 
-  .personnel-overview {
-    align-items: stretch;
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: minmax(11rem, 14rem) minmax(0, 1fr);
-    margin-bottom: 1rem;
-  }
-
   .personnel-portrait {
     margin: 0;
   }
 
   .personnel-portrait img {
     aspect-ratio: 4 / 5;
-    background: #e8edf6;
-    border: 1px solid #d5deeb;
+    background: var(--ipc-color-rule);
+    border: 1px solid var(--ipc-color-rule);
     border-radius: 0.45rem;
     display: block;
     height: 100%;
@@ -1048,56 +788,18 @@ const structuredData = {
   }
 
   .personnel-portrait figcaption {
-    color: #33456f;
+    color: var(--ipc-color-ink-muted);
     font-size: 0.75rem;
     line-height: 1.35;
     margin-top: 0.45rem;
   }
 
-  .personnel-detail-card,
-  .personnel-metric-card,
   .personnel-panel {
-    background: #fbfcff;
-    border: 1px solid #d5deeb;
+    background: var(--ipc-color-paper);
+    border: 1px solid var(--ipc-color-rule);
     border-radius: 0.45rem;
-    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
-  }
-
-  .personnel-detail-card {
-    padding: 1rem 1.1rem;
-  }
-
-  .personnel-detail-card dl {
-    display: grid;
-    gap: 0;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin: 0;
-  }
-
-  .personnel-detail-card div {
-    border-bottom: 1px solid #d9e1ee;
-    display: grid;
-    gap: 0.5rem;
-    grid-template-columns: minmax(8rem, 11rem) minmax(0, 1fr);
-    padding: 0.75rem 0;
-  }
-
-  .personnel-detail-card div:nth-last-child(-n + 2) {
-    border-bottom: 0;
-  }
-
-  .personnel-detail-card dt {
-    color: #33456f;
-    font-size: 0.8125rem;
-    font-weight: 750;
-    margin: 0;
-  }
-
-  .personnel-detail-card dd {
-    color: #071842;
-    font-size: 0.875rem;
-    font-weight: 650;
-    margin: 0;
+    box-shadow: 0 1px 2px
+      color-mix(in oklch, var(--ipc-color-ink) 4%, transparent);
   }
 
   .personnel-status-pill {
@@ -1112,7 +814,6 @@ const structuredData = {
     padding: 0.25rem 0.55rem;
   }
 
-  .personnel-metric-grid,
   .personnel-section-grid {
     display: grid;
     gap: 1rem;
@@ -1120,63 +821,12 @@ const structuredData = {
     margin-bottom: 1rem;
   }
 
-  .personnel-metric-card {
-    display: grid;
-    gap: 0.65rem;
-    grid-template-columns: 2.2rem minmax(0, 1fr);
-    min-height: 7.1rem;
-    padding: 0.85rem;
-  }
-
-  .personnel-metric-icon {
-    height: 2.15rem;
-    margin-top: 0.2rem;
-    width: 2.15rem;
-  }
-
-  .personnel-blue {
-    color: #174bff;
-  }
-
-  .personnel-green {
-    color: #087f3b;
-  }
-
-  .personnel-purple {
-    color: #5b2df5;
-  }
-
-  .personnel-metric-card p,
   .personnel-panel-heading p {
-    color: #33456f;
+    color: var(--ipc-color-ink-muted);
     font-size: 0.8125rem;
     font-weight: 500;
     line-height: 1.45;
     margin: 0;
-  }
-
-  .personnel-metric-card p {
-    color: #071842;
-    font-size: 0.875rem;
-    font-weight: 750;
-    line-height: 1.3;
-  }
-
-  .personnel-metric-card strong {
-    color: #071842;
-    display: block;
-    font-size: 1.5rem;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.12;
-    margin: 0.25rem 0 0.3rem;
-  }
-
-  .personnel-metric-card span {
-    color: #33456f;
-    display: block;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    line-height: 1.45;
   }
 
   .personnel-section-grid {
@@ -1193,255 +843,8 @@ const structuredData = {
   }
 
   .personnel-panel h2 {
-    color: #071842;
+    color: var(--ipc-color-ink);
     margin: 0 0 0.25rem;
-  }
-
-  .personnel-record-list,
-  .personnel-history-list {
-    display: grid;
-    gap: 0.7rem;
-  }
-
-  .personnel-unavailable-chart {
-    align-items: center;
-    background:
-      linear-gradient(#d9e1ee 1px, transparent 1px) 0 0 / 100% 25%,
-      linear-gradient(90deg, #eef3fa 1px, transparent 1px) 0 0 / 12.5% 100%;
-    border-bottom: 1px solid #b8c4d8;
-    border-left: 1px solid #b8c4d8;
-    display: grid;
-    justify-items: center;
-    margin-top: 1rem;
-    min-height: 9rem;
-    text-align: center;
-  }
-
-  .personnel-unavailable-chart strong {
-    color: #071842;
-    font-size: 1.7rem;
-    font-weight: 800;
-    line-height: 1;
-  }
-
-  .personnel-unavailable-chart span {
-    color: #33456f;
-    font-size: 0.8125rem;
-    font-weight: 650;
-    line-height: 1.35;
-    margin-top: -2.6rem;
-    max-width: 16rem;
-  }
-
-  .personnel-line-chart {
-    margin-top: 0.85rem;
-  }
-
-  .personnel-line-chart svg {
-    display: block;
-    height: auto;
-    overflow: visible;
-    width: 100%;
-  }
-
-  .personnel-line-chart text {
-    fill: #071842;
-    font-size: 0.58rem;
-    font-weight: 750;
-  }
-
-  .personnel-chart-grid-line,
-  .personnel-chart-axis {
-    fill: none;
-    stroke: #d9e1ee;
-    stroke-width: 1;
-  }
-
-  .personnel-chart-axis {
-    stroke: #b8c4d8;
-  }
-
-  .personnel-chart-line {
-    fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 3;
-  }
-
-  .personnel-blue-line {
-    stroke: #174bff;
-  }
-
-  .personnel-red-line {
-    stroke: #ff2020;
-  }
-
-  .personnel-chart-legend,
-  .personnel-chart-years {
-    align-items: center;
-    color: #071842;
-    display: flex;
-    font-size: 0.68rem;
-    font-weight: 700;
-    gap: 0.8rem;
-    line-height: 1.2;
-  }
-
-  .personnel-chart-legend {
-    margin-bottom: 0.35rem;
-  }
-
-  .personnel-chart-years {
-    color: #33456f;
-    justify-content: space-between;
-    margin-top: 0.1rem;
-  }
-
-  .personnel-chart-legend i,
-  .personnel-legend i {
-    border-radius: 999px;
-    display: inline-block;
-    height: 0.55rem;
-    margin-right: 0.35rem;
-    width: 0.55rem;
-  }
-
-  .personnel-blue-bg {
-    background: #174bff;
-  }
-
-  .personnel-red-bg {
-    background: #ff2020;
-  }
-
-  .personnel-yellow-bg {
-    background: #ffb703;
-  }
-
-  .personnel-navy-bg {
-    background: #082777;
-  }
-
-  .personnel-horizontal-bars {
-    display: grid;
-    gap: 0.62rem;
-    margin-top: 1rem;
-  }
-
-  .personnel-year-bars {
-    display: grid;
-    gap: 0.7rem;
-    margin-top: 1rem;
-  }
-
-  .personnel-horizontal-bars div,
-  .personnel-year-bars div {
-    align-items: center;
-    display: grid;
-    gap: 0.65rem;
-    grid-template-columns: minmax(5.5rem, 8rem) minmax(0, 1fr) auto;
-  }
-
-  .personnel-horizontal-bars span,
-  .personnel-horizontal-bars strong,
-  .personnel-year-bars span,
-  .personnel-year-bars strong {
-    color: #071842;
-    font-size: 0.75rem;
-    font-weight: 750;
-    line-height: 1.25;
-  }
-
-  .personnel-horizontal-bars i,
-  .personnel-year-bars meter {
-    appearance: none;
-    background: #174bff;
-    border-radius: 0.1rem;
-    display: block;
-    height: 0.85rem;
-    width: 100%;
-  }
-
-  .personnel-year-bars meter::-webkit-meter-bar {
-    background: #e7edf7;
-    border: 0;
-    border-radius: 0.1rem;
-  }
-
-  .personnel-year-bars meter::-webkit-meter-optimum-value {
-    background: #174bff;
-    border-radius: 0.1rem;
-  }
-
-  .personnel-year-bars meter::-moz-meter-bar {
-    background: #174bff;
-    border-radius: 0.1rem;
-  }
-
-  .personnel-charge-bars div {
-    grid-template-columns: minmax(5rem, 7.5rem) minmax(0, 1fr) 2.25rem;
-  }
-
-  .personnel-donut-wrap {
-    align-items: center;
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: 9rem minmax(0, 1fr);
-    margin-top: 1rem;
-  }
-
-  .personnel-donut {
-    align-items: center;
-    aspect-ratio: 1;
-    background: conic-gradient(#ffb703 0 46%, #082777 46% 100%);
-    border-radius: 999px;
-    display: grid;
-    justify-items: center;
-    padding: 1.1rem;
-    position: relative;
-  }
-
-  .personnel-donut::after {
-    background: #fbfcff;
-    border-radius: 999px;
-    content: "";
-    inset: 1.25rem;
-    position: absolute;
-  }
-
-  .personnel-donut strong,
-  .personnel-donut span {
-    color: #071842;
-    position: relative;
-    z-index: 1;
-  }
-
-  .personnel-donut strong {
-    align-self: end;
-    font-size: 1.125rem;
-    font-weight: 800;
-    line-height: 1;
-  }
-
-  .personnel-donut span {
-    align-self: start;
-    font-size: 0.7rem;
-    font-weight: 750;
-  }
-
-  .personnel-legend {
-    display: grid;
-    gap: 0.65rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .personnel-legend li {
-    color: #071842;
-    font-size: 0.78rem;
-    font-weight: 750;
-    line-height: 1.35;
   }
 
   .personnel-table-wrap {
@@ -1456,8 +859,8 @@ const structuredData = {
 
   .personnel-mini-table th,
   .personnel-mini-table td {
-    border-top: 1px solid #d9e1ee;
-    color: #071842;
+    border-top: 1px solid var(--ipc-color-rule);
+    color: var(--ipc-color-ink);
     font-size: 0.75rem;
     line-height: 1.35;
     padding: 0.55rem 0.45rem;
@@ -1466,57 +869,10 @@ const structuredData = {
   }
 
   .personnel-mini-table thead th {
-    color: #33456f;
+    color: var(--ipc-color-ink-muted);
     font-size: 0.68rem;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-  }
-
-  .personnel-record,
-  .personnel-history-row {
-    border-top: 1px solid #d9e1ee;
-    display: grid;
-    gap: 0.75rem;
-    grid-template-columns: minmax(0, 1fr) auto;
-    padding-top: 0.75rem;
-  }
-
-  .personnel-record h3,
-  .personnel-history-row h3 {
-    margin: 0;
-  }
-
-  .personnel-record p,
-  .personnel-history-row p,
-  .personnel-history-row span,
-  .personnel-empty {
-    color: #33456f;
-    font-size: 0.8125rem;
-    line-height: 1.45;
-    margin: 0.25rem 0 0;
-  }
-
-  .personnel-record > a {
-    align-self: start;
-    font-size: 0.8125rem;
-  }
-
-  .personnel-history-row > div:last-child {
-    display: grid;
-    gap: 0.15rem;
-    justify-items: end;
-    text-align: right;
-  }
-
-  .personnel-secondary-actions {
-    justify-content: flex-start;
-    margin: 1.25rem 0;
-  }
-
-  @media (min-width: 768px) {
-    .personnel-metric-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
   }
 
   @media (min-width: 992px) {
@@ -1529,86 +885,16 @@ const structuredData = {
     }
   }
 
-  @media (min-width: 1200px) {
-    .personnel-metric-grid {
-      grid-template-columns: repeat(8, minmax(0, 1fr));
-    }
-  }
-
   @media (max-width: 991.98px) {
-    .personnel-heading,
-    .personnel-overview,
-    .personnel-detail-card dl {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .personnel-actions {
-      justify-content: flex-start;
-    }
-
-    .personnel-detail-card div:nth-last-child(-n + 2) {
-      border-bottom: 1px solid #d9e1ee;
-    }
-
-    .personnel-detail-card div:last-child {
-      border-bottom: 0;
-    }
-
     .personnel-portrait {
       max-width: 14rem;
     }
   }
 
   @media (max-width: 575.98px) {
-    .personnel-heading h1 {
-    }
-
-    .personnel-detail-card div,
-    .personnel-record,
-    .personnel-history-row,
-    .personnel-donut-wrap,
-    .personnel-horizontal-bars div {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .personnel-history-row > div:last-child {
-      justify-items: start;
-      text-align: left;
-    }
-
     .personnel-action {
       width: 100%;
     }
-  }
-
-  .personnel-profile-surface {
-    padding: 1rem 0 1.5rem;
-  }
-
-  .personnel-profile-container {
-    max-width: 1240px;
-  }
-
-  .personnel-breadcrumbs {
-    margin-bottom: 0.55rem;
-  }
-
-  .personnel-topbar {
-    align-items: flex-start;
-    display: grid;
-    gap: 0.75rem;
-    grid-template-columns: minmax(0, 1fr) auto;
-    margin-bottom: 0.65rem;
-  }
-
-  .personnel-topbar .personnel-breadcrumbs {
-    margin-bottom: 0;
-  }
-
-  .personnel-topbar .personnel-actions {
-    display: flex;
-    gap: 0.55rem;
-    justify-content: flex-end;
   }
 
   .personnel-profile-hero {
@@ -1620,12 +906,12 @@ const structuredData = {
   }
 
   .personnel-profile-title h1 {
-    color: #071842;
+    color: var(--ipc-color-ink);
     margin: 0;
   }
 
   .personnel-current-line {
-    color: #071842;
+    color: var(--ipc-color-ink);
     font-size: 0.95rem;
     font-weight: 750;
     line-height: 1.45;
@@ -1633,7 +919,7 @@ const structuredData = {
   }
 
   .personnel-profile-note {
-    color: #0f3172;
+    color: var(--ipc-color-ink-soft);
     font-size: 0.93rem;
     line-height: 1.45;
     margin: 0.7rem 0 0;
@@ -1641,7 +927,7 @@ const structuredData = {
 
   .personnel-current-line a,
   .personnel-profile-aside a {
-    color: #064cfb;
+    color: var(--ipc-color-teal);
     font-weight: 750;
     text-decoration: none;
   }
@@ -1664,7 +950,7 @@ const structuredData = {
   }
 
   .personnel-profile-aside dl div {
-    border-bottom: 1px solid #d9e1ee;
+    border-bottom: 1px solid var(--ipc-color-rule);
     display: grid;
     gap: 0.8rem;
     grid-template-columns: minmax(7.5rem, 10rem) minmax(0, 1fr);
@@ -1673,7 +959,7 @@ const structuredData = {
 
   .personnel-profile-aside dt,
   .personnel-profile-aside dd {
-    color: #071842;
+    color: var(--ipc-color-ink);
     font-size: 0.75rem;
     margin: 0;
   }
@@ -1695,28 +981,11 @@ const structuredData = {
       justify-self: start;
       width: 10rem;
     }
-
-    .personnel-topbar {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .personnel-topbar .personnel-actions {
-      justify-content: flex-start;
-    }
   }
 
   @media (max-width: 575.98px) {
-    .personnel-profile-title h1 {
-    }
-
     .personnel-profile-aside dl div {
       grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
-  @media (min-width: 1200px) {
-    .personnel-metric-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 </style>

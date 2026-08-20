@@ -1,9 +1,15 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { withDb } from "../src/lib/db.js";
+import { US_STATE_TILES } from "../src/lib/geo/states.ts";
 
 const distDir = path.resolve("dist");
 const outputPath = path.join(distDir, "_redirect-map.json");
+
+// Keep in sync with src/lib/pagination.ts PAGE_SIZE. That module can't be
+// imported here (this script runs under plain node, not the Astro/Vite
+// TypeScript resolver), so the value is mirrored as a constant instead.
+const PERSONNEL_PAGE_SIZE = 50;
 
 const normalizePath = (value) => {
   const trimmed = String(value || "").trim();
@@ -135,6 +141,34 @@ const redirects = await withDb(async (client) => {
     )
   ).rows;
 
+  // Mirrors the per-officer "most recent active assignment" grouping done by
+  // loadPersonnelSummaries() (src/lib/data/personnel.ts): for each officer,
+  // pick their active (end_date is null) agency assignment with the latest
+  // start_date, then bucket by that agency's state. Reimplemented as SQL
+  // here (rather than imported) because personnel.ts pulls in TS modules
+  // that resolve via Astro/tsconfig path aliases, which plain node can't
+  // resolve when this script runs standalone.
+  const personnelCategoryCounts = (
+    await client.query(
+      `
+        with active_assignments as (
+          select distinct on (ao.officer_id)
+            ao.officer_id,
+            lower(a.state) as category
+          from public.agency_officers ao
+          join public.agency a on a.id = ao.agency_id
+          where ao.end_date is null
+            and a.state is not null
+          order by ao.officer_id, ao.start_date desc
+        )
+        select category, count(*)::int as total
+        from active_assignments
+        group by category
+        order by category
+      `,
+    )
+  ).rows;
+
   const reportsBySlug = new Map(
     reportRows.map((report) => [report.slug, report]),
   );
@@ -206,6 +240,24 @@ const redirects = await withDb(async (client) => {
       to: normalizePath("/find-records/"),
       status: 301,
       source: "root collection route retired",
+    },
+    {
+      from: normalizePath("/privacy-policy/"),
+      to: normalizePath("/legal-notice/privacy/"),
+      status: 301,
+      source: "legacy static route (Search Console 404 export)",
+    },
+    {
+      from: normalizePath("/partner/prosecutor/"),
+      to: normalizePath("/partner/"),
+      status: 301,
+      source: "legacy static route (Search Console 404 export)",
+    },
+    {
+      from: normalizePath("/partner/peace-officer-standards-and-training/"),
+      to: normalizePath("/partner/"),
+      status: 301,
+      source: "legacy static route (Search Console 404 export)",
     },
     {
       from: normalizePath("/law-enforcement-agency/"),
@@ -281,6 +333,37 @@ const redirects = await withDb(async (client) => {
         source: "state-scoped civil case pagination retired",
       },
     ]),
+    // Full parity with the retired src/pages/personnel/[category]/index.astro
+    // route: it built one redirect stub per US_STATE_TILES entry plus
+    // "federal", regardless of whether that state currently has any
+    // agencies in the database.
+    ...[
+      ...US_STATE_TILES.map((state) => state.code.toLowerCase()),
+      "federal",
+    ].map((category) => ({
+      from: normalizePath(`/personnel/${category}/`),
+      to: normalizePath(`/${category}/`),
+      status: 301,
+      source: "personnel state route retired",
+    })),
+    // Full parity with the retired
+    // src/pages/personnel/[category]/page/[...page].astro route: it
+    // generated a redirect stub for every pagination page 2..N per
+    // category, where N is derived from the personnel count for that
+    // category chunked by PAGE_SIZE.
+    ...personnelCategoryCounts.flatMap(({ category, total }) => {
+      const pageCount = Math.ceil(Number(total) / PERSONNEL_PAGE_SIZE);
+      const pages = [];
+      for (let page = 2; page <= pageCount; page += 1) {
+        pages.push({
+          from: normalizePath(`/personnel/${category}/page/${page}/`),
+          to: normalizePath(`/${category}/`),
+          status: 301,
+          source: "personnel pagination route retired",
+        });
+      }
+      return pages;
+    }),
     {
       from: "/videos/*",
       to: "/find-records/",

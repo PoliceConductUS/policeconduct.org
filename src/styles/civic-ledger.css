@@ -1,0 +1,1108 @@
+/* ==========================================================================
+   Civic ledger design system — shared vocabulary for state, county, place,
+   agency, browse, topic, and detail pages. DESIGN.md: reuse these classes;
+   do not copy page-local versions.
+   ========================================================================== */
+
+.civic-index-page {
+  background: var(--ipc-color-paper-raised);
+  color: var(--ipc-color-ink);
+}
+
+.civic-index-page-main {
+  padding: 1.35rem 0 2.5rem;
+}
+
+.civic-index-page-main > .container {
+  max-width: 1240px;
+}
+
+/* ---- lede ---- */
+
+.civic-lede {
+  padding-bottom: 1.6rem;
+}
+
+.civic-kicker {
+  color: var(--ipc-color-ink-soft);
+  font-size: var(--ipc-type-caption);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.civic-lede h1 {
+  margin: 0;
+  max-width: 22ch;
+}
+
+.civic-lede-sub {
+  color: var(--ipc-color-ink-soft);
+  font-size: 1.0625rem;
+  margin: 0.85rem 0 0;
+  max-width: 54ch;
+}
+
+.civic-lede-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+
+/* ---- merged stat band ---- */
+
+.stat-strip {
+  border-top: 1px solid var(--ipc-color-rule);
+  border-bottom: 1px solid var(--ipc-color-rule);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(18rem, 1.4fr);
+}
+
+.stat-strip--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(18rem, 1.4fr);
+}
+
+/* No trailing jump/drill cell (agency profile pages) — even columns. */
+.stat-strip--even {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.stat-strip--equal5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+/* ---- drill-down emphasis ----
+   On geography pages the ideal next action is drilling into child entities
+   (counties -> places -> agencies). That cell leads the strip (via CSS
+   `order`) and carries a quiet teal wash + eyebrow so it reads as "start
+   here" without shouting. */
+.stat-strip--drill-first {
+  grid-template-columns: minmax(18rem, 1.4fr) repeat(4, minmax(0, 1fr));
+}
+
+.stat-strip--drill-first.stat-strip--three {
+  grid-template-columns: minmax(18rem, 1.4fr) repeat(3, minmax(0, 1fr));
+}
+
+.stat-cell--drill {
+  background: var(--ipc-color-teal-wash);
+  border-left: none;
+  order: -1;
+}
+
+/* The DOM-first data cell is no longer the visual first once the drill
+   cell reorders itself — restore its divider. */
+.stat-strip--drill-first .stat-cell:first-child {
+  border-left: 1px solid var(--ipc-color-rule);
+  padding-left: clamp(1.1rem, 1rem + 1vw, 1.75rem);
+}
+
+.stat-drill-eyebrow {
+  color: var(--ipc-color-teal-ink);
+  display: block;
+  font-size: var(--ipc-type-caption);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+}
+
+.stat-cell--drill .ledger-label {
+  color: var(--ipc-color-teal-ink);
+}
+
+.stat-cell--drill .jump-browse a {
+  color: var(--ipc-color-teal-ink);
+  font-weight: 700;
+}
+
+.stat-cell {
+  border-left: 1px solid var(--ipc-color-rule);
+  padding: 1.35rem clamp(1.1rem, 1rem + 1vw, 1.75rem);
+  position: relative;
+}
+
+.stat-cell:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.stat-cell[data-role]::before {
+  bottom: 0;
+  content: "";
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 3px;
+}
+
+.stat-cell[data-role="civil"]::before {
+  background: var(--ipc-role-civil);
+}
+
+.stat-cell[data-role="budget"]::before {
+  background: var(--ipc-role-budget);
+}
+
+.stat-cell[data-role="liability"]::before {
+  background: var(--ipc-role-liability);
+}
+
+.stat-cell[data-role="neutral"]::before {
+  background: transparent;
+}
+
+/* Mute the role accent while a metric is unavailable — color should mark
+   present data only, never draw the eye to an empty cell. Equal
+   specificity to the role-color rules above (class + attribute selector
+   either way), so this must stay declared after them to win by source
+   order. Applies to both the stat strip and the topic row: any ledger
+   tile carrying `data-role` gets this treatment while `.is-pending`. */
+.is-pending[data-role]::before {
+  background: var(--ipc-color-rule);
+}
+
+a.stat-cell {
+  color: inherit;
+  display: block;
+  text-decoration: none;
+}
+
+.stat-cell--link:hover {
+  background: rgba(23, 75, 255, 0.05);
+}
+
+.ledger-value {
+  display: block;
+  font-size: 2.15rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stat-cell.is-pending .ledger-value {
+  color: var(--ipc-color-ink-faint);
+}
+
+.ledger-label {
+  color: var(--ipc-color-ink-soft);
+  display: block;
+  font-size: var(--ipc-type-small);
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+.stat-cell.is-pending .ledger-label {
+  color: var(--ipc-color-ink-faint);
+}
+
+.ledger-meta {
+  color: var(--ipc-color-ink-faint);
+  display: block;
+  font-size: var(--ipc-type-caption);
+  margin-top: 0.2rem;
+}
+
+.stat-action {
+  color: var(--ipc-color-teal);
+  display: block;
+  font-size: var(--ipc-type-caption);
+  font-weight: 700;
+  margin-top: 0.55rem;
+}
+
+.stat-action a {
+  color: var(--ipc-color-teal);
+  text-decoration: none;
+}
+
+.stat-cell--link:hover .stat-action,
+.stat-action a:hover {
+  text-decoration: underline;
+}
+
+/* ---- jump cell ---- */
+
+.jump-form {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.jump-select {
+  appearance: none;
+  background: var(--ipc-color-paper-raised)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%2334496b' d='M4 6l4 4 4-4z'/%3E%3C/svg%3E")
+    no-repeat right 0.75rem center;
+  background-size: 0.8rem;
+  border: 1px solid var(--ipc-color-rule-strong);
+  color: var(--ipc-color-ink);
+  flex: 1;
+  font-size: 1rem;
+  min-width: 0;
+  padding: 0.6rem 1.7rem 0.6rem 0.6rem;
+}
+
+.jump-select:focus {
+  border-color: var(--ipc-color-teal);
+  box-shadow: 0 0 0 1px var(--ipc-color-teal);
+  outline: none;
+}
+
+.jump-go {
+  background: var(--ipc-color-ink);
+  border: 1px solid var(--ipc-color-ink);
+  color: var(--ipc-color-paper-raised);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: var(--ipc-type-small);
+  font-weight: 700;
+  padding: 0 0.85rem;
+}
+
+.jump-go:hover {
+  background: var(--ipc-color-teal);
+  border-color: var(--ipc-color-teal);
+}
+
+.jump-status {
+  color: var(--ipc-color-ink-soft);
+  font-size: var(--ipc-type-caption);
+  margin: 0.6rem 0 0;
+  min-height: 1.3rem;
+}
+
+.jump-browse {
+  font-size: var(--ipc-type-caption);
+  font-weight: 700;
+  margin: 0.6rem 0 0;
+}
+
+.jump-browse a {
+  color: var(--ipc-color-teal);
+  text-decoration: none;
+}
+
+.jump-browse a:hover {
+  text-decoration: underline;
+}
+
+/* ---- section rhythm ---- */
+
+.civic-section {
+  border-bottom: 1px solid var(--ipc-color-rule);
+  padding: 2.1rem 0;
+}
+
+.civic-section--last {
+  border-bottom: none;
+}
+
+/* The last civic section in a shell body drops its divider automatically, so
+   pages with a conditional final section don't have to hand-place
+   civic-section--last on it. */
+.civic-index-page-main .civic-section:last-of-type {
+  border-bottom: none;
+}
+
+.civic-section-head {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+}
+
+.civic-section-head h2 {
+  margin: 0;
+}
+
+.civic-section-head p {
+  color: var(--ipc-color-ink-soft);
+  font-size: var(--ipc-type-small);
+  margin: 0.3rem 0 0;
+  max-width: 46ch;
+}
+
+.civic-section-link {
+  font-size: var(--ipc-type-small);
+  font-weight: 700;
+}
+
+.civic-section-link span {
+  color: var(--ipc-color-ink-soft);
+  font-weight: 600;
+}
+
+.civic-section-link a {
+  color: var(--ipc-color-teal);
+  text-decoration: none;
+}
+
+.civic-section-link a:hover {
+  text-decoration: underline;
+}
+
+.civic-context-copy {
+  color: var(--ipc-color-ink-soft);
+  margin: 0 0 1.1rem;
+  max-width: 66ch;
+}
+
+.civic-context-copy a {
+  color: var(--ipc-color-teal);
+}
+
+/* ---- pending topic row ---- */
+
+.topic-row {
+  border-left: 1px solid var(--ipc-color-rule);
+  border-top: 1px solid var(--ipc-color-rule);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.topic-cell {
+  border-bottom: 1px solid var(--ipc-color-rule);
+  border-right: 1px solid var(--ipc-color-rule);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  justify-content: space-between;
+  min-height: 7rem;
+  padding: 1.1rem 1.25rem;
+  position: relative;
+}
+
+.topic-cell[data-role]::before {
+  bottom: 0;
+  content: "";
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 3px;
+}
+
+.topic-cell[data-role="budget"]::before {
+  background: var(--ipc-role-budget);
+}
+
+.topic-cell[data-role="liability"]::before {
+  background: var(--ipc-role-liability);
+}
+
+.topic-cell[data-role="civil"]::before {
+  background: var(--ipc-role-civil);
+}
+
+.topic-cell[data-role="neutral"]::before {
+  background: transparent;
+}
+
+/* Hover wash on interactive topic/stat tiles, suppressed while pending
+   (an empty cell isn't clickable data, just a contribution prompt). */
+.ledger-interactive:hover:not(.is-pending) {
+  background: var(--ipc-color-teal-wash);
+}
+
+.ledger-interactive.is-pending {
+  cursor: default;
+}
+
+/* Plain-language gloss under a metric label — keeps unfamiliar terms
+   ("outcomes by income") legible and tells volunteers what a cell will
+   hold once collected. */
+.topic-gloss {
+  color: var(--ipc-color-ink-faint);
+  display: block;
+  font-size: var(--ipc-type-caption);
+  font-weight: 400;
+  margin-top: 0.2rem;
+}
+
+.topic-cell .ledger-label {
+  color: var(--ipc-color-ink-faint);
+  margin-top: 0;
+}
+
+/* Wraps the label/value/gloss group inside a topic-cell (an <a> when the
+   cell links to a populated detail page, a plain <div> when it doesn't —
+   never a dead `href="#"`). */
+.topic-cell .topic-link {
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  text-decoration: none;
+}
+
+.topic-value {
+  color: var(--ipc-color-ink-faint);
+  display: block;
+  font-size: var(--ipc-type-small);
+  font-weight: 600;
+}
+
+.topic-foot {
+  font-size: var(--ipc-type-caption);
+  font-weight: 700;
+}
+
+.topic-foot a {
+  color: var(--ipc-color-teal);
+  text-decoration: none;
+}
+
+.topic-foot a:hover {
+  text-decoration: underline;
+}
+
+/* ---- licensing fact list ---- */
+
+.fact-list {
+  border-left: 1px solid var(--ipc-color-rule);
+  border-top: 1px solid var(--ipc-color-rule);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  margin: 0;
+}
+
+.fact-list > div {
+  border-bottom: 1px solid var(--ipc-color-rule);
+  border-right: 1px solid var(--ipc-color-rule);
+  padding: 0.85rem 1rem;
+}
+
+.fact-list dt {
+  color: var(--ipc-color-ink-muted);
+  font-size: var(--ipc-type-caption);
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.fact-list dd {
+  font-size: var(--ipc-type-small);
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ---- decertification status ledger ---- */
+
+.status-ledger {
+  border-left: 1px solid var(--ipc-color-rule);
+  border-top: 1px solid var(--ipc-color-rule);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.status-cell {
+  border-bottom: 1px solid var(--ipc-color-rule);
+  border-right: 1px solid var(--ipc-color-rule);
+  padding: 0.85rem 1rem;
+}
+
+.status-summary {
+  background: var(--ipc-color-paper);
+}
+
+.status-heading {
+  color: var(--ipc-color-ink-muted);
+  font-size: var(--ipc-type-caption);
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0 0 0.4rem;
+}
+
+.status-summary-value {
+  display: block;
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.status-mark {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.status-mark.present {
+  color: var(--ipc-role-budget);
+}
+
+.status-mark.missing {
+  color: var(--ipc-color-deep-red);
+}
+
+.status-mark.unknown {
+  color: var(--ipc-color-ink-faint);
+}
+
+.civic-limit-note {
+  background: var(--ipc-color-paper-raised);
+  border-left: 4px solid var(--ipc-role-budget);
+  color: var(--ipc-color-ink-soft);
+  font-size: var(--ipc-type-small);
+  margin: 1.5rem 0 0;
+  padding: 0.8rem 0.9rem;
+}
+
+/* ---- responsive ---- */
+
+@media (max-width: 991.98px) {
+  .stat-strip,
+  .stat-strip--three {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-cell:nth-child(odd) {
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .jump-cell {
+    border-left: none;
+    border-top: 1px solid var(--ipc-color-rule);
+    grid-column: 1 / -1;
+    padding-left: 0;
+  }
+
+  .status-ledger {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575.98px) {
+  .stat-strip,
+  .stat-strip--three {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-cell {
+    border-left: none;
+    border-top: 1px solid var(--ipc-color-rule);
+    padding-left: 0;
+  }
+
+  .stat-cell:first-child {
+    border-top: none;
+  }
+
+  .status-ledger {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- agency/entity additions ---- */
+
+.agency-overview-page {
+  background: var(--ipc-color-paper-raised);
+  color: var(--ipc-color-ink);
+}
+
+.agency-overview {
+  min-height: calc(100vh - 3.25rem);
+  padding: 1.35rem 0 clamp(2.5rem, 5vw, 4rem);
+}
+
+.agency-overview > .container {
+  max-width: 1240px;
+}
+
+.agency-overview .breadcrumb {
+  margin-bottom: 1.15rem;
+}
+
+.entity-hero {
+  padding-bottom: 1.6rem;
+}
+
+.entity-hero-grid {
+  align-items: start;
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Two-column hero (header + right-hand aside rail), shared by the entity
+   profile pages and PageShell's optional `aside` slot. Single column on
+   narrow viewports; splits at the same breakpoint as the profile hero. */
+@media (min-width: 900px) {
+  .page-hero-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.34fr);
+  }
+}
+
+.entity-hero h1 {
+  margin: 0;
+  max-width: 34ch;
+}
+
+.agency-overview-federal {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0.75rem 0 0;
+}
+
+.agency-overview-federal span {
+  color: var(--ipc-color-ink-muted);
+  font-size: var(--ipc-type-caption);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.entity-contact {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+  max-width: 54rem;
+}
+
+.entity-address {
+  color: var(--ipc-color-ink-soft);
+  font-size: 1.0625rem;
+  font-style: normal;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.entity-contact-links {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--ipc-type-small);
+  gap: 0.3rem 1rem;
+  margin: 0;
+}
+
+.entity-contact-links a {
+  color: var(--ipc-color-teal);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.entity-contact-links a:hover {
+  text-decoration: underline;
+}
+
+.entity-contact-person {
+  color: var(--ipc-color-ink-muted);
+  font-size: var(--ipc-type-small);
+  margin: 0;
+}
+
+/* Contact name + email are linked in the data model — render as one visual
+   group (the email travels with the person, not the agency links row). */
+.entity-contact-person a {
+  color: var(--ipc-color-teal-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.entity-contact-person a:hover {
+  text-decoration: underline;
+}
+
+.entity-contact-person a:focus-visible {
+  outline: 2px solid var(--ipc-color-teal-ink);
+  outline-offset: 2px;
+}
+
+.entity-contact-person .sep {
+  color: var(--ipc-color-rule-strong);
+  margin: 0 0.3rem;
+}
+
+.entity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1.1rem;
+}
+
+/* ---- entity action bar buttons + "More actions" overflow menu ----
+   Global (not component-scoped) so any entity template's `.entity-actions`
+   row gets the same look, whether its primary/secondary actions are the
+   plain hrefs src/components/EntityActionBar.astro renders directly, or
+   custom markup (e.g. PrefillNavButton buttons) a page slots into it —
+   see EntityActionBar.astro's default <slot />. */
+.entity-action {
+  align-items: center;
+  border: 1px solid var(--ipc-color-rule-strong);
+  color: var(--ipc-color-ink);
+  display: inline-flex;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  gap: 0.35rem;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.7rem;
+  text-decoration: none;
+}
+
+.entity-action:hover {
+  background: var(--ipc-color-teal-wash);
+  border-color: var(--ipc-color-teal-ink);
+}
+
+.entity-action:focus-visible {
+  outline: 2px solid var(--ipc-color-teal-ink);
+  outline-offset: 2px;
+}
+
+.entity-action-primary {
+  background: var(--ipc-color-deep-red);
+  border-color: var(--ipc-color-deep-red);
+  color: var(--ipc-color-paper);
+}
+
+.entity-action-primary:hover {
+  background: var(--ipc-color-ink);
+  border-color: var(--ipc-color-ink);
+}
+
+.entity-menu {
+  display: inline-flex;
+  position: relative;
+}
+
+/* The toggle is a <summary>; reuse .entity-action styling and hide the
+   native disclosure marker so it reads as a button. */
+.entity-menu-toggle {
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  list-style: none;
+}
+
+.entity-menu-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.entity-menu-toggle::marker {
+  content: "";
+}
+
+.entity-menu-chevron {
+  height: 0.7rem;
+  transition: transform 0.12s ease;
+  width: 0.7rem;
+}
+
+.entity-menu[open] .entity-menu-chevron {
+  transform: rotate(180deg);
+}
+
+.entity-menu-list {
+  background: var(--ipc-color-paper-raised);
+  border: 1px solid var(--ipc-color-rule-strong);
+  box-shadow: 0 6px 20px -12px
+    color-mix(in oklab, var(--ipc-color-ink) 45%, transparent);
+  left: 0;
+  list-style: none;
+  margin: 0;
+  min-width: 15rem;
+  padding: 0.3rem 0;
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  z-index: 20;
+}
+
+.entity-menu:not([open]) .entity-menu-list {
+  display: none;
+}
+
+.entity-menu-item {
+  color: var(--ipc-color-ink);
+  display: block;
+  font-size: var(--ipc-type-small);
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  text-decoration: none;
+}
+
+.entity-menu-item:hover {
+  background: var(--ipc-color-teal-wash);
+  color: var(--ipc-color-teal-ink);
+}
+
+/* Keyboard focus needs a real, high-contrast indicator (WCAG 2.4.11), not
+   just the hover wash — and NOT --ipc-color-rule*, which fails 3:1
+   non-text contrast. Use :focus (not :focus-visible): a future roving
+   arrow-key implementation would move focus programmatically, which
+   :focus-visible would not reliably match in every browser. */
+.entity-menu-item:focus {
+  background: var(--ipc-color-teal-wash);
+  color: var(--ipc-color-teal-ink);
+  outline: 2px solid var(--ipc-color-teal-ink);
+  outline-offset: -2px;
+}
+
+.entity-updated {
+  /* var(--ipc-color-ink-faint) measured ~4.14:1 on --ipc-color-paper (fails AA); migrated to
+     --ipc-color-ink-faint, which is guaranteed >=4.5:1 on paper. */
+  color: var(--ipc-color-ink-faint);
+  font-size: var(--ipc-type-caption);
+  margin: 0.9rem 0 0;
+}
+
+.entity-side {
+  align-self: start;
+  background: var(--ipc-color-paper);
+  border: 1px solid var(--ipc-color-rule);
+  padding: 1.1rem 1.25rem;
+}
+
+.entity-side h2 {
+  font-size: var(--ipc-type-h4);
+  margin: 0.15rem 0 0;
+}
+
+.entity-side-list {
+  display: grid;
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.entity-side-list li {
+  align-items: center;
+  border-top: 1px solid var(--ipc-color-rule);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.6rem 0;
+}
+
+.entity-side-list li span {
+  color: var(--ipc-color-ink-soft);
+  font-size: var(--ipc-type-small);
+}
+
+.entity-side .entity-side-link {
+  background: none;
+  border: none;
+  color: var(--ipc-color-teal);
+  cursor: pointer;
+  font-size: var(--ipc-type-small);
+  font-weight: 700;
+  padding: 0;
+  text-decoration: none;
+}
+
+.entity-side .entity-side-link:hover {
+  text-decoration: underline;
+}
+
+.agency-coming-soon {
+  color: var(--ipc-color-ink-soft);
+  display: block;
+  font-size: var(--ipc-type-caption);
+  font-weight: 700;
+  margin-top: 0.5rem;
+  min-height: 1.15rem;
+}
+
+.recent-list {
+  display: grid;
+}
+
+.recent-list a {
+  border-top: 1px solid var(--ipc-color-rule);
+  color: var(--ipc-color-ink);
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem 0;
+  text-decoration: none;
+}
+
+.recent-list-title {
+  color: var(--ipc-color-teal);
+  font-size: var(--ipc-type-small);
+  font-weight: 700;
+}
+
+.recent-list a:hover .recent-list-title {
+  text-decoration: underline;
+}
+
+.recent-list-meta {
+  color: var(--ipc-color-ink-faint);
+  font-size: var(--ipc-type-caption);
+}
+
+/* ---- alphabetical gazetteer (browse-all pages) ---- */
+
+.alpha-nav {
+  column-gap: clamp(1.5rem, 1rem + 2vw, 3rem);
+  column-width: 11rem;
+}
+
+.alpha-group {
+  break-inside: avoid;
+  margin-bottom: 1.4rem;
+}
+
+.alpha-group h2 {
+  border-bottom: 1px solid var(--ipc-color-rule);
+  color: var(--ipc-color-ink-faint);
+  font-size: var(--ipc-type-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  margin: 0 0 0.45rem;
+  padding-bottom: 0.3rem;
+  text-transform: uppercase;
+}
+
+.alpha-group ul {
+  display: grid;
+  gap: 0.3rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.alpha-group a {
+  color: var(--ipc-color-teal);
+  font-size: var(--ipc-type-small);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.alpha-group a:hover {
+  text-decoration: underline;
+}
+
+.alpha-group .alpha-item-meta {
+  color: var(--ipc-color-ink-faint);
+  font-weight: 400;
+}
+
+/* ---- record tables (list sub-pages) ---- */
+
+.list-tools {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.list-count {
+  color: var(--ipc-color-ink-faint);
+  font-size: var(--ipc-type-caption);
+  white-space: nowrap;
+}
+
+.record-table {
+  border-collapse: collapse;
+  font-size: var(--ipc-type-small);
+  width: 100%;
+}
+
+.record-table th {
+  border-bottom: 1px solid var(--ipc-color-rule-strong);
+  color: var(--ipc-color-ink-muted);
+  font-size: var(--ipc-type-caption);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.6rem 1rem 0.6rem 0;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.record-table td {
+  border-bottom: 1px solid var(--ipc-color-rule);
+  padding: 0.6rem 1rem 0.6rem 0;
+  vertical-align: top;
+}
+
+.record-table td.num,
+.record-table th.num {
+  font-variant-numeric: tabular-nums;
+  padding-right: 0;
+  text-align: right;
+}
+
+.record-table a.row-link {
+  color: var(--ipc-color-teal);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.record-table a.row-link:hover {
+  text-decoration: underline;
+}
+
+.record-table .muted {
+  color: var(--ipc-color-ink-faint);
+}
+
+.list-foot {
+  align-items: baseline;
+  color: var(--ipc-color-ink-faint);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--ipc-type-caption);
+  gap: 1rem;
+  justify-content: space-between;
+  margin-top: 0.9rem;
+}
+
+/* ---- detail pages (report / civil case) ---- */
+
+.detail-layout {
+  display: grid;
+  gap: clamp(1.25rem, 1rem + 2vw, 2.5rem);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.detail-body {
+  max-width: 66ch;
+}
+
+.detail-body h3 {
+  font-size: var(--ipc-type-h4);
+  margin: 1.6rem 0 0;
+}
+
+.detail-body p {
+  color: var(--ipc-color-ink-soft);
+  margin: 0.6rem 0 0;
+}
+
+.detail-aside {
+  align-self: start;
+  background: var(--ipc-color-paper);
+  border: 1px solid var(--ipc-color-rule);
+  padding: 1.1rem 1.25rem;
+}
+
+.detail-aside h2 {
+  font-size: var(--ipc-type-h4);
+  margin: 0.15rem 0 0;
+}
+
+.detail-aside ul {
+  color: var(--ipc-color-ink-soft);
+  display: grid;
+  font-size: var(--ipc-type-small);
+  gap: 0.45rem;
+  margin: 0.6rem 0 0;
+  padding-left: 1.1rem;
+}
+
+@media (min-width: 900px) {
+  .detail-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.36fr);
+  }
+}

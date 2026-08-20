@@ -42,12 +42,12 @@ const requiredTables = {
       "id",
       "agency_id",
       "officer_id",
-      "license_type",
+      "title",
       "badge_number",
       "start_date",
       "end_date",
     ],
-    notNull: ["id", "officer_id", "license_type"],
+    notNull: ["id", "officer_id", "title"],
   },
   agency_phone_numbers: {
     columns: ["id", "agency_id", "phone_number", "created_at"],
@@ -179,7 +179,7 @@ const requiredTables = {
   },
   officers: {
     columns: ["id", "slug", "first_name", "middle_name", "last_name", "suffix"],
-    notNull: ["id", "slug", "first_name", "last_name"],
+    notNull: ["id", "slug", "first_name"],
     uniqueColumnSets: [["slug"]],
   },
   officers_stats: {
@@ -222,6 +222,17 @@ const requiredTables = {
       "longitude",
       "created_at",
       "updated_at",
+      // Collection-to-display parity fields (align-report-pages) are
+      // pending the PoliceConductUS/intake migration and intentionally
+      // NOT yet in this contract: submitter_relationship, interaction_type,
+      // setting, case_number, complaint_filed, bodycam_requested, feelings,
+      // incident_time. Also pending: charge_outcome — a future editor-added
+      // column, distinct from the pre-existing submitter-entered `charges`
+      // column (already live in the database; not required by this contract
+      // either, but tolerated the same way). See
+      // openspec/changes/align-report-pages/tasks report for the full
+      // migration SQL. The report-detail loader (`select r.*` + nullable-
+      // string coercion) tolerates their absence today.
     ],
     notNull: ["id", "slug", "title"],
     uniqueColumnSets: [["slug"]],

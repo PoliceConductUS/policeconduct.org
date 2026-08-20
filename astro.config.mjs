@@ -58,7 +58,7 @@ const SITEMAP_EXCLUDED_PATHS = new Set([
   "/personnel/suggest-edit/",
   "/report/new/",
   "/status/",
-  "/volunteer/",
+  "/verify/",
 ]);
 let sitemapLastmodMapPromise;
 
@@ -76,6 +76,11 @@ export default defineConfig({
   build: {
     inlineStylesheets: "never",
   },
+  // Scope component styles with short `astro-<hash>` class markers wrapped in
+  // `:where()` rather than the default `data-astro-cid-<hash>` attributes.
+  // Same zero specificity as the default, but far fewer bytes per element —
+  // meaningful across the ~150k statically rendered personnel pages.
+  scopedStyleStrategy: "where",
   vite: {
     optimizeDeps: {
       include: [

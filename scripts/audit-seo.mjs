@@ -10,6 +10,12 @@ import {
 const DIST_DIR = path.resolve("dist");
 const CANONICAL_HOST = "https://www.policeconduct.org";
 const MAX_PAGES = Number(process.env.SEO_AUDIT_MAX_PAGES || "5000");
+const SITEMAP_HEAD_BYTES = 8192;
+const SITEMAP_HEAD_BYTES_FALLBACK = 65536;
+const SITEMAP_CONCURRENCY = Number(
+  process.env.SEO_AUDIT_SITEMAP_CONCURRENCY || "128",
+);
+const SITEMAP_SAMPLE_LIMIT = 10;
 const FRESH_BUILD_REQUIRED_MESSAGE =
   "Fresh full build required. Run `npm run build` before `npm run audit` or `npm run audit:seo`. Audits do not build automatically, and stale or partial dist/ output is not supported.";
 
@@ -41,6 +47,68 @@ const readText = async (filePath) => {
 const extract = (html, regex) => {
   const match = html.match(regex);
   return match ? match[1] : null;
+};
+
+const JSON_LD_BLOCK_RE =
+  /<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+
+// Pure validator: given a page's HTML, return the JSON-LD findings as
+// { level, message } objects without touching shared state. A block must be
+// parseable JSON and carry a recognizable schema.org shape (a top-level @type,
+// or an @graph of typed nodes). Parse failures and untyped payloads are errors;
+// a missing top-level @context is a warning (valid when the node is a graph
+// member). The caller decides what to do with the findings.
+const collectJsonLdFindings = (html, route) => {
+  const findings = [];
+  const err = (message) => findings.push({ level: "error", message });
+  const warn = (message) => findings.push({ level: "warning", message });
+
+  JSON_LD_BLOCK_RE.lastIndex = 0;
+  let match;
+  let index = 0;
+  while ((match = JSON_LD_BLOCK_RE.exec(html)) !== null) {
+    index += 1;
+    const raw = match[1].trim();
+    if (!raw) {
+      err(`Empty JSON-LD block (#${index}) on ${route}`);
+      continue;
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (error) {
+      err(
+        `Invalid JSON-LD (#${index}) on ${route}: ${error?.message || error}`,
+      );
+      continue;
+    }
+    const nodes = Array.isArray(parsed) ? parsed : [parsed];
+    for (const node of nodes) {
+      if (!node || typeof node !== "object") {
+        err(`JSON-LD (#${index}) on ${route} is not an object`);
+        continue;
+      }
+      const graph = Array.isArray(node["@graph"]) ? node["@graph"] : null;
+      if (graph) {
+        if (graph.length === 0) {
+          err(`JSON-LD @graph (#${index}) on ${route} is empty`);
+        }
+        for (const member of graph) {
+          if (!member || typeof member !== "object" || !member["@type"]) {
+            err(
+              `JSON-LD @graph member (#${index}) on ${route} is missing @type`,
+            );
+          }
+        }
+      } else if (!node["@type"]) {
+        err(`JSON-LD (#${index}) on ${route} is missing @type`);
+      }
+      if (!node["@context"]) {
+        warn(`JSON-LD (#${index}) on ${route} is missing @context`);
+      }
+    }
+  }
+  return findings;
 };
 
 const ensureRobotsAndSitemap = async () => {
@@ -178,7 +246,231 @@ const auditHtml = async () => {
         addError(`Expected noindex,follow on form page ${normalizedRoute}`);
       }
     }
+
+    for (const finding of collectJsonLdFindings(html, normalizedRoute)) {
+      (finding.level === "error" ? addError : addWarning)(finding.message);
+    }
   }
+};
+
+const stripTrailingSlash = (value) =>
+  value.length > 1 && value.endsWith("/") ? value.slice(0, -1) : value;
+
+const normalizeUrlForCompare = (rawUrl) => {
+  const hostNormalized = rawUrl.replace(
+    /^https?:\/\/(www\.)?policeconduct\.org/i,
+    CANONICAL_HOST,
+  );
+  return stripTrailingSlash(hostNormalized);
+};
+
+function* extractLocsSync(xmlText) {
+  const re = /<loc>([^<]+)<\/loc>/g;
+  let match;
+  while ((match = re.exec(xmlText)) !== null) {
+    yield match[1];
+  }
+}
+
+// Async generator: yields every <loc> URL across the sitemap set without
+// ever holding more than one sitemap file's text (or the small index file)
+// in memory at a time. The ~170k individual URLs are streamed one-by-one
+// to the caller rather than collected into an array.
+const collectSitemapUrls = async function* () {
+  const indexPath = path.join(DIST_DIR, "sitemap-index.xml");
+  const indexText = await readText(indexPath);
+
+  if (indexText) {
+    const childUrls = [...extractLocsSync(indexText)];
+    if (childUrls.length === 0) {
+      addError("sitemap-index.xml contains no child <sitemap><loc> entries.");
+      return;
+    }
+    for (const childUrl of childUrls) {
+      let fileName;
+      try {
+        fileName = path.basename(new URL(childUrl).pathname);
+      } catch {
+        addError(
+          `sitemap-index.xml has an unparseable sitemap URL: ${childUrl}`,
+        );
+        continue;
+      }
+      const childPath = path.join(DIST_DIR, fileName);
+      const childText = await readText(childPath);
+      if (!childText) {
+        addError(
+          `sitemap-index.xml references ${fileName}, but dist/${fileName} was not found.`,
+        );
+        continue;
+      }
+      yield* extractLocsSync(childText);
+    }
+    return;
+  }
+
+  const singleText = await readText(path.join(DIST_DIR, "sitemap.xml"));
+  if (singleText) {
+    yield* extractLocsSync(singleText);
+    return;
+  }
+
+  addError(
+    "No sitemap found for sitemap-hygiene audit (dist/sitemap-index.xml or dist/sitemap.xml).",
+  );
+};
+
+const processWithConcurrency = async (iterable, limit, worker) => {
+  const iterator =
+    typeof iterable[Symbol.asyncIterator] === "function"
+      ? iterable[Symbol.asyncIterator]()
+      : iterable[Symbol.iterator]();
+
+  const runWorker = async () => {
+    for (;;) {
+      const { value, done } = await iterator.next();
+      if (done) {
+        return;
+      }
+      await worker(value);
+    }
+  };
+
+  await Promise.all(Array.from({ length: limit }, runWorker));
+};
+
+const readHeadChunk = async (fileHandle) => {
+  const buffer = Buffer.alloc(SITEMAP_HEAD_BYTES);
+  const { bytesRead } = await fileHandle.read(buffer, 0, SITEMAP_HEAD_BYTES, 0);
+  let head = buffer.toString("utf8", 0, bytesRead);
+  if (!head.includes("</head>") && bytesRead === SITEMAP_HEAD_BYTES) {
+    const bigBuffer = Buffer.alloc(SITEMAP_HEAD_BYTES_FALLBACK);
+    const bigRead = await fileHandle.read(
+      bigBuffer,
+      0,
+      SITEMAP_HEAD_BYTES_FALLBACK,
+      0,
+    );
+    head = bigBuffer.toString("utf8", 0, bigRead.bytesRead);
+  }
+  return head;
+};
+
+const auditSitemapHygiene = async () => {
+  const violations = {
+    noFile: [],
+    redirectStub: [],
+    noindex: [],
+    notSelfCanonical: [],
+  };
+  const uniqueViolatingUrls = new Set();
+  let totalChecked = 0;
+  const seenUrls = new Set();
+
+  const recordViolation = (type, url) => {
+    violations[type].push(url);
+    uniqueViolatingUrls.add(url);
+  };
+
+  const checkSitemapUrl = async (rawUrl) => {
+    if (seenUrls.has(rawUrl)) {
+      return;
+    }
+    seenUrls.add(rawUrl);
+    totalChecked += 1;
+
+    let routePath;
+    try {
+      routePath = new URL(rawUrl).pathname;
+    } catch {
+      addError(`Sitemap contains an unparseable URL: ${rawUrl}`);
+      return;
+    }
+
+    const htmlPath = toDistHtmlPath(routePath);
+
+    let fileHandle;
+    try {
+      fileHandle = await fs.open(htmlPath, "r");
+    } catch {
+      recordViolation("noFile", rawUrl);
+      return;
+    }
+
+    try {
+      const head = await readHeadChunk(fileHandle);
+
+      const hasHtmlTag = /<html[\s>]/i.test(head);
+      const hasMetaRefresh = /<meta[^>]+http-equiv=["']refresh["']/i.test(head);
+      if (!hasHtmlTag || hasMetaRefresh) {
+        recordViolation("redirectStub", rawUrl);
+      }
+
+      const robotsMatch = head.match(
+        /<meta\s+name=["']robots["']\s+content=["']([^"']+)["']/i,
+      );
+      if (robotsMatch && /noindex/i.test(robotsMatch[1])) {
+        recordViolation("noindex", rawUrl);
+      }
+
+      const canonicalMatch = head.match(
+        /<link\s+rel=["']canonical["']\s+href=["']([^"']+)["']/i,
+      );
+      if (canonicalMatch) {
+        const normalizedCanonical = normalizeUrlForCompare(canonicalMatch[1]);
+        const normalizedSitemapUrl = normalizeUrlForCompare(rawUrl);
+        if (normalizedCanonical !== normalizedSitemapUrl) {
+          recordViolation("notSelfCanonical", rawUrl);
+        }
+      }
+    } finally {
+      await fileHandle.close();
+    }
+  };
+
+  await processWithConcurrency(
+    collectSitemapUrls(),
+    Math.max(1, SITEMAP_CONCURRENCY),
+    checkSitemapUrl,
+  );
+
+  const reportGroup = (label, message, urls) => {
+    if (urls.length === 0) {
+      return;
+    }
+    addError(
+      `Sitemap hygiene: ${urls.length} URL(s) ${message}. Samples: ${urls
+        .slice(0, SITEMAP_SAMPLE_LIMIT)
+        .join(", ")}${urls.length > SITEMAP_SAMPLE_LIMIT ? ", ..." : ""}`,
+    );
+  };
+
+  reportGroup(
+    "noFile",
+    "have no built page (sitemap URL has no built page)",
+    violations.noFile,
+  );
+  reportGroup(
+    "redirectStub",
+    "are redirect stubs (sitemap URL is a redirect stub)",
+    violations.redirectStub,
+  );
+  reportGroup(
+    "noindex",
+    "are noindex (sitemap URL is noindex)",
+    violations.noindex,
+  );
+  reportGroup(
+    "notSelfCanonical",
+    "are not self-canonical (sitemap URL is not self-canonical)",
+    violations.notSelfCanonical,
+  );
+
+  console.log(
+    `Sitemap hygiene: checked ${totalChecked} unique sitemap URL(s); ${uniqueViolatingUrls.size} unique URL(s) had at least one violation ` +
+      `(no-file: ${violations.noFile.length}, redirect-stub: ${violations.redirectStub.length}, ` +
+      `noindex: ${violations.noindex.length}, not-self-canonical: ${violations.notSelfCanonical.length}).`,
+  );
 };
 
 const main = async () => {
@@ -203,6 +495,7 @@ const main = async () => {
     }
     await ensureRobotsAndSitemap();
     await auditHtml();
+    await auditSitemapHygiene();
   }
 
   if (warnings.length) {
