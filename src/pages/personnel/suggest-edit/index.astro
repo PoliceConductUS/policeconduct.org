@@ -1,6 +1,8 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import PersonnelSubmissionsPaused from "#src/components/PersonnelSubmissionsPaused.astro";
+import { PERSONNEL_UGC_SUSPENDED } from "#src/lib/ugc-policy.js";
 ---
 
 <SiteLayout
@@ -28,213 +30,226 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
       </div>
     </section>
 
-    <section class="py-vh-2" data-form-shell="officerEdit">
-      <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-12 col-lg-8">
-            <div class="border p-4 bg-white shadow-sm">
-              <h2 class="ipc-section-title">Officer edit form</h2>
-              <p class="text-muted mb-3">
-                Use this form to suggest updates to an officer profile. You can
-                fill in only the fields you are correcting.
-              </p>
-              <p class="text-muted mb-3">
-                Submitter contact details are required so we can follow up about
-                your correction if needed.
-              </p>
-              <div class="alert alert-warning rounded-0 small">
-                Please do not include personal addresses, phone numbers, family
-                details, or other private information. Submissions should focus
-                on public, verifiable facts.
-              </div>
-              <form
-                name="officerEdit"
-                method="POST"
-                data-netlify-honeypot="organization"
-                class="needs-validation"
-                novalidate
-              >
-                <input type="hidden" name="form-name" value="officerEdit" />
-                <div class="honeypot visually-hidden">
-                  <label>
-                    Organization
-                    <input type="text" name="organization" />
-                  </label>
-                </div>
-                <div class="form-floating mb-3">
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="officerPath"
-                    name="officerPath"
-                    placeholder="/personnel/"
-                    required
-                  />
-                  <label for="officerPath">Officer profile path*</label>
-                  <div class="invalid-feedback">
-                    Please include the officer profile path.
+    {
+      PERSONNEL_UGC_SUSPENDED ? (
+        <PersonnelSubmissionsPaused />
+      ) : (
+        <section class="py-vh-2" data-form-shell="officerEdit">
+          <div class="container">
+            <div class="row justify-content-center">
+              <div class="col-12 col-lg-8">
+                <div class="border p-4 bg-white shadow-sm">
+                  <h2 class="ipc-section-title">Officer edit form</h2>
+                  <p class="text-muted mb-3">
+                    Use this form to suggest updates to an officer profile. You
+                    can fill in only the fields you are correcting.
+                  </p>
+                  <p class="text-muted mb-3">
+                    Submitter contact details are required so we can follow up
+                    about your correction if needed.
+                  </p>
+                  <div class="alert alert-warning rounded-0 small">
+                    Please do not include personal addresses, phone numbers,
+                    family details, or other private information. Submissions
+                    should focus on public, verifiable facts.
                   </div>
-                  <div class="form-text">
-                    Example: /personnel/james-marhkam-1379/
-                  </div>
-                </div>
-                <div class="form-floating mb-3">
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="officerName"
-                    name="officerName"
-                    placeholder="Officer name"
-                  />
-                  <label for="officerName">Officer name</label>
-                </div>
-                <div class="form-floating mb-3">
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="badgeNumber"
-                    name="badgeNumber"
-                    placeholder="Badge number"
-                  />
-                  <label for="badgeNumber">Badge number</label>
-                </div>
-                <div class="form-floating mb-3">
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="currentEmployer"
-                    name="currentEmployer"
-                    placeholder="Current employer"
-                  />
-                  <label for="currentEmployer">Current employer</label>
-                </div>
-                <div class="form-floating mb-3">
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="currentSupervisor"
-                    name="currentSupervisor"
-                    placeholder="Current supervisor"
-                  />
-                  <label for="currentSupervisor">Current supervisor</label>
-                </div>
-                <div class="form-floating mb-3">
-                  <textarea
-                    class="form-control"
-                    id="pastEmployers"
-                    name="pastEmployers"
-                    placeholder="Past employers"></textarea>
-                  <label for="pastEmployers">Past employers</label>
-                </div>
-                <div class="form-floating mb-3">
-                  <input
-                    type="url"
-                    class="form-control"
-                    id="postOrgLink"
-                    name="postOrgLink"
-                    placeholder="P.O.S.T. organization link"
-                  />
-                  <label for="postOrgLink">
-                    Peace Officer's Standards and Training (P.O.S.T.) org link
-                  </label>
-                </div>
-                <div class="form-floating mb-3">
-                  <input
-                    type="url"
-                    class="form-control"
-                    id="profilePhotoLink"
-                    name="profilePhotoLink"
-                    placeholder="Profile picture link"
-                  />
-                  <label for="profilePhotoLink">Profile picture link</label>
-                </div>
-                <div class="form-floating mb-3">
-                  <textarea
-                    class="form-control"
-                    id="socialLinks"
-                    name="socialLinks"
-                    placeholder="Social media links"></textarea>
-                  <label for="socialLinks">Social media links</label>
-                  <div class="form-text">
-                    List any official or public social profiles, one per line.
-                  </div>
-                </div>
-                <div class="form-floating mb-3">
-                  <textarea
-                    class="form-control"
-                    id="civilLitigation"
-                    name="civilLitigation"
-                    placeholder="Civil litigation"></textarea>
-                  <label for="civilLitigation">Civil litigation</label>
-                  <div class="form-text">
-                    Include case numbers, court, and links if available.
-                  </div>
-                </div>
-                <div class="row g-3 mb-3">
-                  <div class="col-md-6">
-                    <div class="form-floating">
+                  <form
+                    name="officerEdit"
+                    method="POST"
+                    data-netlify-honeypot="organization"
+                    class="needs-validation"
+                    novalidate
+                  >
+                    <input type="hidden" name="form-name" value="officerEdit" />
+                    <div class="honeypot visually-hidden">
+                      <label>
+                        Organization
+                        <input type="text" name="organization" />
+                      </label>
+                    </div>
+                    <div class="form-floating mb-3">
                       <input
                         type="text"
                         class="form-control"
-                        id="submitterName"
-                        name="submitterName"
-                        placeholder="Full name"
+                        id="officerPath"
+                        name="officerPath"
+                        placeholder="/personnel/"
                         required
                       />
-                      <label for="submitterName">Submitter full name*</label>
+                      <label for="officerPath">Officer profile path*</label>
                       <div class="invalid-feedback">
-                        Please provide your full name.
+                        Please include the officer profile path.
+                      </div>
+                      <div class="form-text">
+                        Example: /personnel/james-marhkam-1379/
                       </div>
                     </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-floating">
+                    <div class="form-floating mb-3">
                       <input
-                        type="email"
+                        type="text"
                         class="form-control"
-                        id="submitterEmail"
-                        name="submitterEmail"
-                        placeholder="Email"
-                        required
+                        id="officerName"
+                        name="officerName"
+                        placeholder="Officer name"
                       />
-                      <label for="submitterEmail">Submitter email*</label>
-                      <div class="invalid-feedback">
-                        Please provide a valid email address.
+                      <label for="officerName">Officer name</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="badgeNumber"
+                        name="badgeNumber"
+                        placeholder="Badge number"
+                      />
+                      <label for="badgeNumber">Badge number</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="currentEmployer"
+                        name="currentEmployer"
+                        placeholder="Current employer"
+                      />
+                      <label for="currentEmployer">Current employer</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="currentSupervisor"
+                        name="currentSupervisor"
+                        placeholder="Current supervisor"
+                      />
+                      <label for="currentSupervisor">Current supervisor</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                      <textarea
+                        class="form-control"
+                        id="pastEmployers"
+                        name="pastEmployers"
+                        placeholder="Past employers"
+                      />
+                      <label for="pastEmployers">Past employers</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                      <input
+                        type="url"
+                        class="form-control"
+                        id="postOrgLink"
+                        name="postOrgLink"
+                        placeholder="P.O.S.T. organization link"
+                      />
+                      <label for="postOrgLink">
+                        Peace Officer's Standards and Training (P.O.S.T.) org
+                        link
+                      </label>
+                    </div>
+                    <div class="form-floating mb-3">
+                      <input
+                        type="url"
+                        class="form-control"
+                        id="profilePhotoLink"
+                        name="profilePhotoLink"
+                        placeholder="Profile picture link"
+                      />
+                      <label for="profilePhotoLink">Profile picture link</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                      <textarea
+                        class="form-control"
+                        id="socialLinks"
+                        name="socialLinks"
+                        placeholder="Social media links"
+                      />
+                      <label for="socialLinks">Social media links</label>
+                      <div class="form-text">
+                        List any official or public social profiles, one per
+                        line.
                       </div>
                     </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-floating">
-                      <input
-                        type="tel"
+                    <div class="form-floating mb-3">
+                      <textarea
                         class="form-control"
-                        id="submitterPhone"
-                        name="submitterPhone"
-                        placeholder="Phone"
+                        id="civilLitigation"
+                        name="civilLitigation"
+                        placeholder="Civil litigation"
                       />
-                      <label for="submitterPhone"
-                        >Submitter phone (optional)</label
-                      >
+                      <label for="civilLitigation">Civil litigation</label>
+                      <div class="form-text">
+                        Include case numbers, court, and links if available.
+                      </div>
                     </div>
-                  </div>
+                    <div class="row g-3 mb-3">
+                      <div class="col-md-6">
+                        <div class="form-floating">
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="submitterName"
+                            name="submitterName"
+                            placeholder="Full name"
+                            required
+                          />
+                          <label for="submitterName">
+                            Submitter full name*
+                          </label>
+                          <div class="invalid-feedback">
+                            Please provide your full name.
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-floating">
+                          <input
+                            type="email"
+                            class="form-control"
+                            id="submitterEmail"
+                            name="submitterEmail"
+                            placeholder="Email"
+                            required
+                          />
+                          <label for="submitterEmail">Submitter email*</label>
+                          <div class="invalid-feedback">
+                            Please provide a valid email address.
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-floating">
+                          <input
+                            type="tel"
+                            class="form-control"
+                            id="submitterPhone"
+                            name="submitterPhone"
+                            placeholder="Phone"
+                          />
+                          <label for="submitterPhone">
+                            Submitter phone (optional)
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="small text-muted mb-3">
+                      Protected by reCAPTCHA Enterprise.
+                    </div>
+                    <button type="submit" class="btn btn-dark rounded-0 w-100">
+                      Submit edit suggestion
+                    </button>
+                  </form>
+                  <p class="small text-muted mt-3 mb-0">
+                    If you have documents or public records, include them in the
+                    civil litigation field or submit a separate message via
+                    <a href="/about/contact">Contact Us</a>.
+                  </p>
                 </div>
-                <div class="small text-muted mb-3">
-                  Protected by reCAPTCHA Enterprise.
-                </div>
-                <button type="submit" class="btn btn-dark rounded-0 w-100">
-                  Submit edit suggestion
-                </button>
-              </form>
-              <p class="small text-muted mt-3 mb-0">
-                If you have documents or public records, include them in the
-                civil litigation field or submit a separate message via
-                <a href="/about/contact">Contact Us</a>.
-              </p>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
+        </section>
+      )
+    }
   </main>
   <script>
     import {
@@ -250,7 +265,9 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
       '[data-form-shell="officerEdit"]',
     ) as HTMLElement | null;
 
-    if (!form) {
+    if (!shell) {
+      // The page intentionally renders no form. See src/lib/ugc-policy.ts.
+    } else if (!form) {
       showFormLoadError({ formName: "officerEdit", shell });
     } else {
       initRecaptcha();

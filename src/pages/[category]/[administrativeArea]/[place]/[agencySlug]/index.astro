@@ -15,6 +15,7 @@ import {
   buildVisitorIntentBands,
 } from "#src/lib/data/civic-index.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
+import { PERSONNEL_UGC_SUSPENDED } from "#src/lib/ugc-policy.js";
 
 export async function getStaticPaths() {
   return loadAgencyLocationStaticPaths();
@@ -314,13 +315,17 @@ const structuredData = {
             >
               Add a civil case
             </PrefillNavButton>
-            <PrefillNavButton
-              to="/personnel/new/"
-              payload={suggestPersonnelPrefillPayload}
-              class="entity-action-button"
-            >
-              Suggest new personnel
-            </PrefillNavButton>
+            {
+              PERSONNEL_UGC_SUSPENDED ? null : (
+                <PrefillNavButton
+                  to="/personnel/new/"
+                  payload={suggestPersonnelPrefillPayload}
+                  class="entity-action-button"
+                >
+                  Suggest new personnel
+                </PrefillNavButton>
+              )
+            }
             <PrefillNavButton
               to="/about/contact/"
               payload={subscribePrefillPayload}
