@@ -14,6 +14,10 @@ import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
 import { getPersonnelImageById } from "#src/lib/personnel-images.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
+import {
+  assertNoSuppressedColumns,
+  projection,
+} from "#src/lib/data/personnel-projection.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import { getSiteUrl } from "#src/lib/structured-data.js";
 import {
@@ -48,23 +52,27 @@ if (!slug) {
 }
 const data = await withDb(async (client) => {
   const officer = (
-    await client.query("select * from public.officers where slug = $1", [slug])
+    await client.query(
+      `select ${projection("officers", "o")}
+       from public.officers o
+       where o.slug = $1`,
+      [slug],
+    )
   ).rows[0];
   if (!officer || officer.slug !== slug) {
     throw new Error(`Personnel ${slug} not found.`);
   }
   const officerId = officer.id;
-  const officerStats = (
-    await client.query("select * from public.officers_stats where id = $1", [
-      officerId,
-    ])
-  ).rows[0];
   const agencyOfficers = (
     await client.query(
-      "select * from public.agency_officers where officer_id = $1",
+      `select ${projection("agency_officers", "ao")}
+       from public.agency_officers ao
+       where ao.officer_id = $1`,
       [officerId],
     )
   ).rows;
+  assertNoSuppressedColumns("officers", [officer]);
+  assertNoSuppressedColumns("agency_officers", agencyOfficers);
   const agencyIds = agencyOfficers.map(
     (entry: { agency_id: string }) => entry.agency_id,
   );
@@ -72,7 +80,10 @@ const data = await withDb(async (client) => {
     ? (
         await client.query(
           `
-            select a.*, lp.path as location_path, bpp.path as canonical_path
+            select
+              a.id, a.name, a.slug, a.city, a.state,
+              lp.path as location_path,
+              bpp.path as canonical_path
             from public.agency a
             join public.location_path lp
               on lp.location_path_id = a.location_path_id
@@ -91,7 +102,9 @@ const data = await withDb(async (client) => {
   const reportOfficers = agencyOfficerIds.length
     ? (
         await client.query(
-          "select * from public.review_officers where agency_officer_id = any($1)",
+          `select ro.review_id
+           from public.review_officers ro
+           where ro.agency_officer_id = any($1)`,
           [agencyOfficerIds],
         )
       ).rows
@@ -103,7 +116,9 @@ const data = await withDb(async (client) => {
     ? (
         await client.query(
           `
-            select r.*, lp.path as location_path
+            select
+              r.id, r.slug, r.incident_date,
+              lp.path as location_path
             from public.reviews r
             join public.location_path lp on lp.location_path_id = r.location_path_id
             where r.id = any($1)
@@ -125,17 +140,18 @@ const data = await withDb(async (client) => {
   const civilCases = civilCaseIds.length
     ? (
         await client.query(
-          `select *
-           from public.civil_cases
-           where id = any($1)
-           order by filed_date desc, title asc, cause_number asc`,
+          `select
+             c.id, c.slug, c.title, c.cause_number,
+             c.filed_date, c.date_terminated, c.court
+           from public.civil_cases c
+           where c.id = any($1)
+           order by c.filed_date desc, c.title asc, c.cause_number asc`,
           [civilCaseIds],
         )
       ).rows
     : [];
   return {
     officer,
-    officerStats,
     agencyOfficers,
     agencies,
     reports,
@@ -167,7 +183,6 @@ if (!currentAssignment) {
   );
 }
 const hasCurrentAssignment = Boolean(activeAssignment);
-const currentBadge = currentAssignment?.badge_number || null;
 const currentLicenseType =
   typeof currentAssignment?.license_type === "string"
     ? currentAssignment.license_type.trim()
@@ -195,13 +210,11 @@ const civilCasesWithPaths = data.civilCases.map(
   (caseItem: {
     id: string;
     slug: string;
-    category: string;
     title?: string | null;
     cause_number?: string | null;
     filed_date: string;
     date_terminated?: string | null;
     court?: string | null;
-    primary_source_url?: string | null;
   }) => {
     return {
       ...caseItem,
@@ -269,9 +282,6 @@ const pastEmployerSummary = assignmentHistory
     if (dateRange) {
       segments.push(dateRange);
     }
-    if (entry.badge_number) {
-      segments.push(`Badge ${entry.badge_number}`);
-    }
     return segments.filter(Boolean).join(" — ");
   })
   .join("\n");
@@ -309,7 +319,6 @@ const pastEmployerPrefillPayload = JSON.stringify({
   firstName: data.officer.first_name || "",
   lastName: data.officer.last_name || "",
   suffix: data.officer.suffix || "",
-  badgeNumber: currentBadge || "",
   currentAgency: currentAgencyPrefillName,
   currentAgencyCity: currentAgency?.city || "",
   currentAgencyState: currentAgency?.state || "",
@@ -321,7 +330,6 @@ const suggestEditHref = "/personnel/suggest-edit/";
 const suggestEditPrefillPayload = JSON.stringify({
   officerPath,
   officerName,
-  badgeNumber: currentBadge || "",
   currentEmployer: currentAgencyPrefillName,
   pastEmployers: pastEmployerSummary,
   civilLitigation: civilLitigationSummary,
@@ -681,14 +689,6 @@ const structuredData = {
                 <dt>{metricLabels.totalTimeAsOfficer}</dt>
                 <dd>{totalTimeAsOfficer}</dd>
               </div>
-              {
-                currentBadge ? (
-                  <div>
-                    <dt>Badge Number</dt>
-                    <dd>{currentBadge}</dd>
-                  </div>
-                ) : null
-              }
               <div>
                 <dt>{assignmentStatusLabel}</dt>
                 <dd><a href={currentAgencyPath}>{currentAgency!.name}</a></dd>

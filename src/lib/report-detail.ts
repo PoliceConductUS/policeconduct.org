@@ -3,6 +3,10 @@ import { groupBy, mapBy } from "./data.js";
 import { loadCoverageLinksForReport } from "./data/coverage.js";
 import { requireAgencyCanonicalPath } from "./data/location-paths.js";
 import { buildReportCanonicalPath } from "./data/report-paths.js";
+import {
+  assertNoSuppressedColumns,
+  projection,
+} from "./data/personnel-projection.js";
 
 const assertValue = <T>(value: T | null | undefined, message: string): T => {
   if (value === null || value === undefined) {
@@ -22,7 +26,6 @@ type ReportOfficerEntry = {
   agencyOfficer: Record<string, unknown>;
   agency: Record<string, unknown>;
   path: string;
-  badge: string | null;
   ratingOverall: number | null;
   ratings: ReportOfficerRating[];
 };
@@ -134,7 +137,6 @@ const buildOfficerEntries = (
         canonicalPath: requireAgencyCanonicalPath(agency),
       },
       path,
-      badge: agencyOfficer.badge_number || null,
       ratingOverall,
       ratings: ratingEntries,
     };
@@ -243,7 +245,11 @@ export const loadReportDetail = async (
         [report.id],
       )
     ).rows;
-    const officers = (await client.query("select * from public.officers")).rows;
+    const officers = (
+      await client.query(
+        `select ${projection("officers", "o")} from public.officers o`,
+      )
+    ).rows;
     const agencies = (
       await client.query(
         `
@@ -258,8 +264,12 @@ export const loadReportDetail = async (
       )
     ).rows;
     const agencyOfficers = (
-      await client.query("select * from public.agency_officers")
+      await client.query(
+        `select ${projection("agency_officers", "ao")} from public.agency_officers ao`,
+      )
     ).rows;
+    assertNoSuppressedColumns("officers", officers);
+    assertNoSuppressedColumns("agency_officers", agencyOfficers);
     const tags = (await client.query("select * from public.tags")).rows;
     const traits = (await client.query("select * from public.traits")).rows;
     const rubrics = (await client.query("select * from public.rubrics")).rows;

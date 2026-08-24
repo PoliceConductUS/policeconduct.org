@@ -4,6 +4,10 @@ import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
+import {
+  assertNoSuppressedColumns,
+  projection,
+} from "./personnel-projection.js";
 
 export type AgencyScopedTopicKind =
   | "personnel"
@@ -294,10 +298,13 @@ const loadAgencyRows = async (agencyId: string) =>
     ).rows;
     const agencyOfficers = (
       await client.query(
-        "select * from public.agency_officers where agency_id = $1",
+        `select ${projection("agency_officers", "ao")}
+         from public.agency_officers ao
+         where ao.agency_id = $1`,
         [agencyId],
       )
     ).rows;
+    assertNoSuppressedColumns("agency_officers", agencyOfficers);
     const agencyStats = (
       await client.query("select * from public.agency_stats where id = $1", [
         agencyId,
@@ -318,7 +325,9 @@ const loadAgencyRows = async (agencyId: string) =>
     const officers = officerIds.length
       ? (
           await client.query(
-            "select * from public.officers where id = any($1)",
+            `select ${projection("officers", "o")}
+             from public.officers o
+             where o.id = any($1)`,
             [officerIds],
           )
         ).rows
@@ -388,7 +397,9 @@ const loadAgencyRows = async (agencyId: string) =>
     const civilOfficers = civilOfficerIds.length
       ? (
           await client.query(
-            "select * from public.officers where id = any($1)",
+            `select ${projection("officers", "o")}
+             from public.officers o
+             where o.id = any($1)`,
             [civilOfficerIds],
           )
         ).rows
@@ -442,7 +453,7 @@ const loadAgencyRows = async (agencyId: string) =>
                 on case_bpp.page_type = 'agency'
                and case_bpp.entity_id = case_agency.id
               join lateral (
-                select *
+                select ${projection("agency_officers", "target_assignment")}
                 from public.agency_officers target_assignment
                 where target_assignment.agency_id = $1
                   and target_assignment.officer_id = case_ao.officer_id
@@ -605,7 +616,6 @@ const buildAgencyDetail = async (agencyId: string) => {
     .map(
       (entry: {
         officer_id: string;
-        badge_number?: string | null;
         start_date?: string | null;
         end_date?: string | null;
         license_type?: string | null;

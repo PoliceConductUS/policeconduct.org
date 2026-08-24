@@ -11,6 +11,10 @@ import { formatShortDate } from "#src/lib/format.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import {
+  assertNoSuppressedColumns,
+  projection,
+} from "#src/lib/data/personnel-projection.js";
+import {
   personnelTopics,
   type PersonnelTopic,
 } from "#src/lib/data/personnel-topic-config.js";
@@ -73,7 +77,12 @@ const topicKey = topic as PersonnelTopic;
 const topicConfig = personnelTopics[topicKey];
 const data = await withDb(async (client) => {
   const officer = (
-    await client.query("select * from public.officers where slug = $1", [slug])
+    await client.query(
+      `select ${projection("officers", "o")}
+       from public.officers o
+       where o.slug = $1`,
+      [slug],
+    )
   ).rows[0];
   if (!officer) {
     throw new Error(`Personnel ${slug} not found.`);
@@ -82,7 +91,7 @@ const data = await withDb(async (client) => {
     await client.query(
       `
         select
-          ao.*,
+          ${projection("agency_officers", "ao")},
           a.name as agency_name,
           a.slug as agency_slug,
           lp.place_name,
@@ -132,6 +141,8 @@ const data = await withDb(async (client) => {
         )
       ).rows
     : [];
+  assertNoSuppressedColumns("officers", [officer]);
+  assertNoSuppressedColumns("agency_officers", assignments);
   return { assignments, civilCases, officer, reports };
 });
 
