@@ -228,7 +228,7 @@ const formatDate = (value?: string | null) =>
               <input
                 id="agency-personnel-search"
                 type="search"
-                placeholder="Search by name, status, badge, or license type"
+                placeholder="Search by name, status, or license type"
                 autocomplete="off"
                 data-agency-personnel-search
               />
@@ -244,7 +244,6 @@ const formatDate = (value?: string | null) =>
                       <tr>
                         <th scope="col">Name</th>
                         <th scope="col">Status</th>
-                        <th scope="col">Badge</th>
                         <th scope="col">License type</th>
                         <th scope="col">Start date</th>
                         <th scope="col">End date</th>
@@ -263,7 +262,6 @@ const formatDate = (value?: string | null) =>
                         const searchText = [
                           name,
                           status,
-                          employee.entry.badge_number,
                           employee.entry.license_type,
                           formatDate(employee.entry.start_date),
                           endDate,
@@ -289,7 +287,6 @@ const formatDate = (value?: string | null) =>
                               )}
                             </td>
                             <td>{status}</td>
-                            <td>{employee.entry.badge_number || ""}</td>
                             <td>{employee.entry.license_type || ""}</td>
                             <td>
                               {formatDate(employee.entry.start_date) || ""}
