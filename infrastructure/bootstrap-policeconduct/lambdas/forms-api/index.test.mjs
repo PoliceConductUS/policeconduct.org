@@ -275,3 +275,52 @@ test("origin header casing does not change the verdict", async () => {
     assert.notEqual(response.statusCode, 403, `${headerName} should be read`);
   }
 });
+
+test("submitForm rejects suspended personnel form names before storing anything", async () => {
+  for (const formName of ["personnelNew", "officerEdit"]) {
+    const response = await __testables.submitForm(
+      {
+        requestContext: { http: { sourceIp: "203.0.113.10" } },
+        body: JSON.stringify({
+          formName,
+          recaptchaToken: "token",
+          data: { submitterEmail: "person@example.org" },
+        }),
+      },
+      "req_test",
+    );
+
+    assert.equal(response.statusCode, 403, `${formName} should be rejected`);
+    assert.match(
+      JSON.parse(response.body).error,
+      /paused community submissions about individual personnel/i,
+    );
+  }
+});
+
+test("suspended personnel form names remain known form names", () => {
+  for (const formName of __testables.SUSPENDED_FORM_NAMES) {
+    assert.ok(
+      __testables.ALLOWED_FORM_NAMES.has(formName),
+      `${formName} should stay in ALLOWED_FORM_NAMES so re-enabling is one edit`,
+    );
+  }
+});
+
+test("agency and site-wide form names are not suspended", () => {
+  for (const formName of [
+    "agencyNew",
+    "agencyEdit",
+    "reportNew",
+    "civilLitigationNew",
+    "civilLitigationEdit",
+    "contact",
+    "volunteer",
+    "dataSubjectAccessRequest",
+  ]) {
+    assert.ok(
+      !__testables.SUSPENDED_FORM_NAMES.has(formName),
+      `${formName} is out of scope for the personnel UGC suspension`,
+    );
+  }
+});

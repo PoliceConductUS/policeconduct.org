@@ -10,6 +10,7 @@ import {
   buildWebPage,
   getSiteUrl,
 } from "#src/lib/structured-data.js";
+import { PERSONNEL_UGC_SUSPENDED } from "#src/lib/ugc-policy.js";
 
 const personnelRows = await loadPersonnelSummaries();
 const federalAgencies = await loadFederalAgencySummaries();
@@ -29,6 +30,13 @@ const statesWithPersonnel = stateStats.filter(
 ).length;
 const pagePath = "/personnel/";
 const suggestPersonnelHref = "/personnel/new/";
+const personnelHeaderAction = PERSONNEL_UGC_SUSPENDED
+  ? undefined
+  : {
+      href: suggestPersonnelHref,
+      label: "Suggest new person",
+      target: "_self" as const,
+    };
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const personnelItems = personnelRows.slice(0, 25).map((person, index) => ({
@@ -115,11 +123,7 @@ if (personnelItemList) {
           subtitle="Select a state to browse available records by place."
           emptyLabel="No personnel yet"
           interactionLabel="Hover for counts; click a state to browse available records."
-          headerAction={{
-            href: suggestPersonnelHref,
-            label: "Suggest new person",
-            target: "_self",
-          }}
+          headerAction={personnelHeaderAction}
           federalPanel={{
             title: "Federal agencies",
             value: federalAgencies.length,
