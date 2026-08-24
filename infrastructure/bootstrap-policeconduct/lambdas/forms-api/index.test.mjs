@@ -155,3 +155,158 @@ test("agency and site-wide form names are not suspended", () => {
     );
   }
 });
+
+// --- INS-35: submission notification ----------------------------------------
+//
+// The requirement these cover is not "an email got sent". It is that whoever
+// works the queue can tell a DSAR from a volunteer signup by looking at the
+// subject line, without opening the object, and can tell a first arrival from a
+// verification transition. Both of those are subject-line facts, so they are
+// testable without AWS.
+
+test("a DSAR is marked in the subject line", () => {
+  const subject = __testables.submissionNotificationSubject({
+    eventType: "received",
+    formName: "dataSubjectAccessRequest",
+    submissionId: "sub_abc123",
+  });
+
+  assert.ok(
+    subject.includes("[DSAR]"),
+    `expected a DSAR marker in ${JSON.stringify(subject)}`,
+  );
+  assert.ok(subject.includes("sub_abc123"));
+});
+
+test("form types without a statutory clock are not marked as DSARs", () => {
+  for (const formName of [
+    "contact",
+    "volunteer",
+    "agencyNew",
+    "reportNew",
+    "civilLitigationNew",
+  ]) {
+    const subject = __testables.submissionNotificationSubject({
+      eventType: "received",
+      formName,
+      submissionId: "sub_abc123",
+    });
+    assert.ok(
+      !subject.includes("[DSAR]"),
+      `${formName} must not be labelled a DSAR: ${subject}`,
+    );
+  }
+});
+
+test("received and verified are distinguishable in the subject line", () => {
+  const received = __testables.submissionNotificationSubject({
+    eventType: "received",
+    formName: "dataSubjectAccessRequest",
+    submissionId: "sub_abc123",
+  });
+  const verified = __testables.submissionNotificationSubject({
+    eventType: "verified",
+    formName: "dataSubjectAccessRequest",
+    submissionId: "sub_abc123",
+  });
+
+  assert.notEqual(received, verified);
+  assert.ok(received.includes("received"));
+  assert.ok(verified.includes("VERIFIED"));
+});
+
+test("preview submissions are labelled so a drill is never read as a real request", () => {
+  process.env.NOTIFICATION_ENV_LABEL = "preview";
+  try {
+    const subject = __testables.submissionNotificationSubject({
+      eventType: "received",
+      formName: "dataSubjectAccessRequest",
+      submissionId: "sub_abc123",
+    });
+    assert.ok(subject.startsWith("[PREVIEW] "), subject);
+    assert.ok(subject.includes("[DSAR]"), subject);
+  } finally {
+    delete process.env.NOTIFICATION_ENV_LABEL;
+  }
+});
+
+test("the subject stays inside the SNS 100-character ASCII limit", () => {
+  const subject = __testables.submissionNotificationSubject({
+    eventType: "received",
+    formName: "dataSubjectAccessRequest",
+    submissionId: "x".repeat(400),
+  });
+
+  assert.ok(subject.length <= 100, `subject was ${subject.length} chars`);
+  assert.ok(!/[\r\n]/.test(subject));
+  assert.match(subject, /^[\x20-\x7E]+$/);
+});
+
+test("the notification body carries routing facts and no submission content", () => {
+  const body = __testables.submissionNotificationBody({
+    eventType: "received",
+    formName: "dataSubjectAccessRequest",
+    submissionId: "sub_abc123",
+    bucket: "policeconduct-submissions-942370948729",
+    key: "submissions/2026-08-24/dataSubjectAccessRequest/sub_abc123.json",
+    occurredAt: "2026-08-24T12:00:00.000Z",
+  });
+
+  assert.ok(body.includes("sub_abc123"));
+  assert.ok(body.includes("submissions/2026-08-24/"));
+  assert.ok(body.includes("5 business days"));
+  // The body is built only from routing arguments, so there is no path by
+  // which submitter-supplied fields reach it. Assert the shape that guarantees
+  // that: every line is one of the known keys or prose.
+  for (const line of body.split("\n")) {
+    if (line === "" || !line.includes(":")) {
+      continue;
+    }
+    const field = line.split(":")[0].trim();
+    assert.ok(
+      [
+        "event",
+        "formName",
+        "submissionId",
+        "occurredAt",
+        "bucket",
+        "key",
+      ].includes(field) || /^[A-Z]/.test(line),
+      `unexpected field in notification body: ${line}`,
+    );
+  }
+});
+
+test("a missing topic is reported, not swallowed", async () => {
+  delete process.env.SUBMISSION_NOTIFICATIONS_TOPIC_ARN;
+
+  const warnings = [];
+  const originalWarn = console.warn;
+  console.warn = (line) => warnings.push(line);
+
+  try {
+    const result = await __testables.publishSubmissionNotification({
+      eventType: "received",
+      formName: "dataSubjectAccessRequest",
+      submissionId: "sub_abc123",
+      bucket: "b",
+      key: "k",
+      occurredAt: "2026-08-24T12:00:00.000Z",
+      requestId: "req_1",
+    });
+
+    assert.deepEqual(result, {
+      published: false,
+      reason: "topic_not_configured",
+    });
+    // This log line is what the CloudWatch metric filter and alarm key off. If
+    // it is renamed, the alarm silently stops firing.
+    assert.equal(warnings.length, 1);
+    assert.equal(
+      JSON.parse(warnings[0]).msg,
+      "forms.notify.topic_not_configured",
+    );
+  } finally {
+    console.warn = originalWarn;
+  }
+});

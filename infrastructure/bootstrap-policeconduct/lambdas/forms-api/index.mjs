@@ -4,12 +4,14 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 import { GoogleAuth } from "google-auth-library";
 import { RecaptchaEnterpriseServiceClient } from "@google-cloud/recaptcha-enterprise";
 import { createId } from "@paralleldrive/cuid2";
 import crypto from "crypto";
 
 const s3 = new S3Client({});
+const sns = new SNSClient({});
 const sentryDsn = (process.env.SENTRY_DSN || "").trim();
 const sentryEnvironment = (process.env.SENTRY_ENVIRONMENT || "").trim();
 const sentryRelease = (process.env.SENTRY_RELEASE || "").trim();
@@ -548,10 +550,200 @@ async function sendVerificationEmail({
   return payload;
 }
 
+/**
+ * Form types that start a statutory response clock on receipt.
+ *
+ * INS-16 commits the organization to acknowledging a data subject access
+ * request within 5 business days of receipt. Whoever holds the queue has to be
+ * able to tell a DSAR from a volunteer signup in the notification *subject
+ * line*, without opening the object — so this set drives a subject marker, not
+ * just a body field.
+ */
+const CLOCKED_FORM_NAMES = new Set(["dataSubjectAccessRequest"]);
+
+// SNS caps Subject at 100 printable ASCII characters and rejects newlines.
+const SNS_SUBJECT_MAX_LENGTH = 100;
+
+function sanitizeSubject(value) {
+  // Strip anything SNS will reject, then hard-truncate.
+  const flattened = String(value)
+    .replace(/[\r\n\t]+/g, " ")
+    // eslint-disable-next-line no-control-regex
+    .replace(/[^\x20-\x7E]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return flattened.length > SNS_SUBJECT_MAX_LENGTH
+    ? flattened.slice(0, SNS_SUBJECT_MAX_LENGTH)
+    : flattened;
+}
+
+function submissionNotificationSubject({ eventType, formName, submissionId }) {
+  const label = (process.env.NOTIFICATION_ENV_LABEL || "").trim();
+  const envTag = label ? `[${label.toUpperCase()}] ` : "";
+  const clockTag = CLOCKED_FORM_NAMES.has(formName) ? "[DSAR] " : "";
+  const action = eventType === "verified" ? "VERIFIED" : "received";
+  return sanitizeSubject(
+    `${envTag}${clockTag}${formName} ${action} ${submissionId}`,
+  );
+}
+
+/**
+ * The notification is a pointer, never a payload.
+ *
+ * Submissions can contain names, contact details and free text about named
+ * individuals. None of that belongs in an email relayed through SNS to an
+ * unknown number of subscribers. The body carries only routing facts: what
+ * kind of form, which id, where the object is. Whoever holds the queue reads
+ * the contents in S3, under the KMS key and the access controls that already
+ * govern it.
+ */
+function submissionNotificationBody({
+  eventType,
+  formName,
+  submissionId,
+  bucket,
+  key,
+  occurredAt,
+}) {
+  const lines = [
+    `event:        ${eventType}`,
+    `formName:     ${formName}`,
+    `submissionId: ${submissionId}`,
+    `occurredAt:   ${occurredAt}`,
+    `bucket:       ${bucket}`,
+    `key:          ${key}`,
+  ];
+
+  if (CLOCKED_FORM_NAMES.has(formName)) {
+    lines.push(
+      "",
+      "This form type carries a statutory response clock. Per INS-16 the",
+      "acknowledgement is due within 5 business days of RECEIPT — the clock",
+      "starts at 'received', not at 'verified'.",
+    );
+  }
+
+  lines.push(
+    "",
+    "This notification intentionally contains no submission content. Read the",
+    "object above in S3.",
+  );
+
+  return lines.join("\n");
+}
+
+/**
+ * Tell a human that a submission arrived.
+ *
+ * Deliberately non-fatal: by the time this runs the submission is already
+ * durably stored, and failing the request would only push the submitter to
+ * resubmit and create a duplicate record. A failure here is surfaced through
+ * the `forms.notify.*` log lines, which have CloudWatch metric filters and
+ * alarms behind them, and through the independent S3 event notification on the
+ * bucket, which fires whether or not this code path ran.
+ */
+async function publishSubmissionNotification({
+  eventType,
+  formName,
+  submissionId,
+  bucket,
+  key,
+  occurredAt,
+  requestId,
+}) {
+  const topicArn = (
+    process.env.SUBMISSION_NOTIFICATIONS_TOPIC_ARN || ""
+  ).trim();
+
+  if (!topicArn) {
+    // This is the INS-20 state: a submission lands and nobody is told. It is
+    // logged at warn with its own message so it can alarm rather than sit
+    // silently in a log group.
+    console.warn(
+      JSON.stringify({
+        msg: "forms.notify.topic_not_configured",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+      }),
+    );
+    return { published: false, reason: "topic_not_configured" };
+  }
+
+  try {
+    await sns.send(
+      new PublishCommand({
+        TopicArn: topicArn,
+        Subject: submissionNotificationSubject({
+          eventType,
+          formName,
+          submissionId,
+        }),
+        Message: submissionNotificationBody({
+          eventType,
+          formName,
+          submissionId,
+          bucket,
+          key,
+          occurredAt,
+        }),
+        MessageAttributes: {
+          eventType: { DataType: "String", StringValue: eventType },
+          formName: { DataType: "String", StringValue: formName },
+          statutoryClock: {
+            DataType: "String",
+            StringValue: String(CLOCKED_FORM_NAMES.has(formName)),
+          },
+        },
+      }),
+    );
+
+    console.info(
+      JSON.stringify({
+        msg: "forms.notify.published",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        key,
+      }),
+    );
+    return { published: true };
+  } catch (error) {
+    captureLambdaException(
+      error,
+      { requestId },
+      {
+        operation: "publish_submission_notification",
+        eventType,
+        formName,
+        submissionId,
+      },
+    );
+    console.error(
+      JSON.stringify({
+        msg: "forms.notify.publish_failed",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        key,
+        error: errorInfo(error),
+      }),
+    );
+    return { published: false, reason: "publish_failed" };
+  }
+}
+
 export const __testables = {
   ALLOWED_FORM_NAMES,
+  CLOCKED_FORM_NAMES,
   SUSPENDED_FORM_NAMES,
+  publishSubmissionNotification,
   sendVerificationEmail,
+  submissionNotificationBody,
+  submissionNotificationSubject,
   submitForm,
   verificationConfig,
 };
@@ -1003,6 +1195,19 @@ async function verifySubmissionLink(event, requestId) {
   await writeJsonObject(config.bucket, config.kmsKeyId, key, nextRecord);
   await saveSubmissionStatus(record.submissionId, "in_review", verificationId);
 
+  // Second notification: the submitter confirmed their address. A captured but
+  // unverified request already started the clock, so this is a state change on
+  // an item the queue holder has already seen, not a first sighting.
+  await publishSubmissionNotification({
+    eventType: "verified",
+    formName: record.formName || "unknown",
+    submissionId: record.submissionId,
+    bucket: config.bucket,
+    key: `${config.prefix}status/${record.submissionId}.json`,
+    occurredAt: verifiedAt,
+    requestId,
+  });
+
   console.info(
     JSON.stringify({
       msg: "forms.verify.success",
@@ -1159,6 +1364,18 @@ async function submitForm(event, requestId) {
       SSEKMSKeyId: kmsKeyId,
     }),
   );
+
+  // The submission is stored. Tell a human before doing anything else — the
+  // receipt clock for a DSAR starts here, not at verification (INS-16 §2).
+  await publishSubmissionNotification({
+    eventType: "received",
+    formName,
+    submissionId,
+    bucket,
+    key,
+    occurredAt: receivedAt,
+    requestId,
+  });
 
   if (draftId) {
     try {

@@ -30,6 +30,11 @@ recaptcha_min_score                      = 0.5
 alarm_actions                            = []
 alert_topic_name                         = "policeconduct-alerts"
 alert_email_endpoints                    = []
+# Who gets told a submission arrived (INS-35). Empty disables the notification
+# path entirely rather than building a topic with no subscribers. At least one
+# of these has to be a mailbox someone reads within 5 business days -- that is
+# the DSAR acknowledgement commitment in INS-16.
+submission_notification_email_endpoints  = []
 enable_site_bucket_versioning = true
 ga_measurement_id_production = null
 ga_measurement_id_preview    = null

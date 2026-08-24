@@ -177,3 +177,13 @@ output "alert_topic_arn" {
   description = "SNS topic ARN for stack-managed infrastructure alerts."
   value       = length(aws_sns_topic.infrastructure_alerts) > 0 ? aws_sns_topic.infrastructure_alerts[0].arn : null
 }
+
+output "submission_notifications_topic_arn" {
+  description = "SNS topic ARN for form submission arrival and verification notifications. Null when submission_notification_email_endpoints is empty, which means nobody is being told."
+  value       = length(aws_sns_topic.submission_notifications) > 0 ? aws_sns_topic.submission_notifications[0].arn : null
+}
+
+output "submission_notifications_enabled" {
+  description = "True when at least one human is subscribed to submission notifications."
+  value       = local.enable_submission_notifications
+}
