@@ -37,6 +37,23 @@ const ALLOWED_FORM_NAMES = new Set([
   "videoNew",
   "videoEdit",
 ]);
+/**
+ * Community submissions about named individual personnel are suspended.
+ *
+ * TO RE-ENABLE: empty this Set, and set PERSONNEL_UGC_SUSPENDED to false in
+ * src/lib/ugc-policy.ts. Both are required; this Set controls acceptance and
+ * the site controls the entry points. Re-enable only when a moderation queue
+ * with a named operator and a stated turnaround exists.
+ *
+ * Rejection happens before reCAPTCHA verification and before anything is
+ * written, so a suspended submission is never stored.
+ */
+const SUSPENDED_FORM_NAMES = new Set(["personnelNew", "officerEdit"]);
+const SUSPENDED_FORM_MESSAGE =
+  "We have paused community submissions about individual personnel. Public " +
+  "records listed on the site stay up. To request a correction or removal, " +
+  "use https://www.policeconduct.org/legal-notice/data-subject-access-request/ " +
+  "or email hello@policeconduct.org.";
 const FORMS_WITH_EMAIL_VERIFICATION = new Map([
   ["contact", "email"],
   ["volunteer", "email"],
@@ -532,7 +549,10 @@ async function sendVerificationEmail({
 }
 
 export const __testables = {
+  ALLOWED_FORM_NAMES,
+  SUSPENDED_FORM_NAMES,
   sendVerificationEmail,
+  submitForm,
   verificationConfig,
 };
 
@@ -1059,6 +1079,17 @@ async function submitForm(event, requestId) {
       }),
     );
     return json(400, { error: "Unsupported formName." });
+  }
+  if (SUSPENDED_FORM_NAMES.has(formName)) {
+    console.info(
+      JSON.stringify({
+        msg: "forms.submit.suspended_form_name",
+        requestId,
+        formName,
+        sourceIp,
+      }),
+    );
+    return json(403, { error: SUSPENDED_FORM_MESSAGE });
   }
 
   const expectedAction = `${formName}Submit`;
