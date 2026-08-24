@@ -1,14 +1,42 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { S3Client } from "@aws-sdk/client-s3";
 
 process.env.SENTRY_DSN = "";
 process.env.SENTRY_ENVIRONMENT = "";
 process.env.SUBMISSIONS_BUCKET = "test-submissions-bucket";
 process.env.SUBMISSIONS_KMS_KEY_ID = "test-kms-key";
+process.env.DRAFTS_BUCKET = "test-drafts-bucket";
+process.env.DRAFTS_KMS_KEY_ID = "test-drafts-kms-key";
 process.env.EMAIL_VERIFICATION_FROM_ADDRESS = "noreply@mail.policeconduct.org";
 process.env.EMAIL_VERIFICATION_HMAC_SECRET = "test-hmac-secret";
 
-const { __testables } = await import("./index.mjs");
+const { __testables, handler } = await import("./index.mjs");
+
+function apiEvent({ method, path, origin, body }) {
+  return {
+    rawPath: path,
+    headers: origin === undefined ? {} : { Origin: origin },
+    requestContext: {
+      requestId: "req_test",
+      http: { method, path, sourceIp: "203.0.113.10", userAgent: "test" },
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  };
+}
+
+const WRITE_ROUTES = ["/forms/submit", "/forms/draft", "/forms/verify-link"];
+
+const UNTRUSTED_ORIGINS = [
+  // No Origin header at all — the curl default, and the bug in INS-21.
+  undefined,
+  "https://policeconduct.org.attacker.example",
+  "https://evil.example",
+  // Right host, wrong scheme.
+  "http://www.policeconduct.org",
+  // Preview pattern must not be satisfiable by a suffix.
+  "https://pr-1.preview.policeconduct.org.evil.example",
+];
 
 test("sendVerificationEmail sends the expected Resend request", async () => {
   process.env.RESEND_API_KEY = "re_test_123";
@@ -104,6 +132,147 @@ test("verificationConfig requires RESEND_API_KEY", () => {
     } else {
       process.env.RESEND_API_KEY = previousKey;
     }
+  }
+});
+
+test("every write route rejects an unverifiable origin with 403", async () => {
+  for (const path of WRITE_ROUTES) {
+    for (const origin of UNTRUSTED_ORIGINS) {
+      const response = await handler(
+        apiEvent({
+          method: "POST",
+          path,
+          origin,
+          body: {
+            formName: "dataSubjectAccessRequest",
+            recaptchaToken: "bogus",
+            data: { email: "person@example.org" },
+          },
+        }),
+      );
+
+      const label = `${path} origin=${origin ?? "(absent)"}`;
+      assert.equal(response.statusCode, 403, `${label} should be rejected`);
+
+      const body = JSON.parse(response.body);
+      assert.equal(body.error, "Origin not allowed.", label);
+      // The old missing-origin path answered 200 with a message that told the
+      // caller their submission had been received. It had not been.
+      assert.equal(body.message, undefined, `${label} must not reassure`);
+      assert.equal(body.verificationFailureReason, undefined, label);
+      // CORS headers must not be echoed to an origin we just refused.
+      assert.equal(
+        response.headers["access-control-allow-origin"],
+        undefined,
+        label,
+      );
+    }
+  }
+});
+
+test("a rejected write never reaches S3", async () => {
+  // The point of the gate is that nothing is persisted, so assert on the
+  // storage layer directly rather than on the status code alone. Every write
+  // in this Lambda goes through this one client.
+  const originalSend = S3Client.prototype.send;
+  const commands = [];
+  S3Client.prototype.send = async function (command) {
+    commands.push(command?.constructor?.name ?? "unknown");
+    throw new Error("S3 must not be called for a rejected write");
+  };
+
+  try {
+    for (const path of WRITE_ROUTES) {
+      const response = await handler(
+        apiEvent({
+          method: "POST",
+          path,
+          body: { formName: "contact", recaptchaToken: "bogus", data: {} },
+        }),
+      );
+      assert.equal(response.statusCode, 403, path);
+    }
+    assert.deepEqual(commands, [], "no S3 command should be issued");
+  } finally {
+    S3Client.prototype.send = originalSend;
+  }
+});
+
+test("an allowed origin still reaches the submit handler", async () => {
+  for (const origin of [
+    "https://www.policeconduct.org",
+    "https://policeconduct.org",
+    "https://pr-42.preview.policeconduct.org",
+  ]) {
+    const response = await handler(
+      apiEvent({
+        method: "POST",
+        path: "/forms/submit",
+        origin,
+        // No formName: submitForm's own validation answers, which proves the
+        // origin gate passed without needing a live reCAPTCHA assessment.
+        body: { recaptchaToken: "bogus", data: {} },
+      }),
+    );
+
+    assert.equal(response.statusCode, 400, `${origin} should reach submitForm`);
+    assert.equal(
+      JSON.parse(response.body).error,
+      "Missing required formName.",
+      origin,
+    );
+  }
+});
+
+test("same-origin GET reads are not gated on Origin", async () => {
+  // Browsers omit Origin on same-origin GET. Draft restore and status polling
+  // are same-origin GETs from our own pages; gating them breaks real users.
+  const draft = await handler(
+    apiEvent({ method: "GET", path: "/forms/draft" }),
+  );
+  assert.equal(draft.statusCode, 200);
+
+  const status = await handler(apiEvent({ method: "GET", path: "/status/" }));
+  assert.notEqual(status.statusCode, 403);
+});
+
+test("path prefix /api is stripped before route matching", async () => {
+  // CloudFront routes /api/* to the Lambda; the gate must see the real path.
+  const response = await handler({
+    rawPath: "/api/forms/submit",
+    headers: {},
+    requestContext: {
+      requestId: "req_test",
+      http: {
+        method: "POST",
+        path: "/api/forms/submit",
+        sourceIp: "203.0.113.10",
+      },
+    },
+    body: JSON.stringify({ formName: "contact", recaptchaToken: "bogus" }),
+  });
+
+  assert.equal(response.statusCode, 403);
+  assert.equal(JSON.parse(response.body).error, "Origin not allowed.");
+});
+
+test("origin header casing does not change the verdict", async () => {
+  for (const headerName of ["origin", "Origin", "ORIGIN"]) {
+    const response = await handler({
+      rawPath: "/forms/submit",
+      headers: { [headerName]: "https://www.policeconduct.org" },
+      requestContext: {
+        requestId: "req_test",
+        http: {
+          method: "POST",
+          path: "/forms/submit",
+          sourceIp: "203.0.113.10",
+        },
+      },
+      body: JSON.stringify({ recaptchaToken: "bogus" }),
+    });
+
+    assert.notEqual(response.statusCode, 403, `${headerName} should be read`);
   }
 });
 
