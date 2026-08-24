@@ -2028,17 +2028,12 @@ function handler(event) {
     };
   }
 
-  var civilCaseMatch = uri.match(/^\/civil-litigation\/[^\/]+\/([^\/]+)\/?$/);
-  if (civilCaseMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/civil-cases/' + civilCaseMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
+  // INS-28: the /civil-litigation/{state}/{slug}/ -> /civil-cases/{slug}/ rule is
+  // intentionally absent. It is half of the ADR-0006 URL migration; the other half
+  // is an origin build that publishes pages at /civil-cases/. Shipping this rule
+  // ahead of that build redirected 63 live case pages to 404s. Restore it only in
+  // the same release that deploys a build containing /civil-cases/ pages, and gate
+  // that release on `npm run validate:redirects`.
 
   if (uri === '/videos' || uri === '/videos/' || uri.indexOf('/videos/') === 0 || uri === '/video' || uri === '/video/' || uri.indexOf('/video/') === 0) {
     return {
