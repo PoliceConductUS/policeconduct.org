@@ -1308,6 +1308,39 @@ export const handler = async (event) => {
       );
     }
 
+    /**
+     * Every state-changing route requires an allowed Origin, and is rejected
+     * here — before it reaches any handler that writes.
+     *
+     * A request whose origin we cannot check is untrusted, not exempt. The
+     * previous code answered a missing Origin on /forms/submit with a 200 and
+     * a "we received your submission" body, which both told an unverified
+     * caller their submission had landed when it had not, and skipped
+     * reCAPTCHA entirely on that path. POST /forms/draft had no origin check
+     * at all.
+     *
+     * Scoped to POST deliberately. Browsers omit Origin on same-origin GET,
+     * and the site's own draft restore (GET /forms/draft) and status polling
+     * (GET /status/...) are same-origin GETs, so gating reads on Origin would
+     * break real users. Browsers do send Origin on same-origin POST, so every
+     * legitimate write from our pages carries one.
+     *
+     * No Sentry capture here: under a bot flood this fires per request, and a
+     * refused unverifiable write is now expected behavior, not an anomaly.
+     * The console.warn keeps it in CloudWatch for rate monitoring.
+     */
+    if (method === "POST" && !allowedOrigin) {
+      console.warn(
+        JSON.stringify({
+          msg: "forms.request.origin_rejected",
+          ...context,
+          requestOrigin: requestOrigin || null,
+          reason: requestOrigin ? "origin_not_allowed" : "missing_origin",
+        }),
+      );
+      return json(403, { error: "Origin not allowed.", requestId });
+    }
+
     if (method === "GET" && path === "/forms/draft") {
       return withCors(await getDraft(event), allowedOrigin);
     }
@@ -1317,25 +1350,6 @@ export const handler = async (event) => {
     }
 
     if (method === "POST" && path === "/forms/submit") {
-      if (!allowedOrigin) {
-        const originError = new Error(
-          "Verification email not sent: missing_origin",
-        );
-        captureLambdaException(originError, context, {
-          operation: "validate_origin",
-          requestOrigin: requestOrigin || null,
-          verificationFailureReason: "missing_origin",
-        });
-        console.warn(
-          JSON.stringify({
-            msg: "forms.submit.origin_rejected",
-            ...context,
-            requestOrigin: requestOrigin || null,
-            verificationFailureReason: "missing_origin",
-          }),
-        );
-        return verificationFailureResponse(requestId, "missing_origin");
-      }
       return withCors(await submitForm(event, requestId), allowedOrigin);
     }
 
