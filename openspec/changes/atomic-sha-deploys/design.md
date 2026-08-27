@@ -272,3 +272,8 @@ Determinism & robustness:
   `website_sha` + `db_version` → identical output.
 - The website build is thus a pure function of `(website_sha, db_version)`; neither
   repo's CI needs the other's toolchain (restore is minutes; re-ingesting is slow).
+- **Bootstrap / missing dump:** the site is data-driven, so with no published dump
+  the website build cannot proceed. It fails early and actionably — it checks that
+  `latest.yaml` (and the dump it points to) exist before restoring, rather than
+  crashing mid-build. Intake must publish the first dump to bootstrap; after that a
+  missing/malformed `latest.yaml` is a clear, fixable error, not a silent empty site.

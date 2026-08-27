@@ -6,10 +6,14 @@
   `aws_cloudfront_distribution.preview` via a new `aws_cloudfront_key_value_store`
   (`terraform validate` passes); `scripts/load-preview-redirects.mjs` +
   `deploy-preview.sh` load each build's `redirects.json` into the KVS namespace
-  `r:pr-<N>:<from>`. The apex/www `site` distribution, `index_rewrite`, and
-  root-bucket deploy are not changed; folder layout stays the existing
-  `/<label>/`. Remaining to run in AWS: `terraform apply` + one preview deploy to
-  confirm 301s and `X-Robots-Tag` on a `*.preview` host.
+  `r:pr-<N>:<from>`. CI automation is in place: `.github/workflows/deploy-preview.yml`
+  (PR → restore pinned intake DB dump → build → deploy preview → comment URL) and
+  `.github/workflows/cleanup-preview.yml` (PR close → remove folder + prune KVS).
+  The apex/www `site` distribution, `index_rewrite`, and root-bucket deploy are not
+  changed; folder layout stays the existing `/<label>/`. Remaining to run in AWS:
+  `terraform apply`, wire the CI secrets/vars, and stand up the intake dump side
+  (design.md §7); then a preview deploy confirms 301s + `X-Robots-Tag` on a
+  `*.preview` host.
 - **Phase B (deferred — touches apex):** unify prod onto `builds/<sha>/` with a
   KVS `current` pointer and `scripts/promote.sh` — tasks 1.2, 1.3, 1.4, 2.1.
 - **Phase C (deferred — build speed):** incremental rendering + sharded CI —

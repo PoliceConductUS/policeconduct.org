@@ -1,0 +1,46 @@
+# Tear down a PR preview when the PR closes (Phase A of atomic-sha-deploys):
+# remove its S3 folder and prune its redirect namespace from the preview KVS.
+name: Cleanup preview
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Remove preview folder
+        run: |
+          set -euo pipefail
+          aws s3 rm "s3://${{ vars.S3_BUCKET_PREVIEW }}/pr-${PR_NUMBER}/" --recursive
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ vars.CLOUDFRONT_DIST_PREVIEW }}" \
+            --paths "/pr-${PR_NUMBER}/*"
+
+      - name: Prune preview redirects
+        if: ${{ vars.KVS_ARN_PREVIEW != '' }}
+        run: |
+          set -euo pipefail
+          # An empty map prunes every r:pr-<N>: key for this namespace and adds none.
+          echo "[]" > empty-map.json
+          node scripts/load-preview-redirects.mjs \
+            "${{ vars.KVS_ARN_PREVIEW }}" "r:pr-${PR_NUMBER}:" empty-map.json

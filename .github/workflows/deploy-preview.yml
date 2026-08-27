@@ -1,0 +1,119 @@
+# Preview deploy (Phase A of atomic-sha-deploys). Builds a PR against a restored
+# copy of the intake-published DB dump and publishes it to the preview
+# distribution at pr-<N>.preview.<domain>, with per-build redirects loaded into
+# the preview KVS. Prod (apex/www) is a separate distribution and is untouched.
+#
+# Secrets/vars to provide (placeholders until the AWS + intake dump side exist):
+#   secrets.AWS_ROLE_ARN            - OIDC role for preview deploys
+#   secrets.DOTENV_PRIVATE_KEY      - to decrypt .env-policeconduct (dotenvx)
+#   vars.AWS_REGION                 - e.g. us-east-1
+#   vars.DB_BUCKET                  - s3 bucket holding dumps/ + latest.yaml
+#   vars.S3_BUCKET_PREVIEW          - preview site bucket
+#   vars.CLOUDFRONT_DIST_PREVIEW    - preview distribution id
+#   vars.KVS_ARN_PREVIEW            - preview redirects KeyValueStore ARN
+name: Deploy preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      DOTENV_PRIVATE_KEY: ${{ secrets.DOTENV_PRIVATE_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # Restore the pinned intake DB dump. Read latest.yaml ONCE and record the
+      # version so the build is deterministic (design.md §7). The website is
+      # data-driven, so a missing/malformed dump fails early with an actionable
+      # message rather than crashing mid-build — the first dump must be published
+      # by intake to bootstrap.
+      - name: Restore DB dump
+        run: |
+          set -euo pipefail
+          if ! aws s3api head-object \
+            --bucket "${{ vars.DB_BUCKET }}" --key latest.yaml >/dev/null 2>&1; then
+            echo "::error::No published DB dump: s3://${{ vars.DB_BUCKET }}/latest.yaml is missing. Publish an intake DB dump first (design.md §7)."
+            exit 1
+          fi
+          aws s3 cp "s3://${{ vars.DB_BUCKET }}/latest.yaml" latest.yaml
+          DB_VERSION="$(sed -nE 's/^version:[[:space:]]*//p' latest.yaml | head -1)"
+          DUMP_KEY="$(sed -nE 's/^dump:[[:space:]]*//p' latest.yaml | head -1)"
+          if [ -z "${DB_VERSION}" ] || [ -z "${DUMP_KEY}" ]; then
+            echo "::error::latest.yaml is malformed (missing version or dump). Contents:"; cat latest.yaml
+            exit 1
+          fi
+          if ! aws s3api head-object \
+            --bucket "${{ vars.DB_BUCKET }}" --key "${DUMP_KEY}" >/dev/null 2>&1; then
+            echo "::error::latest.yaml points to a missing dump: s3://${{ vars.DB_BUCKET }}/${DUMP_KEY}"
+            exit 1
+          fi
+          echo "DB_VERSION=${DB_VERSION}" >> "$GITHUB_ENV"
+          echo "Pinned DB dump: ${DB_VERSION} (${DUMP_KEY})"
+          aws s3 cp "s3://${{ vars.DB_BUCKET }}/${DUMP_KEY}" db.dump
+          pg_restore --no-owner --no-privileges --clean --if-exists \
+            --dbname "${DATABASE_URL}" db.dump
+
+      - name: Build and deploy preview
+        env:
+          S3_BUCKET_PREVIEW: ${{ vars.S3_BUCKET_PREVIEW }}
+          CLOUDFRONT_DIST_PREVIEW: ${{ vars.CLOUDFRONT_DIST_PREVIEW }}
+          KVS_ARN_PREVIEW: ${{ vars.KVS_ARN_PREVIEW }}
+        run: bash scripts/deploy-preview.sh
+
+      - name: Comment preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = `https://pr-${process.env.PR_NUMBER}.preview.policeconduct.org`;
+            const marker = "<!-- preview-url -->";
+            const body = `${marker}\nPreview: ${url}\nDB dump: \`${process.env.DB_VERSION}\``;
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo, issue_number: Number(process.env.PR_NUMBER),
+            });
+            const existing = comments.find((c) => c.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: Number(process.env.PR_NUMBER), body });
+            }
