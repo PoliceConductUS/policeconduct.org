@@ -175,7 +175,17 @@ const redirects = await withDb(async (client) => {
   const legacyReportRedirects = legacyReportSlugAliases.flatMap((alias) => {
     const report = reportsBySlug.get(alias.newSlug);
     if (!report) {
-      throw new Error(`Missing report for legacy slug ${alias.oldSlug}`);
+      // The target report no longer exists under this slug — typically because
+      // intake re-ingested reports with new ids, so the manually-maintained
+      // newSlug is stale. An alias to a missing report can't produce a valid
+      // redirect target, so skip it (with a warning) rather than fail the whole
+      // build. Redirect coverage against real prior sitemaps is enforced
+      // separately by verify-redirect-coverage.mjs; reconcile stale aliases in
+      // legacyReportSlugAliases when the warning appears.
+      console.warn(
+        `Skipping legacy report slug alias ${alias.oldSlug}: no current report with slug ${alias.newSlug}.`,
+      );
+      return [];
     }
     return [
       {
