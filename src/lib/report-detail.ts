@@ -11,12 +11,6 @@ const assertValue = <T>(value: T | null | undefined, message: string): T => {
   return value;
 };
 
-type ReportOfficerRating = {
-  traitLabel: string;
-  rubricDescription: string;
-  rubricHelp: string | null;
-};
-
 type ReportOfficerEntry = {
   officer: Record<string, unknown>;
   agencyOfficer: Record<string, unknown>;
@@ -24,13 +18,11 @@ type ReportOfficerEntry = {
   path: string;
   badge: string | null;
   ratingOverall: number | null;
-  ratings: ReportOfficerRating[];
 };
 
 type ReportDetailQuery = {
   report: Record<string, unknown> | null;
   reportOfficers: any[];
-  reportOfficerRatings: any[];
   reportTags: any[];
   reportLinks: any[];
   reportAttachments: any[];
@@ -39,8 +31,6 @@ type ReportDetailQuery = {
   agencies: any[];
   agencyOfficers: any[];
   tags: any[];
-  traits: any[];
-  rubrics: any[];
 };
 
 // Parity fields collected by /report/new that the mockup displays
@@ -116,12 +106,6 @@ const buildOfficerEntries = (
   const officersById = mapBy(data.officers, "id");
   const agenciesById = mapBy(data.agencies, "id");
   const agencyOfficersById = mapBy(data.agencyOfficers || [], "id");
-  const reportOfficerRatings = groupBy(
-    data.reportOfficerRatings || [],
-    "review_personnel_id",
-  );
-  const traitsById = mapBy(data.traits, "id");
-  const rubricsById = mapBy(data.rubrics, "id");
 
   const reportOfficerEntries = data.reportOfficers;
   if (!reportOfficerEntries.length) {
@@ -148,17 +132,6 @@ const buildOfficerEntries = (
       `Missing agency ${agencyOfficer.agency_id} for agency_officer ${agencyOfficer.id}`,
     );
     const path = `/personnel/${officerSlug}/`;
-    const ratingEntries = (reportOfficerRatings[entry.id] || []).map(
-      (rating: any) => {
-        const trait = traitsById[rating.trait_id];
-        const rubric = rubricsById[rating.rubric_id];
-        return {
-          traitLabel: trait?.label || "",
-          rubricDescription: rubric?.description || "",
-          rubricHelp: rubric?.help || null,
-        };
-      },
-    );
     const numericRating = Number(entry.rating_overall);
     const ratingOverall = Number.isNaN(numericRating) ? null : numericRating;
 
@@ -172,7 +145,6 @@ const buildOfficerEntries = (
       path,
       badge: agencyOfficer.badge_number || null,
       ratingOverall,
-      ratings: ratingEntries,
     };
   });
 };
@@ -231,7 +203,6 @@ export const loadReportDetail = async (
       return {
         report: null,
         reportOfficers: [],
-        reportOfficerRatings: [],
         reportTags: [],
         reportLinks: [],
         reportAttachments: [],
@@ -240,8 +211,6 @@ export const loadReportDetail = async (
         agencies: [],
         agencyOfficers: [],
         tags: [],
-        traits: [],
-        rubrics: [],
       };
     }
     const reportOfficers = (
@@ -250,17 +219,6 @@ export const loadReportDetail = async (
         [report.id],
       )
     ).rows;
-    const reportOfficerIds = reportOfficers.map(
-      (entry: { id: string }) => entry.id,
-    );
-    const reportOfficerRatings = reportOfficerIds.length
-      ? (
-          await client.query(
-            "select * from public.review_personnel_ratings where review_personnel_id = any($1)",
-            [reportOfficerIds],
-          )
-        ).rows
-      : [];
     const reportTags = (
       await client.query(
         "select * from public.review_tags where review_id = $1",
@@ -303,12 +261,9 @@ export const loadReportDetail = async (
       await client.query("select * from public.agency_personnel")
     ).rows;
     const tags = (await client.query("select * from public.tags")).rows;
-    const traits = (await client.query("select * from public.traits")).rows;
-    const rubrics = (await client.query("select * from public.rubrics")).rows;
     return {
       report,
       reportOfficers,
-      reportOfficerRatings,
       reportTags,
       reportLinks,
       reportAttachments,
@@ -317,8 +272,6 @@ export const loadReportDetail = async (
       agencies,
       agencyOfficers,
       tags,
-      traits,
-      rubrics,
     };
   });
 
