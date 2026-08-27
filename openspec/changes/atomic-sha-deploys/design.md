@@ -2,6 +2,30 @@
 
 > Sketches for review. Nothing here is wired into `infrastructure/` yet.
 
+## Phasing (prod and build routing stay separate)
+
+Prod and preview are already two distributions: `aws_cloudfront_distribution.site`
+(apex + www + `index_rewrite`, deploys to bucket root) and
+`aws_cloudfront_distribution.preview` (`*.preview.<domain>` + `preview_router` →
+`/<label>/`). This work keeps them separate and lands in phases:
+
+- **Phase A — preview builds + per-build redirects + noindex (do now; prod
+  UNTOUCHED).** Extend only the preview distribution's function with per-build
+  redirects from a KeyValueStore (`r:<label>:<path>`), add a viewer-response
+  `noindex` on it, and load each preview build's `redirects.json` at deploy.
+  The apex/www distribution, `index_rewrite`, and the root-bucket deploy are not
+  changed. Folder layout stays the existing `/<label>/`.
+- **Phase B — prod atomic promotion (deferred).** Only if/when prod moves to
+  immutable `builds/<sha>/` folders with a KVS `current` pointer and
+  `scripts/promote.sh`. This is the part that touches apex routing; it is not in
+  Phase A.
+- **Phase C — incremental rendering + sharded CI (deferred).** Build-speed work
+  (§4–§6 below); orthogonal to routing.
+
+Sections below describe the full end state; the router/noindex under
+`infrastructure/.../functions/` are written to the **Phase A** shape
+(host label → `/<label>/` + redirects; no apex/KVS-pointer branch).
+
 ## 1. Routing: one bucket, one distribution, ONE folder namespace
 
 Every build — PR or prod — lands in the same namespace, `builds/<id>/`, where

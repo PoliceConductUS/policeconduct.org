@@ -1,3 +1,20 @@
+## 0. Phasing (prod and build routing stay separate)
+
+- **Phase A (do now, prod UNTOUCHED):** preview builds + per-build redirects +
+  noindex on the existing preview distribution only — tasks 1.1, 1.5, 2.2, 2.3,
+  plus the preview-side pieces of 4.2 and 5.1. The apex/www `site` distribution,
+  `index_rewrite`, and root-bucket deploy are not changed; folder layout stays
+  the existing `/<label>/`.
+- **Phase B (deferred — touches apex):** unify prod onto `builds/<sha>/` with a
+  KVS `current` pointer and `scripts/promote.sh` — tasks 1.2, 1.3, 1.4, 2.1.
+- **Phase C (deferred — build speed):** incremental rendering + sharded CI —
+  sections 3, 4 (non-preview parts), 6.3.
+
+Router/noindex under `infrastructure/.../functions/` are written to the Phase A
+shape. Phase A still needs Terraform on the **preview** distribution (KVS +
+attach the redirect-aware router and the noindex function) and a preview deploy
+that loads `redirects.json` into the KVS — see design.md.
+
 ## 1. CloudFront router function + KeyValueStore
 
 - [x] 1.1 Create `infrastructure/.../functions/router.js` (cloudfront-js-2.0): one folder namespace `builds/<id>/`; folder selection = KVS `current` for apex, first DNS label (`<id>.builds.<domain>`) otherwise; validate the label `^[a-z0-9-]+$` (traversal/arbitrary-prefix gate); per-build redirect application from KVS (`r:<id>:<path>`) on ALL hosts; index rewrite. See design.md §1.
