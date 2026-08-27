@@ -295,7 +295,9 @@ const loadAgencyRows = async (agencyId: string) =>
     ).rows;
     const agencyPhones = (
       await client.query(
-        "select * from public.agency_phone_numbers where agency_id = $1",
+        `select * from public.agency_phone_numbers
+         where agency_id = $1
+         order by (description ilike 'fax') asc, created_at asc, id asc`,
         [agencyId],
       )
     ).rows;
@@ -346,12 +348,13 @@ const loadAgencyRows = async (agencyId: string) =>
     const licenses = officerIds.length
       ? (
           await client.query(
-            `select distinct on (personnel_id)
-               personnel_id, license_type, status
-             from public.license
-             where personnel_id = any($1)
-             order by personnel_id, (status ilike 'active') desc,
-               first_awarded desc nulls last`,
+            `select distinct on (l.personnel_id)
+               l.personnel_id, al.name as license_type, l.status
+             from public.license l
+             join public.authority_license al on al.id = l.authority_license_id
+             where l.personnel_id = any($1)
+             order by l.personnel_id, (l.status ilike 'active') desc,
+               l.first_awarded desc nulls last`,
             [officerIds],
           )
         ).rows

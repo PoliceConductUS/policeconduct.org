@@ -67,10 +67,10 @@ const address = addressAvailable
     }
   : null;
 const contactPoints = data.agencyPhones.map(
-  (phone: { phone_number: string; label?: string | null }) => ({
+  (phone: { phone_number: string; description?: string | null }) => ({
     "@type": "ContactPoint",
     telephone: phone.phone_number,
-    ...(phone.label ? { contactType: phone.label } : {}),
+    ...(phone.description ? { contactType: phone.description } : {}),
   }),
 );
 const sameAs = data.agencyLinks
@@ -220,10 +220,6 @@ const addressLine = [
 ]
   .filter(Boolean)
   .join(", ");
-const primaryPhone = data.agencyPhones.find(
-  (phone: { description?: string | null }) =>
-    (phone.description || "").toLowerCase() !== "fax",
-);
 const updatedLine = data.agency.updated_at
   ? `Updated ${formatDate(data.agency.updated_at)}`
   : null;
@@ -360,13 +356,31 @@ const structuredData = {
         ) : null
       }
       {
-        primaryPhone || data.agencyLinks.length ? (
+        data.agencyPhones.length || data.agencyLinks.length ? (
           <p class="entity-contact-links">
-            {primaryPhone ? (
-              <a href={`tel:${primaryPhone.phone_number}`}>
-                {primaryPhone.phone_number}
-              </a>
-            ) : null}
+            {data.agencyPhones.map(
+              (phone: {
+                phone_number: string;
+                description?: string | null;
+              }) => {
+                const label = (phone.description || "").trim();
+                const showLabel = label && label.toLowerCase() !== "phone";
+                return (
+                  <a
+                    href={`tel:${phone.phone_number}`}
+                    aria-label={
+                      showLabel
+                        ? `${label}: ${phone.phone_number}`
+                        : phone.phone_number
+                    }
+                  >
+                    {showLabel
+                      ? `${label}: ${phone.phone_number}`
+                      : phone.phone_number}
+                  </a>
+                );
+              },
+            )}
             {data.agencyLinks.map(
               (link: { label?: string | null; url?: string | null }) => {
                 if (!link.url) return null;

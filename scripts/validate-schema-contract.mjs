@@ -152,17 +152,20 @@ const requiredTables = {
     notNull: ["id", "discipline_id", "agency_personnel_id"],
     uniqueColumnSets: [["discipline_id", "agency_personnel_id"]],
   },
+  authority_license: {
+    columns: ["id", "licensing_authority_id", "name"],
+    notNull: ["id", "licensing_authority_id", "name"],
+  },
   license: {
     columns: [
       "id",
       "personnel_id",
-      "license_type",
+      "authority_license_id",
       "status",
       "first_awarded",
-      "issued_by_authority_id",
     ],
-    notNull: ["id", "personnel_id", "license_type", "issued_by_authority_id"],
-    uniqueColumnSets: [["personnel_id", "license_type"]],
+    notNull: ["id", "personnel_id", "authority_license_id"],
+    uniqueColumnSets: [["personnel_id", "authority_license_id"]],
   },
   license_action: {
     columns: ["id", "license_id", "action", "action_date", "status"],

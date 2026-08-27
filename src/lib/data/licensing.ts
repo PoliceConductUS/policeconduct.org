@@ -59,15 +59,10 @@ export const normalizeLicenseStatus = (value: unknown): string | null => {
   return STATUS_DISPLAY[text.toLowerCase()] ?? text;
 };
 
-// Collapse duplicate license-type spellings to a single display value.
-const LICENSE_TYPE_DISPLAY: Record<string, string> = {
-  "peace officer": "Peace Officer License",
-};
-
-export const normalizeLicenseType = (value: unknown): string => {
-  const text = trimOrNull(value) ?? "";
-  return LICENSE_TYPE_DISPLAY[text.toLowerCase()] ?? text;
-};
+// License types are already canonical in authority_license.name (intake collapses
+// whitespace and drops a trailing " License"); just trim for display.
+export const normalizeLicenseType = (value: unknown): string =>
+  trimOrNull(value) ?? "";
 
 // Actions that reflect discipline / compliance problems, distinguished from
 // routine lifecycle events (Granted, Reactivated, expirations) for emphasis.
@@ -125,14 +120,16 @@ const loadAllLicensing = () => {
         await client.query(
           `
             select
-              l.id, l.personnel_id, l.license_type, l.status, l.first_awarded,
+              l.id, l.personnel_id, al.name as license_type, l.status,
+              l.first_awarded,
               la.id as authority_id, la.name as authority_name,
               la.abbreviation as authority_abbreviation,
               la.website as authority_website
             from public.license l
+            join public.authority_license al on al.id = l.authority_license_id
             left join public.licensing_authority la
-              on la.id = l.issued_by_authority_id
-            order by l.personnel_id, l.first_awarded desc nulls last, l.license_type
+              on la.id = al.licensing_authority_id
+            order by l.personnel_id, l.first_awarded desc nulls last, al.name
           `,
         )
       ).rows;
