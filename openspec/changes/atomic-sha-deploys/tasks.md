@@ -1,14 +1,14 @@
 ## 1. CloudFront router function + KeyValueStore
 
-- [ ] 1.1 Create `infrastructure/.../functions/router.js` (cloudfront-js-2.0): one folder namespace `builds/<id>/`; folder selection = KVS `current` for apex, first DNS label (`<id>.builds.<domain>`) otherwise; validate the label `^[a-z0-9-]+$` (traversal/arbitrary-prefix gate); per-build redirect application from KVS (`r:<id>:<path>`) on ALL hosts; index rewrite. See design.md §1.
+- [x] 1.1 Create `infrastructure/.../functions/router.js` (cloudfront-js-2.0): one folder namespace `builds/<id>/`; folder selection = KVS `current` for apex, first DNS label (`<id>.builds.<domain>`) otherwise; validate the label `^[a-z0-9-]+$` (traversal/arbitrary-prefix gate); per-build redirect application from KVS (`r:<id>:<path>`) on ALL hosts; index rewrite. See design.md §1.
 - [ ] 1.2 Terraform: add `aws_cloudfront_key_value_store` and `aws_cloudfront_function.router` with the KVS association; attach as viewer-request on the default behavior; retire `index_rewrite` and `preview_router`.
 - [ ] 1.3 Confirm the rewritten URI (with folder prefix) is the cache key so a pointer flip needs no invalidation; keep the default cache policy.
 - [ ] 1.4 One bucket, one namespace `builds/<id>/` for both PR (`pr-<n>`) and prod (`<sha>`) builds; prefix PR ids `pr-<n>` so decimal PR numbers and hex shas never collide; fold the separate preview bucket/distribution into the single distribution; update origin/OAC + bucket policy.
-- [ ] 1.5 Add a `viewer-response` CloudFront Function `noindex.js` that sets `X-Robots-Tag: noindex, nofollow` when the host is `*.builds.<domain>` (apex stays indexable); build-once means this cannot live in the HTML. See design.md §1.
+- [x] 1.5 Add a `viewer-response` CloudFront Function `noindex.js` that sets `X-Robots-Tag: noindex, nofollow` when the host is `*.builds.<domain>` (apex stays indexable); build-once means this cannot live in the HTML. See design.md §1.
 
 ## 2. Promotion + redirects
 
-- [ ] 2.1 Add `scripts/promote.sh <sha>`: verify `builds/<sha>/index.html` exists, then `cloudfront-keyvaluestore update-keys` `current=<sha>` with the ETag if-match. Rollback = promote previous sha.
+- [x] 2.1 Add `scripts/promote.sh <sha>`: verify `builds/<sha>/index.html` exists, then `cloudfront-keyvaluestore update-keys` `current=<sha>` with the ETag if-match. Rollback = promote previous sha.
 - [ ] 2.2 Redirects (chosen): `builds/<id>/redirects.json` is the per-build source of truth; at each build publish load its entries into the KVS under a per-build namespace `r:<id>:<from> = <to>` (batched); the router applies them on ALL hosts (apex + `*.builds.`). Prune a build's namespace when it is expired.
 - [ ] 2.3 KVS size guard: fail publish if total keys would exceed KVS limits (≤5 MB total, value ≤1 KB, key ≤512 B) — small/stable map × retained builds stays well under. If it ever exceeds, switch to the Lambda@Edge fallback reading the per-build `redirects.json` (edge-memory cached), per design.md §1.
 
