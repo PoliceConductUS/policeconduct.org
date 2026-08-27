@@ -237,6 +237,17 @@ DB intake produces. The handoff is a **versioned DB dump in S3 behind a mutable
 `latest.yaml` pointer**, dereferenced and pinned once per website build so the
 build is deterministic.
 
+**Intake first, always.** Every schema/data change originates in intake and ships
+as a new dump; the website only ever reacts to what intake published — it never
+leads. This is safe because of the immutable-build + pinned-`db_version` model:
+when intake publishes a dump whose schema the current website doesn't yet handle,
+the website's build against it fails in CI/preview, but **prod is untouched** (it
+keeps serving the last *promoted* build; `repository_dispatch` triggers a build,
+never an auto-promote). You then update the website to the new shape, its build
+against the already-published dump goes green, and you promote. During the gap you
+can keep building/rolling back the website against the prior `db_version`. Never
+change the website first to "tolerate both shapes."
+
 **Intake CI** (on a migrations/sources change) — "spin up DB → migrate → mutate":
 
 ```
