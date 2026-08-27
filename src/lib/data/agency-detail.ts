@@ -753,9 +753,16 @@ const buildAgencyDetail = async (agencyId: string) => {
     .map((reportId: string) => {
       const report = reportSummariesById[reportId];
       if (!report) {
-        throw new Error(
-          `Agency ${agencyRequiredId} references report ${reportId}, but that report has no build projection.`,
+        // The build projection (build_page_payload) is the source of truth for
+        // which report pages exist. A referenced report absent from it has no
+        // page to link to, so linking would 404. This normally means the
+        // report was created after the projection snapshot ran (the DB is
+        // mutated concurrently by intake until atomic-sha-deploys lands), or an
+        // unpublished report. Skip it and warn rather than failing the build.
+        console.warn(
+          `Agency ${agencyRequiredId} references report ${reportId}, but that report has no build projection; skipping.`,
         );
+        return null;
       }
       return {
         ...report,
@@ -763,6 +770,7 @@ const buildAgencyDetail = async (agencyId: string) => {
         officers: report.personnel || [],
       };
     })
+    .filter((report): report is NonNullable<typeof report> => report !== null)
     .sort((a, b) => {
       const left = new Date(b.incidentDate).getTime();
       const right = new Date(a.incidentDate).getTime();
