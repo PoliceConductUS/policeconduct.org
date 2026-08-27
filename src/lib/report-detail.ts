@@ -118,7 +118,7 @@ const buildOfficerEntries = (
   const agencyOfficersById = mapBy(data.agencyOfficers || [], "id");
   const reportOfficerRatings = groupBy(
     data.reportOfficerRatings || [],
-    "review_officer_id",
+    "review_personnel_id",
   );
   const traitsById = mapBy(data.traits, "id");
   const rubricsById = mapBy(data.rubrics, "id");
@@ -126,22 +126,22 @@ const buildOfficerEntries = (
   const reportOfficerEntries = data.reportOfficers;
   if (!reportOfficerEntries.length) {
     throw new Error(
-      `Report ${data.report?.slug || data.report?.id || "unknown"} has no review_officers records`,
+      `Report ${data.report?.slug || data.report?.id || "unknown"} has no review_personnel records`,
     );
   }
 
   return reportOfficerEntries.map((entry: any) => {
     const agencyOfficer = assertValue(
-      agencyOfficersById[entry.agency_officer_id],
-      `Missing agency_officer ${entry.agency_officer_id} for review officer ${entry.id}`,
+      agencyOfficersById[entry.agency_personnel_id],
+      `Missing agency_officer ${entry.agency_personnel_id} for review officer ${entry.id}`,
     );
     const officer = assertValue(
-      officersById[agencyOfficer.officer_id],
-      `Missing officer ${agencyOfficer.officer_id} for agency_officer ${agencyOfficer.id}`,
+      officersById[agencyOfficer.personnel_id],
+      `Missing officer ${agencyOfficer.personnel_id} for agency_officer ${agencyOfficer.id}`,
     );
     const officerSlug = assertValue(
       officer.slug,
-      `Missing slug for officer ${agencyOfficer.officer_id} on review officer ${entry.id}`,
+      `Missing slug for officer ${agencyOfficer.personnel_id} on review officer ${entry.id}`,
     );
     const agency = assertValue(
       agenciesById[agencyOfficer.agency_id],
@@ -240,7 +240,7 @@ export const loadReportDetail = async (
     }
     const reportOfficers = (
       await client.query(
-        "select * from public.review_officers where review_id = $1",
+        "select * from public.review_personnel where review_id = $1",
         [report.id],
       )
     ).rows;
@@ -250,7 +250,7 @@ export const loadReportDetail = async (
     const reportOfficerRatings = reportOfficerIds.length
       ? (
           await client.query(
-            "select * from public.review_officers_ratings where review_officer_id = any($1)",
+            "select * from public.review_personnel_ratings where review_personnel_id = any($1)",
             [reportOfficerIds],
           )
         ).rows
@@ -279,7 +279,7 @@ export const loadReportDetail = async (
         [report.id],
       )
     ).rows;
-    const officers = (await client.query("select * from public.officers")).rows;
+    const officers = (await client.query("select * from public.personnel")).rows;
     const agencies = (
       await client.query(
         `
@@ -294,7 +294,7 @@ export const loadReportDetail = async (
       )
     ).rows;
     const agencyOfficers = (
-      await client.query("select * from public.agency_officers")
+      await client.query("select * from public.agency_personnel")
     ).rows;
     const tags = (await client.query("select * from public.tags")).rows;
     const traits = (await client.query("select * from public.traits")).rows;

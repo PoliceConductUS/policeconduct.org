@@ -152,14 +152,14 @@ const redirects = await withDb(async (client) => {
     await client.query(
       `
         with active_assignments as (
-          select distinct on (ao.officer_id)
-            ao.officer_id,
+          select distinct on (ao.personnel_id)
+            ao.personnel_id,
             lower(a.state) as category
-          from public.agency_officers ao
+          from public.agency_personnel ao
           join public.agency a on a.id = ao.agency_id
           where ao.end_date is null
             and a.state is not null
-          order by ao.officer_id, ao.start_date desc
+          order by ao.personnel_id, ao.start_date desc
         )
         select category, count(*)::int as total
         from active_assignments

@@ -459,12 +459,12 @@ const fetchLocationRecordCounts = async (client, locations) => {
             on agency_location.path like target.path || '%'
           join public.agency scoped_agency
             on scoped_agency.location_path_id = agency_location.location_path_id
-          join public.agency_officers target_assignment
+          join public.agency_personnel target_assignment
             on target_assignment.agency_id = scoped_agency.id
-          join public.agency_officers case_assignment
-            on case_assignment.officer_id = target_assignment.officer_id
-          join public.civil_case_officers cco
-            on cco.agency_officer_id = case_assignment.id
+          join public.agency_personnel case_assignment
+            on case_assignment.personnel_id = target_assignment.personnel_id
+          join public.civil_case_personnel cco
+            on cco.agency_personnel_id = case_assignment.id
           group by target.location_path_id
         )
         select
@@ -585,21 +585,21 @@ await withDb(async (client) => {
             from public.agency a
             where exists (
               select 1
-              from public.agency_officers ao
+              from public.agency_personnel ao
               where ao.agency_id = a.id
             )
             or exists (
               select 1
-              from public.agency_officers ao
-              join public.review_officers ro
-                on ro.agency_officer_id = ao.id
+              from public.agency_personnel ao
+              join public.review_personnel ro
+                on ro.agency_personnel_id = ao.id
               where ao.agency_id = a.id
             )
             or exists (
               select 1
-              from public.agency_officers ao
-              join public.civil_case_officers cco
-                on cco.agency_officer_id = ao.id
+              from public.agency_personnel ao
+              join public.civil_case_personnel cco
+                on cco.agency_personnel_id = ao.id
               where ao.agency_id = a.id
             )
             or exists (
@@ -614,9 +614,9 @@ await withDb(async (client) => {
             )
             or exists (
               select 1
-              from public.agency_officers ao
-              join public.coverage_link_agency_officers coverage_officer
-                on coverage_officer.agency_officer_id = ao.id
+              from public.agency_personnel ao
+              join public.coverage_link_agency_personnel coverage_officer
+                on coverage_officer.agency_personnel_id = ao.id
               where ao.agency_id = a.id
             )
           ),
@@ -628,8 +628,8 @@ await withDb(async (client) => {
             -- with a status filter; only the counts are active-only.
             select
               ao.agency_id,
-              count(distinct ao.officer_id) as personnel_count
-            from public.agency_officers ao
+              count(distinct ao.personnel_id) as personnel_count
+            from public.agency_personnel ao
             join eligible_agencies ea
               on ea.id = ao.agency_id
             where ao.end_date is null
@@ -639,33 +639,33 @@ await withDb(async (client) => {
             select
               ao.agency_id,
               count(distinct ro.review_id) as report_count
-            from public.agency_officers ao
+            from public.agency_personnel ao
             join eligible_agencies ea
               on ea.id = ao.agency_id
-            join public.review_officers ro
-              on ro.agency_officer_id = ao.id
+            join public.review_personnel ro
+              on ro.agency_personnel_id = ao.id
             group by ao.agency_id
           ),
           civil_case_links as (
             select
               ao.agency_id,
               cco.civil_case_id
-            from public.agency_officers ao
+            from public.agency_personnel ao
             join eligible_agencies ea
               on ea.id = ao.agency_id
-            join public.civil_case_officers cco
-              on cco.agency_officer_id = ao.id
+            join public.civil_case_personnel cco
+              on cco.agency_personnel_id = ao.id
             union
             select
               target_ao.agency_id,
               cco.civil_case_id
-            from public.agency_officers target_ao
+            from public.agency_personnel target_ao
             join eligible_agencies ea
               on ea.id = target_ao.agency_id
-            join public.agency_officers case_ao
-              on case_ao.officer_id = target_ao.officer_id
-            join public.civil_case_officers cco
-              on cco.agency_officer_id = case_ao.id
+            join public.agency_personnel case_ao
+              on case_ao.personnel_id = target_ao.personnel_id
+            join public.civil_case_personnel cco
+              on cco.agency_personnel_id = case_ao.id
           ),
           civil_case_counts as (
             select
@@ -883,7 +883,7 @@ await withDb(async (client) => {
             report_location.administrative_area_name,
             report_location.place_name,
             report_location.path as location_path,
-            ro.id as review_officer_id,
+            ro.id as review_personnel_id,
             ao.agency_id,
             ao.title,
             o.first_name,
@@ -893,12 +893,12 @@ await withDb(async (client) => {
           from public.reviews r
           join public.location_path report_location
             on report_location.location_path_id = r.location_path_id
-          left join public.review_officers ro
+          left join public.review_personnel ro
             on ro.review_id = r.id
-          left join public.agency_officers ao
-            on ao.id = ro.agency_officer_id
-          left join public.officers o
-            on o.id = ao.officer_id
+          left join public.agency_personnel ao
+            on ao.id = ro.agency_personnel_id
+          left join public.personnel o
+            on o.id = ao.personnel_id
           order by r.incident_date desc, r.id, ro.id
         `,
       )

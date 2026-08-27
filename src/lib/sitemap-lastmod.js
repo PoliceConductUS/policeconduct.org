@@ -147,7 +147,7 @@ export const buildSitemapLastmodMap = async () => {
               bpp.path as canonical_path,
               a.created_at,
               a.updated_at,
-              count(distinct ao_active.officer_id) as active_personnel_count,
+              count(distinct ao_active.personnel_id) as active_personnel_count,
               count(distinct ro.review_id) as report_count,
               max(ao.updated_at) as max_assignment_updated_at,
               max(o.updated_at) as max_officer_updated_at,
@@ -165,15 +165,15 @@ export const buildSitemapLastmodMap = async () => {
             join public.build_page_payload bpp
               on bpp.page_type = 'agency'
              and bpp.entity_id = a.id
-            left join public.agency_officers ao on ao.agency_id = a.id
-            left join public.agency_officers ao_active
+            left join public.agency_personnel ao on ao.agency_id = a.id
+            left join public.agency_personnel ao_active
               on ao_active.agency_id = a.id
              and ao_active.end_date is null
-            left join public.officers o on o.id = ao.officer_id
-            left join public.review_officers ro on ro.agency_officer_id = ao.id
+            left join public.personnel o on o.id = ao.personnel_id
+            left join public.review_personnel ro on ro.agency_personnel_id = ao.id
             left join public.reviews r on r.id = ro.review_id
-            left join public.civil_case_officers cco
-              on cco.agency_officer_id = ao.id
+            left join public.civil_case_personnel cco
+              on cco.agency_personnel_id = ao.id
             left join public.civil_cases c on c.id = cco.civil_case_id
             group by a.id, a.slug, lp.state_or_territory_slug,
               state_lp.path, area_lp.path, lp.path, bpp.path, a.created_at,
@@ -235,12 +235,12 @@ export const buildSitemapLastmodMap = async () => {
               coalesce(max(r.updated_at), o.updated_at),
               coalesce(max(c.updated_at), o.updated_at)
             ) as lastmod
-          from public.officers o
-          join public.agency_officers ao on ao.officer_id = o.id
+          from public.personnel o
+          join public.agency_personnel ao on ao.personnel_id = o.id
           left join public.agency a on a.id = ao.agency_id
-          left join public.review_officers ro on ro.agency_officer_id = ao.id
+          left join public.review_personnel ro on ro.agency_personnel_id = ao.id
           left join public.reviews r on r.id = ro.review_id
-          left join public.civil_case_officers cco on cco.agency_officer_id = ao.id
+          left join public.civil_case_personnel cco on cco.agency_personnel_id = ao.id
           left join public.civil_cases c on c.id = cco.civil_case_id
           where o.slug is not null
           group by o.id, o.slug, o.created_at, o.updated_at
@@ -261,46 +261,46 @@ export const buildSitemapLastmodMap = async () => {
           with active_assignments as (
             select
               ao.id,
-              ao.officer_id,
+              ao.personnel_id,
               ao.start_date,
               ao.created_at,
               ao.updated_at,
               lower(a.state) as agency_state,
               a.updated_at as agency_updated_at,
               count(*) over (partition by ao.agency_id) as active_personnel_count
-            from public.agency_officers ao
+            from public.agency_personnel ao
             join public.agency a on a.id = ao.agency_id
             where ao.end_date is null
           ),
           officer_report_counts as (
             select
-              ao.officer_id,
+              ao.personnel_id,
               count(distinct ro.review_id) as report_count,
               max(r.updated_at) as max_report_updated_at
-            from public.agency_officers ao
-            join public.review_officers ro on ro.agency_officer_id = ao.id
+            from public.agency_personnel ao
+            join public.review_personnel ro on ro.agency_personnel_id = ao.id
             join public.reviews r on r.id = ro.review_id
-            group by ao.officer_id
+            group by ao.personnel_id
           ),
           officer_civil_case_updates as (
             select
-              ao.officer_id,
+              ao.personnel_id,
               max(c.updated_at) as max_civil_case_updated_at
-            from public.agency_officers ao
-            join public.civil_case_officers cco on cco.agency_officer_id = ao.id
+            from public.agency_personnel ao
+            join public.civil_case_personnel cco on cco.agency_personnel_id = ao.id
             join public.civil_cases c on c.id = cco.civil_case_id
-            group by ao.officer_id
+            group by ao.personnel_id
           ),
           ranked_active_assignments as (
             select
               aa.*,
               coalesce(orc.report_count, 0) as report_count,
               row_number() over (
-                partition by aa.officer_id
+                partition by aa.personnel_id
                 order by aa.start_date desc nulls last, aa.created_at desc, aa.id desc
               ) as recency_rank
             from active_assignments aa
-            left join officer_report_counts orc on orc.officer_id = aa.officer_id
+            left join officer_report_counts orc on orc.personnel_id = aa.personnel_id
           ),
           selected_assignments as (
             select *
@@ -323,11 +323,11 @@ export const buildSitemapLastmodMap = async () => {
               )
             ) as lastmod
           from selected_assignments
-          join public.officers o on o.id = selected_assignments.officer_id
+          join public.personnel o on o.id = selected_assignments.personnel_id
           left join officer_report_counts
-            on officer_report_counts.officer_id = selected_assignments.officer_id
+            on officer_report_counts.personnel_id = selected_assignments.personnel_id
           left join officer_civil_case_updates
-            on officer_civil_case_updates.officer_id = selected_assignments.officer_id
+            on officer_civil_case_updates.personnel_id = selected_assignments.personnel_id
           where o.slug is not null
         `,
         [],

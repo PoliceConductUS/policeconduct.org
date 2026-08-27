@@ -33,11 +33,11 @@ const hydrateCoverageLinks = async (rows: any[]): Promise<CoverageLink[]> => {
             officer.first_name,
             officer.last_name,
             agency_officer.title
-          from public.coverage_link_agency_officers coverage_officer
-          join public.agency_officers agency_officer
-            on agency_officer.id = coverage_officer.agency_officer_id
-          join public.officers officer
-            on officer.id = agency_officer.officer_id
+          from public.coverage_link_agency_personnel coverage_officer
+          join public.agency_personnel agency_officer
+            on agency_officer.id = coverage_officer.agency_personnel_id
+          join public.personnel officer
+            on officer.id = agency_officer.personnel_id
           where coverage_officer.coverage_link_id = any($1)
           order by officer.last_name, officer.first_name
         `,
@@ -83,10 +83,10 @@ export const loadCoverageLinksForAgency = async (agencyId: string) => {
         `
           select distinct link.*
           from public.coverage_links link
-          join public.coverage_link_agency_officers coverage_officer
+          join public.coverage_link_agency_personnel coverage_officer
             on coverage_officer.coverage_link_id = link.id
-          join public.agency_officers agency_officer
-            on agency_officer.id = coverage_officer.agency_officer_id
+          join public.agency_personnel agency_officer
+            on agency_officer.id = coverage_officer.agency_personnel_id
           where agency_officer.agency_id = $1
           ${orderClause}
         `,
@@ -105,11 +105,11 @@ export const loadCoverageLinksForOfficer = async (officerId: string) => {
         `
           select distinct link.*
           from public.coverage_links link
-          join public.coverage_link_agency_officers coverage_officer
+          join public.coverage_link_agency_personnel coverage_officer
             on coverage_officer.coverage_link_id = link.id
-          join public.agency_officers agency_officer
-            on agency_officer.id = coverage_officer.agency_officer_id
-          where agency_officer.officer_id = $1
+          join public.agency_personnel agency_officer
+            on agency_officer.id = coverage_officer.agency_personnel_id
+          where agency_officer.personnel_id = $1
           ${orderClause}
         `,
         [officerId],

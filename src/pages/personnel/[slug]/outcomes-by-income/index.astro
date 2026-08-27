@@ -12,7 +12,7 @@ const officer = await withDb(async (client) => {
   return (
     await client.query(
       `select id, first_name, middle_name, last_name, suffix, slug
-       from public.officers
+       from public.personnel
        where id = $1`,
       [officerId],
     )

@@ -26,13 +26,13 @@ export async function getStaticPaths() {
             count(distinct ao.agency_id) as agency_count,
             count(distinct ro.review_id) as report_count,
             count(distinct cco.civil_case_id) as civil_case_count
-          from public.officers o
-          join public.agency_officers ao
-            on ao.officer_id = o.id
-          left join public.review_officers ro
-            on ro.agency_officer_id = ao.id
-          left join public.civil_case_officers cco
-            on cco.agency_officer_id = ao.id
+          from public.personnel o
+          join public.agency_personnel ao
+            on ao.personnel_id = o.id
+          left join public.review_personnel ro
+            on ro.agency_personnel_id = ao.id
+          left join public.civil_case_personnel cco
+            on cco.agency_personnel_id = ao.id
           group by o.slug
           order by o.slug
         `,
@@ -71,7 +71,7 @@ const topicKey = topic as PersonnelTopic;
 const topicConfig = personnelTopics[topicKey];
 const data = await withDb(async (client) => {
   const officer = (
-    await client.query("select * from public.officers where slug = $1", [slug])
+    await client.query("select * from public.personnel where slug = $1", [slug])
   ).rows[0];
   if (!officer) {
     throw new Error(`Personnel ${slug} not found.`);
@@ -86,13 +86,13 @@ const data = await withDb(async (client) => {
           lp.place_name,
           lp.state_or_territory_slug,
           bpp.path as canonical_path
-        from public.agency_officers ao
+        from public.agency_personnel ao
         join public.agency a on a.id = ao.agency_id
         join public.location_path lp on lp.location_path_id = a.location_path_id
         join public.build_page_payload bpp
           on bpp.page_type = 'agency'
          and bpp.entity_id = a.id
-        where ao.officer_id = $1
+        where ao.personnel_id = $1
         order by ao.start_date desc nulls last, a.name asc
       `,
       [officer.id],
@@ -107,9 +107,9 @@ const data = await withDb(async (client) => {
           `
             select distinct r.*, lp.path as location_path
             from public.reviews r
-            join public.review_officers ro on ro.review_id = r.id
+            join public.review_personnel ro on ro.review_id = r.id
             join public.location_path lp on lp.location_path_id = r.location_path_id
-            where ro.agency_officer_id = any($1)
+            where ro.agency_personnel_id = any($1)
             order by r.incident_date desc, r.title asc
           `,
           [assignmentIds],
@@ -122,8 +122,8 @@ const data = await withDb(async (client) => {
           `
             select distinct c.*
             from public.civil_cases c
-            join public.civil_case_officers cco on cco.civil_case_id = c.id
-            where cco.agency_officer_id = any($1)
+            join public.civil_case_personnel cco on cco.civil_case_id = c.id
+            where cco.agency_personnel_id = any($1)
             order by c.filed_date desc, c.title asc
           `,
           [assignmentIds],

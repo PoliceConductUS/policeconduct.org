@@ -33,8 +33,8 @@ export async function getStaticPaths() {
     return (
       await client.query(
         `select distinct o.slug
-         from public.officers o
-         join public.agency_officers ao on ao.officer_id = o.id`,
+         from public.personnel o
+         join public.agency_personnel ao on ao.personnel_id = o.id`,
       )
     ).rows;
   });
@@ -50,20 +50,15 @@ if (!slug) {
 }
 const data = await withDb(async (client) => {
   const officer = (
-    await client.query("select * from public.officers where slug = $1", [slug])
+    await client.query("select * from public.personnel where slug = $1", [slug])
   ).rows[0];
   if (!officer || officer.slug !== slug) {
     throw new Error(`Personnel ${slug} not found.`);
   }
   const officerId = officer.id;
-  const officerStats = (
-    await client.query("select * from public.officers_stats where id = $1", [
-      officerId,
-    ])
-  ).rows[0];
   const agencyOfficers = (
     await client.query(
-      "select * from public.agency_officers where officer_id = $1",
+      "select * from public.agency_personnel where personnel_id = $1",
       [officerId],
     )
   ).rows;
@@ -93,7 +88,7 @@ const data = await withDb(async (client) => {
   const reportOfficers = agencyOfficerIds.length
     ? (
         await client.query(
-          "select * from public.review_officers where agency_officer_id = any($1)",
+          "select * from public.review_personnel where agency_personnel_id = any($1)",
           [agencyOfficerIds],
         )
       ).rows
@@ -118,9 +113,9 @@ const data = await withDb(async (client) => {
   const civilCaseIds = (
     await client.query(
       `select distinct cco.civil_case_id
-       from public.civil_case_officers cco
-       join public.agency_officers ao on ao.id = cco.agency_officer_id
-       where ao.officer_id = $1`,
+       from public.civil_case_personnel cco
+       join public.agency_personnel ao on ao.id = cco.agency_personnel_id
+       where ao.personnel_id = $1`,
       [officerId],
     )
   ).rows.map((row: { civil_case_id: string }) => row.civil_case_id);
@@ -137,7 +132,6 @@ const data = await withDb(async (client) => {
     : [];
   return {
     officer,
-    officerStats,
     agencyOfficers,
     agencies,
     reports,
@@ -189,7 +183,7 @@ const isPlaceholderPersonnel =
     data.officer.last_name === "Personnel");
 if (!isPlaceholderPersonnel && !currentTitle) {
   throw new Error(
-    `Personnel ${data.officer.slug} is missing required title on agency_officers ${currentAssignment?.id || "unknown"}`,
+    `Personnel ${data.officer.slug} is missing required title on agency_personnel ${currentAssignment?.id || "unknown"}`,
   );
 }
 

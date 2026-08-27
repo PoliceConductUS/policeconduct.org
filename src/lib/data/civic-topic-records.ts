@@ -90,11 +90,11 @@ const loadCivilCaseRecords = async (
             as has_direct_connection,
           bool_or(case_ao.agency_id <> target_ao.agency_id)
             as has_officer_transfer_connection
-        from public.civil_case_officers cco
-        join public.agency_officers case_ao
-          on case_ao.id = cco.agency_officer_id
-        join public.agency_officers target_ao
-          on target_ao.officer_id = case_ao.officer_id
+        from public.civil_case_personnel cco
+        join public.agency_personnel case_ao
+          on case_ao.id = cco.agency_personnel_id
+        join public.agency_personnel target_ao
+          on target_ao.personnel_id = case_ao.personnel_id
         join scoped_agencies scoped_agency
           on scoped_agency.id = target_ao.agency_id
         group by cco.civil_case_id
@@ -150,9 +150,9 @@ const loadCivilCaseRecords = async (
             a.slug,
             lp.path as location_path,
             bpp.path as canonical_path
-          from public.civil_case_officers cco
-          join public.agency_officers ao
-            on ao.id = cco.agency_officer_id
+          from public.civil_case_personnel cco
+          join public.agency_personnel ao
+            on ao.id = cco.agency_personnel_id
           join public.agency a
             on a.id = ao.agency_id
           join public.location_path lp
@@ -177,11 +177,11 @@ const loadCivilCaseRecords = async (
             o.first_name,
             o.last_name,
             o.suffix
-          from public.civil_case_officers cco
-          join public.agency_officers ao
-            on ao.id = cco.agency_officer_id
-          join public.officers o
-            on o.id = ao.officer_id
+          from public.civil_case_personnel cco
+          join public.agency_personnel ao
+            on ao.id = cco.agency_personnel_id
+          join public.personnel o
+            on o.id = ao.personnel_id
           where cco.civil_case_id = any($1)
           order by o.last_name, o.first_name, o.id
         `,

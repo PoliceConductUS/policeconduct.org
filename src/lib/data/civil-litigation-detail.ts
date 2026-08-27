@@ -112,11 +112,11 @@ export const loadCivilCaseDetail = async (
             officer.first_name,
             officer.last_name,
             agency_officer.title
-          from public.civil_case_officers civil_case_officer
-          join public.agency_officers agency_officer
-            on agency_officer.id = civil_case_officer.agency_officer_id
-          join public.officers officer
-            on officer.id = agency_officer.officer_id
+          from public.civil_case_personnel civil_case_officer
+          join public.agency_personnel agency_officer
+            on agency_officer.id = civil_case_officer.agency_personnel_id
+          join public.personnel officer
+            on officer.id = agency_officer.personnel_id
           where civil_case_officer.civil_case_id = $1
           order by officer.last_name, officer.first_name
         `,
@@ -136,9 +136,9 @@ export const loadCivilCaseDetail = async (
             lp.administrative_area_name as administrative_area,
             lp.path as location_path,
             bpp.path as canonical_path
-          from public.civil_case_officers civil_case_officer
-          join public.agency_officers agency_officer
-            on agency_officer.id = civil_case_officer.agency_officer_id
+          from public.civil_case_personnel civil_case_officer
+          join public.agency_personnel agency_officer
+            on agency_officer.id = civil_case_officer.agency_personnel_id
           join public.agency agency
             on agency.id = agency_officer.agency_id
           join public.location_path lp

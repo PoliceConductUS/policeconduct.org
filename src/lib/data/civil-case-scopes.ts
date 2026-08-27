@@ -14,11 +14,11 @@ export const loadCivilCaseCountsByAgencyState = async (): Promise<
         select
           lower(lp.state_or_territory_slug) as category,
           count(distinct cco.civil_case_id) as case_count
-        from public.civil_case_officers cco
-        join public.agency_officers case_ao
-          on case_ao.id = cco.agency_officer_id
-        join public.agency_officers target_ao
-          on target_ao.officer_id = case_ao.officer_id
+        from public.civil_case_personnel cco
+        join public.agency_personnel case_ao
+          on case_ao.id = cco.agency_personnel_id
+        join public.agency_personnel target_ao
+          on target_ao.personnel_id = case_ao.personnel_id
         join public.agency a
           on a.id = target_ao.agency_id
         join public.location_path lp

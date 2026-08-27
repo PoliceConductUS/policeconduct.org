@@ -37,25 +37,21 @@ const requiredTables = {
     columns: ["id", "agency_id", "url", "label", "description"],
     notNull: ["id", "url", "label"],
   },
-  agency_officers: {
+  agency_personnel: {
     columns: [
       "id",
       "agency_id",
-      "officer_id",
+      "personnel_id",
       "title",
       "badge_number",
       "start_date",
       "end_date",
     ],
-    notNull: ["id", "officer_id", "title"],
+    notNull: ["id", "personnel_id", "title"],
   },
   agency_phone_numbers: {
     columns: ["id", "agency_id", "phone_number", "created_at"],
     notNull: ["id", "phone_number"],
-  },
-  agency_stats: {
-    columns: ["id"],
-    notNull: ["id"],
   },
   agency_zip_index: {
     columns: ["postal_code", "agency_id", "relationship_type"],
@@ -85,9 +81,9 @@ const requiredTables = {
     ],
     notNull: ["id", "civil_case_id", "title", "url"],
   },
-  civil_case_officers: {
-    columns: ["id", "civil_case_id", "agency_officer_id"],
-    notNull: ["id", "civil_case_id", "agency_officer_id"],
+  civil_case_personnel: {
+    columns: ["id", "civil_case_id", "agency_personnel_id"],
+    notNull: ["id", "civil_case_id", "agency_personnel_id"],
   },
   civil_cases: {
     columns: [
@@ -107,9 +103,9 @@ const requiredTables = {
     notNull: ["id", "slug", "title", "cause_number", "filed_date"],
     uniqueColumnSets: [["slug"]],
   },
-  coverage_link_agency_officers: {
-    columns: ["coverage_link_id", "agency_officer_id"],
-    notNull: ["coverage_link_id", "agency_officer_id"],
+  coverage_link_agency_personnel: {
+    columns: ["coverage_link_id", "agency_personnel_id"],
+    notNull: ["coverage_link_id", "agency_personnel_id"],
   },
   coverage_link_civil_cases: {
     columns: ["coverage_link_id", "civil_case_id"],
@@ -177,14 +173,10 @@ const requiredTables = {
       "depth",
     ],
   },
-  officers: {
+  personnel: {
     columns: ["id", "slug", "first_name", "middle_name", "last_name", "suffix"],
     notNull: ["id", "slug", "first_name"],
     uniqueColumnSets: [["slug"]],
-  },
-  officers_stats: {
-    columns: ["id"],
-    notNull: ["id"],
   },
   review_attachments: {
     columns: ["id", "review_id"],
@@ -194,12 +186,12 @@ const requiredTables = {
     columns: ["id", "review_id", "title", "url"],
     notNull: ["id", "title", "url"],
   },
-  review_officers: {
-    columns: ["id", "review_id", "agency_officer_id", "rating_overall"],
-    notNull: ["id", "review_id", "agency_officer_id"],
+  review_personnel: {
+    columns: ["id", "review_id", "agency_personnel_id", "rating_overall"],
+    notNull: ["id", "review_id", "agency_personnel_id"],
   },
-  review_officers_ratings: {
-    columns: ["id", "review_officer_id", "trait_id", "rubric_id"],
+  review_personnel_ratings: {
+    columns: ["id", "review_personnel_id", "trait_id", "rubric_id"],
     notNull: ["id"],
   },
   review_tags: {

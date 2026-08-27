@@ -364,32 +364,32 @@ export const loadFederalAgencySummaries = async () => {
             fa.name,
             fa.slug,
             count(distinct fab.agency_id) as branch_count,
-            count(distinct active_assignment.officer_id) as personnel_count,
+            count(distinct active_assignment.personnel_id) as personnel_count,
             count(distinct report_officer.review_id) as report_count,
             count(distinct civil_case_link.civil_case_id) as civil_case_count
           from public.federal_agency fa
           left join public.federal_agency_branch fab
             on fab.federal_agency_id = fa.id
-          left join public.agency_officers active_assignment
+          left join public.agency_personnel active_assignment
             on active_assignment.agency_id = fab.agency_id
            and active_assignment.end_date is null
-          left join public.agency_officers report_assignment
+          left join public.agency_personnel report_assignment
             on report_assignment.agency_id = fab.agency_id
-          left join public.review_officers report_officer
-            on report_officer.agency_officer_id = report_assignment.id
+          left join public.review_personnel report_officer
+            on report_officer.agency_personnel_id = report_assignment.id
           left join lateral (
             select cco.civil_case_id
-            from public.agency_officers direct_assignment
-            join public.civil_case_officers cco
-              on cco.agency_officer_id = direct_assignment.id
+            from public.agency_personnel direct_assignment
+            join public.civil_case_personnel cco
+              on cco.agency_personnel_id = direct_assignment.id
             where direct_assignment.agency_id = fab.agency_id
             union
             select cco.civil_case_id
-            from public.agency_officers target_assignment
-            join public.agency_officers case_assignment
-              on case_assignment.officer_id = target_assignment.officer_id
-            join public.civil_case_officers cco
-              on cco.agency_officer_id = case_assignment.id
+            from public.agency_personnel target_assignment
+            join public.agency_personnel case_assignment
+              on case_assignment.personnel_id = target_assignment.personnel_id
+            join public.civil_case_personnel cco
+              on cco.agency_personnel_id = case_assignment.id
             where target_assignment.agency_id = fab.agency_id
           ) civil_case_link on true
           group by fa.id, fa.name, fa.slug
@@ -454,30 +454,30 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
            and bpp.entity_id = a.id
           left join lateral (
             select
-              count(distinct active_assignment.officer_id) as personnel_count,
+              count(distinct active_assignment.personnel_id) as personnel_count,
               count(distinct report_officer.review_id) as report_count,
               count(distinct civil_case_link.civil_case_id) as civil_case_count
             from public.agency child_agency
-            left join public.agency_officers active_assignment
+            left join public.agency_personnel active_assignment
               on active_assignment.agency_id = child_agency.id
              and active_assignment.end_date is null
-            left join public.agency_officers report_assignment
+            left join public.agency_personnel report_assignment
               on report_assignment.agency_id = child_agency.id
-            left join public.review_officers report_officer
-              on report_officer.agency_officer_id = report_assignment.id
+            left join public.review_personnel report_officer
+              on report_officer.agency_personnel_id = report_assignment.id
             left join lateral (
               select cco.civil_case_id
-              from public.agency_officers direct_assignment
-              join public.civil_case_officers cco
-                on cco.agency_officer_id = direct_assignment.id
+              from public.agency_personnel direct_assignment
+              join public.civil_case_personnel cco
+                on cco.agency_personnel_id = direct_assignment.id
               where direct_assignment.agency_id = child_agency.id
               union
               select cco.civil_case_id
-              from public.agency_officers target_assignment
-              join public.agency_officers case_assignment
-                on case_assignment.officer_id = target_assignment.officer_id
-              join public.civil_case_officers cco
-                on cco.agency_officer_id = case_assignment.id
+              from public.agency_personnel target_assignment
+              join public.agency_personnel case_assignment
+                on case_assignment.personnel_id = target_assignment.personnel_id
+              join public.civil_case_personnel cco
+                on cco.agency_personnel_id = case_assignment.id
               where target_assignment.agency_id = child_agency.id
             ) civil_case_link on true
             where child_agency.id = a.id

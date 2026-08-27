@@ -106,7 +106,7 @@ const agencyTopicWhereSql = (kind: AgencyScopedTopicKind) => {
       where bpp.page_type = 'agency'
         and exists (
           select 1
-          from public.agency_officers ao
+          from public.agency_personnel ao
           where ao.agency_id = bpp.entity_id
         )
     `;
@@ -117,9 +117,9 @@ const agencyTopicWhereSql = (kind: AgencyScopedTopicKind) => {
       where bpp.page_type = 'agency'
         and exists (
           select 1
-          from public.agency_officers ao
-          join public.review_officers ro
-            on ro.agency_officer_id = ao.id
+          from public.agency_personnel ao
+          join public.review_personnel ro
+            on ro.agency_personnel_id = ao.id
           where ao.agency_id = bpp.entity_id
         )
     `;
@@ -130,11 +130,11 @@ const agencyTopicWhereSql = (kind: AgencyScopedTopicKind) => {
       where bpp.page_type = 'agency'
         and exists (
           select 1
-          from public.agency_officers target_ao
-          join public.agency_officers case_ao
-            on case_ao.officer_id = target_ao.officer_id
-          join public.civil_case_officers cco
-            on cco.agency_officer_id = case_ao.id
+          from public.agency_personnel target_ao
+          join public.agency_personnel case_ao
+            on case_ao.personnel_id = target_ao.personnel_id
+          join public.civil_case_personnel cco
+            on cco.agency_personnel_id = case_ao.id
           where target_ao.agency_id = bpp.entity_id
         )
     `;
@@ -294,15 +294,10 @@ const loadAgencyRows = async (agencyId: string) =>
     ).rows;
     const agencyOfficers = (
       await client.query(
-        "select * from public.agency_officers where agency_id = $1",
+        "select * from public.agency_personnel where agency_id = $1",
         [agencyId],
       )
     ).rows;
-    const agencyStats = (
-      await client.query("select * from public.agency_stats where id = $1", [
-        agencyId,
-      ])
-    ).rows[0];
     const federalAgency = (
       await client.query(
         `select fa.id, fa.name, fa.slug
@@ -314,21 +309,13 @@ const loadAgencyRows = async (agencyId: string) =>
     ).rows[0];
     const officerIds = [
       ...new Set(
-        agencyOfficers.map((entry: { officer_id: string }) => entry.officer_id),
+        agencyOfficers.map((entry: { personnel_id: string }) => entry.personnel_id),
       ),
     ];
     const officers = officerIds.length
       ? (
           await client.query(
-            "select * from public.officers where id = any($1)",
-            [officerIds],
-          )
-        ).rows
-      : [];
-    const officerStats = officerIds.length
-      ? (
-          await client.query(
-            "select * from public.officers_stats where id = any($1)",
+            "select * from public.personnel where id = any($1)",
             [officerIds],
           )
         ).rows
@@ -338,11 +325,11 @@ const loadAgencyRows = async (agencyId: string) =>
     const reportCounts = officerIds.length
       ? (
           await client.query(
-            `select ao.officer_id, count(distinct ro.review_id) as report_count
-             from public.review_officers ro
-             join public.agency_officers ao on ao.id = ro.agency_officer_id
-             where ao.officer_id = any($1)
-             group by ao.officer_id`,
+            `select ao.personnel_id, count(distinct ro.review_id) as report_count
+             from public.review_personnel ro
+             join public.agency_personnel ao on ao.id = ro.agency_personnel_id
+             where ao.personnel_id = any($1)
+             group by ao.personnel_id`,
             [officerIds],
           )
         ).rows
@@ -353,7 +340,7 @@ const loadAgencyRows = async (agencyId: string) =>
     const reportOfficers = agencyOfficerIds.length
       ? (
           await client.query(
-            "select * from public.review_officers where agency_officer_id = any($1)",
+            "select * from public.review_personnel where agency_personnel_id = any($1)",
             [agencyOfficerIds],
           )
         ).rows
@@ -366,8 +353,8 @@ const loadAgencyRows = async (agencyId: string) =>
     const civilCaseIds = (
       await client.query(
         `select distinct cco.civil_case_id
-         from public.agency_officers ao
-         join public.civil_case_officers cco on cco.agency_officer_id = ao.id
+         from public.agency_personnel ao
+         join public.civil_case_personnel cco on cco.agency_personnel_id = ao.id
          where ao.agency_id = $1`,
         [agencyId],
       )
@@ -386,9 +373,9 @@ const loadAgencyRows = async (agencyId: string) =>
     const civilCaseOfficers = civilCaseIds.length
       ? (
           await client.query(
-            `select cco.civil_case_id, ao.officer_id, ao.title
-             from public.civil_case_officers cco
-             join public.agency_officers ao on ao.id = cco.agency_officer_id
+            `select cco.civil_case_id, ao.personnel_id, ao.title
+             from public.civil_case_personnel cco
+             join public.agency_personnel ao on ao.id = cco.agency_personnel_id
              where cco.civil_case_id = any($1)`,
             [civilCaseIds],
           )
@@ -397,14 +384,14 @@ const loadAgencyRows = async (agencyId: string) =>
     const civilOfficerIds = [
       ...new Set(
         civilCaseOfficers.map(
-          (entry: { officer_id: string }) => entry.officer_id,
+          (entry: { personnel_id: string }) => entry.personnel_id,
         ),
       ),
     ];
     const civilOfficers = civilOfficerIds.length
       ? (
           await client.query(
-            "select * from public.officers where id = any($1)",
+            "select * from public.personnel where id = any($1)",
             [civilOfficerIds],
           )
         ).rows
@@ -412,7 +399,7 @@ const loadAgencyRows = async (agencyId: string) =>
     const targetOfficerIds = [
       ...new Set(
         agencyOfficers
-          .map((entry: { officer_id?: string | null }) => entry.officer_id)
+          .map((entry: { personnel_id?: string | null }) => entry.personnel_id)
           .filter(Boolean),
       ),
     ];
@@ -430,7 +417,7 @@ const loadAgencyRows = async (agencyId: string) =>
                 c.court,
                 c.outcome,
                 c.primary_source_url,
-                o.id as officer_id,
+                o.id as personnel_id,
                 o.slug as officer_slug,
                 o.first_name,
                 o.last_name,
@@ -444,13 +431,13 @@ const loadAgencyRows = async (agencyId: string) =>
                 target_ao.title as target_title,
                 target_ao.start_date as target_start_date,
                 target_ao.end_date as target_end_date
-              from public.civil_case_officers cco
+              from public.civil_case_personnel cco
               join public.civil_cases c
                 on c.id = cco.civil_case_id
-              join public.agency_officers case_ao
-                on case_ao.id = cco.agency_officer_id
-              join public.officers o
-                on o.id = case_ao.officer_id
+              join public.agency_personnel case_ao
+                on case_ao.id = cco.agency_personnel_id
+              join public.personnel o
+                on o.id = case_ao.personnel_id
               join public.agency case_agency
                 on case_agency.id = case_ao.agency_id
               join public.location_path case_location
@@ -460,22 +447,22 @@ const loadAgencyRows = async (agencyId: string) =>
                and case_bpp.entity_id = case_agency.id
               join lateral (
                 select *
-                from public.agency_officers target_assignment
+                from public.agency_personnel target_assignment
                 where target_assignment.agency_id = $1
-                  and target_assignment.officer_id = case_ao.officer_id
+                  and target_assignment.personnel_id = case_ao.personnel_id
                 order by
                   (target_assignment.end_date is null) desc,
                   coalesce(target_assignment.end_date, target_assignment.start_date) desc nulls last,
                   target_assignment.id
                 limit 1
               ) target_ao on true
-              where case_ao.officer_id = any($2)
+              where case_ao.personnel_id = any($2)
                 and case_ao.agency_id <> $1
                 and not exists (
                   select 1
-                  from public.civil_case_officers direct_cco
-                  join public.agency_officers direct_ao
-                    on direct_ao.id = direct_cco.agency_officer_id
+                  from public.civil_case_personnel direct_cco
+                  join public.agency_personnel direct_ao
+                    on direct_ao.id = direct_cco.agency_personnel_id
                   where direct_cco.civil_case_id = c.id
                     and direct_ao.agency_id = $1
                 )
@@ -491,10 +478,8 @@ const loadAgencyRows = async (agencyId: string) =>
       agencyLinks,
       agencyPhones,
       agencyOfficers,
-      agencyStats,
       federalAgency,
       officers,
-      officerStats,
       reportCounts,
       reportIds,
       civilCases,
@@ -559,8 +544,7 @@ const buildAgencyDetail = async (agencyId: string) => {
   const agencyPath = canonicalAgencyPath;
 
   const officersById = mapBy(data.officers, "id");
-  const officerStatsById = mapBy(data.officerStats, "id");
-  const reportCountsByOfficerId = mapBy(data.reportCounts, "officer_id");
+  const reportCountsByOfficerId = mapBy(data.reportCounts, "personnel_id");
   const civilCaseOfficersByCase = groupBy(
     data.civilCaseOfficers,
     "civil_case_id",
@@ -577,7 +561,7 @@ const buildAgencyDetail = async (agencyId: string) => {
   const comparePersonnelEntry = (
     left: {
       entry: {
-        officer_id?: string | null;
+        personnel_id?: string | null;
         start_date?: string | null;
         end_date?: string | null;
         title?: string | null;
@@ -586,7 +570,7 @@ const buildAgencyDetail = async (agencyId: string) => {
     },
     right: {
       entry: {
-        officer_id?: string | null;
+        personnel_id?: string | null;
         start_date?: string | null;
         end_date?: string | null;
         title?: string | null;
@@ -615,28 +599,29 @@ const buildAgencyDetail = async (agencyId: string) => {
     if (endDateCompare !== 0) return endDateCompare;
 
     return compareText(
-      left.entry.officer_id || "",
-      right.entry.officer_id || "",
+      left.entry.personnel_id || "",
+      right.entry.personnel_id || "",
     );
   };
 
   const employees = data.agencyOfficers
     .map(
       (entry: {
-        officer_id: string;
+        personnel_id: string;
         badge_number?: string | null;
         start_date?: string | null;
         end_date?: string | null;
         title?: string | null;
       }) => {
-        const officer = officersById[entry.officer_id];
-        const stats = officerStatsById[entry.officer_id];
-        const reportCountRow = reportCountsByOfficerId[entry.officer_id];
+        const officer = officersById[entry.personnel_id];
+        const reportCountRow = reportCountsByOfficerId[entry.personnel_id];
         return {
           entry,
           officer,
           reportCount: reportCountRow ? Number(reportCountRow.report_count) : 0,
-          rating: stats?.weighted_average ?? null,
+          // Per-personnel rating came from the dropped officers_stats table;
+          // no rating aggregate exists in the current schema.
+          rating: null as number | null,
         };
       },
     )
@@ -662,8 +647,8 @@ const buildAgencyDetail = async (agencyId: string) => {
       primary_source_url?: string | null;
     }) => {
       const officerLinks = (civilCaseOfficersByCase[record.id] || []).map(
-        (entry: { officer_id: string; title?: string | null }) => {
-          const officer = civilOfficersById[entry.officer_id];
+        (entry: { personnel_id: string; title?: string | null }) => {
+          const officer = civilOfficersById[entry.personnel_id];
           return officer
             ? {
                 ...officer,
@@ -699,7 +684,7 @@ const buildAgencyDetail = async (agencyId: string) => {
       caseUrl: `/civil-cases/${record.slug}/`,
       links: entries.map((entry) => ({
         officer: {
-          id: entry.officer_id,
+          id: entry.personnel_id,
           slug: entry.officer_slug,
           first_name: entry.first_name,
           last_name: entry.last_name,

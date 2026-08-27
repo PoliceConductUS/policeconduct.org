@@ -66,9 +66,9 @@ export const loadCivilCasesByState = async (
 
     const caseOfficersResult = await client.query(
       `
-        select cco.civil_case_id, ao.officer_id
-        from public.civil_case_officers cco
-        join public.agency_officers ao on ao.id = cco.agency_officer_id
+        select cco.civil_case_id, ao.personnel_id
+        from public.civil_case_personnel cco
+        join public.agency_personnel ao on ao.id = cco.agency_personnel_id
         where cco.civil_case_id = any($1)
       `,
       [caseIds],
@@ -76,7 +76,7 @@ export const loadCivilCasesByState = async (
     const officerIds = [
       ...new Set(
         caseOfficersResult.rows
-          .map((entry: { officer_id: string }) => entry.officer_id)
+          .map((entry: { personnel_id: string }) => entry.personnel_id)
           .filter(Boolean),
       ),
     ];
@@ -85,7 +85,7 @@ export const loadCivilCasesByState = async (
           await client.query(
             `
               select id, slug, first_name, last_name
-              from public.officers
+              from public.personnel
               where id = any($1)
             `,
             [officerIds],
@@ -104,8 +104,8 @@ export const loadCivilCasesByState = async (
             lp.state_or_territory_slug as state,
             lp.path as location_path,
             bpp.path as canonical_path
-          from public.civil_case_officers cco
-          join public.agency_officers ao on ao.id = cco.agency_officer_id
+          from public.civil_case_personnel cco
+          join public.agency_personnel ao on ao.id = cco.agency_personnel_id
           join public.agency a on a.id = ao.agency_id
           join public.location_path lp on lp.location_path_id = a.location_path_id
           join public.build_page_payload bpp
@@ -134,7 +134,7 @@ export const loadCivilCasesByState = async (
     .map((civilCase) => ({
       ...civilCase,
       officers: (officersByCase[civilCase.id] || [])
-        .map((entry: { officer_id: string }) => officersById[entry.officer_id])
+        .map((entry: { personnel_id: string }) => officersById[entry.personnel_id])
         .filter(Boolean),
       agencies: (agenciesByCase[civilCase.id] || []).map(
         (entry: AgencyRef & { civil_case_id: string }) => ({
