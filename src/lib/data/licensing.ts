@@ -90,78 +90,130 @@ export const isAdverseLicenseAction = (action: unknown): boolean => {
   return ADVERSE_ACTION_PATTERNS.some((pattern) => pattern.test(text));
 };
 
+type RawLicense = {
+  id: string;
+  personnel_id: string;
+  license_type: string;
+  status: string | null;
+  first_awarded: unknown;
+  authority_id: string | null;
+  authority_name: string | null;
+  authority_abbreviation: string | null;
+  authority_website: string | null;
+};
+
+type RawAction = {
+  id: string;
+  license_id: string;
+  action: string;
+  action_date: unknown;
+  status: string | null;
+};
+
+// Every personnel page needs licensing, so at build time (153k+ pages) load all
+// licenses + actions once and serve each page from memory instead of running a
+// pair of queries per page. Memoized per process, like other build-time loaders.
+let allLicensingPromise: Promise<{
+  licensesByPersonnel: Map<string, RawLicense[]>;
+  actionsByLicense: Map<string, RawAction[]>;
+}> | null = null;
+
+const loadAllLicensing = () => {
+  if (!allLicensingPromise) {
+    allLicensingPromise = withDb(async (client) => {
+      const licenseRows: RawLicense[] = (
+        await client.query(
+          `
+            select
+              l.id, l.personnel_id, l.license_type, l.status, l.first_awarded,
+              la.id as authority_id, la.name as authority_name,
+              la.abbreviation as authority_abbreviation,
+              la.website as authority_website
+            from public.license l
+            left join public.licensing_authority la
+              on la.id = l.issued_by_authority_id
+            order by l.personnel_id, l.first_awarded desc nulls last, l.license_type
+          `,
+        )
+      ).rows;
+      const licensesByPersonnel = new Map<string, RawLicense[]>();
+      for (const row of licenseRows) {
+        const list = licensesByPersonnel.get(row.personnel_id);
+        if (list) list.push(row);
+        else licensesByPersonnel.set(row.personnel_id, [row]);
+      }
+
+      const actionRows: RawAction[] = (
+        await client.query(
+          `
+            select id, license_id, action, action_date, status
+            from public.license_action
+            order by action_date desc nulls last, id
+          `,
+        )
+      ).rows;
+      const actionsByLicense = new Map<string, RawAction[]>();
+      for (const row of actionRows) {
+        const list = actionsByLicense.get(row.license_id);
+        if (list) list.push(row);
+        else actionsByLicense.set(row.license_id, [row]);
+      }
+
+      return { licensesByPersonnel, actionsByLicense };
+    });
+  }
+  return allLicensingPromise;
+};
+
+const actionSortTime = (value: string | null): number =>
+  value ? new Date(value).getTime() || 0 : Number.NEGATIVE_INFINITY;
+
 export const loadLicensingForPersonnel = async (
   personnelId: string,
-): Promise<PersonnelLicensing> =>
-  withDb(async (client): Promise<PersonnelLicensing> => {
-    const licenseRows = (
-      await client.query(
-        `
-          select
-            l.id,
-            l.license_type,
-            l.status,
-            l.first_awarded,
-            la.id as authority_id,
-            la.name as authority_name,
-            la.abbreviation as authority_abbreviation,
-            la.website as authority_website
-          from public.license l
-          left join public.licensing_authority la
-            on la.id = l.issued_by_authority_id
-          where l.personnel_id = $1
-          order by l.first_awarded desc nulls last, l.license_type
-        `,
-        [personnelId],
-      )
-    ).rows;
+): Promise<PersonnelLicensing> => {
+  const { licensesByPersonnel, actionsByLicense } = await loadAllLicensing();
+  const licenseRows = licensesByPersonnel.get(personnelId) || [];
 
-    const licenses: License[] = licenseRows.map((row) => ({
-      id: row.id,
-      licenseType: normalizeLicenseType(row.license_type),
-      status: normalizeLicenseStatus(row.status),
-      firstAwarded: row.first_awarded ? String(row.first_awarded) : null,
-      authority: row.authority_id
-        ? {
-            id: row.authority_id,
-            name: row.authority_name,
-            abbreviation: trimOrNull(row.authority_abbreviation),
-            website: trimOrNull(row.authority_website),
-          }
-        : null,
-    }));
+  const licenses: License[] = licenseRows.map((row) => ({
+    id: row.id,
+    licenseType: normalizeLicenseType(row.license_type),
+    status: normalizeLicenseStatus(row.status),
+    firstAwarded: row.first_awarded ? String(row.first_awarded) : null,
+    authority: row.authority_id
+      ? {
+          id: row.authority_id,
+          name: row.authority_name ?? "",
+          abbreviation: trimOrNull(row.authority_abbreviation),
+          website: trimOrNull(row.authority_website),
+        }
+      : null,
+  }));
 
-    const licenseIds = licenses.map((license) => license.id);
-    const licenseTypeById = new Map(
-      licenses.map((license) => [license.id, license.licenseType]),
-    );
+  const licenseTypeById = new Map(
+    licenseRows.map((row) => [row.id, normalizeLicenseType(row.license_type)]),
+  );
 
-    const actionRows = licenseIds.length
-      ? (
-          await client.query(
-            `
-              select id, license_id, action, action_date, status
-              from public.license_action
-              where license_id = any($1)
-              order by action_date desc nulls last, id
-            `,
-            [licenseIds],
-          )
-        ).rows
-      : [];
+  const timeline: LicenseTimelineEntry[] = [];
+  for (const license of licenseRows) {
+    for (const row of actionsByLicense.get(license.id) || []) {
+      timeline.push({
+        id: row.id,
+        action: row.action,
+        actionDate: row.action_date ? String(row.action_date) : null,
+        status: normalizeLicenseStatus(row.status),
+        licenseId: row.license_id,
+        licenseType: licenseTypeById.get(row.license_id) ?? "",
+        isAdverse: isAdverseLicenseAction(row.action),
+      });
+    }
+  }
+  // Merge across the person's licenses -> newest first (undated last).
+  timeline.sort(
+    (a, b) => actionSortTime(b.actionDate) - actionSortTime(a.actionDate),
+  );
 
-    const timeline: LicenseTimelineEntry[] = actionRows.map((row) => ({
-      id: row.id,
-      action: row.action,
-      actionDate: row.action_date ? String(row.action_date) : null,
-      status: normalizeLicenseStatus(row.status),
-      licenseId: row.license_id,
-      licenseType: licenseTypeById.get(row.license_id) ?? "",
-      isAdverse: isAdverseLicenseAction(row.action),
-    }));
-
-    return { licenses, timeline };
-  });
+  return { licenses, timeline };
+};
 
 // Only a tiny fraction of personnel have discipline records, so at build time
 // (153k+ personnel pages) load the set of personnel who have any once and skip
