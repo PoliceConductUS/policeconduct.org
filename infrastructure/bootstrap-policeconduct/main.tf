@@ -2204,32 +2204,37 @@ resource "aws_cloudfront_distribution" "site" {
   }
 }
 
+# Per-build redirects for the preview distribution (Phase A of
+# openspec/changes/atomic-sha-deploys). Keys are namespaced by build id:
+# r:<label>:<path> = <target>. Populated at preview deploy from the build's
+# redirects.json. Prod (apex/www) is a separate distribution and is untouched.
+resource "aws_cloudfront_key_value_store" "preview_redirects" {
+  name = "${var.project_name}-preview-redirects"
+}
+
 resource "aws_cloudfront_function" "preview_router" {
   name    = local.preview_router_function_name
   runtime = "cloudfront-js-2.0"
-  comment = "Route preview subdomains to matching S3 prefix."
+  comment = "Route preview/build subdomains to their S3 prefix; apply per-build redirects."
   publish = true
-  code    = <<-EOF
-function handler(event) {
-  var request = event.request;
-  var host = request.headers.host && request.headers.host.value ? request.headers.host.value : '';
-  var uri = request.uri;
-  var match = host.match(/^([^.]+)\.preview\./);
 
-  if (!match) {
-    return request;
-  }
+  key_value_store_associations = [
+    aws_cloudfront_key_value_store.preview_redirects.arn,
+  ]
 
-  if (uri.endsWith('/')) {
-    uri += 'index.html';
-  } else if (!uri.includes('.')) {
-    uri += '/index.html';
-  }
-
-  request.uri = '/' + match[1] + uri;
-  return request;
+  code = file("${path.module}/functions/router.js")
 }
-EOF
+
+# Non-canonical preview hosts must not be indexed. Build-once means the same HTML
+# also serves the canonical apex on the prod distribution, so this is applied at
+# the edge here and is NOT attached to the prod distribution.
+resource "aws_cloudfront_function" "preview_noindex" {
+  name    = "${var.project_name}-preview-noindex"
+  runtime = "cloudfront-js-2.0"
+  comment = "Mark preview responses noindex (non-canonical hosts)."
+  publish = true
+
+  code = file("${path.module}/functions/noindex.js")
 }
 
 resource "aws_cloudfront_distribution" "preview" {
@@ -2277,6 +2282,11 @@ resource "aws_cloudfront_distribution" "preview" {
     function_association {
       event_type   = "viewer-request"
       function_arn = aws_cloudfront_function.preview_router.arn
+    }
+
+    function_association {
+      event_type   = "viewer-response"
+      function_arn = aws_cloudfront_function.preview_noindex.arn
     }
   }
 

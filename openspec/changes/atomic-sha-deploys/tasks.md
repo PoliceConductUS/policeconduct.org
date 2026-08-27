@@ -1,10 +1,15 @@
 ## 0. Phasing (prod and build routing stay separate)
 
-- **Phase A (do now, prod UNTOUCHED):** preview builds + per-build redirects +
-  noindex on the existing preview distribution only — tasks 1.1, 1.5, 2.2, 2.3,
-  plus the preview-side pieces of 4.2 and 5.1. The apex/www `site` distribution,
-  `index_rewrite`, and root-bucket deploy are not changed; folder layout stays
-  the existing `/<label>/`.
+- **Phase A (DONE — prod UNTOUCHED):** preview builds + per-build redirects +
+  noindex on the existing preview distribution only. Implemented and validated:
+  the redirect-aware `router.js` and `noindex.js` are wired into
+  `aws_cloudfront_distribution.preview` via a new `aws_cloudfront_key_value_store`
+  (`terraform validate` passes); `scripts/load-preview-redirects.mjs` +
+  `deploy-preview.sh` load each build's `redirects.json` into the KVS namespace
+  `r:pr-<N>:<from>`. The apex/www `site` distribution, `index_rewrite`, and
+  root-bucket deploy are not changed; folder layout stays the existing
+  `/<label>/`. Remaining to run in AWS: `terraform apply` + one preview deploy to
+  confirm 301s and `X-Robots-Tag` on a `*.preview` host.
 - **Phase B (deferred — touches apex):** unify prod onto `builds/<sha>/` with a
   KVS `current` pointer and `scripts/promote.sh` — tasks 1.2, 1.3, 1.4, 2.1.
 - **Phase C (deferred — build speed):** incremental rendering + sharded CI —
@@ -26,7 +31,7 @@ that loads `redirects.json` into the KVS — see design.md.
 ## 2. Promotion + redirects
 
 - [x] 2.1 Add `scripts/promote.sh <sha>`: verify `builds/<sha>/index.html` exists, then `cloudfront-keyvaluestore update-keys` `current=<sha>` with the ETag if-match. Rollback = promote previous sha.
-- [ ] 2.2 Redirects (chosen): `builds/<id>/redirects.json` is the per-build source of truth; at each build publish load its entries into the KVS under a per-build namespace `r:<id>:<from> = <to>` (batched); the router applies them on ALL hosts (apex + `*.builds.`). Prune a build's namespace when it is expired.
+- [x] 2.2 Redirects (chosen): `builds/<id>/redirects.json` is the per-build source of truth; at each build publish load its entries into the KVS under a per-build namespace `r:<id>:<from> = <to>` (batched); the router applies them on ALL hosts (apex + `*.builds.`). Prune a build's namespace when it is expired.
 - [ ] 2.3 KVS size guard: fail publish if total keys would exceed KVS limits (≤5 MB total, value ≤1 KB, key ≤512 B) — small/stable map × retained builds stays well under. If it ever exceeds, switch to the Lambda@Edge fallback reading the per-build `redirects.json` (edge-memory cached), per design.md §1.
 
 ## 3. Incremental rendering
