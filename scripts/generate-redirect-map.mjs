@@ -104,12 +104,12 @@ const redirects = await withDb(async (client) => {
   const civilCaseRows = (
     await client.query(
       `
-        select lp.state_or_territory_slug as state, c.slug
+        select split_part(lp.path, '/', 2) as state, c.slug
         from public.civil_cases c
         join public.location_path lp
           on lp.location_path_id = c.location_path_id
         where c.slug is not null
-        order by lp.state_or_territory_slug, c.slug
+        order by split_part(lp.path, '/', 2), c.slug
       `,
     )
   ).rows;
@@ -117,13 +117,13 @@ const redirects = await withDb(async (client) => {
   const reportRows = (
     await client.query(
       `
-        select lp.state_or_territory_slug as state, lp.path as location_path,
+        select split_part(lp.path, '/', 2) as state, lp.path as location_path,
                r.slug, r.incident_date
         from public.reviews r
         join public.location_path lp
           on lp.location_path_id = r.location_path_id
         where r.slug is not null
-        order by lp.state_or_territory_slug, r.slug
+        order by split_part(lp.path, '/', 2), r.slug
       `,
     )
   ).rows;
@@ -131,12 +131,12 @@ const redirects = await withDb(async (client) => {
   const stateRows = (
     await client.query(
       `
-        select distinct lower(lp.state_or_territory_slug) as state
+        select distinct lower(split_part(lp.path, '/', 2)) as state
         from public.agency a
         join public.location_path lp
           on lp.location_path_id = a.location_path_id
-        where lp.state_or_territory_slug is not null
-        order by lower(lp.state_or_territory_slug)
+        where split_part(lp.path, '/', 2) is not null
+        order by lower(split_part(lp.path, '/', 2))
       `,
     )
   ).rows;

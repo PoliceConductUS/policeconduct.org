@@ -416,12 +416,6 @@ const fetchLocationRowsByPath = async (client, paths) => {
         location_path_id,
         path,
         level,
-        state_or_territory_slug,
-        administrative_area_slug,
-        place_slug,
-        state_or_territory_name,
-        administrative_area_name,
-        place_name,
         parent_location_path_id
       from public.location_path
       where path = any($1)
@@ -680,16 +674,16 @@ await withDb(async (client) => {
             a.slug,
             lp.location_path_id,
             lp.path as location_path,
-            lp.state_or_territory_slug as state,
+            split_part(lp.path, '/', 2) as state,
             state_lp.location_path_id as state_location_path_id,
             state_lp.path as state_path,
-            state_lp.state_or_territory_name as state_name,
+            state_lp.display_name as state_name,
             area_lp.location_path_id as administrative_area_location_path_id,
             area_lp.path as administrative_area_path,
-            area_lp.administrative_area_name as administrative_area,
-            area_lp.administrative_area_slug as location_administrative_area_slug,
-            lp.place_name as city,
-            lp.place_slug as location_place_slug,
+            area_lp.display_name as administrative_area,
+            split_part(area_lp.path, '/', 3) as location_administrative_area_slug,
+            lp.display_name as city,
+            split_part(lp.path, '/', 4) as location_place_slug,
             a.address,
             a.zip_code,
             a.latitude,
@@ -714,8 +708,8 @@ await withDb(async (client) => {
             on report_counts.agency_id = a.id
           left join civil_case_counts
             on civil_case_counts.agency_id = a.id
-          order by lower(lp.state_or_territory_slug),
-            lower(lp.administrative_area_name), lower(lp.place_name),
+          order by lower(split_part(lp.path, '/', 2)),
+            lower(area_lp.display_name), lower(lp.display_name),
             lower(a.name), a.id
         `,
       )
@@ -876,12 +870,12 @@ await withDb(async (client) => {
             r.longitude,
             r.created_at,
             r.updated_at,
-            report_location.state_or_territory_slug as state,
-            report_location.administrative_area_slug,
-            report_location.place_slug,
-            report_location.state_or_territory_name,
-            report_location.administrative_area_name,
-            report_location.place_name,
+            split_part(report_location.path, '/', 2) as state,
+            split_part(report_location.path, '/', 3) as administrative_area_slug,
+            split_part(report_location.path, '/', 4) as place_slug,
+            report_state.display_name as state_or_territory_name,
+            report_area.display_name as administrative_area_name,
+            report_location.display_name as place_name,
             report_location.path as location_path,
             ro.id as review_personnel_id,
             ao.agency_id,
@@ -893,6 +887,12 @@ await withDb(async (client) => {
           from public.reviews r
           join public.location_path report_location
             on report_location.location_path_id = r.location_path_id
+          left join public.location_path report_area
+            on report_area.location_path_id = report_location.parent_location_path_id
+           and report_area.level = 'administrative_area'
+          left join public.location_path report_state
+            on report_state.location_path_id = report_area.parent_location_path_id
+           and report_state.level = 'state'
           left join public.review_personnel ro
             on ro.review_id = r.id
           left join public.agency_personnel ao
@@ -1109,8 +1109,8 @@ await withDb(async (client) => {
               select
                 location_path_id,
                 path,
-                state_or_territory_slug,
-                state_or_territory_name,
+                split_part(path, '/', 2) as state_or_territory_slug,
+                display_name as state_or_territory_name,
                 updated_at
               from public.location_path
               where level = 'state'

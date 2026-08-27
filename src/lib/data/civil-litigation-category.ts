@@ -46,11 +46,11 @@ export const loadCivilCasesByState = async (
   } = await withDb(async (client) => {
     const casesResult = await client.query(
       `
-        select c.*, lp.state_or_territory_slug as state, lp.path as location_path
+        select c.*, split_part(lp.path, '/', 2) as state, lp.path as location_path
         from public.civil_cases c
         join public.location_path lp
           on lp.location_path_id = c.location_path_id
-        where upper(lp.state_or_territory_slug) = $1
+        where upper(split_part(lp.path, '/', 2)) = $1
       `,
       [stateCode],
     );
@@ -101,7 +101,7 @@ export const loadCivilCasesByState = async (
             a.id,
             a.slug,
             a.name,
-            lp.state_or_territory_slug as state,
+            split_part(lp.path, '/', 2) as state,
             lp.path as location_path,
             bpp.path as canonical_path
           from public.civil_case_personnel cco

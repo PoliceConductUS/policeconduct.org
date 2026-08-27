@@ -207,15 +207,21 @@ export const loadReportDetail = async (
           select
             r.*,
             lp.path as location_path,
-            lp.state_or_territory_slug,
-            lp.administrative_area_slug,
-            lp.place_slug,
-            lp.state_or_territory_name,
-            lp.administrative_area_name,
-            lp.place_name
+            split_part(lp.path, '/', 2) as state_or_territory_slug,
+            split_part(lp.path, '/', 3) as administrative_area_slug,
+            split_part(lp.path, '/', 4) as place_slug,
+            state_lp.display_name as state_or_territory_name,
+            area_lp.display_name as administrative_area_name,
+            lp.display_name as place_name
           from public.reviews r
           left join public.location_path lp
             on lp.location_path_id = r.location_path_id
+          left join public.location_path area_lp
+            on area_lp.location_path_id = lp.parent_location_path_id
+           and area_lp.level = 'administrative_area'
+          left join public.location_path state_lp
+            on state_lp.location_path_id = area_lp.parent_location_path_id
+           and state_lp.level = 'state'
           where r.slug = $1
         `,
         [slug],

@@ -67,7 +67,8 @@ export const loadCivilCaseDetail = async (
     const civilCase = (
       await client.query(
         `
-          select c.*, lp.path as location_path, lp.state_or_territory_slug
+          select c.*, lp.path as location_path,
+            split_part(lp.path, '/', 2) as state_or_territory_slug
           from public.civil_cases c
           left join public.location_path lp
             on lp.location_path_id = c.location_path_id
@@ -131,9 +132,9 @@ export const loadCivilCaseDetail = async (
             agency.id,
             agency.name,
             agency.slug,
-            lp.place_name as city,
-            lp.state_or_territory_slug as state,
-            lp.administrative_area_name as administrative_area,
+            lp.display_name as city,
+            split_part(lp.path, '/', 2) as state,
+            area_lp.display_name as administrative_area,
             lp.path as location_path,
             bpp.path as canonical_path
           from public.civil_case_personnel civil_case_officer
@@ -143,6 +144,9 @@ export const loadCivilCaseDetail = async (
             on agency.id = agency_officer.agency_id
           join public.location_path lp
             on lp.location_path_id = agency.location_path_id
+          left join public.location_path area_lp
+            on area_lp.location_path_id = lp.parent_location_path_id
+           and area_lp.level = 'administrative_area'
           join public.build_page_payload bpp
             on bpp.page_type = 'agency'
            and bpp.entity_id = agency.id

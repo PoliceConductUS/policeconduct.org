@@ -431,14 +431,14 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
                   'name', a.name,
                   'path', bpp.path,
                   'address', a.address,
-                  'city', lp.place_name,
-                  'state', lp.state_or_territory_slug,
-                  'administrativeArea', lp.administrative_area_name,
+                  'city', lp.display_name,
+                  'state', split_part(lp.path, '/', 2),
+                  'administrativeArea', area_lp.display_name,
                   'personnelCount', coalesce(branch_counts.personnel_count, 0),
                   'reportCount', coalesce(branch_counts.report_count, 0),
                   'civilCaseCount', coalesce(branch_counts.civil_case_count, 0)
                 )
-                order by lp.state_or_territory_slug, lp.place_name, a.name
+                order by split_part(lp.path, '/', 2), lp.display_name, a.name
               ) filter (where a.id is not null),
               '[]'::jsonb
             ) as branches
@@ -449,6 +449,9 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
             on a.id = fab.agency_id
           left join public.location_path lp
             on lp.location_path_id = a.location_path_id
+          left join public.location_path area_lp
+            on area_lp.location_path_id = lp.parent_location_path_id
+           and area_lp.level = 'administrative_area'
           left join public.build_page_payload bpp
             on bpp.page_type = 'agency'
            and bpp.entity_id = a.id

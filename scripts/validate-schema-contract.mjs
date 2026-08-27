@@ -177,18 +177,13 @@ const requiredTables = {
       "location_path_id",
       "path",
       "level",
-      "state_or_territory_slug",
-      "administrative_area_slug",
-      "place_slug",
-      "state_or_territory_name",
-      "administrative_area_name",
-      "place_name",
+      "display_name",
       "parent_location_path_id",
       "centroid",
       "bbox",
       "updated_at",
     ],
-    notNull: ["location_path_id", "path", "level", "state_or_territory_slug"],
+    notNull: ["location_path_id", "path", "level", "display_name"],
     uniqueColumnSets: [["path"]],
   },
   location_path_geometry: {
@@ -225,10 +220,6 @@ const requiredTables = {
     columns: ["id", "review_id", "agency_personnel_id", "rating_overall"],
     notNull: ["id", "review_id", "agency_personnel_id"],
   },
-  review_personnel_ratings: {
-    columns: ["id", "review_personnel_id", "trait_id", "rubric_id"],
-    notNull: ["id"],
-  },
   review_tags: {
     columns: ["review_id", "tag_id"],
     notNull: ["review_id", "tag_id"],
@@ -264,15 +255,7 @@ const requiredTables = {
     notNull: ["id", "slug", "title"],
     uniqueColumnSets: [["slug"]],
   },
-  rubrics: {
-    columns: ["id", "description", "help"],
-    notNull: ["id", "description"],
-  },
   tags: {
-    columns: ["id", "label"],
-    notNull: ["id", "label"],
-  },
-  traits: {
     columns: ["id", "label"],
     notNull: ["id", "label"],
   },

@@ -83,8 +83,8 @@ const data = await withDb(async (client) => {
           ao.*,
           a.name as agency_name,
           a.slug as agency_slug,
-          lp.place_name,
-          lp.state_or_territory_slug,
+          lp.display_name as place_name,
+          split_part(lp.path, '/', 2) as state_or_territory_slug,
           bpp.path as canonical_path
         from public.agency_personnel ao
         join public.agency a on a.id = ao.agency_id

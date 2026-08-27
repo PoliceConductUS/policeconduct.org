@@ -12,7 +12,7 @@ export const loadCivilCaseCountsByAgencyState = async (): Promise<
     const result = await client.query(
       `
         select
-          lower(lp.state_or_territory_slug) as category,
+          lower(split_part(lp.path, '/', 2)) as category,
           count(distinct cco.civil_case_id) as case_count
         from public.civil_case_personnel cco
         join public.agency_personnel case_ao
@@ -23,7 +23,7 @@ export const loadCivilCaseCountsByAgencyState = async (): Promise<
           on a.id = target_ao.agency_id
         join public.location_path lp
           on lp.location_path_id = a.location_path_id
-        group by lower(lp.state_or_territory_slug)
+        group by lower(split_part(lp.path, '/', 2))
       `,
     );
 

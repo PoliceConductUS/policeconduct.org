@@ -109,7 +109,7 @@ export const buildSitemapLastmodMap = async () => {
             r.slug,
             r.incident_date,
             lp.path as location_path,
-            lp.state_or_territory_slug as state,
+            split_part(lp.path, '/', 2) as state,
             r.created_at,
             r.updated_at
           from public.reviews r
@@ -140,7 +140,7 @@ export const buildSitemapLastmodMap = async () => {
             select
               a.id,
               a.slug,
-              lower(lp.state_or_territory_slug) as state,
+              lower(split_part(lp.path, '/', 2)) as state,
               state_lp.path as state_path,
               area_lp.path as administrative_area_path,
               lp.path as place_path,
@@ -175,7 +175,7 @@ export const buildSitemapLastmodMap = async () => {
             left join public.civil_case_personnel cco
               on cco.agency_personnel_id = ao.id
             left join public.civil_cases c on c.id = cco.civil_case_id
-            group by a.id, a.slug, lp.state_or_territory_slug,
+            group by a.id, a.slug, split_part(lp.path, '/', 2),
               state_lp.path, area_lp.path, lp.path, bpp.path, a.created_at,
               a.updated_at
           )
@@ -351,7 +351,7 @@ export const buildSitemapLastmodMap = async () => {
         `
           select
             c.slug,
-            lp.state_or_territory_slug as state,
+            split_part(lp.path, '/', 2) as state,
             c.created_at,
             c.updated_at
           from public.civil_cases c

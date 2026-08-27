@@ -65,11 +65,11 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
          select
            a.id,
            a.name,
-           lp.state_or_territory_slug as state,
-           lp.administrative_area_name as administrative_area,
-           lp.administrative_area_slug as location_administrative_area_slug,
-           lp.place_name as city,
-           lp.place_slug as location_place_slug,
+           split_part(lp.path, '/', 2) as state,
+           area_lp.display_name as administrative_area,
+           split_part(lp.path, '/', 3) as location_administrative_area_slug,
+           lp.display_name as city,
+           split_part(lp.path, '/', 4) as location_place_slug,
            lp.path as location_path,
            bpp.path as canonical_path,
            a.address,
@@ -82,6 +82,9 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
          from public.agency a
          join public.location_path lp
            on lp.location_path_id = a.location_path_id
+         left join public.location_path area_lp
+           on area_lp.location_path_id = lp.parent_location_path_id
+          and area_lp.level = 'administrative_area'
          join public.build_page_payload bpp
            on bpp.page_type = 'agency'
           and bpp.entity_id = a.id
