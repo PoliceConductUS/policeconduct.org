@@ -37,6 +37,8 @@ that loads `redirects.json` into the KVS — see design.md.
 - [x] 2.1 Add `scripts/promote.sh <sha>`: verify `builds/<sha>/index.html` exists, then `cloudfront-keyvaluestore update-keys` `current=<sha>` with the ETag if-match. Rollback = promote previous sha.
 - [x] 2.2 Redirects (chosen): `builds/<id>/redirects.json` is the per-build source of truth; at each build publish load its entries into the KVS under a per-build namespace `r:<id>:<from> = <to>` (batched); the router applies them on ALL hosts (apex + `*.builds.`). Prune a build's namespace when it is expired.
 - [ ] 2.3 KVS size guard: fail publish if total keys would exceed KVS limits (≤5 MB total, value ≤1 KB, key ≤512 B) — small/stable map × retained builds stays well under. If it ever exceeds, switch to the Lambda@Edge fallback reading the per-build `redirects.json` (edge-memory cached), per design.md §1.
+- [x] 2.4 Redirect-coverage guard (`scripts/verify-redirect-coverage.mjs`, `npm run validate:redirects`, wired into `deploy-preview.sh`): every URL in the prior sitemap (previous build if `PRIOR_SITEMAP` set, else the prod URL; `skip` to bypass) must be a route in this build OR redirect to a route that is not itself a redirect source (single hop → no chains/cycles/redirect-to-404). Fails closed. Unit-tested. Should also gate the eventual prod deploy.
+- [ ] 2.5 Redirect generator (`scripts/generate-redirects-from-sitemap.mjs`): from the prior sitemap (previous build, default prod) diff the URLs no longer routes, resolve each via its unique slug (agency/personnel/civil_cases/reviews `slug` are unique) to its current canonical path, and emit the committed append-only static redirect file. Needs the prod/prev sitemaps to run.
 
 ## 3. Incremental rendering
 

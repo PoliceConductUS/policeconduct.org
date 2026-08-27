@@ -37,6 +37,7 @@
     "validate": "npm run format:check && npm run lint && npm run validate:types && npm run validate:shell && npm run validate:schema && npm run validate:openspec && npm run test",
     "validate:no-inline-css": "node scripts/validate-no-inline-css.mjs",
     "validate:openspec": "openspec validate --all",
+    "validate:redirects": "node scripts/verify-redirect-coverage.mjs",
     "validate:schema": "node scripts/validate-schema-contract.mjs",
     "validate:shell": "bash -n scripts/*.sh infrastructure/bootstrap-*/*.sh infrastructure/bootstrap-*/scripts/*.sh",
     "validate:types": "astro check"
