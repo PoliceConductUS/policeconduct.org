@@ -9,29 +9,29 @@
 
 - [x] 2.1 Move secondary/outline control borders (`.nav-action-volunteer`, `.masthead-search-input`) from `--ipc-color-rule-strong` (2.36:1) to `--ipc-color-ink-faint` (~5:1) to satisfy WCAG 1.4.11.
 - [x] 2.2 Darken choropleth `.small-state-gutter-label` from `#6c757d` to `#495057` (7.78:1 on paper; holds over colored state fills).
-- [ ] 2.3 Re-run the axe audit on a fresh build and confirm the two fixes clear (the earlier audit ran against a stale dist).
+- [x] 2.3 Re-run the axe audit on a fresh build and confirm the two fixes clear (the earlier audit ran against a stale dist).
 
 ## 3. Schema contract for the new tables (INCOMPLETE)
 
-- [ ] 3.1 Add `license`, `license_action`, `licensing_authority`, `discipline`, `discipline_agency_personnel` to `scripts/validate-schema-contract.mjs` (columns, notNull, unique/FK expectations) so builds guard on them.
+- [x] 3.1 Add `license`, `license_action`, `licensing_authority`, `discipline`, `discipline_agency_personnel` to `scripts/validate-schema-contract.mjs` (columns, notNull, unique/FK expectations) so builds guard on them.
 
 ## 4. Data layer + normalization (INCOMPLETE)
 
-- [ ] 4.1 Add `src/lib/data/licensing.ts`: `loadLicensingForPersonnel(personnelId)` returning the person's licenses (join `licensing_authority`) and a single merged, newest-first `license_action` timeline with each event tagged by its license.
-- [ ] 4.2 Add a display normalizer for `license.status` (`ACTIVE`/`Active`→"Active", `INACTIVE`→"Inactive", plus `Expired`/`Deceased`) and `license_type` duplicates (`Peace Officer`→`Peace Officer License`). One shared map applied in the data layer.
-- [ ] 4.3 Classify `license_action.action` into routine (`Granted`, `Reactivated`, expirations) vs. adverse (reprimands, `Administrative Hold`, noncompliance, inactive/out-of-compliance, revocations) for timeline emphasis.
-- [ ] 4.4 Add a discipline loader: disciplines for a personnel via `discipline_agency_personnel → agency_personnel` (returns action, effective/expiration dates, case number, attributed agency); and an agency-level discipline count.
+- [x] 4.1 Add `src/lib/data/licensing.ts`: `loadLicensingForPersonnel(personnelId)` returning the person's licenses (join `licensing_authority`) and a single merged, newest-first `license_action` timeline with each event tagged by its license.
+- [x] 4.2 Add a display normalizer for `license.status` (`ACTIVE`/`Active`→"Active", `INACTIVE`→"Inactive", plus `Expired`/`Deceased`) and `license_type` duplicates (`Peace Officer`→`Peace Officer License`). One shared map applied in the data layer.
+- [x] 4.3 Classify `license_action.action` into routine (`Granted`, `Reactivated`, expirations) vs. adverse (reprimands, `Administrative Hold`, noncompliance, inactive/out-of-compliance, revocations) for timeline emphasis.
+- [x] 4.4 Add a discipline loader: disciplines for a personnel via `discipline_agency_personnel → agency_personnel` (returns action, effective/expiration dates, case number, attributed agency); and an agency-level discipline count.
 
 ## 5. Personnel page (INCOMPLETE)
 
-- [ ] 5.1 Add a "Licenses & certification" section to `/personnel/[slug]/`: one `PersonnelLicenseCard` per license (normalized type, status pill, first-awarded date, issuing-authority badge linking to the authority website). ~15% of personnel show multiple cards.
-- [ ] 5.2 Add a `LicenseTimeline` component: newest-first vertical timeline merging all `license_action`s across the person's licenses; each row = date · action · license · status; adverse actions emphasized; collapse-after-N with "show all".
-- [ ] 5.3 Relabel the aside "License Type" field to "Role" (it renders `agency_personnel.title`, the assignment role — not a license).
-- [ ] 5.4 Add a discipline section, rendered only when the person has discipline records (~76 people): action, effective/expiration dates, case number, attributed agency.
+- [x] 5.1 Add a "Licenses & certification" section to `/personnel/[slug]/`: one `PersonnelLicenseCard` per license (normalized type, status pill, first-awarded date, issuing-authority badge linking to the authority website). ~15% of personnel show multiple cards.
+- [x] 5.2 Add a `LicenseTimeline` component: newest-first vertical timeline merging all `license_action`s across the person's licenses; each row = date · action · license · status; adverse actions emphasized; collapse-after-N with "show all".
+- [x] 5.3 Relabel the aside "License Type" field to "Role" (it renders `agency_personnel.title`, the assignment role — not a license).
+- [x] 5.4 Add a discipline section, rendered only when the person has discipline records (~76 people): action, effective/expiration dates, case number, attributed agency.
 
 ## 6. Agency page + licensing authority (INCOMPLETE)
 
-- [ ] 6.1 Agency personnel roster: add a license status/type column (who is actively certified).
+- [x] 6.1 Agency personnel roster: add a license status/type column (who is actively certified).
 - [ ] 6.2 Agency page: show a discipline count/list for disciplines attributed to that agency's assignments.
 - [ ] 6.3 State page: link the state's licensing authority (TCOLE → `/tx/`, MN POST → `/mn/`) to the authority website; no dedicated authority page required.
 
@@ -41,6 +41,6 @@
 
 ## 8. Verify (INCOMPLETE)
 
-- [ ] 8.1 `astro check` clean; schema contract passes with the five new tables added.
+- [x] 8.1 `astro check` clean; schema contract passes with the five new tables added.
 - [ ] 8.2 Full build renders 0 errors; spot-check a multi-license personnel page (timeline order, adverse emphasis, authority link) and one of the ~76 discipline pages.
 - [ ] 8.3 axe: personnel license/discipline sections pass WCAG 2.1 AA (contrast, timeline semantics, table headers).

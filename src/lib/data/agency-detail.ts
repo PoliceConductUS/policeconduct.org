@@ -3,6 +3,10 @@ import { withDb } from "#src/lib/db.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
+import {
+  normalizeLicenseStatus,
+  normalizeLicenseType,
+} from "./licensing.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
 
 export type AgencyScopedTopicKind =
@@ -334,6 +338,21 @@ const loadAgencyRows = async (agencyId: string) =>
           )
         ).rows
       : [];
+    // Primary license per personnel for the roster context line — prefer an
+    // active license, then the most-recently-awarded.
+    const licenses = officerIds.length
+      ? (
+          await client.query(
+            `select distinct on (personnel_id)
+               personnel_id, license_type, status
+             from public.license
+             where personnel_id = any($1)
+             order by personnel_id, (status ilike 'active') desc,
+               first_awarded desc nulls last`,
+            [officerIds],
+          )
+        ).rows
+      : [];
     const agencyOfficerIds = agencyOfficers.map(
       (entry: { id: string }) => entry.id,
     );
@@ -481,6 +500,7 @@ const loadAgencyRows = async (agencyId: string) =>
       federalAgency,
       officers,
       reportCounts,
+      licenses,
       reportIds,
       civilCases,
       civilCaseOfficers,
@@ -545,6 +565,7 @@ const buildAgencyDetail = async (agencyId: string) => {
 
   const officersById = mapBy(data.officers, "id");
   const reportCountsByOfficerId = mapBy(data.reportCounts, "personnel_id");
+  const licenseByOfficerId = mapBy(data.licenses, "personnel_id");
   const civilCaseOfficersByCase = groupBy(
     data.civilCaseOfficers,
     "civil_case_id",
@@ -615,6 +636,7 @@ const buildAgencyDetail = async (agencyId: string) => {
       }) => {
         const officer = officersById[entry.personnel_id];
         const reportCountRow = reportCountsByOfficerId[entry.personnel_id];
+        const licenseRow = licenseByOfficerId[entry.personnel_id];
         return {
           entry,
           officer,
@@ -622,6 +644,12 @@ const buildAgencyDetail = async (agencyId: string) => {
           // Per-personnel rating came from the dropped officers_stats table;
           // no rating aggregate exists in the current schema.
           rating: null as number | null,
+          license: licenseRow
+            ? {
+                type: normalizeLicenseType(licenseRow.license_type),
+                status: normalizeLicenseStatus(licenseRow.status),
+              }
+            : null,
         };
       },
     )

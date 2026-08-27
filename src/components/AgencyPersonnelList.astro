@@ -18,6 +18,10 @@ type EmployeeLike = {
     slug?: string | null;
   } | null;
   reportCount?: number | null;
+  license?: {
+    type?: string | null;
+    status?: string | null;
+  } | null;
 };
 type RosterRow = {
   label: string;
@@ -60,7 +64,14 @@ const rows: RosterRow[] = employees.map((employee) => {
     reportCount > 0
       ? `${reportCount} report${reportCount === 1 ? "" : "s"}`
       : null;
-  const meta = [isFormer ? "Former" : "Current", rank, tenure, reports]
+  const licenseType = (employee.license?.type || "").trim() || null;
+  const licenseStatus = (employee.license?.status || "").trim() || null;
+  const license = licenseType
+    ? licenseStatus
+      ? `${licenseType} (${licenseStatus})`
+      : licenseType
+    : null;
+  const meta = [isFormer ? "Former" : "Current", rank, license, tenure, reports]
     .filter(Boolean)
     .join(" · ");
 

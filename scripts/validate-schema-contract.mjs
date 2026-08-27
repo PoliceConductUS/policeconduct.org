@@ -137,6 +137,41 @@ const requiredTables = {
     columns: ["federal_agency_id", "agency_id"],
     notNull: ["federal_agency_id", "agency_id"],
   },
+  discipline: {
+    columns: [
+      "id",
+      "action",
+      "effective_date",
+      "expiration_date",
+      "case_number",
+    ],
+    notNull: ["id", "action"],
+  },
+  discipline_agency_personnel: {
+    columns: ["id", "discipline_id", "agency_personnel_id"],
+    notNull: ["id", "discipline_id", "agency_personnel_id"],
+    uniqueColumnSets: [["discipline_id", "agency_personnel_id"]],
+  },
+  license: {
+    columns: [
+      "id",
+      "personnel_id",
+      "license_type",
+      "status",
+      "first_awarded",
+      "issued_by_authority_id",
+    ],
+    notNull: ["id", "personnel_id", "license_type", "issued_by_authority_id"],
+    uniqueColumnSets: [["personnel_id", "license_type"]],
+  },
+  license_action: {
+    columns: ["id", "license_id", "action", "action_date", "status"],
+    notNull: ["id", "license_id", "action"],
+  },
+  licensing_authority: {
+    columns: ["id", "name", "abbreviation", "website", "location_path_id"],
+    notNull: ["id", "name", "location_path_id"],
+  },
   location_path: {
     columns: [
       "location_path_id",

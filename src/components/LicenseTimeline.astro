@@ -1,0 +1,187 @@
+---
+import { formatShortDate } from "#src/lib/format.js";
+import type { LicenseTimelineEntry } from "#src/lib/data/licensing.js";
+
+interface Props {
+  entries: LicenseTimelineEntry[];
+  initialCount?: number;
+}
+
+const { entries, initialCount = 8 } = Astro.props;
+const shown = entries.slice(0, initialCount);
+const hidden = entries.slice(initialCount);
+
+const renderEntry = (entry: LicenseTimelineEntry) => ({
+  ...entry,
+  dateLabel: entry.actionDate ? formatShortDate(entry.actionDate) : "Undated",
+});
+---
+
+{
+  entries.length ? (
+    <ol class="license-timeline">
+      {shown.map((raw) => {
+        const entry = renderEntry(raw);
+        return (
+          <li
+            class:list={["license-timeline-item", { "is-adverse": entry.isAdverse }]}
+          >
+            <span class="license-timeline-marker" aria-hidden="true" />
+            <div class="license-timeline-body">
+              <div class="license-timeline-head">
+                <span class="license-timeline-date">{entry.dateLabel}</span>
+                {entry.isAdverse ? (
+                  <span class="license-timeline-flag">Adverse action</span>
+                ) : null}
+              </div>
+              <p class="license-timeline-action">{entry.action}</p>
+              <p class="license-timeline-meta">
+                {entry.licenseType}
+                {entry.status ? <span> &middot; {entry.status}</span> : null}
+              </p>
+            </div>
+          </li>
+        );
+      })}
+      {hidden.length ? (
+        <li class="license-timeline-more">
+          <details>
+            <summary>Show all {entries.length} license events</summary>
+            <ol class="license-timeline">
+              {hidden.map((raw) => {
+                const entry = renderEntry(raw);
+                return (
+                  <li
+                    class:list={[
+                      "license-timeline-item",
+                      { "is-adverse": entry.isAdverse },
+                    ]}
+                  >
+                    <span class="license-timeline-marker" aria-hidden="true" />
+                    <div class="license-timeline-body">
+                      <div class="license-timeline-head">
+                        <span class="license-timeline-date">
+                          {entry.dateLabel}
+                        </span>
+                        {entry.isAdverse ? (
+                          <span class="license-timeline-flag">
+                            Adverse action
+                          </span>
+                        ) : null}
+                      </div>
+                      <p class="license-timeline-action">{entry.action}</p>
+                      <p class="license-timeline-meta">
+                        {entry.licenseType}
+                        {entry.status ? (
+                          <span> &middot; {entry.status}</span>
+                        ) : null}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </details>
+        </li>
+      ) : null}
+    </ol>
+  ) : null
+}
+
+<style>
+  .license-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .license-timeline-item {
+    border-left: 2px solid var(--ipc-color-rule, #d5deeb);
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: 0 1fr;
+    padding: 0 0 1rem 1.1rem;
+    position: relative;
+  }
+
+  .license-timeline-item:last-child {
+    padding-bottom: 0;
+  }
+
+  .license-timeline-marker {
+    background: var(--ipc-color-rule-strong, #9ea5b0);
+    border-radius: 999px;
+    height: 0.7rem;
+    left: -0.41rem;
+    position: absolute;
+    top: 0.15rem;
+    width: 0.7rem;
+  }
+
+  .license-timeline-item.is-adverse {
+    border-left-color: var(--ipc-color-deep-red, #901117);
+  }
+
+  .license-timeline-item.is-adverse .license-timeline-marker {
+    background: var(--ipc-color-deep-red, #901117);
+  }
+
+  .license-timeline-body {
+    grid-column: 2;
+  }
+
+  .license-timeline-head {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .license-timeline-date {
+    color: var(--ipc-color-ink-faint, #5b6472);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .license-timeline-flag {
+    background: var(--ipc-color-deep-red, #901117);
+    border-radius: 999px;
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 0.1rem 0.5rem;
+    text-transform: uppercase;
+  }
+
+  .license-timeline-action {
+    color: var(--ipc-color-ink, #101926);
+    font-size: 0.9rem;
+    font-weight: 650;
+    line-height: 1.35;
+    margin: 0.15rem 0 0;
+  }
+
+  .license-timeline-meta {
+    color: var(--ipc-color-ink-faint, #5b6472);
+    font-size: 0.8rem;
+    line-height: 1.35;
+    margin: 0.15rem 0 0;
+  }
+
+  .license-timeline-more {
+    margin-top: 0.25rem;
+  }
+
+  .license-timeline-more summary {
+    color: var(--ipc-color-teal-ink, #003737);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .license-timeline-more details[open] summary {
+    margin-bottom: 0.85rem;
+  }
+</style>

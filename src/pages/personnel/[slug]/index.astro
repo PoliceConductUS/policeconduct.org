@@ -14,6 +14,11 @@ import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
 import { getPersonnelImageById } from "#src/lib/entity-images.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
+import LicenseTimeline from "#src/components/LicenseTimeline.astro";
+import {
+  loadDisciplineForPersonnel,
+  loadLicensingForPersonnel,
+} from "#src/lib/data/licensing.js";
 import {
   buildContentPageNode,
   buildGovernmentOrganizationNode,
@@ -138,6 +143,8 @@ const data = await withDb(async (client) => {
     civilCases,
   };
 });
+const licensing = await loadLicensingForPersonnel(data.officer.id);
+const discipline = await loadDisciplineForPersonnel(data.officer.id);
 const agenciesById = mapBy(data.agencies, "id");
 const history = normalizeAgencyHistory(data.agencyOfficers);
 const missingAgencyAssignment = history.find(
@@ -591,6 +598,117 @@ const structuredData = {
   <MetricGrid metrics={personnelMetricCards} />
 
   <div class="personnel-section-grid">
+    {
+      licensing.licenses.length ? (
+        <section class="personnel-panel personnel-panel-wide">
+          <div class="personnel-panel-heading">
+            <h2>Licenses &amp; certification</h2>
+            <p>Licenses issued to this individual by a licensing authority.</p>
+          </div>
+          <div class="personnel-license-cards">
+            {licensing.licenses.map((license) => (
+              <article class="personnel-license-card">
+                <h3>{license.licenseType}</h3>
+                <dl>
+                  {license.status ? (
+                    <div>
+                      <dt>Status</dt>
+                      <dd>
+                        <span class="personnel-status-pill">
+                          {license.status}
+                        </span>
+                      </dd>
+                    </div>
+                  ) : null}
+                  {license.firstAwarded ? (
+                    <div>
+                      <dt>First awarded</dt>
+                      <dd>{formatShortDate(license.firstAwarded)}</dd>
+                    </div>
+                  ) : null}
+                  {license.authority ? (
+                    <div>
+                      <dt>Issued by</dt>
+                      <dd>
+                        {license.authority.website ? (
+                          <a
+                            href={license.authority.website}
+                            rel="nofollow noopener"
+                            target="_blank"
+                          >
+                            {license.authority.abbreviation ||
+                              license.authority.name}
+                          </a>
+                        ) : (
+                          license.authority.abbreviation ||
+                          license.authority.name
+                        )}
+                      </dd>
+                    </div>
+                  ) : null}
+                </dl>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null
+    }
+
+    {
+      licensing.timeline.length ? (
+        <section class="personnel-panel personnel-panel-wide">
+          <div class="personnel-panel-heading">
+            <h2>License history</h2>
+            <p>Certification actions across all licenses, most recent first.</p>
+          </div>
+          <LicenseTimeline entries={licensing.timeline} />
+        </section>
+      ) : null
+    }
+
+    {
+      discipline.length ? (
+        <section class="personnel-panel personnel-panel-wide">
+          <div class="personnel-panel-heading">
+            <h2>Discipline</h2>
+            <p>Disciplinary or administrative certification actions.</p>
+          </div>
+          <div class="personnel-table-wrap">
+            <table class="personnel-mini-table">
+              <thead>
+                <tr>
+                  <th scope="col">Action</th>
+                  <th scope="col">Effective</th>
+                  <th scope="col">Expires</th>
+                  <th scope="col">Case #</th>
+                  <th scope="col">Agency</th>
+                </tr>
+              </thead>
+              <tbody>
+                {discipline.map((record) => (
+                  <tr>
+                    <th scope="row">{record.action}</th>
+                    <td>
+                      {record.effectiveDate
+                        ? formatShortDate(record.effectiveDate)
+                        : ""}
+                    </td>
+                    <td>
+                      {record.expirationDate
+                        ? formatShortDate(record.expirationDate)
+                        : ""}
+                    </td>
+                    <td>{record.caseNumber || ""}</td>
+                    <td>{record.agencyName || ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null
+    }
+
     <section class="personnel-panel personnel-panel-wide">
       <div class="personnel-panel-heading">
         <h2>Civil Cases</h2>
@@ -806,6 +924,50 @@ const structuredData = {
     font-weight: 750;
     line-height: 1;
     padding: 0.25rem 0.55rem;
+  }
+
+  .personnel-license-cards {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  }
+
+  .personnel-license-card {
+    background: var(--ipc-color-paper-raised, #fff);
+    border: 1px solid var(--ipc-color-rule, #d5deeb);
+    border-radius: 0.4rem;
+    padding: 0.85rem 0.95rem;
+  }
+
+  .personnel-license-card h3 {
+    color: var(--ipc-color-ink, #101926);
+    font-size: 0.95rem;
+    margin: 0 0 0.55rem;
+  }
+
+  .personnel-license-card dl {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+  }
+
+  .personnel-license-card dl div {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(6rem, auto) minmax(0, 1fr);
+  }
+
+  .personnel-license-card dt {
+    color: var(--ipc-color-ink-faint, #5b6472);
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .personnel-license-card dd {
+    color: var(--ipc-color-ink, #101926);
+    font-size: 0.82rem;
+    margin: 0;
   }
 
   .personnel-section-grid {
