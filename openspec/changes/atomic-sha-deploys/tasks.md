@@ -56,6 +56,13 @@ that loads `redirects.json` into the KVS — see design.md.
 - [ ] 5.1 S3 lifecycle: keep the last N promoted `builds/<sha>/` for rollback and expire older ones; expire `builds/pr-*` on PR close/merge.
 - [ ] 5.2 Deployment docs: promote/rollback runbook; how the pointer, folders, and redirects relate.
 
+## 7. Cross-repo build pipeline (intake → website) — Phase C
+
+- [ ] 7.1 Intake CI: provision Postgres, apply migrations, run ingestion, `pg_dump` to `s3://<db-bucket>/dumps/db-<version>.dump` (immutable; version = hash(migrations + sources)); write `latest.yaml` (version, dump key, published_at, intake shas); `repository_dispatch` to the website.
+- [ ] 7.2 Website CI: read `latest.yaml` ONCE at job start, resolve + record `<db_version>` (optional `db_version` input pins/rolls back; default latest); `pg_restore` the pinned dump into a fresh Postgres before building.
+- [ ] 7.3 Build id = `short_hash(website_sha + db_version)` so a data-only change yields a new immutable `builds/<build-id>/`; write `build-info.json {website_sha, db_version}` into the folder.
+- [ ] 7.4 DB dumps: immutable + retained (lifecycle keeps last N; never expire the dump `latest.yaml` points to). Rebuild/rollback = re-run with the same `website_sha` + `db_version`.
+
 ## 6. Verify
 
 - [ ] 6.1 Apex serves the pointed-to build; flipping `current` serves the new build with no invalidation and no stale HTML.

@@ -228,3 +228,47 @@ carry the changed set on incremental runs.
 - `actions/cache` on `~/.npm` + `node_modules` (key = hash of lockfile).
 - Cache Vite/Astro build cache dir across runs.
 - The prior `builds/<prev-sha>/` in S3 is the incremental base (pulled in §4).
+
+## 7. Cross-repo build pipeline (intake → website)
+
+Schema **and** data both live in the intake repo (migrations under `supabase/`,
+ingestion under `src/` + `sources/`). The website is a pure renderer of whatever
+DB intake produces. The handoff is a **versioned DB dump in S3 behind a mutable
+`latest.yaml` pointer**, dereferenced and pinned once per website build so the
+build is deterministic.
+
+**Intake CI** (on a migrations/sources change) — "spin up DB → migrate → mutate":
+
+```
+1. provision Postgres; apply migrations; run ingestion
+2. pg_dump  -> s3://<db-bucket>/dumps/db-<version>.dump        (immutable)
+              version = hash(migrations + sources)
+3. write    -> s3://<db-bucket>/latest.yaml                    (mutable pointer)
+              version: <version>
+              dump: dumps/db-<version>.dump
+              published_at: <iso8601>
+              migrations_sha: <intake sha>
+              sources_sha: <intake sha / sources hash>
+4. repository_dispatch -> website build
+```
+
+**Website CI** (on website push OR a new dump) — "build → copy to folder":
+
+```
+1. read latest.yaml ONCE at job start; resolve <version> + dump key; echo/record it.
+   (optional `db_version` input pins/rolls back; default = latest.)  <-- determinism
+2. pg_restore the pinned dump into a fresh Postgres
+3. astro build
+4. publish to builds/<build-id>/  and write build-info.json {website_sha, db_version}
+```
+
+Determinism & robustness:
+- **build-id = short_hash(website_sha + db_version)** — a data-only change (intake
+  re-ingests, code unchanged) still yields a new immutable `builds/<build-id>/`.
+- Pinning `latest` at read time means a concurrent intake publish never perturbs an
+  in-flight build; the recorded `<version>` makes the build reproducible.
+- Dumps are immutable and retained (lifecycle keeps the last N; never expire the
+  one `latest.yaml` currently points to). Rebuild/rollback = re-run with the same
+  `website_sha` + `db_version` → identical output.
+- The website build is thus a pure function of `(website_sha, db_version)`; neither
+  repo's CI needs the other's toolchain (restore is minutes; re-ingesting is slow).
