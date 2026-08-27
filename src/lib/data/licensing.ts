@@ -163,10 +163,36 @@ export const loadLicensingForPersonnel = async (
     return { licenses, timeline };
   });
 
+// Only a tiny fraction of personnel have discipline records, so at build time
+// (153k+ personnel pages) load the set of personnel who have any once and skip
+// the per-page query for everyone else. Memoized per process, like other
+// build-time loaders.
+let disciplinedPersonnelPromise: Promise<Set<string>> | null = null;
+
+const loadDisciplinedPersonnelSet = (): Promise<Set<string>> => {
+  if (!disciplinedPersonnelPromise) {
+    disciplinedPersonnelPromise = withDb(async (client) => {
+      const rows = (
+        await client.query(
+          `select distinct ap.personnel_id
+           from public.discipline_agency_personnel dap
+           join public.agency_personnel ap on ap.id = dap.agency_personnel_id`,
+        )
+      ).rows;
+      return new Set<string>(rows.map((row) => row.personnel_id));
+    });
+  }
+  return disciplinedPersonnelPromise;
+};
+
 export const loadDisciplineForPersonnel = async (
   personnelId: string,
-): Promise<DisciplineRecord[]> =>
-  withDb(async (client): Promise<DisciplineRecord[]> => {
+): Promise<DisciplineRecord[]> => {
+  const disciplined = await loadDisciplinedPersonnelSet();
+  if (!disciplined.has(personnelId)) {
+    return [];
+  }
+  return withDb(async (client): Promise<DisciplineRecord[]> => {
     const rows = (
       await client.query(
         `
@@ -202,3 +228,4 @@ export const loadDisciplineForPersonnel = async (
       agencyName: trimOrNull(row.agency_name),
     }));
   });
+};
