@@ -1,0 +1,105 @@
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Guards against production CSS regressions — most importantly PurgeCSS (or any
+// future optimizer) silently dropping design tokens or key component styles, so
+// the built site diverges from `astro dev` (which runs no such optimizer).
+//
+// The design's color system lives entirely in `--ipc-*` custom properties in
+// src/styles/theme.css. If their DEFINITIONS are missing from the emitted CSS,
+// every `var(--ipc-*)` resolves to nothing and the site falls back to browser
+// defaults — the failure mode we hit when PurgeCSS stripped them. We derive the
+// expected token list from source so this stays in sync automatically, then
+// also spot-check a few critical component selectors.
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, "..");
+const themeCssPath = path.join(repoRoot, "src/styles/theme.css");
+const cssDir = path.join(repoRoot, "dist/_astro");
+
+// Component selectors that must survive in the built CSS. Add to this list when
+// a component's styling is load-bearing and easy to lose to over-aggressive
+// purging or refactors.
+const REQUIRED_SELECTORS = [".masthead", ".nav-action-share", ".masthead-nav"];
+
+// Below this, the bundle has almost certainly been stripped of real styles.
+const MIN_TOTAL_CSS_BYTES = 250_000;
+
+const readAllCss = () => {
+  let files;
+  try {
+    files = readdirSync(cssDir).filter((name) => name.endsWith(".css"));
+  } catch {
+    throw new Error(
+      `No CSS directory at ${cssDir}. Run the build before validating CSS.`,
+    );
+  }
+  if (files.length === 0) {
+    throw new Error(`No .css files found in ${cssDir}.`);
+  }
+  const combined = files
+    .map((name) => readFileSync(path.join(cssDir, name), "utf8"))
+    .join("\n");
+  return { combined, fileCount: files.length, bytes: combined.length };
+};
+
+const expectedTokens = () => {
+  const theme = readFileSync(themeCssPath, "utf8");
+  // Custom property DEFINITIONS look like `--ipc-...: value;`
+  const tokens = new Set();
+  for (const match of theme.matchAll(/(--ipc-[a-z0-9-]+)\s*:/gi)) {
+    tokens.add(match[1]);
+  }
+  return [...tokens];
+};
+
+const { combined, fileCount, bytes } = readAllCss();
+const failures = [];
+
+if (bytes < MIN_TOTAL_CSS_BYTES) {
+  failures.push(
+    `Total CSS is ${bytes} bytes across ${fileCount} file(s), below the ${MIN_TOTAL_CSS_BYTES}-byte floor — styles likely stripped.`,
+  );
+}
+
+const tokens = expectedTokens();
+if (tokens.length === 0) {
+  failures.push(
+    `Could not find any --ipc-* token definitions in ${themeCssPath}; the guard cannot validate. Update the token pattern.`,
+  );
+}
+const missingTokens = tokens.filter(
+  (token) => !combined.includes(`${token}:`),
+);
+if (missingTokens.length) {
+  failures.push(
+    `${missingTokens.length}/${tokens.length} design tokens are DEFINED in theme.css but missing from the built CSS: ${missingTokens.join(", ")}`,
+  );
+}
+
+const missingSelectors = REQUIRED_SELECTORS.filter(
+  (selector) => !combined.includes(selector),
+);
+if (missingSelectors.length) {
+  failures.push(
+    `Required component selectors missing from built CSS: ${missingSelectors.join(", ")}`,
+  );
+}
+
+if (failures.length) {
+  console.error("Critical CSS validation failed:");
+  for (const failure of failures) {
+    console.error(`- ${failure}`);
+  }
+  console.error(
+    "\nThis usually means a production-only CSS optimizer (e.g. PurgeCSS) " +
+      "stripped styles that `astro dev` keeps. Compare the built CSS in " +
+      "dist/_astro against `astro dev` output.",
+  );
+  process.exitCode = 1;
+} else {
+  console.log(
+    `Critical CSS validation passed: ${tokens.length} design tokens + ${REQUIRED_SELECTORS.length} component selectors present in ${fileCount} CSS file(s) (${bytes} bytes).`,
+  );
+}
