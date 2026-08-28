@@ -38,9 +38,17 @@ module.exports = {
                 /^data-bs-/,
                 /^data-aos/,
                 /^bs-/,
+                // Astro component scope classes are generated at build time
+                // (scopedStyleStrategy: "where" -> `.foo:where(.astro-<hash>)`),
+                // so they never appear in the scanned .astro source. Without
+                // this, PurgeCSS strips every scoped component style.
+                /^astro-[\w-]+$/,
               ],
               deep: [/modal/, /offcanvas/, /tooltip/, /popover/, /leaflet/],
-              greedy: [/aos/, /data-bs/, /data-astro-cid/, /leaflet/],
+              // `astro-` keeps any compound selector carrying an Astro scope
+              // class (e.g. `.masthead:where(.astro-tq46r5sz)`); the old
+              // `data-astro-cid` covered the attribute-based scope strategy.
+              greedy: [/aos/, /data-bs/, /data-astro-cid/, /astro-/, /leaflet/],
             },
             // Keep CSS custom properties (Bootstrap uses many)
             variables: true,
