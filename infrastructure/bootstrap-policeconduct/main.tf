@@ -164,12 +164,19 @@ locals {
     "object-src 'none';",
     "frame-ancestors 'self';",
     "form-action 'self';",
-    "img-src 'self' data: blob: https://tile.openstreetmap.org https://i.ytimg.com https://www.google-analytics.com https://stats.g.doubleclick.net https://www.gstatic.com https://www.google.com;",
-    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com;",
+    # NOTE: Disqus sources are intentionally still allowed here even though the
+    # Disqus embed was removed from the site. This response-headers policy is
+    # SHARED by the preview and prod CloudFront distributions, and prod has not
+    # yet dropped Disqus. Removing the Disqus allowances now would tighten prod's
+    # CSP too and could break any Disqus still live there. Leaving them is inert
+    # (an unused allowance never breaks anything). Drop these when this branch
+    # merges to prod so both distributions lose Disqus together.
+    "img-src 'self' data: blob: https://tile.openstreetmap.org https://i.ytimg.com https://www.google-analytics.com https://stats.g.doubleclick.net https://c.disquscdn.com https://*.disqus.com https://www.gstatic.com https://www.google.com;",
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com;",
     "style-src 'self' 'unsafe-inline';",
-    "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://*.ingest.us.sentry.io https://*.sentry.io;",
+    "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com https://*.ingest.us.sentry.io https://*.sentry.io;",
     "font-src 'self' data:;",
-    "frame-src 'self' https://www.youtube.com https://www.google.com https://recaptcha.google.com;",
+    "frame-src 'self' https://www.youtube.com https://www.google.com https://recaptcha.google.com https://disqus.com https://*.disqus.com;",
     "worker-src 'self' blob:;",
     "upgrade-insecure-requests",
   ])
