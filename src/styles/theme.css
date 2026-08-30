@@ -735,7 +735,12 @@ progress {
 .container-lg,
 .container-xl,
 .container-xxl {
-  --bs-gutter-x: 3vw;
+  /* Never let the container gutter fall below the row gutter (`g-4` = 1.5rem).
+     A plain `3vw` shrinks to ~5.8px padding on a ~390px phone, too little to
+     absorb a `.row.g-4`'s -12px negative margins, so rows spilled ~6px past the
+     viewport and produced a horizontal scrollbar on every page. `max()` keeps
+     the roomy 3vw on desktop while guaranteeing >=12px padding on mobile. */
+  --bs-gutter-x: max(1.5rem, 3vw);
   --bs-gutter-y: 0;
   width: 100%;
   padding-right: calc(var(--bs-gutter-x) * 0.5);

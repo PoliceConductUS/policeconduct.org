@@ -71,6 +71,19 @@
     position: relative;
   }
 
+  @media (max-width: 767.98px) {
+    /* The masthead switches to a vertical (column) layout on mobile, where a
+       flex item's basis maps to the MAIN axis — height. The desktop
+       `flex: 1 1 20rem` basis (intended as a width) would otherwise reserve
+       20rem of vertical space, leaving a large empty gap above the nav. Size to
+       content and span the full width instead. */
+    .masthead-search {
+      flex: 0 0 auto;
+      max-width: none;
+      width: 100%;
+    }
+  }
+
   .masthead-search-input {
     background: var(--ipc-color-paper-raised)
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2334496b' stroke-width='1.4'%3E%3Ccircle cx='7' cy='7' r='4.3'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E")
