@@ -1,63 +1,6 @@
 ---
 import PageShell from "#src/layouts/PageShell.astro";
-import { loadAgencyFinderResults } from "#src/lib/data/agencies.js";
-import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
-import { loadLocationBuildPayloads } from "#src/lib/data/build-payloads.js";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
-
-const [locations, federalAgencies, agencies] = await Promise.all([
-  loadLocationBuildPayloads(),
-  loadFederalAgencySummaries(),
-  loadAgencyFinderResults(),
-]);
-
-const places = locations
-  .filter((location) => location.level === "place")
-  .map((place) => ({
-    href: place.path,
-    label: [place.displayName, place.administrativeArea, place.stateLabel]
-      .filter(Boolean)
-      .join(", "),
-    meta: `${place.agencies?.length ?? 0} ${
-      (place.agencies?.length ?? 0) === 1 ? "agency" : "agencies"
-    } in the record`,
-    searchText: [
-      place.displayName,
-      place.administrativeArea,
-      place.administrativeAreaSlug,
-      place.state,
-      place.stateLabel,
-    ]
-      .filter(Boolean)
-      .join(" "),
-  }));
-
-const agencyResults = agencies.map((agency) => ({
-  href: agency.canonicalPath,
-  label: agency.name,
-  meta: [agency.city, agency.administrativeArea, agency.state]
-    .filter(Boolean)
-    .join(", "),
-  searchText: [
-    agency.name,
-    agency.city,
-    agency.administrativeArea,
-    agency.state,
-    agency.zipCode,
-    agency.canonicalPath,
-  ]
-    .filter(Boolean)
-    .join(" "),
-}));
-
-const federalAgencyResults = federalAgencies.map((agency) => ({
-  href: agency.path,
-  label: agency.name,
-  meta: `${agency.branchCount} ${
-    agency.branchCount === 1 ? "location" : "locations"
-  } in the record`,
-  searchText: agency.name,
-}));
 
 const pagePath = "/find-records/";
 const siteUrl = getSiteUrl(Astro.site);
@@ -71,24 +14,14 @@ const structuredData = buildWebPage({
   description,
   type: "SearchResultsPage",
 });
+// Only the group containers (type + label) render server-side; the results are
+// fetched lazily from /find-records/data.json on the client, so this page's
+// HTML no longer carries the ~1MB dataset inline.
 const finderGroups = [
-  {
-    type: "place",
-    label: "Places",
-    results: places,
-  },
-  {
-    type: "agency",
-    label: "Agencies",
-    results: agencyResults,
-  },
-  {
-    type: "federal-agency",
-    label: "Federal agencies",
-    results: federalAgencyResults,
-  },
+  { type: "place", label: "Places" },
+  { type: "agency", label: "Agencies" },
+  { type: "federal-agency", label: "Federal agencies" },
 ];
-const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
 ---
 
 <PageShell
@@ -168,13 +101,6 @@ const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
     </div>
   </section>
 
-  <script
-    id="recordFinderData"
-    type="application/json"
-    set:html={finderDataJson}
-    is:inline
-  />
-
   <script is:inline>
     const input = document.querySelector("[data-record-finder-input]");
     const startState = document.querySelector("[data-finder-start]");
@@ -193,10 +119,27 @@ const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
         list,
       ]),
     );
-    const finderDataElement = document.getElementById("recordFinderData");
-    const finderGroups = finderDataElement?.textContent
-      ? JSON.parse(finderDataElement.textContent)
-      : [];
+    // The dataset is fetched lazily from a static JSON file instead of being
+    // inlined, so the page HTML stays small. Load it on first interaction; if a
+    // search happens before it arrives, show a loading note and run once ready.
+    let finderGroups = null;
+    let loadPromise = null;
+    const loadFinderData = () => {
+      if (!loadPromise) {
+        loadPromise = fetch("/find-records/data.json")
+          .then((response) => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+          })
+          .then((groups) => {
+            finderGroups = groups;
+          })
+          .catch(() => {
+            finderGroups = [];
+          });
+      }
+      return loadPromise;
+    };
     const maxVisiblePerGroup = 12;
     const reportedNoResultQueries = new Set();
     let noResultTimer = 0;
@@ -257,7 +200,7 @@ const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
       return link;
     };
 
-    const updateResults = () => {
+    const updateResults = async () => {
       const query = normalize(input?.value);
       window.clearTimeout(noResultTimer);
       clearResults();
@@ -268,6 +211,17 @@ const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
         setHidden(resultsRoot, true);
         setStatus("Type a place or agency name to show matching records.");
         return;
+      }
+
+      if (!finderGroups) {
+        setHidden(startState, true);
+        setHidden(noResultsState, true);
+        setHidden(resultsRoot, true);
+        setStatus("Loading records…");
+        await loadFinderData();
+        // A newer keystroke may have superseded this call while loading.
+        if (normalize(input?.value) !== query) return;
+        clearResults();
       }
 
       let visibleTotal = 0;
@@ -313,6 +267,9 @@ const finderDataJson = JSON.stringify(finderGroups).replace(/</g, "\\u003c");
       input.value = initialQuery;
     }
 
+    // Prefetch the dataset as soon as the field is focused, so it is usually
+    // ready by the time the first character is typed.
+    input?.addEventListener("focus", loadFinderData, { once: true });
     input?.addEventListener("input", updateResults);
     updateResults();
   </script>
