@@ -3,10 +3,7 @@ import { withDb } from "#src/lib/db.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
-import {
-  normalizeLicenseStatus,
-  normalizeLicenseType,
-} from "./licensing.js";
+import { normalizeLicenseStatus, normalizeLicenseType } from "./licensing.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
 
 export type AgencyScopedTopicKind =
@@ -318,7 +315,9 @@ const loadAgencyRows = async (agencyId: string) =>
     ).rows[0];
     const officerIds = [
       ...new Set(
-        agencyOfficers.map((entry: { personnel_id: string }) => entry.personnel_id),
+        agencyOfficers.map(
+          (entry: { personnel_id: string }) => entry.personnel_id,
+        ),
       ),
     ];
     const officers = officerIds.length

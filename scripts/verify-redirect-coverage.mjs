@@ -42,14 +42,18 @@ const readSource = async (source, childRef) => {
   }
   // Local: index at `source`; children are sibling files by basename.
   const dir = path.dirname(path.resolve(source));
-  const file = childRef ? path.join(dir, path.basename(toPath(childRef))) : path.resolve(source);
+  const file = childRef
+    ? path.join(dir, path.basename(toPath(childRef)))
+    : path.resolve(source);
   return readFile(file, "utf8");
 };
 
 // A sitemap index points at child sitemaps; a urlset lists page URLs.
 const loadSitemapPaths = async (source) => {
   const indexXml = await readSource(source);
-  const childRefs = extractLocs(indexXml).filter((l) => /sitemap.*\.xml$/i.test(l));
+  const childRefs = extractLocs(indexXml).filter((l) =>
+    /sitemap.*\.xml$/i.test(l),
+  );
   const paths = new Set();
   if (childRefs.length) {
     for (const ref of childRefs) {
@@ -65,11 +69,15 @@ const loadSitemapPaths = async (source) => {
 
 const loadRedirects = async () => {
   try {
-    const raw = await readFile(path.join(DIST_DIR, "_redirect-map.json"), "utf8");
+    const raw = await readFile(
+      path.join(DIST_DIR, "_redirect-map.json"),
+      "utf8",
+    );
     const list = JSON.parse(raw);
     const map = new Map();
     for (const entry of list) {
-      if (entry && entry.from && entry.to) map.set(toPath(entry.from), toPath(entry.to));
+      if (entry && entry.from && entry.to)
+        map.set(toPath(entry.from), toPath(entry.to));
     }
     return map;
   } catch {
@@ -109,9 +117,13 @@ const main = async () => {
   // itself a redirect source.
   for (const [from, to] of redirects) {
     if (!newPaths.has(to)) {
-      failures.push(`redirect ${from} -> ${to}: target is not a route in this build`);
+      failures.push(
+        `redirect ${from} -> ${to}: target is not a route in this build`,
+      );
     } else if (redirectSources.has(to)) {
-      failures.push(`redirect ${from} -> ${to}: target is itself a redirect (chain/cycle)`);
+      failures.push(
+        `redirect ${from} -> ${to}: target is itself a redirect (chain/cycle)`,
+      );
     }
   }
 
@@ -135,11 +147,14 @@ const main = async () => {
   if (failures.length) {
     console.error(`Redirect-coverage guard failed (${failures.length}):`);
     for (const f of failures.slice(0, 50)) console.error(`- ${f}`);
-    if (failures.length > 50) console.error(`… and ${failures.length - 50} more`);
+    if (failures.length > 50)
+      console.error(`… and ${failures.length - 50} more`);
     process.exitCode = 1;
     return;
   }
-  console.log("Redirect-coverage guard passed: no URL will 404 across this deploy.");
+  console.log(
+    "Redirect-coverage guard passed: no URL will 404 across this deploy.",
+  );
 };
 
 main().catch((error) => {

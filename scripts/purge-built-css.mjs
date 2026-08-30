@@ -60,9 +60,7 @@ const extractTokensFromFiles = async (files) => {
       if (matches) for (const token of matches) tokens.add(token);
     }
   };
-  await Promise.all(
-    Array.from({ length: READ_CONCURRENCY }, () => worker()),
-  );
+  await Promise.all(Array.from({ length: READ_CONCURRENCY }, () => worker()));
   return tokens;
 };
 
@@ -167,7 +165,9 @@ main().catch((error) => {
   // loudly so it gets fixed.
   const bar = "!".repeat(74);
   console.warn(`\n${bar}`);
-  console.warn("!!  POST-BUILD CSS PURGE FAILED  —  shipping UNPURGED css, build continued  !!");
+  console.warn(
+    "!!  POST-BUILD CSS PURGE FAILED  —  shipping UNPURGED css, build continued  !!",
+  );
   console.warn(bar);
   console.warn(error instanceof Error ? error.stack : String(error));
   console.warn(`${bar}\n`);

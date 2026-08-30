@@ -25,7 +25,8 @@ const toPath = (loc) => {
     return String(loc || "").trim();
   }
 };
-const lastSegment = (p) => p.replace(/\/+$/, "").split("/").filter(Boolean).pop() || "";
+const lastSegment = (p) =>
+  p.replace(/\/+$/, "").split("/").filter(Boolean).pop() || "";
 const extractLocs = (xml) =>
   [...xml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)].map((m) => m[1]);
 
@@ -45,11 +46,14 @@ const readSource = async (source, childRef) => {
 
 const loadSitemapPaths = async (source) => {
   const indexXml = await readSource(source);
-  const childRefs = extractLocs(indexXml).filter((l) => /sitemap.*\.xml$/i.test(l));
+  const childRefs = extractLocs(indexXml).filter((l) =>
+    /sitemap.*\.xml$/i.test(l),
+  );
   const paths = new Set();
   if (childRefs.length) {
     for (const ref of childRefs) {
-      for (const loc of extractLocs(await readSource(source, ref))) paths.add(toPath(loc));
+      for (const loc of extractLocs(await readSource(source, ref)))
+        paths.add(toPath(loc));
     }
   } else {
     for (const loc of extractLocs(indexXml)) paths.add(toPath(loc));
@@ -64,7 +68,9 @@ const main = async () => {
     return;
   }
   const priorPaths = await loadSitemapPaths(prior);
-  const currentPaths = await loadSitemapPaths(path.join(DIST_DIR, "sitemap-index.xml"));
+  const currentPaths = await loadSitemapPaths(
+    path.join(DIST_DIR, "sitemap-index.xml"),
+  );
 
   // slug (last segment) -> current path. Flag any slug that isn't unique across
   // current routes (should not happen given slug formats; a collision is a bug).
@@ -73,7 +79,8 @@ const main = async () => {
   for (const p of currentPaths) {
     const slug = lastSegment(p);
     if (!slug) continue;
-    if (currentBySlug.has(slug) && currentBySlug.get(slug) !== p) ambiguous.add(slug);
+    if (currentBySlug.has(slug) && currentBySlug.get(slug) !== p)
+      ambiguous.add(slug);
     else currentBySlug.set(slug, p);
   }
 

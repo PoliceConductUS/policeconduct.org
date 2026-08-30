@@ -243,7 +243,8 @@ export const loadReportDetail = async (
         [report.id],
       )
     ).rows;
-    const officers = (await client.query("select * from public.personnel")).rows;
+    const officers = (await client.query("select * from public.personnel"))
+      .rows;
     const agencies = (
       await client.query(
         `

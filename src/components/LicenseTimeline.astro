@@ -24,7 +24,10 @@ const renderEntry = (entry: LicenseTimelineEntry) => ({
         const entry = renderEntry(raw);
         return (
           <li
-            class:list={["license-timeline-item", { "is-adverse": entry.isAdverse }]}
+            class:list={[
+              "license-timeline-item",
+              { "is-adverse": entry.isAdverse },
+            ]}
           >
             <span class="license-timeline-marker" aria-hidden="true" />
             <div class="license-timeline-body">

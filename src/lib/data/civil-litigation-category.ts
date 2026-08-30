@@ -134,7 +134,9 @@ export const loadCivilCasesByState = async (
     .map((civilCase) => ({
       ...civilCase,
       officers: (officersByCase[civilCase.id] || [])
-        .map((entry: { personnel_id: string }) => officersById[entry.personnel_id])
+        .map(
+          (entry: { personnel_id: string }) => officersById[entry.personnel_id],
+        )
         .filter(Boolean),
       agencies: (agenciesByCase[civilCase.id] || []).map(
         (entry: AgencyRef & { civil_case_id: string }) => ({

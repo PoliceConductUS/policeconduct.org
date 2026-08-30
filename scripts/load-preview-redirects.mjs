@@ -19,7 +19,10 @@ if (!kvsArn || !namespace || !mapPath) {
 }
 
 const aws = (args) =>
-  execFileSync("aws", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  execFileSync("aws", args, {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
 
 const etag = () =>
   aws([

@@ -40,6 +40,7 @@ s3://site/
 ```
 
 Routing is uniform (the `builds` subdomain zone mirrors the `builds/` prefix):
+
 - **Any build by id**: the first DNS label IS the folder — `pr-123.builds.<domain>`
   → `builds/pr-123/`, `<sha>.builds.<domain>` → `builds/<sha>/` (free pre-promote
   smoke test).
@@ -51,43 +52,50 @@ the folder into `request.uri`, **the resolved build id is part of the cache key*
 — flipping the pointer needs **no invalidation**, and builds coexist in cache.
 
 ```js
-import cf from 'cloudfront';
-const kvs = cf.kvs();                       // { current: <sha>, r:/old = /new, … }
+import cf from "cloudfront";
+const kvs = cf.kvs(); // { current: <sha>, r:/old = /new, … }
 
 async function handler(event) {
-  const req  = event.request;
+  const req = event.request;
   const host = req.headers.host.value;
-  const uri  = req.uri;
+  const uri = req.uri;
 
   // 1) folder selection — first DNS label for *.builds.<domain>, pointer for apex
   let id;
-  const label = host.split('.')[0];
-  if (host.includes('.builds.') && /^[a-z0-9-]+$/.test(label)) {
-    id = label;                              // validated: no '.', '/', traversal
+  const label = host.split(".")[0];
+  if (host.includes(".builds.") && /^[a-z0-9-]+$/.test(label)) {
+    id = label; // validated: no '.', '/', traversal
   } else {
-    id = await kvs.get('current');           // apex = prod pointer (a sha)
+    id = await kvs.get("current"); // apex = prod pointer (a sha)
   }
   const prefix = `/builds/${id}`;
 
   // 2) redirects — PER-BUILD, ALL HOSTS. Keys namespaced by id: r:<id>:<path>.
   //    Applies on apex and every *.builds subdomain so no host 404s on legacy URLs.
   try {
-    const to = await kvs.get('r:' + id + ':' + uri);
-    if (to) return { statusCode: 301, statusDescription: 'Moved Permanently',
-                     headers: { location: { value: to } } };
-  } catch (_) { /* no redirect for this path in this build */ }
+    const to = await kvs.get("r:" + id + ":" + uri);
+    if (to)
+      return {
+        statusCode: 301,
+        statusDescription: "Moved Permanently",
+        headers: { location: { value: to } },
+      };
+  } catch (_) {
+    /* no redirect for this path in this build */
+  }
 
   // 3) index rewrite: "/x/" -> "/x/index.html", "/x" -> "/x/index.html", "/" -> "/index.html"
   let p = uri;
-  if (p.endsWith('/'))        p += 'index.html';
-  else if (!p.split('/').pop().includes('.')) p += '/index.html';
+  if (p.endsWith("/")) p += "index.html";
+  else if (!p.split("/").pop().includes(".")) p += "/index.html";
 
-  req.uri = prefix + p;       // e.g. /builds/<sha>/tx/index.html  -> also the cache key
+  req.uri = prefix + p; // e.g. /builds/<sha>/tx/index.html  -> also the cache key
   return req;
 }
 ```
 
 Notes:
+
 - Prefix PR folders `pr-<n>` so PR ids (decimal) and shas (12-hex) never collide.
 - The label regex `^[a-z0-9-]+$` is a security gate: without it a crafted host
   could aim the origin at an arbitrary S3 prefix.
@@ -106,8 +114,8 @@ already point at the apex; this makes it definitive.
 // noindex.js — viewer-response
 function handler(event) {
   const host = event.request.headers.host.value;
-  if (host.includes('.builds.')) {
-    event.response.headers['x-robots-tag'] = { value: 'noindex, nofollow' };
+  if (host.includes(".builds.")) {
+    event.response.headers["x-robots-tag"] = { value: "noindex, nofollow" };
   }
   return event.response;
 }
@@ -200,8 +208,8 @@ Each `getStaticPaths` gains:
 ```js
 const changed = process.env.BUILD_CHANGED_PATHS
   ? new Set(JSON.parse(fs.readFileSync(process.env.BUILD_CHANGED_PATHS)))
-  : null;               // null => full build (first build / forced)
-return allPaths.filter(p => !changed || changed.has(canonicalPathFor(p)));
+  : null; // null => full build (first build / forced)
+return allPaths.filter((p) => !changed || changed.has(canonicalPathFor(p)));
 ```
 
 Result: a typical data delta re-renders hundreds of pages, not 165k → minutes.
@@ -242,7 +250,7 @@ as a new dump; the website only ever reacts to what intake published — it neve
 leads. This is safe because of the immutable-build + pinned-`db_version` model:
 when intake publishes a dump whose schema the current website doesn't yet handle,
 the website's build against it fails in CI/preview, but **prod is untouched** (it
-keeps serving the last *promoted* build; `repository_dispatch` triggers a build,
+keeps serving the last _promoted_ build; `repository_dispatch` triggers a build,
 never an auto-promote). You then update the website to the new shape, its build
 against the already-published dump goes green, and you promote. During the gap you
 can keep building/rolling back the website against the prior `db_version`. Never
@@ -274,6 +282,7 @@ change the website first to "tolerate both shapes."
 ```
 
 Determinism & robustness:
+
 - **build-id = short_hash(website_sha + db_version)** — a data-only change (intake
   re-ingests, code unchanged) still yields a new immutable `builds/<build-id>/`.
 - Pinning `latest` at read time means a concurrent intake publish never perturbs an

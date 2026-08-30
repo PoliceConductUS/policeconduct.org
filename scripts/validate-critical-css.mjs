@@ -75,9 +75,7 @@ if (tokens.length === 0) {
     `Could not find any --ipc-* token definitions in ${themeCssPath}; the guard cannot validate. Update the token pattern.`,
   );
 }
-const missingTokens = tokens.filter(
-  (token) => !combined.includes(`${token}:`),
-);
+const missingTokens = tokens.filter((token) => !combined.includes(`${token}:`));
 if (missingTokens.length) {
   failures.push(
     `${missingTokens.length}/${tokens.length} design tokens are DEFINED in theme.css but missing from the built CSS: ${missingTokens.join(", ")}`,
@@ -100,7 +98,9 @@ if (failures.length) {
   // banner so a real regression is caught by eye, and let the build continue.
   const bar = "!".repeat(74);
   console.warn(`\n${bar}`);
-  console.warn("!!  CRITICAL CSS WARNING  —  build NOT failed, review before deploying  !!");
+  console.warn(
+    "!!  CRITICAL CSS WARNING  —  build NOT failed, review before deploying  !!",
+  );
   console.warn(bar);
   for (const failure of failures) {
     console.warn(`  - ${failure}`);
