@@ -19,12 +19,8 @@ SITE_URL="https://pr-${PR_NUMBER}.preview.policeconduct.org"
 export SITE_URL
 npm run build
 
-# Previews must never be crawlable: Google has indexed pr-N.preview URLs and
-# reported them as duplicate canonicals against production (Search Console
-# 2026-07-28). Deny all crawling on the preview host.
-printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
-
-# Upload + invalidate. Factored into a standalone, retrying, resumable step so a
+# Upload + invalidate (also writes the deny-all robots.txt). Factored into a
+# standalone, retrying, resumable step so a
 # dropped S3 connection can be resumed with `npm run deploy:preview:sync`
 # WITHOUT rebuilding.
 bash scripts/deploy-preview-sync.sh

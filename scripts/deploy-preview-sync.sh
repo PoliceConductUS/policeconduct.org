@@ -26,6 +26,11 @@ if [[ ! -d dist ]]; then
   exit 1
 fi
 
+# Previews must never be crawlable (Google has indexed pr-N.preview URLs as
+# duplicate canonicals against production). Written here so EVERY sync — full
+# deploy or a standalone resume — guarantees the deny-all robots.txt is present.
+printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+
 # Make the AWS CLI itself resilient to transient network errors before we even
 # fall back to the outer retry loop.
 export AWS_MAX_ATTEMPTS="${AWS_MAX_ATTEMPTS:-10}"

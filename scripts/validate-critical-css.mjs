@@ -23,8 +23,14 @@ const cssDir = path.join(repoRoot, "dist/_astro");
 // purging or refactors.
 const REQUIRED_SELECTORS = [".masthead", ".nav-action-share", ".masthead-nav"];
 
-// Below this, the bundle has almost certainly been stripped of real styles.
-const MIN_TOTAL_CSS_BYTES = 250_000;
+// Loose backstop for a catastrophic collapse (near-empty CSS), NOT a target.
+// The token + selector checks below are the precise correctness gates; this
+// only catches "almost everything vanished". Keep it well under the real output
+// so legitimate purging never trips it: the post-build purge (scanning rendered
+// HTML) produces ~244KB from ~476KB unpurged, so 150KB leaves ample margin. An
+// earlier 250KB value was calibrated to the old in-build purge and wrongly
+// failed the leaner, correct post-build result.
+const MIN_TOTAL_CSS_BYTES = 150_000;
 
 const readAllCss = () => {
   let files;
