@@ -42,7 +42,8 @@
     "validate:redirects": "node scripts/verify-redirect-coverage.mjs",
     "validate:schema": "node scripts/validate-schema-contract.mjs",
     "validate:shell": "bash -n scripts/*.sh infrastructure/bootstrap-*/*.sh infrastructure/bootstrap-*/scripts/*.sh",
-    "validate:types": "astro check"
+    "validate:types": "astro check",
+    "deploy:preview:sync": "bash scripts/deploy-preview-sync.sh"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
