@@ -1,6 +1,5 @@
 ---
 import "#src/styles/civic-ledger.css";
-import DisqusComments from "#src/components/DisqusComments.astro";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
@@ -85,7 +84,6 @@ const civilCases = data.civilCases;
 const evidenceLinks = data.evidenceLinks;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const disqusIdentifier = `report:${slug}`;
 const reportsBasePath = data.locationBreadcrumbs.reports.href;
 const yearPath = `${reportsBasePath}${year}/`;
 const monthPath = `${yearPath}${month}/`;
@@ -519,11 +517,6 @@ const structuredData = {
       </p>
     </aside>
   </div>
-
-  <section class="civic-section">
-    <h2>Comments</h2>
-    <DisqusComments pageUrl={pageUrl} disqusIdentifier={disqusIdentifier} />
-  </section>
 
   <section class="civic-section civic-section--last">
     <ReportDisclaimer />
