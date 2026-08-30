@@ -53,3 +53,6 @@ rollback.json
 /public/img/place/*
 /public/img/agency/*
 !/public/img/*/default.webp
+
+# Scratch state written by the using-superpowers skill; not part of the project
+.superpowers/
