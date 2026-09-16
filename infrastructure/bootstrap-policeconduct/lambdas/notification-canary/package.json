@@ -1,0 +1,16 @@
+{
+  "name": "policeconduct-notification-canary",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Scheduled liveness check for the submission notification path (INS-35).",
+  "main": "index.mjs",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cloudwatch": "^3.637.0",
+    "@aws-sdk/client-s3": "^3.637.0",
+    "@aws-sdk/client-sns": "^3.637.0"
+  }
+}

@@ -461,3 +461,62 @@ variable "tags" {
     Stack     = "bootstrap"
   }
 }
+
+variable "notification_canary_alert_endpoints" {
+  description = <<-EOT
+    Where to shout when the submission notification path fails its scheduled
+    check (INS-35).
+
+    This MUST NOT be the same mailbox as submission_notification_email_endpoints.
+    The failure being reported is "the notification channel is dead"; an alert
+    routed into that channel dies with it, which is how two separate outages
+    (INS-20, INS-55) went undetected for months. Prefer a different domain as
+    well: policeconduct.org mail lives in a Google Workspace tenant IPC does not
+    own (INS-55), so a tenant-level failure takes every policeconduct.org
+    address with it at once.
+
+    Leaving this empty disables the canary. A canary whose alarm goes nowhere is
+    worse than none, because it reads as coverage.
+  EOT
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition = length([
+      for endpoint in var.notification_canary_alert_endpoints :
+      endpoint if contains([
+        for recipient in var.submission_notification_email_endpoints :
+        lower(trimspace(recipient))
+      ], lower(trimspace(endpoint)))
+    ]) == 0
+    error_message = "notification_canary_alert_endpoints overlaps submission_notification_email_endpoints. The canary cannot report a dead mailbox into that same mailbox."
+  }
+}
+
+variable "notification_canary_schedule" {
+  description = <<-EOT
+    How often the notification path is asserted to still work (INS-35).
+
+    The manual sweep this replaces was committed to every 2 business days and
+    achieved 1 execution out of 8. Daily is the default because the standard it
+    protects is measured in business days, so a gap longer than a day can hide a
+    breach.
+  EOT
+  type        = string
+  default     = "rate(1 day)"
+}
+
+variable "notification_receipts_since" {
+  description = <<-EOT
+    Reconciliation cutoff date (YYYY-MM-DD) for the notification canary (INS-35).
+
+    Notification receipts only exist from the day this ships. The 104
+    submissions that predate it have none and never will; without a cutoff the
+    canary would report them as unnotified on every run and be muted within a
+    week. Those are INS-16's backlog, worked by a human, not a monitoring signal.
+
+    Set this to the date the change is applied.
+  EOT
+  type        = string
+  default     = ""
+}

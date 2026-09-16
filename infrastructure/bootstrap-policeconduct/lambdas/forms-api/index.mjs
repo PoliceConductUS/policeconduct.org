@@ -736,16 +736,346 @@ async function publishSubmissionNotification({
   }
 }
 
+/**
+ * Who gets told, as a configured value rather than an assumption in code.
+ *
+ * `hello@policeconduct.org` is the documented fallback channel and is confirmed
+ * monitored (INS-16 §14), but it lives in a Google Workspace tenant IPC does
+ * not own (INS-55). A mailbox we do not control can stop being read without
+ * telling us — that already happened once, undetected for 3.5 months. So the
+ * recipient list is configuration, and the canary in lambdas/notification-canary
+ * is what asserts the list still terminates at a live mailbox.
+ */
+function submissionNotificationRecipients() {
+  return (process.env.SUBMISSION_NOTIFICATION_RECIPIENTS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Send the notification over the transport we can observe.
+ *
+ * SNS email subscriptions are deliberately NOT the human-facing path. SNS does
+ * not report delivery status for the `email` protocol, so a subscription to a
+ * mailbox that quietly dies keeps reporting `Confirmed` forever and nobody
+ * finds out. That is exactly the INS-55 failure — mail bouncing for 3.5 months,
+ * believed live, discovered by accident.
+ *
+ * Resend reports a per-message `last_event` (`delivered`, `bounced`, ...), so a
+ * dead mailbox becomes a machine-checkable fact instead of a belief. It is also
+ * already the transport behind the submitter verification email, so this adds
+ * no vendor and no spend.
+ */
+async function sendSubmissionNotificationEmail({
+  eventType,
+  formName,
+  submissionId,
+  bucket,
+  key,
+  occurredAt,
+  requestId,
+}) {
+  const recipients = submissionNotificationRecipients();
+  const resendApiKey = (process.env.RESEND_API_KEY || "").trim();
+  const fromAddress = (
+    process.env.SUBMISSION_NOTIFICATION_FROM_ADDRESS ||
+    process.env.EMAIL_VERIFICATION_FROM_ADDRESS ||
+    ""
+  ).trim();
+
+  if (recipients.length === 0) {
+    // The INS-20 state, stated out loud: a submission landed and there is
+    // nobody to tell. Alarmed on, not merely logged.
+    console.warn(
+      JSON.stringify({
+        msg: "forms.notify.recipients_not_configured",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+      }),
+    );
+    return { sent: false, reason: "recipients_not_configured", recipients };
+  }
+
+  if (!resendApiKey || !fromAddress) {
+    console.error(
+      JSON.stringify({
+        msg: "forms.notify.email_misconfigured",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        hasApiKey: Boolean(resendApiKey),
+        hasFromAddress: Boolean(fromAddress),
+      }),
+    );
+    return { sent: false, reason: "email_misconfigured", recipients };
+  }
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: fromAddress,
+        to: recipients,
+        subject: submissionNotificationSubject({
+          eventType,
+          formName,
+          submissionId,
+        }),
+        text: submissionNotificationBody({
+          eventType,
+          formName,
+          submissionId,
+          bucket,
+          key,
+          occurredAt,
+        }),
+        tags: [
+          { name: "kind", value: "submission_notification" },
+          { name: "eventType", value: eventType },
+          { name: "formName", value: formName },
+        ],
+      }),
+      signal: AbortSignal.timeout(5000),
+    });
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        `Resend notification send failed (${response.status})${
+          payload?.message ? `: ${payload.message}` : ""
+        }`,
+      );
+    }
+
+    const emailId = payload?.id || null;
+    console.info(
+      JSON.stringify({
+        msg: "forms.notify.email_sent",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        emailId,
+        recipientCount: recipients.length,
+      }),
+    );
+    return { sent: true, emailId, recipients };
+  } catch (error) {
+    captureLambdaException(
+      error,
+      { requestId },
+      {
+        operation: "send_submission_notification_email",
+        eventType,
+        formName,
+        submissionId,
+      },
+    );
+    console.error(
+      JSON.stringify({
+        msg: "forms.notify.email_failed",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        error: errorInfo(error),
+      }),
+    );
+    return { sent: false, reason: "email_failed", recipients };
+  }
+}
+
+/**
+ * The receipt prefix sits BESIDE `submissions/`, never under it.
+ *
+ * Two reasons. The S3 event notification filters on `submissions/2` and
+ * `submissions/status/`, so a receipt written under `submissions/` would fire a
+ * notification about a notification — an infinite loop billed by the message.
+ * And the established invariant that a count over `submissions/<date>/` is a
+ * complete count of real submissions (INS-20) must keep holding; a fourth key
+ * layout inside that namespace would quietly break it.
+ */
+const NOTIFICATION_RECEIPTS_PREFIX =
+  process.env.NOTIFICATION_RECEIPTS_PREFIX ?? "notifications/";
+
+function notificationReceiptKey({ submissionId, eventType, occurredAt }) {
+  const day = String(occurredAt || "").slice(0, 10) || "unknown-date";
+  return `${NOTIFICATION_RECEIPTS_PREFIX}${day}/${submissionId}-${eventType}.json`;
+}
+
+/**
+ * Write down that we told someone, so "did anyone get told?" is answerable.
+ *
+ * Without this, the only evidence a notification was attempted is a CloudWatch
+ * log line that expires. The receipt makes the reconciliation in
+ * lambdas/notification-canary possible: list what arrived, list what we
+ * announced, and alarm on the difference. That reconciliation runs against real
+ * traffic, which is the only check that would have caught the original 104.
+ *
+ * Contains routing facts and our own staff recipient addresses. No
+ * submitter-supplied field, same rule as the notification itself.
+ */
+async function writeNotificationReceipt({
+  bucket,
+  kmsKeyId,
+  eventType,
+  formName,
+  submissionId,
+  key,
+  occurredAt,
+  requestId,
+  sns,
+  email,
+}) {
+  const receiptKey = notificationReceiptKey({
+    submissionId,
+    eventType,
+    occurredAt,
+  });
+
+  try {
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: receiptKey,
+        Body: JSON.stringify({
+          submissionId,
+          formName,
+          eventType,
+          occurredAt,
+          submissionKey: key,
+          statutoryClock: CLOCKED_FORM_NAMES.has(formName),
+          snsPublished: Boolean(sns?.published),
+          snsReason: sns?.reason ?? null,
+          emailSent: Boolean(email?.sent),
+          emailId: email?.emailId ?? null,
+          emailReason: email?.reason ?? null,
+          recipients: email?.recipients ?? [],
+        }),
+        ContentType: "application/json",
+        ServerSideEncryption: "aws:kms",
+        SSEKMSKeyId: kmsKeyId,
+      }),
+    );
+    return { written: true, key: receiptKey };
+  } catch (error) {
+    captureLambdaException(
+      error,
+      { requestId },
+      { operation: "write_notification_receipt", submissionId, eventType },
+    );
+    console.error(
+      JSON.stringify({
+        msg: "forms.notify.receipt_failed",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        receiptKey,
+        error: errorInfo(error),
+      }),
+    );
+    return { written: false, key: receiptKey };
+  }
+}
+
+/**
+ * Tell a human, three ways, and write down that we did.
+ *
+ * Every step is non-fatal. By the time this runs the submission is durably
+ * stored; failing the request would only push the submitter to resubmit and
+ * create a duplicate record about a named person. Failures surface through the
+ * `forms.notify.*` log lines, their alarms, and the receipt.
+ */
+async function notifySubmissionEvent({
+  eventType,
+  formName,
+  submissionId,
+  bucket,
+  key,
+  kmsKeyId,
+  occurredAt,
+  requestId,
+}) {
+  const sns = await publishSubmissionNotification({
+    eventType,
+    formName,
+    submissionId,
+    bucket,
+    key,
+    occurredAt,
+    requestId,
+  });
+
+  const email = await sendSubmissionNotificationEmail({
+    eventType,
+    formName,
+    submissionId,
+    bucket,
+    key,
+    occurredAt,
+    requestId,
+  });
+
+  // Nothing reached a human. This is the condition the whole issue exists to
+  // prevent, so it gets its own log line and its own alarm rather than being
+  // inferred from the absence of a success line.
+  if (!sns.published && !email.sent) {
+    console.error(
+      JSON.stringify({
+        msg: "forms.notify.nobody_told",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        key,
+        snsReason: sns.reason ?? null,
+        emailReason: email.reason ?? null,
+      }),
+    );
+  }
+
+  const receipt = await writeNotificationReceipt({
+    bucket,
+    kmsKeyId,
+    eventType,
+    formName,
+    submissionId,
+    key,
+    occurredAt,
+    requestId,
+    sns,
+    email,
+  });
+
+  return { sns, email, receipt };
+}
+
 export const __testables = {
   ALLOWED_FORM_NAMES,
   CLOCKED_FORM_NAMES,
+  NOTIFICATION_RECEIPTS_PREFIX,
   SUSPENDED_FORM_NAMES,
+  notificationReceiptKey,
+  notifySubmissionEvent,
   publishSubmissionNotification,
+  sendSubmissionNotificationEmail,
   sendVerificationEmail,
   submissionNotificationBody,
+  submissionNotificationRecipients,
   submissionNotificationSubject,
   submitForm,
   verificationConfig,
+  writeNotificationReceipt,
 };
 
 function normalizedPath(event) {
@@ -1198,12 +1528,13 @@ async function verifySubmissionLink(event, requestId) {
   // Second notification: the submitter confirmed their address. A captured but
   // unverified request already started the clock, so this is a state change on
   // an item the queue holder has already seen, not a first sighting.
-  await publishSubmissionNotification({
+  await notifySubmissionEvent({
     eventType: "verified",
     formName: record.formName || "unknown",
     submissionId: record.submissionId,
     bucket: config.bucket,
     key: `${config.prefix}status/${record.submissionId}.json`,
+    kmsKeyId: config.kmsKeyId,
     occurredAt: verifiedAt,
     requestId,
   });
@@ -1367,12 +1698,13 @@ async function submitForm(event, requestId) {
 
   // The submission is stored. Tell a human before doing anything else — the
   // receipt clock for a DSAR starts here, not at verification (INS-16 §2).
-  await publishSubmissionNotification({
+  await notifySubmissionEvent({
     eventType: "received",
     formName,
     submissionId,
     bucket,
     key,
+    kmsKeyId,
     occurredAt: receivedAt,
     requestId,
   });

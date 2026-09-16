@@ -187,3 +187,13 @@ output "submission_notifications_enabled" {
   description = "True when at least one human is subscribed to submission notifications."
   value       = local.enable_submission_notifications
 }
+
+output "notification_canary_enabled" {
+  description = "True when the notification path has a scheduled liveness check whose alert routes somewhere independent. False means the path is configured but unverified, which is the state that preceded INS-35."
+  value       = local.enable_notification_canary
+}
+
+output "notification_canary_alert_topic_arn" {
+  description = "SNS topic ARN for notification-path failure alerts. Deliberately not the submissions topic: an alert about a dead channel must not fan out to that channel."
+  value       = length(aws_sns_topic.notification_canary_alerts) > 0 ? aws_sns_topic.notification_canary_alerts[0].arn : null
+}

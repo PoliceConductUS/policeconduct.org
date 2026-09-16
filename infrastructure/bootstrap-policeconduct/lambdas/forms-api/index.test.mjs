@@ -310,3 +310,157 @@ test("a missing topic is reported, not swallowed", async () => {
     console.warn = originalWarn;
   }
 });
+
+test("an unconfigured recipient list is reported, not swallowed", async () => {
+  delete process.env.SUBMISSION_NOTIFICATION_RECIPIENTS;
+
+  const warnings = [];
+  const originalWarn = console.warn;
+  console.warn = (line) => warnings.push(line);
+
+  try {
+    const result = await __testables.sendSubmissionNotificationEmail({
+      eventType: "received",
+      formName: "dataSubjectAccessRequest",
+      submissionId: "sub_abc123",
+      bucket: "b",
+      key: "k",
+      occurredAt: "2026-09-16T12:00:00.000Z",
+      requestId: "req_1",
+    });
+
+    assert.equal(result.sent, false);
+    assert.equal(result.reason, "recipients_not_configured");
+    // This is the INS-20 state. The alarm keys off this exact string.
+    assert.equal(
+      JSON.parse(warnings.at(-1)).msg,
+      "forms.notify.recipients_not_configured",
+    );
+  } finally {
+    console.warn = originalWarn;
+  }
+});
+
+test("the notification email goes to every configured recipient with a DSAR subject", async () => {
+  process.env.RESEND_API_KEY = "re_test_123";
+  process.env.SUBMISSION_NOTIFICATION_RECIPIENTS =
+    "hello@policeconduct.org, queue@example.net";
+
+  const originalFetch = global.fetch;
+  let captured = null;
+  global.fetch = async (url, init) => {
+    captured = { url: String(url), body: JSON.parse(init.body) };
+    return new Response(JSON.stringify({ id: "email_notify_1" }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+
+  try {
+    const result = await __testables.sendSubmissionNotificationEmail({
+      eventType: "received",
+      formName: "dataSubjectAccessRequest",
+      submissionId: "sub_abc123",
+      bucket: "b",
+      key: "submissions/2026-09-16/dataSubjectAccessRequest/sub_abc123.json",
+      occurredAt: "2026-09-16T12:00:00.000Z",
+      requestId: "req_1",
+    });
+
+    assert.equal(result.sent, true);
+    assert.equal(result.emailId, "email_notify_1");
+    assert.deepEqual(captured.body.to, [
+      "hello@policeconduct.org",
+      "queue@example.net",
+    ]);
+    // Triage from the subject line, without opening the object.
+    assert.ok(captured.body.subject.startsWith("[DSAR] "));
+    // The notification is a pointer, never a payload.
+    assert.ok(!captured.body.text.includes("@example.com"));
+    assert.ok(captured.body.text.includes("submissionId: sub_abc123"));
+  } finally {
+    global.fetch = originalFetch;
+    delete process.env.SUBMISSION_NOTIFICATION_RECIPIENTS;
+  }
+});
+
+test("a Resend failure is captured rather than thrown at the submitter", async () => {
+  process.env.RESEND_API_KEY = "re_test_123";
+  process.env.SUBMISSION_NOTIFICATION_RECIPIENTS = "hello@policeconduct.org";
+
+  const originalFetch = global.fetch;
+  const errors = [];
+  const originalError = console.error;
+  console.error = (line) => errors.push(line);
+  global.fetch = async () =>
+    new Response(JSON.stringify({ message: "nope" }), {
+      status: 500,
+      headers: { "content-type": "application/json" },
+    });
+
+  try {
+    const result = await __testables.sendSubmissionNotificationEmail({
+      eventType: "received",
+      formName: "contact",
+      submissionId: "sub_abc123",
+      bucket: "b",
+      key: "k",
+      occurredAt: "2026-09-16T12:00:00.000Z",
+      requestId: "req_1",
+    });
+
+    // The submission is already stored. Throwing here would push the submitter
+    // to resubmit and duplicate a record about a named person.
+    assert.equal(result.sent, false);
+    assert.equal(result.reason, "email_failed");
+    assert.equal(JSON.parse(errors.at(-1)).msg, "forms.notify.email_failed");
+  } finally {
+    global.fetch = originalFetch;
+    console.error = originalError;
+    delete process.env.SUBMISSION_NOTIFICATION_RECIPIENTS;
+  }
+});
+
+test("receipts are written beside submissions, never underneath them", () => {
+  const key = __testables.notificationReceiptKey({
+    submissionId: "sub_abc123",
+    eventType: "received",
+    occurredAt: "2026-09-16T12:00:00.000Z",
+  });
+
+  assert.equal(key, "notifications/2026-09-16/sub_abc123-received.json");
+  // A receipt under submissions/ would match the S3 event filter and notify
+  // about itself, forever. It would also break the INS-20 invariant that a
+  // count over submissions/<date>/ is a complete count of real submissions.
+  assert.ok(!key.startsWith("submissions/"));
+});
+
+test("both notification paths failing is called out on its own line", async () => {
+  delete process.env.SUBMISSION_NOTIFICATIONS_TOPIC_ARN;
+  delete process.env.SUBMISSION_NOTIFICATION_RECIPIENTS;
+
+  const errors = [];
+  const originalError = console.error;
+  console.error = (line) => errors.push(line);
+  const originalWarn = console.warn;
+  console.warn = () => {};
+
+  try {
+    await __testables.notifySubmissionEvent({
+      eventType: "received",
+      formName: "dataSubjectAccessRequest",
+      submissionId: "sub_abc123",
+      bucket: "b",
+      key: "k",
+      kmsKeyId: "test-kms-key",
+      occurredAt: "2026-09-16T12:00:00.000Z",
+      requestId: "req_1",
+    });
+
+    const messages = errors.map((line) => JSON.parse(line).msg);
+    assert.ok(messages.includes("forms.notify.nobody_told"));
+  } finally {
+    console.error = originalError;
+    console.warn = originalWarn;
+  }
+});
