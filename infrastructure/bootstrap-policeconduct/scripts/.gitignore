@@ -1,0 +1,5 @@
+# Rollback records captured by ins35-apply.sh contain the full prior Lambda
+# environment, which includes RESEND_API_KEY and EMAIL_VERIFICATION_HMAC_SECRET
+# in plaintext. They are operational secrets, not source. Delete them once the
+# change they protect is confirmed good.
+ins35-rollback-*.json

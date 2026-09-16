@@ -95,6 +95,23 @@ locals {
     for endpoint in var.alert_email_endpoints : trimspace(endpoint)
     if trimspace(endpoint) != ""
   ])
+  submission_notifications_topic_name = "${var.project_name}-submission-notifications"
+  normalized_submission_notification_emails = distinct([
+    for endpoint in var.submission_notification_email_endpoints : trimspace(endpoint)
+    if trimspace(endpoint) != ""
+  ])
+  # No subscriber means no notification path, so build nothing rather than
+  # build a pipe to nowhere. See the INS-35 block further down.
+  enable_submission_notifications = length(local.normalized_submission_notification_emails) > 0
+  submission_notifications_topic_arn = (
+    local.enable_submission_notifications ? aws_sns_topic.submission_notifications[0].arn : ""
+  )
+  # Alarms about the notification pipe being broken go to the people who depend
+  # on the pipe, not to the general infrastructure alerts topic — that topic is
+  # allowed to have zero subscribers, this one is not.
+  submission_notification_alarm_actions = (
+    local.enable_submission_notifications ? [aws_sns_topic.submission_notifications[0].arn] : []
+  )
   has_sentry_auth_token    = nonsensitive(local.sentry_auth_token != null)
   effective_alarm_actions  = concat(var.alarm_actions, length(local.normalized_alert_email_endpoints) > 0 ? [aws_sns_topic.infrastructure_alerts[0].arn] : [])
   github_environment_names = toset(["production", "preview"])
@@ -977,6 +994,17 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
       values   = [var.forms_email_verification_from_address]
     }
   }
+
+  dynamic "statement" {
+    for_each = local.enable_submission_notifications ? [1] : []
+
+    content {
+      sid       = "PublishSubmissionNotifications"
+      effect    = "Allow"
+      actions   = ["sns:Publish"]
+      resources = [aws_sns_topic.submission_notifications[0].arn]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "forms_lambda_permissions" {
@@ -1080,6 +1108,9 @@ resource "aws_lambda_function" "forms_api_prod" {
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
       SENTRY_DSN                           = local.sentry_dsn_production == null ? "" : local.sentry_dsn_production
       SENTRY_ENVIRONMENT                   = "production"
+      SUBMISSION_NOTIFICATIONS_TOPIC_ARN   = local.submission_notifications_topic_arn
+      SUBMISSION_NOTIFICATION_RECIPIENTS   = join(",", local.normalized_submission_notification_emails)
+      NOTIFICATION_RECEIPTS_SINCE          = var.notification_receipts_since
     }
   }
 }
@@ -1117,6 +1148,14 @@ resource "aws_lambda_function" "forms_api_preview" {
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
       SENTRY_DSN                           = local.sentry_dsn_preview == null ? "" : local.sentry_dsn_preview
       SENTRY_ENVIRONMENT                   = "preview"
+      SUBMISSION_NOTIFICATIONS_TOPIC_ARN   = local.submission_notifications_topic_arn
+      # Preview shares the topic so the pipe can be exercised end to end
+      # without writing a synthetic DSAR into the production submissions store.
+      # The label prefixes the subject with [PREVIEW] so a drill is never
+      # mistaken for a real request with a real clock on it.
+      NOTIFICATION_ENV_LABEL             = "preview"
+      SUBMISSION_NOTIFICATION_RECIPIENTS = join(",", local.normalized_submission_notification_emails)
+      NOTIFICATION_RECEIPTS_SINCE        = var.notification_receipts_since
     }
   }
 }
@@ -1235,6 +1274,147 @@ resource "aws_sns_topic_subscription" "infrastructure_alert_emails" {
   topic_arn = aws_sns_topic.infrastructure_alerts[0].arn
   protocol  = "email"
   endpoint  = each.value
+}
+
+# ---------------------------------------------------------------------------
+# Submission notifications (INS-35)
+#
+# Before this, a form submission landed in the submissions bucket and no human
+# was told: empty bucket notification config, no consumer, zero subscribers on
+# any topic (INS-20). Five real data subject access requests sat unanswered,
+# the oldest for 179 days.
+#
+# The whole feature is gated on there being at least one subscriber. There is
+# no half-enabled state where a topic exists, the config reads as correct, and
+# the mail still goes nowhere — that is precisely the failure being fixed.
+# ---------------------------------------------------------------------------
+
+resource "aws_sns_topic" "submission_notifications" {
+  count = local.enable_submission_notifications ? 1 : 0
+  name  = local.submission_notifications_topic_name
+}
+
+resource "aws_sns_topic_subscription" "submission_notification_emails" {
+  for_each = local.enable_submission_notifications ? toset(local.normalized_submission_notification_emails) : toset([])
+
+  topic_arn = aws_sns_topic.submission_notifications[0].arn
+  protocol  = "email"
+  endpoint  = each.value
+}
+
+data "aws_iam_policy_document" "submission_notifications_topic" {
+  count = local.enable_submission_notifications ? 1 : 0
+
+  # Keep the account-owner statement AWS puts on a topic by default. A custom
+  # policy replaces it wholesale, and dropping it locks the topic.
+  statement {
+    sid     = "AllowAccountOwnerManagement"
+    effect  = "Allow"
+    actions = ["SNS:GetTopicAttributes", "SNS:SetTopicAttributes", "SNS:AddPermission", "SNS:RemovePermission", "SNS:DeleteTopic", "SNS:Subscribe", "SNS:ListSubscriptionsByTopic", "SNS:Publish"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+
+    resources = [aws_sns_topic.submission_notifications[0].arn]
+  }
+
+  # S3 event notifications publish directly. This is the backstop path: it
+  # fires on the storage fact and does not depend on the Lambda remembering to
+  # tell anyone.
+  statement {
+    sid       = "AllowSubmissionsBucketPublish"
+    effect    = "Allow"
+    actions   = ["SNS:Publish"]
+    resources = [aws_sns_topic.submission_notifications[0].arn]
+
+    principals {
+      type        = "Service"
+      identifiers = ["s3.amazonaws.com"]
+    }
+
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values = [
+        aws_s3_bucket.forms_submissions.arn,
+        aws_s3_bucket.forms_submissions_preview.arn,
+      ]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+}
+
+resource "aws_sns_topic_policy" "submission_notifications" {
+  count = local.enable_submission_notifications ? 1 : 0
+
+  arn    = aws_sns_topic.submission_notifications[0].arn
+  policy = data.aws_iam_policy_document.submission_notifications_topic[0].json
+}
+
+# Backstop notification straight off the bucket.
+#
+# The Lambda also publishes, with a subject line that names the form type. This
+# path cannot do that — an S3 event notification email is generic JSON with the
+# object key in it. It is here for a different reason: it survives a bug in the
+# Lambda's publish path. If a submission ever produces the S3 notification and
+# not the Lambda one, the application path is broken and you can see that from
+# your inbox.
+#
+# Prefix filters are literal strings, and submission keys are
+# submissions/<YYYY-MM-DD>/<formName>/<id>.json — the form name sits in the
+# middle of the key, so it cannot be filtered on here. "submissions/2" selects
+# the date-partitioned objects (dates start with "2") and excludes
+# submissions/status/ and submissions/verify/.
+resource "aws_s3_bucket_notification" "forms_submissions" {
+  count = local.enable_submission_notifications ? 1 : 0
+
+  bucket = aws_s3_bucket.forms_submissions.id
+
+  topic {
+    id            = "submission-received"
+    topic_arn     = aws_sns_topic.submission_notifications[0].arn
+    events        = ["s3:ObjectCreated:*"]
+    filter_prefix = "submissions/2"
+  }
+
+  # The verification transition writes submissions/status/<id>.json.
+  topic {
+    id            = "submission-verified"
+    topic_arn     = aws_sns_topic.submission_notifications[0].arn
+    events        = ["s3:ObjectCreated:*"]
+    filter_prefix = "submissions/status/"
+  }
+
+  depends_on = [aws_sns_topic_policy.submission_notifications]
+}
+
+resource "aws_s3_bucket_notification" "forms_submissions_preview" {
+  count = local.enable_submission_notifications ? 1 : 0
+
+  bucket = aws_s3_bucket.forms_submissions_preview.id
+
+  topic {
+    id            = "submission-received"
+    topic_arn     = aws_sns_topic.submission_notifications[0].arn
+    events        = ["s3:ObjectCreated:*"]
+    filter_prefix = "submissions/2"
+  }
+
+  topic {
+    id            = "submission-verified"
+    topic_arn     = aws_sns_topic.submission_notifications[0].arn
+    events        = ["s3:ObjectCreated:*"]
+    filter_prefix = "submissions/status/"
+  }
+
+  depends_on = [aws_sns_topic_policy.submission_notifications]
 }
 
 resource "aws_cloudwatch_metric_alarm" "forms_api_prod_errors" {
@@ -1457,6 +1637,77 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_verification_email_not
   treat_missing_data  = "notBreaching"
   alarm_actions       = local.effective_alarm_actions
   ok_actions          = local.effective_alarm_actions
+}
+
+# Watch the notification path itself (INS-35).
+#
+# Both alarms route to the submission notifications topic rather than the
+# general alerts topic, because the failure they describe is "the queue holder
+# stopped being told" and the queue holder is who needs to hear it.
+#
+# forms.notify.topic_not_configured is the pre-INS-35 state reasserting itself:
+# the Lambda ran, the submission stored, and no topic was configured to tell
+# anyone. It alarms at threshold 1 because one is already too many.
+resource "aws_cloudwatch_log_metric_filter" "forms_api_prod_notify_publish_failed" {
+  count = local.enable_submission_notifications ? 1 : 0
+
+  name           = "${var.project_name}-forms-api-prod-notify-publish-failed"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_prod.function_name}"
+  pattern        = "{ $.msg = \"forms.notify.publish_failed\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-prod-notify-publish-failed"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_prod_notify_publish_failed" {
+  count = local.enable_submission_notifications ? 1 : 0
+
+  alarm_name          = "${var.project_name}-forms-api-prod-notify-publish-failed"
+  alarm_description   = "A submission was stored but the arrival notification failed to publish. Someone filed something and nobody was told."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_prod_notify_publish_failed[0].metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.submission_notification_alarm_actions
+  ok_actions          = local.submission_notification_alarm_actions
+}
+
+resource "aws_cloudwatch_log_metric_filter" "forms_api_prod_notify_topic_not_configured" {
+  count = local.enable_submission_notifications ? 1 : 0
+
+  name           = "${var.project_name}-forms-api-prod-notify-topic-not-configured"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_prod.function_name}"
+  pattern        = "{ $.msg = \"forms.notify.topic_not_configured\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-prod-notify-topic-not-configured"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_prod_notify_topic_not_configured" {
+  count = local.enable_submission_notifications ? 1 : 0
+
+  alarm_name          = "${var.project_name}-forms-api-prod-notify-topic-not-configured"
+  alarm_description   = "Forms API prod stored a submission with no notification topic configured. This is the INS-20 silent-intake state."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_prod_notify_topic_not_configured[0].metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.submission_notification_alarm_actions
+  ok_actions          = local.submission_notification_alarm_actions
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
@@ -2532,4 +2783,207 @@ resource "github_actions_environment_secret" "sentry_auth_token" {
   plaintext_value = local.sentry_auth_token
 
   depends_on = [github_repository_environment.environments]
+}
+
+# ---------------------------------------------------------------------------
+# INS-35 — notification path canary
+#
+# The pipe above is only worth what its liveness is worth. Two channels this
+# organization believed were live were dead and neither reported it: the
+# submissions bucket told nobody for six months (INS-20), and the Workspace
+# admin mailbox bounced for 3.5 months (INS-55). Both were found by accident.
+#
+# This asserts, on a schedule, that the notification path still terminates at a
+# live mailbox — and reports failure somewhere the failure cannot reach.
+# ---------------------------------------------------------------------------
+
+locals {
+  enable_notification_canary = (
+    local.enable_submission_notifications &&
+    length(var.notification_canary_alert_endpoints) > 0
+  )
+}
+
+data "archive_file" "notification_canary_lambda" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambdas/notification-canary"
+  output_path = "${path.module}/lambdas/notification-canary.zip"
+  excludes    = ["*.zip", "index.test.mjs"]
+}
+
+# Separate topic from the submissions topic ON PURPOSE. Same topic would mean
+# the alert about a dead channel fans out to the dead channel.
+resource "aws_sns_topic" "notification_canary_alerts" {
+  count = local.enable_notification_canary ? 1 : 0
+  name  = "${var.project_name}-notification-canary-alerts"
+}
+
+resource "aws_sns_topic_subscription" "notification_canary_alerts" {
+  for_each = local.enable_notification_canary ? toset([
+    for endpoint in var.notification_canary_alert_endpoints : trimspace(endpoint)
+  ]) : toset([])
+
+  topic_arn = aws_sns_topic.notification_canary_alerts[0].arn
+  protocol  = "email"
+  endpoint  = each.value
+}
+
+data "aws_iam_policy_document" "notification_canary_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "notification_canary" {
+  count              = local.enable_notification_canary ? 1 : 0
+  name               = "${var.project_name}-notification-canary"
+  assume_role_policy = data.aws_iam_policy_document.notification_canary_assume_role.json
+}
+
+# Deliberately NO s3:GetObject and NO kms:Decrypt. The canary reconciles by
+# listing keys; the submission id and form name are both in the key. Submission
+# contents route to the queue holder untouched (INS-9), and the cheapest way to
+# guarantee a monitor never reads them is to make it unable to.
+data "aws_iam_policy_document" "notification_canary" {
+  count = local.enable_notification_canary ? 1 : 0
+
+  statement {
+    sid    = "CloudWatchLogsWrite"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+    resources = ["arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:*"]
+  }
+
+  statement {
+    sid       = "ListSubmissionKeysOnly"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = [aws_s3_bucket.forms_submissions.arn]
+  }
+
+  statement {
+    sid       = "PublishCanaryMetrics"
+    effect    = "Allow"
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "cloudwatch:namespace"
+      values   = ["PoliceConduct/Notifications"]
+    }
+  }
+
+  statement {
+    sid       = "AlertOutOfBand"
+    effect    = "Allow"
+    actions   = ["sns:Publish"]
+    resources = [aws_sns_topic.notification_canary_alerts[0].arn]
+  }
+}
+
+resource "aws_iam_role_policy" "notification_canary" {
+  count  = local.enable_notification_canary ? 1 : 0
+  name   = "${var.project_name}-notification-canary"
+  role   = aws_iam_role.notification_canary[0].id
+  policy = data.aws_iam_policy_document.notification_canary[0].json
+}
+
+resource "aws_lambda_function" "notification_canary" {
+  count = local.enable_notification_canary ? 1 : 0
+
+  function_name = "${var.project_name}-notification-canary"
+  role          = aws_iam_role.notification_canary[0].arn
+  handler       = "index.handler"
+  runtime       = var.lambda_nodejs_runtime
+  # The delivery probe polls the transport for a real delivery event rather than
+  # assuming an accepted send succeeded, so it needs room to wait.
+  timeout = 120
+
+  filename         = data.archive_file.notification_canary_lambda.output_path
+  source_code_hash = data.archive_file.notification_canary_lambda.output_base64sha256
+
+  environment {
+    variables = {
+      CANARY_ENVIRONMENT                   = "production"
+      SUBMISSIONS_BUCKET                   = aws_s3_bucket.forms_submissions.id
+      SUBMISSION_NOTIFICATION_RECIPIENTS   = join(",", local.normalized_submission_notification_emails)
+      SUBMISSION_NOTIFICATION_FROM_ADDRESS = var.forms_email_verification_from_address
+      RESEND_API_KEY                       = var.forms_email_resend_api_key == null ? "" : var.forms_email_resend_api_key
+      CANARY_ALERT_TOPIC_ARN               = aws_sns_topic.notification_canary_alerts[0].arn
+      CANARY_ALERT_ENDPOINTS               = join(",", var.notification_canary_alert_endpoints)
+      NOTIFICATION_RECEIPTS_SINCE          = var.notification_receipts_since
+    }
+  }
+}
+
+resource "aws_cloudwatch_event_rule" "notification_canary" {
+  count               = local.enable_notification_canary ? 1 : 0
+  name                = "${var.project_name}-notification-canary"
+  description         = "Assert the submission notification path still reaches a human (INS-35)."
+  schedule_expression = var.notification_canary_schedule
+}
+
+resource "aws_cloudwatch_event_target" "notification_canary" {
+  count     = local.enable_notification_canary ? 1 : 0
+  rule      = aws_cloudwatch_event_rule.notification_canary[0].name
+  target_id = "notification-canary"
+  arn       = aws_lambda_function.notification_canary[0].arn
+}
+
+resource "aws_lambda_permission" "notification_canary" {
+  count         = local.enable_notification_canary ? 1 : 0
+  statement_id  = "AllowExecutionFromEventBridge"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.notification_canary[0].function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.notification_canary[0].arn
+}
+
+# Two consecutive misses, not one. A single slow delivery is not an outage, and
+# a monitor that cries wolf gets muted — which is the state we are leaving.
+resource "aws_cloudwatch_metric_alarm" "notification_canary_delivery" {
+  count = local.enable_notification_canary ? 1 : 0
+
+  alarm_name        = "${var.project_name}-notification-canary-delivery-failed"
+  alarm_description = "The submission notification path did not deliver to a human on its scheduled check. A submission arriving now would tell nobody (INS-35)."
+
+  namespace           = "PoliceConduct/Notifications"
+  metric_name         = "CanaryDelivered"
+  statistic           = "Maximum"
+  period              = 86400
+  evaluation_periods  = 2
+  threshold           = 1
+  comparison_operator = "LessThanThreshold"
+  # A canary that stops running is the same failure as a canary that fails.
+  treat_missing_data = "breaching"
+
+  alarm_actions = [aws_sns_topic.notification_canary_alerts[0].arn]
+  ok_actions    = [aws_sns_topic.notification_canary_alerts[0].arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "submissions_without_notification" {
+  count = local.enable_notification_canary ? 1 : 0
+
+  alarm_name        = "${var.project_name}-submissions-without-notification"
+  alarm_description = "A submission was stored with no notification receipt beside it. This is the INS-20 failure recurring: it arrived and nobody was told."
+
+  namespace           = "PoliceConduct/Notifications"
+  metric_name         = "SubmissionsWithoutNotification"
+  statistic           = "Maximum"
+  period              = 86400
+  evaluation_periods  = 1
+  threshold           = 0
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = [aws_sns_topic.notification_canary_alerts[0].arn]
 }
