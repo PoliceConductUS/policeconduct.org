@@ -9,7 +9,8 @@
 //   OUT            output file (default: redirects.generated.json)
 //
 // Emits [{ from, to, source }] for resolvable moves and reports unresolved
-// prior URLs (entity retired) as 410 candidates. Review, then commit the file
+// prior URLs as needing review (absence does not establish retirement).
+// Review, then commit the file
 // as the append-only source of truth. Run against real prod/prev sitemaps.
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -96,7 +97,7 @@ const main = async () => {
     }
     const to = currentBySlug.get(slug);
     if (to) redirects.push({ from: p, to, source: "sitemap-slug" });
-    else unresolved.push(p); // entity retired -> 410 candidate
+    else unresolved.push(p); // No replacement found; review the intake coverage.
   }
 
   redirects.sort((a, b) => a.from.localeCompare(b.from));
@@ -105,7 +106,7 @@ const main = async () => {
   console.log(
     `Generated ${redirects.length} redirects -> ${OUT}\n` +
       `  prior URLs: ${priorPaths.size}, current routes: ${currentPaths.size}\n` +
-      `  unresolved (retired -> 410 candidates): ${unresolved.length}\n` +
+      `  unresolved (needs review; may not be populated): ${unresolved.length}\n` +
       `  ambiguous slug collisions: ${ambiguousHits.length}`,
   );
   if (unresolved.length) {

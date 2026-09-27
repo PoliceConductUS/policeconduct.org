@@ -45,7 +45,38 @@ one distribution and bucket.
 - **WHEN** a request path matches that build's redirect map
 - **THEN** the router returns a 301 to the mapped path
 - **AND** this holds on the apex and on every `<id>.builds.<domain>` host, so no
-  host returns 404 for a legacy URL
+  host returns 404 for a mapped legacy URL
+
+### Requirement: Every prior URL has an explicit disposition
+
+The coverage check SHALL require every prior sitemap URL to exist in the current
+sitemap, redirect directly to a terminal current route, or have an exact path and
+nonempty reason in `route-absences.json`. Missing intake data SHALL NOT imply
+permanent removal. Recorded absences permit the existing 404 response without
+creating redirects, pages, or 410 responses.
+
+#### Scenario: Personnel not populated by intake
+
+- **WHEN** a missing prior personnel URL has an explicit absence entry
+- **THEN** the coverage check passes for that URL and counts it as absent (404)
+- **AND** no return date or permanent-removal status is inferred
+
+#### Scenario: Unaccounted gap
+
+- **WHEN** a prior URL is missing without a redirect or exact absence entry
+- **THEN** the coverage check fails
+- **AND** an entry for a parent or another personnel URL does not cover the gap
+
+#### Scenario: Profile returns
+
+- **WHEN** a previously absent URL is present in the current sitemap
+- **THEN** it counts as a current route even if its absence entry remains
+
+#### Scenario: Invalid redirect or absence list
+
+- **WHEN** a redirect has a missing or nonterminal destination, or the absence
+  list is missing, malformed, or contains an invalid entry
+- **THEN** the coverage check fails
 
 ### Requirement: Non-canonical hosts are not indexed
 

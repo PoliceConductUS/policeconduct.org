@@ -29,6 +29,8 @@ const requiredTables = {
       "created_at",
       "updated_at",
       "location_path_id",
+      "status",
+      "status_date",
     ],
     notNull: ["id", "name", "slug", "state", "location_path_id"],
     uniqueColumnSets: [["slug"]],

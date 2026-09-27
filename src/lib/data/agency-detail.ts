@@ -260,6 +260,8 @@ const loadAgencyRows = async (agencyId: string) =>
         `
           select
             a.*,
+            a.status,
+            a.status_date::text as status_date,
             bpp.path as canonical_path,
             lp.path as location_path,
             split_part(lp.path, '/', 2) as state,

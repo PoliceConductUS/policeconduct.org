@@ -1,5 +1,5 @@
 import { withDb } from "./db.js";
-import { groupBy, mapBy } from "./data.js";
+import { mapBy } from "./data.js";
 import { loadCoverageLinksForReport } from "./data/coverage.js";
 import { requireAgencyCanonicalPath } from "./data/location-paths.js";
 import { buildReportCanonicalPath } from "./data/report-paths.js";

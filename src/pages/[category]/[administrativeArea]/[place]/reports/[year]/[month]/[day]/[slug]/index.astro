@@ -268,10 +268,6 @@ const structuredData = {
 >
   <PrefillBootstrap />
   <Fragment slot="header">
-    <p class="civic-lede-sub">
-      A first-party account of an experience shared by the public and reviewed
-      before publication on {formatLongDate(data.report.created_at)}.
-    </p>
     <EntityActionBar>
       <PrefillNavButton
         class="entity-action"
@@ -368,7 +364,7 @@ const structuredData = {
     </dl>
   </section>
 
-  <div class="detail-layout civic-section civic-section--last">
+  <div class="civic-section civic-section--last">
     <article class="detail-body">
       <h2>What happened</h2>
       <div set:html={data.report.description!} />
@@ -377,10 +373,6 @@ const structuredData = {
         facts.feelings ? (
           <>
             <h2>How it felt</h2>
-            <p>
-              This is the submitter's own account of how the experience felt to
-              them. It is their perspective, not a verified fact.
-            </p>
             <p>{facts.feelings}</p>
           </>
         ) : null
@@ -486,36 +478,7 @@ const structuredData = {
           </>
         ) : null
       }
-
-      <p class="civic-limit-note">
-        This report is a processed version of a submitted first-party account.
-        It reflects the submitter's account and any linked public records.
-        Publication is not a court finding.
-      </p>
     </article>
-
-    <aside class="detail-aside">
-      <p class="civic-kicker">How reports work</p>
-      <h2>Facts and feelings, kept separate</h2>
-      <ul>
-        <li>
-          "What happened" holds facts: what was said and done, dates, and any
-          linked records.
-        </li>
-        <li>
-          "How it felt," when a submitter shares it, holds their own words about
-          the experience. It is clearly labeled so you know it is their account,
-          not a verified fact.
-        </li>
-        <li>
-          Every report is reviewed before publication and stays connected to the
-          agency and personnel records it names.
-        </li>
-      </ul>
-      <p class="jump-browse">
-        <a href="/report/new/">Share your own experience →</a>
-      </p>
-    </aside>
   </div>
 
   <section class="civic-section civic-section--last">

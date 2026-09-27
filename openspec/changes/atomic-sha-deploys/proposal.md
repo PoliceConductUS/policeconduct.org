@@ -36,7 +36,7 @@ ingredients for something better: a `build_page_payload` projection table with
 - To: `builds/<id>/redirects.json` is the per-build source of truth. A CloudFront
   Function cannot read files, so publish loads each build's map into the KVS under
   a per-build namespace (`r:<id>:<path>`), and the router serves 301s on **every
-  host** — apex and every `<id>.builds.<domain>` — so no host 404s on legacy URLs
+  host** — apex and every `<id>.builds.<domain>` — so no host 404s on mapped legacy URLs
   regardless of which build serves. The map is small and stable, well under KVS
   caps; Lambda@Edge reading the per-build file is the fallback only if it ever
   outgrows KVS. See design.md §1.
@@ -62,3 +62,10 @@ ingredients for something better: a `build_page_payload` projection table with
 - `<sha>.builds.policeconduct.org` per-build preview hostnames (the KVS pointer
   already selects prod; add later if a pre-promote look is wanted).
 - On-demand/SSR rendering of the personnel long tail (keeps the site pure-static).
+
+## Approved route coverage adjustment
+
+Prior URLs may also be explicitly accounted for in `route-absences.json`, with an
+exact path and reason. This permits normal 404s for intake gaps without assuming
+permanent removal. Unaccounted gaps and invalid redirects continue to fail. No
+database, seed, page rendering, or deployed routing changes are included.

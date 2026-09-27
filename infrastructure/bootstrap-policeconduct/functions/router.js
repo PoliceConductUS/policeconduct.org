@@ -16,6 +16,7 @@ import cf from "cloudfront";
 
 const kvs = cf.kvs();
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- CloudFront invokes this entry point.
 async function handler(event) {
   const request = event.request;
   const host =
@@ -42,7 +43,7 @@ async function handler(event) {
         headers: { location: { value: to } },
       };
     }
-  } catch (e) {
+  } catch {
     // no redirect for this path in this build
   }
 

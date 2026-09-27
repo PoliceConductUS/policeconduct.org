@@ -6,6 +6,7 @@
 // responses `noindex` at the edge (build-once means the same HTML also serves
 // the canonical apex on the prod distribution, where this function is not
 // attached). See openspec/changes/atomic-sha-deploys/design.md.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- CloudFront invokes this entry point.
 function handler(event) {
   const response = event.response;
   response.headers["x-robots-tag"] = { value: "noindex, nofollow" };

@@ -1,5 +1,6 @@
 ---
 import "#src/styles/civic-ledger.css";
+import { agencyStatusPresentation } from "#src/lib/agency-status";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
@@ -49,7 +50,18 @@ const {
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(agencyPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
-const pageDescription = `${agencyName} agency profile with contact information, personnel, public reports, and recent civil litigation references.`;
+const status = agencyStatusPresentation(
+  data.agency.status,
+  data.agency.status_date,
+);
+const pageTitle = `${agencyName}${status.prominence === "notice" ? ` — ${status.label}` : ""} | PoliceConduct.org`;
+const pageDescription = [
+  `${agencyName} agency profile.`,
+  status.summary,
+  "Contact information, personnel, public reports, and recent civil litigation references.",
+]
+  .filter(Boolean)
+  .join(" ");
 const civilCaseTotal = counts.civilCases + counts.personnelLinkedCivilCases;
 const addressAvailable =
   data.agency.address ||
@@ -284,17 +296,20 @@ const sortRecent = (items: RecentItem[]) =>
 const recentReports = sortRecent(recentReportItems);
 const recentCases = sortRecent(recentCaseItems);
 
-const organization = buildGovernmentOrganizationNode({
-  siteUrl,
-  url: pageUrl,
-  name: agencyName,
-  mainEntityOfPageId: profilePageId,
-  address: address || undefined,
-  email: data.agency.contact_email || undefined,
-  contactPoint: contactPoints,
-  sameAs,
-  areaServed: { "@type": "AdministrativeArea", name: agencyState },
-});
+const organization: ReturnType<typeof buildGovernmentOrganizationNode> = {
+  ...buildGovernmentOrganizationNode({
+    siteUrl,
+    url: pageUrl,
+    name: agencyName,
+    mainEntityOfPageId: profilePageId,
+    address: address || undefined,
+    email: data.agency.contact_email || undefined,
+    contactPoint: contactPoints,
+    sameAs,
+    areaServed: { "@type": "AdministrativeArea", name: agencyState },
+  }),
+  description: pageDescription,
+};
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
@@ -304,7 +319,7 @@ const structuredData = {
       type: "ProfilePage",
       id: profilePageId,
       pageUrl,
-      name: `${agencyName} | PoliceConduct.org`,
+      name: pageTitle,
       description: pageDescription,
       mainEntityId: organization["@id"],
       dateModified: data.agency.updated_at
@@ -318,7 +333,7 @@ const structuredData = {
 ---
 
 <PageShell
-  title={`${agencyName} | PoliceConduct.org`}
+  title={pageTitle}
   description={pageDescription}
   pagePath={agencyPath}
   canonicalUrl={agencyPath}
@@ -341,6 +356,28 @@ const structuredData = {
 >
   <PrefillBootstrap />
   <Fragment slot="header">
+    {
+      status.label || status.dateLabel ? (
+        <div
+          class:list={[
+            "agency-status",
+            { "agency-status--notice": status.prominence === "notice" },
+          ]}
+        >
+          {status.label ? (
+            <p>
+              <strong>Status: {status.label}</strong>
+            </p>
+          ) : null}
+          {status.dateLabel ? (
+            <p>
+              Status date:{" "}
+              <time datetime={data.agency.status_date}>{status.dateLabel}</time>
+            </p>
+          ) : null}
+        </div>
+      ) : null
+    }
     {
       federalAgency ? (
         <p class="agency-overview-federal">
@@ -622,3 +659,21 @@ const structuredData = {
       });
     });
 </script>
+
+<style>
+  .agency-status {
+    margin-block: 1rem;
+    color: var(--ipc-color-ink);
+  }
+
+  .agency-status p {
+    margin: 0;
+    color: inherit;
+  }
+
+  .agency-status--notice {
+    padding: 0.75rem 1rem;
+    background: var(--ipc-color-ink);
+    color: var(--ipc-color-paper-raised);
+  }
+</style>

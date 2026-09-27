@@ -1,9 +1,11 @@
-// Build-time guard: guarantee no URL silently 404s across a deploy.
+// Build-time guard: account for every prior URL across a deploy.
 //
 // Invariant — every URL in the PRIOR sitemap must, in THIS build, be either:
 //   (a) a static route in the new sitemap, or
 //   (b) redirect to a static route that is NOT itself a redirect source
-//       (single hop => no chains, no cycles, no redirect-to-404).
+//       (single hop => no chains, no cycles, no redirect-to-404), or
+//   (c) explicitly listed in route-absences.json with a reason (normal 404).
+//       Absence does not mean permanent removal or promise a return date.
 //
 // Prior sitemap source (env PRIOR_SITEMAP), in preference order:
 //   - the previous build's sitemap (e.g. a synced builds/<prev-sha>/sitemap-index.xml
@@ -11,7 +13,7 @@
 //   - otherwise it DEFAULTS to the production URL below.
 //   - set PRIOR_SITEMAP=skip to bypass (first-ever deploy / bootstrap).
 // New build sitemaps: dist/sitemap-index.xml (+ children). Redirects:
-// dist/_redirect-map.json ([{ from, to }, ...]).
+// dist/_redirect-map.json ({ redirects: [{ from, to }, ...] }).
 //
 // Fails closed: exits non-zero on any coverage gap, and also if the prior source
 // is set/defaulted but cannot be loaded (use PRIOR_SITEMAP=skip to opt out).
@@ -73,7 +75,7 @@ const loadRedirects = async () => {
       path.join(DIST_DIR, "_redirect-map.json"),
       "utf8",
     );
-    const list = JSON.parse(raw);
+    const { redirects: list } = JSON.parse(raw);
     const map = new Map();
     for (const entry of list) {
       if (entry && entry.from && entry.to)
@@ -83,6 +85,30 @@ const loadRedirects = async () => {
   } catch {
     return new Map();
   }
+};
+
+const loadAbsences = async () => {
+  const entries = JSON.parse(await readFile("route-absences.json", "utf8"));
+  if (!Array.isArray(entries)) {
+    throw new Error(
+      "route-absences.json must contain an array of { path, reason } entries.",
+    );
+  }
+  const paths = new Set();
+  for (const entry of entries) {
+    if (
+      typeof entry?.path !== "string" ||
+      !/^\/(?:[^/\s*?#]+\/)*$/.test(entry.path) ||
+      typeof entry.reason !== "string" ||
+      !entry.reason.trim()
+    ) {
+      throw new Error(
+        "Each route-absences.json entry needs an exact /path/ and a nonempty reason.",
+      );
+    }
+    paths.add(entry.path);
+  }
+  return paths;
 };
 
 const main = async () => {
@@ -104,9 +130,10 @@ const main = async () => {
     process.exitCode = 1;
     return;
   }
-  const [newPaths, redirects] = await Promise.all([
+  const [newPaths, redirects, absences] = await Promise.all([
     loadSitemapPaths(path.join(DIST_DIR, "sitemap-index.xml")),
     loadRedirects(),
+    loadAbsences(),
   ]);
   const redirectSources = new Set(redirects.keys());
 
@@ -127,21 +154,27 @@ const main = async () => {
     }
   }
 
-  // (a)/(b) Every prior URL is still a route, or redirects to one.
+  // Current routes and redirects take precedence over an old absence record.
   let covered = 0;
+  let absent = 0;
   for (const p of priorPaths) {
     if (newPaths.has(p)) continue;
     const to = redirects.get(p);
-    if (!to) {
-      failures.push(`removed route with no redirect (would 404): ${p}`);
-    } else {
+    if (to) {
       covered += 1; // target validity already checked above
+    } else if (absences.has(p)) {
+      absent += 1;
+    } else {
+      failures.push(
+        `missing route with no redirect or recorded absence (would 404): ${p}`,
+      );
     }
   }
 
   console.log(
     `redirect coverage: ${priorPaths.size} prior URLs, ${newPaths.size} current routes, ` +
-      `${redirects.size} redirects, ${covered} prior URLs covered by redirect.`,
+      `${redirects.size} redirects, ${covered} prior URLs covered by redirect, ` +
+      `${absent} prior URLs accounted for as absent (404).`,
   );
 
   if (failures.length) {
@@ -153,7 +186,7 @@ const main = async () => {
     return;
   }
   console.log(
-    "Redirect-coverage guard passed: no URL will 404 across this deploy.",
+    "Redirect-coverage guard passed: every prior URL is accounted for.",
   );
 };
 

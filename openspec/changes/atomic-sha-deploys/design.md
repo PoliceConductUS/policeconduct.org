@@ -71,7 +71,7 @@ async function handler(event) {
   const prefix = `/builds/${id}`;
 
   // 2) redirects — PER-BUILD, ALL HOSTS. Keys namespaced by id: r:<id>:<path>.
-  //    Applies on apex and every *.builds subdomain so no host 404s on legacy URLs.
+  //    Applies on apex and every *.builds subdomain so no host 404s on mapped legacy URLs.
   try {
     const to = await kvs.get("r:" + id + ":" + uri);
     if (to)
@@ -124,8 +124,7 @@ function handler(event) {
 ### Redirects — per-build, on every host (`redirects.json` is the source of truth)
 
 Requirement: redirects must 301 (not 404) on the apex **and** on every
-`<id>.builds.<domain>` subdomain, per build, so crawlers/backlinks never hit a
-404 regardless of which build serves. A CloudFront Function has **no I/O — it
+`<id>.builds.<domain>` subdomain, per build, for paths in the redirect map. A CloudFront Function has **no I/O — it
 cannot read `redirects.json`**; only the KVS is edge-readable.
 
 - **(CHOSEN) CF Function + KVS, per-build namespaced keys `r:<id>:<path>`.** The
@@ -297,3 +296,12 @@ Determinism & robustness:
   `latest.yaml` (and the dump it points to) exist before restoring, rather than
   crashing mid-build. Intake must publish the first dump to bootstrap; after that a
   missing/malformed `latest.yaml` is a clear, fixable error, not a silent empty site.
+
+## Route absence accounting
+
+The coverage checker reads the required repository-root `route-absences.json`
+array of `{ path, reason }` entries. Exact paths only; no wildcard exemptions.
+Existing routes and redirects take precedence; otherwise a listed missing route
+is counted as an accounted-for 404. The list does not generate content or change
+HTTP routing. Missing or malformed lists fail validation. Intake gaps have no
+assumed end date and do not imply retirement. See `docs/route-coverage.md`.
