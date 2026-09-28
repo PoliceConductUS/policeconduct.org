@@ -15,10 +15,13 @@ import { getPersonnelImageById } from "#src/lib/entity-images.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import LicenseTimeline from "#src/components/LicenseTimeline.astro";
+import PersonnelDiscipline from "#src/components/PersonnelDiscipline.astro";
+import PersonnelEducation from "#src/components/PersonnelEducation.astro";
 import {
   loadDisciplineForPersonnel,
   loadLicensingForPersonnel,
 } from "#src/lib/data/licensing.js";
+import { loadEducationForPersonnel } from "#src/lib/data/personnel-education.js";
 import {
   buildContentPageNode,
   buildGovernmentOrganizationNode,
@@ -145,6 +148,7 @@ const data = await withDb(async (client) => {
 });
 const licensing = await loadLicensingForPersonnel(data.officer.id);
 const discipline = await loadDisciplineForPersonnel(data.officer.id);
+const education = await loadEducationForPersonnel(data.officer.id);
 const agenciesById = mapBy(data.agencies, "id");
 const history = normalizeAgencyHistory(data.agencyOfficers);
 const missingAgencyAssignment = history.find(
@@ -630,19 +634,10 @@ const structuredData = {
                     <div>
                       <dt>Issued by</dt>
                       <dd>
-                        {license.authority.website ? (
-                          <a
-                            href={license.authority.website}
-                            rel="nofollow noopener"
-                            target="_blank"
-                          >
-                            {license.authority.abbreviation ||
-                              license.authority.name}
-                          </a>
-                        ) : (
-                          license.authority.abbreviation ||
-                          license.authority.name
-                        )}
+                        <a href={license.authority.href}>
+                          {license.authority.abbreviation ||
+                            license.authority.name}
+                        </a>
                       </dd>
                     </div>
                   ) : null}
@@ -673,38 +668,19 @@ const structuredData = {
             <h2>Discipline</h2>
             <p>Disciplinary or administrative certification actions.</p>
           </div>
-          <div class="personnel-table-wrap">
-            <table class="personnel-mini-table">
-              <thead>
-                <tr>
-                  <th scope="col">Action</th>
-                  <th scope="col">Effective</th>
-                  <th scope="col">Expires</th>
-                  <th scope="col">Case #</th>
-                  <th scope="col">Agency</th>
-                </tr>
-              </thead>
-              <tbody>
-                {discipline.map((record) => (
-                  <tr>
-                    <th scope="row">{record.action}</th>
-                    <td>
-                      {record.effectiveDate
-                        ? formatShortDate(record.effectiveDate)
-                        : ""}
-                    </td>
-                    <td>
-                      {record.expirationDate
-                        ? formatShortDate(record.expirationDate)
-                        : ""}
-                    </td>
-                    <td>{record.caseNumber || ""}</td>
-                    <td>{record.agencyName || ""}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <PersonnelDiscipline records={discipline} />
+        </section>
+      ) : null
+    }
+
+    {
+      education.length ? (
+        <section class="personnel-panel personnel-panel-wide">
+          <div class="personnel-panel-heading">
+            <h2>Education &amp; training</h2>
+            <p>Recorded courses, newest completion dates first.</p>
           </div>
+          <PersonnelEducation records={education} />
         </section>
       ) : null
     }

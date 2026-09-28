@@ -1,4 +1,5 @@
 ---
+import { loadStateAuthorityLink } from "#src/lib/data/licensing-authority.js";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import StatCell from "#src/components/StatCell.astro";
 import StatStrip from "#src/components/StatStrip.astro";
@@ -11,6 +12,9 @@ const { model, site } = Astro.props as {
   model: CivicIndexModel;
   site: URL | undefined;
 };
+
+const authorityHref =
+  model.level === "state" ? await loadStateAuthorityLink(model.pagePath) : null;
 
 const siteUrl = getSiteUrl(site);
 const pageUrl = new URL(model.pagePath, siteUrl).toString();
@@ -307,6 +311,13 @@ const statColumns = model.statCells.length + 1;
   heading={heading}
   lede={model.description}
 >
+  {
+    authorityHref && (
+      <a slot="actions" href={authorityHref}>
+        Licensing authority
+      </a>
+    )
+  }
   <StatStrip
     ariaLabel={`${heading} coverage totals`}
     drillFirst

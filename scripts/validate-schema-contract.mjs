@@ -142,12 +142,20 @@ const requiredTables = {
   discipline: {
     columns: [
       "id",
+      "personnel_id",
+      "licensing_authority_id",
+      "document_url",
+      "allegation",
+      "violation",
+      "finding",
+      "chief_action",
+      "sanction",
       "action",
       "effective_date",
       "expiration_date",
       "case_number",
     ],
-    notNull: ["id", "action"],
+    notNull: ["id", "action", "personnel_id", "licensing_authority_id"],
   },
   discipline_agency_personnel: {
     columns: ["id", "discipline_id", "agency_personnel_id"],
@@ -212,6 +220,18 @@ const requiredTables = {
     columns: ["id", "slug", "first_name", "middle_name", "last_name", "suffix"],
     notNull: ["id", "slug", "first_name"],
     uniqueColumnSets: [["slug"]],
+  },
+  personnel_education: {
+    columns: [
+      "id",
+      "personnel_id",
+      "name",
+      "completion_date",
+      "credits",
+      "sponsor_name",
+      "sponsor_instructor",
+    ],
+    notNull: ["id", "personnel_id", "name"],
   },
   review_attachments: {
     columns: ["id", "review_id"],

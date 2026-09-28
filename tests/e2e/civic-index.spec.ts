@@ -1,5 +1,32 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import dotenv from "dotenv";
+import { Client } from "pg";
+import type { LocationPagePayload } from "../../src/lib/data/build-payloads";
+
+const locations = new Map<string, LocationPagePayload>();
+
+test.beforeAll(async () => {
+  for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
+    dotenv.config({ path, override: true, quiet: true });
+  }
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    const paths = ["/tx/", "/tx/dallas-county/", "/tx/dallas-county/irving/"];
+    const { rows } = await client.query<{
+      path: string;
+      payload: LocationPagePayload;
+    }>(
+      "select path, payload from public.build_page_payload where page_type = 'location' and path = any($1)",
+      [paths],
+    );
+    expect(rows.map((row) => row.path).sort()).toEqual([...paths].sort());
+    for (const row of rows) locations.set(row.path, row.payload);
+  } finally {
+    await client.end();
+  }
+});
 
 const expectBreadcrumbs = async (
   page: Page,
@@ -66,13 +93,31 @@ test.describe("civic index pages", () => {
       { label: "Home", href: "/" },
       { label: "Texas" },
     ]);
-    await expect(page.getByText("State civic index")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Texas", exact: true }),
+    ).toBeVisible();
+    const { coverage } = locations.get("/tx/")!;
 
     const region = "Texas coverage totals";
-    await expectStatValue(page, region, "Agencies", "2,937");
-    await expectStatValue(page, region, "Personnel Records", "129,908");
+    await expectStatValue(
+      page,
+      region,
+      "Agencies",
+      coverage.agencies.toLocaleString("en-US"),
+    );
+    await expectStatValue(
+      page,
+      region,
+      "Personnel",
+      coverage.personnel.toLocaleString("en-US"),
+    );
     await expectStatValue(page, region, "Reports", "1");
-    await expectStatValue(page, region, "Civil Cases", "33");
+    await expectStatValue(
+      page,
+      region,
+      "Civil Cases",
+      coverage.civilCases.toLocaleString("en-US"),
+    );
     await expectStatValue(page, region, "Counties", "254");
 
     // Reports and civil cases drill down; personnel is data, not a link.
@@ -85,7 +130,7 @@ test.describe("civic index pages", () => {
       "/tx/civil-cases/",
     );
     await expect(
-      statCell(page, region, "Personnel Records").getByRole("link"),
+      statCell(page, region, "Personnel").getByRole("link"),
     ).toHaveCount(0);
 
     // County jump + browse-all.
@@ -120,38 +165,75 @@ test.describe("civic index pages", () => {
     await expectNoOldSurfaces(page);
   });
 
-  test("renders licensing and decertification context on the state page", async ({
+  test("renders only the location reports attached to the state", async ({
     page,
   }) => {
     await page.goto("/tx/");
-
-    await expect(
-      page.getByRole("heading", { name: "Officer licensing in Texas" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("link", { name: /Texas Commission on Law Enforcement/ }),
-    ).toHaveAttribute("href", "https://www.tcole.texas.gov/");
-    await expect(page.getByText("736 hours minimum")).toBeVisible();
-    await expect(
-      page.getByText("40 hours of training every 2 years"),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("link", { name: /wandering officers/ }),
-    ).toHaveAttribute(
-      "href",
-      "https://www.yalelawjournal.org/article/the-wandering-officer",
+    const reports = locations.get("/tx/")!.locationReports!;
+    const licensing = reports.find(
+      (report) => report.reportType === "licensing_summary",
+    );
+    const decertification = reports.find(
+      (report) => report.reportType === "decertification_report_card",
     );
 
-    await expect(
-      page.getByRole("heading", { name: "Texas decertification law context" }),
-    ).toBeVisible();
-    await expect(page.getByText("5 of 9")).toBeVisible();
-    await expect(
-      page.getByRole("link", { name: "Report source" }),
-    ).toHaveAttribute("href", "https://www.mayerssolutions.com/licenserevoked");
-    await expect(
-      page.getByText("it is not a local agency rating", { exact: false }),
-    ).toBeVisible();
+    await expect(page.locator(".fact-list")).toHaveCount(licensing ? 1 : 0);
+    if (licensing) {
+      await expect(
+        page.getByRole("heading", { name: licensing.title, exact: true }),
+      ).toBeVisible();
+      const { organization, facts } = licensing.payload as {
+        organization: { name: string; url: string };
+        facts: { label: string; value: string }[];
+      };
+      await expect(
+        page.getByRole("link", { name: `${organization.name} →`, exact: true }),
+      ).toHaveAttribute("href", organization.url);
+      await expect(page.locator(".fact-list dt")).toHaveText(
+        facts.map((fact) => fact.label),
+      );
+      await expect(page.locator(".fact-list dd")).toHaveText(
+        facts.map((fact) => fact.value),
+      );
+      await expect(
+        page.getByRole("link", { name: /wandering officers/ }),
+      ).toHaveAttribute(
+        "href",
+        "https://www.yalelawjournal.org/article/the-wandering-officer",
+      );
+    }
+
+    await expect(page.locator(".status-ledger")).toHaveCount(
+      decertification ? 1 : 0,
+    );
+    if (decertification) {
+      await expect(
+        page.getByRole("heading", { name: decertification.title, exact: true }),
+      ).toBeVisible();
+      const { columns, note } = decertification.payload as {
+        columns: { key: string; label: string; status: string }[];
+        note: string;
+      };
+      const displayed = columns.filter(
+        (column) => !["state", "name", "jurisdiction"].includes(column.key),
+      );
+      await expect(page.locator(".status-summary-value")).toHaveText(
+        `${displayed.filter((column) => column.status === "present").length} of ${displayed.length}`,
+      );
+      await expect(page.locator(".status-mark")).toHaveText(
+        displayed.map(
+          (column) => column.status[0].toUpperCase() + column.status.slice(1),
+        ),
+      );
+      await expect(page.locator(".civic-limit-note")).toHaveText(note);
+      const source = decertification.sources.find(
+        (entry) => entry.sourceType === "methodology",
+      );
+      if (source)
+        await expect(
+          page.getByRole("link", { name: "Report source", exact: true }),
+        ).toHaveAttribute("href", source.url);
+    }
   });
 
   test("renders administrative-area pages with the merged stat band", async ({
@@ -164,7 +246,13 @@ test.describe("civic index pages", () => {
       { label: "Texas", href: "/tx/" },
       { label: "Dallas County" },
     ]);
-    await expect(page.getByText("County civic index")).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "Dallas County",
+        exact: true,
+      }),
+    ).toBeVisible();
 
     const region = "Dallas County coverage totals";
     await expectStatValue(page, region, "Agencies", /\d+/);
@@ -193,12 +281,20 @@ test.describe("civic index pages", () => {
       { label: "Dallas County", href: "/tx/dallas-county/" },
       { label: "Irving" },
     ]);
-    await expect(page.getByText("Place civic index")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Irving", exact: true }),
+    ).toBeVisible();
+    const { coverage } = locations.get("/tx/dallas-county/irving/")!;
 
     const region = "Irving coverage totals";
     await expectStatValue(page, region, "Agencies", "4");
     await expectStatValue(page, region, "Reports", "1");
-    await expectStatValue(page, region, "Civil Cases", "22");
+    await expectStatValue(
+      page,
+      region,
+      "Civil Cases",
+      coverage.civilCases.toLocaleString("en-US"),
+    );
     await expect(
       page.getByRole("link", { name: /Browse all 4 agencies/ }),
     ).toHaveAttribute("href", "/tx/dallas-county/irving/agencies/");

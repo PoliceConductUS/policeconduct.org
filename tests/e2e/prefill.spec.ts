@@ -1,4 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
+import dotenv from "dotenv";
+import { Client } from "pg";
 import {
   assertPrefillApplied,
   assertPrefillConsumed,
@@ -150,6 +152,51 @@ const simpleSenderCases: SenderCase[] = [
   },
 ];
 
+test.beforeAll(async () => {
+  for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
+    dotenv.config({ path, override: true, quiet: true });
+  }
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    const { rows } = await client.query<{
+      title: string;
+      cause_number: string;
+      court: string;
+      slug: string;
+      city: string;
+    }>(
+      `
+      select c.title, c.cause_number, c.court, c.slug, lp.display_name as city
+      from public.civil_cases c
+      cross join public.agency a
+      join public.location_path lp on lp.location_path_id = a.location_path_id
+      where c.slug = $1 and a.slug = $2
+    `,
+      [
+        "lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025",
+        "irving-police-department-049f9a",
+      ],
+    );
+    expect(rows).toHaveLength(1);
+    const record = rows[0];
+    for (const entry of profileSenderCases) {
+      if (
+        entry.route !== "/personnel/james-markham-v-7635c7/" ||
+        !entry.payload
+      )
+        continue;
+      if ("civilLitigation" in entry.payload) {
+        entry.payload.civilLitigation = `${record.title} — ${record.cause_number} — ${record.court} — /civil-cases/${record.slug}/`;
+      }
+      if ("currentAgencyCity" in entry.payload)
+        entry.payload.currentAgencyCity = record.city;
+    }
+  } finally {
+    await client.end();
+  }
+});
+
 const profileSenderCases: SenderCase[] = [
   {
     name: "submit report",
@@ -200,11 +247,10 @@ const profileSenderCases: SenderCase[] = [
       suffix: "V",
       badgeNumber: "",
       currentAgency: "IRVING POLICE DEPARTMENT",
-      currentAgencyCity: "IRVING",
+      currentAgencyCity: "",
       currentAgencyState: "TX",
       pastEmployers: "",
-      civilLitigation:
-        "Lotts v. City of Irving et al — 3:25-CV-03329-S-BN — N.D. Tex. — /civil-cases/lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025/",
+      civilLitigation: "",
       reportLinks:
         "/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
     },
@@ -228,8 +274,7 @@ const profileSenderCases: SenderCase[] = [
       badgeNumber: "",
       currentEmployer: "IRVING POLICE DEPARTMENT",
       pastEmployers: "",
-      civilLitigation:
-        "Lotts v. City of Irving et al — 3:25-CV-03329-S-BN — N.D. Tex. — /civil-cases/lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025/",
+      civilLitigation: "",
     },
     locator: { kind: "role", value: "Suggest edit" },
     targetPath: "/personnel/suggest-edit/",

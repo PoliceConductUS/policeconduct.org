@@ -5,6 +5,7 @@ export type LicensingAuthority = {
   name: string;
   abbreviation: string | null;
   website: string | null;
+  href: string;
 };
 
 export type License = {
@@ -36,8 +37,18 @@ export type DisciplineRecord = {
   effectiveDate: string | null;
   expirationDate: string | null;
   caseNumber: string | null;
-  agencyId: string | null;
-  agencyName: string | null;
+  documentUrl: string | null;
+  allegation: string | null;
+  violation: string | null;
+  finding: string | null;
+  chiefAction: string | null;
+  sanction: string | null;
+  authority: {
+    name: string;
+    abbreviation: string | null;
+    href: string;
+  };
+  agencies: { id: string; name: string }[];
 };
 
 const trimOrNull = (value: unknown): string | null => {
@@ -95,6 +106,8 @@ type RawLicense = {
   authority_name: string | null;
   authority_abbreviation: string | null;
   authority_website: string | null;
+  authority_path: string;
+  authority_level: string;
 };
 
 type RawAction = {
@@ -124,17 +137,28 @@ const loadAllLicensing = () => {
               l.first_awarded,
               la.id as authority_id, la.name as authority_name,
               la.abbreviation as authority_abbreviation,
-              la.website as authority_website
+              la.website as authority_website,
+              lp.path as authority_path, lp.level as authority_level
             from public.license l
             join public.authority_license al on al.id = l.authority_license_id
             left join public.licensing_authority la
               on la.id = al.licensing_authority_id
+            left join public.location_path lp on lp.location_path_id = la.location_path_id
             order by l.personnel_id, l.first_awarded desc nulls last, al.name
           `,
         )
       ).rows;
       const licensesByPersonnel = new Map<string, RawLicense[]>();
       for (const row of licenseRows) {
+        if (
+          row.authority_id &&
+          (row.authority_level !== "state" ||
+            !/^\/[^/]+\/$/.test(row.authority_path))
+        ) {
+          throw new Error(
+            `Invalid licensing authority state path for ${row.authority_id}.`,
+          );
+        }
         const list = licensesByPersonnel.get(row.personnel_id);
         if (list) list.push(row);
         else licensesByPersonnel.set(row.personnel_id, [row]);
@@ -182,6 +206,7 @@ export const loadLicensingForPersonnel = async (
           name: row.authority_name ?? "",
           abbreviation: trimOrNull(row.authority_abbreviation),
           website: trimOrNull(row.authority_website),
+          href: `${row.authority_path}licensing-authority/`,
         }
       : null,
   }));
@@ -223,9 +248,7 @@ const loadDisciplinedPersonnelSet = (): Promise<Set<string>> => {
     disciplinedPersonnelPromise = withDb(async (client) => {
       const rows = (
         await client.query(
-          `select distinct ap.personnel_id
-           from public.discipline_agency_personnel dap
-           join public.agency_personnel ap on ap.id = dap.agency_personnel_id`,
+          `select distinct personnel_id from public.discipline`,
         )
       ).rows;
       return new Set<string>(rows.map((row) => row.personnel_id));
@@ -245,36 +268,78 @@ export const loadDisciplineForPersonnel = async (
     const rows = (
       await client.query(
         `
-          select distinct
+          select
             d.id,
             d.action,
-            d.effective_date,
-            d.expiration_date,
+            d.effective_date::text as effective_date,
+            d.expiration_date::text as expiration_date,
             d.case_number,
-            a.id as agency_id,
-            a.name as agency_name
+            d.document_url,
+            d.allegation,
+            d.violation,
+            d.finding,
+            d.chief_action,
+            d.sanction,
+            la.id as authority_id,
+            la.name as authority_name,
+            la.abbreviation as authority_abbreviation,
+            lp.path as authority_path,
+            lp.level as authority_level,
+            coalesce((
+              select jsonb_agg(distinct jsonb_build_object('id', a.id, 'name', a.name))
+              from public.discipline_agency_personnel dap
+              join public.agency_personnel ap on ap.id = dap.agency_personnel_id
+              join public.agency a on a.id = ap.agency_id
+              where dap.discipline_id = d.id
+            ), '[]'::jsonb) as agencies
           from public.discipline d
-          join public.discipline_agency_personnel dap
-            on dap.discipline_id = d.id
-          join public.agency_personnel ap
-            on ap.id = dap.agency_personnel_id
-          join public.agency a
-            on a.id = ap.agency_id
-          where ap.personnel_id = $1
+          left join public.licensing_authority la
+            on la.id = d.licensing_authority_id
+          left join public.location_path lp
+            on lp.location_path_id = la.location_path_id
+          where d.personnel_id = $1
           order by d.effective_date desc nulls last, d.id
         `,
         [personnelId],
       )
     ).rows;
 
-    return rows.map((row) => ({
-      id: row.id,
-      action: row.action,
-      effectiveDate: row.effective_date ? String(row.effective_date) : null,
-      expirationDate: row.expiration_date ? String(row.expiration_date) : null,
-      caseNumber: trimOrNull(row.case_number),
-      agencyId: row.agency_id ?? null,
-      agencyName: trimOrNull(row.agency_name),
-    }));
+    const agencyCollator = new Intl.Collator("en", { sensitivity: "base" });
+    return rows.map((row) => {
+      if (
+        !row.authority_id ||
+        !row.authority_name ||
+        row.authority_level !== "state" ||
+        !/^\/[^/]+\/$/.test(row.authority_path)
+      ) {
+        throw new Error(
+          `Invalid licensing authority state path for discipline ${row.id}.`,
+        );
+      }
+      const agencies: { id: string; name: string }[] = row.agencies;
+      agencies.sort(
+        (a, b) =>
+          agencyCollator.compare(a.name, b.name) || a.id.localeCompare(b.id),
+      );
+      return {
+        id: row.id,
+        action: row.action,
+        effectiveDate: row.effective_date,
+        expirationDate: row.expiration_date,
+        caseNumber: row.case_number,
+        documentUrl: row.document_url,
+        allegation: row.allegation,
+        violation: row.violation,
+        finding: row.finding,
+        chiefAction: row.chief_action,
+        sanction: row.sanction,
+        authority: {
+          name: row.authority_name,
+          abbreviation: row.authority_abbreviation,
+          href: `${row.authority_path}licensing-authority/`,
+        },
+        agencies,
+      };
+    });
   });
 };
