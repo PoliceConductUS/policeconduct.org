@@ -31,7 +31,7 @@
     "review": "ocr review --audience agent --from main --to HEAD",
     "review:workspace": "ocr review --audience agent",
     "setup": "bash scripts/bootstrap-dev.sh",
-    "test": "npm run test:redirects && npm run test:e2e",
+    "test": "npm run test:redirects && npm run test:lambda && npm run test:e2e",
     "test:e2e": "node scripts/run-e2e.mjs",
     "test:redirects": "node --test scripts/verify-redirect-coverage.test.mjs",
     "update:deps": "node scripts/update-dependencies.mjs --root .",
@@ -44,7 +44,8 @@
     "validate:schema": "node scripts/validate-schema-contract.mjs",
     "validate:shell": "bash -n scripts/*.sh infrastructure/bootstrap-*/*.sh infrastructure/bootstrap-*/scripts/*.sh",
     "validate:types": "astro check",
-    "deploy:preview:sync": "bash scripts/deploy-preview-sync.sh"
+    "deploy:preview:sync": "bash scripts/deploy-preview-sync.sh",
+    "test:lambda": "npm --prefix infrastructure/bootstrap-policeconduct/lambdas/forms-api install --omit=dev --no-audit --no-fund && node --test infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
