@@ -21,7 +21,8 @@ Workflow Standards
 
 - This repo uses Codex App, OpenSpec, Superpowers, and the OpenSpec Superpowers bridge for behavior-changing work.
 - OpenSpec governs what behavior should exist. Superpowers governs how agents execute the work. The bridge keeps brainstorming, plans, verification, and retrospectives under `openspec/changes/<change-name>/`.
-- Behavior changes, data-shape changes, seed/migration changes, validation changes, and downstream contract changes should use an isolated repo-local worktree under `.worktrees/<change-name>`.
+- Only one worktree and branch may be active for this repo at a time. Reuse the current worktree and branch for new work. Never create another worktree or branch without the user's explicit permission, even when isolation would otherwise be preferred.
+- Behavior changes, data-shape changes, seed/migration changes, validation changes, and downstream contract changes should use the active repo-local worktree under `.worktrees/<change-name>`; do not create a new one without the user's explicit permission.
 - Documentation-only edits, formatting, tooling tweaks, and internal refactors that preserve specified behavior may stay lightweight.
 - Use Conventional Commit messages.
 
