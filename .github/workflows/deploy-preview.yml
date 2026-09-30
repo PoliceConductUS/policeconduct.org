@@ -3,13 +3,11 @@
 # distribution at pr-<N>.preview.<domain>, with per-build redirects loaded into
 # the preview KVS. Prod (apex/www) is a separate distribution and is untouched.
 #
-# Secrets/vars to provide (placeholders until the AWS + intake dump side exist):
-#   secrets.AWS_ROLE_ARN            - OIDC role for preview deploys
-#   secrets.DOTENV_PRIVATE_KEY      - to decrypt .env-policeconduct (dotenvx)
-#   vars.AWS_REGION                 - e.g. us-east-1
+# Variables in the preview environment:
+#   vars.AWS_ROLE_ARN               - OIDC role for preview deploys
 #   vars.DB_BUCKET                  - s3 bucket holding dumps/ + latest.yaml
-#   vars.S3_BUCKET_PREVIEW          - preview site bucket
-#   vars.CLOUDFRONT_DIST_PREVIEW    - preview distribution id
+#   vars.S3_BUCKET                  - preview site bucket
+#   vars.CLOUDFRONT_DIST_ID          - preview distribution id
 #   vars.KVS_ARN_PREVIEW            - preview redirects KeyValueStore ARN
 name: Deploy preview
 
@@ -29,6 +27,7 @@ permissions:
 jobs:
   preview:
     runs-on: ubuntu-latest
+    environment: preview
 
     services:
       postgres:
@@ -45,7 +44,9 @@ jobs:
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
-      DOTENV_PRIVATE_KEY: ${{ secrets.DOTENV_PRIVATE_KEY }}
+      RECAPTCHA_SITE_KEY: ${{ vars.RECAPTCHA_SITE_KEY }}
+      PUBLIC_SENTRY_DSN: ${{ vars.PUBLIC_SENTRY_DSN }}
+      PUBLIC_SENTRY_ENVIRONMENT: preview
 
     steps:
       - uses: actions/checkout@v4
@@ -60,8 +61,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
 
       # Restore the pinned intake DB dump. Read latest.yaml ONCE and record the
       # version so the build is deterministic (design.md §7). The website is
@@ -96,8 +97,8 @@ jobs:
 
       - name: Build and deploy preview
         env:
-          S3_BUCKET_PREVIEW: ${{ vars.S3_BUCKET_PREVIEW }}
-          CLOUDFRONT_DIST_PREVIEW: ${{ vars.CLOUDFRONT_DIST_PREVIEW }}
+          S3_BUCKET_PREVIEW: ${{ vars.S3_BUCKET }}
+          CLOUDFRONT_DIST_PREVIEW: ${{ vars.CLOUDFRONT_DIST_ID }}
           KVS_ARN_PREVIEW: ${{ vars.KVS_ARN_PREVIEW }}
         run: bash scripts/deploy-preview.sh
 

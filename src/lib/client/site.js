@@ -300,8 +300,15 @@ const initJumpForms = () => {
         setStatus("Choose one first.");
         return;
       }
+      const destination = new URL(option.value, window.location.href);
+      if (
+        destination.protocol !== "https:" &&
+        destination.protocol !== "http:"
+      ) {
+        return;
+      }
       setStatus(`Opening ${option.textContent.trim()} →`);
-      window.location.href = option.value;
+      window.location.href = destination.href;
     });
   });
 };

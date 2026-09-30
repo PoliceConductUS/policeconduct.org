@@ -126,7 +126,7 @@ const ensureRobotsAndSitemap = async () => {
   }
   if (
     !new RegExp(
-      `Sitemap:\\s*${CANONICAL_HOST.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}/sitemap-index\\.xml`,
+      `Sitemap:\\s*${CANONICAL_HOST.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/sitemap-index\\.xml`,
       "i",
     ).test(robots)
   ) {
