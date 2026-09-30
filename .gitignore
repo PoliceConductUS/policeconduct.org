@@ -41,3 +41,7 @@ upgrade.log
 test-results/
 .deploy-cache/
 rollback.json
+
+# code coverage
+coverage/
+*.lcov
