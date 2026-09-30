@@ -10,6 +10,8 @@ A table-by-table audit found substantive records absent from the existing UI. So
 
 Visual review caught a report date shifted by server timezone and a mobile table wider than its panel. Focused failing tests preceded the corrections. Final review caught a missing required schema column check for the newly displayed case closing date. The fix preserves nullability while ensuring a missing column fails validation.
 
+The first full build found that 45 arrest profiles lack one or more categorical breakdowns. The original sample-only test missed this source variation. The corrected component preserves every stored map and omits absent categorical maps without filling them with zeroes. The regression now renders all 320 profiles and compares every bucket and share to its source.
+
 ## Decisions and limits
 
 Approved report-rating suppression and reporter privacy remain in force. Labeled narrative facts remain visible even when words overlap the description; only an exact full-description duplicate suppresses an extra what-happened paragraph. This can repeat wording, but avoids silently erasing supplied context. Geographic polygons, alias-resolution metadata, and internal system tables are documented coverage exceptions rather than raw data dumped into pages.

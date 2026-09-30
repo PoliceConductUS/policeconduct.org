@@ -31,10 +31,17 @@ const renderComponent = async (
   const compiled = transform(source, {
     internalURL: import.meta.resolve("astro/compiler-runtime"),
     resultScopedSlot: true,
-    resolvePath: (specifier) => specifier,
+    resolvePath: (specifier) =>
+      specifier.startsWith("#src/")
+        ? new URL(`../../src/${specifier.slice(5)}`, import.meta.url).href
+        : specifier,
   });
   const code = ts.transpile(
-    compiled.code.replace(/^import "<stdin>\?astro&type=style[^"\n]*";$/gm, ""),
+    compiled.code
+      .replace(/^import "<stdin>\?astro&type=style[^"\n]*";$/gm, "")
+      .replace(/(["'])#src\/([^"']+)\1/g, (_match, _quote, path) =>
+        JSON.stringify(new URL(`../../src/${path}`, import.meta.url).href),
+      ),
     { target: ts.ScriptTarget.ESNext, module: ts.ModuleKind.ESNext },
   );
   const directory = await mkdtemp(join(tmpdir(), "personnel-post-fixture-"));
@@ -257,5 +264,100 @@ test("mobile arrest tables show every column without horizontal scrolling", asyn
     expect(
       size.cells.every((cell) => cell.right <= 390 && cell.font >= 16),
     ).toBe(true);
+  }
+});
+
+test("every live arrest profile renders exactly its stored breakdowns and buckets", async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  const { loadArrestProfilesForPersonnel } =
+    await import("../../src/lib/data/arrest-profiles");
+  const { rows } =
+    await client.query(`select profile.*, assignment.personnel_id, p.slug
+    from public.arrest_profile profile
+    join public.agency_personnel assignment on assignment.id=profile.agency_personnel_id
+    join public.personnel p on p.id=assignment.personnel_id order by profile.id`);
+  expect(rows.length).toBeGreaterThan(0);
+  expect(
+    rows.some(
+      (row) =>
+        row.slug === "robert-kuether-iii-ad743c" &&
+        !("by_offense" in row.breakdowns) &&
+        !("by_charge_level" in row.breakdowns),
+    ),
+  ).toBe(true);
+  expect(rows.some((row) => !("by_district" in row.breakdowns))).toBe(true);
+  for (let offset = 0; offset < rows.length; offset += 10) {
+    const batch = rows.slice(offset, offset + 10);
+    const profiles = [];
+    for (const row of batch) {
+      const loaded = await loadArrestProfilesForPersonnel(row.personnel_id);
+      const profile = loaded.find((item) => item.id === row.id);
+      expect(profile).toBeDefined();
+      expect(profile!.breakdowns).toEqual(row.breakdowns);
+      profiles.push(profile);
+    }
+    const html = await renderComponent("PersonnelArrestProfiles", { profiles });
+    const rendered = await page.evaluate((html) => {
+      const document = new DOMParser().parseFromString(html, "text/html");
+      return [...document.querySelectorAll("[data-arrest-profile-id]")].map(
+        (article) => ({
+          id: article.getAttribute("data-arrest-profile-id"),
+          tables: [...article.querySelectorAll("table")].map((table) => ({
+            key: table.getAttribute("data-breakdown"),
+            rows: [...table.querySelectorAll("tbody tr")].map((row) =>
+              [...row.children].map((cell) =>
+                cell.textContent!.trim().replace(/\s+(?=%$)/, ""),
+              ),
+            ),
+          })),
+        }),
+      );
+    }, html);
+    expect(rendered).toHaveLength(batch.length);
+    for (const row of batch) {
+      const actual = rendered.find((item) => item.id === row.id)!;
+      expect(actual.tables.map((table) => table.key).sort()).toEqual(
+        Object.keys(row.breakdowns).sort(),
+      );
+      for (const [key, buckets] of Object.entries(row.breakdowns)) {
+        const actualRows = actual.tables.find(
+          (table) => table.key === key,
+        )!.rows;
+        const expectedRows = Object.entries(
+          buckets as Record<string, number>,
+        ).map(([label, count]) => [
+          label,
+          count.toLocaleString("en-US"),
+          `${row.coverage.totalArrests === 0 ? "0.0" : ((count / row.coverage.totalArrests) * 100).toFixed(1)}%`,
+        ]);
+        expect(actualRows.sort((a, b) => a[0].localeCompare(b[0]))).toEqual(
+          expectedRows.sort((a, b) => a[0].localeCompare(b[0])),
+        );
+      }
+    }
+  }
+});
+
+test("arrest component fails for missing required or malformed present maps", async () => {
+  const { loadArrestProfilesForPersonnel } =
+    await import("../../src/lib/data/arrest-profiles");
+  const {
+    rows: [row],
+  } = await client.query(
+    `select personnel_id from public.agency_personnel assignment join public.arrest_profile profile on profile.agency_personnel_id=assignment.id order by profile.id limit 1`,
+  );
+  const [profile] = await loadArrestProfilesForPersonnel(row.personnel_id);
+  for (const malformed of [
+    { ...profile.breakdowns, by_year: undefined },
+    { ...profile.breakdowns, by_offense: null },
+    { ...profile.breakdowns, by_offense: undefined },
+  ]) {
+    await expect(
+      renderComponent("PersonnelArrestProfiles", {
+        profiles: [{ ...profile, breakdowns: malformed }],
+      }),
+    ).rejects.toThrow(/Cannot convert undefined or null to object/);
   }
 });

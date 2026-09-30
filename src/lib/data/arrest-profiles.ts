@@ -13,15 +13,15 @@ export type ArrestProfile = {
     totalArrests: number;
   };
   breakdowns: Record<
-    | "by_year"
-    | "by_month"
-    | "by_iso_week"
-    | "by_day_of_week"
-    | "by_offense"
-    | "by_charge_level"
-    | "by_district",
+    "by_year" | "by_month" | "by_iso_week" | "by_day_of_week",
     Record<string, number>
-  >;
+  > &
+    Partial<
+      Record<
+        "by_offense" | "by_charge_level" | "by_district",
+        Record<string, number>
+      >
+    >;
   updatedAt: string;
 };
 

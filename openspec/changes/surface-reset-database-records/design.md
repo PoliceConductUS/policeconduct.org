@@ -4,7 +4,7 @@ The database has 29 public tables. Live counts include 3,300 agencies, 140,552 p
 
 ## Decisions
 
-Extend existing pages. All agencies with required canonical data receive projections. Arrest profiles join through agency_personnel to personnel and remain assignment-specific. A small loader and component render coverage and seven complete breakdowns; counts are paired with percentages of the profile's recorded total, temporal rows show the trend, and source values are preserved. No peer rank is inferred from periods of differing duration, and officer counts are not summed into unique agency arrests. District codes are source codes without asserted geographic meaning.
+Extend existing pages. All agencies with required canonical data receive projections. Arrest profiles join through agency_personnel to personnel and remain assignment-specific. A small loader and component render coverage and every available breakdown among seven supported dimensions; counts are paired with percentages of the profile's recorded total, temporal rows show the trend, and source values are preserved. No peer rank is inferred from periods of differing duration, and officer counts are not summed into unique agency arrests. District codes are source codes without asserted geographic meaning.
 
 Render report how_felt using its real storage column, desired_outcome and other present narrative facts with reader-friendly headings. Render case date_terminated as Closed. Preserve authored text and existing evidence links. Optional absent facts are omitted. Read DESIGN.md and .impeccable.md; use shared headings and external CSS.
 

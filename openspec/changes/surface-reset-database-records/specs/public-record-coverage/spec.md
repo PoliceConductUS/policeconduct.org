@@ -12,7 +12,7 @@ The site SHALL account for every public table in a coverage audit and expose use
 #### Scenario: Personnel has arrest profiles
 
 - **WHEN** arrest profiles are linked to a person's agency assignments
-- **THEN** the personnel page renders each profile's agency, source, covered months, recorded total, and all seven stored breakdowns
+- **THEN** the personnel page renders each profile's agency, source, covered months, recorded total, and every stored breakdown among the seven supported dimensions
 - **AND** counts have shares and time context, district codes retain source meaning, and no causal or unique-agency-total claim is made
 
 #### Scenario: Stored optional public facts exist
