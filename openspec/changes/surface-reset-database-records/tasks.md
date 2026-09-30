@@ -8,7 +8,7 @@
 ## 2. Verify and release
 
 - [x] 2.1 Format and run aggregate validation; resolve failures against the reset database.
-- [ ] 2.2 Finish full build and inspect generated data coverage and responsive pages.
+- [x] 2.2 Finish full build and inspect generated data coverage and responsive pages.
 - [ ] 2.3 Record verification and retrospective; archive completed changes.
-- [ ] 2.4 Commit, sync existing branch, and publish current full build to PR preview.
+- [x] 2.4 Commit, sync existing branch, and publish current full build to PR preview.
 - [ ] 2.5 Verify remote pages, assets, search and build identity.

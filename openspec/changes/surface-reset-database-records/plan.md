@@ -29,7 +29,7 @@ Reuse current worktree and branch; preserve unrelated dirty work. No DB/schema w
 
 ## Task 3: Integration coverage and release
 
-- [ ] Complete coverage.md with every current public table, count, consumer and visitor use, or clear internal-only purpose; distinguish empty data from missing implementation.
-- [ ] Review both tasks and existing schema-adaptation diff. Resolve material findings with focused fixes and re-review.
-- [ ] Format, aggregate validate, full build, generated-HTML coverage checks and batched desktop/mobile inspection. No partial build can be deployed.
+- [x] Complete coverage.md with every current public table, count, consumer and visitor use, or clear internal-only purpose; distinguish empty data from missing implementation.
+- [x] Review both tasks and existing schema-adaptation diff. Resolve material findings with focused fixes and re-review.
+- [x] Format, aggregate validate, full build, generated-HTML coverage checks and batched desktop/mobile inspection. No partial build can be deployed.
 - [ ] Record evidence/retrospective, archive completed OpenSpec changes, commit, sync current branch without creating worktrees/branches, and publish the exact final build to PR 3 preview. Verify remote paths/assets/search and build identity; report URL and limitations.

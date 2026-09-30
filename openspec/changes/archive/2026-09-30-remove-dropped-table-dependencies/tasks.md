@@ -15,4 +15,4 @@
 
 - [x] 3.1 Resolve the missing discipline fixture without weakening assertions; rerun aggregate validation.
 - [x] 3.2 Configure bounded parallel static rendering as requested.
-- [ ] 3.3 Complete the full static build and record its final checks.
+- [x] 3.3 Complete the full static build and record its final checks.

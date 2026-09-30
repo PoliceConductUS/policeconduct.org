@@ -1,6 +1,6 @@
 ## Verification Status
 
-Aggregate validation is green on 2026-09-29: 117 browser tests passed, 7 existing skips, zero failures. Full static build failed on the county-level agency route mismatch described below.
+Complete on 2026-09-30. Aggregate validation passes with 138 browser tests, one dev-only built-search skip, and zero failures; both built-search tests subsequently pass. The full build of `ad4f4edb88b6` completed successfully, including 165,466 HTML files, Pagefind, no-inline-CSS validation, 6,271 redirects, CSS purge, and critical CSS validation. The older failures below are resolved historical evidence.
 
 ## Completed Checks
 
@@ -38,4 +38,10 @@ The initial serial build was deliberately stopped and restarted after the user d
 
 ## Reset verification (2026-09-30)
 
-Fresh schema validation passes for 25 required public tables. Projection refresh completes with 3,207 agencies and 4,897 payloads; MAC now projects correctly. Fresh aggregate validation passes (117 browser tests, 7 existing skips). The user has expanded scope to audit public-record coverage and publish the PR preview; see `../surface-reset-database-records/`. No production release is authorized by the current objective.
+Fresh schema validation passes for 25 required public tables. Projection refresh completes with 3,207 agencies and 4,897 payloads; MAC now projects correctly. Fresh aggregate validation passes (117 browser tests, 7 existing skips). The user has expanded scope to audit public-record coverage and publish the PR preview; see the associated `surface-reset-database-records` change. No production release is authorized by the current objective.
+
+## Final build evidence (2026-09-30)
+
+All 3,300 agencies have place-level locations and generated canonical pages. All 140,552 personnel pages and their stored education, license, action, discipline, arrest-profile, and assignment-license counts match the current database. The required-path assertion was preserved. The six retired-schema report skips are gone; the remaining dev-only search skip passed against built output (two search tests, zero skips). Twelve desktop/mobile page checks passed.
+
+Completeness: all tasks complete. Correctness: current-schema and direct federal-parent requirements have implementation, focused regression, and full-build evidence. Coherence: exact database identity and required-schema failures are preserved. No unresolved blocking findings. Current PR preview publication belongs to the associated visitor-coverage change; this schema migration does not authorize production deployment.

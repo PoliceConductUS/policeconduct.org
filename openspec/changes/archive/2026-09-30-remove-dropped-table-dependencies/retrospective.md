@@ -13,3 +13,7 @@ Integration review restored shared CSS used by surviving pages. Live directory t
 The direct-discipline regression required a multi-agency fixture absent from the current database. A rollback-only transaction now provides it to the real loader without weakening assertions or persisting synthetic records. Aggregate validation passes with 117 browser tests and 7 existing skips.
 
 The full build exposed a separate routing mismatch: Metropolitan Airports Commission is attached to a county location, but agency projections and routes require a place. Its 117 linked profiles cannot resolve an agency canonical path. The user clarified that agency locations must always be places. The 2026-09-30 database reset corrected this assignment to Fort Snelling UT; full release verification continues under the expanded public-record coverage change. See verify.md. Parallel static rendering is now configured at 8 after the user challenged serial profile rendering.
+
+## Completion after reset
+
+The reset corrected Metropolitan Airports Commission to its place identity, allowing the original routing assertion to remain strict. The full build now completes, and exhaustive generated-record checks match the current database. Migration consumers and visitor coverage share source revision `ad4f4edb88b6`; preview publication evidence is recorded by the visitor-coverage change.
