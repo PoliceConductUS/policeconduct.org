@@ -16,7 +16,7 @@ Independent task reviews and final integration review found no unresolved blocki
 
 Aggregate validation after the source-shape fix passes: 138 browser tests passed, one built-search test skipped on the dev server; all 10 redirect and 10 forms API tests passed. Formatting, lint, types, shell syntax, schema, and 14 OpenSpec validations passed. Three initial prefill failures were stale expected names missing the recorded suffix V; exact expectations were updated without weakening assertions.
 
-The full build of `ad4f4edb88b6745116e839e68af7b69f37c2f24c` passed, including CSS checks, 6,271 redirects, sitemap generation and Pagefind indexing of 165,464 searchable pages. All 165,466 generated HTML files passed the no-inline-CSS check. Built-output search tests passed (two tests, zero skips). Both source commits are pushed to the existing PR branch. Preview upload completed successfully on 2026-09-30 at 12:16 UTC. Published HTML/assets pass verification; live search remains blocked by the deployed shared CSP, as detailed below. No production deployment is part of this change.
+The full build of `ad4f4edb88b6745116e839e68af7b69f37c2f24c` passed, including CSS checks, 6,271 redirects, sitemap generation and Pagefind indexing of 165,464 searchable pages. All 165,466 generated HTML files passed the no-inline-CSS check. Built-output search tests passed (two tests, zero skips). Both source commits are pushed to the existing PR branch. Preview upload completed successfully on 2026-09-30 at 12:16 UTC. Published HTML/assets and unmodified live search pass verification. The user authorized the shared preview/production CSP correction; no production content was deployed.
 
 ## Full-build shape finding
 
@@ -24,7 +24,7 @@ The first full build of source commit `21047d8` stopped after 14,807 rendered ro
 
 ## Generated-output parity
 
-Static generation produced 165,466 pages. The exhaustive check of every personnel page passed with zero mismatches: 140,552 people, 1,769,990 education records, 163,805 licenses, 188,003 license actions, 76 discipline records, 320 arrest profiles, and 181,686 assignment-license links. All 3,300 agency pages, 465 case pages, and three report pages exist at canonical paths. All 51,636 stored arrest-breakdown rows are present on the correct profiles. The entire-profile focused regression independently compares source labels, counts, and shares. Build postprocessing passed. Published HTML/assets pass verification. The live search result and shared-policy approval boundary are recorded below.
+Static generation produced 165,466 pages. The exhaustive check of every personnel page passed with zero mismatches: 140,552 people, 1,769,990 education records, 163,805 licenses, 188,003 license actions, 76 discipline records, 320 arrest profiles, and 181,686 assignment-license links. All 3,300 agency pages, 465 case pages, and three report pages exist at canonical paths. All 51,636 stored arrest-breakdown rows are present on the correct profiles. The entire-profile focused regression independently compares source labels, counts, and shares. Build postprocessing passed. Published HTML/assets pass verification. The live search result and authorized shared-policy correction are recorded below.
 
 ## Published preview
 
@@ -32,15 +32,15 @@ The complete artifact from source commit `ad4f4edb88b6745116e839e68af7b69f37c2f2
 
 Live verification compared nine canonical HTML pages and 14 referenced assets byte-for-byte with the local artifact: all matched, all returned HTTP 200, and JavaScript/CSS MIME types were correct. The samples cover root, Texas, Minnesota, personnel arrest records, an agency without linked records, a report, a civil case, Metropolitan Airports Commission, and a profile with omitted categorical arrest maps. Preview robots.txt matches the deny-all build artifact.
 
-## Remaining live search gate
+## Resolved live search gate
 
-The unmodified live browser search test fails: CloudFront's deployed Content Security Policy blocks Pagefind's WebAssembly. Its required JavaScript, worker, metadata, and WASM files return HTTP 200. The repository already includes `'wasm-unsafe-eval'` in `infrastructure/bootstrap-policeconduct/main.tf`, but deployed response-headers policy `ea0a9aa3-1f0e-4bb7-a9f4-addd13a5d0ab` lacks that token.
+The initial unmodified live browser search test failed: CloudFront's deployed Content Security Policy blocked Pagefind's WebAssembly. Its required JavaScript, worker, metadata, and WASM files return HTTP 200. The repository already includes `'wasm-unsafe-eval'` in `infrastructure/bootstrap-policeconduct/main.tf`, but the deployed response-headers policy `ea0a9aa3-1f0e-4bb7-a9f4-addd13a5d0ab` lacked that token.
 
-The policy is shared by preview distribution `EXPW875KV1ZH5` and production distribution `E2J0V67TGXH1PG`. A browser-only response-header substitution adding exactly that token made the live search test pass and navigate to the expected Irving Police Department page. This diagnostic did not change AWS and is not counted as a passing unmodified live test. Approval is pending because applying the fix would also change production headers beyond the preview-only release scope. The exact proposed policy configuration is prepared; all other policy settings are preserved.
+The policy is shared by preview distribution `EXPW875KV1ZH5` and production distribution `E2J0V67TGXH1PG`. A browser-only response-header substitution adding exactly that token made the live search test pass and navigate to the expected Irving Police Department page. This diagnostic did not change AWS and is not counted as a passing unmodified live test. The user subsequently authorized applying the fix to the shared policy. At 2026-09-30 16:55:42 UTC, CloudFront accepted the update with ETag `E3UN6WX5RRO2AG`. The only effective setting change adds `wasm-unsafe-eval` to `script-src`; all other settings are preserved. A fresh unmodified browser test passed: searching for Irving Police Department returned a result and navigated to its canonical page. Nine HTML pages and 14 assets again matched the built artifact exactly.
 
 GitHub checks are not all green. The automated preview job fails before deployment because `aws-region` is missing; publication used working local credentials. The two CodeQL analysis jobs pass, while the aggregate CodeQL and Copilot setup checks remain failed. These CI failures are separate from the successful local aggregate validation and completed full build.
 
-The new change remains active until the live search gate is resolved or its limitation is explicitly accepted. The completed schema-consumer change is archived. No production content or security policy was changed.
+The live search gate is resolved. The coverage change is ready for archive, and the schema-consumer change is already archived. No production content changed; the shared security-policy update was explicitly authorized.
 
 ## Post-publication checks
 
@@ -48,4 +48,4 @@ On 2026-09-30, the user confirmed that a hard reload resolved the stale homepage
 
 A separate read-only audit found two stored `(000) 000-0000` phone records, for the U.S. Department of the Army and the HHS Office of Inspector General. Their TCOLE source identities are `AgencyPhoneNumber/509516|Phone` and `AgencyPhoneNumber/509518|Phone`. Both were excluded through intake's existing `data exclude` command in the active `dev-copy` workspace, preserving raw source input. The subsequent `data transform gov.tx.tcole` completed successfully and explicitly logged both exclusions.
 
-This source correction has not removed the already-imported database rows or changed the published pages. Intake's incremental update never deletes records. Approval was requested before running its supported local database reset, followed by a new website build and preview publication. The source exclusions are workspace state, not website code changes. The live CSP still lacks `wasm-unsafe-eval`; no shared policy change was applied.
+This source correction has not removed the already-imported database rows or changed the published pages. Intake's incremental update never deletes records. The user clarified that the phone issue belongs to intake and requires no website change. No database reset was performed. The source exclusions are workspace state, not website code changes; remaining data cleanup was handed off to intake. The subsequent authorized shared CSP correction is recorded above.

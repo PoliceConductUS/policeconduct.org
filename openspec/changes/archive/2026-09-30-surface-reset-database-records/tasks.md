@@ -9,6 +9,6 @@
 
 - [x] 2.1 Format and run aggregate validation; resolve failures against the reset database.
 - [x] 2.2 Finish full build and inspect generated data coverage and responsive pages.
-- [ ] 2.3 Record verification and retrospective; archive completed changes.
+- [x] 2.3 Record verification and retrospective; archive completed changes.
 - [x] 2.4 Commit, sync existing branch, and publish current full build to PR preview.
-- [ ] 2.5 Verify remote pages, assets, search and build identity.
+- [x] 2.5 Verify remote pages, assets, search and build identity.
