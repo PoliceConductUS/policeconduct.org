@@ -41,3 +41,11 @@ The policy is shared by preview distribution `EXPW875KV1ZH5` and production dist
 GitHub checks are not all green. The automated preview job fails before deployment because `aws-region` is missing; publication used working local credentials. The two CodeQL analysis jobs pass, while the aggregate CodeQL and Copilot setup checks remain failed. These CI failures are separate from the successful local aggregate validation and completed full build.
 
 The new change remains active until the live search gate is resolved or its limitation is explicitly accepted. The completed schema-consumer change is archived. No production content or security policy was changed.
+
+## Post-publication checks
+
+On 2026-09-30, the user confirmed that a hard reload resolved the stale homepage link to the removed State of Oklahoma placeholder. A fresh check again matched nine live HTML pages and 14 assets byte-for-byte against the published artifact. PR #3 remains at `e1fdf05d8d5048839e3cfdeb30b1e2455bdbd398`; its changes after the built source revision are documentation only.
+
+A separate read-only audit found two stored `(000) 000-0000` phone records, for the U.S. Department of the Army and the HHS Office of Inspector General. Their TCOLE source identities are `AgencyPhoneNumber/509516|Phone` and `AgencyPhoneNumber/509518|Phone`. Both were excluded through intake's existing `data exclude` command in the active `dev-copy` workspace, preserving raw source input. The subsequent `data transform gov.tx.tcole` completed successfully and explicitly logged both exclusions.
+
+This source correction has not removed the already-imported database rows or changed the published pages. Intake's incremental update never deletes records. Approval was requested before running its supported local database reset, followed by a new website build and preview publication. The source exclusions are workspace state, not website code changes. The live CSP still lacks `wasm-unsafe-eval`; no shared policy change was applied.
