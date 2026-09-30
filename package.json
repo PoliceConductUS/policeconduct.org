@@ -33,7 +33,7 @@
     "setup": "bash scripts/bootstrap-dev.sh",
     "test": "npm run test:redirects && npm run test:lambda && npm run test:e2e",
     "test:e2e": "node scripts/run-e2e.mjs",
-    "test:redirects": "node --test scripts/verify-redirect-coverage.test.mjs",
+    "test:redirects": "node --test scripts/verify-redirect-coverage.test.mjs scripts/cloudfront-router.test.mjs scripts/load-redirects.test.mjs scripts/generate-redirect-map.test.mjs",
     "update:deps": "node scripts/update-dependencies.mjs --root .",
     "update:deps:all": "node scripts/update-dependencies.mjs --all",
     "validate": "npm run format:check && npm run lint && npm run validate:types && npm run validate:shell && npm run validate:schema && npm run validate:openspec && npm run test",

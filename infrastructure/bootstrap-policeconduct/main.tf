@@ -1942,131 +1942,26 @@ resource "aws_acm_certificate_validation" "site" {
   validation_record_fqdns = [for record in aws_route53_record.acm_validation : record.fqdn]
 }
 
+locals {
+  shared_router_code = templatefile("${path.module}/functions/router.js", {
+    domain_name    = var.domain_name
+    canonical_host = local.include_www ? local.www_domain : var.domain_name
+  })
+}
+
+resource "aws_cloudfront_key_value_store" "site_redirects" {
+  name = "${var.project_name}-site-redirects"
+}
+
 resource "aws_cloudfront_function" "index_rewrite" {
   name    = local.index_rewrite_function_name
   runtime = "cloudfront-js-2.0"
-  comment = "Rewrite extensionless URIs to index.html."
+  comment = "Apply build redirects and rewrite site file paths."
   publish = true
-  code    = <<-EOF
-function handler(event) {
-  var request = event.request;
-  var host = request.headers.host && request.headers.host.value ? request.headers.host.value.toLowerCase() : '';
-  var apexHost = ${jsonencode(var.domain_name)};
-  var wwwHost = ${jsonencode(local.www_domain)};
-  var enforceWwwRedirect = ${local.include_www ? "true" : "false"};
-  var uri = request.uri;
-  var qs = '';
-
-  if (request.querystring) {
-    var keys = Object.keys(request.querystring);
-    if (keys.length > 0) {
-      var parts = [];
-      for (var i = 0; i < keys.length; i++) {
-        var key = keys[i];
-        var item = request.querystring[key];
-        if (item.multiValue && item.multiValue.length > 0) {
-          for (var j = 0; j < item.multiValue.length; j++) {
-            parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(item.multiValue[j].value || ''));
-          }
-        } else {
-          parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(item.value || ''));
-        }
-      }
-      qs = '?' + parts.join('&');
-    }
-  }
-
-  if (enforceWwwRedirect && host === apexHost) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: 'https://' + wwwHost + uri + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var personnelStatePageMatch = uri.match(/^\/personnel\/([a-z]{2}|federal)\/page(?:\/.*)?\/?$/);
-  if (personnelStatePageMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/' + personnelStatePageMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var personnelStateMatch = uri.match(/^\/personnel\/([a-z]{2}|federal)\/?$/);
-  if (personnelStateMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/' + personnelStateMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var civilStatePageMatch = uri.match(/^\/civil-litigation\/([a-z]{2}|federal)\/page(?:\/.*)?\/?$/);
-  if (civilStatePageMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/' + civilStatePageMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var civilStateMatch = uri.match(/^\/civil-litigation\/([a-z]{2}|federal)\/?$/);
-  if (civilStateMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/' + civilStateMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var civilCaseMatch = uri.match(/^\/civil-litigation\/[^\/]+\/([^\/]+)\/?$/);
-  if (civilCaseMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/civil-cases/' + civilCaseMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  if (uri === '/videos' || uri === '/videos/' || uri.indexOf('/videos/') === 0 || uri === '/video' || uri === '/video/' || uri.indexOf('/video/') === 0) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/search/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  if (uri.endsWith('/')) {
-    request.uri += 'index.html';
-  } else if (!uri.includes('.')) {
-    request.uri += '/index.html';
-  }
-
-  return request;
-}
-EOF
+  key_value_store_associations = [
+    aws_cloudfront_key_value_store.site_redirects.arn,
+  ]
+  code = local.shared_router_code
 }
 
 resource "aws_cloudfront_response_headers_policy" "site_security_headers" {
@@ -2211,10 +2106,8 @@ resource "aws_cloudfront_distribution" "site" {
   }
 }
 
-# Per-build redirects for the preview distribution (Phase A of
-# openspec/changes/atomic-sha-deploys). Keys are namespaced by build id:
-# r:<label>:<path> = <target>. Populated at preview deploy from the build's
-# redirects.json. Prod (apex/www) is a separate distribution and is untouched.
+# Preview uses the same router as production with a separate redirect store.
+# Keys are r:<label>:<path> = <target>, loaded from the build's _redirect-map.json.
 resource "aws_cloudfront_key_value_store" "preview_redirects" {
   name = "${var.project_name}-preview-redirects"
 }
@@ -2229,7 +2122,7 @@ resource "aws_cloudfront_function" "preview_router" {
     aws_cloudfront_key_value_store.preview_redirects.arn,
   ]
 
-  code = file("${path.module}/functions/router.js")
+  code = local.shared_router_code
 }
 
 # Non-canonical preview hosts must not be indexed. Build-once means the same HTML

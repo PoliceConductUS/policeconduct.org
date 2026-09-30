@@ -30,6 +30,7 @@ if [[ -f .env-policeconduct ]]; then
 fi
 
 : "${S3_BUCKET:?S3_BUCKET is required}"
+: "${KVS_ARN:?KVS_ARN is required (production redirect store)}"
 : "${CLOUDFRONT_DIST_ID:?CLOUDFRONT_DIST_ID is required}"
 
 DIST_DIR="dist"
@@ -103,7 +104,12 @@ echo "   ${#CHANGED_FILES[@]} changed/new files."
 echo "   ${#DELETED_FILES[@]} deleted files."
 
 if [[ ${#CHANGED_FILES[@]} -eq 0 && ${#DELETED_FILES[@]} -eq 0 ]]; then
-  echo "✓ Nothing changed. Skipping deploy."
+  if [[ "$DRY_RUN" == true ]]; then
+    echo "── DRY RUN: Would publish production redirects ──"
+  else
+    node scripts/load-redirects.mjs "${KVS_ARN}" "r:prod:" "${DIST_DIR}/_redirect-map.json"
+  fi
+  echo "✓ No content changes."
   exit 0
 fi
 
@@ -120,6 +126,7 @@ if [[ "$DRY_RUN" == true ]]; then
     [[ ${#DELETED_FILES[@]} -gt 20 ]] && echo "  ... and $((${#DELETED_FILES[@]} - 20)) more"
   fi
   echo ""
+  echo "── DRY RUN: Would publish production redirects ──"
   echo "── DRY RUN: Would invalidate paths ──"
   # Show a sample of what would be invalidated
   for f in "${CHANGED_FILES[@]:0:20}"; do
@@ -163,6 +170,8 @@ if [[ ${#DELETED_FILES[@]} -gt 0 ]]; then
     echo "s3://${S3_BUCKET}/${f}"
   done | xargs -P 8 -I {} aws s3 rm {} --only-show-errors
 fi
+
+node scripts/load-redirects.mjs "${KVS_ARN}" "r:prod:" "${DIST_DIR}/_redirect-map.json"
 
 # ── Step 6: Invalidate only changed CloudFront paths ────────────────────────
 # Convert file paths to URL paths for invalidation

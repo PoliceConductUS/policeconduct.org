@@ -1,10 +1,20 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { statSync } from "node:fs";
 import path from "node:path";
 import { withDb } from "../src/lib/db.js";
 import { US_STATE_TILES } from "../src/lib/geo/states.ts";
 
 const distDir = path.resolve("dist");
 const outputPath = path.join(distDir, "_redirect-map.json");
+
+const hasBuiltDestination = ({ to }) => {
+  try {
+    return statSync(path.join(distDir, to, "index.html")).isFile();
+  } catch (error) {
+    if (error.code === "ENOENT") return false;
+    throw error;
+  }
+};
 
 // Keep in sync with src/lib/pagination.ts PAGE_SIZE. That module can't be
 // imported here (this script runs under plain node, not the Astro/Vite
@@ -306,57 +316,50 @@ const redirects = await withDb(async (client) => {
       status: 301,
       source: "civil case form route renamed",
     },
-    ...stateRows.flatMap((entry) => [
-      {
-        from: normalizePath(`/report/${entry.state}/`),
-        to: normalizePath(`/${entry.state}/reports/`),
+    ...stateRows.flatMap((entry) =>
+      [
+        {
+          from: normalizePath(`/report/${entry.state}/`),
+          to: normalizePath(`/${entry.state}/reports/`),
+          status: 301,
+          source: "state-scoped report routes retired",
+        },
+        {
+          from: `/report/${entry.state}/page/*`,
+          to: normalizePath(`/${entry.state}/reports/`),
+          status: 301,
+          source: "state-scoped report pagination retired",
+        },
+        {
+          from: `/personnel/${entry.state}/page/*`,
+          to: normalizePath(`/${entry.state}/`),
+          status: 301,
+          source: "state-scoped personnel pagination retired",
+        },
+        {
+          from: normalizePath(`/civil-litigation/${entry.state}/`),
+          to: normalizePath(`/${entry.state}/`),
+          status: 301,
+          source: "state-scoped civil case routes retired",
+        },
+        {
+          from: `/civil-litigation/${entry.state}/page/*`,
+          to: normalizePath(`/${entry.state}/`),
+          status: 301,
+          source: "state-scoped civil case pagination retired",
+        },
+      ].filter(hasBuiltDestination),
+    ),
+    // Retain legacy state and federal category redirects only when the
+    // destination was generated in this build.
+    ...[...US_STATE_TILES.map((state) => state.code.toLowerCase()), "federal"]
+      .map((category) => ({
+        from: normalizePath(`/personnel/${category}/`),
+        to: normalizePath(`/${category}/`),
         status: 301,
-        source: "state-scoped report routes retired",
-      },
-      {
-        from: `/report/${entry.state}/page/*`,
-        to: normalizePath(`/${entry.state}/reports/`),
-        status: 301,
-        source: "state-scoped report pagination retired",
-      },
-      {
-        from: normalizePath(`/personnel/${entry.state}/`),
-        to: normalizePath(`/${entry.state}/`),
-        status: 301,
-        source: "state-scoped personnel routes retired",
-      },
-      {
-        from: `/personnel/${entry.state}/page/*`,
-        to: normalizePath(`/${entry.state}/`),
-        status: 301,
-        source: "state-scoped personnel pagination retired",
-      },
-      {
-        from: normalizePath(`/civil-litigation/${entry.state}/`),
-        to: normalizePath(`/${entry.state}/`),
-        status: 301,
-        source: "state-scoped civil case routes retired",
-      },
-      {
-        from: `/civil-litigation/${entry.state}/page/*`,
-        to: normalizePath(`/${entry.state}/`),
-        status: 301,
-        source: "state-scoped civil case pagination retired",
-      },
-    ]),
-    // Full parity with the retired src/pages/personnel/[category]/index.astro
-    // route: it built one redirect stub per US_STATE_TILES entry plus
-    // "federal", regardless of whether that state currently has any
-    // agencies in the database.
-    ...[
-      ...US_STATE_TILES.map((state) => state.code.toLowerCase()),
-      "federal",
-    ].map((category) => ({
-      from: normalizePath(`/personnel/${category}/`),
-      to: normalizePath(`/${category}/`),
-      status: 301,
-      source: "personnel state route retired",
-    })),
+        source: "personnel state route retired",
+      }))
+      .filter(hasBuiltDestination),
     // Full parity with the retired
     // src/pages/personnel/[category]/page/[...page].astro route: it
     // generated a redirect stub for every pagination page 2..N per
@@ -373,7 +376,7 @@ const redirects = await withDb(async (client) => {
           source: "personnel pagination route retired",
         });
       }
-      return pages;
+      return pages.filter(hasBuiltDestination);
     }),
     {
       from: "/videos/*",
@@ -396,7 +399,7 @@ await writeFile(
   `${JSON.stringify(
     {
       generatedAt: new Date().toISOString(),
-      note: "Build-time redirect inventory. Current static redirect pages and CloudFront pattern redirects are the active redirect mechanisms.",
+      note: "Build-time redirect inventory loaded into the environment's CloudFront KeyValueStore during deployment.",
       redirects,
     },
     null,

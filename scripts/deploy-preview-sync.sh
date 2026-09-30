@@ -19,6 +19,7 @@ fi
 
 : "${PR_NUMBER:?PR_NUMBER is required (example: PR_NUMBER=3)}"
 : "${S3_BUCKET_PREVIEW:?S3_BUCKET_PREVIEW is required (preview bucket)}"
+: "${KVS_ARN_PREVIEW:?KVS_ARN_PREVIEW is required (preview redirect store)}"
 : "${CLOUDFRONT_DIST_PREVIEW:?CLOUDFRONT_DIST_PREVIEW is required (preview distribution)}"
 
 if [[ ! -d dist ]]; then
@@ -50,6 +51,8 @@ until aws s3 sync dist/ "s3://${S3_BUCKET_PREVIEW}/pr-${PR_NUMBER}/" --delete --
   sleep 10
   attempt=$((attempt + 1))
 done
+
+node scripts/load-redirects.mjs "${KVS_ARN_PREVIEW}" "r:pr-${PR_NUMBER}:" dist/_redirect-map.json
 
 aws cloudfront create-invalidation \
   --distribution-id "${CLOUDFRONT_DIST_PREVIEW}" \
