@@ -1,9 +1,25 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { statSync } from "node:fs";
 import path from "node:path";
 import { withDb } from "../src/lib/db.js";
+import { US_STATE_TILES } from "../src/lib/geo/states.ts";
 
 const distDir = path.resolve("dist");
 const outputPath = path.join(distDir, "_redirect-map.json");
+
+const hasBuiltDestination = ({ to }) => {
+  try {
+    return statSync(path.join(distDir, to, "index.html")).isFile();
+  } catch (error) {
+    if (error.code === "ENOENT") return false;
+    throw error;
+  }
+};
+
+// Keep in sync with src/lib/pagination.ts PAGE_SIZE. That module can't be
+// imported here (this script runs under plain node, not the Astro/Vite
+// TypeScript resolver), so the value is mirrored as a constant instead.
+const PERSONNEL_PAGE_SIZE = 50;
 
 const normalizePath = (value) => {
   const trimmed = String(value || "").trim();
@@ -86,10 +102,11 @@ const redirects = await withDb(async (client) => {
         select
           bpp.payload->'agency'->>'slug' as slug,
           bpp.path as canonical_path
-        from public.federal_agency_branch fab
+        from public.agency a
         join public.build_page_payload bpp
           on bpp.page_type = 'agency'
-         and bpp.entity_id = fab.agency_id
+         and bpp.entity_id = a.id
+        where a.parent_federal_agency_id is not null
         order by bpp.payload->'agency'->>'slug'
       `,
     )
@@ -98,12 +115,12 @@ const redirects = await withDb(async (client) => {
   const civilCaseRows = (
     await client.query(
       `
-        select lp.state_or_territory_slug as state, c.slug
+        select split_part(lp.path, '/', 2) as state, c.slug
         from public.civil_cases c
         join public.location_path lp
           on lp.location_path_id = c.location_path_id
         where c.slug is not null
-        order by lp.state_or_territory_slug, c.slug
+        order by split_part(lp.path, '/', 2), c.slug
       `,
     )
   ).rows;
@@ -111,13 +128,13 @@ const redirects = await withDb(async (client) => {
   const reportRows = (
     await client.query(
       `
-        select lp.state_or_territory_slug as state, lp.path as location_path,
+        select split_part(lp.path, '/', 2) as state, lp.path as location_path,
                r.slug, r.incident_date
         from public.reviews r
         join public.location_path lp
           on lp.location_path_id = r.location_path_id
         where r.slug is not null
-        order by lp.state_or_territory_slug, r.slug
+        order by split_part(lp.path, '/', 2), r.slug
       `,
     )
   ).rows;
@@ -125,12 +142,40 @@ const redirects = await withDb(async (client) => {
   const stateRows = (
     await client.query(
       `
-        select distinct lower(lp.state_or_territory_slug) as state
+        select distinct lower(split_part(lp.path, '/', 2)) as state
         from public.agency a
         join public.location_path lp
           on lp.location_path_id = a.location_path_id
-        where lp.state_or_territory_slug is not null
-        order by lower(lp.state_or_territory_slug)
+        where split_part(lp.path, '/', 2) is not null
+        order by lower(split_part(lp.path, '/', 2))
+      `,
+    )
+  ).rows;
+
+  // Mirrors the per-officer "most recent active assignment" grouping done by
+  // loadPersonnelSummaries() (src/lib/data/personnel.ts): for each officer,
+  // pick their active (end_date is null) agency assignment with the latest
+  // start_date, then bucket by that agency's state. Reimplemented as SQL
+  // here (rather than imported) because personnel.ts pulls in TS modules
+  // that resolve via Astro/tsconfig path aliases, which plain node can't
+  // resolve when this script runs standalone.
+  const personnelCategoryCounts = (
+    await client.query(
+      `
+        with active_assignments as (
+          select distinct on (ao.personnel_id)
+            ao.personnel_id,
+            lower(a.state) as category
+          from public.agency_personnel ao
+          join public.agency a on a.id = ao.agency_id
+          where ao.end_date is null
+            and a.state is not null
+          order by ao.personnel_id, ao.start_date desc
+        )
+        select category, count(*)::int as total
+        from active_assignments
+        group by category
+        order by category
       `,
     )
   ).rows;
@@ -141,7 +186,17 @@ const redirects = await withDb(async (client) => {
   const legacyReportRedirects = legacyReportSlugAliases.flatMap((alias) => {
     const report = reportsBySlug.get(alias.newSlug);
     if (!report) {
-      throw new Error(`Missing report for legacy slug ${alias.oldSlug}`);
+      // The target report no longer exists under this slug — typically because
+      // intake re-ingested reports with new ids, so the manually-maintained
+      // newSlug is stale. An alias to a missing report can't produce a valid
+      // redirect target, so skip it (with a warning) rather than fail the whole
+      // build. Redirect coverage against real prior sitemaps is enforced
+      // separately by verify-redirect-coverage.mjs; reconcile stale aliases in
+      // legacyReportSlugAliases when the warning appears.
+      console.warn(
+        `Skipping legacy report slug alias ${alias.oldSlug}: no current report with slug ${alias.newSlug}.`,
+      );
+      return [];
     }
     return [
       {
@@ -178,7 +233,7 @@ const redirects = await withDb(async (client) => {
       from: normalizePath(`/law-enforcement-agency/federal/${agency.slug}/`),
       to: normalizePath(agency.canonical_path),
       status: 301,
-      source: "federal_agency_branch legacy agency route",
+      source: "agency.parent_federal_agency_id legacy agency route",
     })),
     ...civilCaseRows.map((civilCase) => ({
       from: normalizePath(
@@ -206,6 +261,24 @@ const redirects = await withDb(async (client) => {
       to: normalizePath("/find-records/"),
       status: 301,
       source: "root collection route retired",
+    },
+    {
+      from: normalizePath("/privacy-policy/"),
+      to: normalizePath("/legal-notice/privacy/"),
+      status: 301,
+      source: "legacy static route (Search Console 404 export)",
+    },
+    {
+      from: normalizePath("/partner/prosecutor/"),
+      to: normalizePath("/partner/"),
+      status: 301,
+      source: "legacy static route (Search Console 404 export)",
+    },
+    {
+      from: normalizePath("/partner/peace-officer-standards-and-training/"),
+      to: normalizePath("/partner/"),
+      status: 301,
+      source: "legacy static route (Search Console 404 export)",
     },
     {
       from: normalizePath("/law-enforcement-agency/"),
@@ -243,44 +316,68 @@ const redirects = await withDb(async (client) => {
       status: 301,
       source: "civil case form route renamed",
     },
-    ...stateRows.flatMap((entry) => [
-      {
-        from: normalizePath(`/report/${entry.state}/`),
-        to: normalizePath(`/${entry.state}/reports/`),
+    ...stateRows.flatMap((entry) =>
+      [
+        {
+          from: normalizePath(`/report/${entry.state}/`),
+          to: normalizePath(`/${entry.state}/reports/`),
+          status: 301,
+          source: "state-scoped report routes retired",
+        },
+        {
+          from: `/report/${entry.state}/page/*`,
+          to: normalizePath(`/${entry.state}/reports/`),
+          status: 301,
+          source: "state-scoped report pagination retired",
+        },
+        {
+          from: `/personnel/${entry.state}/page/*`,
+          to: normalizePath(`/${entry.state}/`),
+          status: 301,
+          source: "state-scoped personnel pagination retired",
+        },
+        {
+          from: normalizePath(`/civil-litigation/${entry.state}/`),
+          to: normalizePath(`/${entry.state}/`),
+          status: 301,
+          source: "state-scoped civil case routes retired",
+        },
+        {
+          from: `/civil-litigation/${entry.state}/page/*`,
+          to: normalizePath(`/${entry.state}/`),
+          status: 301,
+          source: "state-scoped civil case pagination retired",
+        },
+      ].filter(hasBuiltDestination),
+    ),
+    // Retain legacy state and federal category redirects only when the
+    // destination was generated in this build.
+    ...[...US_STATE_TILES.map((state) => state.code.toLowerCase()), "federal"]
+      .map((category) => ({
+        from: normalizePath(`/personnel/${category}/`),
+        to: normalizePath(`/${category}/`),
         status: 301,
-        source: "state-scoped report routes retired",
-      },
-      {
-        from: `/report/${entry.state}/page/*`,
-        to: normalizePath(`/${entry.state}/reports/`),
-        status: 301,
-        source: "state-scoped report pagination retired",
-      },
-      {
-        from: normalizePath(`/personnel/${entry.state}/`),
-        to: normalizePath(`/${entry.state}/`),
-        status: 301,
-        source: "state-scoped personnel routes retired",
-      },
-      {
-        from: `/personnel/${entry.state}/page/*`,
-        to: normalizePath(`/${entry.state}/`),
-        status: 301,
-        source: "state-scoped personnel pagination retired",
-      },
-      {
-        from: normalizePath(`/civil-litigation/${entry.state}/`),
-        to: normalizePath(`/${entry.state}/`),
-        status: 301,
-        source: "state-scoped civil case routes retired",
-      },
-      {
-        from: `/civil-litigation/${entry.state}/page/*`,
-        to: normalizePath(`/${entry.state}/`),
-        status: 301,
-        source: "state-scoped civil case pagination retired",
-      },
-    ]),
+        source: "personnel state route retired",
+      }))
+      .filter(hasBuiltDestination),
+    // Full parity with the retired
+    // src/pages/personnel/[category]/page/[...page].astro route: it
+    // generated a redirect stub for every pagination page 2..N per
+    // category, where N is derived from the personnel count for that
+    // category chunked by PAGE_SIZE.
+    ...personnelCategoryCounts.flatMap(({ category, total }) => {
+      const pageCount = Math.ceil(Number(total) / PERSONNEL_PAGE_SIZE);
+      const pages = [];
+      for (let page = 2; page <= pageCount; page += 1) {
+        pages.push({
+          from: normalizePath(`/personnel/${category}/page/${page}/`),
+          to: normalizePath(`/${category}/`),
+          status: 301,
+          source: "personnel pagination route retired",
+        });
+      }
+      return pages.filter(hasBuiltDestination);
+    }),
     {
       from: "/videos/*",
       to: "/find-records/",
@@ -302,7 +399,7 @@ await writeFile(
   `${JSON.stringify(
     {
       generatedAt: new Date().toISOString(),
-      note: "Build-time redirect inventory. Current static redirect pages and CloudFront pattern redirects are the active redirect mechanisms.",
+      note: "Build-time redirect inventory loaded into the environment's CloudFront KeyValueStore during deployment.",
       redirects,
     },
     null,

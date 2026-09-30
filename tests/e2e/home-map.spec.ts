@@ -19,11 +19,12 @@ test.describe("home map", () => {
   test("clicks a colored state and navigates to records", async ({ page }) => {
     await page.goto("/");
 
-    const stateLink = page
-      .locator(
-        '[data-usa-map] [data-map-link-type="state"][data-state-count]:not([data-state-count="0"])',
-      )
-      .first();
+    // A named, full-size state gives the pointer a stable target; the first
+    // populated region can be a tiny SVG shape such as D.C.
+    const stateLink = page.locator(
+      '[data-usa-map] [data-map-link-type="state"][data-state-id="tx"]',
+    );
+    await expect(stateLink).toHaveAttribute("data-state-count", /^[1-9]\d*$/);
     const targetPath = await stateLink.getAttribute("href");
 
     expect(targetPath).toBeTruthy();

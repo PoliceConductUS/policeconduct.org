@@ -4,7 +4,13 @@ import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import { loadLocationBuildPayloads } from "#src/lib/data/build-payloads.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
-import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+import {
+  buildDataset,
+  buildPublisherOrganization,
+  buildWebPage,
+  getSiteUrl,
+} from "#src/lib/structured-data.js";
+import { ORG_LEGAL_NAME } from "#src/lib/org.js";
 
 const pagePath = "/";
 const pageDescription =
@@ -56,51 +62,30 @@ const categoryCoverageStats = US_STATE_TILES.map((state) => {
         : `${state.name}: no entries yet`,
   };
 });
-const organization = {
-  "@type": "NonprofitOrganization",
-  "@id": `${pageUrl}#organization`,
-  name: "Institute for Police Conduct, Inc.",
-  alternateName: "PoliceConduct.org",
-  url: pageUrl,
-  description: pageDescription,
-  taxID: "99-3296620",
-  nonprofitStatus: "https://schema.org/Nonprofit501c3",
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: "8 The Green #11026",
-    addressLocality: "Dover",
-    addressRegion: "DE",
-    postalCode: "19901",
-    addressCountry: "US",
-  },
-  sameAs: [
-    "https://facebook.com/PoliceConductUS",
-    "https://twitter.com/PoliceConductUS",
-    "https://instagram.com/PoliceConductUS",
-    "https://www.tiktok.com/@policeconductus",
-    "https://linkedin.com/company/PoliceConductUS",
-    "https://youtube.com/@PoliceConductUS",
-    "https://www.reddit.com/user/PoliceConductUS/",
-    "https://github.com/PoliceConductUS",
-  ],
-};
-const structuredData = buildWebPage({
+const organization = buildPublisherOrganization(siteUrl);
+const webPage = buildWebPage({
   siteUrl,
   pageUrl,
-  name: "Institute for Police Conduct, Inc.",
+  name: ORG_LEGAL_NAME,
   description: pageDescription,
 });
-structuredData.mainEntity = organization;
+webPage.mainEntity = { "@id": organization["@id"] };
+const schemaContext = "https://schema.org";
+const structuredData = [
+  webPage,
+  { "@context": schemaContext, ...organization },
+  { "@context": schemaContext, ...buildDataset(siteUrl, { pageUrl }) },
+];
 ---
 
 <SiteLayout
-  title="A Civic Record for Police Interactions | PoliceConduct.org"
+  title="A Civic Record for Police Experiences | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
   socialImage="/img/webp/usa-1778524_1280.webp"
   structuredData={structuredData}
 >
-  <main>
+  <main id="main">
     <div class="w-100 overflow-hidden bg-gray-100" id="top">
       <div class="container position-relative">
         <div
@@ -189,7 +174,7 @@ structuredData.mainEntity = organization;
           <div class="col-lg-8">
             <h2 class="ipc-section-title mb-2">Use the record</h2>
             <p class="mb-0 text-light">
-              Use the site to document an interaction, research a local agency,
+              Use the site to document an experience, research a local agency,
               or work with others on public-interest reporting and oversight.
             </p>
           </div>
@@ -275,7 +260,7 @@ structuredData.mainEntity = organization;
               <div class="col-md-4" data-aos="fade-up">
                 <h4 class="ipc-type-h4 my-3">Patterns over time</h4>
                 <p class="text-black-50 mb-0">
-                  A single interaction may look different alongside earlier
+                  A single experience may look different alongside earlier
                   reports, public records, outcomes, and community accounts.
                 </p>
               </div>

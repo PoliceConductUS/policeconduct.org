@@ -3,8 +3,8 @@ import { withDb } from "#src/lib/db.js";
 export type CoverageOfficerRef = {
   slug: string;
   first_name: string;
-  last_name: string;
-  licenseType?: string | null;
+  last_name: string | null;
+  title?: string | null;
 };
 
 export type CoverageLink = {
@@ -32,12 +32,12 @@ const hydrateCoverageLinks = async (rows: any[]): Promise<CoverageLink[]> => {
             officer.slug,
             officer.first_name,
             officer.last_name,
-            agency_officer.license_type
-          from public.coverage_link_agency_officers coverage_officer
-          join public.agency_officers agency_officer
-            on agency_officer.id = coverage_officer.agency_officer_id
-          join public.officers officer
-            on officer.id = agency_officer.officer_id
+            agency_officer.title
+          from public.coverage_link_agency_personnel coverage_officer
+          join public.agency_personnel agency_officer
+            on agency_officer.id = coverage_officer.agency_personnel_id
+          join public.personnel officer
+            on officer.id = agency_officer.personnel_id
           where coverage_officer.coverage_link_id = any($1)
           order by officer.last_name, officer.first_name
         `,
@@ -53,7 +53,7 @@ const hydrateCoverageLinks = async (rows: any[]): Promise<CoverageLink[]> => {
       slug: officer.slug,
       first_name: officer.first_name,
       last_name: officer.last_name,
-      licenseType: officer.license_type || null,
+      title: officer.title || null,
     });
     officersByLink.set(officer.coverage_link_id, list);
   }
@@ -83,10 +83,10 @@ export const loadCoverageLinksForAgency = async (agencyId: string) => {
         `
           select distinct link.*
           from public.coverage_links link
-          join public.coverage_link_agency_officers coverage_officer
+          join public.coverage_link_agency_personnel coverage_officer
             on coverage_officer.coverage_link_id = link.id
-          join public.agency_officers agency_officer
-            on agency_officer.id = coverage_officer.agency_officer_id
+          join public.agency_personnel agency_officer
+            on agency_officer.id = coverage_officer.agency_personnel_id
           where agency_officer.agency_id = $1
           ${orderClause}
         `,
@@ -98,64 +98,35 @@ export const loadCoverageLinksForAgency = async (agencyId: string) => {
   return hydrateCoverageLinks(rows);
 };
 
+let coverageByPersonnel: Promise<Map<string, CoverageLink[]>> | undefined;
+
 export const loadCoverageLinksForOfficer = async (officerId: string) => {
-  const rows = await withDb(async (client) => {
-    return (
-      await client.query(
-        `
-          select distinct link.*
-          from public.coverage_links link
-          join public.coverage_link_agency_officers coverage_officer
-            on coverage_officer.coverage_link_id = link.id
-          join public.agency_officers agency_officer
-            on agency_officer.id = coverage_officer.agency_officer_id
-          where agency_officer.officer_id = $1
-          ${orderClause}
-        `,
-        [officerId],
-      )
-    ).rows;
-  });
-
-  return hydrateCoverageLinks(rows);
-};
-
-export const loadCoverageLinksForReport = async (reportId: string) => {
-  const rows = await withDb(async (client) => {
-    return (
-      await client.query(
-        `
-          select distinct link.*
-          from public.coverage_links link
-          join public.coverage_link_reports coverage_report
-            on coverage_report.coverage_link_id = link.id
-          where coverage_report.review_id = $1
-          ${orderClause}
-        `,
-        [reportId],
-      )
-    ).rows;
-  });
-
-  return hydrateCoverageLinks(rows);
-};
-
-export const loadCoverageLinksForCivilCase = async (civilCaseId: string) => {
-  const rows = await withDb(async (client) => {
-    return (
-      await client.query(
-        `
-          select distinct link.*
-          from public.coverage_links link
-          join public.coverage_link_civil_cases coverage_case
-            on coverage_case.coverage_link_id = link.id
-          where coverage_case.civil_case_id = $1
-          ${orderClause}
-        `,
-        [civilCaseId],
-      )
-    ).rows;
-  });
-
-  return hydrateCoverageLinks(rows);
+  coverageByPersonnel ??= (async () => {
+    const rows = await withDb(
+      async (client) =>
+        (
+          await client.query(`
+        select distinct link.*, assignment.personnel_id
+        from public.coverage_links link
+        join public.coverage_link_agency_personnel linked
+          on linked.coverage_link_id = link.id
+        join public.agency_personnel assignment
+          on assignment.id = linked.agency_personnel_id
+        ${orderClause}
+      `)
+        ).rows,
+    );
+    const uniqueRows = [...new Map(rows.map((row) => [row.id, row])).values()];
+    const links = new Map(
+      (await hydrateCoverageLinks(uniqueRows)).map((link) => [link.id, link]),
+    );
+    const map = new Map<string, CoverageLink[]>();
+    for (const row of rows) {
+      const personnelLinks = map.get(row.personnel_id) ?? [];
+      personnelLinks.push(links.get(row.id)!);
+      map.set(row.personnel_id, personnelLinks);
+    }
+    return map;
+  })();
+  return (await coverageByPersonnel).get(officerId) ?? [];
 };

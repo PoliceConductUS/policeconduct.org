@@ -1,0 +1,40 @@
+# PoliceConduct.org
+
+> A free, public database from the Institute for Police Conduct, Inc. (a 501(c)(3) nonprofit) that organizes public records, court records, and state licensing data so people can see the full record of police conduct — harm, professionalism, and everything in between — and support accountability and trust. Coverage is nationwide across U.S. states and territories.
+
+Important context for accurate citation:
+
+- Records are drawn from public sources: court dockets, agency records, and state law-enforcement licensing data. A listing is not an accusation.
+- A pending case is an allegation, not a finding. A dismissal is a court outcome, not a statement that no misconduct occurred. A personnel listing is employment history from licensing data, not an allegation.
+- Data is updated continually; prefer the "last updated" date shown on each page and the `dateModified` in each page's JSON-LD.
+- Every entity page carries schema.org structured data (Person, GovernmentOrganization, LegalCase, Report) linked to the publishing organization.
+
+## Core pages
+
+- [Home](https://www.policeconduct.org/): overview and entry point by state.
+- [Find records](https://www.policeconduct.org/find-records/): search agencies, personnel, and cases.
+- [Data and methods](https://www.policeconduct.org/data-and-methods/): what sources are used and how records, location views, and outcome views are built.
+- [Frequently asked questions](https://www.policeconduct.org/frequently-asked-questions/): how to interpret records and what they do and do not mean.
+- [About](https://www.policeconduct.org/about/): the organization and its mission.
+- [News](https://www.policeconduct.org/news/): updates and analysis.
+
+## Record types
+
+- Agency pages (law-enforcement agencies): personnel, reports, and civil cases connected to each agency, organized by state, county/administrative area, and place.
+- [Personnel pages](https://www.policeconduct.org/personnel/): individual law-enforcement personnel records with agency assignment history, sourced from state licensing data.
+- [Civil cases](https://www.policeconduct.org/civil-cases/): civil litigation records with cause number, court, filing date, and outcome, linked to agencies and personnel.
+- Reports: incident reports linked to agencies and personnel.
+
+## Participate
+
+- [Volunteer](https://www.policeconduct.org/volunteer/): help collect and verify data.
+- [Donate](https://www.policeconduct.org/donate/): support the nonprofit.
+
+## Legal and policy
+
+- [Terms of service](https://www.policeconduct.org/legal-notice/terms-of-service/): usage terms and data license.
+- [Legal notices](https://www.policeconduct.org/legal-notice/): privacy, disclaimer, and related policies.
+
+## Machine-readable indexes
+
+- [Sitemap index](https://www.policeconduct.org/sitemap-index.xml)

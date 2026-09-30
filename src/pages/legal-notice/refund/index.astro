@@ -1,6 +1,5 @@
 ---
-import SiteLayout from "#src/layouts/SiteLayout.astro";
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const pagePath = "/legal-notice/refund/";
@@ -16,41 +15,32 @@ const structuredData = buildWebPage({
 });
 ---
 
-<SiteLayout
+<PageShell
   title="Refund | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Legal Notice", href: "/legal-notice/" },
+    { label: "Refund Policy", href: pagePath, current: true },
+  ]}
+  heading="REFUND POLICY"
 >
-  <main class="flex-grow-1 py-vh-3">
-    <div class="container">
-      <Breadcrumbs
-        items={[
-          { label: "Legal Notice", href: "/legal-notice/" },
-          { label: "Refund Policy", href: pagePath, current: true },
-        ]}
-      />
-      <h1 class="ipc-page-title">REFUND POLICY</h1>
-      <p>
-        <strong>Last updated</strong>
-        <strong>January 14, 2026</strong>
-      </p>
-      <section>
-        <h2>REFUNDS</h2>
-        <p>All sales are final and no refund will be issued.</p>
-      </section>
-      <section>
-        <h2>QUESTIONS</h2>
-        <p>
-          If you have any questions concerning our return policy, please contact
-          us at:
-        </p>
-        <p>
-          <a href="mailto:support@policeconduct.org"
-            >support@policeconduct.org</a
-          >
-        </p>
-      </section>
-    </div>
-  </main>
-</SiteLayout>
+  <p>
+    <strong>Last updated:</strong> January 14, 2026
+  </p>
+  <section>
+    <h2>REFUNDS</h2>
+    <p>All sales are final and no refund will be issued.</p>
+  </section>
+  <section>
+    <h2>QUESTIONS</h2>
+    <p>
+      If you have any questions concerning our return policy, please contact us
+      at:
+    </p>
+    <p>
+      <a href="mailto:support@policeconduct.org">support@policeconduct.org</a>
+    </p>
+  </section>
+</PageShell>

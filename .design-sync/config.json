@@ -1,0 +1,5 @@
+{
+  "projectId": "6141647b-d0aa-4124-9ebc-628b0fd47be3",
+  "shape": "reference",
+  "notes": "Not a component library. This repo is an Astro app; the synced 'design system' is the civic-index-redesign HTML mockups uploaded as full-page reference cards. Built off-script (no converter) by scratchpad/build.mjs equivalent — see .design-sync/NOTES.md."
+}

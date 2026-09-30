@@ -1,0 +1,202 @@
+[
+  {
+    "state": "al",
+    "name": "Alabama Peace Officers’ Standards and Training Commission",
+    "abbreviation": "APOSTC",
+    "website": "https://www.apostc.alabama.gov/",
+    "sourceUrl": "https://www.apostc.alabama.gov/",
+    "notes": "Official commission site identifies APOSTC and its certification and officer reporting responsibilities."
+  },
+  {
+    "state": "ak",
+    "name": "Alaska Police Standards Council",
+    "abbreviation": "APSC",
+    "website": "https://dps.alaska.gov/apsc/",
+    "sourceUrl": "https://dps.alaska.gov/apsc/",
+    "notes": "Official site identifies the council as setting and enforcing officer training, certification, ethics, and conduct standards."
+  },
+  {
+    "state": "az",
+    "name": "Arizona Peace Officer Standards and Training Board",
+    "abbreviation": "AZPOST",
+    "website": "https://post.az.gov/",
+    "sourceUrl": "https://post.az.gov/",
+    "notes": "Official board site identifies AZPOST and its peace officer certification process."
+  },
+  {
+    "state": "ar",
+    "name": "Arkansas Commission on Law Enforcement Standards and Training",
+    "abbreviation": "CLEST",
+    "website": "https://dps.arkansas.gov/law-enforcement/clest/",
+    "sourceUrl": "https://dps.arkansas.gov/law-enforcement/clest/",
+    "notes": "Selected the commission, not the Arkansas Law Enforcement Training Academy. Arkansas DPS also lists the full state-prefixed commission name at https://dps.arkansas.gov/."
+  },
+  {
+    "state": "ca",
+    "name": "California Commission on Peace Officer Standards and Training",
+    "abbreviation": "POST",
+    "website": "https://post.ca.gov/",
+    "sourceUrl": "https://post.ca.gov/certification-bureau",
+    "notes": "Official certification bureau page identifies the full commission name and POST abbreviation, certificate issuance, and certification status records."
+  },
+  {
+    "state": "co",
+    "name": "Peace Officer Standards and Training Board",
+    "abbreviation": "POST",
+    "website": "https://post.colorado.gov/",
+    "sourceUrl": "https://post.colorado.gov/about-post/post-board",
+    "notes": "Official Colorado POST page identifies the board and its policy and certification appeal roles; the homepage identifies Colorado Peace Officer Standards & Training (POST)."
+  },
+  {
+    "state": "ct",
+    "name": "Police Officer Standards and Training Council",
+    "abbreviation": "POSTC",
+    "website": "https://portal.ct.gov/despp/services/post",
+    "sourceUrl": "https://portal.ct.gov/despp/services/post",
+    "notes": "Official Connecticut site explicitly states that POSTC certifies and decertifies members of Connecticut law enforcement units."
+  },
+  {
+    "state": "de",
+    "name": "Police Officer Standards and Training Commission",
+    "abbreviation": "POST",
+    "website": "https://post.delaware.gov/",
+    "sourceUrl": "https://post.delaware.gov/",
+    "notes": "Current Delaware authority. Formerly the Council on Police Training; official site describes certification and misconduct oversight."
+  },
+  {
+    "state": "fl",
+    "name": "Criminal Justice Standards & Training Commission",
+    "abbreviation": "CJSTC",
+    "website": "https://www.fdle.state.fl.us/CJSTC/Commission",
+    "sourceUrl": "https://www.fdle.state.fl.us/CJSTC/Commission",
+    "notes": "Official FDLE page identifies the commission and expressly lists officer certification, sanctions, and the State Officer Certification Examination among its responsibilities."
+  },
+  {
+    "state": "ga",
+    "name": "Georgia Peace Officer Standards & Training Council",
+    "abbreviation": "POST",
+    "website": "https://gapost.org/",
+    "sourceUrl": "https://gapost.org/",
+    "notes": "Official council website, distinct from the Georgia Public Safety Training Center. State certification rules also identify the council at https://rules.sos.ga.gov/gac/464-3."
+  },
+  {
+    "state": "hi",
+    "name": "Hawaiʻi Law Enforcement Standards Board",
+    "abbreviation": "LESB",
+    "website": "https://ag.hawaii.gov/law-enforcement-standards-board/",
+    "sourceUrl": "https://ag.hawaii.gov/law-enforcement-standards-board/",
+    "notes": "Authority identity verified. Do not imply its certification program is already operational: official 2026 board testimony described staffing and implementation still in progress. SB2519 HD1 CD1 moves certification dates to 2028; official legislative reporting records enactment as Act 107 on June 8, 2026. Supporting sources: https://data.capitol.hawaii.gov/sessions/session2026/bills/SB2519_CD1_.PDF and https://data.capitol.hawaii.gov/advreports/advreport.aspx?measuretype=SB&report=deadline&rpt_type=passLeg_finalDecking&title=Senate+bills+that+have+passed+the+Legislature+or+been+decked+for+Final+Reading&year=2026."
+  },
+  {
+    "state": "id",
+    "name": "Idaho Peace Officer Standards and Training Council",
+    "abbreviation": "POST",
+    "website": "https://post.idaho.gov/",
+    "sourceUrl": "https://post.idaho.gov/about-post/",
+    "notes": "Selected the council as the statutory authority. The POST division provides certification and maintains records as trustee for the council; the official page says POST derives statutory authority from the POST Council. Council name also appears in IDAPA 11.11.01."
+  },
+  {
+    "state": "il",
+    "name": "Illinois Law Enforcement Training and Standards Board",
+    "abbreviation": "ILETSB",
+    "website": "https://www.ptb.illinois.gov/",
+    "sourceUrl": "https://www.ptb.illinois.gov/",
+    "notes": "Official board website identifies full name and abbreviation. The state police academy confirms that officer certification is obtained from ILETSB at https://isp.illinois.gov/AcademyTraining/BasicTraining."
+  },
+  {
+    "state": "in",
+    "name": "Law Enforcement Training Board",
+    "abbreviation": "LETB",
+    "website": "https://www.in.gov/ilea/about-the-academy/training-board/",
+    "sourceUrl": "https://www.in.gov/ilea/about-the-academy/training-board/",
+    "notes": "Selected the governing board, not the academy. Official decertification procedure identifies the LETB hearing and revocation role: https://www.in.gov/ilea/files/Decertification-Procedures.pdf."
+  },
+  {
+    "state": "ia",
+    "name": "Iowa Law Enforcement Academy Council",
+    "abbreviation": null,
+    "website": "https://ilea.iowa.gov/about/academy-council",
+    "sourceUrl": "https://www.legis.iowa.gov/docs/ico/chapter/80B.pdf",
+    "notes": "Selected the statutory council, not only the academy training facility. Iowa Code 80B.3 identifies the council; 80B.13 and 80B.13A govern its certification powers. Current official council page: https://ilea.iowa.gov/about/academy-council. No council-specific abbreviation asserted."
+  },
+  {
+    "state": "ks",
+    "name": "Kansas Commission on Peace Officers’ Standards and Training",
+    "abbreviation": "KSCPOST",
+    "website": "https://kscpost.gov/",
+    "sourceUrl": "https://kscpost.gov/certification/",
+    "notes": "Official certification page identifies the commission; https://kscpost.gov/training/ provides the KSCPOST abbreviation. Distinct from the Kansas Law Enforcement Training Center."
+  },
+  {
+    "state": "ky",
+    "name": "Kentucky Law Enforcement Council",
+    "abbreviation": "KLEC",
+    "website": "https://justice.ky.gov/Boards-Commissions/Pages/klec.aspx",
+    "sourceUrl": "https://justice.ky.gov/Boards-Commissions/KLEC/about/Pages/default.aspx",
+    "notes": "Official council history and duties page expressly identifies certification of police officers among council functions."
+  },
+  {
+    "state": "la",
+    "name": "Council on Peace Officer Standards and Training",
+    "abbreviation": "POST",
+    "website": "https://lcle.la.gov/programs/post/",
+    "sourceUrl": "https://wwwprd.doa.louisiana.gov/boardsandcommissions/viewBoard.cfm?board=440",
+    "notes": "Exact council name from Louisiana's official boards directory and R.S. 40:2403. Council program page at https://lcle.la.gov/programs/post/ uses POST and describes certification. The council operates under the Louisiana Commission on Law Enforcement and Administration of Criminal Justice."
+  },
+  {
+    "state": "me",
+    "name": "Maine Criminal Justice Academy Board of Trustees",
+    "abbreviation": null,
+    "website": "https://www.maine.gov/dps/mcja/about/board",
+    "sourceUrl": "https://www.maine.gov/dps/mcja/about/board",
+    "notes": "Selected the Board of Trustees because the official page expressly assigns it training and certification of Maine law enforcement officers. Statutory support: https://www.legis.maine.gov/statutes/25/title25sec2803-A.html. No board-specific abbreviation asserted."
+  },
+  {
+    "state": "md",
+    "name": "Police Training and Standards Commission",
+    "abbreviation": "PTSC",
+    "website": "https://mpctc.dpscs.maryland.gov/ptsc.htm",
+    "sourceUrl": "https://mpctc.dpscs.maryland.gov/ptsc.htm",
+    "notes": "Official page expressly identifies PTSC as Maryland's police certification and training authority. Selected the police commission, not the combined administrative agency or Correctional Training Commission."
+  },
+  {
+    "state": "ma",
+    "name": "Massachusetts Peace Officer Standards and Training Commission",
+    "abbreviation": "POST",
+    "website": "https://mapostcommission.gov/",
+    "sourceUrl": "https://mapostcommission.gov/",
+    "notes": "Official site identifies mandatory officer certification, discipline, and training responsibilities. Selected the POST Commission, not the Municipal Police Training Committee."
+  },
+  {
+    "state": "mi",
+    "name": "Michigan Commission on Law Enforcement Standards",
+    "abbreviation": "MCOLES",
+    "website": "https://www.michigan.gov/mcoles",
+    "sourceUrl": "https://www.michigan.gov/en/mcoles/standard-training/career-start",
+    "notes": "Official page states that Michigan law enforcement licensing must be approved through MCOLES."
+  },
+  {
+    "state": "mn",
+    "name": "Board of Peace Officer Standards and Training",
+    "abbreviation": "POST",
+    "website": "https://mn.gov/post/",
+    "sourceUrl": "https://mn.gov/post/boardscommittees/rules/postruleschap6700/",
+    "notes": "Official Minnesota board page identifies its training and licensing rules. Minnesota Rule 6700.0200 states the board's selection, training, and licensing authority: https://www.revisor.mn.gov/rules/6700/full."
+  },
+  {
+    "state": "ms",
+    "name": "Board on Law Enforcement Officer Standards and Training",
+    "abbreviation": "BLEOST",
+    "website": "https://www.dps.ms.gov/public-safety-planning/standards-and-training/BLEOST",
+    "sourceUrl": "https://www.dps.ms.gov/node/1519",
+    "notes": "Official Mississippi FAQ identifies BLEOST's minimum employment, training, certification, and professional conduct standards."
+  },
+  {
+    "state": "mo",
+    "name": "Peace Officer Standards and Training Program",
+    "abbreviation": "POST",
+    "website": "https://dps.mo.gov/dir/programs/post/",
+    "sourceUrl": "https://dps.mo.gov/dir/programs/post/",
+    "notes": "Selected the Missouri DPS regulatory program, which the official page explicitly says licenses peace officers and investigates license discipline. A separate POST Commission sets training standards and receives program staff support; Missouri R.S. 590.030 assigns license issuance to the DPS director."
+  }
+]

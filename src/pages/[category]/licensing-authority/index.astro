@@ -1,0 +1,37 @@
+---
+import PageShell from "#src/layouts/PageShell.astro";
+import LicensingAuthorityRecords from "#src/components/LicensingAuthorityRecords.astro";
+import {
+  loadStateAuthorityPaths,
+  loadStateAuthority,
+  loadAuthorityRecords,
+} from "#src/lib/data/licensing-authority.js";
+import "#src/styles/civic-ledger.css";
+
+export async function getStaticPaths() {
+  return loadStateAuthorityPaths();
+}
+const authority = await loadStateAuthority(`/${Astro.params.category}/`);
+const records = await loadAuthorityRecords(authority.id);
+const pagePath = `${authority.statePath}licensing-authority/`;
+---
+
+<PageShell
+  title={`${authority.name} | PoliceConduct.org`}
+  description={`Licenses, license actions, and discipline records from ${authority.name}.`}
+  pagePath={pagePath}
+  heading={authority.name}
+  breadcrumbs={[
+    { label: authority.stateName, href: authority.statePath },
+    { label: "Licensing authority", current: true },
+  ]}
+>
+  {
+    authority.website && (
+      <a slot="actions" href={authority.website} rel="noopener">
+        Official website
+      </a>
+    )
+  }
+  <LicensingAuthorityRecords {...records} />
+</PageShell>

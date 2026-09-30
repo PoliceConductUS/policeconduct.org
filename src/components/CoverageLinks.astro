@@ -1,0 +1,52 @@
+---
+import type { CoverageLink } from "#src/lib/data/coverage.js";
+type Props = { links: CoverageLink[] };
+const { links } = Astro.props;
+const publicationDate = (value: string) =>
+  new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(value));
+---
+
+{
+  links.length ? (
+    <section class="civic-section">
+      <h2>News coverage</h2>
+      <ul>
+        {links.map((link) => (
+          <li>
+            <a href={link.url} target="_blank" rel="noopener noreferrer">
+              {link.title}
+            </a>
+            {link.source_name ? <p>{link.source_name}</p> : null}
+            {link.published_at ? (
+              <p>
+                <time datetime={new Date(link.published_at).toISOString()}>
+                  {publicationDate(link.published_at)}
+                </time>
+              </p>
+            ) : null}
+            {link.notes ? <p>{link.notes}</p> : null}
+            {link.officers.length ? (
+              <p>
+                {link.officers.map((person, index) => (
+                  <>
+                    {index ? ", " : ""}
+                    <a href={`/personnel/${person.slug}/`}>
+                      {[person.first_name, person.last_name]
+                        .filter(Boolean)
+                        .join(" ")}
+                    </a>
+                  </>
+                ))}
+              </p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </section>
+  ) : null
+}

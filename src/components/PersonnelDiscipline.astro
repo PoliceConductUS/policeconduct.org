@@ -1,0 +1,176 @@
+---
+import type { DisciplineRecord } from "#src/lib/data/licensing.js";
+
+const { records } = Astro.props as { records: DisciplineRecord[] };
+const formatRecordedDate = (value: string) =>
+  new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(value));
+---
+
+<div class="personnel-post-list">
+  {
+    records.map((record) => (
+      <article
+        class="personnel-post-record"
+        data-personnel-discipline-id={record.id}
+      >
+        <div class="personnel-post-summary">
+          <h3>{record.action}</h3>
+          <a href={record.authority.href}>
+            {record.authority.abbreviation || record.authority.name}
+          </a>
+        </div>
+        <dl class="personnel-post-facts">
+          {record.effectiveDate && (
+            <div>
+              <dt>Effective date</dt>
+              <dd>{formatRecordedDate(record.effectiveDate)}</dd>
+            </div>
+          )}
+          {record.caseNumber && (
+            <div>
+              <dt>Case number</dt>
+              <dd>{record.caseNumber}</dd>
+            </div>
+          )}
+          {record.agencies.length > 0 && (
+            <div>
+              <dt>Linked agencies</dt>
+              <dd>
+                <ul class="personnel-post-agencies">
+                  {record.agencies.map((agency) => (
+                    <li>{agency.name}</li>
+                  ))}
+                </ul>
+              </dd>
+            </div>
+          )}
+        </dl>
+        {record.documentUrl && (
+          <a href={record.documentUrl} rel="noopener">
+            Source document
+          </a>
+        )}
+        {(record.expirationDate ||
+          record.allegation ||
+          record.violation ||
+          record.finding ||
+          record.chiefAction ||
+          record.sanction) && (
+          <details>
+            <summary>
+              Record details
+              <span class="visually-hidden">
+                {" "}
+                for {record.action}
+                {record.caseNumber && `, case ${record.caseNumber}`}
+              </span>
+            </summary>
+            <dl class="personnel-post-details">
+              {record.expirationDate && (
+                <div>
+                  <dt>End date</dt>
+                  <dd>{formatRecordedDate(record.expirationDate)}</dd>
+                </div>
+              )}
+              {record.allegation && (
+                <div>
+                  <dt>Allegation</dt>
+                  <dd>{record.allegation}</dd>
+                </div>
+              )}
+              {record.violation && (
+                <div>
+                  <dt>Rule violation</dt>
+                  <dd>{record.violation}</dd>
+                </div>
+              )}
+              {record.finding && (
+                <div>
+                  <dt>Finding</dt>
+                  <dd>{record.finding}</dd>
+                </div>
+              )}
+              {record.chiefAction && (
+                <div>
+                  <dt>Chief's action</dt>
+                  <dd>{record.chiefAction}</dd>
+                </div>
+              )}
+              {record.sanction && (
+                <div>
+                  <dt>Penalty</dt>
+                  <dd>{record.sanction}</dd>
+                </div>
+              )}
+            </dl>
+          </details>
+        )}
+      </article>
+    ))
+  }
+</div>
+
+<style>
+  .personnel-post-record {
+    border-top: 1px solid var(--ipc-color-rule);
+    padding: 1rem 0;
+    overflow-wrap: anywhere;
+  }
+  .personnel-post-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+  }
+  .personnel-post-summary h3 {
+    margin: 0;
+  }
+  .personnel-post-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.5rem;
+    margin: 0.65rem 0;
+  }
+  .personnel-post-facts > div {
+    min-width: 8rem;
+    max-width: 100%;
+  }
+  .personnel-post-record dt {
+    color: var(--ipc-color-ink-soft);
+    font-size: var(--ipc-type-small);
+    font-weight: var(--ipc-weight-label);
+  }
+  .personnel-post-record dd {
+    margin: 0;
+  }
+  .personnel-post-agencies {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .personnel-post-record details {
+    margin-top: 0.75rem;
+  }
+  .personnel-post-record summary {
+    color: var(--ipc-color-teal-ink);
+    cursor: pointer;
+    width: fit-content;
+  }
+  .personnel-post-details {
+    margin: 0.75rem 0 0;
+    max-width: 70ch;
+  }
+  .personnel-post-details > div + div {
+    margin-top: 0.75rem;
+  }
+  .personnel-post-record :focus-visible {
+    outline: 2px solid var(--ipc-color-teal-ink);
+    outline-offset: 3px;
+  }
+</style>

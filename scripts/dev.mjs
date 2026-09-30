@@ -47,29 +47,36 @@ if (missingVars.length > 0) {
 
 const args = process.argv.slice(2);
 
-console.log("Refreshing build projections...");
-const refresh = spawn(
-  process.execPath,
-  ["scripts/refresh-build-projections.mjs"],
-  {
+const runStep = async (label, scriptPath, failureMessage) => {
+  console.log(label);
+  const step = spawn(process.execPath, [scriptPath], {
     cwd: repoRoot,
     env: process.env,
     stdio: "inherit",
-  },
+  });
+  const result = await new Promise((resolve) => {
+    step.on("exit", (code, signal) => resolve({ code, signal }));
+  });
+  if (result.signal) {
+    process.kill(process.pid, result.signal);
+  }
+  if (result.code !== 0) {
+    console.error(failureMessage);
+    process.exit(result.code ?? 1);
+  }
+};
+
+await runStep(
+  "Generating icon sprite...",
+  "scripts/generate-icon-sprite.mjs",
+  "Dev startup failed: icon sprite generation failed.",
 );
 
-const refreshResult = await new Promise((resolve) => {
-  refresh.on("exit", (code, signal) => resolve({ code, signal }));
-});
-
-if (refreshResult.signal) {
-  process.kill(process.pid, refreshResult.signal);
-}
-
-if (refreshResult.code !== 0) {
-  console.error("Dev startup failed: build projection refresh failed.");
-  process.exit(refreshResult.code ?? 1);
-}
+await runStep(
+  "Refreshing build projections...",
+  "scripts/refresh-build-projections.mjs",
+  "Dev startup failed: build projection refresh failed.",
+);
 
 const astroBin = path.join(
   repoRoot,

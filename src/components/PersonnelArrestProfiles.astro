@@ -1,0 +1,163 @@
+---
+import type { ArrestProfile } from "#src/lib/data/arrest-profiles.js";
+import { formatShortDate } from "#src/lib/format.js";
+interface Props {
+  profiles: ArrestProfile[];
+}
+const { profiles } = Astro.props;
+const dimensions = [
+  ["by_year", "Year"],
+  ["by_month", "Month"],
+  ["by_iso_week", "Week (ISO calendar)"],
+  ["by_day_of_week", "Day of week"],
+  ["by_offense", "Offense as recorded"],
+  ["by_charge_level", "Charge level source codes"],
+  ["by_district", "District source codes"],
+] as const;
+const collator = new Intl.Collator("en", { numeric: true });
+const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const rowsFor = (
+  profile: ArrestProfile,
+  key: keyof ArrestProfile["breakdowns"],
+) =>
+  Object.entries(profile.breakdowns[key]!).sort(([left], [right]) => {
+    if (key === "by_day_of_week") {
+      const a = days.indexOf(left),
+        b = days.indexOf(right);
+      if (a !== -1 || b !== -1) return (a === -1 ? 7 : a) - (b === -1 ? 7 : b);
+    }
+    return collator.compare(left, right);
+  });
+---
+
+{
+  profiles.length > 0 && (
+    <section id="arrest-records" class="arrest-records">
+      <div class="arrest-records-heading">
+        <h2>Arrest records</h2>
+        <p>
+          These are recorded arrests linked to this agency assignment. They do
+          not measure safety or misconduct.
+        </p>
+      </div>
+      {profiles.map((profile) => (
+        <article data-arrest-profile-id={profile.id}>
+          <h3>
+            <a href={profile.agency.href}>{profile.agency.name}</a>
+          </h3>
+          <p>
+            <strong>
+              {profile.coverage.totalArrests.toLocaleString("en-US")} recorded
+              arrests
+            </strong>{" "}
+            · Recorded months: {profile.coverage.firstMonth} to{" "}
+            {profile.coverage.lastMonth}
+          </p>
+          <p>
+            Source: {profile.coverage.source} · Updated{" "}
+            {formatShortDate(profile.updatedAt)}
+          </p>
+          <p>
+            Each share uses this profile’s{" "}
+            {profile.coverage.totalArrests.toLocaleString("en-US")} recorded
+            arrests. Source wording and unknown groups are kept as recorded.
+            District codes have the source’s meaning; they do not identify
+            arrest locations here.
+          </p>
+          {dimensions
+            .filter(
+              ([key]) =>
+                key === "by_year" ||
+                key === "by_month" ||
+                key === "by_iso_week" ||
+                key === "by_day_of_week" ||
+                Object.hasOwn(profile.breakdowns, key),
+            )
+            .map(([key, label]) => (
+              <details open={key === "by_year" || key === "by_day_of_week"}>
+                <summary>
+                  {label} (
+                  {Object.keys(profile.breakdowns[key]!).length.toLocaleString(
+                    "en-US",
+                  )}{" "}
+                  groups)
+                </summary>
+                <div class="table-responsive">
+                  <table class="table" data-breakdown={key}>
+                    <caption>{label}</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">{label}</th>
+                        <th scope="col">Recorded arrests</th>
+                        <th scope="col">Share of profile total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rowsFor(profile, key).map(([label, count]) => (
+                        <tr>
+                          <th scope="row">{label}</th>
+                          <td>{count.toLocaleString("en-US")}</td>
+                          <td>
+                            {profile.coverage.totalArrests === 0
+                              ? "0.0"
+                              : (
+                                  (count / profile.coverage.totalArrests) *
+                                  100
+                                ).toFixed(1)}
+                            %
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            ))}
+        </article>
+      ))}
+    </section>
+  )
+}
+
+<style>
+  .arrest-records {
+    grid-column: 1 / -1;
+    background: var(--ipc-color-paper);
+    border: 1px solid var(--ipc-color-rule);
+    border-radius: 0.45rem;
+    padding: 1rem 1.1rem;
+  }
+  .arrest-records-heading {
+    margin-bottom: 0.85rem;
+  }
+  .arrest-records h2 {
+    margin: 0 0 0.25rem;
+  }
+  .arrest-records p {
+    color: var(--ipc-color-ink);
+  }
+  .arrest-records a {
+    color: var(--ipc-color-teal);
+  }
+  .arrest-records details {
+    margin-bottom: 0.75rem;
+  }
+  .arrest-records summary {
+    cursor: pointer;
+    font-weight: var(--ipc-weight-label);
+  }
+  .arrest-records table {
+    min-width: 32rem;
+  }
+  @media (max-width: 575.98px) {
+    .arrest-records table {
+      min-width: 0;
+      width: 100%;
+      table-layout: fixed;
+    }
+    .arrest-records th,
+    .arrest-records td {
+      overflow-wrap: anywhere;
+    }
+  }
+</style>

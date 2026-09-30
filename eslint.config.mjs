@@ -45,6 +45,7 @@ export default [
   {
     files: [
       "public/**/*.js",
+      "mockups/**/*.js",
       "src/lib/client/**/*.{js,ts}",
       "src/components/**/*.astro",
       "src/pages/**/*.astro",

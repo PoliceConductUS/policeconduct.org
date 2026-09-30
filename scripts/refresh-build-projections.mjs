@@ -371,17 +371,6 @@ const reportPayload = ({ report }) => {
   };
 };
 
-const locationReportPayload = (report) => ({
-  id: report.id,
-  reportType: report.reportType,
-  reportKey: report.reportKey,
-  title: report.title,
-  summary: report.summary,
-  payload: report.payload,
-  sortOrder: report.sortOrder,
-  sources: report.sources,
-});
-
 const insertJsonRow = async (client, row) => {
   await client.query(
     `
@@ -416,12 +405,6 @@ const fetchLocationRowsByPath = async (client, paths) => {
         location_path_id,
         path,
         level,
-        state_or_territory_slug,
-        administrative_area_slug,
-        place_slug,
-        state_or_territory_name,
-        administrative_area_name,
-        place_name,
         parent_location_path_id
       from public.location_path
       where path = any($1)
@@ -459,12 +442,12 @@ const fetchLocationRecordCounts = async (client, locations) => {
             on agency_location.path like target.path || '%'
           join public.agency scoped_agency
             on scoped_agency.location_path_id = agency_location.location_path_id
-          join public.agency_officers target_assignment
+          join public.agency_personnel target_assignment
             on target_assignment.agency_id = scoped_agency.id
-          join public.agency_officers case_assignment
-            on case_assignment.officer_id = target_assignment.officer_id
-          join public.civil_case_officers cco
-            on cco.agency_officer_id = case_assignment.id
+          join public.agency_personnel case_assignment
+            on case_assignment.personnel_id = target_assignment.personnel_id
+          join public.civil_case_personnel cco
+            on cco.agency_personnel_id = case_assignment.id
           group by target.location_path_id
         )
         select
@@ -583,48 +566,18 @@ await withDb(async (client) => {
               a.state,
               a.city
             from public.agency a
-            where exists (
-              select 1
-              from public.agency_officers ao
-              where ao.agency_id = a.id
-            )
-            or exists (
-              select 1
-              from public.agency_officers ao
-              join public.review_officers ro
-                on ro.agency_officer_id = ao.id
-              where ao.agency_id = a.id
-            )
-            or exists (
-              select 1
-              from public.agency_officers ao
-              join public.civil_case_officers cco
-                on cco.agency_officer_id = ao.id
-              where ao.agency_id = a.id
-            )
-            or exists (
-              select 1
-              from public.agency_links al
-              where al.agency_id = a.id
-            )
-            or exists (
-              select 1
-              from public.federal_agency_branch fab
-              where fab.agency_id = a.id
-            )
-            or exists (
-              select 1
-              from public.agency_officers ao
-              join public.coverage_link_agency_officers coverage_officer
-                on coverage_officer.agency_officer_id = ao.id
-              where ao.agency_id = a.id
-            )
+
           ),
-          active_counts as (
+          personnel_counts as (
+            -- Currently-serving officers only (no end_date). Every displayed
+            -- personnel count is "active force size": it stays meaningful over
+            -- time instead of growing unbounded as officers separate. The
+            -- agency roster page still lists all officers (current + former)
+            -- with a status filter; only the counts are active-only.
             select
               ao.agency_id,
-              count(distinct ao.officer_id) as personnel_count
-            from public.agency_officers ao
+              count(distinct ao.personnel_id) as personnel_count
+            from public.agency_personnel ao
             join eligible_agencies ea
               on ea.id = ao.agency_id
             where ao.end_date is null
@@ -634,33 +587,33 @@ await withDb(async (client) => {
             select
               ao.agency_id,
               count(distinct ro.review_id) as report_count
-            from public.agency_officers ao
+            from public.agency_personnel ao
             join eligible_agencies ea
               on ea.id = ao.agency_id
-            join public.review_officers ro
-              on ro.agency_officer_id = ao.id
+            join public.review_personnel ro
+              on ro.agency_personnel_id = ao.id
             group by ao.agency_id
           ),
           civil_case_links as (
             select
               ao.agency_id,
               cco.civil_case_id
-            from public.agency_officers ao
+            from public.agency_personnel ao
             join eligible_agencies ea
               on ea.id = ao.agency_id
-            join public.civil_case_officers cco
-              on cco.agency_officer_id = ao.id
+            join public.civil_case_personnel cco
+              on cco.agency_personnel_id = ao.id
             union
             select
               target_ao.agency_id,
               cco.civil_case_id
-            from public.agency_officers target_ao
+            from public.agency_personnel target_ao
             join eligible_agencies ea
               on ea.id = target_ao.agency_id
-            join public.agency_officers case_ao
-              on case_ao.officer_id = target_ao.officer_id
-            join public.civil_case_officers cco
-              on cco.agency_officer_id = case_ao.id
+            join public.agency_personnel case_ao
+              on case_ao.personnel_id = target_ao.personnel_id
+            join public.civil_case_personnel cco
+              on cco.agency_personnel_id = case_ao.id
           ),
           civil_case_counts as (
             select
@@ -675,23 +628,23 @@ await withDb(async (client) => {
             a.slug,
             lp.location_path_id,
             lp.path as location_path,
-            lp.state_or_territory_slug as state,
+            split_part(lp.path, '/', 2) as state,
             state_lp.location_path_id as state_location_path_id,
             state_lp.path as state_path,
-            state_lp.state_or_territory_name as state_name,
+            state_lp.display_name as state_name,
             area_lp.location_path_id as administrative_area_location_path_id,
             area_lp.path as administrative_area_path,
-            area_lp.administrative_area_name as administrative_area,
-            area_lp.administrative_area_slug as location_administrative_area_slug,
-            lp.place_name as city,
-            lp.place_slug as location_place_slug,
+            area_lp.display_name as administrative_area,
+            split_part(area_lp.path, '/', 3) as location_administrative_area_slug,
+            lp.display_name as city,
+            split_part(lp.path, '/', 4) as location_place_slug,
             a.address,
             a.zip_code,
             a.latitude,
             a.longitude,
             a.created_at,
             a.updated_at,
-            coalesce(active_counts.personnel_count, 0) as personnel_count,
+            coalesce(personnel_counts.personnel_count, 0) as personnel_count,
             coalesce(report_counts.report_count, 0) as report_count,
             coalesce(civil_case_counts.civil_case_count, 0) as civil_case_count
           from eligible_agencies a
@@ -703,14 +656,14 @@ await withDb(async (client) => {
           join public.location_path state_lp
             on state_lp.location_path_id = area_lp.parent_location_path_id
            and state_lp.level = 'state'
-          left join active_counts
-            on active_counts.agency_id = a.id
+          left join personnel_counts
+            on personnel_counts.agency_id = a.id
           left join report_counts
             on report_counts.agency_id = a.id
           left join civil_case_counts
             on civil_case_counts.agency_id = a.id
-          order by lower(lp.state_or_territory_slug),
-            lower(lp.administrative_area_name), lower(lp.place_name),
+          order by lower(split_part(lp.path, '/', 2)),
+            lower(area_lp.display_name), lower(lp.display_name),
             lower(a.name), a.id
         `,
       )
@@ -871,16 +824,16 @@ await withDb(async (client) => {
             r.longitude,
             r.created_at,
             r.updated_at,
-            report_location.state_or_territory_slug as state,
-            report_location.administrative_area_slug,
-            report_location.place_slug,
-            report_location.state_or_territory_name,
-            report_location.administrative_area_name,
-            report_location.place_name,
+            split_part(report_location.path, '/', 2) as state,
+            split_part(report_location.path, '/', 3) as administrative_area_slug,
+            split_part(report_location.path, '/', 4) as place_slug,
+            report_state.display_name as state_or_territory_name,
+            report_area.display_name as administrative_area_name,
+            report_location.display_name as place_name,
             report_location.path as location_path,
-            ro.id as review_officer_id,
+            ro.id as review_personnel_id,
             ao.agency_id,
-            ao.license_type,
+            ao.title,
             o.first_name,
             o.last_name,
             o.suffix,
@@ -888,12 +841,18 @@ await withDb(async (client) => {
           from public.reviews r
           join public.location_path report_location
             on report_location.location_path_id = r.location_path_id
-          left join public.review_officers ro
+          left join public.location_path report_area
+            on report_area.location_path_id = report_location.parent_location_path_id
+           and report_area.level = 'administrative_area'
+          left join public.location_path report_state
+            on report_state.location_path_id = report_area.parent_location_path_id
+           and report_state.level = 'state'
+          left join public.review_personnel ro
             on ro.review_id = r.id
-          left join public.agency_officers ao
-            on ao.id = ro.agency_officer_id
-          left join public.officers o
-            on o.id = ao.officer_id
+          left join public.agency_personnel ao
+            on ao.id = ro.agency_personnel_id
+          left join public.personnel o
+            on o.id = ao.personnel_id
           order by r.incident_date desc, r.id, ro.id
         `,
       )
@@ -932,7 +891,7 @@ await withDb(async (client) => {
         );
         if (!personnelBySlug.has(slug)) {
           personnelBySlug.set(slug, {
-            licenseType: entry.license_type || null,
+            title: entry.title || null,
             name: `${entry.first_name || ""} ${entry.last_name || ""}${entry.suffix ? ` ${entry.suffix}` : ""}`.trim(),
             slug,
           });
@@ -998,152 +957,6 @@ await withDb(async (client) => {
         updatedAt: row.updated_at,
       };
     });
-
-    const locationReportRows = (
-      await client.query(
-        `
-          select
-            lr.id,
-            lr.location_path_id,
-            lr.report_type,
-            lr.report_key,
-            lr.title,
-            lr.summary,
-            lr.payload,
-            lr.sort_order,
-            lr.updated_at,
-            lrs.id as source_id,
-            lrs.source_key,
-            lrs.label as source_label,
-            lrs.url as source_url,
-            lrs.source_type,
-            lrs.sort_order as source_sort_order
-          from public.location_reports lr
-          left join public.location_report_sources lrs
-            on lrs.location_report_id = lr.id
-          where lr.status = 'published'
-          order by lr.location_path_id, lr.sort_order, lower(lr.title), lr.id,
-            lrs.sort_order, lower(lrs.label), lrs.id
-        `,
-      )
-    ).rows;
-
-    const locationReportsById = new Map();
-    for (const row of locationReportRows) {
-      const reportId = assertValue(row.id, "Location report row is missing id");
-      let report = locationReportsById.get(reportId);
-      if (!report) {
-        report = {
-          id: reportId,
-          locationPathId: assertValue(
-            row.location_path_id,
-            `Location report ${reportId} is missing location_path_id.`,
-          ),
-          reportType: assertValue(
-            row.report_type,
-            `Location report ${reportId} is missing report_type.`,
-          ),
-          reportKey: assertValue(
-            row.report_key,
-            `Location report ${reportId} is missing report_key.`,
-          ),
-          title: assertValue(
-            row.title,
-            `Location report ${reportId} is missing title.`,
-          ),
-          summary: assertValue(
-            row.summary,
-            `Location report ${reportId} is missing summary.`,
-          ),
-          payload: row.payload || {},
-          sortOrder: Number(row.sort_order || 0),
-          sources: [],
-          updatedAt: row.updated_at,
-        };
-        locationReportsById.set(reportId, report);
-      }
-      if (row.source_id) {
-        report.sources.push({
-          id: row.source_id,
-          sourceKey: assertValue(
-            row.source_key,
-            `Location report source ${row.source_id} is missing source_key.`,
-          ),
-          label: assertValue(
-            row.source_label,
-            `Location report source ${row.source_id} is missing label.`,
-          ),
-          url: assertValue(
-            row.source_url,
-            `Location report source ${row.source_id} is missing url.`,
-          ),
-          sourceType: assertValue(
-            row.source_type,
-            `Location report source ${row.source_id} is missing source_type.`,
-          ),
-          sortOrder: Number(row.source_sort_order || 0),
-        });
-      }
-    }
-
-    const locationReportsByLocationId = new Map();
-    for (const report of locationReportsById.values()) {
-      const reportsForLocation =
-        locationReportsByLocationId.get(report.locationPathId) || [];
-      reportsForLocation.push(locationReportPayload(report));
-      locationReportsByLocationId.set(
-        report.locationPathId,
-        reportsForLocation,
-      );
-    }
-
-    const reportStateLocationRows = locationReportsByLocationId.size
-      ? (
-          await client.query(
-            `
-              select
-                location_path_id,
-                path,
-                state_or_territory_slug,
-                state_or_territory_name,
-                updated_at
-              from public.location_path
-              where level = 'state'
-                and location_path_id = any($1)
-            `,
-            [[...locationReportsByLocationId.keys()]],
-          )
-        ).rows
-      : [];
-
-    for (const row of reportStateLocationRows) {
-      const stateSlug = assertValue(
-        row.state_or_territory_slug,
-        `Location report state path ${row.location_path_id} is missing state slug.`,
-      );
-      if (states.has(stateSlug)) {
-        continue;
-      }
-      states.set(stateSlug, {
-        level: "state",
-        state: stateSlug,
-        stateLabel: assertValue(
-          row.state_or_territory_name,
-          `Location report state path ${row.location_path_id} is missing state name.`,
-        ),
-        path: assertValue(
-          row.path,
-          `Location report state path ${row.location_path_id} is missing path.`,
-        ),
-        id: assertValue(
-          row.location_path_id,
-          "Location report state path row is missing id.",
-        ),
-        areas: new Map(),
-        agencies: [],
-        updatedAt: row.updated_at,
-      });
-    }
 
     await client.query("delete from public.build_page_payload");
     await client.query("delete from public.agency_zip_index");
@@ -1325,7 +1138,6 @@ await withDb(async (client) => {
             stateLabel: state.stateLabel,
             administrativeAreaPlural: state.administrativeAreaPlural,
             coverage: state.coverage,
-            locationReports: locationReportsByLocationId.get(state.id) || [],
             mapBounds: state.mapBounds,
             mapPositionSource: state.mapPositionSource,
             children: areas.map(stateAreaChildPayload),
@@ -1353,7 +1165,6 @@ await withDb(async (client) => {
               administrativeAreaKind: area.administrativeAreaKind,
               parentPath: state.path,
               coverage: area.coverage,
-              locationReports: locationReportsByLocationId.get(area.id) || [],
               mapBounds: area.mapBounds,
               mapPositionSource: area.mapPositionSource,
               children: places.map(areaPlaceChildPayload),
@@ -1379,8 +1190,6 @@ await withDb(async (client) => {
                 administrativeAreaSlug: place.administrativeAreaSlug,
                 parentPath: area.path,
                 coverage: place.coverage,
-                locationReports:
-                  locationReportsByLocationId.get(place.id) || [],
                 mapBounds: place.mapBounds,
                 mapPositionSource: place.mapPositionSource,
                 agencies: place.agencies.map((agency) => ({
@@ -1426,7 +1235,6 @@ await withDb(async (client) => {
           locations: locations.length,
           agencies: agencies.length,
           reports: reports.length,
-          locationReports: locationReportsById.size,
           excludedAgencies: totalAgencyCount - agencies.length,
           payloads: payloadRows.length,
           durationMs: Date.now() - startedAt,

@@ -1,0 +1,152 @@
+import { expect, test } from "@playwright/test";
+import dotenv from "dotenv";
+import { Client } from "pg";
+
+type FederalOffice = {
+  agency_id: string;
+  agency_name: string;
+  canonical_path: string;
+  federal_name: string;
+  federal_slug: string;
+  has_assignments: boolean;
+  has_cases: boolean;
+};
+
+type FederalParent = { name: string; slug: string };
+
+let offices: FederalOffice[];
+let parents: FederalParent[];
+
+test.beforeAll(async () => {
+  for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
+    dotenv.config({ path, override: true, quiet: true });
+  }
+
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    parents = (
+      await client.query<FederalParent>(
+        "select name, slug from public.federal_agency order by name",
+      )
+    ).rows;
+    offices = (
+      await client.query<FederalOffice>(`
+        select
+          a.id as agency_id,
+          a.name as agency_name,
+          lp.path || a.slug || '/' as canonical_path,
+          fa.name as federal_name,
+          fa.slug as federal_slug,
+          exists (
+            select 1 from public.agency_personnel ap where ap.agency_id = a.id
+          ) as has_assignments,
+          exists (
+            select 1
+            from public.agency_personnel ap
+            join public.civil_case_personnel ccp
+              on ccp.agency_personnel_id = ap.id
+            where ap.agency_id = a.id
+          ) as has_cases
+        from public.agency a
+        join public.federal_agency fa on fa.id = a.parent_federal_agency_id
+        join public.location_path lp on lp.location_path_id = a.location_path_id
+        order by fa.slug, a.id
+      `)
+    ).rows;
+  } finally {
+    await client.end();
+  }
+
+  expect(offices.length).toBeGreaterThan(0);
+});
+
+test("federal listing loads every parent from the database", async ({
+  page,
+}) => {
+  await page.goto("/federal/");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Federal");
+  await expect(page.locator("[data-jump-select] option")).toHaveCount(
+    parents.length + 1,
+  );
+  for (const parent of parents) {
+    await expect(
+      page.locator(
+        `[data-jump-select] option[value="/federal/${parent.slug}/"]`,
+      ),
+    ).toHaveText(parent.name);
+  }
+});
+
+test("federal parents show their linked office counts and canonical office URLs", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+
+  const officesByParent = new Map<string, FederalOffice[]>();
+  for (const office of offices) {
+    const linkedOffices = officesByParent.get(office.federal_slug) ?? [];
+    linkedOffices.push(office);
+    officesByParent.set(office.federal_slug, linkedOffices);
+  }
+
+  for (const [slug, linkedOffices] of officesByParent) {
+    await page.goto(`/federal/${slug}/`);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      linkedOffices[0].federal_name,
+    );
+    await expect(
+      page
+        .locator(".entity-metric-cell")
+        .filter({
+          has: page.getByText("Linked agency records", { exact: true }),
+        })
+        .locator(".ledger-value"),
+    ).toHaveText(String(linkedOffices.length));
+    const rows = page.locator(".record-table tbody tr");
+    await expect(rows).toHaveCount(linkedOffices.length);
+    for (const office of linkedOffices) {
+      await expect(
+        rows.getByRole("link", { name: office.agency_name }),
+      ).toHaveAttribute("href", office.canonical_path);
+    }
+  }
+});
+
+test("a linked office points back to its federal parent", async ({ page }) => {
+  const office = offices[0];
+  await page.goto(office.canonical_path);
+  await expect(
+    page.locator(".agency-overview-federal").getByRole("link", {
+      name: office.federal_name,
+    }),
+  ).toHaveAttribute("href", `/federal/${office.federal_slug}/`);
+});
+
+test("federal offices without personnel or cases remain eligible for agency pages", async () => {
+  const noPersonnelOffices = offices.filter(
+    (office) => !office.has_assignments && !office.has_cases,
+  );
+  expect(noPersonnelOffices.length).toBeGreaterThan(0);
+
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    const { rows } = await client.query<{ entity_id: string; path: string }>(
+      `select entity_id, path
+       from public.build_page_payload
+       where page_type = 'agency' and entity_id = any($1)`,
+      [noPersonnelOffices.map((office) => office.agency_id)],
+    );
+    expect(new Map(rows.map((row) => [row.entity_id, row.path]))).toEqual(
+      new Map(
+        noPersonnelOffices.map((office) => [
+          office.agency_id,
+          office.canonical_path,
+        ]),
+      ),
+    );
+  } finally {
+    await client.end();
+  }
+});

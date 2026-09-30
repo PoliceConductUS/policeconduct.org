@@ -1,34 +1,39 @@
 ---
-import FatalForceIncidentsPage from "#src/components/FatalForceIncidentsPage.astro";
+import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
+import StatCell from "#src/components/StatCell.astro";
+import { buildHelpCollectHref } from "#src/lib/data/civic-index.js";
 import {
   loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPathsForTopic,
 } from "#src/lib/data/agency-detail.js";
-import { metricLabels } from "#src/lib/metric-vocabulary.js";
 
 export async function getStaticPaths() {
   return loadAgencyLocationStaticPathsForTopic("fatal-force-incidents");
 }
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
-const pagePath = `${data.agencyPath}fatal-force-incidents/`;
-const title = `${data.agencyName} ${metricLabels.fatalForceIncidents}`;
-const description = `Fatal force incidents from the past 5 years for ${data.agencyName}.`;
+const agencySlug = data.agencyPath.split("/").filter(Boolean).pop() || "";
+const volunteerHref = buildHelpCollectHref(
+  `${data.agencyPath}fatal-force-incidents/`,
+  "agency",
+  agencySlug,
+);
 ---
 
-<FatalForceIncidentsPage
-  title={title}
-  description={description}
-  pagePath={pagePath}
-  breadcrumbs={[
-    { label: "Home", href: "/" },
-    { label: data.categoryLabel, href: `/${data.categorySlug}/` },
-    {
-      label: data.administrativeArea,
-      href: `/${data.categorySlug}/${data.administrativeAreaSlug}/`,
-    },
-    { label: data.placeLabel, href: data.placePath },
-    { label: data.agencyName, href: data.agencyPath },
-    { label: metricLabels.fatalForceIncidents, href: pagePath, current: true },
-  ]}
-/>
+<AgencyTopicPage
+  data={data}
+  topicLabel="Fatal Force Incidents"
+  topicSlug="fatal-force-incidents"
+  description="Deaths involving police contact connected to this agency, including custody and pursuit deaths."
+>
+  <ul class="topic-row">
+    <StatCell
+      variant="topic"
+      label="Fatal Force Incidents"
+      gloss="Deaths involving police"
+      role="neutral"
+      empty
+      helpCollectHref={volunteerHref}
+    />
+  </ul>
+</AgencyTopicPage>

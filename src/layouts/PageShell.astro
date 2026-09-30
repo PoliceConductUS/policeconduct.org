@@ -1,0 +1,100 @@
+---
+import SiteLayout from "#src/layouts/SiteLayout.astro";
+import Breadcrumb from "#src/components/Breadcrumb.astro";
+import PageHeader from "#src/components/PageHeader.astro";
+
+// The shared content shell for every standard page: SiteLayout (masthead /
+// footer / <head>) wrapping the `.civic-index-page` shell, the breadcrumb, the
+// PageHeader, and a body slot. Pages declare their meta, breadcrumb trail, and
+// header via props and slot in their body — no page repeats the shell markup.
+//
+// - `breadcrumbs` is the trail ("Home" is auto-injected by Breadcrumb).
+// - `heading` is the <h1>; `eyebrow` an optional uppercase kicker; `lede` an
+//   optional header sub-line (or pass rich sub content via the `header` slot).
+// - The `actions` slot holds page-level header actions (e.g. "Help collect
+//   data"); the default slot is the page body.
+// - The optional `aside` slot turns the header into a two-column hero (header
+//   on the left, aside rail on the right) matching the entity profile pages.
+//   Omit it for the standard single-column header.
+// - The optional `hero` slot replaces the default PageHeader entirely with the
+//   page's own hero markup (e.g. the personnel dashboard's single-row hero),
+//   while keeping the shared shell + breadcrumb. `heading` is unused then.
+// - `searchable` (default true) marks the page body as a Pagefind index target.
+//   Set it false on very-high-cardinality pages (e.g. the ~150k personnel
+//   profiles) so Pagefind doesn't emit a fragment for every one — that alone
+//   was ~640MB of build output. Those pages stay crawlable by external search
+//   engines; they just drop out of the on-site search box.
+interface Props {
+  // SiteLayout passthrough
+  title: string;
+  description?: string;
+  pagePath?: string;
+  canonicalUrl?: string;
+  robots?: string;
+  socialImage?: string;
+  structuredData?: unknown;
+  // Shell + header
+  breadcrumbs: { label: string; href?: string; current?: boolean }[];
+  heading?: string;
+  eyebrow?: string;
+  lede?: string;
+  searchable?: boolean;
+}
+
+const {
+  title,
+  description,
+  pagePath,
+  canonicalUrl,
+  robots,
+  socialImage,
+  structuredData,
+  breadcrumbs,
+  heading,
+  eyebrow,
+  lede,
+  searchable = true,
+} = Astro.props;
+const hasAside = Astro.slots.has("aside");
+const hasHero = Astro.slots.has("hero");
+---
+
+<SiteLayout
+  title={title}
+  description={description}
+  pagePath={pagePath}
+  canonicalUrl={canonicalUrl}
+  robots={robots}
+  socialImage={socialImage}
+  structuredData={structuredData}
+>
+  <main id="main" class="civic-index-page" data-pagefind-body={searchable}>
+    <section class="civic-index-page-main">
+      <div class="container">
+        <Breadcrumb items={breadcrumbs} className="mb-2" />
+        {
+          hasHero ? (
+            <slot name="hero" />
+          ) : (
+            <div class:list={[{ "entity-hero": hasAside }]}>
+              <div
+                class:list={[{ "entity-hero-grid page-hero-grid": hasAside }]}
+              >
+                <PageHeader
+                  eyebrow={eyebrow}
+                  title={heading ?? ""}
+                  description={lede}
+                >
+                  <slot name="header" slot="default" />
+                  <slot name="actions" slot="actions" />
+                </PageHeader>
+                {hasAside ? <slot name="aside" /> : null}
+              </div>
+            </div>
+          )
+        }
+        <slot />
+      </div>
+    </section>
+  </main>
+</SiteLayout>

@@ -3,6 +3,7 @@ import { withDb } from "#src/lib/db.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
 import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
+import { normalizeLicenseStatus, normalizeLicenseType } from "./licensing.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
 
 export type AgencyScopedTopicKind =
@@ -106,7 +107,7 @@ const agencyTopicWhereSql = (kind: AgencyScopedTopicKind) => {
       where bpp.page_type = 'agency'
         and exists (
           select 1
-          from public.agency_officers ao
+          from public.agency_personnel ao
           where ao.agency_id = bpp.entity_id
         )
     `;
@@ -117,9 +118,9 @@ const agencyTopicWhereSql = (kind: AgencyScopedTopicKind) => {
       where bpp.page_type = 'agency'
         and exists (
           select 1
-          from public.agency_officers ao
-          join public.review_officers ro
-            on ro.agency_officer_id = ao.id
+          from public.agency_personnel ao
+          join public.review_personnel ro
+            on ro.agency_personnel_id = ao.id
           where ao.agency_id = bpp.entity_id
         )
     `;
@@ -130,11 +131,11 @@ const agencyTopicWhereSql = (kind: AgencyScopedTopicKind) => {
       where bpp.page_type = 'agency'
         and exists (
           select 1
-          from public.agency_officers target_ao
-          join public.agency_officers case_ao
-            on case_ao.officer_id = target_ao.officer_id
-          join public.civil_case_officers cco
-            on cco.agency_officer_id = case_ao.id
+          from public.agency_personnel target_ao
+          join public.agency_personnel case_ao
+            on case_ao.personnel_id = target_ao.personnel_id
+          join public.civil_case_personnel cco
+            on cco.agency_personnel_id = case_ao.id
           where target_ao.agency_id = bpp.entity_id
         )
     `;
@@ -259,16 +260,21 @@ const loadAgencyRows = async (agencyId: string) =>
         `
           select
             a.*,
+            a.status,
+            a.status_date::text as status_date,
             bpp.path as canonical_path,
             lp.path as location_path,
-            lp.state_or_territory_slug as state,
-            lp.administrative_area_name as administrative_area,
-            lp.administrative_area_slug as location_administrative_area_slug,
-            lp.place_name as city,
-            lp.place_slug as location_place_slug
+            split_part(lp.path, '/', 2) as state,
+            area_lp.display_name as administrative_area,
+            split_part(lp.path, '/', 3) as location_administrative_area_slug,
+            lp.display_name as city,
+            split_part(lp.path, '/', 4) as location_place_slug
           from public.agency a
           join public.location_path lp
             on lp.location_path_id = a.location_path_id
+          left join public.location_path area_lp
+            on area_lp.location_path_id = lp.parent_location_path_id
+           and area_lp.level = 'administrative_area'
           join public.build_page_payload bpp
             on bpp.page_type = 'agency'
            and bpp.entity_id = a.id
@@ -277,56 +283,70 @@ const loadAgencyRows = async (agencyId: string) =>
         [agencyId],
       )
     ).rows[0];
-    const agencyLinks = (
-      await client.query(
-        `select *
-         from public.agency_links
-         where agency_id = $1
-         order by label asc, url asc`,
-        [agencyId],
-      )
-    ).rows;
     const agencyPhones = (
       await client.query(
-        "select * from public.agency_phone_numbers where agency_id = $1",
+        `select * from public.agency_phone_numbers
+         where agency_id = $1
+         order by (description ilike 'fax') asc, created_at asc, id asc`,
         [agencyId],
       )
     ).rows;
     const agencyOfficers = (
       await client.query(
-        "select * from public.agency_officers where agency_id = $1",
+        "select * from public.agency_personnel where agency_id = $1",
         [agencyId],
       )
     ).rows;
-    const agencyStats = (
-      await client.query("select * from public.agency_stats where id = $1", [
-        agencyId,
-      ])
-    ).rows[0];
     const federalAgency = (
       await client.query(
         `select fa.id, fa.name, fa.slug
-         from public.federal_agency_branch fab
-         join public.federal_agency fa on fa.id = fab.federal_agency_id
-         where fab.agency_id = $1`,
+         from public.agency a
+         join public.federal_agency fa on fa.id = a.parent_federal_agency_id
+         where a.id = $1`,
         [agencyId],
       )
     ).rows[0];
-    const officerIds = agencyOfficers.map(
-      (entry: { officer_id: string }) => entry.officer_id,
-    );
+    const officerIds = [
+      ...new Set(
+        agencyOfficers.map(
+          (entry: { personnel_id: string }) => entry.personnel_id,
+        ),
+      ),
+    ];
     const officers = officerIds.length
       ? (
           await client.query(
-            "select * from public.officers where id = any($1)",
+            "select * from public.personnel where id = any($1)",
             [officerIds],
           )
         ).rows
       : [];
-    const officerStats = officerIds.length
+    // Live report counts, not the officers_stats.review_count projection
+    // (which can be stale/unpopulated). Same join shape as personnel.ts.
+    const reportCounts = officerIds.length
       ? (
           await client.query(
-            "select * from public.officers_stats where id = any($1)",
+            `select ao.personnel_id, count(distinct ro.review_id) as report_count
+             from public.review_personnel ro
+             join public.agency_personnel ao on ao.id = ro.agency_personnel_id
+             where ao.personnel_id = any($1)
+             group by ao.personnel_id`,
+            [officerIds],
+          )
+        ).rows
+      : [];
+    // Primary license per personnel for the roster context line — prefer an
+    // active license, then the most-recently-awarded.
+    const licenses = officerIds.length
+      ? (
+          await client.query(
+            `select distinct on (l.personnel_id)
+               l.personnel_id, al.name as license_type, l.status
+             from public.license l
+             join public.authority_license al on al.id = l.authority_license_id
+             where l.personnel_id = any($1)
+             order by l.personnel_id, (l.status ilike 'active') desc,
+               l.first_awarded desc nulls last`,
             [officerIds],
           )
         ).rows
@@ -337,7 +357,7 @@ const loadAgencyRows = async (agencyId: string) =>
     const reportOfficers = agencyOfficerIds.length
       ? (
           await client.query(
-            "select * from public.review_officers where agency_officer_id = any($1)",
+            "select * from public.review_personnel where agency_personnel_id = any($1)",
             [agencyOfficerIds],
           )
         ).rows
@@ -350,8 +370,8 @@ const loadAgencyRows = async (agencyId: string) =>
     const civilCaseIds = (
       await client.query(
         `select distinct cco.civil_case_id
-         from public.agency_officers ao
-         join public.civil_case_officers cco on cco.agency_officer_id = ao.id
+         from public.agency_personnel ao
+         join public.civil_case_personnel cco on cco.agency_personnel_id = ao.id
          where ao.agency_id = $1`,
         [agencyId],
       )
@@ -370,9 +390,9 @@ const loadAgencyRows = async (agencyId: string) =>
     const civilCaseOfficers = civilCaseIds.length
       ? (
           await client.query(
-            `select cco.civil_case_id, ao.officer_id, ao.license_type
-             from public.civil_case_officers cco
-             join public.agency_officers ao on ao.id = cco.agency_officer_id
+            `select cco.civil_case_id, ao.personnel_id, ao.title
+             from public.civil_case_personnel cco
+             join public.agency_personnel ao on ao.id = cco.agency_personnel_id
              where cco.civil_case_id = any($1)`,
             [civilCaseIds],
           )
@@ -381,14 +401,14 @@ const loadAgencyRows = async (agencyId: string) =>
     const civilOfficerIds = [
       ...new Set(
         civilCaseOfficers.map(
-          (entry: { officer_id: string }) => entry.officer_id,
+          (entry: { personnel_id: string }) => entry.personnel_id,
         ),
       ),
     ];
     const civilOfficers = civilOfficerIds.length
       ? (
           await client.query(
-            "select * from public.officers where id = any($1)",
+            "select * from public.personnel where id = any($1)",
             [civilOfficerIds],
           )
         ).rows
@@ -396,7 +416,7 @@ const loadAgencyRows = async (agencyId: string) =>
     const targetOfficerIds = [
       ...new Set(
         agencyOfficers
-          .map((entry: { officer_id?: string | null }) => entry.officer_id)
+          .map((entry: { personnel_id?: string | null }) => entry.personnel_id)
           .filter(Boolean),
       ),
     ];
@@ -412,28 +432,29 @@ const loadAgencyRows = async (agencyId: string) =>
                 c.filed_date,
                 c.date_terminated,
                 c.court,
+                c.outcome,
                 c.primary_source_url,
-                o.id as officer_id,
+                o.id as personnel_id,
                 o.slug as officer_slug,
                 o.first_name,
                 o.last_name,
                 o.suffix,
-                case_ao.license_type as case_license_type,
+                case_ao.title as case_title,
                 case_agency.id as case_agency_id,
                 case_agency.name as case_agency_name,
                 case_agency.slug as case_agency_slug,
                 case_location.path as case_agency_location_path,
                 case_bpp.path as case_agency_canonical_path,
-                target_ao.license_type as target_license_type,
+                target_ao.title as target_title,
                 target_ao.start_date as target_start_date,
                 target_ao.end_date as target_end_date
-              from public.civil_case_officers cco
+              from public.civil_case_personnel cco
               join public.civil_cases c
                 on c.id = cco.civil_case_id
-              join public.agency_officers case_ao
-                on case_ao.id = cco.agency_officer_id
-              join public.officers o
-                on o.id = case_ao.officer_id
+              join public.agency_personnel case_ao
+                on case_ao.id = cco.agency_personnel_id
+              join public.personnel o
+                on o.id = case_ao.personnel_id
               join public.agency case_agency
                 on case_agency.id = case_ao.agency_id
               join public.location_path case_location
@@ -443,22 +464,22 @@ const loadAgencyRows = async (agencyId: string) =>
                and case_bpp.entity_id = case_agency.id
               join lateral (
                 select *
-                from public.agency_officers target_assignment
+                from public.agency_personnel target_assignment
                 where target_assignment.agency_id = $1
-                  and target_assignment.officer_id = case_ao.officer_id
+                  and target_assignment.personnel_id = case_ao.personnel_id
                 order by
                   (target_assignment.end_date is null) desc,
                   coalesce(target_assignment.end_date, target_assignment.start_date) desc nulls last,
                   target_assignment.id
                 limit 1
               ) target_ao on true
-              where case_ao.officer_id = any($2)
+              where case_ao.personnel_id = any($2)
                 and case_ao.agency_id <> $1
                 and not exists (
                   select 1
-                  from public.civil_case_officers direct_cco
-                  join public.agency_officers direct_ao
-                    on direct_ao.id = direct_cco.agency_officer_id
+                  from public.civil_case_personnel direct_cco
+                  join public.agency_personnel direct_ao
+                    on direct_ao.id = direct_cco.agency_personnel_id
                   where direct_cco.civil_case_id = c.id
                     and direct_ao.agency_id = $1
                 )
@@ -471,13 +492,12 @@ const loadAgencyRows = async (agencyId: string) =>
 
     return {
       agency,
-      agencyLinks,
       agencyPhones,
       agencyOfficers,
-      agencyStats,
       federalAgency,
       officers,
-      officerStats,
+      reportCounts,
+      licenses,
       reportIds,
       civilCases,
       civilCaseOfficers,
@@ -541,7 +561,8 @@ const buildAgencyDetail = async (agencyId: string) => {
   const agencyPath = canonicalAgencyPath;
 
   const officersById = mapBy(data.officers, "id");
-  const officerStatsById = mapBy(data.officerStats, "id");
+  const reportCountsByOfficerId = mapBy(data.reportCounts, "personnel_id");
+  const licenseByOfficerId = mapBy(data.licenses, "personnel_id");
   const civilCaseOfficersByCase = groupBy(
     data.civilCaseOfficers,
     "civil_case_id",
@@ -558,19 +579,19 @@ const buildAgencyDetail = async (agencyId: string) => {
   const comparePersonnelEntry = (
     left: {
       entry: {
-        officer_id?: string | null;
+        personnel_id?: string | null;
         start_date?: string | null;
         end_date?: string | null;
-        license_type?: string | null;
+        title?: string | null;
       };
       officer?: { first_name?: string | null; last_name?: string | null };
     },
     right: {
       entry: {
-        officer_id?: string | null;
+        personnel_id?: string | null;
         start_date?: string | null;
         end_date?: string | null;
-        license_type?: string | null;
+        title?: string | null;
       };
       officer?: { first_name?: string | null; last_name?: string | null };
     },
@@ -596,27 +617,36 @@ const buildAgencyDetail = async (agencyId: string) => {
     if (endDateCompare !== 0) return endDateCompare;
 
     return compareText(
-      left.entry.officer_id || "",
-      right.entry.officer_id || "",
+      left.entry.personnel_id || "",
+      right.entry.personnel_id || "",
     );
   };
 
   const employees = data.agencyOfficers
     .map(
       (entry: {
-        officer_id: string;
+        personnel_id: string;
         badge_number?: string | null;
         start_date?: string | null;
         end_date?: string | null;
-        license_type?: string | null;
+        title?: string | null;
       }) => {
-        const officer = officersById[entry.officer_id];
-        const stats = officerStatsById[entry.officer_id];
+        const officer = officersById[entry.personnel_id];
+        const reportCountRow = reportCountsByOfficerId[entry.personnel_id];
+        const licenseRow = licenseByOfficerId[entry.personnel_id];
         return {
           entry,
           officer,
-          reportCount: stats?.review_count ?? 0,
-          rating: stats?.weighted_average ?? null,
+          reportCount: reportCountRow ? Number(reportCountRow.report_count) : 0,
+          // Per-personnel rating came from the dropped officers_stats table;
+          // no rating aggregate exists in the current schema.
+          rating: null as number | null,
+          license: licenseRow
+            ? {
+                type: normalizeLicenseType(licenseRow.license_type),
+                status: normalizeLicenseStatus(licenseRow.status),
+              }
+            : null,
         };
       },
     )
@@ -638,15 +668,16 @@ const buildAgencyDetail = async (agencyId: string) => {
       filed_date: string;
       date_terminated?: string | null;
       court?: string | null;
+      outcome?: string | null;
       primary_source_url?: string | null;
     }) => {
       const officerLinks = (civilCaseOfficersByCase[record.id] || []).map(
-        (entry: { officer_id: string; license_type?: string | null }) => {
-          const officer = civilOfficersById[entry.officer_id];
+        (entry: { personnel_id: string; title?: string | null }) => {
+          const officer = civilOfficersById[entry.personnel_id];
           return officer
             ? {
                 ...officer,
-                licenseType: entry.license_type || null,
+                title: entry.title || null,
               }
             : null;
         },
@@ -673,16 +704,17 @@ const buildAgencyDetail = async (agencyId: string) => {
       filed_date: record.filed_date,
       date_terminated: record.date_terminated,
       court: record.court,
+      outcome: record.outcome,
       primary_source_url: record.primary_source_url,
       caseUrl: `/civil-cases/${record.slug}/`,
       links: entries.map((entry) => ({
         officer: {
-          id: entry.officer_id,
+          id: entry.personnel_id,
           slug: entry.officer_slug,
           first_name: entry.first_name,
           last_name: entry.last_name,
           suffix: entry.suffix,
-          licenseType: entry.case_license_type || null,
+          title: entry.case_title || null,
         },
         caseAgency: {
           id: entry.case_agency_id,
@@ -695,7 +727,7 @@ const buildAgencyDetail = async (agencyId: string) => {
           }),
         },
         targetAgencyAssignment: {
-          licenseType: entry.target_license_type || null,
+          title: entry.target_title || null,
           startDate: entry.target_start_date || null,
           endDate: entry.target_end_date || null,
           relationship: entry.target_end_date ? "former" : "current",
@@ -712,9 +744,16 @@ const buildAgencyDetail = async (agencyId: string) => {
     .map((reportId: string) => {
       const report = reportSummariesById[reportId];
       if (!report) {
-        throw new Error(
-          `Agency ${agencyRequiredId} references report ${reportId}, but that report has no build projection.`,
+        // The build projection (build_page_payload) is the source of truth for
+        // which report pages exist. A referenced report absent from it has no
+        // page to link to, so linking would 404. This normally means the
+        // report was created after the projection snapshot ran (the DB is
+        // mutated concurrently by intake until atomic-sha-deploys lands), or an
+        // unpublished report. Skip it and warn rather than failing the build.
+        console.warn(
+          `Agency ${agencyRequiredId} references report ${reportId}, but that report has no build projection; skipping.`,
         );
+        return null;
       }
       return {
         ...report,
@@ -722,6 +761,7 @@ const buildAgencyDetail = async (agencyId: string) => {
         officers: report.personnel || [],
       };
     })
+    .filter((report): report is NonNullable<typeof report> => report !== null)
     .sort((a, b) => {
       const left = new Date(b.incidentDate).getTime();
       const right = new Date(a.incidentDate).getTime();

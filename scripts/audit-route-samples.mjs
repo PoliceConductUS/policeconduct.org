@@ -8,7 +8,6 @@ const collator = new Intl.Collator("en", {
 
 export const FORM_ROUTES = [
   "/about/contact/",
-  "/volunteer/",
   "/report/new/",
   "/personnel/new/",
   "/personnel/suggest-edit/",
