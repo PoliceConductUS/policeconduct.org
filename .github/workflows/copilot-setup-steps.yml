@@ -29,4 +29,4 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      # The database-backed build and publication run in deploy-preview.yml.
+      # Database-backed builds and preview publication run from the local environment.

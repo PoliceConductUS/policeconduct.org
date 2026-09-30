@@ -16,12 +16,12 @@ Jump controls SHALL navigate only to HTTP or HTTPS URLs.
 
 ### Requirement: CI checks enforce their intended responsibilities
 
-Preview deployment SHALL use the configured preview environment and a real intake database dump. Copilot setup SHALL prepare dependencies and browsers. SEO host checks SHALL treat hostname dots as literal characters.
+Preview builds and publication SHALL run from the local environment, without an automatic GitHub preview deployment workflow. Copilot setup SHALL prepare dependencies and browsers. SEO host checks SHALL treat hostname dots as literal characters.
 
-#### Scenario: Preview data is absent
+#### Scenario: A pull request is updated
 
-- **WHEN** no published intake dump is configured
-- **THEN** preview deployment fails visibly without substituting fabricated or empty data
+- **WHEN** a pull request is opened or updated
+- **THEN** GitHub does not automatically build or publish its preview
 
 #### Scenario: A lookalike hostname is supplied
 
