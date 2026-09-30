@@ -205,7 +205,7 @@ const profileSenderCases: SenderCase[] = [
     payload: {
       officer: {
         department: "IRVING POLICE DEPARTMENT",
-        name: "James Markham",
+        name: "James Markham V",
       },
     },
     locator: { kind: "role", value: "Share your experience" },
@@ -217,9 +217,9 @@ const profileSenderCases: SenderCase[] = [
     expectedFields: ["defendants", "jurisdiction", "links", "summary"],
     payload: {
       jurisdiction: "tx",
-      defendants: "James Markham\nIRVING POLICE DEPARTMENT",
+      defendants: "James Markham V\nIRVING POLICE DEPARTMENT",
       summary:
-        "James Markham profile: /personnel/james-markham-v-7635c7/\nCurrent agency: IRVING POLICE DEPARTMENT",
+        "James Markham V profile: /personnel/james-markham-v-7635c7/\nCurrent agency: IRVING POLICE DEPARTMENT",
       links:
         "/personnel/james-markham-v-7635c7/\n/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
     },
@@ -270,7 +270,7 @@ const profileSenderCases: SenderCase[] = [
     ],
     payload: {
       officerPath: "/personnel/james-markham-v-7635c7/",
-      officerName: "James Markham",
+      officerName: "James Markham V",
       badgeNumber: "",
       currentEmployer: "IRVING POLICE DEPARTMENT",
       pastEmployers: "",
@@ -351,9 +351,7 @@ const profileSenderCases: SenderCase[] = [
       "agencyPath",
       "civilLitigation",
       "departmentHead",
-      "departmentWebsite",
       "jurisdiction",
-      "socialLinks",
     ],
     locator: { kind: "role", value: "Suggest edit" },
     targetPath: "/agency/suggest-edit/",

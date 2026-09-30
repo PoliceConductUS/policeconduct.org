@@ -283,15 +283,6 @@ const loadAgencyRows = async (agencyId: string) =>
         [agencyId],
       )
     ).rows[0];
-    const agencyLinks = (
-      await client.query(
-        `select *
-         from public.agency_links
-         where agency_id = $1
-         order by label asc, url asc`,
-        [agencyId],
-      )
-    ).rows;
     const agencyPhones = (
       await client.query(
         `select * from public.agency_phone_numbers
@@ -309,9 +300,9 @@ const loadAgencyRows = async (agencyId: string) =>
     const federalAgency = (
       await client.query(
         `select fa.id, fa.name, fa.slug
-         from public.federal_agency_branch fab
-         join public.federal_agency fa on fa.id = fab.federal_agency_id
-         where fab.agency_id = $1`,
+         from public.agency a
+         join public.federal_agency fa on fa.id = a.parent_federal_agency_id
+         where a.id = $1`,
         [agencyId],
       )
     ).rows[0];
@@ -501,7 +492,6 @@ const loadAgencyRows = async (agencyId: string) =>
 
     return {
       agency,
-      agencyLinks,
       agencyPhones,
       agencyOfficers,
       federalAgency,

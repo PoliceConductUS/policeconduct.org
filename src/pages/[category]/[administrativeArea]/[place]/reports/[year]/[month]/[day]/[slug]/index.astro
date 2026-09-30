@@ -3,6 +3,7 @@ import "#src/styles/civic-ledger.css";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
+import ReportNarrative from "#src/components/ReportNarrative.astro";
 import ReportDisclaimer from "#src/components/ReportDisclaimer.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import { loadReportSummaries } from "#src/lib/data/summaries.js";
@@ -76,11 +77,19 @@ const formatIncidentTime = (value: string | null) => {
   const hour12 = hour24 % 12 || 12;
   return `${hour12}:${match[2]} ${period}`;
 };
+const incidentDate =
+  data.report.incident_date instanceof Date
+    ? data.report.incident_date
+    : new Date(String(data.report.incident_date));
+const incidentDateDisplay = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+}).format(incidentDate);
 const incidentTimeDisplay = formatIncidentTime(facts.incidentTime);
 const pagePath = data.canonicalPath;
-const tags = data.tags;
 const officers = data.officers;
-const civilCases = data.civilCases;
 const evidenceLinks = data.evidenceLinks;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
@@ -214,7 +223,6 @@ const reportEntity = {
     name: "Anonymous",
   },
   publisher: { "@id": organizationId(siteUrl) },
-  ...(tags.length ? { keywords: tags.join(", ") } : {}),
   ...(reportAddress
     ? { contentLocation: { "@type": "Place", name: reportAddress } }
     : {}),
@@ -287,7 +295,7 @@ const structuredData = {
       <div>
         <dt>Incident date</dt>
         <dd>
-          {formatLongDate(data.report.incident_date)}
+          {incidentDateDisplay}
           {incidentTimeDisplay ? ` at ${incidentTimeDisplay}` : ""}
         </dd>
       </div>
@@ -361,22 +369,25 @@ const structuredData = {
           </div>
         ) : null
       }
+      {
+        data.report.updated_at ? (
+          <div>
+            <>
+              <dt>Updated</dt>
+              <dd>{formatLongDate(data.report.updated_at)}</dd>
+            </>
+          </div>
+        ) : null
+      }
     </dl>
   </section>
 
   <div class="civic-section civic-section--last">
     <article class="detail-body">
-      <h2>What happened</h2>
-      <div set:html={data.report.description!} />
-
-      {
-        facts.feelings ? (
-          <>
-            <h2>How it felt</h2>
-            <p>{facts.feelings}</p>
-          </>
-        ) : null
-      }
+      <ReportNarrative
+        description={String(data.report.description!)}
+        facts={facts}
+      />
 
       {
         officers.length ? (
@@ -419,60 +430,6 @@ const structuredData = {
                 <a href={link.url} target="_blank" rel="noopener noreferrer">
                   {link.title}
                 </a>
-              </p>
-            ))}
-          </>
-        ) : null
-      }
-
-      {
-        civilCases.length ? (
-          <>
-            <h3>Related civil litigation</h3>
-            <div class="recent-list">
-              {civilCases.map((civilCase) => (
-                <a href={civilCase.path}>
-                  <span class="recent-list-title">{civilCase.title}</span>
-                  <span class="recent-list-meta">
-                    {civilCase.causeNumber}
-                    {civilCase.filedDate
-                      ? ` · Filed ${formatLongDate(civilCase.filedDate)}`
-                      : ""}
-                  </span>
-                </a>
-              ))}
-            </div>
-          </>
-        ) : null
-      }
-
-      {
-        tags.length ? (
-          <>
-            <h3>Tags</h3>
-            <p>{tags.join(", ")}</p>
-          </>
-        ) : null
-      }
-
-      {
-        data.reportWitnesses.length ? (
-          <>
-            <h3>Witnesses</h3>
-            {data.reportWitnesses.map((witness) => (
-              <p>{witness.statement}</p>
-            ))}
-          </>
-        ) : null
-      }
-
-      {
-        data.reportAttachments.length ? (
-          <>
-            <h3>Attachments</h3>
-            {data.reportAttachments.map((attachment) => (
-              <p>
-                {attachment.file_name} ({attachment.content_type})
               </p>
             ))}
           </>

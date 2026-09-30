@@ -1,13 +1,11 @@
 ---
 import "#src/styles/civic-ledger.css";
 import { agencyStatusPresentation } from "#src/lib/agency-status";
+import CoverageLinks from "#src/components/CoverageLinks.astro";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import PageShell from "#src/layouts/PageShell.astro";
-import SocialLink, {
-  type SocialPlatform,
-} from "#src/components/SocialLink.astro";
 import StatCell from "#src/components/StatCell.astro";
 import StatStrip from "#src/components/StatStrip.astro";
 import { buildHelpCollectHref } from "#src/lib/data/civic-index.js";
@@ -85,46 +83,7 @@ const contactPoints = data.agencyPhones.map(
     ...(phone.description ? { contactType: phone.description } : {}),
   }),
 );
-const sameAs = data.agencyLinks
-  .map((link: { url?: string | null }) => link.url)
-  .filter(Boolean);
 const agencyPrefillName = agencyName.toLocaleUpperCase("en-US");
-const primaryWebsite =
-  data.agencyLinks.find((link: { url?: string | null }) =>
-    /^https?:\/\//i.test(link.url || ""),
-  )?.url || "";
-const agencyLinksSummary = data.agencyLinks
-  .map((link: { label?: string | null; url?: string | null }) =>
-    [link.label, link.url].filter(Boolean).join(": "),
-  )
-  .filter(Boolean)
-  .join("\n");
-// Recognized social platforms for the agency links list — hostnames map to
-// the SocialPlatform ids SocialLink.astro already has icons for. Anything
-// else (department websites, PDFs, etc.) falls back to a plain text link.
-const SOCIAL_PLATFORM_HOSTS: Array<[RegExp, SocialPlatform]> = [
-  [/(^|\.)youtube\.com$/, "youtube"],
-  [/(^|\.)youtu\.be$/, "youtube"],
-  [/(^|\.)facebook\.com$/, "facebook"],
-  [/(^|\.)x\.com$/, "twitter"],
-  [/(^|\.)twitter\.com$/, "twitter"],
-  [/(^|\.)instagram\.com$/, "instagram"],
-  [/(^|\.)linkedin\.com$/, "linkedin"],
-  [/(^|\.)tiktok\.com$/, "tiktok"],
-  [/(^|\.)reddit\.com$/, "reddit"],
-];
-const detectSocialPlatform = (url: string): SocialPlatform | null => {
-  let hostname: string;
-  try {
-    hostname = new URL(url).hostname.toLowerCase();
-  } catch {
-    return null;
-  }
-  const match = SOCIAL_PLATFORM_HOSTS.find(([pattern]) =>
-    pattern.test(hostname),
-  );
-  return match ? match[1] : null;
-};
 const civilLitigationRecords = [
   ...civilCases.map((record: CivilCaseRecord) => ({
     ...record,
@@ -173,9 +132,7 @@ const suggestEditPrefillPayload = JSON.stringify({
   agencyPath,
   agencyName: agencyPrefillName,
   jurisdiction: categorySlug,
-  departmentWebsite: primaryWebsite,
   departmentHead: data.agency.contact_name || "",
-  socialLinks: agencyLinksSummary,
   civilLitigation: civilLitigationSummary,
 });
 const suggestPersonnelPrefillPayload = JSON.stringify({
@@ -305,7 +262,6 @@ const organization: ReturnType<typeof buildGovernmentOrganizationNode> = {
     address: address || undefined,
     email: data.agency.contact_email || undefined,
     contactPoint: contactPoints,
-    sameAs,
     areaServed: { "@type": "AdministrativeArea", name: agencyState },
   }),
   description: pageDescription,
@@ -393,7 +349,7 @@ const structuredData = {
         ) : null
       }
       {
-        data.agencyPhones.length || data.agencyLinks.length ? (
+        data.agencyPhones.length ? (
           <p class="entity-contact-links">
             {data.agencyPhones.map(
               (phone: {
@@ -418,31 +374,14 @@ const structuredData = {
                 );
               },
             )}
-            {data.agencyLinks.map(
-              (link: { label?: string | null; url?: string | null }) => {
-                if (!link.url) return null;
-                const platform = detectSocialPlatform(link.url);
-                return platform ? (
-                  <SocialLink
-                    platform={platform}
-                    href={link.url}
-                    entityName={agencyDisplayName}
-                  />
-                ) : (
-                  <a href={link.url} rel="noopener">
-                    {link.label || link.url}
-                  </a>
-                );
-              },
-            )}
           </p>
         ) : null
       }
       {
         data.agency.contact_name || data.agency.contact_email ? (
           // Contact name + email are linked in the data model —
-          // render as one visual group; phone and website links
-          // above must not sit between them.
+          // render as one visual group; phone links above must not sit
+          // between them.
           <p class="entity-contact-person">
             {data.agency.contact_name ? (
               <>Contact: {toDisplayName(data.agency.contact_name)}</>
@@ -628,6 +567,8 @@ const structuredData = {
       </section>
     ) : null
   }
+
+  <CoverageLinks links={data.coverageLinks} />
 
   <section class="civic-section civic-section--last">
     <p class="civic-limit-note">

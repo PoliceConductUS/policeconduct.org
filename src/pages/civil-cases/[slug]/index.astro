@@ -201,6 +201,40 @@ const structuredData = {
         <dd>{formatLongDate(data.civilCase.filed_date)}</dd>
       </div>
       {
+        data.civilCase.date_terminated ? (
+          <div>
+            <>
+              <dt>Closed</dt>
+              <dd>{formatLongDate(data.civilCase.date_terminated)}</dd>
+            </>
+          </div>
+        ) : null
+      }
+      {
+        data.civilCase.location_path ? (
+          <div>
+            <>
+              <dt>Incident location</dt>
+              <dd>
+                <a href={data.civilCase.location_path}>
+                  {data.civilCase.location_name!}
+                </a>
+              </dd>
+            </>
+          </div>
+        ) : null
+      }
+      {
+        data.civilCase.updated_at ? (
+          <div>
+            <>
+              <dt>Updated</dt>
+              <dd>{formatLongDate(data.civilCase.updated_at)}</dd>
+            </>
+          </div>
+        ) : null
+      }
+      {
         data.civilCase.outcome ? (
           <div>
             <dt>Outcome</dt>
@@ -258,26 +292,6 @@ const structuredData = {
                   : ""}
               </p>
             ))}
-          </>
-        ) : null
-      }
-
-      {
-        data.reports.length ? (
-          <>
-            <h3>Related reports</h3>
-            <div class="recent-list">
-              {data.reports.map((report) => (
-                <a href={report.path}>
-                  <span class="recent-list-title">{report.title}</span>
-                  {report.incident_date ? (
-                    <span class="recent-list-meta">
-                      Report · Incident {formatLongDate(report.incident_date)}
-                    </span>
-                  ) : null}
-                </a>
-              ))}
-            </div>
           </>
         ) : null
       }

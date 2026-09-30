@@ -29,15 +29,12 @@ const requiredTables = {
       "created_at",
       "updated_at",
       "location_path_id",
+      "parent_federal_agency_id",
       "status",
       "status_date",
     ],
     notNull: ["id", "name", "slug", "state", "location_path_id"],
     uniqueColumnSets: [["slug"]],
-  },
-  agency_links: {
-    columns: ["id", "agency_id", "url", "label", "description"],
-    notNull: ["id", "url", "label"],
   },
   agency_personnel: {
     columns: [
@@ -46,10 +43,29 @@ const requiredTables = {
       "personnel_id",
       "title",
       "badge_number",
+      "license_id",
       "start_date",
       "end_date",
     ],
     notNull: ["id", "personnel_id", "title"],
+  },
+  arrest_profile: {
+    columns: [
+      "id",
+      "agency_personnel_id",
+      "coverage",
+      "breakdowns",
+      "created_at",
+      "updated_at",
+    ],
+    notNull: [
+      "id",
+      "agency_personnel_id",
+      "coverage",
+      "breakdowns",
+      "created_at",
+      "updated_at",
+    ],
   },
   agency_phone_numbers: {
     columns: ["id", "agency_id", "phone_number", "created_at"],
@@ -96,6 +112,7 @@ const requiredTables = {
       "cause_number",
       "court",
       "filed_date",
+      "date_terminated",
       "claims_summary",
       "outcome",
       "primary_source_url",
@@ -108,14 +125,6 @@ const requiredTables = {
   coverage_link_agency_personnel: {
     columns: ["coverage_link_id", "agency_personnel_id"],
     notNull: ["coverage_link_id", "agency_personnel_id"],
-  },
-  coverage_link_civil_cases: {
-    columns: ["coverage_link_id", "civil_case_id"],
-    notNull: ["coverage_link_id", "civil_case_id"],
-  },
-  coverage_link_reports: {
-    columns: ["coverage_link_id", "review_id"],
-    notNull: ["coverage_link_id", "review_id"],
   },
   coverage_links: {
     columns: [
@@ -134,10 +143,6 @@ const requiredTables = {
     columns: ["id", "name", "slug"],
     notNull: ["id", "name", "slug"],
     uniqueColumnSets: [["slug"]],
-  },
-  federal_agency_branch: {
-    columns: ["federal_agency_id", "agency_id"],
-    notNull: ["federal_agency_id", "agency_id"],
   },
   discipline: {
     columns: [
@@ -217,7 +222,18 @@ const requiredTables = {
     ],
   },
   personnel: {
-    columns: ["id", "slug", "first_name", "middle_name", "last_name", "suffix"],
+    columns: [
+      "id",
+      "slug",
+      "first_name",
+      "middle_name",
+      "last_name",
+      "suffix",
+      "prefix",
+      "deceased_on",
+      "deceased_message",
+      "deceased_source",
+    ],
     notNull: ["id", "slug", "first_name"],
     uniqueColumnSets: [["slug"]],
   },
@@ -233,10 +249,6 @@ const requiredTables = {
     ],
     notNull: ["id", "personnel_id", "name"],
   },
-  review_attachments: {
-    columns: ["id", "review_id"],
-    notNull: ["id"],
-  },
   review_links: {
     columns: ["id", "review_id", "title", "url"],
     notNull: ["id", "title", "url"],
@@ -244,14 +256,6 @@ const requiredTables = {
   review_personnel: {
     columns: ["id", "review_id", "agency_personnel_id", "rating_overall"],
     notNull: ["id", "review_id", "agency_personnel_id"],
-  },
-  review_tags: {
-    columns: ["review_id", "tag_id"],
-    notNull: ["review_id", "tag_id"],
-  },
-  review_witnesses: {
-    columns: ["id", "review_id"],
-    notNull: ["id"],
   },
   reviews: {
     columns: [
@@ -265,24 +269,23 @@ const requiredTables = {
       "longitude",
       "created_at",
       "updated_at",
-      // Collection-to-display parity fields (align-report-pages) are
-      // pending the PoliceConductUS/intake migration and intentionally
-      // NOT yet in this contract: submitter_relationship, interaction_type,
-      // setting, case_number, complaint_filed, bodycam_requested, feelings,
-      // incident_time. Also pending: charge_outcome — a future editor-added
-      // column, distinct from the pre-existing submitter-entered `charges`
-      // column (already live in the database; not required by this contract
-      // either, but tolerated the same way). See
-      // openspec/changes/align-report-pages/tasks report for the full
-      // migration SQL. The report-detail loader (`select r.*` + nullable-
-      // string coercion) tolerates their absence today.
+      "description",
+      "submitter_relationship",
+      "interaction_type",
+      "setting",
+      "case_number",
+      "complaint_filed",
+      "bodycam_requested",
+      "incident_time",
+      "charges",
+      "how_felt",
+      "desired_outcome",
+      "what_happened",
+      "what_else",
+      "purpose",
     ],
     notNull: ["id", "slug", "title"],
     uniqueColumnSets: [["slug"]],
-  },
-  tags: {
-    columns: ["id", "label"],
-    notNull: ["id", "label"],
   },
 };
 

@@ -92,10 +92,11 @@ const redirects = await withDb(async (client) => {
         select
           bpp.payload->'agency'->>'slug' as slug,
           bpp.path as canonical_path
-        from public.federal_agency_branch fab
+        from public.agency a
         join public.build_page_payload bpp
           on bpp.page_type = 'agency'
-         and bpp.entity_id = fab.agency_id
+         and bpp.entity_id = a.id
+        where a.parent_federal_agency_id is not null
         order by bpp.payload->'agency'->>'slug'
       `,
     )
@@ -222,7 +223,7 @@ const redirects = await withDb(async (client) => {
       from: normalizePath(`/law-enforcement-agency/federal/${agency.slug}/`),
       to: normalizePath(agency.canonical_path),
       status: 301,
-      source: "federal_agency_branch legacy agency route",
+      source: "agency.parent_federal_agency_id legacy agency route",
     })),
     ...civilCaseRows.map((civilCase) => ({
       from: normalizePath(

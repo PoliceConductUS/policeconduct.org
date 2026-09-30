@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import "dotenv/config";
+import dotenv from "dotenv";
 import { Client } from "pg";
 
 // These specs exercise the align-report-pages parity work: the report
@@ -18,18 +18,18 @@ type ReportFixture = {
 type PersonnelFixture = {
   agencyPersonnelPath: string;
   officerName: string;
+  reportCount: number;
 };
 
 let reportFixture: ReportFixture | null = null;
 let personnelFixture: PersonnelFixture | null = null;
-let fixtureLookupError: string | null = null;
 
 test.beforeAll(async () => {
+  for (const path of [".env", ".env-recaptcha", ".env-policeconduct"])
+    dotenv.config({ path, override: true, quiet: true });
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    fixtureLookupError =
-      "DATABASE_URL is not set; cannot look up dev-data fixtures.";
-    return;
+    throw new Error("DATABASE_URL is required for report-pages fixtures.");
   }
 
   const client = new Client({ connectionString: databaseUrl });
@@ -48,9 +48,10 @@ test.beforeAll(async () => {
         from public.reviews r
         join public.location_path lp
           on lp.location_path_id = r.location_path_id
-        join public.review_officers ro on ro.review_id = r.id
-        join public.review_officers_ratings rr
-          on rr.review_officer_id = ro.id
+        join public.review_personnel ro on ro.review_id = r.id
+        where ro.rating_overall is not null
+          and r.charges is null and r.case_number is null and r.setting is null
+          and r.how_felt is null
         group by r.id, lp.path
         order by r.slug
         limit 1
@@ -66,26 +67,26 @@ test.beforeAll(async () => {
       };
     }
 
-    // The smallest agency (fewest personnel, so the row is on the
-    // unpaginated first page) that has at least one officer with a linked
-    // report, per the live review_officers <-> agency_officers join
-    // agency-detail.ts now uses instead of the stale officers_stats
-    // projection.
+    // The smallest agency with a report-linked person keeps the full-roster
+    // page fast. Compare its displayed count to the real relationship rows.
     const personnelRow = (
       await client.query(`
         select
           bpp.path as agency_path,
           o.first_name,
-          o.last_name
-        from public.review_officers ro
-        join public.agency_officers ao on ao.id = ro.agency_officer_id
+          o.last_name,
+          (select count(distinct rp.review_id) from public.review_personnel rp
+            join public.agency_personnel ap on ap.id = rp.agency_personnel_id
+            where ap.personnel_id = o.id) as report_count
+        from public.review_personnel ro
+        join public.agency_personnel ao on ao.id = ro.agency_personnel_id
         join public.agency a on a.id = ao.agency_id
-        join public.officers o on o.id = ao.officer_id
+        join public.personnel o on o.id = ao.personnel_id
         join public.build_page_payload bpp
           on bpp.page_type = 'agency' and bpp.entity_id = a.id
         join (
           select agency_id, count(*) as officer_count
-          from public.agency_officers
+          from public.agency_personnel
           group by agency_id
         ) sizes on sizes.agency_id = a.id
         group by bpp.path, o.first_name, o.last_name, o.id, sizes.officer_count, a.id
@@ -97,6 +98,7 @@ test.beforeAll(async () => {
           agency_path: string;
           first_name: string | null;
           last_name: string | null;
+          report_count: string;
         }
       | undefined;
 
@@ -107,31 +109,21 @@ test.beforeAll(async () => {
       personnelFixture = {
         agencyPersonnelPath: `${personnelRow.agency_path}personnel/`,
         officerName,
+        reportCount: Number(personnelRow.report_count),
       };
     }
 
     if (!reportRow || !personnelRow) {
-      fixtureLookupError =
-        "Dev database has no reports with officer ratings, or no agency " +
-        "with a report-linked officer; these fixtures are required for " +
-        "the report-pages e2e specs.";
+      throw new Error(
+        "Required rated report and report-linked personnel fixtures are unavailable.",
+      );
     }
-  } catch (error) {
-    fixtureLookupError = `Could not query the dev database for report-pages fixtures: ${String(error)}`;
   } finally {
     await client.end().catch(() => {});
   }
 });
 
 test.describe("report detail page", () => {
-  test.beforeEach(() => {
-    test.skip(
-      !reportFixture,
-      fixtureLookupError ??
-        "No report fixture with rated officers found in dev data.",
-    );
-  });
-
   test('renders the factual account under "What happened"', async ({
     page,
   }) => {
@@ -174,7 +166,7 @@ test.describe("report detail page", () => {
   }) => {
     await page.goto(reportFixture!.path);
 
-    // This fixture's officers have review_officers_ratings rows (see the
+    // This fixture's officers have non-null review_personnel.rating_overall values (see the
     // beforeAll query), so this is a real assertion that rating data is
     // suppressed, not a vacuous pass.
     await expect(page.locator(".rating-badge")).toHaveCount(0);
@@ -202,26 +194,19 @@ test.describe("report detail page", () => {
 });
 
 test.describe("agency personnel report counts", () => {
-  test.beforeEach(() => {
-    test.skip(
-      !personnelFixture,
-      fixtureLookupError ??
-        "No agency with a report-linked officer found in dev data.",
-    );
-  });
-
   test("shows a non-zero live report count for an officer with linked reports", async ({
     page,
   }) => {
     await page.goto(personnelFixture!.agencyPersonnelPath);
 
-    const row = page.locator("table.record-table tbody tr").filter({
+    const row = page.locator("[data-roster-item]").filter({
       has: page.getByRole("link", { name: personnelFixture!.officerName }),
     });
     await expect(row).toHaveCount(1);
 
-    const reportsCell = row.locator("td.num");
-    const reportsText = (await reportsCell.innerText()).trim();
-    expect(Number(reportsText)).toBeGreaterThan(0);
+    expect(personnelFixture!.reportCount).toBeGreaterThan(0);
+    await expect(row.locator(".roster-meta")).toContainText(
+      `${personnelFixture!.reportCount} report${personnelFixture!.reportCount === 1 ? "" : "s"}`,
+    );
   });
 });

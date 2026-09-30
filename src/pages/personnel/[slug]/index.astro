@@ -1,4 +1,6 @@
 ---
+import CoverageLinks from "#src/components/CoverageLinks.astro";
+import { loadCoverageLinksForOfficer } from "#src/lib/data/coverage.js";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import "#src/styles/civic-ledger.css";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
@@ -16,6 +18,9 @@ import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import LicenseTimeline from "#src/components/LicenseTimeline.astro";
 import PersonnelDiscipline from "#src/components/PersonnelDiscipline.astro";
+import PersonnelDeceasedNotice from "#src/components/PersonnelDeceasedNotice.astro";
+import PersonnelArrestProfiles from "#src/components/PersonnelArrestProfiles.astro";
+import { loadArrestProfilesForPersonnel } from "#src/lib/data/arrest-profiles.js";
 import PersonnelEducation from "#src/components/PersonnelEducation.astro";
 import {
   loadDisciplineForPersonnel,
@@ -146,6 +151,8 @@ const data = await withDb(async (client) => {
     civilCases,
   };
 });
+const coverageLinks = await loadCoverageLinksForOfficer(data.officer.id);
+const arrestProfiles = await loadArrestProfilesForPersonnel(data.officer.id);
 const licensing = await loadLicensingForPersonnel(data.officer.id);
 const discipline = await loadDisciplineForPersonnel(data.officer.id);
 const education = await loadEducationForPersonnel(data.officer.id);
@@ -239,7 +246,13 @@ const reportItems = data.reports.map(
 );
 
 const officerPath = `/personnel/${data.officer.slug}/`;
-const officerName = [data.officer.first_name, data.officer.last_name]
+const officerName = [
+  data.officer.prefix,
+  data.officer.first_name,
+  data.officer.middle_name,
+  data.officer.last_name,
+  data.officer.suffix,
+]
   .filter(Boolean)
   .join(" ");
 const deceasedOnValue = data.officer.deceased_on;
@@ -256,8 +269,8 @@ const deceasedPublicMessage =
     : "This individual is reported deceased.");
 const assignmentStatusLabel = hasCurrentAssignment
   ? "Current agency"
-  : "Last known agency";
-const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${hasCurrentAssignment ? currentAgency!.name : `Last known: ${currentAgency!.name}`} | PoliceConduct.org`;
+  : "Most recent agency";
+const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${hasCurrentAssignment ? currentAgency!.name : `Most recent: ${currentAgency!.name}`} | PoliceConduct.org`;
 const pageDescription = isDeceased
   ? `${officerName} personnel profile with agency assignments, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
   : `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}, agency assignments, public reports, coverage, and civil litigation records.`;
@@ -438,10 +451,20 @@ const personnelMetricCards: MetricCardItem[] = [
     value: unavailableValue,
   },
   {
+    ...(arrestProfiles.length
+      ? {
+          detail: "Recorded counts by agency assignment",
+          action: {
+            href: "#arrest-records",
+            kind: "link" as const,
+            label: "View records",
+          },
+        }
+      : {}),
     accent: metricVisuals.arrests.accent,
     icon: metricVisuals.arrests.icon,
     label: metricVisuals.arrests.label,
-    value: unavailableValue,
+    value: arrestProfiles.length ? "Available" : unavailableValue,
   },
   {
     ...(reportItems.length > 0
@@ -524,7 +547,9 @@ const structuredData = {
       <div class="personnel-profile-title">
         <h1 class="ipc-page-title">{officerName}</h1>
         <p class="personnel-current-line">
-          Current agency: <a href={currentAgencyPath}>{currentAgency!.name}</a>
+          {assignmentStatusLabel}: <a href={currentAgencyPath}
+            >{currentAgency!.name}</a
+          >
           <span aria-hidden="true"> · </span>
           {currentAgencyLocation}
         </p>
@@ -534,8 +559,10 @@ const structuredData = {
         {
           isDeceased ? (
             <div class="personnel-status-note" role="status">
-              <strong>Status: Deceased.</strong>
-              <span>{deceasedPublicMessage}</span>
+              <PersonnelDeceasedNotice
+                message={deceasedPublicMessage}
+                source={data.officer.deceased_source}
+              />
             </div>
           ) : null
         }
@@ -602,6 +629,8 @@ const structuredData = {
   <MetricGrid metrics={personnelMetricCards} />
 
   <div class="personnel-section-grid">
+    <PersonnelArrestProfiles profiles={arrestProfiles} />
+    <CoverageLinks links={coverageLinks} />
     {
       licensing.licenses.length ? (
         <section class="personnel-panel personnel-panel-wide">
@@ -611,7 +640,10 @@ const structuredData = {
           </div>
           <div class="personnel-license-cards">
             {licensing.licenses.map((license) => (
-              <article class="personnel-license-card">
+              <article
+                class="personnel-license-card"
+                id={`license-${license.id}`}
+              >
                 <h3>{license.licenseType}</h3>
                 <dl>
                   {license.status ? (
@@ -739,6 +771,7 @@ const structuredData = {
                 <tr>
                   <th scope="col">Agency</th>
                   <th scope="col">Role</th>
+                  <th scope="col">License</th>
                   <th scope="col">Start Date</th>
                   <th scope="col">End Date</th>
                   <th scope="col">Status</th>
@@ -746,13 +779,30 @@ const structuredData = {
               </thead>
               <tbody>
                 {assignmentHistory.map((entry) => (
-                  <tr>
+                  <tr data-agency-assignment-id={entry.id}>
                     <th scope="row">
                       <a href={requireAgencyCanonicalPath(entry.agency)}>
                         {entry.agency.name}
                       </a>
                     </th>
                     <td>{entry.title || currentTitle}</td>
+                    <td>
+                      {entry.license_id &&
+                        (() => {
+                          const license = licensing.licenses.find(
+                            (license) => license.id === entry.license_id,
+                          );
+                          if (!license)
+                            throw new Error(
+                              `Assignment ${entry.id} references missing license ${entry.license_id}`,
+                            );
+                          return (
+                            <a href={`#license-${license.id}`}>
+                              {license.licenseType}
+                            </a>
+                          );
+                        })()}
+                    </td>
                     <td>
                       {entry.start_date
                         ? formatShortDate(entry.start_date)

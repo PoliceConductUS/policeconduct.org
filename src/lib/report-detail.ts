@@ -1,6 +1,5 @@
 import { withDb } from "./db.js";
 import { mapBy } from "./data.js";
-import { loadCoverageLinksForReport } from "./data/coverage.js";
 import { requireAgencyCanonicalPath } from "./data/location-paths.js";
 import { buildReportCanonicalPath } from "./data/report-paths.js";
 
@@ -23,22 +22,18 @@ type ReportOfficerEntry = {
 type ReportDetailQuery = {
   report: Record<string, unknown> | null;
   reportOfficers: any[];
-  reportTags: any[];
   reportLinks: any[];
-  reportAttachments: any[];
-  reportWitnesses: any[];
   officers: any[];
   agencies: any[];
   agencyOfficers: any[];
-  tags: any[];
 };
 
 // Parity fields collected by /report/new that the mockup displays
 // post-approval, mapped from their storage columns and rendered only when
 // present (see openspec/changes/align-report-pages/brainstorm.md). `charges`
-// holds submitter-entered charges/allegations text (`reviews.charges`); true
-// charge OUTCOME is editor-added data pending the intake migration and has
-// no storage column yet (see scripts/validate-schema-contract.mjs).
+// holds submitter-entered charges/allegations text (`reviews.charges`).
+// Narrative answers use the current reviews columns and remain the
+// submitter's own account.
 export type ReportDetailFacts = {
   submitterRelationship: string | null;
   interactionType: string | null;
@@ -49,12 +44,16 @@ export type ReportDetailFacts = {
   incidentTime: string | null;
   feelings: string | null;
   charges: string | null;
+  desiredOutcome: string | null;
+  whatHappened: string | null;
+  whatElse: string | null;
+  purpose: string | null;
 };
 
 const nullableText = (value: unknown): string | null =>
   typeof value === "string" && value.trim().length > 0 ? value : null;
 
-const buildReportFacts = (
+export const buildReportFacts = (
   report: Record<string, unknown>,
 ): ReportDetailFacts => ({
   submitterRelationship: nullableText(report.submitter_relationship),
@@ -64,8 +63,12 @@ const buildReportFacts = (
   complaintFiled: nullableText(report.complaint_filed),
   bodycamRequested: nullableText(report.bodycam_requested),
   incidentTime: nullableText(report.incident_time),
-  feelings: nullableText(report.feelings),
+  feelings: nullableText(report.how_felt),
   charges: nullableText(report.charges),
+  desiredOutcome: nullableText(report.desired_outcome),
+  whatHappened: nullableText(report.what_happened),
+  whatElse: nullableText(report.what_else),
+  purpose: nullableText(report.purpose),
 });
 
 export type ReportDetailModel = {
@@ -78,18 +81,7 @@ export type ReportDetailModel = {
     place: { label: string; href: string };
     reports: { label: string; href: string };
   };
-  reportWitnesses: Record<string, unknown>[];
-  reportAttachments: Record<string, unknown>[];
-  tags: string[];
   officers: ReportOfficerEntry[];
-  civilCases: {
-    id: string;
-    title: string;
-    causeNumber: string;
-    court: string | null;
-    filedDate: string | null;
-    path: string;
-  }[];
   evidenceLinks: {
     id: string;
     title: string;
@@ -203,14 +195,10 @@ export const loadReportDetail = async (
       return {
         report: null,
         reportOfficers: [],
-        reportTags: [],
         reportLinks: [],
-        reportAttachments: [],
-        reportWitnesses: [],
         officers: [],
         agencies: [],
         agencyOfficers: [],
-        tags: [],
       };
     }
     const reportOfficers = (
@@ -219,27 +207,9 @@ export const loadReportDetail = async (
         [report.id],
       )
     ).rows;
-    const reportTags = (
-      await client.query(
-        "select * from public.review_tags where review_id = $1",
-        [report.id],
-      )
-    ).rows;
     const reportLinks = (
       await client.query(
         "select * from public.review_links where review_id = $1",
-        [report.id],
-      )
-    ).rows;
-    const reportAttachments = (
-      await client.query(
-        "select * from public.review_attachments where review_id = $1",
-        [report.id],
-      )
-    ).rows;
-    const reportWitnesses = (
-      await client.query(
-        "select * from public.review_witnesses where review_id = $1",
         [report.id],
       )
     ).rows;
@@ -261,18 +231,13 @@ export const loadReportDetail = async (
     const agencyOfficers = (
       await client.query("select * from public.agency_personnel")
     ).rows;
-    const tags = (await client.query("select * from public.tags")).rows;
     return {
       report,
       reportOfficers,
-      reportTags,
       reportLinks,
-      reportAttachments,
-      reportWitnesses,
       officers,
       agencies,
       agencyOfficers,
-      tags,
     };
   });
 
@@ -305,39 +270,7 @@ export const loadReportDetail = async (
     `Report ${reportId} is missing place_name.`,
   );
 
-  const tagsById = mapBy(data.tags, "id");
-  const tags = (data.reportTags || [])
-    .map((entry: { tag_id: string }) => tagsById[entry.tag_id])
-    .filter(Boolean)
-    .map((tag: { label: string }) => tag.label);
-
   const evidenceLinks = buildEvidenceLinks(data.reportLinks ?? []);
-  const coverageLinks = await loadCoverageLinksForReport(
-    String(data.report.id),
-  );
-  const civilCases = await withDb(async (client) => {
-    return (
-      await client.query(
-        `
-          select distinct
-            civil_case.id,
-            civil_case.title,
-            civil_case.cause_number,
-            civil_case.court,
-            civil_case.filed_date,
-            civil_case.slug
-          from public.coverage_link_reports report_link
-          join public.coverage_link_civil_cases civil_case_link
-            on civil_case_link.coverage_link_id = report_link.coverage_link_id
-          join public.civil_cases civil_case
-            on civil_case.id = civil_case_link.civil_case_id
-          where report_link.review_id = $1
-          order by civil_case.filed_date desc, civil_case.title
-        `,
-        [reportId],
-      )
-    ).rows;
-  });
 
   return {
     report: data.report,
@@ -366,36 +299,9 @@ export const loadReportDetail = async (
         href: `${locationPath}reports/`,
       },
     },
-    reportWitnesses: data.reportWitnesses ?? [],
-    reportAttachments: data.reportAttachments ?? [],
-    tags,
     officers: buildOfficerEntries(
       data as ReportDetailQuery & { report: Record<string, unknown> },
     ),
-    civilCases: civilCases.map((civilCase: Record<string, string | null>) => {
-      const id = assertValue(civilCase.id, "Missing id for civil case row");
-      const title = assertValue(
-        civilCase.title,
-        `Missing title for civil case ${id}`,
-      );
-      const causeNumber = assertValue(
-        civilCase.cause_number,
-        `Missing cause_number for civil case ${id}`,
-      );
-      const slug = assertValue(
-        civilCase.slug,
-        `Missing slug for civil case ${id}`,
-      );
-
-      return {
-        id,
-        title,
-        causeNumber,
-        court: civilCase.court,
-        filedDate: civilCase.filed_date,
-        path: `/civil-cases/${slug}/`,
-      };
-    }),
-    evidenceLinks: [...evidenceLinks, ...coverageLinks],
+    evidenceLinks,
   };
 };

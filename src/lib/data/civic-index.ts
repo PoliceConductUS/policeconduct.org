@@ -1,7 +1,6 @@
 import type {
   LocationAgencyPayload,
   LocationChildPayload,
-  LocationReportPayload,
   LocationPagePayload,
 } from "./build-payloads.js";
 import { metricLabels } from "../metric-vocabulary.js";
@@ -154,7 +153,6 @@ export type CivicIndexModel = {
   };
   pagePath: string;
   pendingTopics: CivicPendingTopic[];
-  locationReports: LocationReportPayload[];
   rows: CivicIndexRow[];
   statCells: CivicStatCell[];
   title: string;
@@ -577,7 +575,6 @@ export const buildStateCivicIndex = async (
     },
     pagePath: state.path,
     pendingTopics: buildPendingTopics(state.path, "state", stateSlug),
-    locationReports: state.locationReports || [],
     rows,
     statCells: buildStatCells({
       coverage,
@@ -637,7 +634,6 @@ export const buildAdministrativeAreaCivicIndex = async (
       "administrative_area",
       areaSlug,
     ),
-    locationReports: area.locationReports || [],
     rows,
     statCells: buildStatCells({
       coverage,
@@ -695,7 +691,6 @@ export const buildPlaceCivicIndex = async (
     },
     pagePath: place.path,
     pendingTopics: buildPendingTopics(place.path, "place", placeSlug),
-    locationReports: place.locationReports || [],
     rows,
     statCells: buildStatCells({
       coverage,

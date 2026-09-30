@@ -371,17 +371,6 @@ const reportPayload = ({ report }) => {
   };
 };
 
-const locationReportPayload = (report) => ({
-  id: report.id,
-  reportType: report.reportType,
-  reportKey: report.reportKey,
-  title: report.title,
-  summary: report.summary,
-  payload: report.payload,
-  sortOrder: report.sortOrder,
-  sources: report.sources,
-});
-
 const insertJsonRow = async (client, row) => {
   await client.query(
     `
@@ -577,42 +566,7 @@ await withDb(async (client) => {
               a.state,
               a.city
             from public.agency a
-            where exists (
-              select 1
-              from public.agency_personnel ao
-              where ao.agency_id = a.id
-            )
-            or exists (
-              select 1
-              from public.agency_personnel ao
-              join public.review_personnel ro
-                on ro.agency_personnel_id = ao.id
-              where ao.agency_id = a.id
-            )
-            or exists (
-              select 1
-              from public.agency_personnel ao
-              join public.civil_case_personnel cco
-                on cco.agency_personnel_id = ao.id
-              where ao.agency_id = a.id
-            )
-            or exists (
-              select 1
-              from public.agency_links al
-              where al.agency_id = a.id
-            )
-            or exists (
-              select 1
-              from public.federal_agency_branch fab
-              where fab.agency_id = a.id
-            )
-            or exists (
-              select 1
-              from public.agency_personnel ao
-              join public.coverage_link_agency_personnel coverage_officer
-                on coverage_officer.agency_personnel_id = ao.id
-              where ao.agency_id = a.id
-            )
+
           ),
           personnel_counts as (
             -- Currently-serving officers only (no end_date). Every displayed
@@ -1004,152 +958,6 @@ await withDb(async (client) => {
       };
     });
 
-    const locationReportRows = (
-      await client.query(
-        `
-          select
-            lr.id,
-            lr.location_path_id,
-            lr.report_type,
-            lr.report_key,
-            lr.title,
-            lr.summary,
-            lr.payload,
-            lr.sort_order,
-            lr.updated_at,
-            lrs.id as source_id,
-            lrs.source_key,
-            lrs.label as source_label,
-            lrs.url as source_url,
-            lrs.source_type,
-            lrs.sort_order as source_sort_order
-          from public.location_reports lr
-          left join public.location_report_sources lrs
-            on lrs.location_report_id = lr.id
-          where lr.status = 'published'
-          order by lr.location_path_id, lr.sort_order, lower(lr.title), lr.id,
-            lrs.sort_order, lower(lrs.label), lrs.id
-        `,
-      )
-    ).rows;
-
-    const locationReportsById = new Map();
-    for (const row of locationReportRows) {
-      const reportId = assertValue(row.id, "Location report row is missing id");
-      let report = locationReportsById.get(reportId);
-      if (!report) {
-        report = {
-          id: reportId,
-          locationPathId: assertValue(
-            row.location_path_id,
-            `Location report ${reportId} is missing location_path_id.`,
-          ),
-          reportType: assertValue(
-            row.report_type,
-            `Location report ${reportId} is missing report_type.`,
-          ),
-          reportKey: assertValue(
-            row.report_key,
-            `Location report ${reportId} is missing report_key.`,
-          ),
-          title: assertValue(
-            row.title,
-            `Location report ${reportId} is missing title.`,
-          ),
-          summary: assertValue(
-            row.summary,
-            `Location report ${reportId} is missing summary.`,
-          ),
-          payload: row.payload || {},
-          sortOrder: Number(row.sort_order || 0),
-          sources: [],
-          updatedAt: row.updated_at,
-        };
-        locationReportsById.set(reportId, report);
-      }
-      if (row.source_id) {
-        report.sources.push({
-          id: row.source_id,
-          sourceKey: assertValue(
-            row.source_key,
-            `Location report source ${row.source_id} is missing source_key.`,
-          ),
-          label: assertValue(
-            row.source_label,
-            `Location report source ${row.source_id} is missing label.`,
-          ),
-          url: assertValue(
-            row.source_url,
-            `Location report source ${row.source_id} is missing url.`,
-          ),
-          sourceType: assertValue(
-            row.source_type,
-            `Location report source ${row.source_id} is missing source_type.`,
-          ),
-          sortOrder: Number(row.source_sort_order || 0),
-        });
-      }
-    }
-
-    const locationReportsByLocationId = new Map();
-    for (const report of locationReportsById.values()) {
-      const reportsForLocation =
-        locationReportsByLocationId.get(report.locationPathId) || [];
-      reportsForLocation.push(locationReportPayload(report));
-      locationReportsByLocationId.set(
-        report.locationPathId,
-        reportsForLocation,
-      );
-    }
-
-    const reportStateLocationRows = locationReportsByLocationId.size
-      ? (
-          await client.query(
-            `
-              select
-                location_path_id,
-                path,
-                split_part(path, '/', 2) as state_or_territory_slug,
-                display_name as state_or_territory_name,
-                updated_at
-              from public.location_path
-              where level = 'state'
-                and location_path_id = any($1)
-            `,
-            [[...locationReportsByLocationId.keys()]],
-          )
-        ).rows
-      : [];
-
-    for (const row of reportStateLocationRows) {
-      const stateSlug = assertValue(
-        row.state_or_territory_slug,
-        `Location report state path ${row.location_path_id} is missing state slug.`,
-      );
-      if (states.has(stateSlug)) {
-        continue;
-      }
-      states.set(stateSlug, {
-        level: "state",
-        state: stateSlug,
-        stateLabel: assertValue(
-          row.state_or_territory_name,
-          `Location report state path ${row.location_path_id} is missing state name.`,
-        ),
-        path: assertValue(
-          row.path,
-          `Location report state path ${row.location_path_id} is missing path.`,
-        ),
-        id: assertValue(
-          row.location_path_id,
-          "Location report state path row is missing id.",
-        ),
-        areas: new Map(),
-        agencies: [],
-        updatedAt: row.updated_at,
-      });
-    }
-
     await client.query("delete from public.build_page_payload");
     await client.query("delete from public.agency_zip_index");
     await client.query("delete from public.location_path_closure");
@@ -1330,7 +1138,6 @@ await withDb(async (client) => {
             stateLabel: state.stateLabel,
             administrativeAreaPlural: state.administrativeAreaPlural,
             coverage: state.coverage,
-            locationReports: locationReportsByLocationId.get(state.id) || [],
             mapBounds: state.mapBounds,
             mapPositionSource: state.mapPositionSource,
             children: areas.map(stateAreaChildPayload),
@@ -1358,7 +1165,6 @@ await withDb(async (client) => {
               administrativeAreaKind: area.administrativeAreaKind,
               parentPath: state.path,
               coverage: area.coverage,
-              locationReports: locationReportsByLocationId.get(area.id) || [],
               mapBounds: area.mapBounds,
               mapPositionSource: area.mapPositionSource,
               children: places.map(areaPlaceChildPayload),
@@ -1384,8 +1190,6 @@ await withDb(async (client) => {
                 administrativeAreaSlug: place.administrativeAreaSlug,
                 parentPath: area.path,
                 coverage: place.coverage,
-                locationReports:
-                  locationReportsByLocationId.get(place.id) || [],
                 mapBounds: place.mapBounds,
                 mapPositionSource: place.mapPositionSource,
                 agencies: place.agencies.map((agency) => ({
@@ -1431,7 +1235,6 @@ await withDb(async (client) => {
           locations: locations.length,
           agencies: agencies.length,
           reports: reports.length,
-          locationReports: locationReportsById.size,
           excludedAgencies: totalAgencyCount - agencies.length,
           payloads: payloadRows.length,
           durationMs: Date.now() - startedAt,

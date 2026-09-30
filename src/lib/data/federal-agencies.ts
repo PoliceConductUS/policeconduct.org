@@ -363,18 +363,19 @@ export const loadFederalAgencySummaries = async () => {
             fa.id,
             fa.name,
             fa.slug,
-            count(distinct fab.agency_id) as branch_count,
+            count(distinct a.id) as branch_count,
             count(distinct active_assignment.personnel_id) as personnel_count,
             count(distinct report_officer.review_id) as report_count,
             count(distinct civil_case_link.civil_case_id) as civil_case_count
           from public.federal_agency fa
-          left join public.federal_agency_branch fab
-            on fab.federal_agency_id = fa.id
+          left join public.agency a
+            on a.parent_federal_agency_id = fa.id
+           and a.parent_federal_agency_id is not null
           left join public.agency_personnel active_assignment
-            on active_assignment.agency_id = fab.agency_id
+            on active_assignment.agency_id = a.id
            and active_assignment.end_date is null
           left join public.agency_personnel report_assignment
-            on report_assignment.agency_id = fab.agency_id
+            on report_assignment.agency_id = a.id
           left join public.review_personnel report_officer
             on report_officer.agency_personnel_id = report_assignment.id
           left join lateral (
@@ -382,7 +383,7 @@ export const loadFederalAgencySummaries = async () => {
             from public.agency_personnel direct_assignment
             join public.civil_case_personnel cco
               on cco.agency_personnel_id = direct_assignment.id
-            where direct_assignment.agency_id = fab.agency_id
+            where direct_assignment.agency_id = a.id
             union
             select cco.civil_case_id
             from public.agency_personnel target_assignment
@@ -390,7 +391,7 @@ export const loadFederalAgencySummaries = async () => {
               on case_assignment.personnel_id = target_assignment.personnel_id
             join public.civil_case_personnel cco
               on cco.agency_personnel_id = case_assignment.id
-            where target_assignment.agency_id = fab.agency_id
+            where target_assignment.agency_id = a.id
           ) civil_case_link on true
           group by fa.id, fa.name, fa.slug
           order by fa.name
@@ -443,10 +444,8 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
               '[]'::jsonb
             ) as branches
           from public.federal_agency fa
-          left join public.federal_agency_branch fab
-            on fab.federal_agency_id = fa.id
           left join public.agency a
-            on a.id = fab.agency_id
+            on a.parent_federal_agency_id = fa.id
           left join public.location_path lp
             on lp.location_path_id = a.location_path_id
           left join public.location_path area_lp
@@ -612,7 +611,6 @@ export const buildFederalCivicIndex = (
     },
     pagePath,
     pendingTopics: buildPendingTopics(pagePath, "federal", "federal"),
-    locationReports: [],
     rows,
     statCells: [
       {

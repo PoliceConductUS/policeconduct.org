@@ -74,6 +74,7 @@ export default defineConfig({
     enabled: process.env.DISABLE_ASTRO_DEV_TOOLBAR !== "1",
   },
   build: {
+    concurrency: 8,
     inlineStylesheets: "never",
   },
   // Scope component styles with short `astro-<hash>` class markers wrapped in
