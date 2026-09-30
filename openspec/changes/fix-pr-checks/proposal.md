@@ -7,7 +7,7 @@ PR #3 fails preview deployment because its AWS configuration does not match the 
 ## What Changes
 
 - Restrict jump-control navigation to HTTP(S) URLs in the site and mockup.
-- Correct literal hostname escaping in the SEO audit.
+- Parse sitemap directives and compare their URLs directly to the canonical host.
 - Connect preview automation to the existing environment configuration and identify the missing intake dump prerequisite.
 - Make Copilot's dependency/browser setup complete successfully without treating environment setup as a database-backed release build.
 

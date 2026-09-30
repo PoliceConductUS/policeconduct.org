@@ -124,12 +124,11 @@ const ensureRobotsAndSitemap = async () => {
   if (!/Allow:\s*\//i.test(robots)) {
     addError("robots.txt missing 'Allow: /'.");
   }
-  if (
-    !new RegExp(
-      `Sitemap:\\s*${CANONICAL_HOST.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/sitemap-index\\.xml`,
-      "i",
-    ).test(robots)
-  ) {
+  const sitemapUrls = robots.split(/\r?\n/).flatMap((line) => {
+    const directive = line.trim().match(/^Sitemap:\s*(\S+)$/i);
+    return directive ? [directive[1].toLowerCase()] : [];
+  });
+  if (!sitemapUrls.includes(`${CANONICAL_HOST}/sitemap-index.xml`)) {
     addError(
       `robots.txt sitemap line should point to ${CANONICAL_HOST}/sitemap-index.xml.`,
     );
