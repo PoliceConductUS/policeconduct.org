@@ -17,7 +17,7 @@
 //
 // Fails closed: exits non-zero on any coverage gap, and also if the prior source
 // is set/defaulted but cannot be loaded (use PRIOR_SITEMAP=skip to opt out).
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 
 const DIST_DIR = path.resolve("dist");
@@ -87,6 +87,17 @@ const loadRedirects = async () => {
   }
 };
 
+const hasGeneratedRoute = async (route) => {
+  const file = path.resolve(DIST_DIR, `.${route}`, "index.html");
+  if (!file.startsWith(`${DIST_DIR}${path.sep}`)) return false;
+  try {
+    await access(file);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const loadAbsences = async () => {
   const entries = JSON.parse(await readFile("route-absences.json", "utf8"));
   if (!Array.isArray(entries)) {
@@ -143,7 +154,7 @@ const main = async () => {
   // source is not in the prior sitemap. Single hop: target is a route and not
   // itself a redirect source.
   for (const [from, to] of redirects) {
-    if (!newPaths.has(to)) {
+    if (!newPaths.has(to) && !(await hasGeneratedRoute(to))) {
       failures.push(
         `redirect ${from} -> ${to}: target is not a route in this build`,
       );
@@ -158,7 +169,7 @@ const main = async () => {
   let covered = 0;
   let absent = 0;
   for (const p of priorPaths) {
-    if (newPaths.has(p)) continue;
+    if (newPaths.has(p) || (await hasGeneratedRoute(p))) continue;
     const to = redirects.get(p);
     if (to) {
       covered += 1; // target validity already checked above

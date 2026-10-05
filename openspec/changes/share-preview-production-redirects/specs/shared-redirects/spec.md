@@ -28,3 +28,21 @@ Local production and preview publication SHALL load their own build's validated 
 
 - **WHEN** the shared router is enabled on preview
 - **THEN** representative legacy production paths return the expected HTTP redirect and resolve to available preview destinations
+
+### Requirement: Coverage includes generated noindex pages
+
+The coverage checker SHALL recognize generated HTML routes omitted from the sitemap, including submission forms, while rejecting missing redirect destinations and redirect chains.
+
+#### Scenario: A redirect targets a noindex form
+
+- **WHEN** a redirect destination has generated HTML but is excluded from the sitemap
+- **THEN** the coverage checker accepts the destination without changing its indexing policy
+
+### Requirement: Approved duplicate agency URLs retain navigation
+
+The redirect generator SHALL map approved legacy duplicate agency paths to the retained agency identity, resolving the destination from its database-backed location path and slug. Missing retained identities SHALL fail generation.
+
+#### Scenario: A reader follows an approved duplicate URL
+
+- **WHEN** the legacy duplicate agency URL is requested
+- **THEN** it redirects directly to the retained agency canonical path

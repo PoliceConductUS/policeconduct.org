@@ -19,7 +19,13 @@ const sitemap = (paths) =>
 
 async function check(
   t,
-  { prior = [missing], current = ["/"], redirects = [], absences = [] } = {},
+  {
+    prior = [missing],
+    current = ["/"],
+    redirects = [],
+    absences = [],
+    htmlRoutes = [],
+  } = {},
 ) {
   const cwd = await mkdtemp(path.join(tmpdir(), "route-coverage-"));
   t.after(() => rm(cwd, { recursive: true, force: true }));
@@ -30,6 +36,14 @@ async function check(
     path.join(cwd, "dist/_redirect-map.json"),
     JSON.stringify({ redirects }),
   );
+  for (const route of htmlRoutes) {
+    const routeDir = path.join(cwd, "dist", route.replace(/^\/+/, ""));
+    await mkdir(routeDir, { recursive: true });
+    await writeFile(
+      path.join(routeDir, "index.html"),
+      '<!doctype html><html><head><meta name="robots" content="noindex"></head><body>Fixture route</body></html>',
+    );
+  }
   if (absences !== null) {
     await writeFile(
       path.join(cwd, "route-absences.json"),
@@ -78,6 +92,49 @@ test("a verified replacement redirect still passes", async (t) => {
     redirects: [{ from: missing, to: "/personnel/replacement-789/" }],
   });
   assert.equal(result.status, 0, result.stderr);
+});
+
+test("a prior noindex route with generated HTML is a current page", async (t) => {
+  const route = "/forms/contact/";
+  const result = await check(t, {
+    prior: [route],
+    htmlRoutes: [route],
+  });
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("a redirect to a noindex route with generated HTML passes", async (t) => {
+  const destination = "/forms/contact/";
+  const result = await check(t, {
+    prior: ["/old-contact/"],
+    redirects: [{ from: "/old-contact/", to: destination }],
+    htmlRoutes: [destination],
+  });
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("a redirect to a route without sitemap entry or generated HTML fails", async (t) => {
+  const destination = "/forms/missing/";
+  const result = await check(t, {
+    prior: ["/old-contact/"],
+    redirects: [{ from: "/old-contact/", to: destination }],
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /target is not a route/);
+});
+
+test("a redirect chain through a noindex route still fails", async (t) => {
+  const middle = "/forms/contact/";
+  const result = await check(t, {
+    prior: ["/old-contact/"],
+    redirects: [
+      { from: "/old-contact/", to: middle },
+      { from: middle, to: "/" },
+    ],
+    htmlRoutes: [middle],
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /chain\/cycle/);
 });
 
 test("an absence record cannot excuse a redirect to a missing destination", async (t) => {

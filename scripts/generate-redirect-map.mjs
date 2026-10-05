@@ -32,6 +32,70 @@ const normalizePath = (value) => {
     : `${withLeadingSlash}/`;
 };
 
+// User-approved duplicate agencies: legacy routes resolve to retained agency IDs.
+const approvedDuplicateAgencyAliases = [
+  {
+    from: "/law-enforcement-agency/mn/brooklyn-center-police-department-mn-ypgp/",
+    retainedAgencyId: "f1vaatwf5ilk19pjizorn6ge",
+  },
+  {
+    from: "/law-enforcement-agency/mn/minneapolis-police-department-mn-n6rd/",
+    retainedAgencyId: "ikojqoawn6c4m5m23cgs3yan",
+  },
+  {
+    from: "/law-enforcement-agency/mn/minnesota-state-patrol-d4e5f6/",
+    retainedAgencyId: "amcwh94rl4evk2uvlej74k70",
+  },
+  {
+    from: "/law-enforcement-agency/mn/st-anthony-police-department-mn-tbh3/",
+    retainedAgencyId: "g0z448nl5vtavrvntebbzu2n",
+  },
+  {
+    from: "/law-enforcement-agency/tx/dallas-police-department-tx-woyv/",
+    retainedAgencyId: "cm76wpxb701ggvrvgmu50aa9n",
+  },
+  {
+    from: "/law-enforcement-agency/tx/fort-worth-police-department-tx-py90/",
+    retainedAgencyId: "cm7a0bgon037gewvgoqo5jqsu",
+  },
+  {
+    from: "/law-enforcement-agency/tx/texas-department-of-public-safety-tx-28dj/",
+    retainedAgencyId: "cm7a0bgoo03ekewvgxw2elv24",
+  },
+  {
+    from: "/law-enforcement-agency/federal/fbi/",
+    retainedAgencyId: "cm7a0bgot046gewvgtaafjyui",
+  },
+  {
+    from: "/law-enforcement-agency/federal/atf/",
+    retainedAgencyId: "cm7a0bgot046mewvgs6xyqymp",
+  },
+  {
+    from: "/law-enforcement-agency/federal/dea/",
+    retainedAgencyId: "cm7a0bgot046oewvgozeu75gj",
+  },
+  {
+    from: "/law-enforcement-agency/federal/usss/",
+    retainedAgencyId: "cm7a0bgot046iewvg5qs1f9cn",
+  },
+  {
+    from: "/law-enforcement-agency/federal/cbp/",
+    retainedAgencyId: "cufdb3i3jzsr5kkfuto7huqk",
+  },
+  {
+    from: "/law-enforcement-agency/federal/tsa/",
+    retainedAgencyId: "chvdwkxp1cjwertwzt6ll9b0",
+  },
+  {
+    from: "/law-enforcement-agency/federal/uscg/",
+    retainedAgencyId: "c887sm2ibjg8c2yp4e4f4es5",
+  },
+  {
+    from: "/law-enforcement-agency/federal/usms/",
+    retainedAgencyId: "cs2sz1y65zqybhahepchwol6",
+  },
+];
+
 const legacyReportSlugAliases = [
   {
     oldSlug: "2023-12-04-75039-1st-amendment-retaliation-arrest-2c545f",
@@ -180,19 +244,48 @@ const redirects = await withDb(async (client) => {
     )
   ).rows;
 
+  const retainedAgencyRows = (
+    await client.query(
+      `
+        select a.id, a.slug, lp.path as location_path
+        from public.agency a
+        join public.location_path lp
+          on lp.location_path_id = a.location_path_id
+        where a.id = any($1::text[])
+      `,
+      [approvedDuplicateAgencyAliases.map((alias) => alias.retainedAgencyId)],
+    )
+  ).rows;
+  const retainedAgenciesById = new Map(
+    retainedAgencyRows.map((agency) => [agency.id, agency]),
+  );
+  const approvedDuplicateRedirects = approvedDuplicateAgencyAliases.map(
+    (alias) => {
+      const agency = retainedAgenciesById.get(alias.retainedAgencyId);
+      if (!agency) {
+        throw new Error(
+          `Missing retained agency ${alias.retainedAgencyId} for approved duplicate redirect ${alias.from}.`,
+        );
+      }
+      return {
+        from: alias.from,
+        to: normalizePath(`${agency.location_path}${agency.slug}/`),
+        status: 301,
+        source: "approved duplicate agency alias",
+      };
+    },
+  );
+
   const reportsBySlug = new Map(
     reportRows.map((report) => [report.slug, report]),
   );
   const legacyReportRedirects = legacyReportSlugAliases.flatMap((alias) => {
     const report = reportsBySlug.get(alias.newSlug);
     if (!report) {
-      // The target report no longer exists under this slug — typically because
-      // intake re-ingested reports with new ids, so the manually-maintained
-      // newSlug is stale. An alias to a missing report can't produce a valid
-      // redirect target, so skip it (with a warning) rather than fail the whole
-      // build. Redirect coverage against real prior sitemaps is enforced
-      // separately by verify-redirect-coverage.mjs; reconcile stale aliases in
-      // legacyReportSlugAliases when the warning appears.
+      // No current report was found under this slug. An alias to a missing
+      // report cannot produce a valid redirect target, so skip it with a warning.
+      // verify-redirect-coverage.mjs separately requires coverage against prior
+      // sitemaps; reconcile this alias when the warning appears.
       console.warn(
         `Skipping legacy report slug alias ${alias.oldSlug}: no current report with slug ${alias.newSlug}.`,
       );
@@ -235,6 +328,7 @@ const redirects = await withDb(async (client) => {
       status: 301,
       source: "agency.parent_federal_agency_id legacy agency route",
     })),
+    ...approvedDuplicateRedirects,
     ...civilCaseRows.map((civilCase) => ({
       from: normalizePath(
         `/civil-litigation/${civilCase.state}/${civilCase.slug}/`,

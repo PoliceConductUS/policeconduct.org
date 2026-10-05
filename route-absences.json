@@ -418,5 +418,13 @@
   {
     "path": "/personnel/william-rushing-mte82/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return. Same-name records were reviewed and have different agency/state assignments."
+  },
+  {
+    "path": "/report/mn/2026-01-07-55401-death-of-renee-nicole-good-ice-shooting-d1e2f3/",
+    "reason": "Published report is absent from the current intake database. The user explicitly declined restoration on 2026-10-04."
+  },
+  {
+    "path": "/report/mn/2026-01-24-55404-death-of-alex-pretti-federal-officers-shooting-g4h5i6/",
+    "reason": "Published report is absent from the current intake database. The user explicitly declined restoration on 2026-10-04."
   }
 ]
