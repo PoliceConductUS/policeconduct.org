@@ -223,3 +223,34 @@ test("without JavaScript every compact discipline summary remains accessible", a
     await context.close();
   }
 });
+
+test("discipline allegations are visible with details closed and sources open in a new tab", async ({
+  page,
+}) => {
+  const {
+    rows: [record],
+  } = await client.query(
+    `select d.id, d.case_number, d.allegation from discipline d
+     join licensing_authority la on la.id = d.licensing_authority_id
+     join location_path lp on lp.location_path_id = la.location_path_id
+     where lp.path = '/mn/' and d.allegation is not null
+       and d.case_number is not null and d.document_url is not null
+     order by d.effective_date desc, d.id limit 1`,
+  );
+  expect(record).toBeTruthy();
+  await page.goto("/mn/licensing-authority/");
+  await page
+    .getByRole("searchbox", { name: "Search by person or case number" })
+    .fill(record.case_number);
+  const row = page.locator(`[data-discipline-id="${record.id}"]`);
+  await expect(row.locator("details[open]")).toHaveCount(0);
+  await expect(row.locator(".discipline-allegation dd")).toBeVisible();
+  await expect(row.locator(".discipline-allegation dd")).toHaveText(
+    record.allegation,
+  );
+  const source = row.getByRole("link", { name: "Source document" });
+  await expect(source).not.toBeVisible();
+  await row.locator("summary").click();
+  await expect(source).toBeVisible();
+  await expect(source).toHaveAttribute("target", "_blank");
+});

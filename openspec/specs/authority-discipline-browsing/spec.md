@@ -8,12 +8,12 @@ TBD - created by archiving change compact-authority-discipline. Update Purpose a
 
 ### Requirement: Compact discipline summaries
 
-Authority discipline records MUST retain person, action, supplied effective date, case number and source link in a compact summary. Additional optional facts MUST be available through a keyboard-operable native disclosure without fabricated missing values. All records MUST remain accessible without JavaScript.
+Authority discipline records MUST retain person, action, supplied effective date, case number and complete supplied allegation in a compact summary. Additional optional facts and source links MUST be available through a keyboard-operable native disclosure without fabricated missing values. Source links MUST open the stored URL in a new tab. All records MUST remain accessible without JavaScript.
 
 #### Scenario: Detailed record
 
 - **WHEN** a record has additional recorded facts and a source URL
-- **THEN** its summary exposes the source URL, its details start collapsed and opening them reveals every supplied additional fact
+- **THEN** its summary exposes the complete supplied allegation, its details start collapsed and opening them reveals every supplied additional fact and the new-tab source link
 
 ### Requirement: Local discipline browsing
 
@@ -42,3 +42,25 @@ The authority page MUST provide in-page links to its present activity sections a
 
 - **WHEN** discipline records are present
 - **THEN** a reader can jump directly to the discipline heading from the beginning of the content
+
+### Requirement: Scan allegations without expansion
+
+Authority discipline rows SHALL display the complete supplied allegation with Record details closed and use compact spacing without reducing shared text sizes. Other optional details and source links SHALL be inside the disclosure. Source links SHALL open the stored URL in a new tab.
+
+#### Scenario: Allegation and source supplied
+
+- **WHEN** an authority discipline record has an allegation and document URL
+- **THEN** its allegation is visible with details closed
+- **AND** its source link is visible after expansion and targets a new tab
+
+#### Scenario: Officer-page allegation supplied
+
+- **WHEN** an officer discipline record has an allegation
+- **THEN** its complete allegation is visible with Record details closed
+- **AND** its remaining detail fields stay collapsed
+
+#### Scenario: Officer-page source supplied
+
+- **WHEN** an officer discipline record has a source document
+- **THEN** its source link is hidden until Record details is expanded
+- **AND** the source link opens its stored URL in a new tab

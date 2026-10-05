@@ -125,7 +125,10 @@ test("discipline keeps direct records with no agency link and separates findings
     "/mn/licensing-authority/",
   );
   await expect(
-    detailed.getByRole("link", { name: "Source document" }),
+    detailed.getByRole("link", {
+      name: "Source document",
+      includeHidden: true,
+    }),
   ).toHaveAttribute("href", "https://example.org/order.pdf");
   for (const text of [
     "Jan 2, 2025",
@@ -136,8 +139,18 @@ test("discipline keeps direct records with no agency link and separates findings
     await expect(detailed.getByText(text, { exact: true })).toBeVisible();
   }
   await expect(detailed.getByText("Recorded finding")).not.toBeVisible();
+  await expect(detailed.locator("details a")).not.toBeVisible();
+  await expect(
+    detailed.getByText("Recorded allegation", { exact: true }),
+  ).toBeVisible();
   await detailed.locator("summary").focus();
   await page.keyboard.press("Enter");
+  await expect(
+    detailed.getByRole("link", { name: "Source document" }),
+  ).toBeVisible();
+  await expect(
+    detailed.getByRole("link", { name: "Source document" }),
+  ).toHaveAttribute("target", "_blank");
   for (const text of [
     "Feb 3, 2026",
     "Recorded allegation",
@@ -246,7 +259,10 @@ test("live profile shows directly owned discipline and every education record", 
   );
   await expect(discipline).toContainText(person.discipline_action);
   await expect(
-    discipline.getByRole("link", { name: "Source document" }),
+    discipline.getByRole("link", {
+      name: "Source document",
+      includeHidden: true,
+    }),
   ).toHaveAttribute("href", person.discipline_document);
   await expect(page.locator("[data-education-id]")).toHaveCount(
     Number(person.education_count),

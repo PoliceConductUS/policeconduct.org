@@ -128,7 +128,7 @@ test("record summaries and direct discipline retain dates across timezones and s
     page.getByRole("link", { name: "Taylor Example" }),
   ).toHaveAttribute("href", "/personnel/taylor-example/");
   await expect(
-    page.getByRole("link", { name: "Source document" }),
+    page.getByRole("link", { name: "Source document", includeHidden: true }),
   ).toHaveAttribute("href", "https://example.org/order.pdf");
   await expect(
     page.locator('[data-discipline-id="discipline-fixture"]'),
@@ -149,7 +149,7 @@ test("record summaries and direct discipline retain dates across timezones and s
   }
 });
 
-test("optional facts start collapsed while the summary and supplied source remain visible", async ({
+test("details and source start collapsed while the summary and allegation remain visible", async ({
   page,
 }) => {
   await page.setContent(
@@ -192,7 +192,10 @@ test("optional facts start collapsed while the summary and supplied source remai
   );
   const row = page.locator('[data-discipline-id="detailed"]');
   await expect(
-    row.getByRole("link", { name: "Source document" }),
+    row.getByRole("link", { name: "Source document", includeHidden: true }),
+  ).not.toBeVisible();
+  await expect(
+    row.getByText("Recorded allegation", { exact: true }),
   ).toBeVisible();
   await expect(row.getByText("A-123", { exact: true })).toBeVisible();
   await expect(row.getByText("Jan 2, 2025", { exact: true })).toBeVisible();
@@ -202,6 +205,9 @@ test("optional facts start collapsed while the summary and supplied source remai
   const disclosure = row.locator("summary");
   await disclosure.focus();
   await page.keyboard.press("Enter");
+  const source = row.getByRole("link", { name: "Source document" });
+  await expect(source).toBeVisible();
+  await expect(source).toHaveAttribute("target", "_blank");
   for (const fact of [
     "Jan 2, 2026",
     "Recorded allegation",

@@ -50,13 +50,16 @@ const formatRecordedDate = (value: string) =>
             </div>
           )}
         </dl>
-        {record.documentUrl && (
-          <a href={record.documentUrl} rel="noopener">
-            Source document
-          </a>
+        {record.allegation && (
+          <dl class="personnel-post-details">
+            <div>
+              <dt>Allegation</dt>
+              <dd>{record.allegation}</dd>
+            </div>
+          </dl>
         )}
         {(record.expirationDate ||
-          record.allegation ||
+          record.documentUrl ||
           record.violation ||
           record.finding ||
           record.chiefAction ||
@@ -75,12 +78,6 @@ const formatRecordedDate = (value: string) =>
                 <div>
                   <dt>End date</dt>
                   <dd>{formatRecordedDate(record.expirationDate)}</dd>
-                </div>
-              )}
-              {record.allegation && (
-                <div>
-                  <dt>Allegation</dt>
-                  <dd>{record.allegation}</dd>
                 </div>
               )}
               {record.violation && (
@@ -108,6 +105,11 @@ const formatRecordedDate = (value: string) =>
                 </div>
               )}
             </dl>
+            {record.documentUrl && (
+              <a href={record.documentUrl} target="_blank" rel="noopener">
+                Source document
+              </a>
+            )}
           </details>
         )}
       </article>
