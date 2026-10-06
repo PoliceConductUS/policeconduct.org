@@ -335,6 +335,15 @@ const loadAgencyRows = async (agencyId: string) =>
           )
         ).rows
       : [];
+    const disciplineLinks = (
+      await client.query<{ personnel_id: string; discipline_id: string }>(
+        `select distinct ap.personnel_id, dap.discipline_id
+         from public.discipline_agency_personnel dap
+         join public.agency_personnel ap on ap.id = dap.agency_personnel_id
+         where ap.agency_id = $1`,
+        [agencyId],
+      )
+    ).rows;
     // Primary license per personnel for the roster context line — prefer an
     // active license, then the most-recently-awarded.
     const licenses = officerIds.length
@@ -497,6 +506,7 @@ const loadAgencyRows = async (agencyId: string) =>
       federalAgency,
       officers,
       reportCounts,
+      disciplineLinks,
       licenses,
       reportIds,
       civilCases,
@@ -562,6 +572,10 @@ const buildAgencyDetail = async (agencyId: string) => {
 
   const officersById = mapBy(data.officers, "id");
   const reportCountsByOfficerId = mapBy(data.reportCounts, "personnel_id");
+  const disciplineLinksByPersonnelId = groupBy(
+    data.disciplineLinks,
+    "personnel_id",
+  );
   const licenseByOfficerId = mapBy(data.licenses, "personnel_id");
   const civilCaseOfficersByCase = groupBy(
     data.civilCaseOfficers,
@@ -638,6 +652,8 @@ const buildAgencyDetail = async (agencyId: string) => {
           entry,
           officer,
           reportCount: reportCountRow ? Number(reportCountRow.report_count) : 0,
+          disciplineCount:
+            disciplineLinksByPersonnelId[entry.personnel_id]?.length ?? 0,
           // Per-personnel rating came from the dropped officers_stats table;
           // no rating aggregate exists in the current schema.
           rating: null as number | null,
@@ -794,6 +810,9 @@ const buildAgencyDetail = async (agencyId: string) => {
       civilCases: civilCases.length,
       personnelLinkedCivilCases: personnelLinkedCivilCases.length,
       reports: reportedReports.length,
+      discipline: new Set(
+        data.disciplineLinks.map((link) => link.discipline_id),
+      ).size,
       personnel: employees.length,
       currentPersonnel: currentEmployees.length,
       formerPersonnel: formerEmployees.length,

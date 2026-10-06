@@ -32,7 +32,8 @@
 ## 6. Agency page + licensing authority (INCOMPLETE)
 
 - [x] 6.1 Agency personnel roster: add a license status/type column (who is actively certified).
-- [ ] 6.2 Agency page: show a discipline count/list for disciplines attributed to that agency's assignments.
+- [ ] 6.2 Agency page: show a discipline record list for disciplines attributed to that agency's assignments (visible fields and layout remain unspecified).
+- [x] 6.2a Agency page: show a distinct-record discipline total; roster: show positive agency-specific counts linking to each person's discipline section.
 - [ ] 6.3 State page: link the state's licensing authority (TCOLE → `/tx/`, MN POST → `/mn/`) to the authority website; no dedicated authority page required.
 
 ## 7. Out of scope (decided — do NOT build)

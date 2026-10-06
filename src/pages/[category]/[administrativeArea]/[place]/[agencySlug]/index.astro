@@ -527,6 +527,17 @@ const structuredData = {
   </StatStrip>
 
   {
+    counts.discipline > 0 && (
+      <p class="civic-limit-note">
+        <a href={`${agencyPath}personnel/`}>
+          {`${formatCount(counts.discipline)} discipline record${counts.discipline === 1 ? "" : "s"}`}
+        </a>
+        {" linked to this agency’s personnel."}
+      </p>
+    )
+  }
+
+  {
     recentReports.length ? (
       <section class="civic-section">
         <div class="civic-section-head">

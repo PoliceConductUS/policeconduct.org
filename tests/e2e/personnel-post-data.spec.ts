@@ -63,6 +63,18 @@ test("direct discipline returns one full record with its exact authority and dis
       ) links
       join (values (1, 'test-discipline-link-one'), (2, 'test-discipline-link-two'))
         as fixture(position, id) on fixture.position = links.position;
+      insert into public.agency_personnel (id, agency_id, personnel_id, title, start_date)
+      select 'test-discipline-repeated-assignment', ap.agency_id, ap.personnel_id, ap.title, ap.start_date
+      from public.discipline_agency_personnel dap
+      join public.agency_personnel ap on ap.id = dap.agency_personnel_id
+      where dap.id = 'test-discipline-link-one';
+      insert into public.discipline_agency_personnel (id, discipline_id, agency_personnel_id)
+      values ('test-discipline-repeated-link', 'test-personnel-discipline-multi-agency',
+        'test-discipline-repeated-assignment');
+      insert into public.discipline (id, personnel_id, licensing_authority_id, action)
+      select 'test-personnel-discipline-unlinked', personnel_id, licensing_authority_id,
+        'Test unlinked action' from public.discipline
+      where id = 'test-personnel-discipline-multi-agency';
     `),
     );
     const {
@@ -114,6 +126,33 @@ test("direct discipline returns one full record with its exact authority and dis
         [fixture.id],
       ),
     );
+
+    const { loadAgencyDetail } =
+      await import("../../src/lib/data/agency-detail");
+    for (const agency of agencyRows) {
+      const detail = await loadAgencyDetail(agency.id);
+      const {
+        rows: [expected],
+      } = await withDb((connection) =>
+        connection.query(
+          `select count(distinct dap.discipline_id)::int as total,
+            count(distinct dap.discipline_id) filter
+              (where ap.personnel_id = $2)::int as personnel_total
+           from public.discipline_agency_personnel dap
+           join public.agency_personnel ap on ap.id = dap.agency_personnel_id
+           where ap.agency_id = $1`,
+          [agency.id, fixture.personnel_id],
+        ),
+      );
+      expect(detail.counts.discipline).toBe(expected.total);
+      const entries = detail.employees.filter(
+        (employee) => employee.entry.personnel_id === fixture.personnel_id,
+      );
+      expect(entries.length).toBeGreaterThan(0);
+      for (const employee of entries) {
+        expect(employee.disciplineCount).toBe(expected.personnel_total);
+      }
+    }
 
     const records = await loadDisciplineForPersonnel(fixture.personnel_id);
     expect(records.filter((record) => record.id === fixture.id)).toHaveLength(

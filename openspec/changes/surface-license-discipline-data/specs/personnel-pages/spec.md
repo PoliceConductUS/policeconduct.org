@@ -53,3 +53,19 @@ from `discipline` when, and only when, the individual has them.
 
 - **WHEN** a personnel page renders for someone with no discipline links
 - **THEN** no discipline section is rendered
+
+### Requirement: Agency-specific discipline counts
+
+Agency personnel rosters SHALL append a linked discipline record count to the existing personnel context line when positive. Counts SHALL include distinct discipline IDs explicitly linked through `discipline_agency_personnel → agency_personnel` to that person at that agency, across the person's assignments there. Counts SHALL link to `/personnel/{stored-slug}/#discipline`. Zero counts SHALL omit the label. Personnel discipline sections SHALL have the `discipline` fragment ID.
+
+#### Scenario: Person has records linked to multiple agencies
+
+- **WHEN** the person appears in an agency roster
+- **THEN** only records explicitly linked to that agency's assignments count
+- **AND** repeated links to the same discipline ID count once
+
+#### Scenario: Agency total
+
+- **WHEN** an agency has explicitly linked discipline records
+- **THEN** its page shows a distinct-record count linked to its personnel roster
+- **AND** the total is not the sum of per-person roster counts
