@@ -61,9 +61,7 @@ test.beforeAll(async () => {
   expect(offices.length).toBeGreaterThan(0);
 });
 
-test("federal listing loads every parent from the database", async ({
-  page,
-}) => {
+test("federal listing includes every root federal agency", async ({ page }) => {
   await page.goto("/federal/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Federal");
   await expect(page.locator("[data-jump-select] option")).toHaveCount(
@@ -84,7 +82,7 @@ test("federal parents show their linked office counts and canonical office URLs"
   test.setTimeout(120_000);
 
   const officesByParent = new Map<string, FederalOffice[]>();
-  for (const office of offices) {
+  for (const office of offices.filter((office) => office.has_assignments)) {
     const linkedOffices = officesByParent.get(office.federal_slug) ?? [];
     linkedOffices.push(office);
     officesByParent.set(office.federal_slug, linkedOffices);
@@ -113,17 +111,32 @@ test("federal parents show their linked office counts and canonical office URLs"
   }
 });
 
-test("a linked office points back to its federal parent", async ({ page }) => {
-  const office = offices[0];
-  await page.goto(office.canonical_path);
-  await expect(
-    page.locator(".agency-overview-federal").getByRole("link", {
-      name: office.federal_name,
-    }),
-  ).toHaveAttribute("href", `/federal/${office.federal_slug}/`);
+test("root federal pages remain available without eligible offices", async ({
+  page,
+}) => {
+  const { loadFederalAgencyDetailBySlug } =
+    await import("../../src/lib/data/federal-agencies");
+  const emptyParents = parents.filter(
+    (parent) =>
+      !offices.some(
+        (office) =>
+          office.federal_slug === parent.slug && office.has_assignments,
+      ),
+  );
+  expect(emptyParents.length).toBeGreaterThan(0);
+  for (const parent of emptyParents) {
+    const detail = await loadFederalAgencyDetailBySlug(parent.slug);
+    expect(detail).not.toBeNull();
+    expect(detail!.branches).toEqual([]);
+    await page.goto(`/federal/${parent.slug}/`);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      parent.name,
+    );
+    await expect(page.locator(".record-table tbody tr")).toHaveCount(0);
+  }
 });
 
-test("federal offices without personnel or cases remain eligible for agency pages", async () => {
+test("federal offices without personnel or cases are excluded from agency pages", async () => {
   const noPersonnelOffices = offices.filter(
     (office) => !office.has_assignments && !office.has_cases,
   );
@@ -138,14 +151,7 @@ test("federal offices without personnel or cases remain eligible for agency page
        where page_type = 'agency' and entity_id = any($1)`,
       [noPersonnelOffices.map((office) => office.agency_id)],
     );
-    expect(new Map(rows.map((row) => [row.entity_id, row.path]))).toEqual(
-      new Map(
-        noPersonnelOffices.map((office) => [
-          office.agency_id,
-          office.canonical_path,
-        ]),
-      ),
-    );
+    expect(rows).toEqual([]);
   } finally {
     await client.end();
   }

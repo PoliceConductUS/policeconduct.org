@@ -566,7 +566,11 @@ await withDb(async (client) => {
               a.state,
               a.city
             from public.agency a
-
+            where exists (
+              select 1
+              from public.agency_personnel ap
+              where ap.agency_id = a.id
+            )
           ),
           personnel_counts as (
             -- Currently-serving officers only (no end_date). Every displayed

@@ -62,42 +62,43 @@ const renderComponent = async (
   }
 };
 
-test("every agency with a valid place path has its exact projection", async () => {
-  const { rows } = await client.query(`select a.id from public.agency a
-    join public.location_path lp on lp.location_path_id = a.location_path_id
-    join public.location_path area on area.location_path_id = lp.parent_location_path_id and area.level = 'administrative_area'
-    join public.location_path state on state.location_path_id = area.parent_location_path_id and state.level = 'state'
-    left join public.build_page_payload bpp on bpp.page_type = 'agency' and bpp.entity_id = a.id and bpp.path = lp.path || a.slug || '/'
-    where bpp.entity_id is null`);
+test("agency projections include only agencies with linked personnel", async () => {
+  const { rows } = await client.query(`
+    with expected as (
+      select a.id, lp.path || a.slug || '/' as path
+      from public.agency a
+      join public.location_path lp on lp.location_path_id = a.location_path_id
+      join public.location_path area on area.location_path_id = lp.parent_location_path_id and area.level = 'administrative_area'
+      join public.location_path state on state.location_path_id = area.parent_location_path_id and state.level = 'state'
+      where exists (select 1 from public.agency_personnel ap where ap.agency_id = a.id)
+    ), actual as (
+      select entity_id as id, path from public.build_page_payload where page_type = 'agency'
+    )
+    select * from (select * from expected except select * from actual) missing
+    union all
+    select * from (select * from actual except select * from expected) unexpected
+  `);
   expect(rows).toEqual([]);
 });
-test("agency without personnel resolves and appears in place navigation", async ({
+test("agency without personnel is omitted from place navigation", async ({
   page,
 }) => {
   const {
     rows: [agency],
-  } =
-    await client.query(`select a.name, lp.path, lp.path || a.slug || '/' as href
+  } = await client.query(`
+    select a.id, a.name, lp.path, lp.path || a.slug || '/' as href
     from public.agency a join public.location_path lp on lp.location_path_id = a.location_path_id
-    where a.name = 'Palestine City Marshal''s Office'`);
+    where not exists (select 1 from public.agency_personnel ap where ap.agency_id = a.id)
+      and exists (select 1 from public.agency other where other.location_path_id = a.location_path_id
+        and exists
+          (select 1 from public.agency_personnel ap where ap.agency_id = other.id))
+    order by a.id limit 1
+  `);
   expect(agency).toBeDefined();
-  await page.goto(agency.href);
-  await expect(
-    page.getByRole("heading", { level: 1, name: agency.name }),
-  ).toBeVisible();
   await page.goto(agency.path);
   await expect(
-    page.locator("#civic-jump option").filter({ hasText: agency.name }),
-  ).toHaveAttribute("value", agency.href);
-  await page.locator("#civic-jump").selectOption(agency.href);
-  await page
-    .locator("[data-jump-form]")
-    .getByRole("button", { name: "Go →" })
-    .click();
-  await expect(page).toHaveURL(agency.href);
-  await expect(
-    page.getByRole("heading", { level: 1, name: agency.name }),
-  ).toBeVisible();
+    page.locator(`#civic-jump option[value="${agency.href}"]`),
+  ).toHaveCount(0);
 });
 test("report keeps authored description and displays distinct narrative fields", async ({
   page,

@@ -370,6 +370,10 @@ export const loadFederalAgencySummaries = async () => {
           from public.federal_agency fa
           left join public.agency a
             on a.parent_federal_agency_id = fa.id
+           and exists (
+             select 1 from public.agency_personnel assignment
+             where assignment.agency_id = a.id
+           )
            and a.parent_federal_agency_id is not null
           left join public.agency_personnel active_assignment
             on active_assignment.agency_id = a.id
@@ -446,6 +450,10 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
           from public.federal_agency fa
           left join public.agency a
             on a.parent_federal_agency_id = fa.id
+           and exists (
+             select 1 from public.agency_personnel assignment
+             where assignment.agency_id = a.id
+           )
           left join public.location_path lp
             on lp.location_path_id = a.location_path_id
           left join public.location_path area_lp

@@ -1,14 +1,8 @@
-# public-record-coverage Specification
-
-## Purpose
-
-Make useful stored public records available on canonical visitor pages and verify their coverage in the published preview.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Useful public records are available on visitor pages
 
-The site SHALL account for every public table in a coverage audit and expose useful records through the existing entity pages, without exposing internal bookkeeping as public content.
+The site SHALL account for every public table in a coverage audit and expose useful records through the existing entity pages, without exposing internal bookkeeping as public content. Agency generation SHALL preserve linked-record eligibility: agencies with current or former personnel assignments qualify; agencies without assignments SHALL be excluded.
 
 #### Scenario: Agency has linked personnel
 
@@ -32,12 +26,3 @@ The site SHALL account for every public table in a coverage audit and expose use
 - **WHEN** a report has narrative facts or a requested outcome, a civil case has a closing date, or a personnel record has a death source
 - **THEN** the corresponding page shows those facts with clear labels and source links
 - **AND** absent optional facts are omitted
-
-### Requirement: Preview release is fully verified
-
-The release SHALL preserve required-data failures and canonical routing, pass format and aggregate validation, finish the full static build, and publish that build to the existing PR preview.
-
-#### Scenario: Preview is ready for review
-
-- **WHEN** publication is reported complete
-- **THEN** committed and synced source matches the published build, expected record pages and assets respond successfully, and coverage evidence accounts for the database tables

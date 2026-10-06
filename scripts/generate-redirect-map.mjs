@@ -247,7 +247,9 @@ const redirects = await withDb(async (client) => {
   const retainedAgencyRows = (
     await client.query(
       `
-        select a.id, a.slug, lp.path as location_path
+        select a.id, a.slug, lp.path as location_path,
+          (select count(*) from public.agency_personnel ap
+           where ap.agency_id = a.id) as assignment_count
         from public.agency a
         join public.location_path lp
           on lp.location_path_id = a.location_path_id
@@ -259,7 +261,7 @@ const redirects = await withDb(async (client) => {
   const retainedAgenciesById = new Map(
     retainedAgencyRows.map((agency) => [agency.id, agency]),
   );
-  const approvedDuplicateRedirects = approvedDuplicateAgencyAliases.map(
+  const approvedDuplicateRedirects = approvedDuplicateAgencyAliases.flatMap(
     (alias) => {
       const agency = retainedAgenciesById.get(alias.retainedAgencyId);
       if (!agency) {
@@ -267,12 +269,15 @@ const redirects = await withDb(async (client) => {
           `Missing retained agency ${alias.retainedAgencyId} for approved duplicate redirect ${alias.from}.`,
         );
       }
-      return {
-        from: alias.from,
-        to: normalizePath(`${agency.location_path}${agency.slug}/`),
-        status: 301,
-        source: "approved duplicate agency alias",
-      };
+      if (Number(agency.assignment_count) === 0) return [];
+      return [
+        {
+          from: alias.from,
+          to: normalizePath(`${agency.location_path}${agency.slug}/`),
+          status: 301,
+          source: "approved duplicate agency alias",
+        },
+      ];
     },
   );
 

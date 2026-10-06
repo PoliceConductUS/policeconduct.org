@@ -53,6 +53,7 @@ const approvedDuplicatePaths = [
 
 const retainedAgencies = approvedDuplicatePaths.map(([, id], index) => ({
   id,
+  assignment_count: 1,
   location_path: `/tx/fixture-county/place-${index}/`,
   slug: `current-agency-${index}`,
 }));
@@ -209,4 +210,26 @@ test("missing required retained agency fails redirect generation", async (t) => 
   await assert.rejects(readFile(path.join(cwd, "dist/_redirect-map.json")), {
     code: "ENOENT",
   });
+});
+
+test("approved aliases for agencies without personnel are omitted", async (t) => {
+  const excludedId = "chvdwkxp1cjwertwzt6ll9b0";
+  const cwd = await createFixture(
+    t,
+    retainedAgencies.map((agency) => ({
+      ...agency,
+      assignment_count: agency.id === excludedId ? 0 : 1,
+    })),
+  );
+  const result = runGenerator(cwd);
+  assert.equal(result.status, 0, result.stderr);
+  const { redirects } = JSON.parse(
+    await readFile(path.join(cwd, "dist/_redirect-map.json"), "utf8"),
+  );
+  assert.equal(
+    redirects.some(
+      (entry) => entry.from === "/law-enforcement-agency/federal/tsa/",
+    ),
+    false,
+  );
 });
