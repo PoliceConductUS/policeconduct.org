@@ -85,11 +85,12 @@ const data = await withDb(async (client) => {
           a.slug as agency_slug,
           lp.display_name as place_name,
           split_part(lp.path, '/', 2) as state_or_territory_slug,
-          bpp.path as canonical_path
+          lp.path as location_path,
+          bpp.page_type
         from public.agency_personnel ao
         join public.agency a on a.id = ao.agency_id
         join public.location_path lp on lp.location_path_id = a.location_path_id
-        join public.build_page_payload bpp
+        left join public.build_page_payload bpp
           on bpp.page_type = 'agency'
          and bpp.entity_id = a.id
         where ao.personnel_id = $1
@@ -222,13 +223,18 @@ const fallbackChart =
                 {data.assignments.map((assignment) => (
                   <tr>
                     <th scope="row">
-                      <a
-                        href={requireAgencyCanonicalPath({
-                          canonicalPath: assignment.canonical_path,
-                        })}
-                      >
-                        {assignment.agency_name}
-                      </a>
+                      {assignment.page_type === "agency" ? (
+                        <a
+                          href={requireAgencyCanonicalPath({
+                            location_path: assignment.location_path,
+                            slug: assignment.agency_slug,
+                          })}
+                        >
+                          {assignment.agency_name}
+                        </a>
+                      ) : (
+                        assignment.agency_name
+                      )}
                     </th>
                     <td>{assignment.title}</td>
                     <td>

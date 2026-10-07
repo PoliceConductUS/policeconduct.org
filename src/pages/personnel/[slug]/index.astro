@@ -82,11 +82,11 @@ const data = await withDb(async (client) => {
     ? (
         await client.query(
           `
-            select a.*, lp.path as location_path, bpp.path as canonical_path
+            select a.*, lp.path as location_path, bpp.page_type
             from public.agency a
             join public.location_path lp
               on lp.location_path_id = a.location_path_id
-            join public.build_page_payload bpp
+            left join public.build_page_payload bpp
               on bpp.page_type = 'agency'
              and bpp.entity_id = a.id
             where a.id = any($1)
@@ -485,9 +485,10 @@ const personnelMetricCards: MetricCardItem[] = [
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(officerPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
-const agencyUrl = currentAgency
-  ? new URL(requireAgencyCanonicalPath(currentAgency), siteUrl).toString()
-  : null;
+const agencyUrl =
+  currentAgency.page_type === "agency"
+    ? new URL(requireAgencyCanonicalPath(currentAgency), siteUrl).toString()
+    : null;
 const organization =
   currentAgency && agencyUrl
     ? buildGovernmentOrganizationNode({
@@ -547,9 +548,13 @@ const structuredData = {
       <div class="personnel-profile-title">
         <h1 class="ipc-page-title">{officerName}</h1>
         <p class="personnel-current-line">
-          {assignmentStatusLabel}: <a href={currentAgencyPath}
-            >{currentAgency!.name}</a
-          >
+          {assignmentStatusLabel}: {
+            currentAgency.page_type === "agency" ? (
+              <a href={currentAgencyPath}>{currentAgency.name}</a>
+            ) : (
+              currentAgency.name
+            )
+          }
           <span aria-hidden="true"> · </span>
           {currentAgencyLocation}
         </p>
@@ -615,7 +620,15 @@ const structuredData = {
           }
           <div>
             <dt>{assignmentStatusLabel}</dt>
-            <dd><a href={currentAgencyPath}>{currentAgency!.name}</a></dd>
+            <dd>
+              {
+                currentAgency.page_type === "agency" ? (
+                  <a href={currentAgencyPath}>{currentAgency.name}</a>
+                ) : (
+                  currentAgency.name
+                )
+              }
+            </dd>
           </div>
           <div>
             <dt>Updated</dt>
@@ -781,9 +794,13 @@ const structuredData = {
                 {assignmentHistory.map((entry) => (
                   <tr data-agency-assignment-id={entry.id}>
                     <th scope="row">
-                      <a href={requireAgencyCanonicalPath(entry.agency)}>
-                        {entry.agency.name}
-                      </a>
+                      {entry.agency.page_type === "agency" ? (
+                        <a href={requireAgencyCanonicalPath(entry.agency)}>
+                          {entry.agency.name}
+                        </a>
+                      ) : (
+                        entry.agency.name
+                      )}
                     </th>
                     <td>{entry.title || currentTitle}</td>
                     <td>

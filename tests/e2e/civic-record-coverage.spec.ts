@@ -289,3 +289,27 @@ test("report incident date matches the UTC date in its canonical route", async (
     }).format(incident),
   );
 });
+
+test("excluded former agencies remain in personnel history without links to ungenerated pages", async ({
+  page,
+}) => {
+  const {
+    rows: [assignment],
+  } =
+    await client.query(`select ap.id, p.slug, a.name, lp.path || a.slug || '/' href
+    from public.agency_personnel ap join public.personnel p on p.id=ap.personnel_id
+    join public.agency a on a.id=ap.agency_id
+    join public.location_path lp on lp.location_path_id=a.location_path_id
+    where p.slug='loren-hansell-342089' and not exists
+      (select 1 from public.agency_personnel current_assignment where current_assignment.agency_id=a.id and current_assignment.end_date is null)
+    order by ap.id limit 1`);
+  expect(assignment).toBeDefined();
+  await page.goto(`/personnel/${assignment.slug}/`);
+  await expect(
+    page.locator(`[data-agency-assignment-id="${assignment.id}"]`),
+  ).toContainText(assignment.name);
+  await expect(page.locator(`a[href="${assignment.href}"]`)).toHaveCount(0);
+  await page.goto(`/personnel/${assignment.slug}/agencies/`);
+  await expect(page.locator("tbody")).toContainText(assignment.name);
+  await expect(page.locator(`a[href="${assignment.href}"]`)).toHaveCount(0);
+});

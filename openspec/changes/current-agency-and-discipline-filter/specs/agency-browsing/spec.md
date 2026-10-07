@@ -23,3 +23,12 @@ Agency personnel rosters SHALL offer a checkbox labeled "With discipline actions
 
 - **WHEN** the visitor clears the discipline checkbox
 - **THEN** rows matching the remaining filters become visible again
+
+### Requirement: Excluded agencies remain recorded in personnel history
+
+Personnel pages SHALL load assignment agency identity from agency and its exact location_path, independently of page eligibility. They SHALL retain historical assignments for excluded agencies, display those agency names without page links, and continue failing if the required agency identity is missing.
+
+#### Scenario: Former agency has no current personnel
+
+- **WHEN** a personnel profile has a recorded assignment at an agency without a generated page
+- **THEN** its profile and agency-history page show the recorded assignment without linking to an ungenerated agency page
