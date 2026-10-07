@@ -249,7 +249,7 @@ const redirects = await withDb(async (client) => {
       `
         select a.id, a.slug, lp.path as location_path,
           (select count(*) from public.agency_personnel ap
-           where ap.agency_id = a.id) as assignment_count
+           where ap.agency_id = a.id and ap.end_date is null) as assignment_count
         from public.agency a
         join public.location_path lp
           on lp.location_path_id = a.location_path_id

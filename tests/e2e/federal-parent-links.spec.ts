@@ -9,7 +9,6 @@ type FederalOffice = {
   federal_name: string;
   federal_slug: string;
   has_assignments: boolean;
-  has_cases: boolean;
 };
 
 type FederalParent = { name: string; slug: string };
@@ -39,15 +38,8 @@ test.beforeAll(async () => {
           fa.name as federal_name,
           fa.slug as federal_slug,
           exists (
-            select 1 from public.agency_personnel ap where ap.agency_id = a.id
-          ) as has_assignments,
-          exists (
-            select 1
-            from public.agency_personnel ap
-            join public.civil_case_personnel ccp
-              on ccp.agency_personnel_id = ap.id
-            where ap.agency_id = a.id
-          ) as has_cases
+            select 1 from public.agency_personnel ap where ap.agency_id = a.id and ap.end_date is null
+          ) as has_assignments
         from public.agency a
         join public.federal_agency fa on fa.id = a.parent_federal_agency_id
         join public.location_path lp on lp.location_path_id = a.location_path_id
@@ -136,9 +128,9 @@ test("root federal pages remain available without eligible offices", async ({
   }
 });
 
-test("federal offices without personnel or cases are excluded from agency pages", async () => {
+test("federal offices without current personnel are excluded from agency pages", async () => {
   const noPersonnelOffices = offices.filter(
-    (office) => !office.has_assignments && !office.has_cases,
+    (office) => !office.has_assignments,
   );
   expect(noPersonnelOffices.length).toBeGreaterThan(0);
 

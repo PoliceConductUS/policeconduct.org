@@ -62,7 +62,7 @@ const renderComponent = async (
   }
 };
 
-test("agency projections include only agencies with linked personnel", async () => {
+test("agency projections include only agencies with current personnel", async () => {
   const { rows } = await client.query(`
     with expected as (
       select a.id, lp.path || a.slug || '/' as path
@@ -70,7 +70,7 @@ test("agency projections include only agencies with linked personnel", async () 
       join public.location_path lp on lp.location_path_id = a.location_path_id
       join public.location_path area on area.location_path_id = lp.parent_location_path_id and area.level = 'administrative_area'
       join public.location_path state on state.location_path_id = area.parent_location_path_id and state.level = 'state'
-      where exists (select 1 from public.agency_personnel ap where ap.agency_id = a.id)
+      where exists (select 1 from public.agency_personnel ap where ap.agency_id = a.id and ap.end_date is null)
     ), actual as (
       select entity_id as id, path from public.build_page_payload where page_type = 'agency'
     )
@@ -80,7 +80,7 @@ test("agency projections include only agencies with linked personnel", async () 
   `);
   expect(rows).toEqual([]);
 });
-test("agency without personnel is omitted from place navigation", async ({
+test("agency without current personnel is omitted from place navigation", async ({
   page,
 }) => {
   const {
@@ -88,10 +88,10 @@ test("agency without personnel is omitted from place navigation", async ({
   } = await client.query(`
     select a.id, a.name, lp.path, lp.path || a.slug || '/' as href
     from public.agency a join public.location_path lp on lp.location_path_id = a.location_path_id
-    where not exists (select 1 from public.agency_personnel ap where ap.agency_id = a.id)
+    where not exists (select 1 from public.agency_personnel ap where ap.agency_id = a.id and ap.end_date is null)
       and exists (select 1 from public.agency other where other.location_path_id = a.location_path_id
         and exists
-          (select 1 from public.agency_personnel ap where ap.agency_id = other.id))
+          (select 1 from public.agency_personnel ap where ap.agency_id = other.id and ap.end_date is null))
     order by a.id limit 1
   `);
   expect(agency).toBeDefined();

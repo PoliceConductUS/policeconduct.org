@@ -570,6 +570,7 @@ await withDb(async (client) => {
               select 1
               from public.agency_personnel ap
               where ap.agency_id = a.id
+                and ap.end_date is null
             )
           ),
           personnel_counts as (

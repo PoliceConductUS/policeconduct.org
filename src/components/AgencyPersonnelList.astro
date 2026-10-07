@@ -128,44 +128,50 @@ const showTools = total >= 15;
     }
   </div>
 
-  {
-    showTools ? (
-      <div class="roster-controls">
-        <div class="roster-facets" role="group" aria-label="Filter by status">
-          <button type="button" data-facet="all" aria-pressed="true">
-            All
-          </button>
-          <button type="button" data-facet="current" aria-pressed="false">
-            Current
-          </button>
-          <button type="button" data-facet="former" aria-pressed="false">
-            Former
-          </button>
-        </div>
-        <div class="roster-search">
-          <label class="visually-hidden" for="roster-filter">
-            Find an officer by name
-          </label>
-          <input
-            id="roster-filter"
-            type="search"
-            placeholder="Find an officer…"
-            autocomplete="off"
-            data-roster-input
-          />
-          <button
-            type="button"
-            class="roster-search-clear"
-            data-roster-clear
-            aria-label="Clear filter"
-            hidden
-          >
-            ×
-          </button>
-        </div>
-      </div>
-    ) : null
-  }
+  <div class="roster-controls">
+    {
+      showTools && (
+        <>
+          <div class="roster-facets" role="group" aria-label="Filter by status">
+            <button type="button" data-facet="all" aria-pressed="true">
+              All
+            </button>
+            <button type="button" data-facet="current" aria-pressed="false">
+              Current
+            </button>
+            <button type="button" data-facet="former" aria-pressed="false">
+              Former
+            </button>
+          </div>
+          <div class="roster-search">
+            <label class="visually-hidden" for="roster-filter">
+              Find an officer by name
+            </label>
+            <input
+              id="roster-filter"
+              type="search"
+              placeholder="Find an officer…"
+              autocomplete="off"
+              data-roster-input
+            />
+            <button
+              type="button"
+              class="roster-search-clear"
+              data-roster-clear
+              aria-label="Clear filter"
+              hidden
+            >
+              ×
+            </button>
+          </div>
+        </>
+      )
+    }
+    <label class="roster-discipline-filter">
+      <input type="checkbox" data-roster-discipline />
+      With discipline actions
+    </label>
+  </div>
 
   {
     showTools ? (
@@ -196,6 +202,7 @@ const showTools = total >= 15;
                 data-roster-item
                 data-name={row.search}
                 data-status={row.isFormer ? "former" : "current"}
+                data-discipline-count={row.disciplineCount}
               >
                 {row.href ? (
                   <a class="roster-name" href={row.href}>
@@ -234,6 +241,9 @@ const showTools = total >= 15;
   for (const root of document.querySelectorAll<HTMLElement>("[data-roster]")) {
     const input = root.querySelector<HTMLInputElement>("[data-roster-input]");
     const clear = root.querySelector<HTMLButtonElement>("[data-roster-clear]");
+    const discipline = root.querySelector<HTMLInputElement>(
+      "[data-roster-discipline]",
+    );
     const facetButtons = [
       ...root.querySelectorAll<HTMLButtonElement>("[data-facet]"),
     ];
@@ -259,7 +269,9 @@ const showTools = total >= 15;
       for (const item of items) {
         const matchName = !query || (item.dataset.name || "").includes(query);
         const matchFacet = facet === "all" || item.dataset.status === facet;
-        const show = matchName && matchFacet;
+        const matchDiscipline =
+          !discipline?.checked || Number(item.dataset.disciplineCount) > 0;
+        const show = matchName && matchFacet && matchDiscipline;
         item.hidden = !show;
         if (show) {
           visible += 1;
@@ -282,7 +294,8 @@ const showTools = total >= 15;
       if (clear) clear.hidden = !query;
       if (empty) empty.hidden = visible !== 0;
       if (summary) {
-        const filtering = query !== "" || facet !== "all";
+        const filtering =
+          query !== "" || facet !== "all" || discipline?.checked;
         summary.innerHTML = filtering
           ? `Showing <strong>${visible.toLocaleString("en-US")}</strong> of ${total.toLocaleString("en-US")}`
           : summaryHtml;
@@ -295,6 +308,7 @@ const showTools = total >= 15;
     };
 
     input?.addEventListener("input", schedule);
+    discipline?.addEventListener("change", schedule);
     clear?.addEventListener("click", () => {
       if (input) input.value = "";
       input?.focus();
@@ -367,6 +381,14 @@ const showTools = total >= 15;
   .roster-facets button:focus-visible {
     outline: 2px solid var(--ipc-color-teal);
     outline-offset: -2px;
+  }
+
+  .roster-discipline-filter {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.5rem;
+    color: var(--ipc-color-ink-soft);
+    font-size: var(--ipc-type-small);
   }
 
   .roster-search {

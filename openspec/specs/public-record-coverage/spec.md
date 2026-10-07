@@ -10,22 +10,28 @@ Make useful stored public records available on canonical visitor pages and verif
 
 The site SHALL account for every public table in a coverage audit and expose useful records through the existing entity pages, without exposing internal bookkeeping as public content.
 
-#### Scenario: Agency has linked personnel
+#### Scenario: Agency has current personnel
 
-- **WHEN** an agency has valid required database identity, a place location and at least one current or former personnel assignment
+- **WHEN** an agency has valid required database identity, a place location and at least one current personnel assignment with no end date
 - **THEN** it receives its canonical agency page and appears in location navigation
 
 #### Scenario: Agency has no qualifying links
 
-- **WHEN** an agency has no personnel assignments, including a federal office
+- **WHEN** an agency has no current personnel assignments, including a federal office
 - **THEN** it receives no agency build projection and does not appear in generated location navigation
 - **AND** root federal agencies always receive detail pages and Federal directory entries, even without qualifying offices
+
+#### Scenario: Agency has an imported arrest profile
+
+- **WHEN** an agency has an `agency_arrest_profile` linked by `agency_id`
+- **THEN** its canonical agency page renders that profile’s stored total, coverage, and one-dimensional count breakdowns
+- **AND** agency totals come directly from that imported profile rather than a sum of personnel profiles
 
 #### Scenario: Personnel has arrest profiles
 
 - **WHEN** arrest profiles are linked to a person's agency assignments
-- **THEN** the personnel page renders each profile's agency, source, covered months, recorded total, and every stored breakdown among the seven supported dimensions
-- **AND** counts have shares and time context, district codes retain source meaning, and no causal or unique-agency-total claim is made
+- **THEN** the personnel page renders each profile's agency, source, covered months, recorded total, and every stored one-dimensional count breakdown among the sixteen supported dimensions
+- **AND** counts have shares using their respective arrest, charge-row, or distinct reported charge-record totals; district codes retain source meaning; residential tracts do not represent arrest locations; and no causal claim is made
 
 #### Scenario: Stored optional public facts exist
 

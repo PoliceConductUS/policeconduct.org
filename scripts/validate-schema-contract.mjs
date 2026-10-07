@@ -49,6 +49,24 @@ const requiredTables = {
     ],
     notNull: ["id", "personnel_id", "title"],
   },
+  agency_arrest_profile: {
+    columns: [
+      "id",
+      "agency_id",
+      "coverage",
+      "breakdowns",
+      "created_at",
+      "updated_at",
+    ],
+    notNull: [
+      "id",
+      "agency_id",
+      "coverage",
+      "breakdowns",
+      "created_at",
+      "updated_at",
+    ],
+  },
   arrest_profile: {
     columns: [
       "id",

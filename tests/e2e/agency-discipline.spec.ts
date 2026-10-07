@@ -91,3 +91,61 @@ test("roster links agency-specific discipline counts and omits zero counts", asy
       .locator('a[href$="#discipline"]'),
   ).toHaveCount(0);
 });
+
+test("discipline filter works on small rosters and restores all personnel", async ({
+  page,
+}) => {
+  await page.setContent(
+    await renderComponent("AgencyPersonnelList", {
+      employees: [
+        {
+          entry: {},
+          officer: { first_name: "Jane", last_name: "Doe", slug: "jane-doe" },
+          disciplineCount: 2,
+        },
+        {
+          entry: {},
+          officer: { first_name: "Sam", last_name: "Smith", slug: "sam-smith" },
+          disciplineCount: 0,
+        },
+      ],
+    }),
+  );
+  const filter = page.getByRole("checkbox", {
+    name: "With discipline actions",
+  });
+  await filter.check();
+  await expect(page.locator("[data-roster-item]:visible")).toHaveCount(1);
+  await expect(page.locator("[data-roster-summary]")).toHaveText(
+    "Showing 1 of 2",
+  );
+  await filter.uncheck();
+  await expect(page.locator("[data-roster-item]:visible")).toHaveCount(2);
+});
+
+test("discipline filter combines with status and name filters", async ({
+  page,
+}) => {
+  await page.setContent(
+    await renderComponent("AgencyPersonnelList", {
+      employees: Array.from({ length: 16 }, (_, index) => ({
+        entry: index === 1 ? { end_date: "2025-01-01" } : {},
+        officer: {
+          first_name: `Person ${index}`,
+          last_name: "Officer",
+          slug: `person-${index}`,
+        },
+        disciplineCount: index < 2 ? 1 : 0,
+      })),
+    }),
+  );
+  await page.getByRole("checkbox", { name: "With discipline actions" }).check();
+  await expect(page.locator("[data-roster-item]:visible")).toHaveCount(2);
+  await page.getByRole("button", { name: "Current", exact: true }).click();
+  await expect(page.locator("[data-roster-item]:visible")).toHaveCount(1);
+  await page.getByRole("searchbox").fill("Person 1");
+  await expect(page.locator("[data-roster-item]:visible")).toHaveCount(0);
+  await expect(page.locator("[data-roster-empty]")).toBeVisible();
+  await page.getByRole("button", { name: "Former", exact: true }).click();
+  await expect(page.locator("[data-roster-item]:visible")).toHaveCount(1);
+});

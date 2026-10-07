@@ -111,26 +111,39 @@ test("personnel page displays every recorded arrest row and share", async ({
   await expect(section).toContainText(row.coverage.source);
   await expect(section).toContainText(row.coverage.firstMonth);
   await expect(section).toContainText(row.coverage.lastMonth);
-  for (const [key, buckets] of Object.entries(row.breakdowns)) {
+  for (const [key, buckets] of Object.entries(row.breakdowns).filter(
+    ([key]) => key !== "cells" && key !== "residential_income_by_tract",
+  )) {
     const table = section.locator(`table[data-breakdown="${key}"]`);
     expect(await table.locator("tbody tr").count()).toBe(
       Object.keys(buckets as object).length,
     );
-    for (const [label, count] of Object.entries(
-      buckets as Record<string, number>,
-    )) {
-      const cells = table.locator("tbody tr").filter({
-        has: page.getByRole("rowheader", {
-          name: label,
-          exact: true,
-          includeHidden: true,
-        }),
-      });
-      await expect(cells).toContainText(count.toLocaleString("en-US"));
-      await expect(cells).toContainText(
-        `${((count / row.coverage.totalArrests) * 100).toFixed(1)}%`,
+    const rendered = await table
+      .locator("tbody tr")
+      .evaluateAll((rows) =>
+        rows.map((row) =>
+          [...row.children].map((cell, index) =>
+            index === 0
+              ? cell.textContent!
+              : cell.textContent!.trim().replace(/\s+(?=%$)/, ""),
+          ),
+        ),
       );
-    }
+    const total = key.startsWith("charge_rows_")
+      ? row.coverage.chargeRows
+      : key.startsWith("distinct_charge_records_")
+        ? row.coverage.distinctChargeRecords
+        : row.coverage.totalArrests;
+    const expected = Object.entries(buckets as Record<string, number>).map(
+      ([label, count]) => [
+        label,
+        count.toLocaleString("en-US"),
+        `${total === 0 ? "0.0" : ((count / total) * 100).toFixed(1)}%`,
+      ],
+    );
+    const order = (left: string[], right: string[]) =>
+      left[0].localeCompare(right[0]);
+    expect(rendered.sort(order)).toEqual(expected.sort(order));
   }
   await expect(
     section.getByRole("link", {
@@ -247,7 +260,7 @@ test("mobile arrest tables show every column without horizontal scrolling", asyn
       details.forEach((detail) => detail.setAttribute("open", "")),
     );
   const tables = section.locator("table");
-  expect(await tables.count()).toBe(7);
+  expect(await tables.count()).toBe(16);
   for (const table of await tables.all()) {
     const size = await table.evaluate((element) => {
       const container = element.parentElement!;
@@ -279,15 +292,6 @@ test("every live arrest profile renders exactly its stored breakdowns and bucket
     join public.agency_personnel assignment on assignment.id=profile.agency_personnel_id
     join public.personnel p on p.id=assignment.personnel_id order by profile.id`);
   expect(rows.length).toBeGreaterThan(0);
-  expect(
-    rows.some(
-      (row) =>
-        row.slug === "robert-kuether-iii-ad743c" &&
-        !("by_offense" in row.breakdowns) &&
-        !("by_charge_level" in row.breakdowns),
-    ),
-  ).toBe(true);
-  expect(rows.some((row) => !("by_district" in row.breakdowns))).toBe(true);
   for (let offset = 0; offset < rows.length; offset += 10) {
     const batch = rows.slice(offset, offset + 10);
     const profiles = [];
@@ -307,8 +311,10 @@ test("every live arrest profile renders exactly its stored breakdowns and bucket
           tables: [...article.querySelectorAll("table")].map((table) => ({
             key: table.getAttribute("data-breakdown"),
             rows: [...table.querySelectorAll("tbody tr")].map((row) =>
-              [...row.children].map((cell) =>
-                cell.textContent!.trim().replace(/\s+(?=%$)/, ""),
+              [...row.children].map((cell, index) =>
+                index === 0
+                  ? cell.textContent!
+                  : cell.textContent!.trim().replace(/\s+(?=%$)/, ""),
               ),
             ),
           })),
@@ -319,9 +325,15 @@ test("every live arrest profile renders exactly its stored breakdowns and bucket
     for (const row of batch) {
       const actual = rendered.find((item) => item.id === row.id)!;
       expect(actual.tables.map((table) => table.key).sort()).toEqual(
-        Object.keys(row.breakdowns).sort(),
+        Object.keys(row.breakdowns)
+          .filter(
+            (key) => key !== "cells" && key !== "residential_income_by_tract",
+          )
+          .sort(),
       );
-      for (const [key, buckets] of Object.entries(row.breakdowns)) {
+      for (const [key, buckets] of Object.entries(row.breakdowns).filter(
+        ([key]) => key !== "cells" && key !== "residential_income_by_tract",
+      )) {
         const actualRows = actual.tables.find(
           (table) => table.key === key,
         )!.rows;
@@ -330,7 +342,7 @@ test("every live arrest profile renders exactly its stored breakdowns and bucket
         ).map(([label, count]) => [
           label,
           count.toLocaleString("en-US"),
-          `${row.coverage.totalArrests === 0 ? "0.0" : ((count / row.coverage.totalArrests) * 100).toFixed(1)}%`,
+          `${(key.startsWith("charge_rows_") ? row.coverage.chargeRows : key.startsWith("distinct_charge_records_") ? row.coverage.distinctChargeRecords : row.coverage.totalArrests) === 0 ? "0.0" : ((count / (key.startsWith("charge_rows_") ? row.coverage.chargeRows : key.startsWith("distinct_charge_records_") ? row.coverage.distinctChargeRecords : row.coverage.totalArrests)) * 100).toFixed(1)}%`,
         ]);
         expect(actualRows.sort((a, b) => a[0].localeCompare(b[0]))).toEqual(
           expectedRows.sort((a, b) => a[0].localeCompare(b[0])),
@@ -351,8 +363,8 @@ test("arrest component fails for missing required or malformed present maps", as
   const [profile] = await loadArrestProfilesForPersonnel(row.personnel_id);
   for (const malformed of [
     { ...profile.breakdowns, by_year: undefined },
-    { ...profile.breakdowns, by_offense: null },
-    { ...profile.breakdowns, by_offense: undefined },
+    { ...profile.breakdowns, arrests_by_offense: null },
+    { ...profile.breakdowns, arrests_by_offense: undefined },
   ]) {
     await expect(
       renderComponent("PersonnelArrestProfiles", {
