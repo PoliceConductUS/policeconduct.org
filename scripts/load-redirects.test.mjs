@@ -279,6 +279,11 @@ function deploy(
     }
     const log = join(dir, "calls");
     writeFileSync(log, "");
+    // Coverage failures and ordering are exercised in deploy-release-guard.test.mjs.
+    // Keep these fixtures focused on redirect publication and cloud call ordering.
+    writeFileSync(join(dir, "bin", "npm"), "#!/usr/bin/env bash\nexit 0\n", {
+      mode: 0o755,
+    });
     for (const tool of ["aws", "node"])
       writeFileSync(
         join(dir, "bin", tool),

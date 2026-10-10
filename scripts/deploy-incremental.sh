@@ -51,6 +51,9 @@ if [[ ! -d "$DIST_DIR" ]]; then
   exit 1
 fi
 
+# Refuse to publish unaccounted prior URLs or invalid redirects.
+npm run validate:redirects
+
 # ── Step 2: Generate content manifest (path → md5) ─────────────────────────
 echo "▶ Computing content hashes for ${DIST_DIR}/..."
 

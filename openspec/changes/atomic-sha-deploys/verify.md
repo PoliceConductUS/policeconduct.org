@@ -37,3 +37,17 @@ Follow-up identity review removed Spenser Stockwell from the absence list after
 finding a same-agency Spencer Stockwell candidate. The prior exact-name comparison
 was incomplete; remaining absences are preliminary unmatched records, not proof
 that the people are absent under every possible name variant.
+
+## Deployment guard follow-up
+
+Eight isolated executable deployment fixtures failed before the guard was added
+and pass afterward. They exercise preview build, standalone preview sync,
+production build, and production `--skip-build`, with failing and passing
+coverage checks. Failed checks exit before any AWS or redirect-loader call;
+passing checks follow the build where applicable and precede the first upload.
+Fixtures use fake npm, AWS, and Node commands and never contact cloud services.
+This follow-up does not establish live deployment or complete deferred tasks.
+
+Focused verification passes: all 80 redirect tests (including eight deployment
+guard fixtures), ESLint for both changed test files, shell syntax validation,
+OpenSpec validation for this change, formatting, and `git diff --check`.

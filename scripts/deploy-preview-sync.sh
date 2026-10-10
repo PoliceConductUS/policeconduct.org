@@ -27,6 +27,9 @@ if [[ ! -d dist ]]; then
   exit 1
 fi
 
+# Refuse to publish unaccounted prior URLs or invalid redirects.
+npm run validate:redirects
+
 # Previews must never be crawlable (Google has indexed pr-N.preview URLs as
 # duplicate canonicals against production). Written here so EVERY sync — full
 # deploy or a standalone resume — guarantees the deny-all robots.txt is present.

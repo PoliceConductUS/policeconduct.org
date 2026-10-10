@@ -22,3 +22,16 @@ redirects. No production paths will be invented or inferred from a missing row.
       allowances separately from redirects. Update unresolved generator wording.
 - [x] Update the deployment specification and document list maintenance.
 - [x] Run focused tests and the aggregate validation gate; record limitations.
+
+## Deployment guard follow-up
+
+The current preview sync and production incremental deployment must run the
+existing strict redirect coverage check after build/output existence checks and
+before any cloud publication. Standalone preview sync and production
+`--skip-build` use the same gate. This changes no route policy or data and does
+not implement the deferred atomic deployment system.
+
+- [x] Reproduce missing deployment checks with isolated executable shell fixtures.
+- [x] Gate both publication scripts and include fixtures in `test:redirects`.
+- [x] Verify failure blocks all cloud calls and successful coverage follows the
+      build and precedes publication.

@@ -78,6 +78,15 @@ creating redirects, pages, or 410 responses.
   list is missing, malformed, or contains an invalid entry
 - **THEN** the coverage check fails
 
+#### Scenario: Deployment coverage gate
+
+- **WHEN** preview sync or production incremental deployment runs, including
+  standalone preview sync and production `--skip-build`
+- **THEN** `npm run validate:redirects` runs after the build (when requested) and
+  the output directory check
+- **AND** a failed check stops deployment before any S3 write, redirect-store
+  publication, or CloudFront invalidation
+
 ### Requirement: Non-canonical hosts are not indexed
 
 The system SHALL suppress search-engine indexing of non-canonical build hosts at
