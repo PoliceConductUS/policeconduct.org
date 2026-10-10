@@ -24,8 +24,8 @@ The site SHALL account for every public table in a coverage audit and expose use
 #### Scenario: Agency has an imported arrest profile
 
 - **WHEN** an agency has an `agency_arrest_profile` linked by `agency_id`
-- **THEN** its canonical agency page renders that profile’s stored total, coverage, and one-dimensional count breakdowns
-- **AND** agency totals come directly from that imported profile rather than a sum of personnel profiles
+- **THEN** its canonical agency page does not display arrest profiles while the agency presentation is deferred
+- **AND** imported agency profiles remain available in the data layer and personnel arrest profiles remain visible on personnel pages
 
 #### Scenario: Personnel has arrest profiles
 

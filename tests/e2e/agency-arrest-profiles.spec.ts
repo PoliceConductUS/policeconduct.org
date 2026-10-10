@@ -33,44 +33,10 @@ test("agency arrest loader uses the imported agency profile without summing pers
   });
   expect(await loadArrestProfilesForAgency("no-such-agency")).toEqual([]);
 });
-test("Irving agency page displays its imported arrests and new charge breakdowns", async ({
+test("Irving agency page omits the deferred arrest display", async ({
   page,
 }) => {
-  const {
-    rows: [row],
-  } = await client.query(
-    `select profile.* from public.agency_arrest_profile profile join public.agency a on a.id=profile.agency_id where a.slug='irving-police-department-049f9a'`,
-  );
   await page.goto("/tx/dallas-county/irving/irving-police-department-049f9a/");
-  const section = page.locator("#arrest-records");
-  await expect(section).toContainText(
-    `${row.coverage.totalArrests.toLocaleString("en-US")} recorded arrests`,
-  );
-  await expect(section).toContainText(row.coverage.firstMonth);
-  await expect(section).toContainText(row.coverage.lastMonth);
-  await expect(section).toContainText("one distinct booking");
-  for (const [key, buckets] of Object.entries(row.breakdowns)) {
-    if (key === "cells" || key === "residential_income_by_tract") continue;
-    const table = section.locator(`table[data-breakdown="${key}"]`);
-    await expect(table.locator("tbody tr")).toHaveCount(
-      Object.keys(buckets as object).length,
-    );
-    const rendered = await table
-      .locator("tbody tr")
-      .evaluateAll((rows) =>
-        rows.map((row) =>
-          [...row.children]
-            .slice(0, 2)
-            .map((cell, index) =>
-              index === 0 ? cell.textContent! : cell.textContent!.trim(),
-            ),
-        ),
-      );
-    const expected = Object.entries(buckets as Record<string, number>).map(
-      ([label, count]) => [label, count.toLocaleString("en-US")],
-    );
-    const order = (left: string[], right: string[]) =>
-      left[0].localeCompare(right[0]);
-    expect(rendered.sort(order)).toEqual(expected.sort(order));
-  }
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Irving");
+  await expect(page.locator("#arrest-records")).toHaveCount(0);
 });

@@ -1,8 +1,6 @@
 ---
 import "#src/styles/civic-ledger.css";
 import { agencyStatusPresentation } from "#src/lib/agency-status";
-import AgencyArrestProfiles from "#src/components/AgencyArrestProfiles.astro";
-import { loadArrestProfilesForAgency } from "#src/lib/data/arrest-profiles.js";
 import CoverageLinks from "#src/components/CoverageLinks.astro";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
@@ -34,7 +32,6 @@ type PersonnelLinkedCivilCaseRecord =
   AgencyDetail["personnelLinkedCivilCases"][number];
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
-const arrestProfiles = await loadArrestProfilesForAgency(data.agency.id);
 
 const {
   agencyName,
@@ -581,8 +578,6 @@ const structuredData = {
       </section>
     ) : null
   }
-
-  <AgencyArrestProfiles profiles={arrestProfiles} />
 
   <CoverageLinks links={data.coverageLinks} />
 

@@ -4,7 +4,7 @@ The imported agency arrest profile is absent from the agency page, and personnel
 
 # What Changes
 
-Load agency_arrest_profile by exact resolved agency ID, display its recorded coverage and count breakdowns, and update the shared personnel presentation to current imported dimensions. Require the agency profile table in schema validation. No intake or database changes.
+Load agency_arrest_profile by exact resolved agency ID and update the personnel presentation to current imported dimensions. The agency-page arrest display is deferred at the user's request; retain imported data and personnel display. Require the agency profile table in schema validation. No intake or database changes.
 
 # Impact
 

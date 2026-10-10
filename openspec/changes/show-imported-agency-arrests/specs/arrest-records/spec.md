@@ -1,13 +1,14 @@
 ## ADDED Requirements
 
-### Requirement: Agency arrest profiles use imported agency totals
+### Requirement: Agency arrest display is deferred
 
-The agency page SHALL load agency_arrest_profile through agency_id after canonical route resolution and SHALL display its recorded total and coverage without summing personnel profiles.
+The agency page SHALL omit the arrest display while its presentation is deferred. Imported agency profiles SHALL remain available in the data layer without summing personnel profiles.
 
 #### Scenario: Irving has an imported profile
 
 - **WHEN** a visitor opens the Irving agency page
-- **THEN** its arrest section shows the stored agency total, dates, and one-dimensional count breakdowns
+- **THEN** the page does not render an arrest section
+- **AND** related personnel arrest sections remain visible
 
 ### Requirement: Personnel profiles preserve current import count units
 
