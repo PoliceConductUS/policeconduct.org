@@ -20,6 +20,7 @@ const hasBuiltDestination = ({ to }) => {
 // imported here (this script runs under plain node, not the Astro/Vite
 // TypeScript resolver), so the value is mirrored as a constant instead.
 const PERSONNEL_PAGE_SIZE = 50;
+const AGENCY_PAGE_SIZE = 50;
 
 const normalizePath = (value) => {
   const trimmed = String(value || "").trim();
@@ -150,12 +151,13 @@ const redirects = await withDb(async (client) => {
     await client.query(
       `
         select
-          payload->'agency'->>'state' as state,
-          payload->'agency'->>'slug' as slug,
-          path as canonical_path
-        from public.build_page_payload
-        where page_type = 'agency'
-        order by payload->'agency'->>'state', payload->'agency'->>'slug'
+          lower(split_part(lp.path, '/', 2)) as state,
+          a.slug,
+          lp.path || a.slug || '/' as canonical_path
+        from public.agency a
+        join public.location_path lp on lp.location_path_id = a.location_path_id
+        join public.build_page_payload bpp on bpp.entity_id = a.id and bpp.page_type = 'agency'
+        order by lower(split_part(lp.path, '/', 2)), a.slug
       `,
     )
   ).rows;
@@ -164,14 +166,15 @@ const redirects = await withDb(async (client) => {
     await client.query(
       `
         select
-          bpp.payload->'agency'->>'slug' as slug,
-          bpp.path as canonical_path
+          a.slug,
+          lp.path || a.slug || '/' as canonical_path
         from public.agency a
         join public.build_page_payload bpp
           on bpp.page_type = 'agency'
          and bpp.entity_id = a.id
+        join public.location_path lp on lp.location_path_id = a.location_path_id
         where a.parent_federal_agency_id is not null
-        order by bpp.payload->'agency'->>'slug'
+        order by a.slug
       `,
     )
   ).rows;
@@ -325,7 +328,7 @@ const redirects = await withDb(async (client) => {
       ),
       to: normalizePath(agency.canonical_path),
       status: 301,
-      source: "build_page_payload.path",
+      source: "agency.location_path_id and agency.slug",
     })),
     ...federalBranchRows.map((agency) => ({
       from: normalizePath(`/law-enforcement-agency/federal/${agency.slug}/`),
@@ -449,16 +452,61 @@ const redirects = await withDb(async (client) => {
         },
       ].filter(hasBuiltDestination),
     ),
+    ...[
+      {
+        from: "/civil-litigation/federal/",
+        to: "/federal/",
+        status: 301,
+        source: "federal civil case collection retired",
+      },
+    ].filter(
+      (entry) =>
+        !stateRows.some(({ state }) => state === "federal") &&
+        hasBuiltDestination(entry),
+    ),
     // Retain legacy state and federal category redirects only when the
     // destination was generated in this build.
     ...[...US_STATE_TILES.map((state) => state.code.toLowerCase()), "federal"]
-      .map((category) => ({
-        from: normalizePath(`/personnel/${category}/`),
-        to: normalizePath(`/${category}/`),
-        status: 301,
-        source: "personnel state route retired",
-      }))
+      .flatMap((category) => [
+        {
+          from: normalizePath(`/personnel/${category}/`),
+          to: normalizePath(`/${category}/`),
+          status: 301,
+          source: "personnel state route retired",
+        },
+        {
+          from: normalizePath(`/law-enforcement-agency/${category}/`),
+          to: normalizePath(`/${category}/`),
+          status: 301,
+          source: "agency collection route retired",
+        },
+        {
+          from: `/law-enforcement-agency/${category}/page/*`,
+          to: normalizePath(`/${category}/`),
+          status: 301,
+          source: "agency collection pagination retired",
+        },
+      ])
       .filter(hasBuiltDestination),
+    ...[...new Set(agencyRows.map(({ state }) => state))].flatMap(
+      (category) => {
+        const pageCount = Math.ceil(
+          agencyRows.filter(({ state }) => state === category).length /
+            AGENCY_PAGE_SIZE,
+        );
+        return Array.from(
+          { length: Math.max(0, pageCount - 1) },
+          (_, index) => ({
+            from: normalizePath(
+              `/law-enforcement-agency/${category}/page/${index + 2}/`,
+            ),
+            to: normalizePath(`/${category}/`),
+            status: 301,
+            source: "agency collection pagination retired",
+          }),
+        ).filter(hasBuiltDestination);
+      },
+    ),
     // Full parity with the retired
     // src/pages/personnel/[category]/page/[...page].astro route: it
     // generated a redirect stub for every pagination page 2..N per

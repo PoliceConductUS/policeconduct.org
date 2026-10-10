@@ -13,3 +13,7 @@
 8. Add only approved duplicate agency aliases; resolve retained agency destinations through `agency.location_path_id -> location_path.path` and the stored agency slug. Fail for missing retained IDs. Verify mappings and built destination availability.
 9. Audit all 477 exact paths into actionable groups, with existing decisions, evidence, and recommendations distinguished. Do not add unapproved absence records or guessed identity redirects.
 10. Review scoped changes, run `npm run validate`, and report pre-merge preparation versus later production build/publication. No production build, deployment, or activation in this follow-up.
+
+## Legacy collection release follow-up
+
+Restore legacy agency collection navigation to built state/federal civic indexes, including scoped wildcard and exact count-derived pagination entries. Add the federal civil collection mapping to the built federal index. Keep missing indexes unredirected and preserve individual record identity. Resolve agency route identity through the required agency/location join rather than projection payloads. Verify in temporary fixtures; do not modify the ongoing build output or deploy.

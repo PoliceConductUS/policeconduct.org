@@ -79,13 +79,14 @@ const createFixture = async (t, duplicateRows = retainedAgencies) => {
     'export const US_STATE_TILES = [{code:"TX"},{code:"DC"},{code:"AK"}];',
   );
   const responses = [
-    [
-      {
-        state: "tx",
-        slug: "agency-123",
-        canonical_path: "/tx/county/place/agency-123/",
-      },
-    ],
+    Array.from({ length: 100 }, (_, index) => ({
+      state: "tx",
+      slug: index === 0 ? "agency-123" : `agency-fixture-${index}`,
+      canonical_path:
+        index === 0
+          ? "/tx/county/place/agency-123/"
+          : `/tx/county/place/agency-fixture-${index}/`,
+    })),
     [],
     [],
     [],
@@ -100,6 +101,11 @@ const createFixture = async (t, duplicateRows = retainedAgencies) => {
     path.join(cwd, "src/lib/db.js"),
     `const responses = ${JSON.stringify(responses)};
      export const withDb = (run) => run({query: async (sql, values) => {
+       if (responses.length >= 6 && (!sql.includes("lp.location_path_id = a.location_path_id")
+           || !sql.includes("lp.path || a.slug || '/' as canonical_path")
+           || !sql.includes("bpp.entity_id = a.id") || /bpp\\.path|payload->/.test(sql))) {
+         throw new Error("Agency route identity must use the agency location join and stored slug; projections only select eligibility.");
+       }
        const rows = responses.shift();
        if (responses.length === 0) {
          if (!/from public.agency a\\s+join public.location_path lp\\s+on lp.location_path_id = a.location_path_id/.test(sql)
@@ -232,4 +238,69 @@ test("approved aliases for agencies without personnel are omitted", async (t) =>
     ),
     false,
   );
+});
+
+test("legacy agency collections and federal civil collection require built civic indexes", async (t) => {
+  const cwd = await createFixture(t);
+  for (const category of ["mn", "or", "wa"]) {
+    await mkdir(path.join(cwd, "dist", category), { recursive: true });
+    await writeFile(path.join(cwd, "dist", category, "index.html"), "fixture");
+  }
+  await writeFile(
+    path.join(cwd, "src/lib/geo/states.ts"),
+    'export const US_STATE_TILES = [{code:"TX"},{code:"MN"},{code:"OR"},{code:"WA"},{code:"AK"}];',
+  );
+  let result = runGenerator(cwd);
+  assert.equal(result.status, 0, result.stderr);
+  let { redirects } = JSON.parse(
+    await readFile(path.join(cwd, "dist/_redirect-map.json"), "utf8"),
+  );
+  for (const category of ["tx", "mn", "or", "wa", "federal"]) {
+    for (const suffix of ["/", "/page/*"]) {
+      const from = `/law-enforcement-agency/${category}${suffix}`;
+      const matches = redirects.filter((entry) => entry.from === from);
+      assert.equal(matches.length, 1, `${from} must redirect exactly once`);
+      assert.equal(matches[0].to, `/${category}/`);
+      assert.equal(matches[0].status, 301);
+    }
+  }
+  assert.equal(
+    redirects.find((entry) => entry.from === "/civil-litigation/federal/")?.to,
+    "/federal/",
+  );
+  assert.equal(
+    redirects.find(
+      (entry) => entry.from === "/law-enforcement-agency/tx/page/2/",
+    )?.to,
+    "/tx/",
+  );
+  assert.equal(
+    redirects.some(
+      (entry) => entry.from === "/law-enforcement-agency/tx/page/3/",
+    ),
+    false,
+  );
+  await rm(path.join(cwd, "dist/federal/index.html"));
+  await rm(path.join(cwd, "dist/tx/index.html"));
+  result = runGenerator(cwd);
+  assert.equal(result.status, 0, result.stderr);
+  ({ redirects } = JSON.parse(
+    await readFile(path.join(cwd, "dist/_redirect-map.json"), "utf8"),
+  ));
+  for (const from of [
+    "/law-enforcement-agency/tx/",
+    "/law-enforcement-agency/tx/page/*",
+    "/law-enforcement-agency/tx/page/2/",
+    "/law-enforcement-agency/ak/",
+    "/law-enforcement-agency/ak/page/*",
+    "/law-enforcement-agency/federal/",
+    "/law-enforcement-agency/federal/page/*",
+    "/civil-litigation/federal/",
+  ]) {
+    assert.equal(
+      redirects.some((entry) => entry.from === from),
+      false,
+      `${from} must not redirect to an unbuilt index`,
+    );
+  }
 });

@@ -45,3 +45,10 @@
 - Watch routes were deleted in May 22 commit `c0d17dd`; explicit approval for removing nested watch pages was not located. Both production URLs still serve video. Restoration remains unresolved, including lost link identity/relationship data; no parent-page redirect was added.
 - Fresh case trace corrects the prior seven-acquired assertion: six exact dockets exist in retained dev-copy acquisition; Van Kirk's requested exact docket does not. Current transform skips each present case at zero resolved personnel, including confirmed name-filter defects. Details and historical limits are in the release disposition document and `/tmp/pc-seven-cases-current-trace.md`. No intake mutation occurred.
 - Fresh aggregate `npm run validate` exited 0: 71 redirect tests, 10 forms API tests, 140 browser tests passed; one expected built-search skip. Evidence: `/tmp/pc-release-federal-report-validate-20261004.log`. Coverage remains a separate failing release gate. No production build or deployment occurred.
+
+## Legacy collection release follow-up
+
+- New isolated generator fixture failed before implementation because `/law-enforcement-agency/tx/` had no redirect; all five generator fixtures pass afterward.
+- Fixtures cover TX/MN/OR/WA and federal collection roots, scoped pagination wildcards, exact TX page 2 and the page-count boundary, omitted redirects for absent indexes (including federal), and preserved record-specific mappings. SQL assertions require agency/location joins and reject projection identity fields.
+- All 81 redirect tests pass. Focused ESLint, formatting, OpenSpec validation, and `git diff --check` pass. Evidence: `/tmp/pc-legacy-collection-tests.log`.
+- No build, database mutation, deployment, or live verification was performed by this follow-up; the ongoing build output was untouched.
