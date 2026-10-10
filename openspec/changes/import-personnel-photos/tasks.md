@@ -6,4 +6,4 @@
 ## 2. Verification
 
 - [x] 2.1 Test exact association staging, corruption and missing files.
-- [ ] 2.2 Run relevant type/schema/OpenSpec checks and verify Markham asset.
+- [x] 2.2 Run relevant type/schema/OpenSpec checks and verify Markham asset.

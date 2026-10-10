@@ -120,6 +120,9 @@ export default defineConfig({
     {
       name: "intake-personnel-photos",
       hooks: {
+        "astro:config:setup": async ({ command }) => {
+          if (command === "dev") await stagePersonnelPhotos();
+        },
         "astro:build:start": async () => {
           await stagePersonnelPhotos();
         },

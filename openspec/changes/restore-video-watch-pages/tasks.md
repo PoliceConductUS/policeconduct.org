@@ -6,4 +6,4 @@
 - [x] Connect existing video source rows to watch pages.
 - [x] Generate legacy redirects preserving original link IDs.
 - [x] Run focused tests, type check, and scoped lint.
-- [ ] Verify restored original IDs against repaired intake data and rendered pages.
+- [x] Verify restored original IDs against repaired intake data and rendered pages.
