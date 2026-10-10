@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
+import { stagePersonnelPhotos } from "./src/lib/personnel-photos.js";
 import { loadEnv } from "vite";
 
 import sentry from "@sentry/astro";
@@ -116,6 +117,14 @@ export default defineConfig({
     },
   },
   integrations: [
+    {
+      name: "intake-personnel-photos",
+      hooks: {
+        "astro:build:start": async () => {
+          await stagePersonnelPhotos();
+        },
+      },
+    },
     sitemap({
       entryLimit: 45000,
       filter: (page) => {

@@ -15,6 +15,28 @@ for (const envFile of envFiles) {
 }
 
 const requiredTables = {
+  personnel_photo: {
+    columns: [
+      "id",
+      "personnel_id",
+      "workspace_path",
+      "sha256",
+      "byte_size",
+      "content_type",
+      "source_filename",
+      "source_url",
+    ],
+    notNull: [
+      "id",
+      "personnel_id",
+      "workspace_path",
+      "sha256",
+      "byte_size",
+      "content_type",
+      "source_filename",
+    ],
+    uniqueColumnSets: [["personnel_id"]],
+  },
   agency: {
     columns: [
       "id",

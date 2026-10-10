@@ -13,7 +13,7 @@ import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
-import { getPersonnelImageById } from "#src/lib/entity-images.js";
+import { getPersonnelPhotoById } from "#src/lib/personnel-photos.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import LicenseTimeline from "#src/components/LicenseTimeline.astro";
@@ -353,9 +353,9 @@ const claimProfilePrefillPayload = JSON.stringify({
   message: `I would like to claim ownership of this profile.\nProfile path: ${officerPath}`,
 });
 
-const personnelImageSrc =
-  getPersonnelImageById(data.officer.id) || "/img/personnel/default.webp";
-const hasMappedPersonnelImage = Boolean(getPersonnelImageById(data.officer.id));
+const personnelPhoto = await getPersonnelPhotoById(data.officer.id);
+const personnelImageSrc = personnelPhoto || "/img/personnel/default.webp";
+const hasPersonnelPhoto = Boolean(personnelPhoto);
 const civilCaseCount = data.civilCases.length;
 const activeCivilCaseCount = civilCasesWithPaths.filter(
   (caseItem) => !caseItem.date_terminated,
@@ -501,7 +501,7 @@ const person = buildPersonNode({
   siteUrl,
   url: pageUrl,
   name: officerName,
-  image: hasMappedPersonnelImage
+  image: hasPersonnelPhoto
     ? new URL(personnelImageSrc, siteUrl).toString()
     : undefined,
   mainEntityOfPageId: profilePageId,

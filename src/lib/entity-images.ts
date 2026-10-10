@@ -114,6 +114,3 @@ export const getEntityImageById = (
   }
   return Object.hasOwn(map, id) ? map[id] : null;
 };
-
-export const getPersonnelImageById = (personnelId: string): string | null =>
-  getEntityImageById("personnel", personnelId);

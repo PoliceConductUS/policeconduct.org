@@ -1922,5 +1922,13 @@
   {
     "path": "/law-enforcement-agency/va/u-s-naval-investigative-service-dbaab2/",
     "reason": "Agency cm7a0bgot046uewvgsjf5j9jw has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/report/or/",
+    "reason": "Empty state report collection excluded: the current intake database has no reports in this state. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/wa/",
+    "reason": "Empty state report collection excluded: the current intake database has no reports in this state. The user approved excluding empty state pages."
   }
 ]

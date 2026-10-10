@@ -1,0 +1,49 @@
+---
+import WatchPage from "#src/components/WatchPage.astro";
+import { loadReportSummaries } from "#src/lib/data/summaries.js";
+import { loadReportDetail } from "#src/lib/report-detail.js";
+import { parseLocationPathParts } from "#src/lib/data/report-paths.js";
+import { getVideoEmbedUrl, requireWatchVideo } from "#src/lib/video.js";
+export async function getStaticPaths() {
+  const paths = [];
+  for (const report of await loadReportSummaries()) {
+    const detail = await loadReportDetail(report.slug);
+    if (!detail) throw new Error(`Report ${report.slug} not found.`);
+    const location = parseLocationPathParts(report.locationPath, report.id);
+    for (const video of detail.evidenceLinks.filter((link) =>
+      getVideoEmbedUrl(link.url),
+    )) {
+      paths.push({
+        params: {
+          category: location.state,
+          administrativeArea: location.administrativeArea,
+          place: location.place,
+          year: report.year,
+          month: report.month,
+          day: report.day,
+          slug: report.slug,
+          videoId: video.id,
+        },
+      });
+    }
+  }
+  return paths;
+}
+const { slug, videoId } = Astro.params;
+const data = await loadReportDetail(slug!);
+if (!data) throw new Error(`Report ${slug} not found.`);
+const video = requireWatchVideo(data.evidenceLinks, videoId!);
+const watchPath = `${data.canonicalPath}watch/${video.id}/`;
+if (Astro.url.pathname !== watchPath)
+  throw new Error(
+    `Report video path ${Astro.url.pathname} does not match ${watchPath}.`,
+  );
+---
+
+<WatchPage
+  video={video}
+  videos={data.evidenceLinks.filter((link) => getVideoEmbedUrl(link.url))}
+  parentTitle={data.report.title as string}
+  parentPath={data.canonicalPath}
+  watchPath={watchPath}
+/>

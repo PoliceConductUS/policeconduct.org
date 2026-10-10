@@ -1,4 +1,5 @@
 ---
+import { getVideoEmbedUrl } from "#src/lib/video.js";
 import PageShell from "#src/layouts/PageShell.astro";
 import "#src/styles/civic-ledger.css";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
@@ -302,7 +303,19 @@ const structuredData = {
             <h3>Related links</h3>
             {coverageLinks.map((link) => (
               <p>
-                <a href={link.url} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={
+                    getVideoEmbedUrl(link.url)
+                      ? `${casePath}watch/${link.id}/`
+                      : link.url
+                  }
+                  target={getVideoEmbedUrl(link.url) ? undefined : "_blank"}
+                  rel={
+                    getVideoEmbedUrl(link.url)
+                      ? undefined
+                      : "noopener noreferrer"
+                  }
+                >
                   {link.title}
                 </a>
               </p>

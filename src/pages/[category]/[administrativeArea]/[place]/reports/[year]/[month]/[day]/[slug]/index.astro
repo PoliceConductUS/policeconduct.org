@@ -5,6 +5,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import ReportNarrative from "#src/components/ReportNarrative.astro";
 import ReportDisclaimer from "#src/components/ReportDisclaimer.astro";
+import { getVideoEmbedUrl } from "#src/lib/video.js";
 import PageShell from "#src/layouts/PageShell.astro";
 import { loadReportSummaries } from "#src/lib/data/summaries.js";
 import { parseLocationPathParts } from "#src/lib/data/report-paths.js";
@@ -427,7 +428,19 @@ const structuredData = {
             <h3>Records and evidence</h3>
             {evidenceLinks.map((link) => (
               <p>
-                <a href={link.url} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={
+                    getVideoEmbedUrl(link.url)
+                      ? `${data.canonicalPath}watch/${link.id}/`
+                      : link.url
+                  }
+                  target={getVideoEmbedUrl(link.url) ? undefined : "_blank"}
+                  rel={
+                    getVideoEmbedUrl(link.url)
+                      ? undefined
+                      : "noopener noreferrer"
+                  }
+                >
                   {link.title}
                 </a>
               </p>

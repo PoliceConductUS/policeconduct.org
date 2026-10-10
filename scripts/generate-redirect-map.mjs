@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { statSync } from "node:fs";
 import path from "node:path";
+import { getVideoEmbedUrl } from "../src/lib/video.ts";
 import { withDb } from "../src/lib/db.js";
 import { US_STATE_TILES } from "../src/lib/geo/states.ts";
 
@@ -182,7 +183,9 @@ const redirects = await withDb(async (client) => {
   const civilCaseRows = (
     await client.query(
       `
-        select split_part(lp.path, '/', 2) as state, c.slug
+        select split_part(lp.path, '/', 2) as state, c.slug,
+          (select coalesce(json_agg(json_build_object('id', l.id, 'url', l.url)), '[]'::json)
+           from public.civil_case_links l where l.civil_case_id = c.id) as videos
         from public.civil_cases c
         join public.location_path lp
           on lp.location_path_id = c.location_path_id
@@ -196,7 +199,9 @@ const redirects = await withDb(async (client) => {
     await client.query(
       `
         select split_part(lp.path, '/', 2) as state, lp.path as location_path,
-               r.slug, r.incident_date
+               r.slug, r.incident_date,
+               (select coalesce(json_agg(json_build_object('id', l.id, 'url', l.url)), '[]'::json)
+                from public.review_links l where l.review_id = r.id) as videos
         from public.reviews r
         join public.location_path lp
           on lp.location_path_id = r.location_path_id
@@ -321,7 +326,51 @@ const redirects = await withDb(async (client) => {
     ];
   });
 
+  const watchRedirects = [
+    ...civilCaseRows.flatMap((civilCase) =>
+      civilCase.videos
+        .filter((video) => getVideoEmbedUrl(video.url))
+        .map((video) => ({
+          from: normalizePath(
+            `/civil-litigation/${civilCase.state}/${civilCase.slug}/watch/${video.id}/`,
+          ),
+          to: normalizePath(
+            `/civil-cases/${civilCase.slug}/watch/${video.id}/`,
+          ),
+          status: 301,
+          source: "civil_case_links.id and civil_cases.slug",
+        })),
+    ),
+    ...reportRows.flatMap((report) => {
+      const slugs = [
+        report.slug,
+        ...legacyReportSlugAliases
+          .filter((alias) => alias.newSlug === report.slug)
+          .map((alias) => alias.oldSlug),
+      ];
+      return report.videos
+        .filter((video) => getVideoEmbedUrl(video.url))
+        .flatMap((video) =>
+          slugs.flatMap((slug) =>
+            [
+              `/report/${report.state}/${slug}/watch/${video.id}/`,
+              `/report/${slug}/watch/${video.id}/`,
+              ...(slug !== report.slug
+                ? [`${buildReportPath({ ...report, slug })}watch/${video.id}/`]
+                : []),
+            ].map((from) => ({
+              from: normalizePath(from),
+              to: normalizePath(`${buildReportPath(report)}watch/${video.id}/`),
+              status: 301,
+              source: "review_links.id and reviews.slug",
+            })),
+          ),
+        );
+    }),
+  ];
+
   return [
+    ...watchRedirects,
     ...agencyRows.map((agency) => ({
       from: normalizePath(
         `/law-enforcement-agency/${agency.state}/${agency.slug}/`,

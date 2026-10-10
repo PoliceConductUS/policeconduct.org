@@ -73,6 +73,10 @@ const createFixture = async (t, duplicateRows = retainedAgencies) => {
     new URL("./generate-redirect-map.mjs", import.meta.url),
     path.join(cwd, "scripts/generate-redirect-map.mjs"),
   );
+  await copyFile(
+    new URL("../src/lib/video.ts", import.meta.url),
+    path.join(cwd, "src/lib/video.ts"),
+  );
   await writeFile(path.join(cwd, "package.json"), '{"type":"module"}');
   await writeFile(
     path.join(cwd, "src/lib/geo/states.ts"),
@@ -88,8 +92,26 @@ const createFixture = async (t, duplicateRows = retainedAgencies) => {
           : `/tx/county/place/agency-fixture-${index}/`,
     })),
     [],
-    [],
-    [],
+    [
+      {
+        state: "tx",
+        slug: "case-slug",
+        videos: [
+          { id: "original-case-link", url: "https://youtu.be/TKh6X74AEc0" },
+        ],
+      },
+    ],
+    [
+      {
+        state: "tx",
+        slug: "first-amendment-retaliation-arrest-2c545f",
+        location_path: "/tx/county/place/",
+        incident_date: "2023-12-04",
+        videos: [
+          { id: "original-report-link", url: "https://youtu.be/TKh6X74AEc0" },
+        ],
+      },
+    ],
     [{ state: "tx" }, { state: "dc" }, { state: "ak" }],
     [
       { category: "tx", total: 100 },
@@ -303,4 +325,29 @@ test("legacy agency collections and federal civil collection require built civic
       `${from} must not redirect to an unbuilt index`,
     );
   }
+});
+
+test("legacy watch URLs preserve the stored video link id and resolve to watch pages", async (t) => {
+  const cwd = await createFixture(t);
+  const result = runGenerator(cwd);
+  assert.equal(result.status, 0, result.stderr);
+  const { redirects } = JSON.parse(
+    await readFile(path.join(cwd, "dist/_redirect-map.json"), "utf8"),
+  );
+  const expected = [
+    [
+      "/civil-litigation/tx/case-slug/watch/original-case-link/",
+      "/civil-cases/case-slug/watch/original-case-link/",
+    ],
+    [
+      "/report/tx/first-amendment-retaliation-arrest-2c545f/watch/original-report-link/",
+      "/tx/county/place/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/watch/original-report-link/",
+    ],
+    [
+      "/report/tx/2023-12-04-75039-1st-amendment-retaliation-arrest-2c545f/watch/original-report-link/",
+      "/tx/county/place/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/watch/original-report-link/",
+    ],
+  ];
+  for (const [from, to] of expected)
+    assert.equal(redirects.find((entry) => entry.from === from)?.to, to);
 });
