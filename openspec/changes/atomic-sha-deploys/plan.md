@@ -11,6 +11,11 @@ existing 404 response; it does not declare permanent retirement or promise a
 return date. The list is release metadata, not a source of personnel identity.
 Current routes and valid redirects take precedence when a profile returns.
 
+The October 9, 2026 follow-up excludes empty state pages as the user requested.
+Record only exact published state roots and legacy state collection URLs after
+verifying their states have no current agency assignments, reports, or civil
+cases. Federal roots and individual record URLs are outside this decision.
+
 The user approved explicit accounting rather than blanket exemptions or forced
 redirects. No production paths will be invented or inferred from a missing row.
 

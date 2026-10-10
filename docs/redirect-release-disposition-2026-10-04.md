@@ -7,6 +7,22 @@ The original 477 count measures URLs, not 477 missing entities or independent de
 - After the checker correction, 15 verified agency redirects, and two explicitly approved report absences, 459 URLs remain: 298 state/category/pagination URLs, 54 excluded agency entries, and 107 record/media URLs needing further source or identity review.
 - Those 107 are 57 cases, 29 agency URLs (28 agency names, including two Antioch IDs), 19 personnel, and two watch routes. They should not be treated as 107 proven missing real-world entities.
 
+## October 9 empty-state decision
+
+The user approved excluding empty state pages. A fresh production sitemap and
+current database comparison identified 235 published URLs across 47 states with
+no agencies having current personnel assignments, reports, or civil cases. Their
+exact state roots and empty legacy state collection URLs are now recorded in
+`route-absences.json`. This does not exclude federal root pages or authorize
+removing individual agency, personnel, case, report, or watch records. Earlier
+counts below remain historical inventories, not the current release result.
+
+Separately, the existing approved current-assignment rule accounts for 139
+published agency URLs whose exact database slugs identify agencies with zero
+current assignments. Their absence entries include the verified agency IDs.
+Approved duplicate-agency redirect sources are excluded from this accounting.
+Personnel profiles and federal root pages remain outside this exclusion.
+
 ## October 5 intake rerun
 
 Applied CourtListener chain entry 000009 to the local database: 105 case creates, 305 personnel-link creates, and 105 source-link creates. Database case count increased from 465 to 570. The transform emits 551 cases; the additive update retains existing cases it no longer emits. No deletions were generated.

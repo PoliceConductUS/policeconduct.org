@@ -426,5 +426,1501 @@
   {
     "path": "/report/mn/2026-01-24-55404-death-of-alex-pretti-federal-officers-shooting-g4h5i6/",
     "reason": "Published report is absent from the current intake database. The user explicitly declined restoration on 2026-10-04."
+  },
+  {
+    "path": "/ak/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/al/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ar/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/az/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ca/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ak/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/al/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ar/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/az/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ca/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/co/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ct/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/dc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/de/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/fl/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ga/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/hi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ia/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/id/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/il/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/in/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ks/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ky/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/la/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ma/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/md/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/me/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/mi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/mo/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ms/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/mt/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/nc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/nd/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ne/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/nh/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/nj/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/nm/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/nv/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ny/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/oh/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ok/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/pa/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ri/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/sc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/sd/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/tn/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/ut/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/va/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/vt/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/wi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/wv/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/civil-litigation/wy/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/co/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ct/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/dc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/de/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/fl/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ga/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/hi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ia/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/id/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/il/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/in/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ks/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ky/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/la/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ak/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/al/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ar/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/az/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ca/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/co/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ct/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/dc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/de/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/fl/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ga/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/hi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ia/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/id/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/il/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/in/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ks/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ky/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/la/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ma/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/md/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/me/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/mi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/mo/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ms/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/mt/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/nc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/nd/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ne/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/nh/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/nj/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/nm/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/nv/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ny/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/oh/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ok/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/pa/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ri/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/sc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/sd/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/tn/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/ut/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/va/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/vt/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/wi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/wv/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/wy/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ma/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/md/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/me/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/mi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/mo/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ms/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/mt/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/nc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/nd/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ne/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/nh/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/nj/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/nm/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/nv/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ny/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/oh/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ok/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/pa/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ak/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/al/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ar/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/az/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ca/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/co/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ct/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/dc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/de/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/fl/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ga/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/hi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ia/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/id/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/il/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/in/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ks/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ky/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/la/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ma/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/md/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/me/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/mi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/mo/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ms/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/mt/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/nc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/nd/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ne/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/nh/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/nj/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/nm/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/nv/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ny/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/oh/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ok/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/pa/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ri/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/sc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/sd/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/tn/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/ut/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/va/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/vt/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/wi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/wv/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/wy/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ak/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/al/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ar/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/az/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ca/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/co/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ct/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/dc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/de/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/fl/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ga/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/hi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ia/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/id/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/il/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/in/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ks/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ky/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/la/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ma/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/md/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/me/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/mi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/mo/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ms/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/mt/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/nc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/nd/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ne/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/nh/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/nj/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/nm/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/nv/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ny/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/oh/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ok/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/pa/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ri/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/sc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/sd/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/tn/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/ut/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/va/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/vt/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/wi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/wv/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/report/wy/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ri/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/sc/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/sd/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/tn/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/ut/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/va/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/vt/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/wi/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/wv/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/wy/",
+    "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/law-enforcement-agency/dc/office-of-inspector-general-u-s-department-of-agriculture-af9bb9/",
+    "reason": "Agency cm7a0bgot0475ewvgp9eyc8w2 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/dc/office-of-inspector-general-u-s-department-of-health-and-human-services-a8a99b/",
+    "reason": "Agency cm7a0bgot047bewvgj0mszhif has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/dc/u-s-bureau-of-alcohol-tobacco-and-firearms-f6cd18/",
+    "reason": "Agency cm7a0bgot046mewvgs6xyqymp has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/dc/u-s-bureau-of-diplomatic-security-d96c37/",
+    "reason": "Agency cm7a0bgot046zewvgw9muzy3w has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/dc/u-s-customs-service-480037/",
+    "reason": "Agency cm7a0bgot046kewvgkwwlie10 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/dc/u-s-department-of-energy-1605c3/",
+    "reason": "Agency cm7a0bgot0479ewvgjlhnpdzd has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/dc/u-s-department-of-veterans-affairs-c3f258/",
+    "reason": "Agency cm7a0bgot0473ewvg9v7lgxy4 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/dc/u-s-federal-bureau-of-investigation-ca5492/",
+    "reason": "Agency cm7a0bgot046gewvgtaafjyui has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/dc/u-s-federal-reserve-system-d9bacf/",
+    "reason": "Agency cm7a0bgot046xewvgaaosroib has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/dc/u-s-internal-revenue-service-cf63e4/",
+    "reason": "Agency cm7a0bgot046sewvgaos4a556 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/dc/u-s-national-parks-service-686f61/",
+    "reason": "Agency cm7a0bgot0471ewvg4p3ymwe3 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/dc/u-s-secret-service-06ce24/",
+    "reason": "Agency cm7a0bgot046iewvg5qs1f9cn has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/federal/ice/",
+    "reason": "Agency czyyk2hqe9ke2kq3cg9nodb4 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/il/u-s-postal-inspection-service-17b7ab/",
+    "reason": "Agency cm7a0bgot046qewvgdf7x72uh has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/8th-judicial-dist-cscd-02263b/",
+    "reason": "Agency cm7a0bgoa00xfewvg29qh1phd has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/20th-82nd-judicial-district-juvenile-probation-department-c81db4/",
+    "reason": "Agency cm76wpxbb020cvrvgroxnlisn has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/39th-judicial-district-cscd-f5daa3/",
+    "reason": "Agency cm7a0bgo800meewvg9ikfolfj has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/63rd-83rd-judicial-district-cscd-ab8a82/",
+    "reason": "Agency cm7a0bgop03meewvgxndeb5yd has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/76th-276th-judicial-district-cscd-66ef71/",
+    "reason": "Agency cm7a0bgoh0286ewvg508qxfay has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/76th-276th-judicial-districts-juvenile-probation-department-f3d748/",
+    "reason": "Agency cm7a0bgoo03cpewvgdkis38o2 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/79th-judicial-district-cscd-a50d76/",
+    "reason": "Agency cm7a0bgoc0180ewvg294onl8t has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/90th-judicial-district-cscd-75717c/",
+    "reason": "Agency cm7a0bgos0453ewvgt3qk87iz has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/90th-judicial-district-juvenile-probation-f90dcf/",
+    "reason": "Agency cm7a0bgos044pewvg442708lw has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/106th-judicial-district-cscd-e8410e/",
+    "reason": "Agency cm76wpxb801ldvrvg9em6unor has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/109th-judicial-district-winkler-co-cscd-a478ac/",
+    "reason": "Agency cm7a0bgos041cewvgp56liimj has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/118th-judicial-district-juvenile-probation-department-f1037d/",
+    "reason": "Agency cm7a0bgoa00zsewvgzfv484kh has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/258th-411th-judical-dist-cscd-f7112f/",
+    "reason": "Agency cm7a0bgoj02kmewvg1oyocctl has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/259th-judicial-dist-cscd-9186f7/",
+    "reason": "Agency cm7a0bgoc01bgewvgrbfs7bmt has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/266th-judicial-district-comm-supv-and-corr-dept-95c4cb/",
+    "reason": "Agency cm76wpxbb01zfvrvgibvty9ai has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/286th-judicial-dist-atty-s-office-800814/",
+    "reason": "Agency cm7a0bgoa00w3ewvgs37x83a4 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/287th-judicial-dist-cscd-fb44df/",
+    "reason": "Agency cm76wpxaz0070vrvg64742o91 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/452nd-judicial-dist-cscd-0b5ed5/",
+    "reason": "Agency cm7a0bgof01uvewvg8bwuswt8 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/adjutant-general-s-department-6f5964/",
+    "reason": "Agency cm7a0bgoo03fkewvgoo627hm7 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/alvarado-marshal-s-office-abbc8a/",
+    "reason": "Agency cm7a0bgoc01asewvgxa2212py has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/anderson-houston-co-comm-supervision-and-corr-dept-f021af/",
+    "reason": "Agency cm76wpxay0002vrvgzo69nez1 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/andrews-co-juvenile-probation-dept-a6db1c/",
+    "reason": "Agency cm76wpxay0019vrvgy0k36aen has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/angelina-county-cscd-f7315c/",
+    "reason": "Agency cm76wpxay001rvrvg66rttft3 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/aransas-co-const-pct-1-bd34d9/",
+    "reason": "Agency cm76wpxaz003uvrvgjbtkwvpa has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/atascosa-co-atty-s-office-28cfe1/",
+    "reason": "Agency cm76wpxaz005cvrvg676a2aj3 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/axtell-isd-police-department-186608/",
+    "reason": "Agency cm7a0bgog01y6ewvgk29umr61 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/bastrop-county-emergency-communications-bf9854/",
+    "reason": "Agency cm76wpxb0008avrvg0r39p6mi has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/bell-lampasas-co-cscd-0eb23f/",
+    "reason": "Agency cm76wpxb000a6vrvgduyushjn has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/bloomburg-police-department-c7d089/",
+    "reason": "Agency cm76wpxb400zovrvg45sy7n41 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/brown-co-const-pct-1-a3693b/",
+    "reason": "Agency cm76wpxb300q2vrvg5t25b292 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/burleson-public-safety-communications-department-3db859/",
+    "reason": "Agency cm7a0bgoc019bewvgad7d02ji has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/calhoun-co-juvenile-probation-dept-b0e207/",
+    "reason": "Agency cm76wpxb300tgvrvgokziazol has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/callahan-co-const-pct-3-4b0d77/",
+    "reason": "Agency cm76wpxb300ukvrvgd3lrhxpp has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/cass-county-cscd-806922/",
+    "reason": "Agency cm76wpxb400z0vrvgnutjrmyx has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/cherokee-county-cscd-35b3f0/",
+    "reason": "Agency cm76wpxb5011qvrvgidmgt4a6 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/chico-police-dept-b17bb6/",
+    "reason": "Agency cm7a0bgos042sewvgfocbpz3m has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/cochran-co-juvenile-probation-dept-5a5937/",
+    "reason": "Agency cm76wpxb5013mvrvg0ywfzx9d has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/collin-co-cscd-98a4ef/",
+    "reason": "Agency cm76wpxb5014ovrvga0xnbrn3 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/crane-co-juvenile-probation-dept-9ec157/",
+    "reason": "Agency cm76wpxb601cdvrvg2cwsn3vs has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/dalhart-isd-police-department-fe850a/",
+    "reason": "Agency cm76wpxb701e0vrvgq2moogrn has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/dallas-county-cscd-5c9e86/",
+    "reason": "Agency cm76wpxb701ezvrvg4x70r9o5 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/dawson-county-juvenile-probation-department-533d52/",
+    "reason": "Agency cm76wpxb801lgvrvgu9gur9hd has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/dewitt-co-attorney-s-office-fbb7d1/",
+    "reason": "Agency cm76wpxba01r2vrvgocs943zs has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/dickinson-fire-marshal-s-office-484950/",
+    "reason": "Agency cm7a0bgo50020ewvgehulu6hb has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/duncanville-fire-dept-84f258/",
+    "reason": "Agency cm76wpxb701iovrvgv3t65eza has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/gaines-county-juvenile-probation-department-78df59/",
+    "reason": "Agency cm76wpxbd027nvrvglc1mik62 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/garza-co-const-pct-2-81cfba/",
+    "reason": "Agency cm7a0bgo5002xewvgz2deahi5 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/grayson-county-cscd-d71a35/",
+    "reason": "Agency cm7a0bgo6005qewvgs6jh8j1s has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/guadalupe-county-cscd-02278b/",
+    "reason": "Agency cm7a0bgo600a5ewvgi3qjqdxn has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/hale-co-juvenile-probation-dept-ea2728/",
+    "reason": "Agency cm7a0bgo600biewvggl08xlbp has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/harrison-county-cscd-9e7aef/",
+    "reason": "Agency cm7a0bgo800l7ewvgbpfrg9qo has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/hidalgo-county-community-supervision-and-correctional-department-273053/",
+    "reason": "Agency cm7a0bgo900qlewvg54vig96q has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/highland-village-fire-dept-08c77b/",
+    "reason": "Agency cm76wpxba01pkvrvg6ghlmgzd has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/hill-county-cscd-ae0e77/",
+    "reason": "Agency cm7a0bgo900uaewvg6atto8w9 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/hill-county-juvenile-probation-department-57bfa1/",
+    "reason": "Agency cm7a0bgo900udewvg90bainxw has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/hockley-co-const-pct-1-8d1872/",
+    "reason": "Agency cm7a0bgoa00vsewvghlqs6u74 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/hockley-co-juvenile-justice-agency-c3d667/",
+    "reason": "Agency cm7a0bgoa00vmewvgfx8h4rrk has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/howard-co-const-pct-1-6c914d/",
+    "reason": "Agency cm7a0bgoa00zyewvga2h5bfup has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/howard-county-cscd-c362a2/",
+    "reason": "Agency cm7a0bgoa00zpewvg3ceuvneh has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/hutchinson-co-cscd-16d48a/",
+    "reason": "Agency cm7a0bgob012tewvgfdca5gkk has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/hutchinson-co-juvenile-probation-dept-a56d4d/",
+    "reason": "Agency cm7a0bgob012qewvgcmu4rwd3 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/jasper-co-const-pct-3-301c91/",
+    "reason": "Agency cm7a0bgob014rewvgjl5gk4yf has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/kaufman-county-cscd-8554c7/",
+    "reason": "Agency cm7a0bgoc01coewvgke2vlbal has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/kendall-county-cscd-429b16/",
+    "reason": "Agency cm7a0bgod01erewvgiav5fqua has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/kerr-co-juvenile-probation-dept-950c6a/",
+    "reason": "Agency cm7a0bgod01fuewvgh5n2tal7 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/kerr-county-cscd-b70c54/",
+    "reason": "Agency cm7a0bgod01frewvglazvq8f3 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/kleberg-co-const-pct-1-458109/",
+    "reason": "Agency cm7a0bgod01hlewvg1zdkgm82 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/lake-city-police-dept-5467af/",
+    "reason": "Agency cm7a0bgom02y1ewvgqzj062z6 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/lamar-county-cscd-4349a4/",
+    "reason": "Agency cm7a0bgod01ihewvg2wefnmcw has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/lamb-county-juvenile-probation-department-8379c9/",
+    "reason": "Agency cm7a0bgod01jpewvgylwkipb4 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/lampasas-co-const-pct-3-9020d3/",
+    "reason": "Agency cm7a0bgoe01kfewvgxi0kvklb has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/lefors-city-marshal-s-office-82c191/",
+    "reason": "Agency cm7a0bgo5005cewvgzysz7onf has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/leon-co-const-pct-4-49f99a/",
+    "reason": "Agency cm7a0bgoe01mtewvgcoxelktd has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/liberty-chambers-co-cscd-fb4288/",
+    "reason": "Agency cm7a0bgoe01nnewvgcuwryhs3 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/lubbock-co-cscd-7cf487/",
+    "reason": "Agency cm7a0bgof01rvewvgovdfdi3b has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/lubbock-county-juvenile-justice-center-058db2/",
+    "reason": "Agency cm7a0bgof01ryewvgaxca6d75 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/lufkin-city-marshal-s-office-fab0e1/",
+    "reason": "Agency cm76wpxaz0030vrvgbz19cr6q has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/lynn-co-juvenile-probation-department-cd3ea3/",
+    "reason": "Agency cm7a0bgof01u8ewvgnrshn592 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/marble-falls-fire-department-ef9161/",
+    "reason": "Agency cm76wpxb300smvrvg1tc994z1 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/mart-isd-police-department-ba6dfb/",
+    "reason": "Agency cm7a0bgog01xyewvggkaezuu1 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/mclennan-county-cscd-0cae37/",
+    "reason": "Agency cm7a0bgof01vaewvgd4gs2v4l has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/medina-county-juvenile-probation-department-ca163b/",
+    "reason": "Agency cm7a0bgog021hewvg2v6oja6z has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/midland-co-const-pct-3-5f6aaa/",
+    "reason": "Agency cm7a0bgoh022wewvgics7t4s7 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/mitchell-co-const-pct-2-557e35/",
+    "reason": "Agency cm7a0bgoh024mewvgx0781fyp has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/mount-calm-isd-police-department-411fd5/",
+    "reason": "Agency cm7a0bgoa00vaewvgvpqyikjk has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/navarro-county-cscd-233239/",
+    "reason": "Agency cm7a0bgoi02aqewvguqlahna8 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/newton-co-dist-atty-s-office-23d0ad/",
+    "reason": "Agency cm7a0bgoi02cnewvgorfmxt60 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/ochiltree-hansford-co-juvenile-probation-dept-e30233/",
+    "reason": "Agency cm7a0bgoi02f6ewvggwwi28f9 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/palestine-city-marshal-s-office-ec140b/",
+    "reason": "Agency cm76wpxay000vvrvgd7ezo4fp has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/panola-co-cscd-b8f120/",
+    "reason": "Agency cm7a0bgoj02hyewvgy28b0tao has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/parker-co-juvenile-probation-dept-4194c2/",
+    "reason": "Agency cm7a0bgoj02iiewvgldksl8k7 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/pecos-co-atty-s-office-0a8dfd/",
+    "reason": "Agency cm7a0bgoj02kdewvgti7copdq has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/pecos-municipal-criminal-justice-center-366c91/",
+    "reason": "Agency cm7a0bgok02qgewvgxbmkwbwy has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/pine-forest-police-dept-2b1914/",
+    "reason": "Agency cm7a0bgoj02gbewvg3qaytym4 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/randall-county-juvenile-probation-e94ac4/",
+    "reason": "Agency cm7a0bgok02o8ewvg851xlmcu has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/reeves-co-const-pct-4-3c0c27/",
+    "reason": "Agency cm7a0bgok02qbewvgj7wcuon0 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/rio-bravo-police-dept-73ac8a/",
+    "reason": "Agency cm7a0bgor03tnewvgnttysejh has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/rockwall-county-cscd-f5c668/",
+    "reason": "Agency cm7a0bgol02s0ewvghwv39ulx has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/rose-hill-acres-police-department-2668c1/",
+    "reason": "Agency cm7a0bgo700e8ewvgxr0v43zb has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/runnels-co-const-pct-1-33327d/",
+    "reason": "Agency cm7a0bgol02t5ewvg798mlode has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/rusk-county-adult-probation-cae773/",
+    "reason": "Agency cm7a0bgol02tiewvgbwz8m2b6 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/san-juan-municipal-court-marshall-s-office-27e2e8/",
+    "reason": "Agency cm7a0bgo900trewvgaw6agxlt has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/sansom-park-fire-marshal-s-office-d746a8/",
+    "reason": "Agency cm7a0bgon03a7ewvg6m2t9mib has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/springlake-earth-isd-police-department-b660bf/",
+    "reason": "Agency cm7a0bgoe01k4ewvg7uyyvpdd has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/starr-co-cscd-c552c8/",
+    "reason": "Agency cm7a0bgom032uewvgeuqt5p95 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/texas-state-guard-7c92c2/",
+    "reason": "Agency cm7a0bgot047iewvg6cxc40pt has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/tom-green-co-atty-s-office-f20f5b/",
+    "reason": "Agency cm7a0bgoo03e4ewvgraujgga2 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/u-s-marshals-service-6e592c/",
+    "reason": "Agency cm7a0bgot046vewvgevecoygr has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/u-s-military-police-b28f13/",
+    "reason": "Agency cm7a0bgot047dewvg9mgaog4n has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/upton-co-const-pct-1-7dcec8/",
+    "reason": "Agency cm7a0bgop03l9ewvgebglraqi has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/upton-reagan-juvenile-probation-department-0adc4d/",
+    "reason": "Agency cm7a0bgop03l3ewvgjleel17r has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/vega-city-marshal-s-office-f83c78/",
+    "reason": "Agency cm7a0bgoj02flewvg26js0bod has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/victoria-county-cscd-236bf6/",
+    "reason": "Agency cm7a0bgoq03oqewvg97wj7jfi has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/waller-county-juvenile-probation-b2e92f/",
+    "reason": "Agency cm7a0bgoq03q7ewvgqmha1g4h has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/white-deer-city-marshal-s-office-709db7/",
+    "reason": "Agency cm76wpxb400yyvrvgdhevl60x has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/wichita-co-juvenile-probation-dept-326b0f/",
+    "reason": "Agency cm7a0bgor03v9ewvgdvfdgjy5 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/wilbarger-county-cscd-25f81e/",
+    "reason": "Agency cm7a0bgor03wmewvg7ql0rffu has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/wilbarger-county-juvenile-probation-46c7a3/",
+    "reason": "Agency cm7a0bgor03wpewvgsq6qhjy9 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/wood-co-const-pct-2-e951d4/",
+    "reason": "Agency cm7a0bgos043cewvg2au6yghm has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/wood-co-crim-dist-atty-s-office-b05b75/",
+    "reason": "Agency cm7a0bgos043lewvgykp7vd26 has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/zapata-co-juvenile-probation-dept-3c875d/",
+    "reason": "Agency cm7a0bgos045cewvgsltdtbhq has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/tx/zavala-co-const-pct-2-2fbf7a/",
+    "reason": "Agency cm7a0bgot0464ewvg8owq8gvx has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/va/u-s-department-of-the-army-2fec60/",
+    "reason": "Agency cm7a0bgot0477ewvgq4hzh87t has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/va/u-s-drug-enforcement-administration-04c753/",
+    "reason": "Agency cm7a0bgot046oewvgozeu75gj has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
+  },
+  {
+    "path": "/law-enforcement-agency/va/u-s-naval-investigative-service-dbaab2/",
+    "reason": "Agency cm7a0bgot046uewvgsjf5j9jw has no current personnel assignment. Agency pages require at least one current assignment under the approved inclusion rule."
   }
 ]
