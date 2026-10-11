@@ -1,3 +1,8 @@
+import {
+  buildPendingTopics,
+  civicIndexCollator,
+  type CivicIndexModel,
+} from "#src/lib/data/civic-index.js";
 import { withDb } from "#src/lib/db.js";
 import {
   metricLabels,
@@ -71,6 +76,15 @@ export type FederalAgencyIndexModel = {
   pagePath: string;
   rows: FederalAgencyIndexRow[];
   rowsLabel: string;
+  /**
+   * True only for a single federal agency's own detail page, where `rows`
+   * are that agency's field offices (`FederalAgencyBranch[]`), not a
+   * browse/hierarchy listing of other federal agency groups. Distinguishes
+   * the "Field offices" record-table + TableScroll rendering (task 3)
+   * from the generic hierarchy table shared by the top-level federal list
+   * and federal topic pages, which this flag leaves untouched.
+   */
+  isFieldOfficesTable?: boolean;
   searchLabel: string;
   searchPlaceholder: string;
   title: string;
@@ -349,34 +363,40 @@ export const loadFederalAgencySummaries = async () => {
             fa.id,
             fa.name,
             fa.slug,
-            count(distinct fab.agency_id) as branch_count,
-            count(distinct active_assignment.officer_id) as personnel_count,
+            count(distinct a.id) as branch_count,
+            count(distinct active_assignment.personnel_id) as personnel_count,
             count(distinct report_officer.review_id) as report_count,
             count(distinct civil_case_link.civil_case_id) as civil_case_count
           from public.federal_agency fa
-          left join public.federal_agency_branch fab
-            on fab.federal_agency_id = fa.id
-          left join public.agency_officers active_assignment
-            on active_assignment.agency_id = fab.agency_id
+          left join public.agency a
+            on a.parent_federal_agency_id = fa.id
+           and exists (
+             select 1 from public.agency_personnel assignment
+             where assignment.agency_id = a.id
+               and assignment.end_date is null
+           )
+           and a.parent_federal_agency_id is not null
+          left join public.agency_personnel active_assignment
+            on active_assignment.agency_id = a.id
            and active_assignment.end_date is null
-          left join public.agency_officers report_assignment
-            on report_assignment.agency_id = fab.agency_id
-          left join public.review_officers report_officer
-            on report_officer.agency_officer_id = report_assignment.id
+          left join public.agency_personnel report_assignment
+            on report_assignment.agency_id = a.id
+          left join public.review_personnel report_officer
+            on report_officer.agency_personnel_id = report_assignment.id
           left join lateral (
             select cco.civil_case_id
-            from public.agency_officers direct_assignment
-            join public.civil_case_officers cco
-              on cco.agency_officer_id = direct_assignment.id
-            where direct_assignment.agency_id = fab.agency_id
+            from public.agency_personnel direct_assignment
+            join public.civil_case_personnel cco
+              on cco.agency_personnel_id = direct_assignment.id
+            where direct_assignment.agency_id = a.id
             union
             select cco.civil_case_id
-            from public.agency_officers target_assignment
-            join public.agency_officers case_assignment
-              on case_assignment.officer_id = target_assignment.officer_id
-            join public.civil_case_officers cco
-              on cco.agency_officer_id = case_assignment.id
-            where target_assignment.agency_id = fab.agency_id
+            from public.agency_personnel target_assignment
+            join public.agency_personnel case_assignment
+              on case_assignment.personnel_id = target_assignment.personnel_id
+            join public.civil_case_personnel cco
+              on cco.agency_personnel_id = case_assignment.id
+            where target_assignment.agency_id = a.id
           ) civil_case_link on true
           group by fa.id, fa.name, fa.slug
           order by fa.name
@@ -417,53 +437,59 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
                   'name', a.name,
                   'path', bpp.path,
                   'address', a.address,
-                  'city', lp.place_name,
-                  'state', lp.state_or_territory_slug,
-                  'administrativeArea', lp.administrative_area_name,
+                  'city', lp.display_name,
+                  'state', split_part(lp.path, '/', 2),
+                  'administrativeArea', area_lp.display_name,
                   'personnelCount', coalesce(branch_counts.personnel_count, 0),
                   'reportCount', coalesce(branch_counts.report_count, 0),
                   'civilCaseCount', coalesce(branch_counts.civil_case_count, 0)
                 )
-                order by lp.state_or_territory_slug, lp.place_name, a.name
+                order by split_part(lp.path, '/', 2), lp.display_name, a.name
               ) filter (where a.id is not null),
               '[]'::jsonb
             ) as branches
           from public.federal_agency fa
-          left join public.federal_agency_branch fab
-            on fab.federal_agency_id = fa.id
           left join public.agency a
-            on a.id = fab.agency_id
+            on a.parent_federal_agency_id = fa.id
+           and exists (
+             select 1 from public.agency_personnel assignment
+             where assignment.agency_id = a.id
+               and assignment.end_date is null
+           )
           left join public.location_path lp
             on lp.location_path_id = a.location_path_id
+          left join public.location_path area_lp
+            on area_lp.location_path_id = lp.parent_location_path_id
+           and area_lp.level = 'administrative_area'
           left join public.build_page_payload bpp
             on bpp.page_type = 'agency'
            and bpp.entity_id = a.id
           left join lateral (
             select
-              count(distinct active_assignment.officer_id) as personnel_count,
+              count(distinct active_assignment.personnel_id) as personnel_count,
               count(distinct report_officer.review_id) as report_count,
               count(distinct civil_case_link.civil_case_id) as civil_case_count
             from public.agency child_agency
-            left join public.agency_officers active_assignment
+            left join public.agency_personnel active_assignment
               on active_assignment.agency_id = child_agency.id
              and active_assignment.end_date is null
-            left join public.agency_officers report_assignment
+            left join public.agency_personnel report_assignment
               on report_assignment.agency_id = child_agency.id
-            left join public.review_officers report_officer
-              on report_officer.agency_officer_id = report_assignment.id
+            left join public.review_personnel report_officer
+              on report_officer.agency_personnel_id = report_assignment.id
             left join lateral (
               select cco.civil_case_id
-              from public.agency_officers direct_assignment
-              join public.civil_case_officers cco
-                on cco.agency_officer_id = direct_assignment.id
+              from public.agency_personnel direct_assignment
+              join public.civil_case_personnel cco
+                on cco.agency_personnel_id = direct_assignment.id
               where direct_assignment.agency_id = child_agency.id
               union
               select cco.civil_case_id
-              from public.agency_officers target_assignment
-              join public.agency_officers case_assignment
-                on case_assignment.officer_id = target_assignment.officer_id
-              join public.civil_case_officers cco
-                on cco.agency_officer_id = case_assignment.id
+              from public.agency_personnel target_assignment
+              join public.agency_personnel case_assignment
+                on case_assignment.personnel_id = target_assignment.personnel_id
+              join public.civil_case_personnel cco
+                on cco.agency_personnel_id = case_assignment.id
               where target_assignment.agency_id = child_agency.id
             ) civil_case_link on true
             where child_agency.id = a.id
@@ -521,6 +547,108 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
     ),
     slug: String(row.slug),
   } satisfies FederalAgencyDetail;
+};
+
+export const buildFederalCivicIndex = (
+  federalAgencies: FederalAgencySummary[],
+): CivicIndexModel => {
+  const pagePath = "/federal/";
+  const totals = federalAgencies.reduce(
+    (accumulator, agency) => ({
+      civilCases: accumulator.civilCases + agency.civilCaseCount,
+      personnel: accumulator.personnel + agency.personnelCount,
+      reports: accumulator.reports + agency.reportCount,
+    }),
+    { civilCases: 0, personnel: 0, reports: 0 },
+  );
+  const count = (value: number) => value.toLocaleString("en-US");
+  const rows = federalAgencies
+    .map((agency) => ({
+      href: agency.path,
+      label: agency.name,
+      searchText: agency.name,
+      values: {},
+    }))
+    .sort((a, b) => civicIndexCollator.compare(a.label, b.label));
+
+  return {
+    breadcrumbs: [
+      { label: "Home", href: "/" },
+      { label: "Federal", href: pagePath, current: true },
+    ],
+    columns: [{ key: "label", label: "Federal agency" }],
+    coverage: [
+      {
+        key: "agencies",
+        label: metricLabels.agencies,
+        value: federalAgencies.length,
+      },
+      {
+        key: "personnel",
+        label: metricLabels.personnel,
+        value: totals.personnel,
+      },
+      { key: "reports", label: metricLabels.reports, value: totals.reports },
+      {
+        key: "civil_cases",
+        label: metricLabels.civilCases,
+        value: totals.civilCases,
+      },
+    ],
+    description:
+      "Public records for federal law enforcement agencies, their personnel, reports, and civil litigation.",
+    drilldownLabel: "Federal records",
+    indexLabel: "Federal agencies",
+    jumpCell: {
+      browse: {
+        href: `${pagePath}agencies/`,
+        label: `Browse all ${rows.length} agencies →`,
+      },
+      count: count(rows.length),
+      label: metricLabels.agencies,
+      options: rows.map((row) => ({ href: row.href, label: row.label })),
+      placeholder: "Choose agency…",
+      selectLabel: "Agency",
+    },
+    jurisdictionLabel: "Police conduct",
+    level: "place",
+    map: {
+      bounds: null,
+      description: "",
+      emptyLabel: "",
+      points: [],
+      title: "",
+    },
+    pagePath,
+    pendingTopics: buildPendingTopics(pagePath, "federal", "federal"),
+    rows,
+    statCells: [
+      {
+        key: "personnel",
+        label: metricLabels.personnelRecords,
+        value: count(totals.personnel),
+        meta: "Currently serving",
+      },
+      {
+        key: "reports",
+        label: metricLabels.reports,
+        value: count(totals.reports),
+        meta: "Shared by the public",
+        href: totals.reports > 0 ? `${pagePath}reports/` : undefined,
+        actionLabel: totals.reports > 0 ? "View reports →" : undefined,
+      },
+      {
+        key: "civil_cases",
+        label: metricLabels.civilCases,
+        value: count(totals.civilCases),
+        meta: "Court records",
+        role: "civil",
+        href: totals.civilCases > 0 ? `${pagePath}civil-cases/` : undefined,
+        actionLabel: totals.civilCases > 0 ? "View civil cases →" : undefined,
+      },
+    ],
+    title: "Federal Police Records | PoliceConduct.org",
+  };
 };
 
 export const buildFederalAgencyIndexModel = (
@@ -581,8 +709,6 @@ export const buildFederalAgencyIndexModel = (
       {
         ...metricVisuals.personnel,
         detail: "Active linked personnel",
-        href: `${pagePath}personnel/`,
-        actionLabel: "View details",
         key: "personnel",
         value: formatCount(totals.personnel),
       },
@@ -608,7 +734,7 @@ export const buildFederalAgencyIndexModel = (
     rowsLabel: "Federal agencies",
     searchLabel: "Jump to",
     searchPlaceholder: "Search federal agencies",
-    title: "Federal Civic Index | PoliceConduct.org",
+    title: "Federal Police Records | PoliceConduct.org",
   };
 };
 
@@ -622,7 +748,7 @@ export const buildFederalAgencyDetailIndexModel = (
   ],
   charts: generalFederalCharts,
   columns: [
-    { key: "label", label: "Child agency" },
+    { key: "label", label: "Field office" },
     { key: "location", label: "Location" },
     { key: "personnel", label: metricLabels.personnel, numeric: true },
     { key: "reports", label: metricLabels.reports, numeric: true },
@@ -689,10 +815,11 @@ export const buildFederalAgencyDetailIndexModel = (
       reports: branch.reportCount,
     },
   })),
-  rowsLabel: "Child agencies",
+  rowsLabel: "Field offices",
+  isFieldOfficesTable: true,
   searchLabel: "Jump to",
-  searchPlaceholder: "Search child agencies",
-  title: `${federalAgency.name} Civic Index | PoliceConduct.org`,
+  searchPlaceholder: "Search field offices",
+  title: `${federalAgency.name} Police Records | PoliceConduct.org`,
 });
 
 export const buildFederalAgencyTopicIndexModel = (

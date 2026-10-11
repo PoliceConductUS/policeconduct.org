@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Texas Civic Index v4 | PoliceConduct.org (mockup)</title>
+    <link rel="stylesheet" href="shared-v2.css" />
+  </head>
+  <body>
+    <div class="variant-banner">
+      Design mockup v4 — sub-pages wired up (try Dallas in the county jump) ·
+      <a href="wyoming-v4.html">Wyoming</a> ·
+      <a href="counties-v4.html">all counties</a> ·
+      <a href="agency-entity-v4.html">Irving Police Department</a> · previous:
+      <a href="texas-v3.html">v3</a>
+    </div>
+
+    <header class="masthead">
+      <div class="container">
+        <a class="masthead-mark" href="#">Police<span>Conduct</span>.org</a>
+        <nav class="masthead-nav">
+          <a class="nav-action nav-action-find" href="#">Find an agency</a>
+          <a class="nav-action nav-action-share" href="#"
+            >Share an interaction</a
+          >
+          <a href="#">Volunteer</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="container">
+        <ol class="crumbs">
+          <li><a href="#">Home</a></li>
+          <li aria-current="page">Texas</li>
+        </ol>
+
+        <section class="lede">
+          <p class="kicker">State civic index</p>
+          <h1>Texas</h1>
+          <p class="lede-sub">
+            Public records for law enforcement agencies, personnel, reports, and
+            civil litigation across Texas's 254 counties.
+          </p>
+        </section>
+
+        <section class="stat-strip" aria-label="Texas coverage totals">
+          <div class="stat-cell">
+            <strong class="ledger-value ledger-value--lg tabular">2,937</strong>
+            <span class="ledger-label">Agencies</span>
+            <span class="ledger-meta">Statewide</span>
+          </div>
+          <div class="stat-cell">
+            <strong class="ledger-value ledger-value--lg tabular"
+              >129,908</strong
+            >
+            <span class="ledger-label">Personnel records</span>
+            <span class="ledger-meta">Current &amp; former</span>
+          </div>
+          <div class="stat-cell">
+            <strong class="ledger-value ledger-value--lg tabular">1</strong>
+            <span class="ledger-label">Reports</span>
+            <span class="ledger-meta">Shared by the public</span>
+          </div>
+          <div class="stat-cell">
+            <strong class="ledger-value ledger-value--lg tabular">33</strong>
+            <span class="ledger-label">Civil cases</span>
+            <span class="ledger-meta">Court records</span>
+          </div>
+          <div class="stat-cell jump-cell">
+            <strong class="ledger-value ledger-value--lg tabular">254</strong>
+            <span class="ledger-label">Counties</span>
+            <form class="jump-form" data-jump-form>
+              <label for="county-jump" class="visually-hidden">County</label>
+              <select id="county-jump" class="jump-select" data-jump-select>
+                <option value="" selected disabled>Choose county…</option>
+                <option value="/tx/anderson-county/">Anderson</option>
+                <option value="/tx/andrews-county/">Andrews</option>
+                <option value="/tx/angelina-county/">Angelina</option>
+                <option value="/tx/aransas-county/">Aransas</option>
+                <option value="/tx/archer-county/">Archer</option>
+                <option value="/tx/armstrong-county/">Armstrong</option>
+                <option value="/tx/atascosa-county/">Atascosa</option>
+                <option value="/tx/austin-county/">Austin</option>
+                <option value="/tx/bailey-county/">Bailey</option>
+                <option value="/tx/bandera-county/">Bandera</option>
+                <option value="/tx/bastrop-county/">Bastrop</option>
+                <option value="/tx/baylor-county/">Baylor</option>
+                <option value="/tx/bee-county/">Bee</option>
+                <option value="/tx/bell-county/">Bell</option>
+                <option value="/tx/bexar-county/">Bexar</option>
+                <option value="/tx/blanco-county/">Blanco</option>
+                <option value="/tx/borden-county/">Borden</option>
+                <option value="/tx/bosque-county/">Bosque</option>
+                <option value="/tx/bowie-county/">Bowie</option>
+                <option value="/tx/brazoria-county/">Brazoria</option>
+                <option value="/tx/brazos-county/">Brazos</option>
+                <option value="/tx/brewster-county/">Brewster</option>
+                <option value="/tx/briscoe-county/">Briscoe</option>
+                <option value="/tx/brooks-county/">Brooks</option>
+                <option value="/tx/brown-county/">Brown</option>
+                <option value="/tx/burleson-county/">Burleson</option>
+                <option value="/tx/burnet-county/">Burnet</option>
+                <option value="/tx/caldwell-county/">Caldwell</option>
+                <option value="/tx/calhoun-county/">Calhoun</option>
+                <option value="/tx/callahan-county/">Callahan</option>
+                <option value="/tx/cameron-county/">Cameron</option>
+                <option value="/tx/camp-county/">Camp</option>
+                <option value="/tx/carson-county/">Carson</option>
+                <option value="/tx/cass-county/">Cass</option>
+                <option value="/tx/castro-county/">Castro</option>
+                <option value="/tx/chambers-county/">Chambers</option>
+                <option value="/tx/cherokee-county/">Cherokee</option>
+                <option value="/tx/childress-county/">Childress</option>
+                <option value="/tx/clay-county/">Clay</option>
+                <option value="/tx/cochran-county/">Cochran</option>
+                <option value="/tx/coke-county/">Coke</option>
+                <option value="/tx/coleman-county/">Coleman</option>
+                <option value="/tx/collin-county/">Collin</option>
+                <option value="/tx/collingsworth-county/">Collingsworth</option>
+                <option value="/tx/colorado-county/">Colorado</option>
+                <option value="/tx/comal-county/">Comal</option>
+                <option value="/tx/comanche-county/">Comanche</option>
+                <option value="/tx/concho-county/">Concho</option>
+                <option value="/tx/cooke-county/">Cooke</option>
+                <option value="/tx/coryell-county/">Coryell</option>
+                <option value="/tx/cottle-county/">Cottle</option>
+                <option value="/tx/crane-county/">Crane</option>
+                <option value="/tx/crockett-county/">Crockett</option>
+                <option value="/tx/crosby-county/">Crosby</option>
+                <option value="/tx/culberson-county/">Culberson</option>
+                <option value="/tx/dallam-county/">Dallam</option>
+                <option value="county-v4.html">Dallas</option>
+                <option value="/tx/dawson-county/">Dawson</option>
+                <option value="/tx/deaf-smith-county/">Deaf Smith</option>
+                <option value="/tx/delta-county/">Delta</option>
+                <option value="/tx/denton-county/">Denton</option>
+                <option value="/tx/dewitt-county/">Dewitt</option>
+                <option value="/tx/dickens-county/">Dickens</option>
+                <option value="/tx/dimmit-county/">Dimmit</option>
+                <option value="/tx/donley-county/">Donley</option>
+                <option value="/tx/duval-county/">Duval</option>
+                <option value="/tx/eastland-county/">Eastland</option>
+                <option value="/tx/ector-county/">Ector</option>
+                <option value="/tx/edwards-county/">Edwards</option>
+                <option value="/tx/el-paso-county/">El Paso</option>
+                <option value="/tx/ellis-county/">Ellis</option>
+                <option value="/tx/erath-county/">Erath</option>
+                <option value="/tx/falls-county/">Falls</option>
+                <option value="/tx/fannin-county/">Fannin</option>
+                <option value="/tx/fayette-county/">Fayette</option>
+                <option value="/tx/fisher-county/">Fisher</option>
+                <option value="/tx/floyd-county/">Floyd</option>
+                <option value="/tx/foard-county/">Foard</option>
+                <option value="/tx/fort-bend-county/">Fort Bend</option>
+                <option value="/tx/franklin-county/">Franklin</option>
+                <option value="/tx/freestone-county/">Freestone</option>
+                <option value="/tx/frio-county/">Frio</option>
+                <option value="/tx/gaines-county/">Gaines</option>
+                <option value="/tx/galveston-county/">Galveston</option>
+                <option value="/tx/garza-county/">Garza</option>
+                <option value="/tx/gillespie-county/">Gillespie</option>
+                <option value="/tx/glasscock-county/">Glasscock</option>
+                <option value="/tx/goliad-county/">Goliad</option>
+                <option value="/tx/gonzales-county/">Gonzales</option>
+                <option value="/tx/gray-county/">Gray</option>
+                <option value="/tx/grayson-county/">Grayson</option>
+                <option value="/tx/gregg-county/">Gregg</option>
+                <option value="/tx/grimes-county/">Grimes</option>
+                <option value="/tx/guadalupe-county/">Guadalupe</option>
+                <option value="/tx/hale-county/">Hale</option>
+                <option value="/tx/hall-county/">Hall</option>
+                <option value="/tx/hamilton-county/">Hamilton</option>
+                <option value="/tx/hansford-county/">Hansford</option>
+                <option value="/tx/hardeman-county/">Hardeman</option>
+                <option value="/tx/hardin-county/">Hardin</option>
+                <option value="/tx/harris-county/">Harris</option>
+                <option value="/tx/harrison-county/">Harrison</option>
+                <option value="/tx/hartley-county/">Hartley</option>
+                <option value="/tx/haskell-county/">Haskell</option>
+                <option value="/tx/hays-county/">Hays</option>
+                <option value="/tx/hemphill-county/">Hemphill</option>
+                <option value="/tx/henderson-county/">Henderson</option>
+                <option value="/tx/hidalgo-county/">Hidalgo</option>
+                <option value="/tx/hill-county/">Hill</option>
+                <option value="/tx/hockley-county/">Hockley</option>
+                <option value="/tx/hood-county/">Hood</option>
+                <option value="/tx/hopkins-county/">Hopkins</option>
+                <option value="/tx/houston-county/">Houston</option>
+                <option value="/tx/howard-county/">Howard</option>
+                <option value="/tx/hudspeth-county/">Hudspeth</option>
+                <option value="/tx/hunt-county/">Hunt</option>
+                <option value="/tx/hutchinson-county/">Hutchinson</option>
+                <option value="/tx/irion-county/">Irion</option>
+                <option value="/tx/jack-county/">Jack</option>
+                <option value="/tx/jackson-county/">Jackson</option>
+                <option value="/tx/jasper-county/">Jasper</option>
+                <option value="/tx/jeff-davis-county/">Jeff Davis</option>
+                <option value="/tx/jefferson-county/">Jefferson</option>
+                <option value="/tx/jim-hogg-county/">Jim Hogg</option>
+                <option value="/tx/jim-wells-county/">Jim Wells</option>
+                <option value="/tx/johnson-county/">Johnson</option>
+                <option value="/tx/jones-county/">Jones</option>
+                <option value="/tx/karnes-county/">Karnes</option>
+                <option value="/tx/kaufman-county/">Kaufman</option>
+                <option value="/tx/kendall-county/">Kendall</option>
+                <option value="/tx/kenedy-county/">Kenedy</option>
+                <option value="/tx/kent-county/">Kent</option>
+                <option value="/tx/kerr-county/">Kerr</option>
+                <option value="/tx/kimble-county/">Kimble</option>
+                <option value="/tx/king-county/">King</option>
+                <option value="/tx/kinney-county/">Kinney</option>
+                <option value="/tx/kleberg-county/">Kleberg</option>
+                <option value="/tx/knox-county/">Knox</option>
+                <option value="/tx/la-salle-county/">La Salle</option>
+                <option value="/tx/lamar-county/">Lamar</option>
+                <option value="/tx/lamb-county/">Lamb</option>
+                <option value="/tx/lampasas-county/">Lampasas</option>
+                <option value="/tx/lavaca-county/">Lavaca</option>
+                <option value="/tx/lee-county/">Lee</option>
+                <option value="/tx/leon-county/">Leon</option>
+                <option value="/tx/liberty-county/">Liberty</option>
+                <option value="/tx/limestone-county/">Limestone</option>
+                <option value="/tx/lipscomb-county/">Lipscomb</option>
+                <option value="/tx/live-oak-county/">Live Oak</option>
+                <option value="/tx/llano-county/">Llano</option>
+                <option value="/tx/loving-county/">Loving</option>
+                <option value="/tx/lubbock-county/">Lubbock</option>
+                <option value="/tx/lynn-county/">Lynn</option>
+                <option value="/tx/madison-county/">Madison</option>
+                <option value="/tx/marion-county/">Marion</option>
+                <option value="/tx/martin-county/">Martin</option>
+                <option value="/tx/mason-county/">Mason</option>
+                <option value="/tx/matagorda-county/">Matagorda</option>
+                <option value="/tx/maverick-county/">Maverick</option>
+                <option value="/tx/mcculloch-county/">Mcculloch</option>
+                <option value="/tx/mclennan-county/">Mclennan</option>
+                <option value="/tx/mcmullen-county/">Mcmullen</option>
+                <option value="/tx/medina-county/">Medina</option>
+                <option value="/tx/menard-county/">Menard</option>
+                <option value="/tx/midland-county/">Midland</option>
+                <option value="/tx/milam-county/">Milam</option>
+                <option value="/tx/mills-county/">Mills</option>
+                <option value="/tx/mitchell-county/">Mitchell</option>
+                <option value="/tx/montague-county/">Montague</option>
+                <option value="/tx/montgomery-county/">Montgomery</option>
+                <option value="/tx/moore-county/">Moore</option>
+                <option value="/tx/morris-county/">Morris</option>
+                <option value="/tx/motley-county/">Motley</option>
+                <option value="/tx/nacogdoches-county/">Nacogdoches</option>
+                <option value="/tx/navarro-county/">Navarro</option>
+                <option value="/tx/newton-county/">Newton</option>
+                <option value="/tx/nolan-county/">Nolan</option>
+                <option value="/tx/nueces-county/">Nueces</option>
+                <option value="/tx/ochiltree-county/">Ochiltree</option>
+                <option value="/tx/oldham-county/">Oldham</option>
+                <option value="/tx/orange-county/">Orange</option>
+                <option value="/tx/palo-pinto-county/">Palo Pinto</option>
+                <option value="/tx/panola-county/">Panola</option>
+                <option value="/tx/parker-county/">Parker</option>
+                <option value="/tx/parmer-county/">Parmer</option>
+                <option value="/tx/pecos-county/">Pecos</option>
+                <option value="/tx/polk-county/">Polk</option>
+                <option value="/tx/potter-county/">Potter</option>
+                <option value="/tx/presidio-county/">Presidio</option>
+                <option value="/tx/rains-county/">Rains</option>
+                <option value="/tx/randall-county/">Randall</option>
+                <option value="/tx/reagan-county/">Reagan</option>
+                <option value="/tx/real-county/">Real</option>
+                <option value="/tx/red-river-county/">Red River</option>
+                <option value="/tx/reeves-county/">Reeves</option>
+                <option value="/tx/refugio-county/">Refugio</option>
+                <option value="/tx/roberts-county/">Roberts</option>
+                <option value="/tx/robertson-county/">Robertson</option>
+                <option value="/tx/rockwall-county/">Rockwall</option>
+                <option value="/tx/runnels-county/">Runnels</option>
+                <option value="/tx/rusk-county/">Rusk</option>
+                <option value="/tx/sabine-county/">Sabine</option>
+                <option value="/tx/san-augustine-county/">San Augustine</option>
+                <option value="/tx/san-jacinto-county/">San Jacinto</option>
+                <option value="/tx/san-patricio-county/">San Patricio</option>
+                <option value="/tx/san-saba-county/">San Saba</option>
+                <option value="/tx/schleicher-county/">Schleicher</option>
+                <option value="/tx/scurry-county/">Scurry</option>
+                <option value="/tx/shackelford-county/">Shackelford</option>
+                <option value="/tx/shelby-county/">Shelby</option>
+                <option value="/tx/sherman-county/">Sherman</option>
+                <option value="/tx/smith-county/">Smith</option>
+                <option value="/tx/somervell-county/">Somervell</option>
+                <option value="/tx/starr-county/">Starr</option>
+                <option value="/tx/stephens-county/">Stephens</option>
+                <option value="/tx/sterling-county/">Sterling</option>
+                <option value="/tx/stonewall-county/">Stonewall</option>
+                <option value="/tx/sutton-county/">Sutton</option>
+                <option value="/tx/swisher-county/">Swisher</option>
+                <option value="/tx/tarrant-county/">Tarrant</option>
+                <option value="/tx/taylor-county/">Taylor</option>
+                <option value="/tx/terrell-county/">Terrell</option>
+                <option value="/tx/terry-county/">Terry</option>
+                <option value="/tx/throckmorton-county/">Throckmorton</option>
+                <option value="/tx/titus-county/">Titus</option>
+                <option value="/tx/tom-green-county/">Tom Green</option>
+                <option value="/tx/travis-county/">Travis</option>
+                <option value="/tx/trinity-county/">Trinity</option>
+                <option value="/tx/tyler-county/">Tyler</option>
+                <option value="/tx/upshur-county/">Upshur</option>
+                <option value="/tx/upton-county/">Upton</option>
+                <option value="/tx/uvalde-county/">Uvalde</option>
+                <option value="/tx/val-verde-county/">Val Verde</option>
+                <option value="/tx/van-zandt-county/">Van Zandt</option>
+                <option value="/tx/victoria-county/">Victoria</option>
+                <option value="/tx/walker-county/">Walker</option>
+                <option value="/tx/waller-county/">Waller</option>
+                <option value="/tx/ward-county/">Ward</option>
+                <option value="/tx/washington-county/">Washington</option>
+                <option value="/tx/webb-county/">Webb</option>
+                <option value="/tx/wharton-county/">Wharton</option>
+                <option value="/tx/wheeler-county/">Wheeler</option>
+                <option value="/tx/wichita-county/">Wichita</option>
+                <option value="/tx/wilbarger-county/">Wilbarger</option>
+                <option value="/tx/willacy-county/">Willacy</option>
+                <option value="/tx/williamson-county/">Williamson</option>
+                <option value="/tx/wilson-county/">Wilson</option>
+                <option value="/tx/winkler-county/">Winkler</option>
+                <option value="/tx/wise-county/">Wise</option>
+                <option value="/tx/wood-county/">Wood</option>
+                <option value="/tx/yoakum-county/">Yoakum</option>
+                <option value="/tx/young-county/">Young</option>
+                <option value="/tx/zapata-county/">Zapata</option>
+                <option value="/tx/zavala-county/">Zavala</option>
+              </select>
+              <button class="jump-go" type="submit">Go →</button>
+            </form>
+            <p class="jump-status" data-jump-status aria-live="polite"></p>
+            <p class="jump-browse">
+              <a href="counties-v4.html">Browse all 254 counties →</a>
+            </p>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <div>
+              <h2>Look deeper by topic</h2>
+              <p>
+                Counts show records available on this site. Topics we have not
+                collected records for yet are marked below.
+              </p>
+            </div>
+          </div>
+
+          <ul class="topic-row ledger-grid">
+            <li class="topic-cell ledger-interactive" data-role="neutral">
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Personnel</span>
+                <span class="ledger-value ledger-value--md tabular"
+                  >129,908</span
+                >
+                <span class="topic-foot"
+                  ><span>Current &amp; former</span><span>→</span></span
+                >
+              </a>
+            </li>
+            <li class="topic-cell ledger-interactive" data-role="neutral">
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Reports</span>
+                <span class="ledger-value ledger-value--md tabular">1</span>
+                <span class="topic-foot"
+                  ><span>Shared by the public</span><span>→</span></span
+                >
+              </a>
+            </li>
+            <li class="topic-cell ledger-interactive" data-role="civil">
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Civil cases</span>
+                <span class="ledger-value ledger-value--md tabular">33</span>
+                <span class="topic-foot"
+                  ><span>Court records</span><span>→</span></span
+                >
+              </a>
+            </li>
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="budget"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Budget</span>
+                <span class="ledger-value">Not yet available</span>
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="#">Help collect this →</a></span
+              >
+            </li>
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="liability"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Liability costs</span>
+                <span class="ledger-value">Not yet available</span>
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="#">Help collect this →</a></span
+              >
+            </li>
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="neutral"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Fatal force incidents</span>
+                <span class="ledger-value">Not yet available</span>
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="#">Help collect this →</a></span
+              >
+            </li>
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="neutral"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Outcomes by income</span>
+                <span class="ledger-value">Not yet available</span>
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="#">Help collect this →</a></span
+              >
+            </li>
+          </ul>
+        </section>
+
+        <section class="context-band">
+          <div class="context-head">
+            <h2>Decertification law context</h2>
+            <span class="context-summary"
+              >4 missing ·
+              <a
+                href="https://www.mayerssolutions.com/licenserevoked"
+                rel="noopener"
+                >Report source</a
+              ></span
+            >
+          </div>
+          <p class="context-tier">
+            Texas ranks in the top tier of most empowering decertification
+            mechanisms and processes.
+          </p>
+          <div
+            class="status-ledger ledger-grid"
+            aria-label="Texas decertification report card statuses"
+          >
+            <div class="status-cell status-summary">
+              <h4 class="ledger-label ledger-label--caption">Present</h4>
+              <strong class="ledger-value ledger-value--summary tabular"
+                >5 of 9</strong
+              >
+            </div>
+            <div class="status-cell">
+              <h4 class="ledger-label ledger-label--caption">
+                Meetings open to the public
+              </h4>
+              <span class="status-mark missing" aria-label="Missing"
+                >Missing</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4 class="ledger-label ledger-label--caption">
+                Meetings occur often
+              </h4>
+              <span class="status-mark missing" aria-label="Missing"
+                >Missing</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4 class="ledger-label ledger-label--caption">
+                Civilians can file complaints
+              </h4>
+              <span class="status-mark present" aria-label="Present"
+                >Present</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4 class="ledger-label ledger-label--caption">
+                Civilians help make decisions
+              </h4>
+              <span class="status-mark present" aria-label="Present"
+                >Present</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4 class="ledger-label ledger-label--caption">
+                Independent complaint investigations
+              </h4>
+              <span class="status-mark present" aria-label="Present"
+                >Present</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4 class="ledger-label ledger-label--caption">
+                Open-investigation information
+              </h4>
+              <span class="status-mark missing" aria-label="Missing"
+                >Missing</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4 class="ledger-label ledger-label--caption">
+                Decision and discipline information
+              </h4>
+              <span class="status-mark missing" aria-label="Missing"
+                >Missing</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4 class="ledger-label ledger-label--caption">
+                National decertification index checks
+              </h4>
+              <span class="status-mark present" aria-label="Present"
+                >Present</span
+              >
+            </div>
+            <div class="status-cell">
+              <h4 class="ledger-label ledger-label--caption">
+                Automatic and case-by-case decertification
+              </h4>
+              <span class="status-mark present" aria-label="Present"
+                >Present</span
+              >
+            </div>
+          </div>
+          <p class="limit-note">
+            This is state-law context that applies across Texas jurisdictions.
+            It is not a rating of any local agency.
+          </p>
+        </section>
+      </div>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

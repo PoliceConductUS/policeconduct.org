@@ -4,8 +4,7 @@ export type PersonnelSummary = {
   lastName: string;
   firstName: string;
   nameSuffix?: string | null;
-  licenseType: string | null;
-  roleTitle: string | null;
+  title: string | null;
   reportCount: number;
   civilCaseCount: number;
   agencyName: string;
@@ -66,7 +65,7 @@ export type ReportSummary = {
   agencyCanonicalPath: string;
   ratingOverall?: number | null;
   personnel?: {
-    licenseType?: string | null;
+    title?: string | null;
     name: string;
     slug?: string | null;
   }[];

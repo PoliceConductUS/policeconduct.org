@@ -19,7 +19,10 @@ SITE_URL="https://pr-${PR_NUMBER}.preview.policeconduct.org"
 export SITE_URL
 npm run build
 
-aws s3 sync dist/ "s3://${S3_BUCKET_PREVIEW}/pr-${PR_NUMBER}/" --delete
-aws cloudfront create-invalidation --distribution-id "${CLOUDFRONT_DIST_PREVIEW}" --paths "/pr-${PR_NUMBER}/*"
+# Upload + invalidate (also writes the deny-all robots.txt). Factored into a
+# standalone, retrying, resumable step so a
+# dropped S3 connection can be resumed with `npm run deploy:preview:sync`
+# WITHOUT rebuilding.
+bash scripts/deploy-preview-sync.sh
 
 echo "Preview deploy complete: ${SITE_URL}"

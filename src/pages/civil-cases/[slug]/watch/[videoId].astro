@@ -1,0 +1,37 @@
+---
+import WatchPage from "#src/components/WatchPage.astro";
+import { loadCivilCaseList } from "#src/lib/data/civil-cases.js";
+import { loadCivilCaseDetailBySlug } from "#src/lib/data/civil-litigation-detail.js";
+import { getVideoEmbedUrl, requireWatchVideo } from "#src/lib/video.js";
+export async function getStaticPaths() {
+  const paths = [];
+  for (const civilCase of await loadCivilCaseList()) {
+    const detail = await loadCivilCaseDetailBySlug(civilCase.slug);
+    if (!detail) throw new Error(`Civil case ${civilCase.slug} not found.`);
+    for (const video of detail.coverageLinks.filter((link) =>
+      getVideoEmbedUrl(link.url),
+    )) {
+      paths.push({ params: { slug: civilCase.slug, videoId: video.id } });
+    }
+  }
+  return paths;
+}
+const { slug, videoId } = Astro.params;
+const data = await loadCivilCaseDetailBySlug(slug!);
+if (!data) throw new Error(`Civil case ${slug} not found.`);
+const video = requireWatchVideo(data.coverageLinks, videoId!);
+const parentPath = `/civil-cases/${data.civilCase.slug}/`;
+const watchPath = `${parentPath}watch/${video.id}/`;
+if (Astro.url.pathname !== watchPath)
+  throw new Error(
+    `Civil case video path ${Astro.url.pathname} does not match ${watchPath}.`,
+  );
+---
+
+<WatchPage
+  video={video}
+  videos={data.coverageLinks.filter((link) => getVideoEmbedUrl(link.url))}
+  parentTitle={data.civilCase.title}
+  parentPath={parentPath}
+  watchPath={watchPath}
+/>

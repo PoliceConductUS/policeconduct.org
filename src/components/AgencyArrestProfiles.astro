@@ -1,0 +1,15 @@
+---
+import PersonnelArrestProfiles from "./PersonnelArrestProfiles.astro";
+import type { AgencyArrestProfile } from "#src/lib/data/arrest-profiles.js";
+interface Props {
+  profiles: AgencyArrestProfile[];
+}
+const { profiles } = Astro.props;
+---
+
+<PersonnelArrestProfiles profiles={profiles}>
+  <p slot="introduction">
+    Agency-wide recorded arrests. These counts come from the agency’s imported
+    records and do not measure safety or misconduct.
+  </p>
+</PersonnelArrestProfiles>

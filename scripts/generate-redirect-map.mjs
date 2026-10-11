@@ -1,9 +1,27 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { statSync } from "node:fs";
 import path from "node:path";
+import { getVideoEmbedUrl } from "../src/lib/video.ts";
 import { withDb } from "../src/lib/db.js";
+import { US_STATE_TILES } from "../src/lib/geo/states.ts";
 
 const distDir = path.resolve("dist");
 const outputPath = path.join(distDir, "_redirect-map.json");
+
+const hasBuiltDestination = ({ to }) => {
+  try {
+    return statSync(path.join(distDir, to, "index.html")).isFile();
+  } catch (error) {
+    if (error.code === "ENOENT") return false;
+    throw error;
+  }
+};
+
+// Keep in sync with src/lib/pagination.ts PAGE_SIZE. That module can't be
+// imported here (this script runs under plain node, not the Astro/Vite
+// TypeScript resolver), so the value is mirrored as a constant instead.
+const PERSONNEL_PAGE_SIZE = 50;
+const AGENCY_PAGE_SIZE = 50;
 
 const normalizePath = (value) => {
   const trimmed = String(value || "").trim();
@@ -15,6 +33,70 @@ const normalizePath = (value) => {
     ? withLeadingSlash
     : `${withLeadingSlash}/`;
 };
+
+// User-approved duplicate agencies: legacy routes resolve to retained agency IDs.
+const approvedDuplicateAgencyAliases = [
+  {
+    from: "/law-enforcement-agency/mn/brooklyn-center-police-department-mn-ypgp/",
+    retainedAgencyId: "f1vaatwf5ilk19pjizorn6ge",
+  },
+  {
+    from: "/law-enforcement-agency/mn/minneapolis-police-department-mn-n6rd/",
+    retainedAgencyId: "ikojqoawn6c4m5m23cgs3yan",
+  },
+  {
+    from: "/law-enforcement-agency/mn/minnesota-state-patrol-d4e5f6/",
+    retainedAgencyId: "amcwh94rl4evk2uvlej74k70",
+  },
+  {
+    from: "/law-enforcement-agency/mn/st-anthony-police-department-mn-tbh3/",
+    retainedAgencyId: "g0z448nl5vtavrvntebbzu2n",
+  },
+  {
+    from: "/law-enforcement-agency/tx/dallas-police-department-tx-woyv/",
+    retainedAgencyId: "cm76wpxb701ggvrvgmu50aa9n",
+  },
+  {
+    from: "/law-enforcement-agency/tx/fort-worth-police-department-tx-py90/",
+    retainedAgencyId: "cm7a0bgon037gewvgoqo5jqsu",
+  },
+  {
+    from: "/law-enforcement-agency/tx/texas-department-of-public-safety-tx-28dj/",
+    retainedAgencyId: "cm7a0bgoo03ekewvgxw2elv24",
+  },
+  {
+    from: "/law-enforcement-agency/federal/fbi/",
+    retainedAgencyId: "cm7a0bgot046gewvgtaafjyui",
+  },
+  {
+    from: "/law-enforcement-agency/federal/atf/",
+    retainedAgencyId: "cm7a0bgot046mewvgs6xyqymp",
+  },
+  {
+    from: "/law-enforcement-agency/federal/dea/",
+    retainedAgencyId: "cm7a0bgot046oewvgozeu75gj",
+  },
+  {
+    from: "/law-enforcement-agency/federal/usss/",
+    retainedAgencyId: "cm7a0bgot046iewvg5qs1f9cn",
+  },
+  {
+    from: "/law-enforcement-agency/federal/cbp/",
+    retainedAgencyId: "cufdb3i3jzsr5kkfuto7huqk",
+  },
+  {
+    from: "/law-enforcement-agency/federal/tsa/",
+    retainedAgencyId: "chvdwkxp1cjwertwzt6ll9b0",
+  },
+  {
+    from: "/law-enforcement-agency/federal/uscg/",
+    retainedAgencyId: "c887sm2ibjg8c2yp4e4f4es5",
+  },
+  {
+    from: "/law-enforcement-agency/federal/usms/",
+    retainedAgencyId: "cs2sz1y65zqybhahepchwol6",
+  },
+];
 
 const legacyReportSlugAliases = [
   {
@@ -70,12 +152,13 @@ const redirects = await withDb(async (client) => {
     await client.query(
       `
         select
-          payload->'agency'->>'state' as state,
-          payload->'agency'->>'slug' as slug,
-          path as canonical_path
-        from public.build_page_payload
-        where page_type = 'agency'
-        order by payload->'agency'->>'state', payload->'agency'->>'slug'
+          lower(split_part(lp.path, '/', 2)) as state,
+          a.slug,
+          lp.path || a.slug || '/' as canonical_path
+        from public.agency a
+        join public.location_path lp on lp.location_path_id = a.location_path_id
+        join public.build_page_payload bpp on bpp.entity_id = a.id and bpp.page_type = 'agency'
+        order by lower(split_part(lp.path, '/', 2)), a.slug
       `,
     )
   ).rows;
@@ -84,13 +167,15 @@ const redirects = await withDb(async (client) => {
     await client.query(
       `
         select
-          bpp.payload->'agency'->>'slug' as slug,
-          bpp.path as canonical_path
-        from public.federal_agency_branch fab
+          a.slug,
+          lp.path || a.slug || '/' as canonical_path
+        from public.agency a
         join public.build_page_payload bpp
           on bpp.page_type = 'agency'
-         and bpp.entity_id = fab.agency_id
-        order by bpp.payload->'agency'->>'slug'
+         and bpp.entity_id = a.id
+        join public.location_path lp on lp.location_path_id = a.location_path_id
+        where a.parent_federal_agency_id is not null
+        order by a.slug
       `,
     )
   ).rows;
@@ -98,12 +183,14 @@ const redirects = await withDb(async (client) => {
   const civilCaseRows = (
     await client.query(
       `
-        select lp.state_or_territory_slug as state, c.slug
+        select split_part(lp.path, '/', 2) as state, c.slug,
+          (select coalesce(json_agg(json_build_object('id', l.id, 'url', l.url)), '[]'::json)
+           from public.civil_case_links l where l.civil_case_id = c.id) as videos
         from public.civil_cases c
         join public.location_path lp
           on lp.location_path_id = c.location_path_id
         where c.slug is not null
-        order by lp.state_or_territory_slug, c.slug
+        order by split_part(lp.path, '/', 2), c.slug
       `,
     )
   ).rows;
@@ -111,13 +198,15 @@ const redirects = await withDb(async (client) => {
   const reportRows = (
     await client.query(
       `
-        select lp.state_or_territory_slug as state, lp.path as location_path,
-               r.slug, r.incident_date
+        select split_part(lp.path, '/', 2) as state, lp.path as location_path,
+               r.slug, r.incident_date,
+               (select coalesce(json_agg(json_build_object('id', l.id, 'url', l.url)), '[]'::json)
+                from public.review_links l where l.review_id = r.id) as videos
         from public.reviews r
         join public.location_path lp
           on lp.location_path_id = r.location_path_id
         where r.slug is not null
-        order by lp.state_or_territory_slug, r.slug
+        order by split_part(lp.path, '/', 2), r.slug
       `,
     )
   ).rows;
@@ -125,15 +214,80 @@ const redirects = await withDb(async (client) => {
   const stateRows = (
     await client.query(
       `
-        select distinct lower(lp.state_or_territory_slug) as state
+        select distinct lower(split_part(lp.path, '/', 2)) as state
         from public.agency a
         join public.location_path lp
           on lp.location_path_id = a.location_path_id
-        where lp.state_or_territory_slug is not null
-        order by lower(lp.state_or_territory_slug)
+        where split_part(lp.path, '/', 2) is not null
+        order by lower(split_part(lp.path, '/', 2))
       `,
     )
   ).rows;
+
+  // Mirrors the per-officer "most recent active assignment" grouping done by
+  // loadPersonnelSummaries() (src/lib/data/personnel.ts): for each officer,
+  // pick their active (end_date is null) agency assignment with the latest
+  // start_date, then bucket by that agency's state. Reimplemented as SQL
+  // here (rather than imported) because personnel.ts pulls in TS modules
+  // that resolve via Astro/tsconfig path aliases, which plain node can't
+  // resolve when this script runs standalone.
+  const personnelCategoryCounts = (
+    await client.query(
+      `
+        with active_assignments as (
+          select distinct on (ao.personnel_id)
+            ao.personnel_id,
+            lower(a.state) as category
+          from public.agency_personnel ao
+          join public.agency a on a.id = ao.agency_id
+          where ao.end_date is null
+            and a.state is not null
+          order by ao.personnel_id, ao.start_date desc
+        )
+        select category, count(*)::int as total
+        from active_assignments
+        group by category
+        order by category
+      `,
+    )
+  ).rows;
+
+  const retainedAgencyRows = (
+    await client.query(
+      `
+        select a.id, a.slug, lp.path as location_path,
+          (select count(*) from public.agency_personnel ap
+           where ap.agency_id = a.id and ap.end_date is null) as assignment_count
+        from public.agency a
+        join public.location_path lp
+          on lp.location_path_id = a.location_path_id
+        where a.id = any($1::text[])
+      `,
+      [approvedDuplicateAgencyAliases.map((alias) => alias.retainedAgencyId)],
+    )
+  ).rows;
+  const retainedAgenciesById = new Map(
+    retainedAgencyRows.map((agency) => [agency.id, agency]),
+  );
+  const approvedDuplicateRedirects = approvedDuplicateAgencyAliases.flatMap(
+    (alias) => {
+      const agency = retainedAgenciesById.get(alias.retainedAgencyId);
+      if (!agency) {
+        throw new Error(
+          `Missing retained agency ${alias.retainedAgencyId} for approved duplicate redirect ${alias.from}.`,
+        );
+      }
+      if (Number(agency.assignment_count) === 0) return [];
+      return [
+        {
+          from: alias.from,
+          to: normalizePath(`${agency.location_path}${agency.slug}/`),
+          status: 301,
+          source: "approved duplicate agency alias",
+        },
+      ];
+    },
+  );
 
   const reportsBySlug = new Map(
     reportRows.map((report) => [report.slug, report]),
@@ -141,7 +295,14 @@ const redirects = await withDb(async (client) => {
   const legacyReportRedirects = legacyReportSlugAliases.flatMap((alias) => {
     const report = reportsBySlug.get(alias.newSlug);
     if (!report) {
-      throw new Error(`Missing report for legacy slug ${alias.oldSlug}`);
+      // No current report was found under this slug. An alias to a missing
+      // report cannot produce a valid redirect target, so skip it with a warning.
+      // verify-redirect-coverage.mjs separately requires coverage against prior
+      // sitemaps; reconcile this alias when the warning appears.
+      console.warn(
+        `Skipping legacy report slug alias ${alias.oldSlug}: no current report with slug ${alias.newSlug}.`,
+      );
+      return [];
     }
     return [
       {
@@ -165,21 +326,66 @@ const redirects = await withDb(async (client) => {
     ];
   });
 
+  const watchRedirects = [
+    ...civilCaseRows.flatMap((civilCase) =>
+      civilCase.videos
+        .filter((video) => getVideoEmbedUrl(video.url))
+        .map((video) => ({
+          from: normalizePath(
+            `/civil-litigation/${civilCase.state}/${civilCase.slug}/watch/${video.id}/`,
+          ),
+          to: normalizePath(
+            `/civil-cases/${civilCase.slug}/watch/${video.id}/`,
+          ),
+          status: 301,
+          source: "civil_case_links.id and civil_cases.slug",
+        })),
+    ),
+    ...reportRows.flatMap((report) => {
+      const slugs = [
+        report.slug,
+        ...legacyReportSlugAliases
+          .filter((alias) => alias.newSlug === report.slug)
+          .map((alias) => alias.oldSlug),
+      ];
+      return report.videos
+        .filter((video) => getVideoEmbedUrl(video.url))
+        .flatMap((video) =>
+          slugs.flatMap((slug) =>
+            [
+              `/report/${report.state}/${slug}/watch/${video.id}/`,
+              `/report/${slug}/watch/${video.id}/`,
+              ...(slug !== report.slug
+                ? [`${buildReportPath({ ...report, slug })}watch/${video.id}/`]
+                : []),
+            ].map((from) => ({
+              from: normalizePath(from),
+              to: normalizePath(`${buildReportPath(report)}watch/${video.id}/`),
+              status: 301,
+              source: "review_links.id and reviews.slug",
+            })),
+          ),
+        );
+    }),
+  ];
+
   return [
+    ...watchRedirects,
     ...agencyRows.map((agency) => ({
       from: normalizePath(
         `/law-enforcement-agency/${agency.state}/${agency.slug}/`,
       ),
       to: normalizePath(agency.canonical_path),
       status: 301,
-      source: "build_page_payload.path",
+      source: "agency.location_path_id and agency.slug",
     })),
     ...federalBranchRows.map((agency) => ({
       from: normalizePath(`/law-enforcement-agency/federal/${agency.slug}/`),
       to: normalizePath(agency.canonical_path),
       status: 301,
-      source: "federal_agency_branch legacy agency route",
+      source: "agency.parent_federal_agency_id legacy agency route",
     })),
+    ...approvedDuplicateRedirects,
     ...civilCaseRows.map((civilCase) => ({
       from: normalizePath(
         `/civil-litigation/${civilCase.state}/${civilCase.slug}/`,
@@ -206,6 +412,24 @@ const redirects = await withDb(async (client) => {
       to: normalizePath("/find-records/"),
       status: 301,
       source: "root collection route retired",
+    },
+    {
+      from: normalizePath("/privacy-policy/"),
+      to: normalizePath("/legal-notice/privacy/"),
+      status: 301,
+      source: "legacy static route (Search Console 404 export)",
+    },
+    {
+      from: normalizePath("/partner/prosecutor/"),
+      to: normalizePath("/partner/"),
+      status: 301,
+      source: "legacy static route (Search Console 404 export)",
+    },
+    {
+      from: normalizePath("/partner/peace-officer-standards-and-training/"),
+      to: normalizePath("/partner/"),
+      status: 301,
+      source: "legacy static route (Search Console 404 export)",
     },
     {
       from: normalizePath("/law-enforcement-agency/"),
@@ -243,44 +467,113 @@ const redirects = await withDb(async (client) => {
       status: 301,
       source: "civil case form route renamed",
     },
-    ...stateRows.flatMap((entry) => [
+    ...stateRows.flatMap((entry) =>
+      [
+        {
+          from: normalizePath(`/report/${entry.state}/`),
+          to: normalizePath(`/${entry.state}/reports/`),
+          status: 301,
+          source: "state-scoped report routes retired",
+        },
+        {
+          from: `/report/${entry.state}/page/*`,
+          to: normalizePath(`/${entry.state}/reports/`),
+          status: 301,
+          source: "state-scoped report pagination retired",
+        },
+        {
+          from: `/personnel/${entry.state}/page/*`,
+          to: normalizePath(`/${entry.state}/`),
+          status: 301,
+          source: "state-scoped personnel pagination retired",
+        },
+        {
+          from: normalizePath(`/civil-litigation/${entry.state}/`),
+          to: normalizePath(`/${entry.state}/`),
+          status: 301,
+          source: "state-scoped civil case routes retired",
+        },
+        {
+          from: `/civil-litigation/${entry.state}/page/*`,
+          to: normalizePath(`/${entry.state}/`),
+          status: 301,
+          source: "state-scoped civil case pagination retired",
+        },
+      ].filter(hasBuiltDestination),
+    ),
+    ...[
       {
-        from: normalizePath(`/report/${entry.state}/`),
-        to: normalizePath(`/${entry.state}/reports/`),
+        from: "/civil-litigation/federal/",
+        to: "/federal/",
         status: 301,
-        source: "state-scoped report routes retired",
+        source: "federal civil case collection retired",
       },
-      {
-        from: `/report/${entry.state}/page/*`,
-        to: normalizePath(`/${entry.state}/reports/`),
-        status: 301,
-        source: "state-scoped report pagination retired",
+    ].filter(
+      (entry) =>
+        !stateRows.some(({ state }) => state === "federal") &&
+        hasBuiltDestination(entry),
+    ),
+    // Retain legacy state and federal category redirects only when the
+    // destination was generated in this build.
+    ...[...US_STATE_TILES.map((state) => state.code.toLowerCase()), "federal"]
+      .flatMap((category) => [
+        {
+          from: normalizePath(`/personnel/${category}/`),
+          to: normalizePath(`/${category}/`),
+          status: 301,
+          source: "personnel state route retired",
+        },
+        {
+          from: normalizePath(`/law-enforcement-agency/${category}/`),
+          to: normalizePath(`/${category}/`),
+          status: 301,
+          source: "agency collection route retired",
+        },
+        {
+          from: `/law-enforcement-agency/${category}/page/*`,
+          to: normalizePath(`/${category}/`),
+          status: 301,
+          source: "agency collection pagination retired",
+        },
+      ])
+      .filter(hasBuiltDestination),
+    ...[...new Set(agencyRows.map(({ state }) => state))].flatMap(
+      (category) => {
+        const pageCount = Math.ceil(
+          agencyRows.filter(({ state }) => state === category).length /
+            AGENCY_PAGE_SIZE,
+        );
+        return Array.from(
+          { length: Math.max(0, pageCount - 1) },
+          (_, index) => ({
+            from: normalizePath(
+              `/law-enforcement-agency/${category}/page/${index + 2}/`,
+            ),
+            to: normalizePath(`/${category}/`),
+            status: 301,
+            source: "agency collection pagination retired",
+          }),
+        ).filter(hasBuiltDestination);
       },
-      {
-        from: normalizePath(`/personnel/${entry.state}/`),
-        to: normalizePath(`/${entry.state}/`),
-        status: 301,
-        source: "state-scoped personnel routes retired",
-      },
-      {
-        from: `/personnel/${entry.state}/page/*`,
-        to: normalizePath(`/${entry.state}/`),
-        status: 301,
-        source: "state-scoped personnel pagination retired",
-      },
-      {
-        from: normalizePath(`/civil-litigation/${entry.state}/`),
-        to: normalizePath(`/${entry.state}/`),
-        status: 301,
-        source: "state-scoped civil case routes retired",
-      },
-      {
-        from: `/civil-litigation/${entry.state}/page/*`,
-        to: normalizePath(`/${entry.state}/`),
-        status: 301,
-        source: "state-scoped civil case pagination retired",
-      },
-    ]),
+    ),
+    // Full parity with the retired
+    // src/pages/personnel/[category]/page/[...page].astro route: it
+    // generated a redirect stub for every pagination page 2..N per
+    // category, where N is derived from the personnel count for that
+    // category chunked by PAGE_SIZE.
+    ...personnelCategoryCounts.flatMap(({ category, total }) => {
+      const pageCount = Math.ceil(Number(total) / PERSONNEL_PAGE_SIZE);
+      const pages = [];
+      for (let page = 2; page <= pageCount; page += 1) {
+        pages.push({
+          from: normalizePath(`/personnel/${category}/page/${page}/`),
+          to: normalizePath(`/${category}/`),
+          status: 301,
+          source: "personnel pagination route retired",
+        });
+      }
+      return pages.filter(hasBuiltDestination);
+    }),
     {
       from: "/videos/*",
       to: "/find-records/",
@@ -302,7 +595,7 @@ await writeFile(
   `${JSON.stringify(
     {
       generatedAt: new Date().toISOString(),
-      note: "Build-time redirect inventory. Current static redirect pages and CloudFront pattern redirects are the active redirect mechanisms.",
+      note: "Build-time redirect inventory loaded into the environment's CloudFront KeyValueStore during deployment.",
       redirects,
     },
     null,
