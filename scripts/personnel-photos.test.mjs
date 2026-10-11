@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-import { copyPersonnelPhoto } from "../src/lib/personnel-photos.js";
+import { copyPersonnelPhoto } from "../src/lib/personnel-photo-files.js";
 test("copies the explicitly associated image and rejects missing or corrupt bytes", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "website-photos-"));
   try {
