@@ -181,3 +181,12 @@ test("a malformed absence list fails even when all prior routes exist", async (t
   assert.equal(result.status, 1);
   assert.match(result.stderr, /JSON/);
 });
+
+test("retired pagination is covered by its terminal wildcard redirect", async (t) => {
+  const result = await check(t, {
+    prior: ["/law-enforcement-agency/tx/page/59/"],
+    current: ["/tx/"],
+    redirects: [{ from: "/law-enforcement-agency/tx/page/*", to: "/tx/" }],
+  });
+  assert.equal(result.status, 0, result.stderr);
+});

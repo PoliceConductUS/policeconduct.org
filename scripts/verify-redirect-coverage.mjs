@@ -170,7 +170,15 @@ const main = async () => {
   let absent = 0;
   for (const p of priorPaths) {
     if (newPaths.has(p) || (await hasGeneratedRoute(p))) continue;
-    const to = redirects.get(p);
+    let to = redirects.get(p);
+    if (!to) {
+      let slash = p.lastIndexOf("/");
+      while (slash >= 0 && !to) {
+        to = redirects.get(p.slice(0, slash + 1) + "*");
+        if (slash === 0) break;
+        slash = p.lastIndexOf("/", slash - 1);
+      }
+    }
     if (to) {
       covered += 1; // target validity already checked above
     } else if (absences.has(p)) {

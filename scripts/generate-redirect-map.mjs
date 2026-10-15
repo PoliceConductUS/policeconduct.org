@@ -289,6 +289,23 @@ const redirects = await withDb(async (client) => {
     },
   );
 
+  const retainedFarmakes = (
+    await client.query("select slug from public.personnel where id = $1", [
+      "lo3ghx7mu1k0k7aj2cl2v4t3",
+    ])
+  ).rows[0];
+  if (!retainedFarmakes) {
+    throw new Error(
+      "Missing retained John Farmakes profile for duplicate redirect.",
+    );
+  }
+  const farmakesRedirect = {
+    from: "/personnel/john-farmakes-k0l1m2/",
+    to: normalizePath(`/personnel/${retainedFarmakes.slug}/`),
+    status: 301,
+    source: "approved duplicate personnel alias",
+  };
+
   const reportsBySlug = new Map(
     reportRows.map((report) => [report.slug, report]),
   );
@@ -305,6 +322,7 @@ const redirects = await withDb(async (client) => {
       return [];
     }
     return [
+      farmakesRedirect,
       {
         from: normalizePath(`/report/${report.state}/${alias.oldSlug}/`),
         to: buildReportPath(report),

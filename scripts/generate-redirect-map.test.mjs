@@ -123,6 +123,9 @@ const createFixture = async (t, duplicateRows = retainedAgencies) => {
     path.join(cwd, "src/lib/db.js"),
     `const responses = ${JSON.stringify(responses)};
      export const withDb = (run) => run({query: async (sql, values) => {
+       if (sql.includes("from public.personnel where id")) {
+         return {rows: [{slug: "john-farmakes-l2v4t3"}]};
+       }
        if (responses.length >= 6 && (!sql.includes("lp.location_path_id = a.location_path_id")
            || !sql.includes("lp.path || a.slug || '/' as canonical_path")
            || !sql.includes("bpp.entity_id = a.id") || /bpp\\.path|payload->/.test(sql))) {
@@ -350,4 +353,21 @@ test("legacy watch URLs preserve the stored video link id and resolve to watch p
   ];
   for (const [from, to] of expected)
     assert.equal(redirects.find((entry) => entry.from === from)?.to, to);
+});
+
+test("Farmakes duplicate redirects to the retained database slug", async (t) => {
+  const fixture = await createFixture(t);
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/generate-redirect-map.mjs"],
+    { cwd: fixture, encoding: "utf8" },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  const { redirects } = JSON.parse(
+    await readFile(path.join(fixture, "dist/_redirect-map.json"), "utf8"),
+  );
+  assert.equal(
+    redirects.find((r) => r.from === "/personnel/john-farmakes-k0l1m2/").to,
+    "/personnel/john-farmakes-l2v4t3/",
+  );
 });
