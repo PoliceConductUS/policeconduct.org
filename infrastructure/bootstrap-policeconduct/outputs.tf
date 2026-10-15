@@ -177,3 +177,13 @@ output "alert_topic_arn" {
   description = "SNS topic ARN for stack-managed infrastructure alerts."
   value       = length(aws_sns_topic.infrastructure_alerts) > 0 ? aws_sns_topic.infrastructure_alerts[0].arn : null
 }
+
+output "site_redirects_kvs_arn" {
+  description = "KeyValueStore for production build redirects."
+  value       = aws_cloudfront_key_value_store.site_redirects.arn
+}
+
+output "preview_redirects_kvs_arn" {
+  description = "KeyValueStore for preview build redirects."
+  value       = aws_cloudfront_key_value_store.preview_redirects.arn
+}

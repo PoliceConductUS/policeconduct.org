@@ -1,0 +1,110 @@
+---
+// Shared social-media icon link for entity profiles (agency, personnel, …):
+// an inline-SVG glyph (aria-hidden), an accessible name built from the
+// entity + platform, and a brand-tint hover/focus color.
+//
+// Port of mockups/civic-index-redesign/agency-entity-v8.html (.social-link)
+// + entity-actions.css. Icon glyphs live in the shared registry (src/lib/icons)
+// and are pulled from the cached /icons.svg sprite via <use>, so the SVG markup
+// is not duplicated into every rendered page.
+import type { SocialIconName } from "#src/lib/icons.js";
+
+export type SocialPlatform = SocialIconName;
+
+interface Props {
+  platform: SocialPlatform;
+  href: string;
+  entityName: string;
+}
+
+const { platform, href, entityName } = Astro.props;
+
+const PLATFORM_LABELS: Record<SocialPlatform, string> = {
+  youtube: "YouTube",
+  facebook: "Facebook",
+  twitter: "X",
+  instagram: "Instagram",
+  tiktok: "TikTok",
+  linkedin: "LinkedIn",
+  reddit: "Reddit",
+  github: "GitHub",
+};
+---
+
+<a
+  class:list={["social-link", `social-link--${platform}`]}
+  href={href}
+  rel="noopener"
+  aria-label={`${entityName} on ${PLATFORM_LABELS[platform]}`}
+>
+  <svg aria-hidden="true" focusable="false"
+    ><use href={`/icons.svg#social-${platform}`}></use></svg
+  >
+</a>
+
+<style>
+  /* Brand-tint hover/focus colors are hardcoded per platform below rather
+     than passed through as CSS custom properties, to avoid define:vars'
+     inline style="--x: ..." output (this repo's no-inline-CSS gate scans
+     rendered HTML for both <style> tags and style= attributes). */
+  .social-link {
+    align-items: center;
+    color: var(--ipc-color-teal-ink);
+    display: inline-flex;
+  }
+
+  .social-link svg {
+    height: 1.15rem;
+    width: 1.15rem;
+  }
+
+  .social-link:focus-visible {
+    outline: 2px solid var(--ipc-color-teal-ink);
+    outline-offset: 2px;
+  }
+
+  /* Intentional, documented exception to the --ipc-*-token-only rule: these
+     are platform brand colors (YouTube red, Facebook blue, etc.), not
+     design-system colors, so they are not represented as --ipc-* tokens.
+     Scope is deliberately narrow — hover/focus tint only, never used for
+     text or other UI chrome. */
+  .social-link--youtube:hover,
+  .social-link--youtube:focus-visible {
+    color: #ff0000;
+  }
+
+  .social-link--facebook:hover,
+  .social-link--facebook:focus-visible {
+    color: #1877f2;
+  }
+
+  .social-link--twitter:hover,
+  .social-link--twitter:focus-visible {
+    color: #000000;
+  }
+
+  .social-link--instagram:hover,
+  .social-link--instagram:focus-visible {
+    color: #e4405f;
+  }
+
+  .social-link--tiktok:hover,
+  .social-link--tiktok:focus-visible {
+    color: #000000;
+  }
+
+  .social-link--linkedin:hover,
+  .social-link--linkedin:focus-visible {
+    color: #0a66c2;
+  }
+
+  .social-link--reddit:hover,
+  .social-link--reddit:focus-visible {
+    color: #ff4500;
+  }
+
+  .social-link--github:hover,
+  .social-link--github:focus-visible {
+    color: #181717;
+  }
+</style>

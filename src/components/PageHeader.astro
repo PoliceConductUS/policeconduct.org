@@ -1,0 +1,35 @@
+---
+import "#src/styles/civic-ledger.css";
+
+// The single page header for the whole site. Renders the redesign `.civic-lede`
+// treatment (styles live in civic-ledger.css):
+//   - an optional uppercase `eyebrow`,
+//   - the page <h1> `title`,
+//   - a `description` sub-line, OR rich sub content passed as default children,
+//   - an optional `actions` slot for page-level actions (e.g. "Help collect
+//     data").
+// Replaces both the old EntityPageHeader component and the various inline
+// `.civic-lede` blocks so every page shares one header.
+interface Props {
+  title: string;
+  eyebrow?: string;
+  description?: string;
+}
+
+const { title, eyebrow, description } = Astro.props;
+const hasActions = Astro.slots.has("actions");
+---
+
+<section class="civic-lede">
+  {eyebrow ? <p class="civic-kicker">{eyebrow}</p> : null}
+  <h1>{title}</h1>
+  {description ? <p class="civic-lede-sub">{description}</p> : null}
+  <slot />
+  {
+    hasActions ? (
+      <div class="civic-lede-actions">
+        <slot name="actions" />
+      </div>
+    ) : null
+  }
+</section>

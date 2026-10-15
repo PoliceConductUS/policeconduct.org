@@ -1,14 +1,13 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
 import DataPanel from "#src/components/DataPanel.astro";
-import EntityPageHeader from "#src/components/EntityPageHeader.astro";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
 import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportSummary } from "#src/lib/data/types.js";
 import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
+import { buildCollectionPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 type Props = {
   breadcrumbs: { label: string; href: string }[];
@@ -18,11 +17,15 @@ type Props = {
 };
 
 const { breadcrumbs, pagePath, reports, title } = Astro.props as Props;
+// `title` is already "Reports for <location>"; derive the location for a
+// description that adds context instead of restating the heading.
+const locationLabel = title.replace(/^Reports for /, "");
+const pageDescription = `Police experiences reported in ${locationLabel}.`;
 const formatCount = (value: number) => value.toLocaleString("en-US");
 const metricCards = [
   {
     ...metricVisuals.reports,
-    detail: "Published public reports",
+    detail: "On record",
     value: formatCount(reports.length),
   },
   {
@@ -43,97 +46,70 @@ const reportAgencyRows = [
   { label: "Civil-case reports", value: "--", width: 26 },
   { label: "Other reports", value: "--", width: 44 },
 ];
+const siteUrl = getSiteUrl(Astro.site);
+const structuredData = buildCollectionPage({
+  siteUrl,
+  pageUrl: new URL(pagePath, siteUrl).toString(),
+  name: `${title} | PoliceConduct.org`,
+  description: pageDescription,
+  items: reports.map((report) => ({
+    href: report.canonicalPath,
+    name: report.title,
+  })),
+});
 ---
 
-<SiteLayout
+<PageShell
   title={`${title} | PoliceConduct.org`}
-  description={`Published reports for ${title}.`}
+  description={pageDescription}
   pagePath={pagePath}
   canonicalUrl={pagePath}
+  structuredData={structuredData}
+  breadcrumbs={breadcrumbs}
+  heading={title}
+  lede={pageDescription}
 >
-  <main class="report-archive-page">
-    <section class="report-archive-main">
-      <div class="container">
-        <Breadcrumbs
-          items={[
-            ...breadcrumbs,
-            { label: title, href: pagePath, current: true },
-          ]}
-          className="mb-2"
-        />
-        <EntityPageHeader
-          title={title}
-          description={`Published reports for ${title}.`}
-        >
-          <Fragment slot="actions">
-            <HelpCollectDataButton
-              context={title}
-              sourcePage={pagePath}
-              topic="Reports"
-            />
-          </Fragment>
-        </EntityPageHeader>
+  <HelpCollectDataButton
+    slot="actions"
+    context={title}
+    sourcePage={pagePath}
+    topic="Reports"
+  />
 
-        <MetricGrid metrics={metricCards} columns="four" />
+  <MetricGrid metrics={metricCards} columns="four" />
 
-        <div class="entity-chart-grid">
-          <DataPanel
-            title="Reports Over Time"
-            description="Published reports by incident year"
-          >
-            <SampleMeasurementChart
-              ariaLabel="Sample reports over time chart"
-              rows={reportTimeRows}
-            />
-          </DataPanel>
+  <div class="entity-chart-grid">
+    <DataPanel title="Reports Over Time" description="By incident year">
+      <SampleMeasurementChart
+        ariaLabel="Sample reports over time chart"
+        rows={reportTimeRows}
+      />
+    </DataPanel>
 
-          <DataPanel
-            title="Reports by Agency"
-            description="Published reports grouped by agency"
-          >
-            <SampleMeasurementChart
-              ariaLabel="Sample reports by agency chart"
-              rows={reportAgencyRows}
-            />
-          </DataPanel>
+    <DataPanel title="Reports by Agency" description="By agency">
+      <SampleMeasurementChart
+        ariaLabel="Sample reports by agency chart"
+        rows={reportAgencyRows}
+      />
+    </DataPanel>
 
-          <DataPanel
-            className="entity-table-panel"
-            title={metricLabels.reports}
-            description="Published public reports in this scope"
-          >
-            <div class="report-archive-list">
-              {
-                reports.map((report) => (
-                  <a href={report.canonicalPath}>
-                    <span>{report.title}</span>
-                    <small>{formatShortDate(report.incidentDate)}</small>
-                    {report.address ? <em>{report.address}</em> : null}
-                  </a>
-                ))
-              }
-            </div>
-          </DataPanel>
-        </div>
+    <DataPanel className="entity-table-panel" title={metricLabels.reports}>
+      <div class="report-archive-list">
+        {
+          reports.map((report) => (
+            <a href={report.canonicalPath}>
+              <span>{report.title}</span>
+              <small>{formatShortDate(report.incidentDate)}</small>
+              {report.address ? <em>{report.address}</em> : null}
+            </a>
+          ))
+        }
       </div>
-    </section>
-  </main>
-</SiteLayout>
+    </DataPanel>
+  </div>
+</PageShell>
 
 <style>
-  .report-archive-page {
-    background: #fbfcff;
-    color: #071842;
-  }
-
-  .report-archive-main {
-    padding: 1rem 0 2.5rem;
-  }
-
-  .report-archive-main > .container {
-    max-width: 1240px;
-  }
-
   .report-archive-list {
     display: grid;
   }

@@ -1,0 +1,77 @@
+---
+import PageShell from "#src/layouts/PageShell.astro";
+import "#src/styles/civic-ledger.css";
+import {
+  getVideoEmbedUrl,
+  getYouTubeThumbnailUrl,
+  type VideoLink,
+} from "#src/lib/video.js";
+import { getSiteUrl } from "#src/lib/structured-data.js";
+interface Props {
+  video: VideoLink;
+  videos: VideoLink[];
+  parentTitle: string;
+  parentPath: string;
+  watchPath: string;
+}
+const { video, videos, parentTitle, parentPath, watchPath } = Astro.props;
+const pageUrl = new URL(watchPath, getSiteUrl(Astro.site)).toString();
+const index = videos.findIndex((link) => link.id === video.id);
+const previous = videos[index - 1];
+const next = videos[index + 1];
+const description = `Video from ${parentTitle}.`;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "@id": `${pageUrl}#video`,
+  name: video.title,
+  description,
+  url: pageUrl,
+  embedUrl: getVideoEmbedUrl(video.url),
+  thumbnailUrl: getYouTubeThumbnailUrl(video.url),
+  isPartOf: { "@id": new URL(parentPath, getSiteUrl(Astro.site)).toString() },
+};
+---
+
+<PageShell
+  title={`${video.title} | Watch | PoliceConduct.org`}
+  description={description}
+  pagePath={watchPath}
+  canonicalUrl={watchPath}
+  structuredData={structuredData}
+  heading={video.title}
+  eyebrow="Watch"
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: parentTitle, href: parentPath },
+    { label: "Watch", href: watchPath },
+  ]}
+>
+  <p slot="header">From <a href={parentPath}>{parentTitle}</a></p>
+  <section class="civic-section civic-section--last">
+    <div class="ratio ratio-16x9 border mb-3">
+      <iframe
+        src={getVideoEmbedUrl(video.url)!}
+        title={video.title}
+        loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen></iframe>
+    </div>
+    <p>
+      <a href={parentPath}>Back to record</a> · <a
+        href={video.url}
+        target="_blank"
+        rel="noopener noreferrer">Open original source</a
+      >
+    </p>
+    <nav aria-label="Videos" class="d-flex justify-content-between gap-3">
+      {
+        previous ? (
+          <a href={`${parentPath}watch/${previous.id}/`}>Previous video</a>
+        ) : null
+      }
+      {next ? <a href={`${parentPath}watch/${next.id}/`}>Next video</a> : null}
+    </nav>
+  </section>
+</PageShell>

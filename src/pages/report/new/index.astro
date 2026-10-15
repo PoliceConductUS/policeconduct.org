@@ -1,622 +1,596 @@
 ---
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 ---
 
-<SiteLayout
-  title="Document a Police Interaction | PoliceConduct.org"
-  description="Share what happened during a police interaction, how it felt, and what people should know."
+<PageShell
+  title="Document a Police Experience | PoliceConduct.org"
+  description="Share what happened during a police experience, how it felt, and what people should know."
   pagePath="/report/new/"
+  canonicalUrl="/report/new/"
   robots="noindex,follow"
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    {
+      label: "Document a police experience",
+      href: "/report/new/",
+      current: true,
+    },
+  ]}
+  heading="Document a police experience"
 >
   <PrefillBootstrap />
-  <section class="bg-primary-subtle border-bottom">
-    <div class="container py-5">
-      <div class="row justify-content-center">
-        <div class="col-lg-9">
-          <p class="text-uppercase fw-semibold text-primary small mb-2">
-            Share your experience
-          </p>
-          <h1 class="ipc-page-title text-primary-emphasis mb-3">
-            Document a police interaction
-          </h1>
-          <p class="lead mb-3">
-            Share what happened, how you felt, and what people should know.
-          </p>
-          <p class="mb-3">
-            Police interactions can be helpful, routine, confusing, frightening,
-            harmful, respectful, or life-changing. All of those experiences can
-            help communities understand how policing works in real life.
-          </p>
-          <div class="alert alert-info mb-0" role="note">
-            <strong
-              >You do not need to prove misconduct to share what happened.</strong
-            >
-            Contact information is not published. There is no account or proof of
-            identity required, but you do need to confirm your submission by email
-            before PoliceConduct.org can process it.
-          </div>
-        </div>
-      </div>
+  <Fragment slot="header">
+    <p class="civic-lede-sub">
+      Share what happened, how you felt, and what people should know.
+    </p>
+    <p class="civic-lede-sub">
+      Police experiences can be helpful, routine, confusing, frightening,
+      harmful, respectful, or life-changing. All of them can help communities
+      understand how policing works in real life.
+    </p>
+    <div class="alert alert-info mb-0" role="note">
+      <strong
+        >You do not need to prove misconduct to share what happened.</strong
+      >
+      Contact information is not published. There is no account or proof of identity
+      required, but you do need to confirm your submission by email before PoliceConduct.org
+      can process it.
     </div>
-  </section>
+  </Fragment>
 
-  <main class="container py-5">
-    <div class="row gx-0 gy-4 gx-lg-4 align-items-start">
-      <aside class="col-lg-3">
-        <nav
-          class="report-new-nav sticky-lg-top"
-          aria-label="Report form sections"
-        >
-          <a href="#start">Start</a>
-          <a href="#basic-details">Basic details</a>
-          <a href="#story">What happened</a>
-          <a href="#people-involved">People involved</a>
-          <a href="#records">Records</a>
-          <a href="#contact">Contact</a>
-        </nav>
-      </aside>
-
-      <div class="col-lg-9" data-report-form-shell>
-        <form
-          id="report-form"
-          class="d-grid gap-4"
-          novalidate
-          data-form-endpoint="/api/report/submit"
-          data-form-draft-key="report-new"
-          data-form-draft-cookiename="reportDraftId"
-          data-form-success-kind="verification_pending"
-        >
-          <section id="start" class="report-new-section">
-            <h2>Start</h2>
-            <p>
-              Your experience matters even if you are not sure what to call it.
-              Helpful, routine, confusing, mixed, concerning, harmful, severe,
-              and uncertain interactions all belong.
-            </p>
-            <div class="row gx-0 gy-3 gx-md-3">
-              <div class="col-md-6">
-                <label class="form-label" for="submitterRelationship"
-                  >Did this happen to you?</label
-                >
-                <select
-                  class="form-select"
-                  id="submitterRelationship"
-                  name="submitterRelationship"
-                  required
-                >
-                  <option value="">Choose one</option>
-                  <option>Directly involved</option>
-                  <option>Witnessed in person</option>
-                  <option>Helping someone else</option>
-                  <option>Records or evidence only</option>
-                </select>
-                <div class="form-text">
-                  Firsthand interactions are the main focus, but other reports
-                  can still help.
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="interactionType"
-                  >How would you describe it?</label
-                >
-                <select
-                  class="form-select"
-                  id="interactionType"
-                  name="interactionType"
-                  required
-                >
-                  <option value="">Choose one</option>
-                  <option>Helpful or positive</option>
-                  <option>Routine but worth sharing</option>
-                  <option>Confusing or uncomfortable</option>
-                  <option>Mixed</option>
-                  <option>Concerning or harmful</option>
-                  <option>Severe harm or death</option>
-                  <option>I am not sure</option>
-                </select>
-                <div class="form-text">
-                  This does not decide whether misconduct happened. It helps us
-                  understand what this felt like to you.
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section id="basic-details" class="report-new-section">
-            <h2>Basic details</h2>
-            <p>
-              Approximate details are okay. If you do not know something, leave
-              it blank or write "not sure."
-            </p>
-            <div class="row gx-0 gy-3 gx-md-3">
-              <div class="col-md-6">
-                <label class="form-label" for="incidentDate"
-                  >Approximate date</label
-                >
-                <input
-                  class="form-control"
-                  id="incidentDate"
-                  name="incidentDate"
-                  type="date"
-                  required
-                />
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="incidentTime"
-                  >Approximate time</label
-                >
-                <input
-                  class="form-control"
-                  id="incidentTime"
-                  name="incidentTime"
-                  type="time"
-                />
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="location">City and state</label>
-                <input
-                  class="form-control"
-                  id="location"
-                  name="location"
-                  required
-                />
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="setting"
-                  >Location or setting</label
-                >
-                <input
-                  class="form-control"
-                  id="setting"
-                  name="setting"
-                  placeholder="Traffic stop, home, jail, school, sidewalk"
-                />
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="agencyName"
-                  >Police agency, if known</label
-                >
-                <input
-                  class="form-control"
-                  id="agencyName"
-                  name="agencyName"
-                  autocomplete="organization"
-                />
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="caseNumber"
-                  >Case, citation, or report number</label
-                >
-                <input class="form-control" id="caseNumber" name="caseNumber" />
-              </div>
-            </div>
-          </section>
-
-          <section id="story" class="report-new-section">
-            <h2>What happened?</h2>
-            <div class="d-grid gap-3">
-              <div>
-                <label class="form-label" for="whatHappened"
-                  >Tell us what happened</label
-                >
-                <textarea
-                  class="form-control"
-                  id="whatHappened"
-                  name="whatHappened"
-                  rows="7"
-                  required></textarea>
-                <div class="form-text">
-                  Start with what led up to the interaction. Then describe what
-                  happened in order. Include what officers or personnel did or
-                  said, what you did or said, and how it ended.
-                </div>
-              </div>
-              <div>
-                <label class="form-label" for="howFelt"
-                  >How did you feel during or after this interaction?</label
-                >
-                <textarea
-                  class="form-control"
-                  id="howFelt"
-                  name="howFelt"
-                  rows="4"
-                  required></textarea>
-                <div class="form-text">
-                  You can describe feeling helped, respected, confused, ignored,
-                  intimidated, unsafe, relieved, harmed, grateful, afraid, or
-                  unsure.
-                </div>
-              </div>
-              <div>
-                <label class="form-label" for="whatElse"
-                  >What else should people know?</label
-                >
-                <textarea
-                  class="form-control"
-                  id="whatElse"
-                  name="whatElse"
-                  rows="4"
-                  required></textarea>
-                <div class="form-text">
-                  This could include what happened before or after, whether this
-                  has happened before, whether records exist, whether anyone
-                  followed up, or anything you are unsure about.
-                </div>
-              </div>
-            </div>
-
-            <details class="report-new-disclosure mt-4">
-              <summary>Examples: what happened and what it meant to you</summary
+  <div class="row gx-0 gy-4 gx-lg-4 align-items-start">
+    <div class="col-12" data-report-form-shell>
+      <form
+        id="report-form"
+        class="d-grid gap-4"
+        novalidate
+        data-form-endpoint="/api/report/submit"
+        data-form-draft-key="report-new"
+        data-form-draft-cookiename="reportDraftId"
+        data-form-success-kind="verification_pending"
+      >
+        <section id="start" class="report-new-section">
+          <h2>Start</h2>
+          <p>
+            Your experience matters even if you are not sure what to call it.
+            Helpful, routine, confusing, mixed, concerning, harmful, severe, and
+            uncertain experiences all belong.
+          </p>
+          <div class="row gx-0 gy-3 gx-md-3">
+            <div class="col-md-6">
+              <label class="form-label" for="submitterRelationship"
+                >Did this happen to you?</label
               >
-              <div class="d-grid gap-3 mt-3">
-                <p>
-                  You do not need to remove feelings or conclusions. When you
-                  can, connect them to what you saw, heard, felt, or
-                  experienced.
-                </p>
-                <div>
-                  <p class="mb-1">
-                    <strong>Less useful:</strong> "The officer was trying to intimidate
-                    me."
-                  </p>
-                  <p class="mb-0">
-                    <strong>More useful:</strong> "The officer stepped close to me,
-                    raised his voice, and said, 'You do not want to make this harder.'
-                    I felt intimidated and believed he was trying to pressure me to
-                    stop asking questions."
-                  </p>
-                </div>
-                <div>
-                  <p class="mb-1">
-                    <strong>Less useful:</strong> "She lied about why she stopped
-                    me."
-                  </p>
-                  <p class="mb-0">
-                    <strong>More useful:</strong> "The officer first said I was stopped
-                    for speeding. Later, the citation listed failure to signal. I
-                    do not know why the reason changed, but it made me question whether
-                    the stop was properly explained."
-                  </p>
-                </div>
-                <div>
-                  <p class="mb-1">
-                    <strong>Less useful:</strong> "He was racist."
-                  </p>
-                  <p class="mb-0">
-                    <strong>More useful:</strong> "The officer searched my car after
-                    asking where I was from and whether I belonged in this neighborhood.
-                    I experienced the interaction as discriminatory because of those
-                    comments and the way I was treated."
-                  </p>
-                </div>
-                <div>
-                  <p class="mb-1">
-                    <strong>Less useful:</strong> "The officer saved my life."
-                  </p>
-                  <p class="mb-0">
-                    <strong>More useful:</strong> "The officer applied pressure to
-                    the wound, called for medical assistance, and stayed with me until
-                    paramedics arrived. I believe those actions may have saved my
-                    life."
-                  </p>
-                </div>
-              </div>
-            </details>
-          </section>
-
-          <section id="people-involved" class="report-new-section">
-            <h2>People involved</h2>
-            <p>
-              You do not need a name or badge number. Descriptions are helpful.
-              Separating people helps avoid treating everyone involved as if
-              they did the same thing.
-            </p>
-            <div data-people-list class="d-grid gap-3" aria-live="polite"></div>
-            <button
-              class="btn btn-outline-primary mt-3"
-              type="button"
-              data-add-person
-            >
-              Add another person
-            </button>
-          </section>
-
-          <section id="records" class="report-new-section">
-            <h2>Records and evidence</h2>
-            <p>
-              You do not need proof to share what happened. Photos, videos,
-              records, or links can help, but they are not required. If you do
-              not know an answer, choose "Not sure."
-            </p>
-            <div class="row gx-0 gy-3 gx-md-3 mb-3">
-              <div class="col-md-6">
-                <label class="form-label" for="bodycamRequested"
-                  >Was body camera footage requested?</label
-                >
-                <select
-                  class="form-select"
-                  id="bodycamRequested"
-                  name="bodycamRequested"
-                  required
-                >
-                  <option value="">Choose one</option>
-                  <option>Yes</option>
-                  <option>No</option>
-                  <option>Not sure</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="complaintFiled"
-                  >Was a complaint filed?</label
-                >
-                <select
-                  class="form-select"
-                  id="complaintFiled"
-                  name="complaintFiled"
-                  required
-                >
-                  <option value="">Choose one</option>
-                  <option>Yes</option>
-                  <option>No</option>
-                  <option>Not sure</option>
-                </select>
+              <select
+                class="form-select"
+                id="submitterRelationship"
+                name="submitterRelationship"
+                required
+              >
+                <option value="">Choose one</option>
+                <option>Directly involved</option>
+                <option>Witnessed in person</option>
+                <option>Helping someone else</option>
+                <option>Records or evidence only</option>
+              </select>
+              <div class="form-text">
+                Firsthand experiences are the main focus, but other reports can
+                still help.
               </div>
             </div>
-            <div data-evidence-list class="d-grid gap-3" aria-live="polite">
-            </div>
-            <button
-              class="btn btn-outline-primary mt-3"
-              type="button"
-              data-add-evidence
-            >
-              Add evidence or record
-            </button>
-          </section>
-
-          <section id="purpose" class="report-new-section">
-            <h2>What do you want this to help with?</h2>
-            <label class="form-label" for="reportPurpose"
-              >Choose the closest answer</label
-            >
-            <select
-              class="form-select"
-              id="reportPurpose"
-              name="reportPurpose"
-              required
-            >
-              <option value="">Choose one</option>
-              <option>Preserve what happened</option>
-              <option>Recognize helpful conduct</option>
-              <option>Help others see a pattern</option>
-              <option>Support accountability or review</option>
-              <option>Add context to an officer or agency record</option>
-              <option>Help me understand whether this was normal</option>
-              <option>I am not sure</option>
-            </select>
-          </section>
-
-          <section id="contact" class="report-new-section">
-            <h2>Contact and privacy</h2>
-            <p>
-              We use this to follow up if we need clarification. We do not
-              publish your contact information. You do not need to create an
-              account or prove your identity.
-            </p>
-            <div class="row gx-0 gy-3 gx-md-3">
-              <div class="col-md-6">
-                <label class="form-label" for="reporterName">Your name</label>
-                <input
-                  class="form-control"
-                  id="reporterName"
-                  name="reporterName"
-                  autocomplete="name"
-                  required
-                />
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="reporterEmail">Email</label>
-                <input
-                  class="form-control"
-                  id="reporterEmail"
-                  name="reporterEmail"
-                  type="email"
-                  autocomplete="email"
-                  required
-                />
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="reporterPhone">Phone</label>
-                <input
-                  class="form-control"
-                  id="reporterPhone"
-                  name="reporterPhone"
-                  type="tel"
-                  autocomplete="tel"
-                />
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="preferredContact"
-                  >Preferred contact method</label
-                >
-                <select
-                  class="form-select"
-                  id="preferredContact"
-                  name="preferredContact"
-                >
-                  <option value="">Choose one</option>
-                  <option>Email</option>
-                  <option>Phone</option>
-                  <option>Either is okay</option>
-                </select>
+            <div class="col-md-6">
+              <label class="form-label" for="interactionType"
+                >How would you describe it?</label
+              >
+              <select
+                class="form-select"
+                id="interactionType"
+                name="interactionType"
+                required
+              >
+                <option value="">Choose one</option>
+                <option>Helpful or positive</option>
+                <option>Routine but worth sharing</option>
+                <option>Confusing or uncomfortable</option>
+                <option>Mixed</option>
+                <option>Concerning or harmful</option>
+                <option>Severe harm or death</option>
+                <option>I am not sure</option>
+              </select>
+              <div class="form-text">
+                This does not decide whether misconduct happened. It helps us
+                understand what this felt like to you.
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <section class="report-new-section">
-            <h2>Review and submit</h2>
-            <div class="alert alert-warning" role="note">
-              After you submit, we will send you an email confirmation link.
-              PoliceConduct.org cannot process the submission until it is
-              confirmed. After confirmation, you will receive a submission ID
-              that you can use to check status or follow up by email.
-            </div>
-            <div class="form-check">
+        <section id="basic-details" class="report-new-section">
+          <h2>Basic details</h2>
+          <p>
+            Approximate details are okay. If you do not know something, leave it
+            blank or write "not sure."
+          </p>
+          <div class="row gx-0 gy-3 gx-md-3">
+            <div class="col-md-6">
+              <label class="form-label" for="incidentDate"
+                >Approximate date</label
+              >
               <input
-                class="form-check-input"
-                id="consent"
-                name="consent"
-                type="checkbox"
-                value="yes"
+                class="form-control"
+                id="incidentDate"
+                name="incidentDate"
+                type="date"
                 required
               />
-              <label class="form-check-label" for="consent">
-                I am sharing this truthfully to the best of my knowledge. I
-                understand PoliceConduct.org may review, summarize, redact, or
-                ask for clarification before publishing. My report may include
-                what happened, what I saw or heard, how I felt, what I believe
-                it meant, and any supporting context. PoliceConduct.org may
-                distinguish those from verified records or final findings.
-              </label>
             </div>
-          </section>
+            <div class="col-md-6">
+              <label class="form-label" for="incidentTime"
+                >Approximate time</label
+              >
+              <input
+                class="form-control"
+                id="incidentTime"
+                name="incidentTime"
+                type="time"
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="location">City and state</label>
+              <input
+                class="form-control"
+                id="location"
+                name="location"
+                required
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="setting">Location or setting</label
+              >
+              <input
+                class="form-control"
+                id="setting"
+                name="setting"
+                placeholder="Traffic stop, home, jail, school, sidewalk"
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="agencyName"
+                >Police agency, if known</label
+              >
+              <input
+                class="form-control"
+                id="agencyName"
+                name="agencyName"
+                autocomplete="organization"
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="caseNumber"
+                >Case, citation, or report number</label
+              >
+              <input class="form-control" id="caseNumber" name="caseNumber" />
+            </div>
+          </div>
+        </section>
 
-          <div
-            class="d-flex flex-column flex-sm-row gap-3 align-items-sm-center"
-          >
-            <button class="btn btn-primary btn-lg" type="submit"
-              >Submit my experience</button
-            >
-            <p class="text-body mb-0">
-              Unconfirmed submissions cannot be processed.
-            </p>
+        <section id="story" class="report-new-section">
+          <h2>What happened?</h2>
+          <div class="d-grid gap-3">
+            <div>
+              <label class="form-label" for="whatHappened"
+                >Tell us what happened</label
+              >
+              <textarea
+                class="form-control"
+                id="whatHappened"
+                name="whatHappened"
+                rows="7"
+                required></textarea>
+              <div class="form-text">
+                Start with what led up to the experience. Then describe what
+                happened in order. Include what officers or personnel did or
+                said, what you did or said, and how it ended.
+              </div>
+            </div>
+            <div>
+              <label class="form-label" for="howFelt"
+                >How did you feel during or after this experience?</label
+              >
+              <textarea
+                class="form-control"
+                id="howFelt"
+                name="howFelt"
+                rows="4"
+                required></textarea>
+              <div class="form-text">
+                You can describe feeling helped, respected, confused, ignored,
+                intimidated, unsafe, relieved, harmed, grateful, afraid, or
+                unsure.
+              </div>
+            </div>
+            <div>
+              <label class="form-label" for="whatElse"
+                >What else should people know?</label
+              >
+              <textarea
+                class="form-control"
+                id="whatElse"
+                name="whatElse"
+                rows="4"
+                required></textarea>
+              <div class="form-text">
+                This could include what happened before or after, whether this
+                has happened before, whether records exist, whether anyone
+                followed up, or anything you are unsure about.
+              </div>
+            </div>
           </div>
 
-          <template id="person-template">
-            <article
-              class="report-new-repeat border rounded p-3"
-              data-person-involved
-            >
-              <div
-                class="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-3"
-              >
-                <h3 class="ipc-subsection-title mb-0" data-person-label>
-                  Person involved
-                </h3>
-                <button
-                  class="btn btn-sm btn-outline-danger"
-                  type="button"
-                  data-remove-person
-                >
-                  Remove person
-                </button>
+          <details class="report-new-disclosure mt-4">
+            <summary>Examples: what happened and what it meant to you</summary>
+            <div class="d-grid gap-3 mt-3">
+              <p>
+                You do not need to remove feelings or conclusions. When you can,
+                connect them to what you saw, heard, felt, or experienced.
+              </p>
+              <div>
+                <p class="mb-1">
+                  <strong>Less useful:</strong> "The officer was trying to intimidate
+                  me."
+                </p>
+                <p class="mb-0">
+                  <strong>More useful:</strong> "The officer stepped close to me,
+                  raised his voice, and said, 'You do not want to make this harder.'
+                  I felt intimidated and believed he was trying to pressure me to
+                  stop asking questions."
+                </p>
               </div>
-              <div class="row gx-0 gy-3 gx-md-3">
-                <div class="col-md-6">
-                  <label class="form-label" for="person-name-0"
-                    >Name or description</label
-                  >
-                  <input
-                    class="form-control"
-                    id="person-name-0"
-                    name="people[0][name]"
-                    required
-                  />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label" for="person-badge-0"
-                    >Badge number</label
-                  >
-                  <input
-                    class="form-control"
-                    id="person-badge-0"
-                    name="people[0][badge]"
-                  />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label" for="person-department-0"
-                    >Agency, if known</label
-                  >
-                  <input
-                    class="form-control"
-                    id="person-department-0"
-                    name="people[0][department]"
-                  />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label" for="person-central-0"
-                    >Was this person central to what happened?</label
-                  >
-                  <select
-                    class="form-select"
-                    id="person-central-0"
-                    name="people[0][central]"
-                  >
-                    <option value="">Choose one</option>
-                    <option>Yes</option>
-                    <option>No</option>
-                    <option>Not sure</option>
-                  </select>
-                </div>
-                <div class="col-12">
-                  <label class="form-label" for="person-actions-0"
-                    >What did this person do or say?</label
-                  >
-                  <textarea
-                    class="form-control"
-                    id="person-actions-0"
-                    name="people[0][actions]"
-                    rows="3"></textarea>
-                </div>
+              <div>
+                <p class="mb-1">
+                  <strong>Less useful:</strong> "She lied about why she stopped me."
+                </p>
+                <p class="mb-0">
+                  <strong>More useful:</strong> "The officer first said I was stopped
+                  for speeding. Later, the citation listed failure to signal. I do
+                  not know why the reason changed, but it made me question whether
+                  the stop was properly explained."
+                </p>
               </div>
-            </article>
-          </template>
+              <div>
+                <p class="mb-1">
+                  <strong>Less useful:</strong> "He was racist."
+                </p>
+                <p class="mb-0">
+                  <strong>More useful:</strong> "The officer searched my car after
+                  asking where I was from and whether I belonged in this neighborhood.
+                  I experienced this as discriminatory because of those comments and
+                  the way I was treated."
+                </p>
+              </div>
+              <div>
+                <p class="mb-1">
+                  <strong>Less useful:</strong> "The officer saved my life."
+                </p>
+                <p class="mb-0">
+                  <strong>More useful:</strong> "The officer applied pressure to the
+                  wound, called for medical assistance, and stayed with me until paramedics
+                  arrived. I believe those actions may have saved my life."
+                </p>
+              </div>
+            </div>
+          </details>
+        </section>
 
-          <template id="evidence-template">
-            <article class="report-new-repeat border rounded p-3" data-evidence>
-              <div
-                class="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-3"
+        <section id="people-involved" class="report-new-section">
+          <h2>People involved</h2>
+          <p>
+            You do not need a name or badge number. Descriptions are helpful.
+            Separating people helps avoid treating everyone involved as if they
+            did the same thing.
+          </p>
+          <div data-people-list class="d-grid gap-3" aria-live="polite"></div>
+          <button
+            class="btn btn-outline-primary mt-3"
+            type="button"
+            data-add-person
+          >
+            Add another person
+          </button>
+        </section>
+
+        <section id="records" class="report-new-section">
+          <h2>Records and evidence</h2>
+          <p>
+            You do not need proof to share what happened. Photos, videos,
+            records, or links can help, but they are not required. If you do not
+            know an answer, choose "Not sure."
+          </p>
+          <div class="row gx-0 gy-3 gx-md-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label" for="bodycamRequested"
+                >Was body camera footage requested?</label
               >
-                <h3 class="ipc-subsection-title mb-0" data-evidence-label>
-                  Evidence or record
-                </h3>
-                <button
-                  class="btn btn-sm btn-outline-danger"
-                  type="button"
-                  data-remove-evidence
+              <select
+                class="form-select"
+                id="bodycamRequested"
+                name="bodycamRequested"
+                required
+              >
+                <option value="">Choose one</option>
+                <option>Yes</option>
+                <option>No</option>
+                <option>Not sure</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="complaintFiled"
+                >Was a complaint filed?</label
+              >
+              <select
+                class="form-select"
+                id="complaintFiled"
+                name="complaintFiled"
+                required
+              >
+                <option value="">Choose one</option>
+                <option>Yes</option>
+                <option>No</option>
+                <option>Not sure</option>
+              </select>
+            </div>
+          </div>
+          <div data-evidence-list class="d-grid gap-3" aria-live="polite"></div>
+          <button
+            class="btn btn-outline-primary mt-3"
+            type="button"
+            data-add-evidence
+          >
+            Add evidence or record
+          </button>
+        </section>
+
+        <section id="purpose" class="report-new-section">
+          <h2>What do you want this to help with?</h2>
+          <label class="form-label" for="reportPurpose"
+            >Choose the closest answer</label
+          >
+          <select
+            class="form-select"
+            id="reportPurpose"
+            name="reportPurpose"
+            required
+          >
+            <option value="">Choose one</option>
+            <option>Preserve what happened</option>
+            <option>Recognize helpful conduct</option>
+            <option>Help others see a pattern</option>
+            <option>Support accountability or review</option>
+            <option>Add context to an officer or agency record</option>
+            <option>Help me understand whether this was normal</option>
+            <option>I am not sure</option>
+          </select>
+        </section>
+
+        <section id="contact" class="report-new-section">
+          <h2>Contact and privacy</h2>
+          <p>
+            We use this to follow up if we need clarification. We do not publish
+            your contact information. You do not need to create an account or
+            prove your identity.
+          </p>
+          <div class="row gx-0 gy-3 gx-md-3">
+            <div class="col-md-6">
+              <label class="form-label" for="reporterName">Your name</label>
+              <input
+                class="form-control"
+                id="reporterName"
+                name="reporterName"
+                autocomplete="name"
+                required
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="reporterEmail">Email</label>
+              <input
+                class="form-control"
+                id="reporterEmail"
+                name="reporterEmail"
+                type="email"
+                autocomplete="email"
+                required
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="reporterPhone">Phone</label>
+              <input
+                class="form-control"
+                id="reporterPhone"
+                name="reporterPhone"
+                type="tel"
+                autocomplete="tel"
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="preferredContact"
+                >Preferred contact method</label
+              >
+              <select
+                class="form-select"
+                id="preferredContact"
+                name="preferredContact"
+              >
+                <option value="">Choose one</option>
+                <option>Email</option>
+                <option>Phone</option>
+                <option>Either is okay</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="report-new-section">
+          <h2>Review and submit</h2>
+          <div class="alert alert-warning" role="note">
+            After you submit, we will send you an email confirmation link.
+            PoliceConduct.org cannot process the submission until it is
+            confirmed. After confirmation, you will receive a submission ID that
+            you can use to check status or follow up by email.
+          </div>
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              id="consent"
+              name="consent"
+              type="checkbox"
+              value="yes"
+              required
+            />
+            <label class="form-check-label" for="consent">
+              I am sharing this truthfully to the best of my knowledge. I
+              understand PoliceConduct.org may review, summarize, redact, or ask
+              for clarification before publishing. My report may include what
+              happened, what I saw or heard, how I felt, what I believe it
+              meant, and any supporting context. PoliceConduct.org may
+              distinguish those from verified records or final findings.
+            </label>
+          </div>
+        </section>
+
+        <div class="d-flex flex-column flex-sm-row gap-3 align-items-sm-center">
+          <button class="btn btn-primary btn-lg" type="submit"
+            >Submit my experience</button
+          >
+          <p class="text-body mb-0">
+            Unconfirmed submissions cannot be processed.
+          </p>
+        </div>
+
+        <template id="person-template">
+          <article
+            class="report-new-repeat border rounded p-3"
+            data-person-involved
+          >
+            <div
+              class="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-3"
+            >
+              <h3 class="ipc-subsection-title mb-0" data-person-label>
+                Person involved
+              </h3>
+              <button
+                class="btn btn-sm btn-outline-danger"
+                type="button"
+                data-remove-person
+              >
+                Remove person
+              </button>
+            </div>
+            <div class="row gx-0 gy-3 gx-md-3">
+              <div class="col-md-6">
+                <label class="form-label" for="person-name-0"
+                  >Name or description</label
                 >
-                  Remove evidence
-                </button>
+                <input
+                  class="form-control"
+                  id="person-name-0"
+                  name="people[0][name]"
+                  required
+                />
               </div>
-              <div class="row gx-0 gy-3 gx-md-3">
-                <div class="col-md-6">
-                  <label class="form-label" for="evidence-link-0"
-                    >Link or file name</label
-                  >
-                  <input
-                    class="form-control"
-                    id="evidence-link-0"
-                    name="evidence[0][link]"
-                  />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label" for="evidence-description-0"
-                    >What is this?</label
-                  >
-                  <input
-                    class="form-control"
-                    id="evidence-description-0"
-                    name="evidence[0][description]"
-                  />
-                </div>
+              <div class="col-md-6">
+                <label class="form-label" for="person-badge-0"
+                  >Badge number</label
+                >
+                <input
+                  class="form-control"
+                  id="person-badge-0"
+                  name="people[0][badge]"
+                />
               </div>
-            </article>
-          </template>
-        </form>
-      </div>
+              <div class="col-md-6">
+                <label class="form-label" for="person-department-0"
+                  >Agency, if known</label
+                >
+                <input
+                  class="form-control"
+                  id="person-department-0"
+                  name="people[0][department]"
+                />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="person-central-0"
+                  >Was this person central to what happened?</label
+                >
+                <select
+                  class="form-select"
+                  id="person-central-0"
+                  name="people[0][central]"
+                >
+                  <option value="">Choose one</option>
+                  <option>Yes</option>
+                  <option>No</option>
+                  <option>Not sure</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="person-actions-0"
+                  >What did this person do or say?</label
+                >
+                <textarea
+                  class="form-control"
+                  id="person-actions-0"
+                  name="people[0][actions]"
+                  rows="3"></textarea>
+              </div>
+            </div>
+          </article>
+        </template>
+
+        <template id="evidence-template">
+          <article class="report-new-repeat border rounded p-3" data-evidence>
+            <div
+              class="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-3"
+            >
+              <h3 class="ipc-subsection-title mb-0" data-evidence-label>
+                Evidence or record
+              </h3>
+              <button
+                class="btn btn-sm btn-outline-danger"
+                type="button"
+                data-remove-evidence
+              >
+                Remove evidence
+              </button>
+            </div>
+            <div class="row gx-0 gy-3 gx-md-3">
+              <div class="col-md-6">
+                <label class="form-label" for="evidence-link-0"
+                  >Link or file name</label
+                >
+                <input
+                  class="form-control"
+                  id="evidence-link-0"
+                  name="evidence[0][link]"
+                />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="evidence-description-0"
+                  >What is this?</label
+                >
+                <input
+                  class="form-control"
+                  id="evidence-description-0"
+                  name="evidence[0][description]"
+                />
+              </div>
+            </div>
+          </article>
+        </template>
+      </form>
     </div>
-  </main>
-</SiteLayout>
+  </div>
+</PageShell>
 
 <script>
   import {

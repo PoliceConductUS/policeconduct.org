@@ -1,9 +1,9 @@
 ---
-import SiteLayout from "#src/layouts/SiteLayout.astro";
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+import { ORG_ADDRESS_LINE, ORG_EIN, ORG_LEGAL_NAME } from "#src/lib/org.js";
 
 type DonationFrequency = "monthly" | "oneTime";
 type PresetAmountKey =
@@ -76,8 +76,8 @@ type DonationPageCopy = {
 const donatePageConfiguration: DonatePageConfiguration = {
   pageTitle: "Donate",
   pageSubtitle:
-    "Your support powers report review, privacy protection, and a transparent public record of police interactions nationwide.",
-  ein: "99-3296620",
+    "Your support powers report review, privacy protection, and a transparent public record of police experiences nationwide.",
+  ein: ORG_EIN,
   financialReportsPath: "/about/financial-reports",
   presetAmounts: [
     { key: "amount10", label: "$10" },
@@ -211,7 +211,7 @@ const donatePageCopy: DonationPageCopy = {
   otherWays: [
     {
       title: "Donate by check",
-      body: "Make checks payable to Institute for Police Conduct, Inc. Mail to: 8 The Green #11026, Dover, DE 19901.",
+      body: `Make checks payable to ${ORG_LEGAL_NAME} Mail to: ${ORG_ADDRESS_LINE}.`,
     },
     {
       title: "Employer match",
@@ -310,8 +310,7 @@ const validateStripeHostnames = (links: StripeLinkEntry[]) => {
 
 validateStripeHostnames(collectStripeLinks(donatePageConfiguration));
 const pagePath = "/donate/";
-const pageDescription =
-  "Support the Institute for Police Conduct, Inc. with a donation to fund public accountability records, reporting infrastructure, and transparency work.";
+const pageDescription = `Support the ${ORG_LEGAL_NAME} with a donation to fund public accountability records, reporting infrastructure, and transparency work.`;
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
 const structuredData = buildWebPage({
@@ -322,271 +321,262 @@ const structuredData = buildWebPage({
 });
 ---
 
-<SiteLayout
+<PageShell
   title="Donate | PoliceConduct.org"
   description={pageDescription}
   pagePath={pagePath}
+  canonicalUrl={pagePath}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Donate", href: pagePath, current: true },
+  ]}
+  heading={donatePageCopy.heroTitle}
+  lede={donatePageCopy.heroSubtitle}
 >
   <PrefillBootstrap />
-  <main class="flex-grow-1 py-vh-3" data-donation-root>
-    <div class="container">
-      <Breadcrumbs
-        items={[
-          { label: "Home", href: "/" },
-          { label: "Donate", href: pagePath, current: true },
-        ]}
-        className="mb-2"
-      />
-      <div class="row align-items-start mb-5">
-        <div class="col-lg-6">
+  <div data-donation-root>
+    <div class="row align-items-start mb-5">
+      <div class="col-lg-6">
+        <div class="mt-4">
           <p class="text-uppercase small text-muted mb-2">
-            {donatePageCopy.eyebrow}
+            {donatePageCopy.impactTitle}
           </p>
-          <h1 class="ipc-page-title">{donatePageCopy.heroTitle}</h1>
-          <p class="lead text-muted">{donatePageCopy.heroSubtitle}</p>
-          <div class="mt-4">
-            <p class="text-uppercase small text-muted mb-2">
-              {donatePageCopy.impactTitle}
-            </p>
-            <ul class="list-unstyled text-muted mb-0">
-              {
-                donatePageCopy.impactItems.map((item) => (
-                  <li class="mb-2">{item}</li>
-                ))
-              }
-            </ul>
+          <ul class="list-unstyled text-muted mb-0">
+            {
+              donatePageCopy.impactItems.map((item) => (
+                <li class="mb-2">{item}</li>
+              ))
+            }
+          </ul>
+        </div>
+      </div>
+      <div class="col-lg-6 mt-4 mt-lg-0">
+        <div class="border p-4 bg-white shadow-sm">
+          <h2 class="ipc-section-title">
+            {donatePageCopy.donationCardTitle}
+          </h2>
+          <p class="text-muted mb-3">{donatePageCopy.donationCardSubtitle}</p>
+
+          <fieldset
+            class="btn-group w-100 mb-3"
+            role="radiogroup"
+            aria-label={donatePageCopy.frequencyLegend}
+          >
+            <legend class="visually-hidden">
+              {donatePageCopy.frequencyLegend}
+            </legend>
+            {
+              donatePageCopy.frequencyOptions.map((option) => (
+                <>
+                  <input
+                    class="btn-check"
+                    type="radio"
+                    name="donation-frequency"
+                    id={`frequency-${option.key}`}
+                    value={option.key}
+                    checked={option.key === defaultFrequency}
+                  />
+                  <label
+                    class="btn btn-outline-dark"
+                    for={`frequency-${option.key}`}
+                  >
+                    {option.label}
+                  </label>
+                </>
+              ))
+            }
+          </fieldset>
+
+          <p class="text-uppercase small text-muted mb-2">
+            {donatePageCopy.presetHeading}
+          </p>
+          <div class="d-flex flex-wrap gap-2">
+            {
+              donatePageConfiguration.presetAmounts.map((amount) => {
+                const monthlyLink =
+                  donatePageConfiguration.stripeLinks.presets.monthly[
+                    amount.key
+                  ];
+                const oneTimeLink =
+                  donatePageConfiguration.stripeLinks.presets.oneTime[
+                    amount.key
+                  ];
+                const isPrimary = amount.key === primaryPresetKey;
+                const initialLink =
+                  defaultFrequency === "monthly" ? monthlyLink : oneTimeLink;
+                const isDisabled = !initialLink;
+                return (
+                  <a
+                    class={`btn rounded-0 ${
+                      isPrimary ? "btn-dark" : "btn-outline-dark"
+                    } ${isDisabled ? "disabled" : ""}`}
+                    data-preset-button
+                    data-amount-key={amount.key}
+                    data-amount-label={amount.label}
+                    data-link-monthly={monthlyLink}
+                    data-link-onetime={oneTimeLink}
+                    href={initialLink || undefined}
+                    aria-disabled={isDisabled ? "true" : "false"}
+                    tabindex={isDisabled ? -1 : 0}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {amount.label}
+                  </a>
+                );
+              })
+            }
+          </div>
+          <div class="border rounded-0 p-3 bg-gray-100 my-3">
+            <div class="d-flex flex-wrap gap-2 small text-muted">
+              <span>{donatePageCopy.trustStripSegments.join(" • ")}</span>
+            </div>
+            <a
+              class="small text-decoration-none d-inline-block mt-2"
+              href={donatePageConfiguration.financialReportsPath}
+              data-donation-financial-link
+            >
+              {donatePageCopy.trustStripLinkLabel}
+            </a>
           </div>
         </div>
-        <div class="col-lg-6 mt-4 mt-lg-0">
-          <div class="border p-4 bg-white shadow-sm">
-            <h2 class="ipc-section-title">
-              {donatePageCopy.donationCardTitle}
-            </h2>
-            <p class="text-muted mb-3">{donatePageCopy.donationCardSubtitle}</p>
+      </div>
+    </div>
 
-            <fieldset
-              class="btn-group w-100 mb-3"
-              role="radiogroup"
-              aria-label={donatePageCopy.frequencyLegend}
-            >
-              <legend class="visually-hidden">
-                {donatePageCopy.frequencyLegend}
-              </legend>
-              {
-                donatePageCopy.frequencyOptions.map((option) => (
-                  <>
-                    <input
-                      class="btn-check"
-                      type="radio"
-                      name="donation-frequency"
-                      id={`frequency-${option.key}`}
-                      value={option.key}
-                      checked={option.key === defaultFrequency}
-                    />
-                    <label
-                      class="btn btn-outline-dark"
-                      for={`frequency-${option.key}`}
-                    >
-                      {option.label}
-                    </label>
-                  </>
-                ))
-              }
-            </fieldset>
+    <div class="border p-4 mb-4">
+      <div class="row align-items-center">
+        <div class="col-lg-7">
+          <h2 class="ipc-section-title mb-2">{donatePageCopy.clubsTitle}</h2>
+          <p class="text-muted mb-2">{donatePageCopy.clubsSubtitle}</p>
+          <p class="text-muted mb-0">
+            {donatePageConfiguration.guardrailSentence}
+          </p>
+        </div>
+        <div class="col-lg-5 text-lg-end mt-3 mt-lg-0">
+          <PrefillNavButton
+            class="btn btn-outline-dark rounded-0"
+            to={donatePageCopy.clubsContactPath}
+            payload={{
+              whoami: "Donor",
+              message: "Question about club benefits.",
+            }}
+            data-donation-contact-link
+          >
+            {donatePageCopy.clubsContactLabel}
+          </PrefillNavButton>
+        </div>
+      </div>
 
-            <p class="text-uppercase small text-muted mb-2">
-              {donatePageCopy.presetHeading}
-            </p>
-            <div class="d-flex flex-wrap gap-2">
-              {
-                donatePageConfiguration.presetAmounts.map((amount) => {
-                  const monthlyLink =
-                    donatePageConfiguration.stripeLinks.presets.monthly[
-                      amount.key
-                    ];
-                  const oneTimeLink =
-                    donatePageConfiguration.stripeLinks.presets.oneTime[
-                      amount.key
-                    ];
-                  const isPrimary = amount.key === primaryPresetKey;
-                  const initialLink =
-                    defaultFrequency === "monthly" ? monthlyLink : oneTimeLink;
-                  const isDisabled = !initialLink;
-                  return (
+      <div class="row g-4 mt-3" data-club-grid>
+        {
+          donatePageConfiguration.clubs.map((club) => {
+            const monthlyLink =
+              donatePageConfiguration.stripeLinks.clubs.monthly[club.key] || "";
+            const annualLink =
+              donatePageConfiguration.stripeLinks.clubs.oneTime[club.key] || "";
+            return (
+              <div class="col-md-6 col-lg-3" data-club-card>
+                <div class="border p-3 h-100 d-flex flex-column">
+                  <h3 class="ipc-subsection-title text-uppercase text-muted mb-1">
+                    {club.name}
+                  </h3>
+                  <p class="small fw-bold mb-2">{club.monthlyAmountLabel}</p>
+                  <p class="x-small text-muted font-italic mb-2">
+                    {club.description}
+                  </p>
+                  <details class="small text-muted mb-4">
+                    <summary class="text-muted">
+                      {donatePageCopy.clubBenefitsLabel}
+                    </summary>
+                    <ul class="mt-2 ps-3 mb-0">
+                      {club.perks.map((perk) => (
+                        <li>{perk}</li>
+                      ))}
+                    </ul>
+                  </details>
+                  <div class="mt-auto d-grid gap-2">
                     <a
-                      class={`btn rounded-0 ${
-                        isPrimary ? "btn-dark" : "btn-outline-dark"
-                      } ${isDisabled ? "disabled" : ""}`}
-                      data-preset-button
-                      data-amount-key={amount.key}
-                      data-amount-label={amount.label}
-                      data-link-monthly={monthlyLink}
-                      data-link-onetime={oneTimeLink}
-                      href={initialLink || undefined}
-                      aria-disabled={isDisabled ? "true" : "false"}
-                      tabindex={isDisabled ? -1 : 0}
+                      class="btn btn-sm btn-dark rounded-0"
+                      data-club-button
+                      data-club-key={club.key}
+                      data-club-name={club.name}
+                      data-club-frequency="monthly"
+                      data-link={monthlyLink}
+                      href={monthlyLink || undefined}
+                      aria-disabled={monthlyLink ? "false" : "true"}
+                      tabindex={monthlyLink ? 0 : -1}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      {amount.label}
+                      {donatePageCopy.clubMonthlyButtonLabel}
                     </a>
-                  );
-                })
-              }
-            </div>
-            <div class="border rounded-0 p-3 bg-gray-100 my-3">
-              <div class="d-flex flex-wrap gap-2 small text-muted">
-                <span>{donatePageCopy.trustStripSegments.join(" • ")}</span>
-              </div>
-              <a
-                class="small text-decoration-none d-inline-block mt-2"
-                href={donatePageConfiguration.financialReportsPath}
-                data-donation-financial-link
-              >
-                {donatePageCopy.trustStripLinkLabel}
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="border p-4 mb-4">
-        <div class="row align-items-center">
-          <div class="col-lg-7">
-            <h2 class="ipc-section-title mb-2">{donatePageCopy.clubsTitle}</h2>
-            <p class="text-muted mb-2">{donatePageCopy.clubsSubtitle}</p>
-            <p class="text-muted mb-0">
-              {donatePageConfiguration.guardrailSentence}
-            </p>
-          </div>
-          <div class="col-lg-5 text-lg-end mt-3 mt-lg-0">
-            <PrefillNavButton
-              class="btn btn-outline-dark rounded-0"
-              to={donatePageCopy.clubsContactPath}
-              payload={{
-                whoami: "Donor",
-                message: "Question about club benefits.",
-              }}
-              data-donation-contact-link
-            >
-              {donatePageCopy.clubsContactLabel}
-            </PrefillNavButton>
-          </div>
-        </div>
-
-        <div class="row g-4 mt-3" data-club-grid>
-          {
-            donatePageConfiguration.clubs.map((club) => {
-              const monthlyLink =
-                donatePageConfiguration.stripeLinks.clubs.monthly[club.key] ||
-                "";
-              const annualLink =
-                donatePageConfiguration.stripeLinks.clubs.oneTime[club.key] ||
-                "";
-              return (
-                <div class="col-md-6 col-lg-3" data-club-card>
-                  <div class="border p-3 h-100 d-flex flex-column">
-                    <h3 class="ipc-subsection-title text-uppercase text-muted mb-1">
-                      {club.name}
-                    </h3>
-                    <p class="small fw-bold mb-2">{club.monthlyAmountLabel}</p>
-                    <p class="x-small text-muted font-italic mb-2">
-                      {club.description}
-                    </p>
-                    <details class="small text-muted mb-4">
-                      <summary class="text-muted">
-                        {donatePageCopy.clubBenefitsLabel}
-                      </summary>
-                      <ul class="mt-2 ps-3 mb-0">
-                        {club.perks.map((perk) => (
-                          <li>{perk}</li>
-                        ))}
-                      </ul>
-                    </details>
-                    <div class="mt-auto d-grid gap-2">
-                      <a
-                        class="btn btn-sm btn-dark rounded-0"
-                        data-club-button
-                        data-club-key={club.key}
-                        data-club-name={club.name}
-                        data-club-frequency="monthly"
-                        data-link={monthlyLink}
-                        href={monthlyLink || undefined}
-                        aria-disabled={monthlyLink ? "false" : "true"}
-                        tabindex={monthlyLink ? 0 : -1}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {donatePageCopy.clubMonthlyButtonLabel}
-                      </a>
-                      <a
-                        class="btn btn-sm btn-outline-dark rounded-0"
-                        data-club-button
-                        data-club-key={club.key}
-                        data-club-name={club.name}
-                        data-club-frequency="annual"
-                        data-link={annualLink}
-                        href={annualLink || undefined}
-                        aria-disabled={annualLink ? "false" : "true"}
-                        tabindex={annualLink ? 0 : -1}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {donatePageCopy.clubAnnualButtonLabel}
-                      </a>
-                      <span class="small text-muted" data-club-hint>
-                        {donatePageCopy.clubDisabledHint}
-                      </span>
-                    </div>
+                    <a
+                      class="btn btn-sm btn-outline-dark rounded-0"
+                      data-club-button
+                      data-club-key={club.key}
+                      data-club-name={club.name}
+                      data-club-frequency="annual"
+                      data-link={annualLink}
+                      href={annualLink || undefined}
+                      aria-disabled={annualLink ? "false" : "true"}
+                      tabindex={annualLink ? 0 : -1}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {donatePageCopy.clubAnnualButtonLabel}
+                    </a>
+                    <span class="small text-muted" data-club-hint>
+                      {donatePageCopy.clubDisabledHint}
+                    </span>
                   </div>
                 </div>
-              );
-            })
-          }
-        </div>
-      </div>
-
-      <div class="border p-4 mb-4">
-        <h2 class="ipc-section-title mb-3">{donatePageCopy.otherWaysTitle}</h2>
-        <div class="row g-3">
-          {
-            donatePageCopy.otherWays.map((item) => (
-              <div class="col-md-4">
-                <div class="border p-3 h-100">
-                  <h3 class="ipc-subsection-title text-uppercase text-muted mb-2">
-                    {item.title}
-                  </h3>
-                  <p class="small mb-0">{item.body}</p>
-                </div>
               </div>
-            ))
-          }
-        </div>
+            );
+          })
+        }
       </div>
+    </div>
 
-      <div class="border p-4 mb-4">
-        <h2 class="ipc-section-title mb-3">{donatePageCopy.processingTitle}</h2>
+    <div class="border p-4 mb-4">
+      <h2 class="ipc-section-title mb-3">{donatePageCopy.otherWaysTitle}</h2>
+      <div class="row g-3">
         {
-          donatePageCopy.processingParagraphs.map((paragraph) => (
-            <p class="text-muted mb-2">{paragraph}</p>
+          donatePageCopy.otherWays.map((item) => (
+            <div class="col-md-4">
+              <div class="border p-3 h-100">
+                <h3 class="ipc-subsection-title text-uppercase text-muted mb-2">
+                  {item.title}
+                </h3>
+                <p class="small mb-0">{item.body}</p>
+              </div>
+            </div>
           ))
         }
       </div>
-
-      <div class="mt-5 border-top pt-4">
-        <p class="text-muted mb-2">{donatePageCopy.financialFooterPrompt}</p>
-        <a
-          href={donatePageConfiguration.financialReportsPath}
-          class="link-dark"
-          data-donation-financial-link
-        >
-          {donatePageCopy.financialFooterLabel}
-        </a>
-      </div>
     </div>
-  </main>
-</SiteLayout>
+
+    <div class="border p-4 mb-4">
+      <h2 class="ipc-section-title mb-3">{donatePageCopy.processingTitle}</h2>
+      {
+        donatePageCopy.processingParagraphs.map((paragraph) => (
+          <p class="text-muted mb-2">{paragraph}</p>
+        ))
+      }
+    </div>
+
+    <div class="mt-5 border-top pt-4">
+      <p class="text-muted mb-2">{donatePageCopy.financialFooterPrompt}</p>
+      <a
+        href={donatePageConfiguration.financialReportsPath}
+        class="link-dark"
+        data-donation-financial-link
+      >
+        {donatePageCopy.financialFooterLabel}
+      </a>
+    </div>
+  </div>
+</PageShell>
 
 <script is:inline>
   const rootElement = document.querySelector("[data-donation-root]");

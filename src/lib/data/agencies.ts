@@ -28,8 +28,8 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
          active_personnel_counts as (
            select
              agency_id,
-             count(distinct officer_id) as active_personnel_count
-           from public.agency_officers
+             count(distinct personnel_id) as active_personnel_count
+           from public.agency_personnel
            where end_date is null
            group by agency_id
          ),
@@ -37,23 +37,23 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
            select
              ao.agency_id,
              count(distinct ro.review_id) as report_count
-           from public.agency_officers ao
-           join public.review_officers ro
-             on ro.agency_officer_id = ao.id
+           from public.agency_personnel ao
+           join public.review_personnel ro
+             on ro.agency_personnel_id = ao.id
            group by ao.agency_id
          ),
          civil_case_agency_cases as (
            select direct_ao.agency_id, cco.civil_case_id
-           from public.agency_officers direct_ao
-           join public.civil_case_officers cco
-             on cco.agency_officer_id = direct_ao.id
+           from public.agency_personnel direct_ao
+           join public.civil_case_personnel cco
+             on cco.agency_personnel_id = direct_ao.id
            union
            select target_ao.agency_id, cco.civil_case_id
-           from public.agency_officers target_ao
-           join public.agency_officers case_ao
-             on case_ao.officer_id = target_ao.officer_id
-           join public.civil_case_officers cco
-             on cco.agency_officer_id = case_ao.id
+           from public.agency_personnel target_ao
+           join public.agency_personnel case_ao
+             on case_ao.personnel_id = target_ao.personnel_id
+           join public.civil_case_personnel cco
+             on cco.agency_personnel_id = case_ao.id
          ),
          civil_case_counts as (
            select
@@ -65,11 +65,11 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
          select
            a.id,
            a.name,
-           lp.state_or_territory_slug as state,
-           lp.administrative_area_name as administrative_area,
-           lp.administrative_area_slug as location_administrative_area_slug,
-           lp.place_name as city,
-           lp.place_slug as location_place_slug,
+           split_part(lp.path, '/', 2) as state,
+           area_lp.display_name as administrative_area,
+           split_part(lp.path, '/', 3) as location_administrative_area_slug,
+           lp.display_name as city,
+           split_part(lp.path, '/', 4) as location_place_slug,
            lp.path as location_path,
            bpp.path as canonical_path,
            a.address,
@@ -82,6 +82,9 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
          from public.agency a
          join public.location_path lp
            on lp.location_path_id = a.location_path_id
+         left join public.location_path area_lp
+           on area_lp.location_path_id = lp.parent_location_path_id
+          and area_lp.level = 'administrative_area'
          join public.build_page_payload bpp
            on bpp.page_type = 'agency'
           and bpp.entity_id = a.id

@@ -1,0 +1,129 @@
+---
+import { getSiteUrl } from "#src/lib/structured-data.js";
+
+// The single site-wide breadcrumb component. Renders the redesign `.crumbs`
+// trail (mockups/civic-index-redesign/shared-v5.css) and emits BreadcrumbList
+// JSON-LD so every page exposes its hierarchy to search and AI answer engines.
+//
+// - "Home" is auto-injected when the caller does not already start the trail
+//   with it, so callers can pass either a bare or a Home-prefixed trail.
+// - The current page is the item flagged `current`, or the last item when none
+//   is flagged; it renders as plain text (aria-current="page", no link).
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+  current?: boolean;
+}
+
+interface Props {
+  items: BreadcrumbItem[];
+  className?: string;
+}
+
+const { items, className } = Astro.props;
+
+const homeItem: BreadcrumbItem = { label: "Home", href: "/" };
+const withHome =
+  items[0]?.label === homeItem.label && items[0]?.href === homeItem.href
+    ? items
+    : [homeItem, ...items];
+const lastIndex = withHome.length - 1;
+const normalizedItems = withHome.map((item, index) => ({
+  label: item.label,
+  href: item.href,
+  current: item.current ?? index === lastIndex,
+}));
+
+// Emit BreadcrumbList JSON-LD only for a well-formed trail: at least two items,
+// and every non-current item has an href. The current item resolves to this
+// page's own URL.
+const siteUrl = getSiteUrl(Astro.site);
+const currentPath = Astro.url?.pathname || "/";
+const hasValidTrail =
+  normalizedItems.length >= 2 &&
+  normalizedItems.every((item) => item.current || Boolean(item.href));
+const breadcrumbData = hasValidTrail
+  ? {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: normalizedItems.map((item, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: item.label,
+        item: new URL(item.href || currentPath, siteUrl).toString(),
+      })),
+    }
+  : null;
+const serializedBreadcrumbData = breadcrumbData
+  ? JSON.stringify(breadcrumbData).replace(/</g, "\\u003c")
+  : "";
+---
+
+<nav aria-label="Breadcrumb" data-pagefind-ignore>
+  <ol class:list={["crumbs", className]}>
+    {
+      normalizedItems.map((item) => (
+        <li aria-current={item.current ? "page" : undefined}>
+          {!item.current && item.href ? (
+            <a href={item.href}>{item.label}</a>
+          ) : (
+            item.label
+          )}
+        </li>
+      ))
+    }
+  </ol>
+</nav>
+{
+  breadcrumbData ? (
+    <script
+      type="application/ld+json"
+      set:html={serializedBreadcrumbData}
+      is:inline
+    />
+  ) : null
+}
+
+<style>
+  .crumbs {
+    color: var(--ipc-color-ink-faint);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: var(--ipc-type-caption);
+    font-weight: 600;
+    gap: 0.4rem;
+    letter-spacing: 0.02em;
+    list-style: none;
+    margin: 1.35rem 0 0;
+    padding: 0;
+    text-transform: uppercase;
+  }
+
+  .crumbs li::after {
+    color: var(--ipc-color-rule-strong);
+    content: "/";
+    margin-left: 0.4rem;
+  }
+
+  .crumbs li:last-child::after {
+    content: "";
+  }
+
+  .crumbs a {
+    color: var(--ipc-color-ink-muted);
+    text-decoration: none;
+  }
+
+  .crumbs a:hover {
+    color: var(--ipc-color-ink);
+  }
+
+  .crumbs a:focus-visible {
+    outline: 2px solid var(--ipc-color-teal-ink);
+    outline-offset: 2px;
+  }
+
+  .crumbs [aria-current] {
+    color: var(--ipc-color-ink);
+  }
+</style>

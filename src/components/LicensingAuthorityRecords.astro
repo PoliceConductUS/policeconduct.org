@@ -1,0 +1,463 @@
+---
+import type { AuthorityRecords } from "#src/lib/data/licensing-authority.js";
+const { licenses, actions, discipline } = Astro.props as AuthorityRecords;
+const formatRecordedDate = (value: string) =>
+  new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(value));
+---
+
+{
+  (licenses.length > 0 || actions.length > 0 || discipline.length > 0) && (
+    <nav class="authority-sections" aria-label="Authority records">
+      {licenses.length > 0 && <a href="#licenses-heading">Licenses</a>}
+      {actions.length > 0 && <a href="#actions-heading">License actions</a>}
+      {discipline.length > 0 && (
+        <a href="#discipline-heading">Discipline records</a>
+      )}
+    </nav>
+  )
+}
+{
+  licenses.length > 0 && (
+    <section class="civic-section" aria-labelledby="licenses-heading">
+      <div class="civic-section-head">
+        <h2 id="licenses-heading">Licenses</h2>
+      </div>
+      <div class="table-responsive">
+        <table class="record-table">
+          <caption class="visually-hidden">
+            Recorded licenses by type and status
+          </caption>
+          <thead>
+            <tr>
+              <>
+                <th scope="col">License type</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="num">
+                  Records
+                </th>
+              </>
+            </tr>
+          </thead>
+          <tbody>
+            {licenses.map((row) => (
+              <tr>
+                <td>{row.licenseType}</td>
+                <td>{row.status}</td>
+                <td class="num">{row.count.toLocaleString("en-US")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+{
+  actions.length > 0 && (
+    <section class="civic-section" aria-labelledby="actions-heading">
+      <div class="civic-section-head">
+        <h2 id="actions-heading">License actions</h2>
+      </div>
+      <div class="table-responsive">
+        <table class="record-table">
+          <caption class="visually-hidden">Recorded license actions</caption>
+          <thead>
+            <tr>
+              <>
+                <th scope="col">Action</th>
+                <th scope="col" class="num">
+                  Records
+                </th>
+                <th scope="col">Latest action date</th>
+              </>
+            </tr>
+          </thead>
+          <tbody>
+            {actions.map((row) => (
+              <tr>
+                <td>{row.action}</td>
+                <td class="num">{row.count.toLocaleString("en-US")}</td>
+                <td>{row.latestDate && formatRecordedDate(row.latestDate)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+{
+  discipline.length > 0 && (
+    <section
+      class="civic-section"
+      aria-labelledby="discipline-heading"
+      data-discipline-browser
+    >
+      <div class="civic-section-head">
+        <div>
+          <h2 id="discipline-heading">Discipline records</h2>
+          <p>Newest effective dates first.</p>
+        </div>
+      </div>
+      <div class="discipline-controls" data-discipline-controls hidden>
+        <label for="discipline-search">Search by person or case number</label>
+        <div class="discipline-search-row">
+          <input
+            id="discipline-search"
+            type="search"
+            aria-controls="discipline-records"
+          />
+          <button type="button" data-discipline-clear>
+            Clear search
+          </button>
+        </div>
+        <div class="discipline-paging">
+          <p
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            data-discipline-status
+          />
+          <div class="discipline-page-buttons">
+            <button
+              type="button"
+              data-discipline-previous
+              aria-controls="discipline-records"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              data-discipline-next
+              aria-controls="discipline-records"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="discipline-records">
+        {discipline.map((record) => (
+          <article
+            class="discipline-record"
+            data-discipline-id={record.id}
+            data-person={record.personnelName}
+            data-case={record.caseNumber}
+          >
+            <div class="discipline-summary">
+              <h3>
+                <a href={`/personnel/${record.personnelSlug}/`}>
+                  {record.personnelName}
+                </a>
+              </h3>
+              <dl class="discipline-facts">
+                <div>
+                  <dt>Action</dt>
+                  <dd>{record.action}</dd>
+                </div>
+                {record.effectiveDate && (
+                  <div>
+                    <dt>Effective date</dt>
+                    <dd>{formatRecordedDate(record.effectiveDate)}</dd>
+                  </div>
+                )}
+                {record.caseNumber && (
+                  <div>
+                    <dt>Case number</dt>
+                    <dd>{record.caseNumber}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+            {record.allegation && (
+              <dl class="discipline-allegation">
+                <div>
+                  <dt>Allegation</dt>
+                  <dd>{record.allegation}</dd>
+                </div>
+              </dl>
+            )}
+            {(record.expirationDate ||
+              record.documentUrl ||
+              record.violation ||
+              record.finding ||
+              record.chiefAction ||
+              record.sanction) && (
+              <details>
+                <summary>
+                  Record details
+                  <span class="visually-hidden">
+                    {" "}
+                    for {record.personnelName}
+                    {record.caseNumber && `, case ${record.caseNumber}`}
+                  </span>
+                </summary>
+                <dl class="discipline-details">
+                  {record.expirationDate && (
+                    <div>
+                      <dt>End date</dt>
+                      <dd>{formatRecordedDate(record.expirationDate)}</dd>
+                    </div>
+                  )}
+                  {record.violation && (
+                    <div>
+                      <dt>Rule violation</dt>
+                      <dd>{record.violation}</dd>
+                    </div>
+                  )}
+                  {record.finding && (
+                    <div>
+                      <dt>Finding</dt>
+                      <dd>{record.finding}</dd>
+                    </div>
+                  )}
+                  {record.chiefAction && (
+                    <div>
+                      <dt>Chief's action</dt>
+                      <dd>{record.chiefAction}</dd>
+                    </div>
+                  )}
+                  {record.sanction && (
+                    <div>
+                      <dt>Penalty</dt>
+                      <dd>{record.sanction}</dd>
+                    </div>
+                  )}
+                </dl>
+                {record.documentUrl && (
+                  <a
+                    class="discipline-source"
+                    href={record.documentUrl}
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Source document
+                  </a>
+                )}
+              </details>
+            )}
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+<script>
+  for (const section of document.querySelectorAll<HTMLElement>(
+    "[data-discipline-browser]",
+  )) {
+    const controls = section.querySelector<HTMLElement>(
+      "[data-discipline-controls]",
+    )!;
+    const search =
+      section.querySelector<HTMLInputElement>("input[type=search]")!;
+    const clear = section.querySelector<HTMLButtonElement>(
+      "[data-discipline-clear]",
+    )!;
+    const previous = section.querySelector<HTMLButtonElement>(
+      "[data-discipline-previous]",
+    )!;
+    const next = section.querySelector<HTMLButtonElement>(
+      "[data-discipline-next]",
+    )!;
+    const status = section.querySelector<HTMLElement>(
+      "[data-discipline-status]",
+    )!;
+    const records = Array.from(
+      section.querySelectorAll<HTMLElement>("[data-discipline-id]"),
+    );
+    let matches = records;
+    let page = 0;
+    const pageSize = 10;
+
+    const render = () => {
+      const start = page * pageSize;
+      const visible = new Set(matches.slice(start, start + pageSize));
+      for (const record of records) record.hidden = !visible.has(record);
+      status.textContent = matches.length
+        ? `Showing ${start + 1}–${Math.min(start + pageSize, matches.length)} of ${matches.length} records`
+        : "No matching records.";
+      // Keep boundary buttons focusable so paging never drops keyboard focus.
+      previous.setAttribute("aria-disabled", String(page === 0));
+      next.setAttribute(
+        "aria-disabled",
+        String(start + pageSize >= matches.length),
+      );
+    };
+    const filter = () => {
+      const query = search.value.trim().toLocaleLowerCase("en-US");
+      matches = records.filter((record) =>
+        [record.dataset.person!, record.dataset.case ?? ""].some((value) =>
+          value.toLocaleLowerCase("en-US").includes(query),
+        ),
+      );
+      page = 0;
+      render();
+    };
+    search.addEventListener("input", filter);
+    clear.addEventListener("click", () => {
+      search.value = "";
+      filter();
+      search.focus();
+    });
+    previous.addEventListener("click", () => {
+      if (page === 0) return;
+      page -= 1;
+      render();
+    });
+    next.addEventListener("click", () => {
+      if ((page + 1) * pageSize >= matches.length) return;
+      page += 1;
+      render();
+    });
+    filter();
+    controls.hidden = false;
+  }
+</script>
+
+<style>
+  .authority-sections {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--ipc-color-rule);
+  }
+  .discipline-controls {
+    margin-bottom: 1rem;
+  }
+  .discipline-controls label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: var(--ipc-weight-label);
+  }
+  .discipline-search-row,
+  .discipline-paging,
+  .discipline-page-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .discipline-search-row {
+    max-width: 42rem;
+  }
+  .discipline-search-row input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    border: 1px solid var(--ipc-color-ink-soft);
+    border-radius: 0;
+    padding: 0.6rem 0.75rem;
+    color: var(--ipc-color-ink);
+    background: var(--ipc-color-paper-raised);
+    font: inherit;
+    caret-color: var(--ipc-color-teal-ink);
+  }
+  .discipline-controls button {
+    flex-shrink: 0;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid var(--ipc-color-ink-soft);
+    background: var(--ipc-color-paper-raised);
+    color: var(--ipc-color-ink);
+    font: inherit;
+    cursor: pointer;
+  }
+  .discipline-controls button:hover:not([aria-disabled="true"]) {
+    background: var(--ipc-color-teal-wash);
+  }
+  .discipline-controls button[aria-disabled="true"] {
+    color: var(--ipc-color-ink-soft);
+    background: var(--ipc-color-paper);
+    cursor: default;
+  }
+  .discipline-controls :focus-visible,
+  .discipline-record :focus-visible,
+  .authority-sections :focus-visible {
+    outline: 2px solid var(--ipc-color-teal-ink);
+    outline-offset: 3px;
+  }
+  .discipline-paging {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+  .discipline-paging p {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .discipline-record {
+    border-top: 1px solid var(--ipc-color-rule);
+    padding: 0.625rem 0;
+    overflow-wrap: anywhere;
+  }
+  .discipline-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    align-items: start;
+    gap: 0.25rem 1rem;
+  }
+  .discipline-summary h3 {
+    margin: 0;
+  }
+  .discipline-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    margin: 0;
+  }
+  .discipline-facts > div {
+    display: flex;
+    align-items: baseline;
+    gap: 0.375rem;
+  }
+  .discipline-record dt {
+    color: var(--ipc-color-ink-soft);
+    font-size: var(--ipc-type-small);
+    font-weight: var(--ipc-weight-label);
+  }
+  .discipline-record dd {
+    margin: 0;
+  }
+  .discipline-allegation {
+    margin: 0.375rem 0 0;
+  }
+  .discipline-allegation > div {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .discipline-allegation dt {
+    flex-shrink: 0;
+  }
+  .discipline-source {
+    display: inline-block;
+    margin-top: 0.5rem;
+  }
+  .discipline-record details {
+    margin-top: 0.375rem;
+  }
+  .discipline-record summary {
+    cursor: pointer;
+    color: var(--ipc-color-teal-ink);
+    width: fit-content;
+  }
+  .discipline-details {
+    max-width: 70ch;
+    margin: 1rem 0 0;
+  }
+  .discipline-details > div + div {
+    margin-top: 0.75rem;
+  }
+  @media (max-width: 40rem) {
+    .discipline-summary {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.375rem;
+    }
+  }
+</style>

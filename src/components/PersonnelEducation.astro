@@ -1,0 +1,242 @@
+---
+import type { EducationRecord } from "#src/lib/data/personnel-education.js";
+
+const { records } = Astro.props as { records: EducationRecord[] };
+const formatRecordedDate = (value: string) =>
+  new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(value));
+---
+
+<div data-education-browser>
+  <div class="education-controls" data-education-controls hidden>
+    <label for="personnel-education-search">Search courses</label>
+    <div class="education-search-row">
+      <input
+        id="personnel-education-search"
+        type="search"
+        aria-controls="personnel-education-records"
+      />
+      <button type="button" data-education-clear>Clear search</button>
+    </div>
+    <div class="education-paging">
+      <p
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-education-status
+      >
+      </p>
+      <div class="education-page-buttons">
+        <button
+          type="button"
+          data-education-previous
+          aria-controls="personnel-education-records">Previous</button
+        >
+        <button
+          type="button"
+          data-education-next
+          aria-controls="personnel-education-records">Next</button
+        >
+      </div>
+    </div>
+  </div>
+  <div id="personnel-education-records">
+    {
+      records.map((record) => (
+        <article
+          class="education-record"
+          data-education-id={record.id}
+          data-search={`${record.name} ${record.sponsorName ?? ""} ${record.sponsorInstructor ?? ""}`}
+        >
+          <strong>{record.name}</strong>
+          <dl>
+            {record.completionDate && (
+              <div>
+                <dt>Completed</dt>
+                <dd>{formatRecordedDate(record.completionDate)}</dd>
+              </div>
+            )}
+            {record.credits !== null && (
+              <div>
+                <dt>Credits</dt>
+                <dd>{record.credits}</dd>
+              </div>
+            )}
+            {record.sponsorName && (
+              <div>
+                <dt>Sponsor</dt>
+                <dd>{record.sponsorName}</dd>
+              </div>
+            )}
+            {record.sponsorInstructor && (
+              <div>
+                <dt>Instructor</dt>
+                <dd>{record.sponsorInstructor}</dd>
+              </div>
+            )}
+          </dl>
+        </article>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  for (const browser of document.querySelectorAll<HTMLElement>(
+    "[data-education-browser]",
+  )) {
+    const controls = browser.querySelector<HTMLElement>(
+      "[data-education-controls]",
+    )!;
+    const search =
+      browser.querySelector<HTMLInputElement>("input[type=search]")!;
+    const clear = browser.querySelector<HTMLButtonElement>(
+      "[data-education-clear]",
+    )!;
+    const previous = browser.querySelector<HTMLButtonElement>(
+      "[data-education-previous]",
+    )!;
+    const next = browser.querySelector<HTMLButtonElement>(
+      "[data-education-next]",
+    )!;
+    const status = browser.querySelector<HTMLElement>(
+      "[data-education-status]",
+    )!;
+    const records = Array.from(
+      browser.querySelectorAll<HTMLElement>("[data-education-id]"),
+    );
+    let matches = records;
+    let page = 0;
+    const pageSize = 10;
+
+    const render = () => {
+      const start = page * pageSize;
+      const visible = new Set(matches.slice(start, start + pageSize));
+      for (const record of records) record.hidden = !visible.has(record);
+      status.textContent = matches.length
+        ? `Showing ${start + 1}–${Math.min(start + pageSize, matches.length)} of ${matches.length} courses`
+        : "No matching courses.";
+      previous.setAttribute("aria-disabled", String(page === 0));
+      next.setAttribute(
+        "aria-disabled",
+        String(start + pageSize >= matches.length),
+      );
+    };
+    const filter = () => {
+      const query = search.value.trim().toLocaleLowerCase("en-US");
+      matches = records.filter((record) =>
+        record.dataset.search!.toLocaleLowerCase("en-US").includes(query),
+      );
+      page = 0;
+      render();
+    };
+    search.addEventListener("input", filter);
+    clear.addEventListener("click", () => {
+      search.value = "";
+      filter();
+      search.focus();
+    });
+    previous.addEventListener("click", () => {
+      if (page === 0) return;
+      page -= 1;
+      render();
+    });
+    next.addEventListener("click", () => {
+      if ((page + 1) * pageSize >= matches.length) return;
+      page += 1;
+      render();
+    });
+    filter();
+    controls.hidden = false;
+  }
+</script>
+
+<style>
+  .education-controls {
+    margin-bottom: 0.75rem;
+  }
+  .education-controls label {
+    display: block;
+    font-weight: var(--ipc-weight-label);
+    margin-bottom: 0.5rem;
+  }
+  .education-search-row,
+  .education-paging,
+  .education-page-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .education-search-row input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    border: 1px solid var(--ipc-color-ink-soft);
+    border-radius: 0;
+    padding: 0.6rem 0.75rem;
+    background: var(--ipc-color-paper-raised);
+    color: var(--ipc-color-ink);
+    font: inherit;
+  }
+  .education-controls button {
+    flex-shrink: 0;
+    border: 1px solid var(--ipc-color-ink-soft);
+    background: var(--ipc-color-paper-raised);
+    color: var(--ipc-color-ink);
+    cursor: pointer;
+    font: inherit;
+    padding: 0.6rem 0.85rem;
+  }
+  .education-controls button:hover:not([aria-disabled="true"]) {
+    background: var(--ipc-color-teal-wash);
+  }
+  .education-controls button[aria-disabled="true"] {
+    color: var(--ipc-color-ink-soft);
+    cursor: default;
+  }
+  .education-paging {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+  }
+  .education-paging p {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .education-record {
+    border-top: 1px solid var(--ipc-color-rule);
+    padding: 0.8rem 0;
+    overflow-wrap: anywhere;
+  }
+  .education-record[hidden] {
+    display: none;
+  }
+  .education-record dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.5rem;
+    margin: 0.5rem 0 0;
+  }
+  .education-record dt {
+    color: var(--ipc-color-ink-soft);
+    font-size: var(--ipc-type-small);
+    font-weight: var(--ipc-weight-label);
+  }
+  .education-record dd {
+    margin: 0;
+  }
+  .education-controls :focus-visible {
+    outline: 2px solid var(--ipc-color-teal-ink);
+    outline-offset: 3px;
+  }
+  @media (max-width: 40rem) {
+    .education-paging {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+</style>

@@ -164,8 +164,15 @@ locals {
     "object-src 'none';",
     "frame-ancestors 'self';",
     "form-action 'self';",
+    # NOTE: Disqus sources are intentionally still allowed here even though the
+    # Disqus embed was removed from the site. This response-headers policy is
+    # SHARED by the preview and prod CloudFront distributions, and prod has not
+    # yet dropped Disqus. Removing the Disqus allowances now would tighten prod's
+    # CSP too and could break any Disqus still live there. Leaving them is inert
+    # (an unused allowance never breaks anything). Drop these when this branch
+    # merges to prod so both distributions lose Disqus together.
     "img-src 'self' data: blob: https://tile.openstreetmap.org https://i.ytimg.com https://www.google-analytics.com https://stats.g.doubleclick.net https://c.disquscdn.com https://*.disqus.com https://www.gstatic.com https://www.google.com;",
-    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com;",
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com;",
     "style-src 'self' 'unsafe-inline';",
     "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com https://*.ingest.us.sentry.io https://*.sentry.io;",
     "font-src 'self' data:;",
@@ -1935,131 +1942,26 @@ resource "aws_acm_certificate_validation" "site" {
   validation_record_fqdns = [for record in aws_route53_record.acm_validation : record.fqdn]
 }
 
+locals {
+  shared_router_code = templatefile("${path.module}/functions/router.js", {
+    domain_name    = var.domain_name
+    canonical_host = local.include_www ? local.www_domain : var.domain_name
+  })
+}
+
+resource "aws_cloudfront_key_value_store" "site_redirects" {
+  name = "${var.project_name}-site-redirects"
+}
+
 resource "aws_cloudfront_function" "index_rewrite" {
   name    = local.index_rewrite_function_name
   runtime = "cloudfront-js-2.0"
-  comment = "Rewrite extensionless URIs to index.html."
+  comment = "Apply build redirects and rewrite site file paths."
   publish = true
-  code    = <<-EOF
-function handler(event) {
-  var request = event.request;
-  var host = request.headers.host && request.headers.host.value ? request.headers.host.value.toLowerCase() : '';
-  var apexHost = ${jsonencode(var.domain_name)};
-  var wwwHost = ${jsonencode(local.www_domain)};
-  var enforceWwwRedirect = ${local.include_www ? "true" : "false"};
-  var uri = request.uri;
-  var qs = '';
-
-  if (request.querystring) {
-    var keys = Object.keys(request.querystring);
-    if (keys.length > 0) {
-      var parts = [];
-      for (var i = 0; i < keys.length; i++) {
-        var key = keys[i];
-        var item = request.querystring[key];
-        if (item.multiValue && item.multiValue.length > 0) {
-          for (var j = 0; j < item.multiValue.length; j++) {
-            parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(item.multiValue[j].value || ''));
-          }
-        } else {
-          parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(item.value || ''));
-        }
-      }
-      qs = '?' + parts.join('&');
-    }
-  }
-
-  if (enforceWwwRedirect && host === apexHost) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: 'https://' + wwwHost + uri + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var personnelStatePageMatch = uri.match(/^\/personnel\/([a-z]{2}|federal)\/page(?:\/.*)?\/?$/);
-  if (personnelStatePageMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/' + personnelStatePageMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var personnelStateMatch = uri.match(/^\/personnel\/([a-z]{2}|federal)\/?$/);
-  if (personnelStateMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/' + personnelStateMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var civilStatePageMatch = uri.match(/^\/civil-litigation\/([a-z]{2}|federal)\/page(?:\/.*)?\/?$/);
-  if (civilStatePageMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/' + civilStatePageMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var civilStateMatch = uri.match(/^\/civil-litigation\/([a-z]{2}|federal)\/?$/);
-  if (civilStateMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/' + civilStateMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var civilCaseMatch = uri.match(/^\/civil-litigation\/[^\/]+\/([^\/]+)\/?$/);
-  if (civilCaseMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/civil-cases/' + civilCaseMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  if (uri === '/videos' || uri === '/videos/' || uri.indexOf('/videos/') === 0 || uri === '/video' || uri === '/video/' || uri.indexOf('/video/') === 0) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/search/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  if (uri.endsWith('/')) {
-    request.uri += 'index.html';
-  } else if (!uri.includes('.')) {
-    request.uri += '/index.html';
-  }
-
-  return request;
-}
-EOF
+  key_value_store_associations = [
+    aws_cloudfront_key_value_store.site_redirects.arn,
+  ]
+  code = local.shared_router_code
 }
 
 resource "aws_cloudfront_response_headers_policy" "site_security_headers" {
@@ -2204,32 +2106,35 @@ resource "aws_cloudfront_distribution" "site" {
   }
 }
 
+# Preview uses the same router as production with a separate redirect store.
+# Keys are r:<label>:<path> = <target>, loaded from the build's _redirect-map.json.
+resource "aws_cloudfront_key_value_store" "preview_redirects" {
+  name = "${var.project_name}-preview-redirects"
+}
+
 resource "aws_cloudfront_function" "preview_router" {
   name    = local.preview_router_function_name
   runtime = "cloudfront-js-2.0"
-  comment = "Route preview subdomains to matching S3 prefix."
+  comment = "Route preview/build subdomains to their S3 prefix; apply per-build redirects."
   publish = true
-  code    = <<-EOF
-function handler(event) {
-  var request = event.request;
-  var host = request.headers.host && request.headers.host.value ? request.headers.host.value : '';
-  var uri = request.uri;
-  var match = host.match(/^([^.]+)\.preview\./);
 
-  if (!match) {
-    return request;
-  }
+  key_value_store_associations = [
+    aws_cloudfront_key_value_store.preview_redirects.arn,
+  ]
 
-  if (uri.endsWith('/')) {
-    uri += 'index.html';
-  } else if (!uri.includes('.')) {
-    uri += '/index.html';
-  }
-
-  request.uri = '/' + match[1] + uri;
-  return request;
+  code = local.shared_router_code
 }
-EOF
+
+# Non-canonical preview hosts must not be indexed. Build-once means the same HTML
+# also serves the canonical apex on the prod distribution, so this is applied at
+# the edge here and is NOT attached to the prod distribution.
+resource "aws_cloudfront_function" "preview_noindex" {
+  name    = "${var.project_name}-preview-noindex"
+  runtime = "cloudfront-js-2.0"
+  comment = "Mark preview responses noindex (non-canonical hosts)."
+  publish = true
+
+  code = file("${path.module}/functions/noindex.js")
 }
 
 resource "aws_cloudfront_distribution" "preview" {
@@ -2277,6 +2182,11 @@ resource "aws_cloudfront_distribution" "preview" {
     function_association {
       event_type   = "viewer-request"
       function_arn = aws_cloudfront_function.preview_router.arn
+    }
+
+    function_association {
+      event_type   = "viewer-response"
+      function_arn = aws_cloudfront_function.preview_noindex.arn
     }
   }
 

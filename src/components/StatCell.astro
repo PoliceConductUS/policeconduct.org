@@ -1,0 +1,180 @@
+---
+// Single metric tile shared by the top-of-page stat strip (state, county,
+// place, agency landing pages) and the pending-topic row. Port of
+// mockups/civic-index-redesign/texas-v9.html + shared-v5.css
+// (.stat-cell / .topic-cell / .stat-cell--drill).
+//
+// Empty-state contract (openspec redesign-civic-index-to-production,
+// "Metric availability states"): an unavailable metric never renders a
+// numeric zero. It shows a neutral "--" (or "$--" when `currency`), its
+// role accent is muted (`.is-pending[data-role]::before`, civic-ledger.css),
+// and it may show a subtle, non-primary "Help collect this ->" link built
+// with query context (source page + scope) rather than any hedging copy
+// such as "not yet collected" / "not on this site yet".
+//
+// Three render shapes, chosen by props:
+//   - metric cell (default, `variant="strip"`): the whole cell is the
+//     click target when `href` + a real value are present.
+//   - topic cell (`variant="topic"`): a squarish `<li>` for `.topic-row`,
+//     with an optional plain-language `gloss` under the label and a
+//     `.topic-foot` "Help collect this" link when empty.
+//   - drill cell (`drill`): the geography "Start here" jump cell that
+//     leads a `<StatStrip drillFirst>` on state/administrative-area/place
+//     pages. Renders a real <form> GET-equivalent (client-enhanced by
+//     src/lib/client/site.js's initJumpForms; works with JS disabled via
+//     the "Browse all" link and the <select>'s own per-option navigation
+//     is NOT required — the form's action/method make it a real, if
+//     unenhanced-ugly, submit target) -- see Astro markup below.
+export type StatCellRole = "budget" | "liability" | "civil" | "neutral";
+
+interface JumpOption {
+  href: string;
+  label: string;
+}
+
+interface MetricProps {
+  drill?: false;
+  variant?: "strip" | "topic";
+  label: string;
+  value?: string | null;
+  meta?: string;
+  gloss?: string;
+  href?: string;
+  actionLabel?: string;
+  empty?: boolean;
+  currency?: boolean;
+  role?: StatCellRole;
+  helpCollectHref?: string;
+  helpCollectLabel?: string;
+}
+
+interface DrillProps {
+  drill: true;
+  id?: string;
+  childCount: string;
+  childLabel: string;
+  jumpOptions: JumpOption[];
+  placeholder: string;
+  selectLabel: string;
+  browseHref: string;
+  browseLabel: string;
+}
+
+type Props = MetricProps | DrillProps;
+
+const props = Astro.props as Props;
+---
+
+{
+  props.drill ? (
+    <div class="stat-cell jump-cell stat-cell--drill">
+      <span class="stat-drill-eyebrow">Start here</span>
+      <strong class="ledger-value">{props.childCount}</strong>
+      <span class="ledger-label">{props.childLabel}</span>
+      <form
+        class="jump-form"
+        data-jump-form
+        action={props.browseHref}
+        method="get"
+      >
+        <label for={props.id || "civic-jump"} class="visually-hidden">
+          {props.selectLabel}
+        </label>
+        <select
+          id={props.id || "civic-jump"}
+          class="jump-select"
+          data-jump-select
+        >
+          <option value="" selected disabled>
+            {props.placeholder}
+          </option>
+          {props.jumpOptions.map((option) => (
+            <option value={option.href}>{option.label}</option>
+          ))}
+        </select>
+        <button class="jump-go" type="submit">
+          Go →
+        </button>
+      </form>
+      <p class="jump-status" data-jump-status aria-live="polite" />
+      <p class="jump-browse">
+        <a href={props.browseHref}>{props.browseLabel}</a>
+      </p>
+    </div>
+  ) : (
+    (() => {
+      const {
+        variant = "strip",
+        label,
+        value,
+        meta,
+        gloss,
+        href,
+        actionLabel,
+        currency = false,
+        role,
+        helpCollectHref,
+        helpCollectLabel = "Help collect this →",
+      } = props;
+      const empty = props.empty ?? (value == null || value === "");
+      const displayValue = empty ? (currency ? "$--" : "--") : value;
+      const isLink = Boolean(href) && !empty;
+
+      return variant === "topic" ? (
+        <li
+          class:list={[
+            "topic-cell",
+            "ledger-interactive",
+            { "is-pending": empty },
+          ]}
+          data-role={role}
+        >
+          {isLink ? (
+            <a class="topic-link" href={href}>
+              <span class="ledger-label">{label}</span>
+              <span class="topic-value">{displayValue}</span>
+              {gloss ? (
+                <span class="ledger-meta topic-gloss">{gloss}</span>
+              ) : null}
+            </a>
+          ) : (
+            <div class="topic-link">
+              <span class="ledger-label">{label}</span>
+              <span class="topic-value">{displayValue}</span>
+              {gloss ? (
+                <span class="ledger-meta topic-gloss">{gloss}</span>
+              ) : null}
+            </div>
+          )}
+          {empty && helpCollectHref ? (
+            <span class="topic-foot">
+              <a href={helpCollectHref}>{helpCollectLabel}</a>
+            </span>
+          ) : null}
+        </li>
+      ) : isLink ? (
+        <a class="stat-cell stat-cell--link" data-role={role} href={href}>
+          <strong class="ledger-value">{value}</strong>
+          <span class="ledger-label">{label}</span>
+          {meta ? <span class="ledger-meta">{meta}</span> : null}
+          {actionLabel ? <span class="stat-action">{actionLabel}</span> : null}
+        </a>
+      ) : (
+        <div
+          class:list={["stat-cell", { "is-pending": empty }]}
+          data-role={role}
+        >
+          <strong class="ledger-value">{displayValue}</strong>
+          <span class="ledger-label">{label}</span>
+          {!empty && meta ? <span class="ledger-meta">{meta}</span> : null}
+          {gloss ? <span class="ledger-meta topic-gloss">{gloss}</span> : null}
+          {empty && helpCollectHref ? (
+            <span class="stat-action">
+              <a href={helpCollectHref}>{helpCollectLabel}</a>
+            </span>
+          ) : null}
+        </div>
+      );
+    })()
+  )
+}

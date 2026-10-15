@@ -1,6 +1,5 @@
 ---
-import SiteLayout from "#src/layouts/SiteLayout.astro";
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import {
@@ -9,109 +8,108 @@ import {
   PAGE_SIZE,
   newsBadgeClassName,
 } from "#src/lib/news.js";
+import { buildCollectionPage, getSiteUrl } from "#src/lib/structured-data.js";
 
 const articles = loadNewsArticles();
 const pageArticles = articles.slice(0, PAGE_SIZE);
 const totalPages = Math.max(1, Math.ceil(articles.length / PAGE_SIZE));
 const nextUrl = totalPages > 1 ? "/news/page/2/" : null;
+
+const siteUrl = getSiteUrl(Astro.site);
+const structuredData = buildCollectionPage({
+  siteUrl,
+  pageUrl: new URL("/news/", siteUrl).toString(),
+  name: "News",
+  description: "News and updates from PoliceConduct.org.",
+  items: pageArticles.map((article) => ({
+    href: article.href,
+    name: article.title,
+  })),
+});
 ---
 
-<SiteLayout
+<PageShell
   title="News | PoliceConduct.org"
   description="News and updates from PoliceConduct.org."
   pagePath="/news/"
+  canonicalUrl="/news/"
+  structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "News", href: "/news/", current: true },
+  ]}
+  heading="News"
+  lede="Product updates, policy notes, and community announcements."
 >
+  <Fragment slot="actions">
+    <PrefillNavButton
+      class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
+      to="/about/contact/"
+      payload={{
+        whoami: "Subscriber",
+        message:
+          "Please notify me about news updates from PoliceConduct.org: /news/",
+      }}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="lucide lucide-bell"
+      >
+        <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
+        <path d="M3.262 15a4 4 0 0 0 3.938 3h9.6a4 4 0 0 0 3.938-3"></path>
+        <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
+      </svg>
+      <span>Notify me about news updates</span>
+    </PrefillNavButton>
+  </Fragment>
   <PrefillBootstrap />
-  <main class="">
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
-      <div class="container">
-        <div class="row">
-          <div class="col-12 col-lg-10">
-            <Breadcrumbs
-              items={[
-                { label: "Home", href: "/" },
-                { label: "News", href: "/news/", current: true },
-              ]}
-              className="mb-2"
-            />
-            <h1 class="ipc-page-title">News</h1>
-            <p class="lead mb-0">
-              Product updates, policy notes, and community announcements.
-            </p>
-            <div class="d-flex flex-wrap gap-2 mt-3">
-              <PrefillNavButton
-                class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
-                to="/about/contact/"
-                payload={{
-                  whoami: "Subscriber",
-                  message:
-                    "Please notify me about news updates from PoliceConduct.org: /news/",
-                }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="lucide lucide-bell"
-                >
-                  <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
-                  <path d="M3.262 15a4 4 0 0 0 3.938 3h9.6a4 4 0 0 0 3.938-3"
-                  ></path>
-                  <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
-                </svg>
-                <span>Notify me about news updates</span>
-              </PrefillNavButton>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
 
-    <section class="py-vh-2">
-      <div class="container">
-        <div class="list-group shadow-sm">
-          {
-            pageArticles.map((article) => (
-              <a
-                class="list-group-item list-group-item-action"
-                href={article.href}
-              >
-                <div class="row g-2 align-items-start">
-                  <div class="col">
-                    <div class="text-uppercase small text-muted">
-                      {formatNewsDate(article.date)}
-                    </div>
-                    <div class="fw-semibold">{article.title}</div>
-                    <p class="mb-1 text-muted">{article.description}</p>
-                  </div>
-                  {article.badge ? (
-                    <div class="col-auto">
-                      <span class={newsBadgeClassName(article.badge)}>
-                        {article.badge}
-                      </span>
-                    </div>
-                  ) : null}
-                </div>
-              </a>
-            ))
-          }
-        </div>
+  <section class="py-vh-2">
+    <div class="container">
+      <div class="list-group shadow-sm">
         {
-          totalPages > 1 ? (
-            <div class="d-flex justify-content-end mt-3">
-              <a class="btn btn-outline-dark rounded-0" href={nextUrl}>
-                Older News
-              </a>
-            </div>
-          ) : null
+          pageArticles.map((article) => (
+            <a
+              class="list-group-item list-group-item-action"
+              href={article.href}
+            >
+              <div class="row g-2 align-items-start">
+                <div class="col">
+                  <div class="text-uppercase small text-muted">
+                    {formatNewsDate(article.date)}
+                  </div>
+                  <div class="fw-semibold">{article.title}</div>
+                  <p class="mb-1 text-muted">{article.description}</p>
+                </div>
+                {article.badge ? (
+                  <div class="col-auto">
+                    <span class={newsBadgeClassName(article.badge)}>
+                      {article.badge}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            </a>
+          ))
         }
       </div>
-    </section>
-  </main>
-</SiteLayout>
+      {
+        totalPages > 1 ? (
+          <div class="d-flex justify-content-end mt-3">
+            <a class="btn btn-outline-dark rounded-0" href={nextUrl}>
+              Older News
+            </a>
+          </div>
+        ) : null
+      }
+    </div>
+  </section>
+</PageShell>

@@ -1,0 +1,7 @@
+# Personnel record display
+
+Use direct discipline.personnel_id and personnel_education.personnel_id. Return one discipline per id with arrays of explicitly linked agencies; assignment relationships enrich context but never decide whose discipline to display. Read dates as YYYY-MM-DD text and format in UTC. Authority links use exact database-backed state path and reject malformed identity. Stored document URL is a direct visible link.
+
+Discipline summaries show action, authority, case/date/source and linked agency names; native details reveal allegation, rule violation, finding, chief action, penalty and end date when present. Do not equate allegation with finding or infer employment attribution. Education shows name, completion date, credits (including zero), sponsor and instructor. Search full course collection case-insensitively; show10matches, Previous/Next buttons, result counts, reset and no-match states. Local pager has no URL state. All courses remain readable without JS; no server schema fallback.
+
+Use existing civic typography/color/spacing, no heading overrides or inline CSS. Per-person course queries must avoid loading all1.77mrows in process. A cached set of personnel with education can avoid repeated scans for people without records, consistent with existing build loader style. No external calls or DB changes. Preserve existing license/history UI and unrelated work.
