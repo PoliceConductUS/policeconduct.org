@@ -335,6 +335,20 @@ const loadAgencyRows = async (agencyId: string) =>
           )
         ).rows
       : [];
+    const personnelDisciplineCounts = officerIds.length
+      ? (
+          await client.query<{
+            personnel_id: string;
+            discipline_count: number;
+          }>(
+            `select personnel_id, count(*)::int as discipline_count
+             from public.discipline
+             where personnel_id = any($1)
+             group by personnel_id`,
+            [officerIds],
+          )
+        ).rows
+      : [];
     const disciplineLinks = (
       await client.query<{ personnel_id: string; discipline_id: string }>(
         `select distinct ap.personnel_id, dap.discipline_id
@@ -507,6 +521,7 @@ const loadAgencyRows = async (agencyId: string) =>
       officers,
       reportCounts,
       disciplineLinks,
+      personnelDisciplineCounts,
       licenses,
       reportIds,
       civilCases,
@@ -572,6 +587,10 @@ const buildAgencyDetail = async (agencyId: string) => {
 
   const officersById = mapBy(data.officers, "id");
   const reportCountsByOfficerId = mapBy(data.reportCounts, "personnel_id");
+  const personnelDisciplineCountsById = mapBy(
+    data.personnelDisciplineCounts,
+    "personnel_id",
+  );
   const disciplineLinksByPersonnelId = groupBy(
     data.disciplineLinks,
     "personnel_id",
@@ -652,6 +671,9 @@ const buildAgencyDetail = async (agencyId: string) => {
           entry,
           officer,
           reportCount: reportCountRow ? Number(reportCountRow.report_count) : 0,
+          personnelDisciplineCount:
+            personnelDisciplineCountsById[entry.personnel_id]
+              ?.discipline_count ?? 0,
           disciplineCount:
             disciplineLinksByPersonnelId[entry.personnel_id]?.length ?? 0,
           // Per-personnel rating came from the dropped officers_stats table;

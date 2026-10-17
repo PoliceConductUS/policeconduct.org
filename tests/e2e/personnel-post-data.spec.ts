@@ -30,6 +30,16 @@ test.afterAll(async () => {
 test("direct discipline returns one full record with its exact authority and distinct linked agencies", async () => {
   await withDb((connection) => connection.query("begin"));
   try {
+    const {
+      rows: [baseline],
+    } = await withDb((connection) =>
+      connection.query<{ total: number }>(`
+        select count(*)::int as total from public.discipline
+        where personnel_id = (select personnel_id from public.agency_personnel
+          group by personnel_id having count(distinct agency_id) > 1
+          order by personnel_id limit 1)
+      `),
+    );
     await withDb((connection) =>
       connection.query(`
       insert into public.discipline (
@@ -151,6 +161,7 @@ test("direct discipline returns one full record with its exact authority and dis
       expect(entries.length).toBeGreaterThan(0);
       for (const employee of entries) {
         expect(employee.disciplineCount).toBe(expected.personnel_total);
+        expect(employee.personnelDisciplineCount).toBe(baseline.total + 2);
       }
     }
 
@@ -177,6 +188,45 @@ test("direct discipline returns one full record with its exact authority and dis
       },
       agencies: agencyRows,
     });
+
+    // Keep the record linked elsewhere while removing its links to this agency.
+    await withDb((connection) =>
+      connection.query(`
+      delete from public.discipline_agency_personnel
+      where id in ('test-discipline-link-one', 'test-discipline-repeated-link')
+    `),
+    );
+    const {
+      rows: [unlinkedAgency],
+    } = await withDb((connection) =>
+      connection.query<{ agency_id: string }>(`
+        select agency_id from public.agency_personnel
+        where id = 'test-discipline-repeated-assignment'
+      `),
+    );
+    const elsewhereDetail = await loadAgencyDetail(unlinkedAgency.agency_id);
+    const {
+      rows: [remaining],
+    } = await withDb((connection) =>
+      connection.query<{ total: number; personnel_total: number }>(
+        `
+        select count(distinct dap.discipline_id)::int as total,
+          count(distinct dap.discipline_id) filter
+            (where ap.personnel_id = $2)::int as personnel_total
+        from public.discipline_agency_personnel dap
+        join public.agency_personnel ap on ap.id = dap.agency_personnel_id
+        where ap.agency_id = $1
+      `,
+        [unlinkedAgency.agency_id, fixture.personnel_id],
+      ),
+    );
+    expect(elsewhereDetail.counts.discipline).toBe(remaining.total);
+    for (const employee of elsewhereDetail.employees.filter(
+      (employee) => employee.entry.personnel_id === fixture.personnel_id,
+    )) {
+      expect(employee.disciplineCount).toBe(remaining.personnel_total);
+      expect(employee.personnelDisciplineCount).toBe(baseline.total + 2);
+    }
   } finally {
     await withDb((connection) => connection.query("rollback"));
   }

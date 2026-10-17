@@ -12,7 +12,7 @@ Agency office generation, office navigation and legacy redirects SHALL require a
 
 ### Requirement: Personnel can be filtered by discipline
 
-Agency personnel rosters SHALL offer a checkbox labeled "With discipline actions" that retains only rows with positive agency-linked discipline counts. It SHALL combine with existing status and name filters, update the result summary and empty state, and work on small rosters.
+Agency personnel rosters SHALL offer a checkbox labeled "With discipline actions" that retains only rows whose personnel have at least one direct discipline record, regardless of agency linkage. This checkbox rule is superseded by the approved `filter-roster-by-personnel-discipline` change; existing agency-linked count labels and agency totals retain their meaning. It SHALL combine with existing status and name filters, update the result summary and empty state, and work on small rosters.
 
 #### Scenario: Filters combine
 

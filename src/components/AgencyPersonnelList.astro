@@ -19,6 +19,7 @@ type EmployeeLike = {
   } | null;
   reportCount?: number | null;
   disciplineCount: number;
+  personnelDisciplineCount: number;
   license?: {
     type?: string | null;
     status?: string | null;
@@ -33,6 +34,7 @@ type RosterRow = {
   letter: string;
   sortKey: string;
   disciplineCount: number;
+  personnelDisciplineCount: number;
 };
 
 const { employees } = Astro.props as { employees: EmployeeLike[] };
@@ -85,6 +87,7 @@ const rows: RosterRow[] = employees.map((employee) => {
     isFormer,
     meta,
     disciplineCount: employee.disciplineCount,
+    personnelDisciplineCount: employee.personnelDisciplineCount,
     // Fall back to the first name when a record has no surname, so it sorts and
     // groups by its own initial instead of collapsing to the top of the list.
     sortKey: (lastName || firstName || "~").toLocaleLowerCase("en-US"),
@@ -202,7 +205,7 @@ const showTools = total >= 15;
                 data-roster-item
                 data-name={row.search}
                 data-status={row.isFormer ? "former" : "current"}
-                data-discipline-count={row.disciplineCount}
+                data-discipline-count={row.personnelDisciplineCount}
               >
                 {row.href ? (
                   <a class="roster-name" href={row.href}>

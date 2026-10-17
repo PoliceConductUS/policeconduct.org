@@ -64,16 +64,19 @@ test("roster links agency-specific discipline counts and omits zero counts", asy
           entry: {},
           officer: { first_name: "Jane", last_name: "Doe", slug: "jane-doe" },
           disciplineCount: 2,
+          personnelDisciplineCount: 3,
         },
         {
           entry: {},
           officer: { first_name: "John", last_name: "Doe", slug: "john-doe" },
           disciplineCount: 1,
+          personnelDisciplineCount: 2,
         },
         {
           entry: {},
           officer: { first_name: "Sam", last_name: "Doe", slug: "sam-doe" },
           disciplineCount: 0,
+          personnelDisciplineCount: 1,
         },
       ],
     }),
@@ -92,7 +95,7 @@ test("roster links agency-specific discipline counts and omits zero counts", asy
   ).toHaveCount(0);
 });
 
-test("discipline filter works on small rosters and restores all personnel", async ({
+test("discipline filter includes personnel without agency-linked records and restores all personnel", async ({
   page,
 }) => {
   await page.setContent(
@@ -102,11 +105,19 @@ test("discipline filter works on small rosters and restores all personnel", asyn
           entry: {},
           officer: { first_name: "Jane", last_name: "Doe", slug: "jane-doe" },
           disciplineCount: 2,
+          personnelDisciplineCount: 3,
+        },
+        {
+          entry: {},
+          officer: { first_name: "Alex", last_name: "Roe", slug: "alex-roe" },
+          disciplineCount: 0,
+          personnelDisciplineCount: 1,
         },
         {
           entry: {},
           officer: { first_name: "Sam", last_name: "Smith", slug: "sam-smith" },
           disciplineCount: 0,
+          personnelDisciplineCount: 0,
         },
       ],
     }),
@@ -115,12 +126,15 @@ test("discipline filter works on small rosters and restores all personnel", asyn
     name: "With discipline actions",
   });
   await filter.check();
-  await expect(page.locator("[data-roster-item]:visible")).toHaveCount(1);
+  await expect(page.locator("[data-roster-item]:visible")).toHaveCount(2);
+  await expect(
+    page.getByRole("link", { name: "Roe, Alex", exact: true }),
+  ).toBeVisible();
   await expect(page.locator("[data-roster-summary]")).toHaveText(
-    "Showing 1 of 2",
+    "Showing 2 of 3",
   );
   await filter.uncheck();
-  await expect(page.locator("[data-roster-item]:visible")).toHaveCount(2);
+  await expect(page.locator("[data-roster-item]:visible")).toHaveCount(3);
 });
 
 test("discipline filter combines with status and name filters", async ({
@@ -135,7 +149,8 @@ test("discipline filter combines with status and name filters", async ({
           last_name: "Officer",
           slug: `person-${index}`,
         },
-        disciplineCount: index < 2 ? 1 : 0,
+        disciplineCount: index === 0 ? 1 : 0,
+        personnelDisciplineCount: index < 2 ? 1 : 0,
       })),
     }),
   );
