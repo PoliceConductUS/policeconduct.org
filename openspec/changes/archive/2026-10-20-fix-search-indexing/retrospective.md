@@ -39,3 +39,5 @@ The existing authority identity test takes 52.5 seconds even alone, close to its
 ## 6. Promote candidates
 
 - [ ] Run aggregate validation and standalone test commands sequentially when they share browser outputs. Keep this as a cycle note; no memory or project policy updates were requested.
+
+> **Update 2026-10-20**: The parent requested a clean aggregate rerun after the initial scoped verification. npm run validate then ran alone and passed completely (149 browser tests passed, 1 skipped; all earlier stages passed). This supersedes the unresolved aggregate-pass limitation in section 3; the earlier collision evidence remains accurate. See verify.md, Final sequential aggregate verification.

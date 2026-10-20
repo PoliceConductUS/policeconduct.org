@@ -24,3 +24,7 @@ Independent review by the parent agent reported no findings on 2026-10-20.
 Parent's authenticated Search Console audit on 2026-10-20 found the sitemap successfully read that day with 190,979 discovered URLs. Dataset report showed one valid item, zero invalid items, and the three object-type warnings. One sampled crawled-not-indexed personnel URL was already indexed in URL Inspection. This supports keeping code scope to the reported types; it does not establish that every unindexed URL is eligible or indexed.
 
 Production build/deployment, Google recrawl, and warning clearance are not established by this implementation verification. Parent owns release and live checks. No unrelated routing or indexing policy changes were made.
+
+## Final sequential aggregate verification
+
+After both overlapping runners and the isolated rerun finished, npm run validate was run alone and exited 0. All formatting, lint, type, shell, schema, and OpenSpec gates passed, followed by 84 redirect tests, 3 media tests, 10 Lambda tests, and 149 browser tests passed / 1 skipped. The authority identity test passed in 59.2 seconds under its unchanged 60-second timeout. The earlier collision record above describes superseded verification attempts; the final aggregate gate is clean. The worktree Astro dev server was stopped afterward.
