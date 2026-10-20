@@ -34,7 +34,7 @@ export const organizationId = (siteUrl) =>
   `${new URL("/", siteUrl).toString()}#organization`;
 
 /**
- * The publishing NonprofitOrganization. Include this node in a page's @graph so
+ * The publishing Organization. Include this node in a page's @graph so
  * the page is self-contained, and reference it elsewhere via
  * `{ "@id": organizationId(siteUrl) }`.
  * @param {URL} siteUrl
@@ -42,7 +42,7 @@ export const organizationId = (siteUrl) =>
 export const buildPublisherOrganization = (siteUrl) => {
   const url = new URL("/", siteUrl).toString();
   return {
-    "@type": "NonprofitOrganization",
+    "@type": "Organization",
     "@id": organizationId(siteUrl),
     name: ORG_LEGAL_NAME,
     alternateName: "PoliceConduct.org",
@@ -121,7 +121,7 @@ export const buildDataset = (siteUrl, options = {}) => {
       "civil litigation",
       "public records",
     ],
-    spatialCoverage: { "@type": "Country", name: "United States" },
+    spatialCoverage: { "@type": "Place", name: "United States" },
     measurementTechnique:
       "Aggregation of public records, court dockets, and state law-enforcement licensing data.",
   };
