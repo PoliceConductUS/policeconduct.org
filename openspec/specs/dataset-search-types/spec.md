@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change fix-search-indexing. Update Purpose after archive.
+Ensure search consumers can read the home-page Dataset using supported organization and geographic coverage types while preserving its existing identity and nonprofit metadata.
 
 ## Requirements
 
