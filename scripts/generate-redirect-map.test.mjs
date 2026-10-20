@@ -371,3 +371,23 @@ test("Farmakes duplicate redirects to the retained database slug", async (t) => 
     "/personnel/john-farmakes-l2v4t3/",
   );
 });
+
+test("legacy static aliases preserve both exact slash variants", async (t) => {
+  const cwd = await createFixture(t);
+  const result = runGenerator(cwd);
+  assert.equal(result.status, 0, result.stderr);
+  const { redirects } = JSON.parse(
+    await readFile(path.join(cwd, "dist/_redirect-map.json"), "utf8"),
+  );
+  for (const [from, to] of [
+    ["/privacy-policy", "/legal-notice/privacy/"],
+    ["/privacy-policy/", "/legal-notice/privacy/"],
+    ["/partner/prosecutor", "/partner/"],
+    ["/partner/prosecutor/", "/partner/"],
+  ]) {
+    const matches = redirects.filter((entry) => entry.from === from);
+    assert.equal(matches.length, 1, `${from} must appear exactly once`);
+    assert.equal(matches[0].to, to);
+    assert.equal(matches[0].status, 301);
+  }
+});
