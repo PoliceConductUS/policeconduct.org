@@ -25,11 +25,9 @@ const hasActions = Astro.slots.has("actions");
   <h1>{title}</h1>
   {description ? <p class="civic-lede-sub">{description}</p> : null}
   <slot />
-  {
-    hasActions ? (
-      <div class="civic-lede-actions">
-        <slot name="actions" />
-      </div>
-    ) : null
-  }
+  {hasActions ? (
+    <div class="civic-lede-actions">
+      <slot name="actions" />
+    </div>
+  ) : null}
 </section>

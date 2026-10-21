@@ -2,14 +2,7 @@
 import PageShell from "#src/layouts/PageShell.astro";
 import { buildNewsArticle, getSiteUrl } from "#src/lib/structured-data.js";
 
-export const newsMeta = {
-  date: "2025-01-19",
-  description:
-    "Institute for Police Conduct launches its soft beta to refine its tools, verify early data, and invite community support before a broader rollout.",
-  href: "/news/2025/01/19/institute-for-police-conduct-begins-soft-launch/",
-  title:
-    "A New Chapter for Accountability: Institute for Police Conduct Begins Soft Launch",
-};
+import { newsMeta } from "./_metadata";
 
 const siteUrl = getSiteUrl(Astro.site);
 const structuredData = buildNewsArticle({
@@ -39,8 +32,8 @@ const structuredData = buildNewsArticle({
 >
   <Fragment slot="header">
     <p class="lead text-muted mb-0">
-      <strong>Dover, Delaware</strong> — A new initiative dedicated to transparency
-      and public safety,
+      <strong>Dover, Delaware</strong> — A new initiative dedicated to
+      transparency and public safety,
       <strong>Institute for Police Conduct</strong>, has officially entered its
       soft launch phase.
     </p>
@@ -76,13 +69,14 @@ const structuredData = buildNewsArticle({
       </p>
       <ul>
         <li>
-          <strong>Volunteers:</strong> We are looking for researchers, data entry
-          specialists, and legal enthusiasts to help verify information and build
-          out our database.
+          <strong>Volunteers:</strong> We are looking for researchers, data
+          entry specialists, and legal enthusiasts to help verify information
+          and build out our database.
         </li>
         <li>
-          <strong>Donations:</strong> Every dollar goes directly toward server costs,
-          secure data storage, and the technical infrastructure needed to scale.
+          <strong>Donations:</strong> Every dollar goes directly toward server
+          costs, secure data storage, and the technical infrastructure needed to
+          scale.
         </li>
       </ul>
 

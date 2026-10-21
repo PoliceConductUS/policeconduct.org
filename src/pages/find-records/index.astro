@@ -84,18 +84,16 @@ const finderGroups = [
         </div>
 
         <div class="finder-result-groups d-none" data-finder-results>
-          {
-            finderGroups.map((group) => (
-              <section
-                class="finder-result-group"
-                data-result-group={group.type}
-                hidden
-              >
-                <h2 class="ipc-section-title">{group.label}</h2>
-                <div class="finder-result-list" data-result-list={group.type} />
-              </section>
-            ))
-          }
+          {finderGroups.map((group) => (
+            <section
+              class="finder-result-group"
+              data-result-group={group.type}
+              hidden
+            >
+              <h2 class="ipc-section-title">{group.label}</h2>
+              <div class="finder-result-list" data-result-list={group.type} />
+            </section>
+          ))}
         </div>
       </div>
     </div>

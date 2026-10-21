@@ -48,127 +48,123 @@ const rowsFor = (
   );
 ---
 
-{
-  profiles.length > 0 && (
-    <section id="arrest-records" class="arrest-records">
-      <div class="arrest-records-heading">
-        <h2>Arrest records</h2>
-        <slot name="introduction">
-          <p>
-            These are recorded arrests linked to this agency assignment. They do
-            not measure safety or misconduct.
-          </p>
-        </slot>
-      </div>
-      {profiles.map((profile) => (
-        <article data-arrest-profile-id={profile.id}>
-          <h3>
-            <a href={profile.agency.href}>{profile.agency.name}</a>
-          </h3>
-          <p>
-            <strong>
-              {profile.coverage.totalArrests.toLocaleString("en-US")} recorded
-              arrests
-            </strong>{" "}
-            · Recorded months: {profile.coverage.firstMonth} to{" "}
-            {profile.coverage.lastMonth}
-          </p>
-          <p>
-            Source: {profile.coverage.source} · Updated{" "}
-            {formatShortDate(profile.updatedAt)}
-          </p>
-          <p>
-            {profile.coverage.chargeRows.toLocaleString("en-US")} charge rows ·{" "}
-            {profile.coverage.distinctChargeRecords.toLocaleString("en-US")}{" "}
-            distinct reported charge records
-          </p>
-          <p>
-            Each arrest is one distinct booking. An arrest can appear in more
-            than one offense or charge-level group. Charge rows include repeated
-            source rows. Distinct reported charge records are distinct complete
-            charge entries within a booking, not a verified count of separate
-            legal charges.
-          </p>
-          <p>
-            Source wording and unknown groups are kept as recorded. District
-            codes are source codes. Arrest-location beats use supplied polygons
-            without historical boundary dates. Residential tracts describe home
-            neighborhoods, not arrest locations or personal income.
-          </p>
-          {dimensions
-            .filter(
-              ([key]) =>
-                key === "by_year" ||
-                key === "by_month" ||
-                key === "by_iso_week" ||
-                key === "by_day_of_week" ||
-                Object.hasOwn(profile.breakdowns, key),
-            )
-            .map(([key, label]) => (
-              <details open={key === "by_year" || key === "by_day_of_week"}>
-                <summary>
-                  {label} (
-                  {rowsFor(profile, key).length.toLocaleString("en-US")} groups)
-                </summary>
-                <div class="table-responsive">
-                  <table class="table" data-breakdown={key}>
-                    <caption>{label}</caption>
-                    <thead>
+{profiles.length > 0 && (
+  <section id="arrest-records" class="arrest-records">
+    <div class="arrest-records-heading">
+      <h2>Arrest records</h2>
+      <slot name="introduction">
+        <p>
+          These are recorded arrests linked to this agency assignment. They do
+          not measure safety or misconduct.
+        </p>
+      </slot>
+    </div>
+    {profiles.map((profile) => (
+      <article data-arrest-profile-id={profile.id}>
+        <h3>
+          <a href={profile.agency.href}>{profile.agency.name}</a>
+        </h3>
+        <p>
+          <strong>
+            {profile.coverage.totalArrests.toLocaleString("en-US")} recorded
+            arrests
+          </strong>{" "}
+          · Recorded months: {profile.coverage.firstMonth} to{" "}
+          {profile.coverage.lastMonth}
+        </p>
+        <p>
+          Source: {profile.coverage.source} · Updated{" "}
+          {formatShortDate(profile.updatedAt)}
+        </p>
+        <p>
+          {profile.coverage.chargeRows.toLocaleString("en-US")} charge rows ·{" "}
+          {profile.coverage.distinctChargeRecords.toLocaleString("en-US")}{" "}
+          distinct reported charge records
+        </p>
+        <p>
+          Each arrest is one distinct booking. An arrest can appear in more than
+          one offense or charge-level group. Charge rows include repeated source
+          rows. Distinct reported charge records are distinct complete charge
+          entries within a booking, not a verified count of separate legal
+          charges.
+        </p>
+        <p>
+          Source wording and unknown groups are kept as recorded. District codes
+          are source codes. Arrest-location beats use supplied polygons without
+          historical boundary dates. Residential tracts describe home
+          neighborhoods, not arrest locations or personal income.
+        </p>
+        {dimensions
+          .filter(
+            ([key]) =>
+              key === "by_year" ||
+              key === "by_month" ||
+              key === "by_iso_week" ||
+              key === "by_day_of_week" ||
+              Object.hasOwn(profile.breakdowns, key),
+          )
+          .map(([key, label]) => (
+            <details open={key === "by_year" || key === "by_day_of_week"}>
+              <summary>
+                {label} ({rowsFor(profile, key).length.toLocaleString("en-US")}{" "}
+                groups)
+              </summary>
+              <div class="table-responsive">
+                <table class="table" data-breakdown={key}>
+                  <caption>{label}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">{label}</th>
+                      <th scope="col">
+                        {key.startsWith("charge_rows_")
+                          ? "Charge rows"
+                          : key.startsWith("distinct_charge_records_")
+                            ? "Distinct reported charge records"
+                            : "Recorded arrests"}
+                      </th>
+                      <th scope="col">
+                        {key.startsWith("charge_rows_")
+                          ? "Share of charge rows"
+                          : key.startsWith("distinct_charge_records_")
+                            ? "Share of distinct reported charge records"
+                            : "Share of arrests"}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rowsFor(profile, key).map(([label, count]) => (
                       <tr>
-                        <th scope="col">{label}</th>
-                        <th scope="col">
-                          {key.startsWith("charge_rows_")
-                            ? "Charge rows"
+                        <th scope="row">{label}</th>
+                        <td>{count.toLocaleString("en-US")}</td>
+                        <td>
+                          {(key.startsWith("charge_rows_")
+                            ? profile.coverage.chargeRows
                             : key.startsWith("distinct_charge_records_")
-                              ? "Distinct reported charge records"
-                              : "Recorded arrests"}
-                        </th>
-                        <th scope="col">
-                          {key.startsWith("charge_rows_")
-                            ? "Share of charge rows"
-                            : key.startsWith("distinct_charge_records_")
-                              ? "Share of distinct reported charge records"
-                              : "Share of arrests"}
-                        </th>
+                              ? profile.coverage.distinctChargeRecords
+                              : profile.coverage.totalArrests) === 0
+                            ? "0.0"
+                            : (
+                                (count /
+                                  (key.startsWith("charge_rows_")
+                                    ? profile.coverage.chargeRows
+                                    : key.startsWith("distinct_charge_records_")
+                                      ? profile.coverage.distinctChargeRecords
+                                      : profile.coverage.totalArrests)) *
+                                100
+                              ).toFixed(1)}
+                          %
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {rowsFor(profile, key).map(([label, count]) => (
-                        <tr>
-                          <th scope="row">{label}</th>
-                          <td>{count.toLocaleString("en-US")}</td>
-                          <td>
-                            {(key.startsWith("charge_rows_")
-                              ? profile.coverage.chargeRows
-                              : key.startsWith("distinct_charge_records_")
-                                ? profile.coverage.distinctChargeRecords
-                                : profile.coverage.totalArrests) === 0
-                              ? "0.0"
-                              : (
-                                  (count /
-                                    (key.startsWith("charge_rows_")
-                                      ? profile.coverage.chargeRows
-                                      : key.startsWith(
-                                            "distinct_charge_records_",
-                                          )
-                                        ? profile.coverage.distinctChargeRecords
-                                        : profile.coverage.totalArrests)) *
-                                  100
-                                ).toFixed(1)}
-                            %
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </details>
-            ))}
-        </article>
-      ))}
-    </section>
-  )
-}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          ))}
+      </article>
+    ))}
+  </section>
+)}
 
 <style>
   .arrest-records {

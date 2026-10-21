@@ -17,79 +17,77 @@ const renderEntry = (entry: LicenseTimelineEntry) => ({
 });
 ---
 
-{
-  entries.length ? (
-    <ol class="license-timeline">
-      {shown.map((raw) => {
-        const entry = renderEntry(raw);
-        return (
-          <li
-            class:list={[
-              "license-timeline-item",
-              { "is-adverse": entry.isAdverse },
-            ]}
-          >
-            <span class="license-timeline-marker" aria-hidden="true" />
-            <div class="license-timeline-body">
-              <div class="license-timeline-head">
-                <span class="license-timeline-date">{entry.dateLabel}</span>
-                {entry.isAdverse ? (
-                  <span class="license-timeline-flag">Adverse action</span>
-                ) : null}
-              </div>
-              <p class="license-timeline-action">{entry.action}</p>
-              <p class="license-timeline-meta">
-                {entry.licenseType}
-                {entry.status ? <span> &middot; {entry.status}</span> : null}
-              </p>
+{entries.length ? (
+  <ol class="license-timeline">
+    {shown.map((raw) => {
+      const entry = renderEntry(raw);
+      return (
+        <li
+          class:list={[
+            "license-timeline-item",
+            { "is-adverse": entry.isAdverse },
+          ]}
+        >
+          <span class="license-timeline-marker" aria-hidden="true" />
+          <div class="license-timeline-body">
+            <div class="license-timeline-head">
+              <span class="license-timeline-date">{entry.dateLabel}</span>
+              {entry.isAdverse ? (
+                <span class="license-timeline-flag">Adverse action</span>
+              ) : null}
             </div>
-          </li>
-        );
-      })}
-      {hidden.length ? (
-        <li class="license-timeline-more">
-          <details>
-            <summary>Show all {entries.length} license events</summary>
-            <ol class="license-timeline">
-              {hidden.map((raw) => {
-                const entry = renderEntry(raw);
-                return (
-                  <li
-                    class:list={[
-                      "license-timeline-item",
-                      { "is-adverse": entry.isAdverse },
-                    ]}
-                  >
-                    <span class="license-timeline-marker" aria-hidden="true" />
-                    <div class="license-timeline-body">
-                      <div class="license-timeline-head">
-                        <span class="license-timeline-date">
-                          {entry.dateLabel}
-                        </span>
-                        {entry.isAdverse ? (
-                          <span class="license-timeline-flag">
-                            Adverse action
-                          </span>
-                        ) : null}
-                      </div>
-                      <p class="license-timeline-action">{entry.action}</p>
-                      <p class="license-timeline-meta">
-                        {entry.licenseType}
-                        {entry.status ? (
-                          <span> &middot; {entry.status}</span>
-                        ) : null}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </details>
+            <p class="license-timeline-action">{entry.action}</p>
+            <p class="license-timeline-meta">
+              {entry.licenseType}
+              {entry.status ? <span> &middot; {entry.status}</span> : null}
+            </p>
+          </div>
         </li>
-      ) : null}
-    </ol>
-  ) : null
-}
+      );
+    })}
+    {hidden.length ? (
+      <li class="license-timeline-more">
+        <details>
+          <summary>Show all {entries.length} license events</summary>
+          <ol class="license-timeline">
+            {hidden.map((raw) => {
+              const entry = renderEntry(raw);
+              return (
+                <li
+                  class:list={[
+                    "license-timeline-item",
+                    { "is-adverse": entry.isAdverse },
+                  ]}
+                >
+                  <span class="license-timeline-marker" aria-hidden="true" />
+                  <div class="license-timeline-body">
+                    <div class="license-timeline-head">
+                      <span class="license-timeline-date">
+                        {entry.dateLabel}
+                      </span>
+                      {entry.isAdverse ? (
+                        <span class="license-timeline-flag">
+                          Adverse action
+                        </span>
+                      ) : null}
+                    </div>
+                    <p class="license-timeline-action">{entry.action}</p>
+                    <p class="license-timeline-meta">
+                      {entry.licenseType}
+                      {entry.status ? (
+                        <span> &middot; {entry.status}</span>
+                      ) : null}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </details>
+      </li>
+    ) : null}
+  </ol>
+) : null}
 
 <style>
   .license-timeline {

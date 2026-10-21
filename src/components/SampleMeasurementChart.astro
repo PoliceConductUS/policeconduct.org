@@ -22,15 +22,13 @@ const {
 ---
 
 <div class="measure-space" aria-label={ariaLabel}>
-  {
-    rows.map((row) => (
-      <div class="measure-row">
-        <span class="measure-label">{row.label}</span>
-        <span class="measure-track" aria-hidden="true" />
-        <span class="measure-value">{row.value}</span>
-      </div>
-    ))
-  }
+  {rows.map((row) => (
+    <div class="measure-row">
+      <span class="measure-label">{row.label}</span>
+      <span class="measure-track" aria-hidden="true" />
+      <span class="measure-value">{row.value}</span>
+    </div>
+  ))}
   {legend.length ? <p class="measure-legend">{legend.join(" · ")}</p> : null}
 </div>
 

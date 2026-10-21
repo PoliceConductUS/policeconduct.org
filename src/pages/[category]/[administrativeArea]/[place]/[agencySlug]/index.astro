@@ -312,95 +312,82 @@ const structuredData = {
 >
   <PrefillBootstrap />
   <Fragment slot="header">
-    {
-      status.label || status.dateLabel ? (
-        <div
-          class:list={[
-            "agency-status",
-            { "agency-status--notice": status.prominence === "notice" },
-          ]}
-        >
-          {status.label ? (
-            <p>
-              <strong>Status: {status.label}</strong>
-            </p>
-          ) : null}
-          {status.dateLabel ? (
-            <p>
-              Status date:{" "}
-              <time datetime={data.agency.status_date}>{status.dateLabel}</time>
-            </p>
-          ) : null}
-        </div>
-      ) : null
-    }
-    {
-      federalAgency ? (
-        <p class="agency-overview-federal">
-          <span>Federal agency</span>
-          <a href={federalAgency.path}>{federalAgency.name}</a>
-        </p>
-      ) : null
-    }
+    {status.label || status.dateLabel ? (
+      <div
+        class:list={[
+          "agency-status",
+          { "agency-status--notice": status.prominence === "notice" },
+        ]}
+      >
+        {status.label ? (
+          <p>
+            <strong>Status: {status.label}</strong>
+          </p>
+        ) : null}
+        {status.dateLabel ? (
+          <p>
+            Status date:{" "}
+            <time datetime={data.agency.status_date}>{status.dateLabel}</time>
+          </p>
+        ) : null}
+      </div>
+    ) : null}
+    {federalAgency ? (
+      <p class="agency-overview-federal">
+        <span>Federal agency</span>
+        <a href={federalAgency.path}>{federalAgency.name}</a>
+      </p>
+    ) : null}
     <div class="entity-contact">
-      {
-        addressLine ? (
-          <address class="entity-address">{addressLine}</address>
-        ) : null
-      }
-      {
-        data.agencyPhones.length ? (
-          <p class="entity-contact-links">
-            {data.agencyPhones.map(
-              (phone: {
-                phone_number: string;
-                description?: string | null;
-              }) => {
-                const label = (phone.description || "").trim();
-                const showLabel = label && label.toLowerCase() !== "phone";
-                return (
-                  <a
-                    href={`tel:${phone.phone_number}`}
-                    aria-label={
-                      showLabel
-                        ? `${label}: ${phone.phone_number}`
-                        : phone.phone_number
-                    }
-                  >
-                    {showLabel
+      {addressLine ? (
+        <address class="entity-address">{addressLine}</address>
+      ) : null}
+      {data.agencyPhones.length ? (
+        <p class="entity-contact-links">
+          {data.agencyPhones.map(
+            (phone: { phone_number: string; description?: string | null }) => {
+              const label = (phone.description || "").trim();
+              const showLabel = label && label.toLowerCase() !== "phone";
+              return (
+                <a
+                  href={`tel:${phone.phone_number}`}
+                  aria-label={
+                    showLabel
                       ? `${label}: ${phone.phone_number}`
-                      : phone.phone_number}
-                  </a>
-                );
-              },
-            )}
-          </p>
-        ) : null
-      }
-      {
-        data.agency.contact_name || data.agency.contact_email ? (
-          // Contact name + email are linked in the data model —
-          // render as one visual group; phone links above must not sit
-          // between them.
-          <p class="entity-contact-person">
-            {data.agency.contact_name ? (
-              <>Contact: {toDisplayName(data.agency.contact_name)}</>
-            ) : (
-              "Contact:"
-            )}
-            {data.agency.contact_name && data.agency.contact_email ? (
-              <span class="sep" aria-hidden="true">
-                ·
-              </span>
-            ) : null}
-            {data.agency.contact_email ? (
-              <a href={`mailto:${data.agency.contact_email}`}>
-                {data.agency.contact_email}
-              </a>
-            ) : null}
-          </p>
-        ) : null
-      }
+                      : phone.phone_number
+                  }
+                >
+                  {showLabel
+                    ? `${label}: ${phone.phone_number}`
+                    : phone.phone_number}
+                </a>
+              );
+            },
+          )}
+        </p>
+      ) : null}
+      {data.agency.contact_name || data.agency.contact_email ? (
+        // Contact name + email are linked in the data model —
+        // render as one visual group; phone links above must not sit
+        // between them.
+        <p class="entity-contact-person">
+          {data.agency.contact_name ? (
+            <>Contact: {toDisplayName(data.agency.contact_name)}</>
+          ) : (
+            "Contact:"
+          )}
+          {data.agency.contact_name && data.agency.contact_email ? (
+            <span class="sep" aria-hidden="true">
+              ·
+            </span>
+          ) : null}
+          {data.agency.contact_email ? (
+            <a href={`mailto:${data.agency.contact_email}`}>
+              {data.agency.contact_email}
+            </a>
+          ) : null}
+        </p>
+      ) : null}
     </div>
     {updatedLine ? <p class="entity-updated">{updatedLine}</p> : null}
   </Fragment>
@@ -486,9 +473,11 @@ const structuredData = {
   <StatStrip ariaLabel={`${agencyDisplayName} record totals`} columns="five">
     <StatCell
       label="Personnel"
-      value={counts.currentPersonnel > 0
-        ? formatCount(counts.currentPersonnel)
-        : null}
+      value={
+        counts.currentPersonnel > 0
+          ? formatCount(counts.currentPersonnel)
+          : null
+      }
       meta={personnelMeta || undefined}
       href={counts.personnel > 0 ? `${agencyPath}personnel/` : undefined}
       actionLabel="View personnel →"
@@ -526,58 +515,52 @@ const structuredData = {
     />
   </StatStrip>
 
-  {
-    counts.discipline > 0 && (
-      <p class="civic-limit-note">
-        <a href={`${agencyPath}personnel/`}>
-          {`${formatCount(counts.discipline)} discipline record${counts.discipline === 1 ? "" : "s"}`}
-        </a>
-        {" linked to this agency’s personnel."}
-      </p>
-    )
-  }
+  {counts.discipline > 0 && (
+    <p class="civic-limit-note">
+      <a href={`${agencyPath}personnel/`}>
+        {`${formatCount(counts.discipline)} discipline record${counts.discipline === 1 ? "" : "s"}`}
+      </a>
+      {" linked to this agency’s personnel."}
+    </p>
+  )}
 
-  {
-    recentReports.length ? (
-      <section class="civic-section">
-        <div class="civic-section-head">
-          <div>
-            <h2>Recent experience reports</h2>
-            <p>Public accounts shared about this agency.</p>
-          </div>
+  {recentReports.length ? (
+    <section class="civic-section">
+      <div class="civic-section-head">
+        <div>
+          <h2>Recent experience reports</h2>
+          <p>Public accounts shared about this agency.</p>
         </div>
-        <div class="recent-list">
-          {recentReports.map((item) => (
-            <a href={item.href}>
-              <span class="recent-list-title">{item.title}</span>
-              <span class="recent-list-meta">{item.meta}</span>
-            </a>
-          ))}
-        </div>
-      </section>
-    ) : null
-  }
+      </div>
+      <div class="recent-list">
+        {recentReports.map((item) => (
+          <a href={item.href}>
+            <span class="recent-list-title">{item.title}</span>
+            <span class="recent-list-meta">{item.meta}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  ) : null}
 
-  {
-    recentCases.length ? (
-      <section class="civic-section">
-        <div class="civic-section-head">
-          <div>
-            <h2>Recent civil cases</h2>
-            <p>Court records connected to this agency.</p>
-          </div>
+  {recentCases.length ? (
+    <section class="civic-section">
+      <div class="civic-section-head">
+        <div>
+          <h2>Recent civil cases</h2>
+          <p>Court records connected to this agency.</p>
         </div>
-        <div class="recent-list">
-          {recentCases.map((item) => (
-            <a href={item.href}>
-              <span class="recent-list-title">{item.title}</span>
-              <span class="recent-list-meta">{item.meta}</span>
-            </a>
-          ))}
-        </div>
-      </section>
-    ) : null
-  }
+      </div>
+      <div class="recent-list">
+        {recentCases.map((item) => (
+          <a href={item.href}>
+            <span class="recent-list-title">{item.title}</span>
+            <span class="recent-list-meta">{item.meta}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  ) : null}
 
   <CoverageLinks links={data.coverageLinks} />
 

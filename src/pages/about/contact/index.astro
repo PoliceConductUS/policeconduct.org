@@ -45,7 +45,9 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
             aria-label="I am a/an"
             required
           >
-            <option value="" selected disabled>Choose one</option>
+            <option value="" selected disabled>
+              Choose one
+            </option>
             <option value="individual">
               Individual with a complaint or commendation
             </option>
@@ -102,7 +104,8 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
             placeholder="Leave a message here"
             id="message"
             name="message"
-            required></textarea>
+            required
+          ></textarea>
           <label for="message">Message*</label>
           <div class="invalid-feedback">Please include a message.</div>
         </div>
@@ -178,7 +181,6 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
       }
     }
   </script>
-
   <script>
     import {
       initRecaptcha,

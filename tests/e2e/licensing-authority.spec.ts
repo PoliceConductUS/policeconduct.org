@@ -55,12 +55,26 @@ test("state authority resolves its identity, summaries and direct discipline", a
   await expect(page.locator("[data-discipline-id]")).toHaveCount(
     discipline.length,
   );
+  // These server-rendered records are complete once the count matches. Read
+  // them together to avoid two browser round trips per discipline record.
+  const renderedRecords = await page
+    .locator("[data-discipline-id]")
+    .evaluateAll((rows) =>
+      rows.map((row) => ({
+        id: row.getAttribute("data-discipline-id"),
+        href: row.querySelector("a[href]")?.getAttribute("href"),
+        text: row.textContent ?? "",
+      })),
+    );
+  const recordsById = new Map(renderedRecords.map((row) => [row.id, row]));
+  expect(recordsById.size).toBe(discipline.length);
   for (const record of discipline) {
-    const row = page.locator(`[data-discipline-id="${record.id}"]`);
-    await expect(
-      row.getByRole("link", { includeHidden: true }).first(),
-    ).toHaveAttribute("href", `/personnel/${record.slug}/`);
-    await expect(row).toContainText(record.action);
+    const row = recordsById.get(record.id);
+    expect(row, `discipline record ${record.id}`).toBeDefined();
+    expect(row!.href).toBe(`/personnel/${record.slug}/`);
+    expect(row!.text.replace(/\s+/g, " ").trim()).toContain(
+      record.action.replace(/\s+/g, " ").trim(),
+    );
   }
   await expect(
     page.getByRole("heading", { level: 2, name: /Education|Training/ }),

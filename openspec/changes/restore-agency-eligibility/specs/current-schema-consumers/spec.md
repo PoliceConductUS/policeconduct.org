@@ -4,10 +4,10 @@
 
 The site MUST identify federal branch agencies through `agency.parent_federal_agency_id` referencing `federal_agency.id`. Federal listings, counts, parent links, and legacy redirects SHALL use this replacement relationship, subject to the same personnel-linked eligibility rule as all other agencies.
 
-#### Scenario: Federal office has no personnel or cases
+#### Scenario: Federal office has no current personnel
 
-- **WHEN** an agency has a parent_federal_agency_id and no linked personnel or cases
-- **THEN** it is excluded from agency generation and federal directories
+- **WHEN** an agency has a parent_federal_agency_id and no current personnel assignments
+- **THEN** it qualifies for agency generation and federal directories only if it has a former personnel assignment
 - **AND** root federal agencies always receive detail pages and Federal directory entries, even without qualifying offices
 
 #### Scenario: Reader browses federal offices

@@ -67,13 +67,7 @@ const resolveUrlBase = (): string => {
 const urlBase = resolveUrlBase();
 
 export type EntityImageType =
-  | "personnel"
-  | "report"
-  | "state"
-  | "city"
-  | "county"
-  | "place"
-  | "agency";
+  "personnel" | "report" | "state" | "city" | "county" | "place" | "agency";
 
 // type -> (id -> served url), scanned once per type and cached.
 const cacheByType = new Map<string, Record<string, string>>();

@@ -60,31 +60,41 @@ const tableOutcomes = ["Dismissed", "Reduced", "Plea", "Convicted", "Jail"];
       <label>
         <span>Charge category</span>
         <select name="charge">
-          {chargeCategories.map((option) => <option>{option}</option>)}
+          {chargeCategories.map((option) => (
+            <option>{option}</option>
+          ))}
         </select>
       </label>
       <label>
         <span>Outcome set</span>
         <select name="outcome">
-          {outcomeSets.map((option) => <option>{option}</option>)}
+          {outcomeSets.map((option) => (
+            <option>{option}</option>
+          ))}
         </select>
       </label>
       <label>
         <span>Measure</span>
         <select name="measure">
-          {measures.map((option) => <option>{option}</option>)}
+          {measures.map((option) => (
+            <option>{option}</option>
+          ))}
         </select>
       </label>
       <label>
         <span>Income source</span>
         <select name="income-source">
-          {incomeSources.map((option) => <option>{option}</option>)}
+          {incomeSources.map((option) => (
+            <option>{option}</option>
+          ))}
         </select>
       </label>
       <label>
         <span>Time period</span>
         <select name="time-period">
-          {timePeriods.map((option) => <option>{option}</option>)}
+          {timePeriods.map((option) => (
+            <option>{option}</option>
+          ))}
         </select>
       </label>
     </form>
@@ -109,18 +119,16 @@ const tableOutcomes = ["Dismissed", "Reduced", "Plea", "Convicted", "Jail"];
             </tr>
           </thead>
           <tbody>
-            {
-              tableRows.map((charge, index) => (
-                <tr>
-                  <th scope="row">{charge}</th>
-                  <td>{tableOutcomes[index]}</td>
-                  <td />
-                  <td />
-                  <td />
-                  <td />
-                </tr>
-              ))
-            }
+            {tableRows.map((charge, index) => (
+              <tr>
+                <th scope="row">{charge}</th>
+                <td>{tableOutcomes[index]}</td>
+                <td />
+                <td />
+                <td />
+                <td />
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

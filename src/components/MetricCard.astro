@@ -29,17 +29,15 @@ const isEmpty =
   <strong class="ledger-value">{metric.value}</strong>
   <span class="ledger-label">{metric.label}</span>
   {metric.detail ? <span class="ledger-meta">{metric.detail}</span> : null}
-  {
-    action ? (
-      <span class="entity-metric-action">
-        {action.kind === "link" ? (
-          <MetricCardLink href={action.href}>{action.label}</MetricCardLink>
-        ) : (
-          <MetricCardButton href={action.href}>{action.label}</MetricCardButton>
-        )}
-      </span>
-    ) : null
-  }
+  {action ? (
+    <span class="entity-metric-action">
+      {action.kind === "link" ? (
+        <MetricCardLink href={action.href}>{action.label}</MetricCardLink>
+      ) : (
+        <MetricCardButton href={action.href}>{action.label}</MetricCardButton>
+      )}
+    </span>
+  ) : null}
 </div>
 
 <style>

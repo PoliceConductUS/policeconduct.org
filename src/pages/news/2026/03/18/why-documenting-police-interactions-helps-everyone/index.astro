@@ -2,14 +2,7 @@
 import PageShell from "#src/layouts/PageShell.astro";
 import { buildNewsArticle, getSiteUrl } from "#src/lib/structured-data.js";
 
-export const newsMeta = {
-  badge: "New",
-  date: "2026-03-18",
-  description:
-    "Documenting police experiences—positive and negative—helps create a more complete public record, supports accountability, and gives communities a clearer picture of how policing is experienced in real life.",
-  href: "/news/2026/03/18/why-documenting-police-interactions-helps-everyone/",
-  title: "Why Documenting Police Experiences Helps Everyone",
-};
+import { newsMeta } from "./_metadata";
 
 const siteUrl = getSiteUrl(Astro.site);
 const structuredData = buildNewsArticle({
@@ -39,11 +32,11 @@ const structuredData = buildNewsArticle({
 >
   <Fragment slot="header">
     <p class="lead text-muted mb-0">
-      <strong>Dover, Delaware — March 18, 2026</strong> — Every day, thousands of
-      experiences take place between police officers and the communities they serve.
-      Most are routine. Some are positive. Others may raise questions or concerns.
-      In many cases, these moments are never documented in a way that is accessible
-      to the public.
+      <strong>Dover, Delaware — March 18, 2026</strong> — Every day, thousands
+      of experiences take place between police officers and the communities they
+      serve. Most are routine. Some are positive. Others may raise questions or
+      concerns. In many cases, these moments are never documented in a way that
+      is accessible to the public.
     </p>
   </Fragment>
 
@@ -71,19 +64,19 @@ const structuredData = buildNewsArticle({
         stops.
       </p>
       <p>
-        The first is the <strong>false statement</strong> response. The person is
-        told they misunderstood what happened: the officer did not say that, or the
-        law does not work the way they think.
+        The first is the <strong>false statement</strong> response. The person
+        is told they misunderstood what happened: the officer did not say that,
+        or the law does not work the way they think.
       </p>
       <p>
-        The second is the <strong>generalization</strong> response. Someone had a
-        bad experience with one officer and is accused of unfairly applying that experience
-        to the entire profession.
+        The second is the <strong>generalization</strong> response. Someone had
+        a bad experience with one officer and is accused of unfairly applying
+        that experience to the entire profession.
       </p>
       <p>
-        The third is the <strong>upset guest</strong> response. The complaint is dismissed
-        because the person was the subject of enforcement&mdash;they are seen as simply
-        being angry about a ticket, a citation, or an arrest.
+        The third is the <strong>upset guest</strong> response. The complaint is
+        dismissed because the person was the subject of enforcement&mdash;they
+        are seen as simply being angry about a ticket, a citation, or an arrest.
       </p>
       <p>
         On the surface, these responses can seem reasonable. But in practice,
@@ -207,9 +200,10 @@ const structuredData = buildNewsArticle({
       </p>
       <p>
         To submit a report or contact the team, visit
-        <a href="https://policeconduct.org" class="link-dark"
-          ><strong>PoliceConduct.org</strong></a
-        >.
+        <a href="https://policeconduct.org" class="link-dark">
+          <strong>PoliceConduct.org</strong>
+        </a>
+        .
       </p>
     </div>
   </section>

@@ -30,14 +30,12 @@ const sections = [
 
 <h2>What happened</h2>
 <div set:html={description} />
-{
-  sections.map(({ label, text }) => (
-    <section>
-      {label !== "What happened" ? <h2>{label}</h2> : null}
-      {label === "How it felt" ? (
-        <p>This is the person’s account of how the experience felt.</p>
-      ) : null}
-      <p class="authored-answer">{text}</p>
-    </section>
-  ))
-}
+{sections.map(({ label, text }) => (
+  <section>
+    {label !== "What happened" ? <h2>{label}</h2> : null}
+    {label === "How it felt" ? (
+      <p>This is the person’s account of how the experience felt.</p>
+    ) : null}
+    <p class="authored-answer">{text}</p>
+  </section>
+))}

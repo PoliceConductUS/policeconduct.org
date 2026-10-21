@@ -34,29 +34,25 @@ const reportHref = (report: AgencyReportSummary) => {
   description={`${data.reportedReports.length.toLocaleString("en-US")} public reports connected to this agency, shared by the public and reviewed before publication.`}
 >
   <div class="recent-list">
-    {
-      pageReports.map((report) => (
-        <a href={reportHref(report)}>
-          <span class="recent-list-title">{report.title}</span>
-          <span class="recent-list-meta">
-            Report
-            {report.incidentDate
-              ? ` · Incident ${formatShortDate(report.incidentDate)}`
-              : ""}
-          </span>
-        </a>
-      ))
-    }
+    {pageReports.map((report) => (
+      <a href={reportHref(report)}>
+        <span class="recent-list-title">{report.title}</span>
+        <span class="recent-list-meta">
+          Report
+          {report.incidentDate
+            ? ` · Incident ${formatShortDate(report.incidentDate)}`
+            : ""}
+        </span>
+      </a>
+    ))}
   </div>
-  {
-    lastPage > 1 ? (
-      <Pagination
-        basePath={reportsIndexPath}
-        currentPage={currentPage}
-        lastPage={lastPage}
-      />
-    ) : null
-  }
+  {lastPage > 1 ? (
+    <Pagination
+      basePath={reportsIndexPath}
+      currentPage={currentPage}
+      lastPage={lastPage}
+    />
+  ) : null}
   <p class="civic-limit-note">
     Reports reflect the submitter's account and linked public records.
     Publication is not a court finding.

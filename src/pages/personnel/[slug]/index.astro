@@ -548,29 +548,26 @@ const structuredData = {
       <div class="personnel-profile-title">
         <h1 class="ipc-page-title">{officerName}</h1>
         <p class="personnel-current-line">
-          {assignmentStatusLabel}: {
-            currentAgency.page_type === "agency" ? (
-              <a href={currentAgencyPath}>{currentAgency.name}</a>
-            ) : (
-              currentAgency.name
-            )
-          }
+          {assignmentStatusLabel}:{" "}
+          {currentAgency.page_type === "agency" ? (
+            <a href={currentAgencyPath}>{currentAgency.name}</a>
+          ) : (
+            currentAgency.name
+          )}
           <span aria-hidden="true"> · </span>
           {currentAgencyLocation}
         </p>
         <p class="personnel-profile-note">
           Combined career data aggregated across all known agencies.
         </p>
-        {
-          isDeceased ? (
-            <div class="personnel-status-note" role="status">
-              <PersonnelDeceasedNotice
-                message={deceasedPublicMessage}
-                source={data.officer.deceased_source}
-              />
-            </div>
-          ) : null
-        }
+        {isDeceased ? (
+          <div class="personnel-status-note" role="status">
+            <PersonnelDeceasedNotice
+              message={deceasedPublicMessage}
+              source={data.officer.deceased_source}
+            />
+          </div>
+        ) : null}
         <EntityActionBar>
           <HelpCollectDataButton
             context={officerName}
@@ -610,24 +607,20 @@ const structuredData = {
             <dt>{metricLabels.totalTimeAsOfficer}</dt>
             <dd>{totalTimeAsOfficer}</dd>
           </div>
-          {
-            currentBadge ? (
-              <div>
-                <dt>Badge Number</dt>
-                <dd>{currentBadge}</dd>
-              </div>
-            ) : null
-          }
+          {currentBadge ? (
+            <div>
+              <dt>Badge Number</dt>
+              <dd>{currentBadge}</dd>
+            </div>
+          ) : null}
           <div>
             <dt>{assignmentStatusLabel}</dt>
             <dd>
-              {
-                currentAgency.page_type === "agency" ? (
-                  <a href={currentAgencyPath}>{currentAgency.name}</a>
-                ) : (
-                  currentAgency.name
-                )
-              }
+              {currentAgency.page_type === "agency" ? (
+                <a href={currentAgencyPath}>{currentAgency.name}</a>
+              ) : (
+                currentAgency.name
+              )}
             </dd>
           </div>
           <div>
@@ -644,131 +637,121 @@ const structuredData = {
   <div class="personnel-section-grid">
     <PersonnelArrestProfiles profiles={arrestProfiles} />
     <CoverageLinks links={coverageLinks} />
-    {
-      licensing.licenses.length ? (
-        <section class="personnel-panel personnel-panel-wide">
-          <div class="personnel-panel-heading">
-            <h2>Licenses &amp; certification</h2>
-            <p>Licenses issued to this individual by a licensing authority.</p>
-          </div>
-          <div class="personnel-license-cards">
-            {licensing.licenses.map((license) => (
-              <article
-                class="personnel-license-card"
-                id={`license-${license.id}`}
-              >
-                <h3>{license.licenseType}</h3>
-                <dl>
-                  {license.status ? (
-                    <div>
-                      <dt>Status</dt>
-                      <dd>
-                        <span class="personnel-status-pill">
-                          {license.status}
-                        </span>
-                      </dd>
-                    </div>
-                  ) : null}
-                  {license.firstAwarded ? (
-                    <div>
-                      <dt>First awarded</dt>
-                      <dd>{formatShortDate(license.firstAwarded)}</dd>
-                    </div>
-                  ) : null}
-                  {license.authority ? (
-                    <div>
-                      <dt>Issued by</dt>
-                      <dd>
-                        <a href={license.authority.href}>
-                          {license.authority.abbreviation ||
-                            license.authority.name}
-                        </a>
-                      </dd>
-                    </div>
-                  ) : null}
-                </dl>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null
-    }
+    {licensing.licenses.length ? (
+      <section class="personnel-panel personnel-panel-wide">
+        <div class="personnel-panel-heading">
+          <h2>Licenses &amp; certification</h2>
+          <p>Licenses issued to this individual by a licensing authority.</p>
+        </div>
+        <div class="personnel-license-cards">
+          {licensing.licenses.map((license) => (
+            <article
+              class="personnel-license-card"
+              id={`license-${license.id}`}
+            >
+              <h3>{license.licenseType}</h3>
+              <dl>
+                {license.status ? (
+                  <div>
+                    <dt>Status</dt>
+                    <dd>
+                      <span class="personnel-status-pill">
+                        {license.status}
+                      </span>
+                    </dd>
+                  </div>
+                ) : null}
+                {license.firstAwarded ? (
+                  <div>
+                    <dt>First awarded</dt>
+                    <dd>{formatShortDate(license.firstAwarded)}</dd>
+                  </div>
+                ) : null}
+                {license.authority ? (
+                  <div>
+                    <dt>Issued by</dt>
+                    <dd>
+                      <a href={license.authority.href}>
+                        {license.authority.abbreviation ||
+                          license.authority.name}
+                      </a>
+                    </dd>
+                  </div>
+                ) : null}
+              </dl>
+            </article>
+          ))}
+        </div>
+      </section>
+    ) : null}
 
-    {
-      licensing.timeline.length ? (
-        <section class="personnel-panel personnel-panel-wide">
-          <div class="personnel-panel-heading">
-            <h2>License history</h2>
-            <p>Certification actions across all licenses, most recent first.</p>
-          </div>
-          <LicenseTimeline entries={licensing.timeline} />
-        </section>
-      ) : null
-    }
+    {licensing.timeline.length ? (
+      <section class="personnel-panel personnel-panel-wide">
+        <div class="personnel-panel-heading">
+          <h2>License history</h2>
+          <p>Certification actions across all licenses, most recent first.</p>
+        </div>
+        <LicenseTimeline entries={licensing.timeline} />
+      </section>
+    ) : null}
 
-    {
-      discipline.length ? (
-        <section id="discipline" class="personnel-panel personnel-panel-wide">
-          <div class="personnel-panel-heading">
-            <h2>Discipline</h2>
-            <p>Disciplinary or administrative certification actions.</p>
-          </div>
-          <PersonnelDiscipline records={discipline} />
-        </section>
-      ) : null
-    }
+    {discipline.length ? (
+      <section id="discipline" class="personnel-panel personnel-panel-wide">
+        <div class="personnel-panel-heading">
+          <h2>Discipline</h2>
+          <p>Disciplinary or administrative certification actions.</p>
+        </div>
+        <PersonnelDiscipline records={discipline} />
+      </section>
+    ) : null}
 
-    {
-      education.length ? (
-        <section class="personnel-panel personnel-panel-wide">
-          <div class="personnel-panel-heading">
-            <h2>Education &amp; training</h2>
-            <p>Recorded courses, newest completion dates first.</p>
-          </div>
-          <PersonnelEducation records={education} />
-        </section>
-      ) : null
-    }
+    {education.length ? (
+      <section class="personnel-panel personnel-panel-wide">
+        <div class="personnel-panel-heading">
+          <h2>Education &amp; training</h2>
+          <p>Recorded courses, newest completion dates first.</p>
+        </div>
+        <PersonnelEducation records={education} />
+      </section>
+    ) : null}
 
     <section class="personnel-panel personnel-panel-wide">
       <div class="personnel-panel-heading">
         <h2>Civil Cases</h2>
         <p>Cases connected through agency assignments.</p>
       </div>
-      {
-        civilCasesWithPaths.length ? (
-          <div class="personnel-table-wrap">
-            <table class="personnel-mini-table">
-              <thead>
+      {civilCasesWithPaths.length ? (
+        <div class="personnel-table-wrap">
+          <table class="personnel-mini-table">
+            <thead>
+              <tr>
+                <th scope="col">Case Name</th>
+                <th scope="col">Filed</th>
+                <th scope="col">Court</th>
+                <th scope="col">Cause</th>
+              </tr>
+            </thead>
+            <tbody>
+              {civilCasesWithPaths.slice(0, 4).map((caseItem) => (
                 <tr>
-                  <th scope="col">Case Name</th>
-                  <th scope="col">Filed</th>
-                  <th scope="col">Court</th>
-                  <th scope="col">Cause</th>
+                  <th scope="row">
+                    <a href={caseItem.caseUrl}>
+                      {caseItem.title || "Civil case"}
+                    </a>
+                  </th>
+                  <td>
+                    {caseItem.filed_date
+                      ? formatShortDate(caseItem.filed_date)
+                      : ""}
+                  </td>
+                  <td>{caseItem.court || ""}</td>
+                  <td>{caseItem.cause_number || ""}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {civilCasesWithPaths.slice(0, 4).map((caseItem) => (
-                  <tr>
-                    <th scope="row">
-                      <a href={caseItem.caseUrl}>
-                        {caseItem.title || "Civil case"}
-                      </a>
-                    </th>
-                    <td>
-                      {caseItem.filed_date
-                        ? formatShortDate(caseItem.filed_date)
-                        : ""}
-                    </td>
-                    <td>{caseItem.court || ""}</td>
-                    <td>{caseItem.cause_number || ""}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null
-      }
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
     </section>
 
     <section class="personnel-panel personnel-panel-wide">
@@ -776,72 +759,68 @@ const structuredData = {
         <h2>{metricLabels.agencies}</h2>
         <p>Known agency assignments linked to this profile.</p>
       </div>
-      {
-        assignmentHistory.length ? (
-          <div class="personnel-table-wrap">
-            <table class="personnel-mini-table">
-              <thead>
-                <tr>
-                  <th scope="col">Agency</th>
-                  <th scope="col">Role</th>
-                  <th scope="col">License</th>
-                  <th scope="col">Start Date</th>
-                  <th scope="col">End Date</th>
-                  <th scope="col">Status</th>
+      {assignmentHistory.length ? (
+        <div class="personnel-table-wrap">
+          <table class="personnel-mini-table">
+            <thead>
+              <tr>
+                <th scope="col">Agency</th>
+                <th scope="col">Role</th>
+                <th scope="col">License</th>
+                <th scope="col">Start Date</th>
+                <th scope="col">End Date</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {assignmentHistory.map((entry) => (
+                <tr data-agency-assignment-id={entry.id}>
+                  <th scope="row">
+                    {entry.agency.page_type === "agency" ? (
+                      <a href={requireAgencyCanonicalPath(entry.agency)}>
+                        {entry.agency.name}
+                      </a>
+                    ) : (
+                      entry.agency.name
+                    )}
+                  </th>
+                  <td>{entry.title || currentTitle}</td>
+                  <td>
+                    {entry.license_id &&
+                      (() => {
+                        const license = licensing.licenses.find(
+                          (license) => license.id === entry.license_id,
+                        );
+                        if (!license)
+                          throw new Error(
+                            `Assignment ${entry.id} references missing license ${entry.license_id}`,
+                          );
+                        return (
+                          <a href={`#license-${license.id}`}>
+                            {license.licenseType}
+                          </a>
+                        );
+                      })()}
+                  </td>
+                  <td>
+                    {entry.start_date ? formatShortDate(entry.start_date) : ""}
+                  </td>
+                  <td>
+                    {entry.end_date
+                      ? formatShortDate(entry.end_date)
+                      : "Present"}
+                  </td>
+                  <td>
+                    <span class="personnel-status-pill">
+                      {entry.end_date ? "Completed" : "Active"}
+                    </span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {assignmentHistory.map((entry) => (
-                  <tr data-agency-assignment-id={entry.id}>
-                    <th scope="row">
-                      {entry.agency.page_type === "agency" ? (
-                        <a href={requireAgencyCanonicalPath(entry.agency)}>
-                          {entry.agency.name}
-                        </a>
-                      ) : (
-                        entry.agency.name
-                      )}
-                    </th>
-                    <td>{entry.title || currentTitle}</td>
-                    <td>
-                      {entry.license_id &&
-                        (() => {
-                          const license = licensing.licenses.find(
-                            (license) => license.id === entry.license_id,
-                          );
-                          if (!license)
-                            throw new Error(
-                              `Assignment ${entry.id} references missing license ${entry.license_id}`,
-                            );
-                          return (
-                            <a href={`#license-${license.id}`}>
-                              {license.licenseType}
-                            </a>
-                          );
-                        })()}
-                    </td>
-                    <td>
-                      {entry.start_date
-                        ? formatShortDate(entry.start_date)
-                        : ""}
-                    </td>
-                    <td>
-                      {entry.end_date
-                        ? formatShortDate(entry.end_date)
-                        : "Present"}
-                    </td>
-                    <td>
-                      <span class="personnel-status-pill">
-                        {entry.end_date ? "Completed" : "Active"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null
-      }
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
     </section>
   </div>
 

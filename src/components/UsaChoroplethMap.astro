@@ -111,85 +111,79 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
   <div class:list={["col-12", federalPanel ? "col-lg-8" : null]}>
     <section class="collection-index-panel collection-index-panel-map h-100">
       <div class="collection-index-body">
-        <div
-          class="d-flex flex-column flex-lg-row gap-3 justify-content-between"
-        >
+        <div class="d-flex flex-column flex-lg-row gap-3 justify-content-between">
           <div>
             <h2 class="ipc-section-title mb-1">
               {title === "States" ? "Browse by state" : title}
             </h2>
             {subtitle ? <p class="text-muted mb-0">{subtitle}</p> : null}
           </div>
-          {
-            headerAction ? (
-              <div class="d-flex justify-content-lg-end align-items-start">
-                {headerAction.prefillPayload ? (
-                  <PrefillNavButton
-                    class="btn btn-outline-dark rounded-0"
-                    to={headerAction.href}
-                    payload={headerAction.prefillPayload}
-                    data-map-link-type="header_action"
-                    data-map-label={headerAction.label}
-                  >
-                    {headerAction.label}
-                  </PrefillNavButton>
-                ) : (
-                  <a
-                    class="btn btn-outline-dark rounded-0"
-                    href={headerAction.href}
-                    target={headerAction.target || "_self"}
-                    data-map-link-type="header_action"
-                    data-map-label={headerAction.label}
-                  >
-                    {headerAction.label}
-                  </a>
-                )}
-              </div>
-            ) : null
-          }
+          {headerAction ? (
+            <div class="d-flex justify-content-lg-end align-items-start">
+              {headerAction.prefillPayload ? (
+                <PrefillNavButton
+                  class="btn btn-outline-dark rounded-0"
+                  to={headerAction.href}
+                  payload={headerAction.prefillPayload}
+                  data-map-link-type="header_action"
+                  data-map-label={headerAction.label}
+                >
+                  {headerAction.label}
+                </PrefillNavButton>
+              ) : (
+                <a
+                  class="btn btn-outline-dark rounded-0"
+                  href={headerAction.href}
+                  target={headerAction.target || "_self"}
+                  data-map-link-type="header_action"
+                  data-map-label={headerAction.label}
+                >
+                  {headerAction.label}
+                </a>
+              )}
+            </div>
+          ) : null}
         </div>
         <div class="map-wrap" data-usa-map>
           <svg viewBox="192 9 1138 746" class="usa-map">
             <title>{title} coverage map</title>
             <desc>{interactionLabel || "Interactive state map."}</desc>
-            {
-              USA_STATE_PATHS.map((state) => {
-                const { count, fill, href, isInteractive, label } =
-                  getStateDisplay(state.id, state.label);
-                const pathEl = (
-                  <path
-                    id={`state-${state.id}`}
-                    data-role="map-state"
-                    data-state-id={state.id}
-                    d={state.d}
-                    fill={fill}
-                    stroke="#111"
-                    stroke-width="1"
-                    class:list={{
-                      "has-data": Boolean(count),
-                      "no-data": !count,
-                      "is-interactive": isInteractive,
-                    }}
-                  >
-                    <title>{label}</title>
-                  </path>
-                );
-                return href ? (
-                  <a
-                    href={href}
-                    aria-label={`View ${label}`}
-                    data-map-label={state.label}
-                    data-map-link-type="state"
-                    data-state-count={String(count)}
-                    data-state-id={state.id}
-                  >
-                    {pathEl}
-                  </a>
-                ) : (
-                  pathEl
-                );
-              })
-            }
+            {USA_STATE_PATHS.map((state) => {
+              const { count, fill, href, isInteractive, label } =
+                getStateDisplay(state.id, state.label);
+              const pathEl = (
+                <path
+                  id={`state-${state.id}`}
+                  data-role="map-state"
+                  data-state-id={state.id}
+                  d={state.d}
+                  fill={fill}
+                  stroke="#111"
+                  stroke-width="1"
+                  class:list={{
+                    "has-data": Boolean(count),
+                    "no-data": !count,
+                    "is-interactive": isInteractive,
+                  }}
+                >
+                  <title>{label}</title>
+                </path>
+              );
+              return href ? (
+                <a
+                  href={href}
+                  aria-label={`View ${label}`}
+                  data-map-label={state.label}
+                  data-map-link-type="state"
+                  data-state-count={String(count)}
+                  data-state-id={state.id}
+                >
+                  {pathEl}
+                </a>
+              ) : (
+                pathEl
+              );
+            })}
             <g class="small-state-gutter" aria-hidden="true">
               <text
                 x={SMALL_STATE_GUTTER_X}
@@ -199,139 +193,130 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
                 Small states
               </text>
             </g>
-            {
-              SMALL_STATE_CHIPS.map((chip, index) => {
-                const { fill, href, label } = getStateDisplay(
-                  chip.id,
-                  chip.name,
-                );
-                const y =
-                  SMALL_STATE_GUTTER_Y +
-                  index * (SMALL_STATE_GUTTER_HEIGHT + SMALL_STATE_GUTTER_GAP);
-                const pillEl = (
-                  <g
-                    class="small-state-pill"
-                    data-role="small-state-pill"
-                    data-state-id={chip.id}
+            {SMALL_STATE_CHIPS.map((chip, index) => {
+              const { fill, href, label } = getStateDisplay(chip.id, chip.name);
+              const y =
+                SMALL_STATE_GUTTER_Y +
+                index * (SMALL_STATE_GUTTER_HEIGHT + SMALL_STATE_GUTTER_GAP);
+              const pillEl = (
+                <g
+                  class="small-state-pill"
+                  data-role="small-state-pill"
+                  data-state-id={chip.id}
+                >
+                  <rect
+                    x={SMALL_STATE_GUTTER_X}
+                    y={y}
+                    width={SMALL_STATE_GUTTER_WIDTH}
+                    height={SMALL_STATE_GUTTER_HEIGHT}
+                    rx="15"
+                    fill={fill}
+                    class="small-state-pill-rect"
+                  />
+                  <text
+                    x={SMALL_STATE_GUTTER_X + SMALL_STATE_GUTTER_WIDTH / 2}
+                    y={y + 19}
+                    text-anchor="middle"
+                    class="small-state-pill-code"
                   >
-                    <rect
-                      x={SMALL_STATE_GUTTER_X}
-                      y={y}
-                      width={SMALL_STATE_GUTTER_WIDTH}
-                      height={SMALL_STATE_GUTTER_HEIGHT}
-                      rx="15"
-                      fill={fill}
-                      class="small-state-pill-rect"
-                    />
-                    <text
-                      x={SMALL_STATE_GUTTER_X + SMALL_STATE_GUTTER_WIDTH / 2}
-                      y={y + 19}
-                      text-anchor="middle"
-                      class="small-state-pill-code"
-                    >
-                      {chip.code}
-                    </text>
-                    <title>{label}</title>
-                  </g>
-                );
+                    {chip.code}
+                  </text>
+                  <title>{label}</title>
+                </g>
+              );
 
-                return href ? (
-                  <a
-                    href={href}
-                    aria-label={`View ${label}`}
-                    data-map-label={chip.name}
-                    data-map-link-type="state"
-                    data-state-count={String(
-                      byCode.get(chip.id.toLowerCase())?.count || 0,
-                    )}
-                    data-state-id={chip.id}
-                  >
-                    {pillEl}
-                  </a>
-                ) : (
-                  pillEl
-                );
-              })
-            }
+              return href ? (
+                <a
+                  href={href}
+                  aria-label={`View ${label}`}
+                  data-map-label={chip.name}
+                  data-map-link-type="state"
+                  data-state-count={String(
+                    byCode.get(chip.id.toLowerCase())?.count || 0,
+                  )}
+                  data-state-id={chip.id}
+                >
+                  {pillEl}
+                </a>
+              ) : (
+                pillEl
+              );
+            })}
           </svg>
         </div>
         <div class="d-flex align-items-center text-muted small gap-2">
           <span class="legend-swatch"></span>
           <span>{emptyLabel}</span>
-          {
-            interactionLabel ? (
-              <span class="ms-auto">{interactionLabel}</span>
-            ) : null
-          }
+          {interactionLabel ? (
+            <span class="ms-auto">{interactionLabel}</span>
+          ) : null}
         </div>
       </div>
     </section>
   </div>
-  {
-    federalPanel ? (
-      <div class="col-12 col-lg-4">
-        <aside class="collection-index-panel collection-index-panel-federal h-100">
-          <div class="collection-index-body">
-            <div class="d-flex align-items-center justify-content-between gap-3">
-              <div>
-                {federalPanel.eyebrow ? (
-                  <p class="text-uppercase small text-muted mb-1">
-                    {federalPanel.eyebrow}
-                  </p>
-                ) : null}
-                <h2 class="ipc-section-title mb-0">{federalPanel.title}</h2>
-              </div>
-              {federalPanel.value !== undefined ? (
-                <span class="badge bg-dark rounded-pill">
-                  {federalPanel.value}
-                </span>
+  {federalPanel ? (
+    <div class="col-12 col-lg-4">
+      <aside class="collection-index-panel collection-index-panel-federal h-100">
+        <div class="collection-index-body">
+          <div class="d-flex align-items-center justify-content-between gap-3">
+            <div>
+              {federalPanel.eyebrow ? (
+                <p class="text-uppercase small text-muted mb-1">
+                  {federalPanel.eyebrow}
+                </p>
               ) : null}
+              <h2 class="ipc-section-title mb-0">{federalPanel.title}</h2>
             </div>
-            {federalPanel.description ? (
-              <p class="text-muted small mb-0">{federalPanel.description}</p>
-            ) : null}
-            {federalPanel.items && federalPanel.items.length > 0 ? (
-              <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-                {federalPanel.items.map((item) => (
-                  <li class="d-flex align-items-start justify-content-between gap-2">
-                    {item.href ? (
-                      <a
-                        class="text-decoration-none fw-semibold"
-                        href={item.href}
-                        data-map-label={item.label}
-                        data-map-link-type="federal_item"
-                      >
-                        {item.label}
-                      </a>
-                    ) : (
-                      <span class="fw-semibold">{item.label}</span>
-                    )}
-                    {item.badgeText ? (
-                      <span class="badge bg-light text-dark border rounded-pill">
-                        {item.badgeText}
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            {federalPanel.actionHref && federalPanel.actionLabel ? (
-              <div class="mt-auto">
-                <a
-                  class="btn btn-outline-dark rounded-0 w-100"
-                  href={federalPanel.actionHref}
-                  data-map-label={federalPanel.actionLabel}
-                  data-map-link-type="federal_action"
-                >
-                  {federalPanel.actionLabel}
-                </a>
-              </div>
+            {federalPanel.value !== undefined ? (
+              <span class="badge bg-dark rounded-pill">
+                {federalPanel.value}
+              </span>
             ) : null}
           </div>
-        </aside>
-      </div>
-    ) : null
-  }
+          {federalPanel.description ? (
+            <p class="text-muted small mb-0">{federalPanel.description}</p>
+          ) : null}
+          {federalPanel.items && federalPanel.items.length > 0 ? (
+            <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
+              {federalPanel.items.map((item) => (
+                <li class="d-flex align-items-start justify-content-between gap-2">
+                  {item.href ? (
+                    <a
+                      class="text-decoration-none fw-semibold"
+                      href={item.href}
+                      data-map-label={item.label}
+                      data-map-link-type="federal_item"
+                    >
+                      {item.label}
+                    </a>
+                  ) : (
+                    <span class="fw-semibold">{item.label}</span>
+                  )}
+                  {item.badgeText ? (
+                    <span class="badge bg-light text-dark border rounded-pill">
+                      {item.badgeText}
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {federalPanel.actionHref && federalPanel.actionLabel ? (
+            <div class="mt-auto">
+              <a
+                class="btn btn-outline-dark rounded-0 w-100"
+                href={federalPanel.actionHref}
+                data-map-label={federalPanel.actionLabel}
+                data-map-link-type="federal_action"
+              >
+                {federalPanel.actionLabel}
+              </a>
+            </div>
+          ) : null}
+        </div>
+      </aside>
+    </div>
+  ) : null}
 </div>
 
 <style>

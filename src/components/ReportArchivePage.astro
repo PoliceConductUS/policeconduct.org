@@ -95,15 +95,13 @@ const structuredData = buildCollectionPage({
 
     <DataPanel className="entity-table-panel" title={metricLabels.reports}>
       <div class="report-archive-list">
-        {
-          reports.map((report) => (
-            <a href={report.canonicalPath}>
-              <span>{report.title}</span>
-              <small>{formatShortDate(report.incidentDate)}</small>
-              {report.address ? <em>{report.address}</em> : null}
-            </a>
-          ))
-        }
+        {reports.map((report) => (
+          <a href={report.canonicalPath}>
+            <span>{report.title}</span>
+            <small>{formatShortDate(report.incidentDate)}</small>
+            {report.address ? <em>{report.address}</em> : null}
+          </a>
+        ))}
       </div>
     </DataPanel>
   </div>

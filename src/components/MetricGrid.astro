@@ -9,7 +9,9 @@ const { metrics, columns = "auto" } = Astro.props as {
 ---
 
 <div class:list={["entity-metric-grid", `entity-metric-grid-${columns}`]}>
-  {metrics.map((metric) => <MetricCard metric={metric} />)}
+  {metrics.map((metric) => (
+    <MetricCard metric={metric} />
+  ))}
 </div>
 
 <style>

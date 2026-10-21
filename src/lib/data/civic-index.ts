@@ -13,10 +13,7 @@ export const civicIndexCollator = new Intl.Collator("en", {
 export type CivicIndexLevel = "state" | "administrative_area" | "place";
 
 export type CivicIndexScope =
-  | "state"
-  | "administrative_area"
-  | "place"
-  | "agency";
+  "state" | "administrative_area" | "place" | "agency";
 
 export type CivicScopedTopicKind =
   | "reports"

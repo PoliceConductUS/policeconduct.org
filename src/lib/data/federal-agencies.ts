@@ -406,18 +406,16 @@ export const loadFederalAgencySummaries = async () => {
   });
 
   return rows
-    .map(
-      (row: any): FederalAgencySummary => ({
-        branchCount: Number(row.branch_count || 0),
-        civilCaseCount: Number(row.civil_case_count || 0),
-        id: String(row.id),
-        name: String(row.name),
-        path: federalAgencyPath(String(row.slug)),
-        personnelCount: Number(row.personnel_count || 0),
-        reportCount: Number(row.report_count || 0),
-        slug: String(row.slug),
-      }),
-    )
+    .map((row: any): FederalAgencySummary => ({
+      branchCount: Number(row.branch_count || 0),
+      civilCaseCount: Number(row.civil_case_count || 0),
+      id: String(row.id),
+      name: String(row.name),
+      path: federalAgencyPath(String(row.slug)),
+      personnelCount: Number(row.personnel_count || 0),
+      reportCount: Number(row.report_count || 0),
+      slug: String(row.slug),
+    }))
     .sort((left, right) => nameCollator.compare(left.name, right.name));
 };
 

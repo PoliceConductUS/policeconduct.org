@@ -65,116 +65,111 @@ type Props = MetricProps | DrillProps;
 const props = Astro.props as Props;
 ---
 
-{
-  props.drill ? (
-    <div class="stat-cell jump-cell stat-cell--drill">
-      <span class="stat-drill-eyebrow">Start here</span>
-      <strong class="ledger-value">{props.childCount}</strong>
-      <span class="ledger-label">{props.childLabel}</span>
-      <form
-        class="jump-form"
-        data-jump-form
-        action={props.browseHref}
-        method="get"
+{props.drill ? (
+  <div class="stat-cell jump-cell stat-cell--drill">
+    <span class="stat-drill-eyebrow">Start here</span>
+    <strong class="ledger-value">{props.childCount}</strong>
+    <span class="ledger-label">{props.childLabel}</span>
+    <form
+      class="jump-form"
+      data-jump-form
+      action={props.browseHref}
+      method="get"
+    >
+      <label for={props.id || "civic-jump"} class="visually-hidden">
+        {props.selectLabel}
+      </label>
+      <select
+        id={props.id || "civic-jump"}
+        class="jump-select"
+        data-jump-select
       >
-        <label for={props.id || "civic-jump"} class="visually-hidden">
-          {props.selectLabel}
-        </label>
-        <select
-          id={props.id || "civic-jump"}
-          class="jump-select"
-          data-jump-select
-        >
-          <option value="" selected disabled>
-            {props.placeholder}
-          </option>
-          {props.jumpOptions.map((option) => (
-            <option value={option.href}>{option.label}</option>
-          ))}
-        </select>
-        <button class="jump-go" type="submit">
-          Go →
-        </button>
-      </form>
-      <p class="jump-status" data-jump-status aria-live="polite" />
-      <p class="jump-browse">
-        <a href={props.browseHref}>{props.browseLabel}</a>
-      </p>
-    </div>
-  ) : (
-    (() => {
-      const {
-        variant = "strip",
-        label,
-        value,
-        meta,
-        gloss,
-        href,
-        actionLabel,
-        currency = false,
-        role,
-        helpCollectHref,
-        helpCollectLabel = "Help collect this →",
-      } = props;
-      const empty = props.empty ?? (value == null || value === "");
-      const displayValue = empty ? (currency ? "$--" : "--") : value;
-      const isLink = Boolean(href) && !empty;
+        <option value="" selected disabled>
+          {props.placeholder}
+        </option>
+        {props.jumpOptions.map((option) => (
+          <option value={option.href}>{option.label}</option>
+        ))}
+      </select>
+      <button class="jump-go" type="submit">
+        Go →
+      </button>
+    </form>
+    <p class="jump-status" data-jump-status aria-live="polite" />
+    <p class="jump-browse">
+      <a href={props.browseHref}>{props.browseLabel}</a>
+    </p>
+  </div>
+) : (
+  (() => {
+    const {
+      variant = "strip",
+      label,
+      value,
+      meta,
+      gloss,
+      href,
+      actionLabel,
+      currency = false,
+      role,
+      helpCollectHref,
+      helpCollectLabel = "Help collect this →",
+    } = props;
+    const empty = props.empty ?? (value == null || value === "");
+    const displayValue = empty ? (currency ? "$--" : "--") : value;
+    const isLink = Boolean(href) && !empty;
 
-      return variant === "topic" ? (
-        <li
-          class:list={[
-            "topic-cell",
-            "ledger-interactive",
-            { "is-pending": empty },
-          ]}
-          data-role={role}
-        >
-          {isLink ? (
-            <a class="topic-link" href={href}>
-              <span class="ledger-label">{label}</span>
-              <span class="topic-value">{displayValue}</span>
-              {gloss ? (
-                <span class="ledger-meta topic-gloss">{gloss}</span>
-              ) : null}
-            </a>
-          ) : (
-            <div class="topic-link">
-              <span class="ledger-label">{label}</span>
-              <span class="topic-value">{displayValue}</span>
-              {gloss ? (
-                <span class="ledger-meta topic-gloss">{gloss}</span>
-              ) : null}
-            </div>
-          )}
-          {empty && helpCollectHref ? (
-            <span class="topic-foot">
-              <a href={helpCollectHref}>{helpCollectLabel}</a>
-            </span>
-          ) : null}
-        </li>
-      ) : isLink ? (
-        <a class="stat-cell stat-cell--link" data-role={role} href={href}>
-          <strong class="ledger-value">{value}</strong>
-          <span class="ledger-label">{label}</span>
-          {meta ? <span class="ledger-meta">{meta}</span> : null}
-          {actionLabel ? <span class="stat-action">{actionLabel}</span> : null}
-        </a>
-      ) : (
-        <div
-          class:list={["stat-cell", { "is-pending": empty }]}
-          data-role={role}
-        >
-          <strong class="ledger-value">{displayValue}</strong>
-          <span class="ledger-label">{label}</span>
-          {!empty && meta ? <span class="ledger-meta">{meta}</span> : null}
-          {gloss ? <span class="ledger-meta topic-gloss">{gloss}</span> : null}
-          {empty && helpCollectHref ? (
-            <span class="stat-action">
-              <a href={helpCollectHref}>{helpCollectLabel}</a>
-            </span>
-          ) : null}
-        </div>
-      );
-    })()
-  )
-}
+    return variant === "topic" ? (
+      <li
+        class:list={[
+          "topic-cell",
+          "ledger-interactive",
+          { "is-pending": empty },
+        ]}
+        data-role={role}
+      >
+        {isLink ? (
+          <a class="topic-link" href={href}>
+            <span class="ledger-label">{label}</span>
+            <span class="topic-value">{displayValue}</span>
+            {gloss ? (
+              <span class="ledger-meta topic-gloss">{gloss}</span>
+            ) : null}
+          </a>
+        ) : (
+          <div class="topic-link">
+            <span class="ledger-label">{label}</span>
+            <span class="topic-value">{displayValue}</span>
+            {gloss ? (
+              <span class="ledger-meta topic-gloss">{gloss}</span>
+            ) : null}
+          </div>
+        )}
+        {empty && helpCollectHref ? (
+          <span class="topic-foot">
+            <a href={helpCollectHref}>{helpCollectLabel}</a>
+          </span>
+        ) : null}
+      </li>
+    ) : isLink ? (
+      <a class="stat-cell stat-cell--link" data-role={role} href={href}>
+        <strong class="ledger-value">{value}</strong>
+        <span class="ledger-label">{label}</span>
+        {meta ? <span class="ledger-meta">{meta}</span> : null}
+        {actionLabel ? <span class="stat-action">{actionLabel}</span> : null}
+      </a>
+    ) : (
+      <div class:list={["stat-cell", { "is-pending": empty }]} data-role={role}>
+        <strong class="ledger-value">{displayValue}</strong>
+        <span class="ledger-label">{label}</span>
+        {!empty && meta ? <span class="ledger-meta">{meta}</span> : null}
+        {gloss ? <span class="ledger-meta topic-gloss">{gloss}</span> : null}
+        {empty && helpCollectHref ? (
+          <span class="stat-action">
+            <a href={helpCollectHref}>{helpCollectLabel}</a>
+          </span>
+        ) : null}
+      </div>
+    );
+  })()
+)}

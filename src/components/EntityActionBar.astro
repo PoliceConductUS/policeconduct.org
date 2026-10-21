@@ -44,20 +44,16 @@ const currentPath = Astro.url?.pathname || "/";
 ---
 
 <div class="entity-actions" data-pagefind-ignore>
-  {
-    primary ? (
-      <a class="entity-action entity-action-primary" href={primary.href}>
-        {primary.label}
-      </a>
-    ) : null
-  }
-  {
-    actions.map((action) => (
-      <a class="entity-action" href={action.href}>
-        {action.label}
-      </a>
-    ))
-  }
+  {primary ? (
+    <a class="entity-action entity-action-primary" href={primary.href}>
+      {primary.label}
+    </a>
+  ) : null}
+  {actions.map((action) => (
+    <a class="entity-action" href={action.href}>
+      {action.label}
+    </a>
+  ))}
   <slot />
   <details class="entity-menu">
     <summary class="entity-action entity-menu-toggle">
@@ -77,15 +73,13 @@ const currentPath = Astro.url?.pathname || "/";
           View sources &amp; methodology
         </a>
       </li>
-      {
-        more.map((item) => (
-          <li>
-            <a class="entity-menu-item" href={item.href}>
-              {item.label}
-            </a>
-          </li>
-        ))
-      }
+      {more.map((item) => (
+        <li>
+          <a class="entity-menu-item" href={item.href}>
+            {item.label}
+          </a>
+        </li>
+      ))}
     </ul>
   </details>
 </div>

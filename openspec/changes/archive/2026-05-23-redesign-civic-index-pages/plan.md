@@ -708,21 +708,19 @@ const structuredData = buildWebPage({
           <aside class="civic-coverage" aria-label="Current record coverage">
             <h2>Current record coverage</h2>
             <dl>
-              {
-                model.coverage.map((metric) => (
-                  <div>
-                    <dt>{metric.label}</dt>
-                    <dd>{metric.value.toLocaleString("en-US")}</dd>
-                  </div>
-                ))
-              }
+              {model.coverage.map((metric) => (
+                <div>
+                  <dt>{metric.label}</dt>
+                  <dd>{metric.value.toLocaleString("en-US")}</dd>
+                </div>
+              ))}
             </dl>
           </aside>
         </div>
       </div>
     </section>
-  </main></SiteLayout
->
+  </main>
+</SiteLayout>
 ```
 
 - [ ] **Step 2: Add map, table, and action rail markup**
@@ -755,72 +753,64 @@ Append inside `<main>` before closing it:
         <table class="civic-index-table" data-civic-index-table>
           <thead>
             <tr>
-              {
-                model.columns.map((column) => (
-                  <th scope="col">
-                    <button
-                      type="button"
-                      data-civic-index-sort={column.key}
-                      data-civic-index-numeric={
-                        column.numeric ? "true" : "false"
-                      }
-                    >
-                      {column.label}
-                    </button>
-                  </th>
-                ))
-              }
+              {model.columns.map((column) => (
+                <th scope="col">
+                  <button
+                    type="button"
+                    data-civic-index-sort={column.key}
+                    data-civic-index-numeric={column.numeric ? "true" : "false"}
+                  >
+                    {column.label}
+                  </button>
+                </th>
+              ))}
               <th scope="col">View</th>
             </tr>
           </thead>
           <tbody>
-            {
-              model.rows.map((row) => (
-                <tr data-civic-index-row data-search-text={row.searchText}>
-                  {model.columns.map((column) => (
-                    <td
-                      data-sort-value={String(
-                        column.key === "label"
-                          ? row.label
-                          : (row.values[column.key] ?? ""),
-                      )}
-                    >
-                      {column.key === "label" ? (
-                        <a href={row.href}>{row.label}</a>
-                      ) : (
-                        (row.values[column.key] ?? "")
-                      )}
-                    </td>
-                  ))}
-                  <td>
-                    <a href={row.href}>View</a>
+            {model.rows.map((row) => (
+              <tr data-civic-index-row data-search-text={row.searchText}>
+                {model.columns.map((column) => (
+                  <td
+                    data-sort-value={String(
+                      column.key === "label"
+                        ? row.label
+                        : (row.values[column.key] ?? ""),
+                    )}
+                  >
+                    {column.key === "label" ? (
+                      <a href={row.href}>{row.label}</a>
+                    ) : (
+                      (row.values[column.key] ?? "")
+                    )}
                   </td>
-                </tr>
-              ))
-            }
+                ))}
+                <td>
+                  <a href={row.href}>View</a>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
     </div>
     <aside class="civic-actions" aria-label="Start with a question">
       <h2>Start with a question</h2>
-      {
-        model.actionGroups.map((group) => (
-          <section>
-            <h3>{group.label}</h3>
-            <ul>
-              {group.actions.map((action) => (
-                <li>
-                  <a href={action.href}>
-                    <strong>{action.label}</strong>
-                    <span>{action.description}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))
-      }
+      {model.actionGroups.map((group) => (
+        <section>
+          <h3>{group.label}</h3>
+          <ul>
+            {group.actions.map((action) => (
+              <li>
+                <a href={action.href}>
+                  <strong>{action.label}</strong>
+                  <span>{action.description}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </aside>
   </div>
 </section>
@@ -835,14 +825,12 @@ Append inside `<main>` after the main grid:
   <div class="container">
     <h2>Data not collected yet</h2>
     <div class="civic-future-grid">
-      {
-        model.futureDatasets.map((dataset) => (
-          <article>
-            <h3>{dataset.label}</h3>
-            <p>{dataset.description}</p>
-          </article>
-        ))
-      }
+      {model.futureDatasets.map((dataset) => (
+        <article>
+          <h3>{dataset.label}</h3>
+          <p>{dataset.description}</p>
+        </article>
+      ))}
     </div>
   </div>
 </section>

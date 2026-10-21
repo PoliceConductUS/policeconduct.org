@@ -37,9 +37,9 @@ const PLATFORM_LABELS: Record<SocialPlatform, string> = {
   rel="noopener"
   aria-label={`${entityName} on ${PLATFORM_LABELS[platform]}`}
 >
-  <svg aria-hidden="true" focusable="false"
-    ><use href={`/icons.svg#social-${platform}`}></use></svg
-  >
+  <svg aria-hidden="true" focusable="false">
+    <use href={`/icons.svg#social-${platform}`}></use>
+  </svg>
 </a>
 
 <style>

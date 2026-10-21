@@ -26,12 +26,10 @@ const pagePath = `${authority.statePath}licensing-authority/`;
     { label: "Licensing authority", current: true },
   ]}
 >
-  {
-    authority.website && (
-      <a slot="actions" href={authority.website} rel="noopener">
-        Official website
-      </a>
-    )
-  }
+  {authority.website && (
+    <a slot="actions" href={authority.website} rel="noopener">
+      Official website
+    </a>
+  )}
   <LicensingAuthorityRecords {...records} />
 </PageShell>

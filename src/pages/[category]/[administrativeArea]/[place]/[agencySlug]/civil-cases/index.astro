@@ -45,21 +45,19 @@ const formatDate = (value?: string | null) =>
         </tr>
       </thead>
       <tbody>
-        {
-          rows.map((row: CivilCaseRow) => (
-            <tr>
-              <td>
-                <a class="row-link" href={row.caseUrl}>
-                  {row.title || "Civil case"}
-                </a>
-              </td>
-              <td class="muted">{row.cause_number || ""}</td>
-              <td>{row.court || ""}</td>
-              <td>{formatDate(row.filed_date)}</td>
-              <td>{row.outcome}</td>
-            </tr>
-          ))
-        }
+        {rows.map((row: CivilCaseRow) => (
+          <tr>
+            <td>
+              <a class="row-link" href={row.caseUrl}>
+                {row.title || "Civil case"}
+              </a>
+            </td>
+            <td class="muted">{row.cause_number || ""}</td>
+            <td>{row.court || ""}</td>
+            <td>{formatDate(row.filed_date)}</td>
+            <td>{row.outcome}</td>
+          </tr>
+        ))}
       </tbody>
     </table>
   </TableScroll>

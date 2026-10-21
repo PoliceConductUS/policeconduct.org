@@ -126,113 +126,104 @@ const showTools = total >= 15;
 
 <div class="roster" data-roster>
   <div class="roster-summary" data-roster-summary aria-live="polite">
-    <strong>{formatCount(total)}</strong>{
-      ` personnel · ${formatCount(currentCount)} current · ${formatCount(formerCount)} former`
-    }
+    <strong>{formatCount(total)}</strong>
+    {` personnel · ${formatCount(currentCount)} current · ${formatCount(formerCount)} former`}
   </div>
 
   <div class="roster-controls">
-    {
-      showTools && (
-        <>
-          <div class="roster-facets" role="group" aria-label="Filter by status">
-            <button type="button" data-facet="all" aria-pressed="true">
-              All
-            </button>
-            <button type="button" data-facet="current" aria-pressed="false">
-              Current
-            </button>
-            <button type="button" data-facet="former" aria-pressed="false">
-              Former
-            </button>
-          </div>
-          <div class="roster-search">
-            <label class="visually-hidden" for="roster-filter">
-              Find an officer by name
-            </label>
-            <input
-              id="roster-filter"
-              type="search"
-              placeholder="Find an officer…"
-              autocomplete="off"
-              data-roster-input
-            />
-            <button
-              type="button"
-              class="roster-search-clear"
-              data-roster-clear
-              aria-label="Clear filter"
-              hidden
-            >
-              ×
-            </button>
-          </div>
-        </>
-      )
-    }
+    {showTools && (
+      <>
+        <div class="roster-facets" role="group" aria-label="Filter by status">
+          <button type="button" data-facet="all" aria-pressed="true">
+            All
+          </button>
+          <button type="button" data-facet="current" aria-pressed="false">
+            Current
+          </button>
+          <button type="button" data-facet="former" aria-pressed="false">
+            Former
+          </button>
+        </div>
+        <div class="roster-search">
+          <label class="visually-hidden" for="roster-filter">
+            Find an officer by name
+          </label>
+          <input
+            id="roster-filter"
+            type="search"
+            placeholder="Find an officer…"
+            autocomplete="off"
+            data-roster-input
+          />
+          <button
+            type="button"
+            class="roster-search-clear"
+            data-roster-clear
+            aria-label="Clear filter"
+            hidden
+          >
+            ×
+          </button>
+        </div>
+      </>
+    )}
     <label class="roster-discipline-filter">
       <input type="checkbox" data-roster-discipline />
       With discipline actions
     </label>
   </div>
 
-  {
-    showTools ? (
-      <nav class="roster-jump" aria-label="Jump to letter">
-        {alphabet.map((letter) =>
-          presentLetters.has(letter) ? (
-            <a href={`#${groupId(letter)}`} data-jump={letter}>
-              {letter}
-            </a>
-          ) : (
-            <span data-jump={letter} aria-hidden="true">
-              {letter}
-            </span>
-          ),
-        )}
-      </nav>
-    ) : null
-  }
+  {showTools ? (
+    <nav class="roster-jump" aria-label="Jump to letter">
+      {alphabet.map((letter) =>
+        presentLetters.has(letter) ? (
+          <a href={`#${groupId(letter)}`} data-jump={letter}>
+            {letter}
+          </a>
+        ) : (
+          <span data-jump={letter} aria-hidden="true">
+            {letter}
+          </span>
+        ),
+      )}
+    </nav>
+  ) : null}
 
   <div class="roster-list">
-    {
-      groups.map(([letter, groupRows]) => (
-        <section class="roster-letter" id={groupId(letter)} data-roster-group>
-          <h2>{letter}</h2>
-          <ul>
-            {groupRows.map((row) => (
-              <li
-                data-roster-item
-                data-name={row.search}
-                data-status={row.isFormer ? "former" : "current"}
-                data-discipline-count={row.personnelDisciplineCount}
-              >
-                {row.href ? (
-                  <a class="roster-name" href={row.href}>
-                    {row.label}
-                  </a>
-                ) : (
-                  <span class="roster-name roster-name--inert">
-                    {row.label}
-                  </span>
+    {groups.map(([letter, groupRows]) => (
+      <section class="roster-letter" id={groupId(letter)} data-roster-group>
+        <h2>{letter}</h2>
+        <ul>
+          {groupRows.map((row) => (
+            <li
+              data-roster-item
+              data-name={row.search}
+              data-status={row.isFormer ? "former" : "current"}
+              data-discipline-count={row.personnelDisciplineCount}
+            >
+              {row.href ? (
+                <a class="roster-name" href={row.href}>
+                  {row.label}
+                </a>
+              ) : (
+                <span class="roster-name roster-name--inert">{row.label}</span>
+              )}
+              <span class="roster-meta">
+                {row.meta}
+                {row.disciplineCount > 0 && row.href && (
+                  <>
+                    {" · "}
+                    <a href={`${row.href}#discipline`}>
+                      {`${row.disciplineCount.toLocaleString("en-US")} discipline record${row.disciplineCount === 1 ? "" : "s"}`}
+                    </a>
+                  </>
                 )}
-                <span class="roster-meta">
-                  {row.meta}
-                  {row.disciplineCount > 0 && row.href && (
-                    <>
-                      {" · "}
-                      <a href={`${row.href}#discipline`}>
-                        {`${row.disciplineCount.toLocaleString("en-US")} discipline record${row.disciplineCount === 1 ? "" : "s"}`}
-                      </a>
-                    </>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))
-    }
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
   </div>
 
   <p class="roster-empty" data-roster-empty hidden>

@@ -61,28 +61,24 @@ const serializedBreadcrumbData = breadcrumbData
 
 <nav aria-label="Breadcrumb" data-pagefind-ignore>
   <ol class:list={["crumbs", className]}>
-    {
-      normalizedItems.map((item) => (
-        <li aria-current={item.current ? "page" : undefined}>
-          {!item.current && item.href ? (
-            <a href={item.href}>{item.label}</a>
-          ) : (
-            item.label
-          )}
-        </li>
-      ))
-    }
+    {normalizedItems.map((item) => (
+      <li aria-current={item.current ? "page" : undefined}>
+        {!item.current && item.href ? (
+          <a href={item.href}>{item.label}</a>
+        ) : (
+          item.label
+        )}
+      </li>
+    ))}
   </ol>
 </nav>
-{
-  breadcrumbData ? (
-    <script
-      type="application/ld+json"
-      set:html={serializedBreadcrumbData}
-      is:inline
-    />
-  ) : null
-}
+{breadcrumbData ? (
+  <script
+    type="application/ld+json"
+    set:html={serializedBreadcrumbData}
+    is:inline
+  />
+) : null}
 
 <style>
   .crumbs {

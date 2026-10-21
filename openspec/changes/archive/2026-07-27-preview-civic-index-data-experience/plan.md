@@ -52,10 +52,7 @@ In `src/lib/data/civic-index.ts`, replace the generic guidance/trend/data panel 
 
 ```ts
 export type CivicIndexScope =
-  | "state"
-  | "administrative_area"
-  | "place"
-  | "agency";
+  "state" | "administrative_area" | "place" | "agency";
 
 export type CivicIndexPreviewMetric = {
   detail: string;

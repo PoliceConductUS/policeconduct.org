@@ -117,7 +117,8 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                   class="form-control"
                   id="pastEmployers"
                   name="pastEmployers"
-                  placeholder="Past employers"></textarea>
+                  placeholder="Past employers"
+                ></textarea>
                 <label for="pastEmployers">Past employers</label>
               </div>
               <div class="form-floating mb-3">
@@ -147,7 +148,8 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                   class="form-control"
                   id="socialLinks"
                   name="socialLinks"
-                  placeholder="Social media links"></textarea>
+                  placeholder="Social media links"
+                ></textarea>
                 <label for="socialLinks">Social media links</label>
                 <div class="form-text">
                   List any official or public social profiles, one per line.
@@ -158,7 +160,8 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                   class="form-control"
                   id="civilLitigation"
                   name="civilLitigation"
-                  placeholder="Civil litigation"></textarea>
+                  placeholder="Civil litigation"
+                ></textarea>
                 <label for="civilLitigation">Civil litigation</label>
                 <div class="form-text">
                   Include case numbers, court, and links if available.
@@ -206,9 +209,9 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                       name="submitterPhone"
                       placeholder="Phone"
                     />
-                    <label for="submitterPhone"
-                      >Submitter phone (optional)</label
-                    >
+                    <label for="submitterPhone">
+                      Submitter phone (optional)
+                    </label>
                   </div>
                 </div>
               </div>
@@ -261,7 +264,6 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
       });
     }
   </script>
-
   <script is:inline>
     window.__IPC_PREFILL__?.prefillFields?.({
       key: window.location.pathname,

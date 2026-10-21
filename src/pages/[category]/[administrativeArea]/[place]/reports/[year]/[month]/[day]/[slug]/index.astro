@@ -300,86 +300,68 @@ const structuredData = {
           {incidentTimeDisplay ? ` at ${incidentTimeDisplay}` : ""}
         </dd>
       </div>
-      {
-        reportAddress ? (
-          <div>
-            <dt>Location</dt>
-            <dd>{reportAddress}</dd>
-          </div>
-        ) : null
-      }
+      {reportAddress ? (
+        <div>
+          <dt>Location</dt>
+          <dd>{reportAddress}</dd>
+        </div>
+      ) : null}
       <div>
         <dt>Agency</dt>
         <dd>
           <a href={primaryAgencyPath}>{primaryAgencyName}</a>
         </dd>
       </div>
-      {
-        facts.submitterRelationship ? (
-          <div>
-            <dt>Submitted by</dt>
-            <dd>{facts.submitterRelationship}</dd>
-          </div>
-        ) : null
-      }
-      {
-        facts.interactionType ? (
-          <div>
-            <dt>Experience type</dt>
-            <dd>{facts.interactionType}</dd>
-          </div>
-        ) : null
-      }
-      {
-        facts.setting ? (
-          <div>
-            <dt>Setting</dt>
-            <dd>{facts.setting}</dd>
-          </div>
-        ) : null
-      }
-      {
-        facts.complaintFiled ? (
-          <div>
-            <dt>Complaint filed</dt>
-            <dd>{facts.complaintFiled}</dd>
-          </div>
-        ) : null
-      }
-      {
-        facts.caseNumber ? (
-          <div>
-            <dt>Case number</dt>
-            <dd>{facts.caseNumber}</dd>
-          </div>
-        ) : null
-      }
-      {
-        facts.bodycamRequested ? (
-          <div>
-            <dt>Bodycam requested</dt>
-            <dd>{facts.bodycamRequested}</dd>
-          </div>
-        ) : null
-      }
-      {
-        facts.charges ? (
-          <div>
-            <dt>Charges</dt>
-            <dd>{facts.charges}</dd>
-          </div>
-        ) : null
-      }
-      {
-        data.report.updated_at ? (
-          <div>
-            <>
-              <dt>Updated</dt>
-              <dd>{formatLongDate(data.report.updated_at)}</dd>
-            </>
-          </div>
-        ) : null
-      }
+      {facts.submitterRelationship ? (
+        <div>
+          <dt>Submitted by</dt>
+          <dd>{facts.submitterRelationship}</dd>
+        </div>
+      ) : null}
+      {facts.interactionType ? (
+        <div>
+          <dt>Experience type</dt>
+          <dd>{facts.interactionType}</dd>
+        </div>
+      ) : null}
+      {facts.setting ? (
+        <div>
+          <dt>Setting</dt>
+          <dd>{facts.setting}</dd>
+        </div>
+      ) : null}
+      {facts.complaintFiled ? (
+        <div>
+          <dt>Complaint filed</dt>
+          <dd>{facts.complaintFiled}</dd>
+        </div>
+      ) : null}
+      {facts.caseNumber ? (
+        <div>
+          <dt>Case number</dt>
+          <dd>{facts.caseNumber}</dd>
+        </div>
+      ) : null}
+      {facts.bodycamRequested ? (
+        <div>
+          <dt>Bodycam requested</dt>
+          <dd>{facts.bodycamRequested}</dd>
+        </div>
+      ) : null}
+      {facts.charges ? (
+        <div>
+          <dt>Charges</dt>
+          <dd>{facts.charges}</dd>
+        </div>
+      ) : null}
+      {data.report.updated_at ? (
+        <div>
+          <>
+            <dt>Updated</dt>
+            <dd>{formatLongDate(data.report.updated_at)}</dd>
+          </>
+        </div>
+      ) : null}
     </dl>
   </section>
 
@@ -390,64 +372,58 @@ const structuredData = {
         facts={facts}
       />
 
-      {
-        officers.length ? (
-          <>
-            <h3>People involved</h3>
-            {officers.map((entry) => (
-              <p>
-                <a href={entry.path}>
-                  {entry.officer!.first_name} {entry.officer!.last_name}
-                  {entry.officer!.suffix ? ` ${entry.officer!.suffix}` : ""}
-                </a>
-                {entry.agencyOfficer.title
-                  ? ` — ${entry.agencyOfficer.title}`
-                  : ""}
-                {entry.badge ? ` — Badge ${entry.badge}` : ""}
-                {" · "}
-                <a
-                  href={
-                    (
-                      entry.agency as typeof entry.agency & {
-                        canonicalPath: string;
-                      }
-                    ).canonicalPath
-                  }
-                >
-                  {entry.agency!.name}
-                </a>
-              </p>
-            ))}
-          </>
-        ) : null
-      }
+      {officers.length ? (
+        <>
+          <h3>People involved</h3>
+          {officers.map((entry) => (
+            <p>
+              <a href={entry.path}>
+                {entry.officer!.first_name} {entry.officer!.last_name}
+                {entry.officer!.suffix ? ` ${entry.officer!.suffix}` : ""}
+              </a>
+              {entry.agencyOfficer.title
+                ? ` — ${entry.agencyOfficer.title}`
+                : ""}
+              {entry.badge ? ` — Badge ${entry.badge}` : ""}
+              {" · "}
+              <a
+                href={
+                  (
+                    entry.agency as typeof entry.agency & {
+                      canonicalPath: string;
+                    }
+                  ).canonicalPath
+                }
+              >
+                {entry.agency!.name}
+              </a>
+            </p>
+          ))}
+        </>
+      ) : null}
 
-      {
-        evidenceLinks.length ? (
-          <>
-            <h3>Records and evidence</h3>
-            {evidenceLinks.map((link) => (
-              <p>
-                <a
-                  href={
-                    getVideoEmbedUrl(link.url)
-                      ? `${data.canonicalPath}watch/${link.id}/`
-                      : link.url
-                  }
-                  target={getVideoEmbedUrl(link.url) ? undefined : "_blank"}
-                  rel={
-                    getVideoEmbedUrl(link.url)
-                      ? undefined
-                      : "noopener noreferrer"
-                  }
-                >
-                  {link.title}
-                </a>
-              </p>
-            ))}
-          </>
-        ) : null
-      }
+      {evidenceLinks.length ? (
+        <>
+          <h3>Records and evidence</h3>
+          {evidenceLinks.map((link) => (
+            <p>
+              <a
+                href={
+                  getVideoEmbedUrl(link.url)
+                    ? `${data.canonicalPath}watch/${link.id}/`
+                    : link.url
+                }
+                target={getVideoEmbedUrl(link.url) ? undefined : "_blank"}
+                rel={
+                  getVideoEmbedUrl(link.url) ? undefined : "noopener noreferrer"
+                }
+              >
+                {link.title}
+              </a>
+            </p>
+          ))}
+        </>
+      ) : null}
     </article>
   </div>
 

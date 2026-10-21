@@ -12,109 +12,107 @@ const formatRecordedDate = (value: string) =>
 ---
 
 <div class="personnel-post-list">
-  {
-    records.map((record) => (
-      <article
-        class="personnel-post-record"
-        data-personnel-discipline-id={record.id}
-      >
-        <div class="personnel-post-summary">
-          <h3>{record.action}</h3>
-          <a href={record.authority.href}>
-            {record.authority.abbreviation || record.authority.name}
-          </a>
-        </div>
-        <dl class="personnel-post-facts">
-          {record.effectiveDate && (
-            <div>
-              <dt>Effective date</dt>
-              <dd>{formatRecordedDate(record.effectiveDate)}</dd>
-            </div>
-          )}
-          {record.caseNumber && (
-            <div>
-              <dt>Case number</dt>
-              <dd>{record.caseNumber}</dd>
-            </div>
-          )}
-          {record.agencies.length > 0 && (
-            <div>
-              <dt>Linked agencies</dt>
-              <dd>
-                <ul class="personnel-post-agencies">
-                  {record.agencies.map((agency) => (
-                    <li>{agency.name}</li>
-                  ))}
-                </ul>
-              </dd>
-            </div>
-          )}
+  {records.map((record) => (
+    <article
+      class="personnel-post-record"
+      data-personnel-discipline-id={record.id}
+    >
+      <div class="personnel-post-summary">
+        <h3>{record.action}</h3>
+        <a href={record.authority.href}>
+          {record.authority.abbreviation || record.authority.name}
+        </a>
+      </div>
+      <dl class="personnel-post-facts">
+        {record.effectiveDate && (
+          <div>
+            <dt>Effective date</dt>
+            <dd>{formatRecordedDate(record.effectiveDate)}</dd>
+          </div>
+        )}
+        {record.caseNumber && (
+          <div>
+            <dt>Case number</dt>
+            <dd>{record.caseNumber}</dd>
+          </div>
+        )}
+        {record.agencies.length > 0 && (
+          <div>
+            <dt>Linked agencies</dt>
+            <dd>
+              <ul class="personnel-post-agencies">
+                {record.agencies.map((agency) => (
+                  <li>{agency.name}</li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+        )}
+      </dl>
+      {record.allegation && (
+        <dl class="personnel-post-details">
+          <div>
+            <dt>Allegation</dt>
+            <dd>{record.allegation}</dd>
+          </div>
         </dl>
-        {record.allegation && (
+      )}
+      {(record.expirationDate ||
+        record.documentUrl ||
+        record.violation ||
+        record.finding ||
+        record.chiefAction ||
+        record.sanction) && (
+        <details>
+          <summary>
+            Record details
+            <span class="visually-hidden">
+              {" "}
+              for {record.action}
+              {record.caseNumber && `, case ${record.caseNumber}`}
+            </span>
+          </summary>
           <dl class="personnel-post-details">
-            <div>
-              <dt>Allegation</dt>
-              <dd>{record.allegation}</dd>
-            </div>
-          </dl>
-        )}
-        {(record.expirationDate ||
-          record.documentUrl ||
-          record.violation ||
-          record.finding ||
-          record.chiefAction ||
-          record.sanction) && (
-          <details>
-            <summary>
-              Record details
-              <span class="visually-hidden">
-                {" "}
-                for {record.action}
-                {record.caseNumber && `, case ${record.caseNumber}`}
-              </span>
-            </summary>
-            <dl class="personnel-post-details">
-              {record.expirationDate && (
-                <div>
-                  <dt>End date</dt>
-                  <dd>{formatRecordedDate(record.expirationDate)}</dd>
-                </div>
-              )}
-              {record.violation && (
-                <div>
-                  <dt>Rule violation</dt>
-                  <dd>{record.violation}</dd>
-                </div>
-              )}
-              {record.finding && (
-                <div>
-                  <dt>Finding</dt>
-                  <dd>{record.finding}</dd>
-                </div>
-              )}
-              {record.chiefAction && (
-                <div>
-                  <dt>Chief's action</dt>
-                  <dd>{record.chiefAction}</dd>
-                </div>
-              )}
-              {record.sanction && (
-                <div>
-                  <dt>Penalty</dt>
-                  <dd>{record.sanction}</dd>
-                </div>
-              )}
-            </dl>
-            {record.documentUrl && (
-              <a href={record.documentUrl} target="_blank" rel="noopener">
-                Source document
-              </a>
+            {record.expirationDate && (
+              <div>
+                <dt>End date</dt>
+                <dd>{formatRecordedDate(record.expirationDate)}</dd>
+              </div>
             )}
-          </details>
-        )}
-      </article>
-    ))
-  }
+            {record.violation && (
+              <div>
+                <dt>Rule violation</dt>
+                <dd>{record.violation}</dd>
+              </div>
+            )}
+            {record.finding && (
+              <div>
+                <dt>Finding</dt>
+                <dd>{record.finding}</dd>
+              </div>
+            )}
+            {record.chiefAction && (
+              <div>
+                <dt>Chief's action</dt>
+                <dd>{record.chiefAction}</dd>
+              </div>
+            )}
+            {record.sanction && (
+              <div>
+                <dt>Penalty</dt>
+                <dd>{record.sanction}</dd>
+              </div>
+            )}
+          </dl>
+          {record.documentUrl && (
+            <a href={record.documentUrl} target="_blank" rel="noopener">
+              Source document
+            </a>
+          )}
+        </details>
+      )}
+    </article>
+  ))}
 </div>
 
 <style>

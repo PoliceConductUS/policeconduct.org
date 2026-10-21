@@ -59,29 +59,27 @@ const pageDescription =
 
   <section class="civic-section civic-section--last">
     <div class="profile-record-list">
-      {
-        page.data.map((caseItem) => (
-          <article class="profile-record">
-            <div class="profile-record-meta">
-              <span>{formatLongDate(caseItem.filed_date)}</span>
-              {caseItem.court ? <span>{caseItem.court}</span> : null}
+      {page.data.map((caseItem) => (
+        <article class="profile-record">
+          <div class="profile-record-meta">
+            <span>{formatLongDate(caseItem.filed_date)}</span>
+            {caseItem.court ? <span>{caseItem.court}</span> : null}
+          </div>
+          <div class="profile-record-body">
+            <h2 class="profile-record-title">
+              <a href={`/civil-cases/${caseItem.slug}/`}>{caseItem.title}</a>
+            </h2>
+            <div class="profile-record-detail">
+              {caseItem.cause_number ? (
+                <span>{caseItem.cause_number}</span>
+              ) : null}
+              {caseItem.claims_summary ? (
+                <span>{caseItem.claims_summary}</span>
+              ) : null}
             </div>
-            <div class="profile-record-body">
-              <h2 class="profile-record-title">
-                <a href={`/civil-cases/${caseItem.slug}/`}>{caseItem.title}</a>
-              </h2>
-              <div class="profile-record-detail">
-                {caseItem.cause_number ? (
-                  <span>{caseItem.cause_number}</span>
-                ) : null}
-                {caseItem.claims_summary ? (
-                  <span>{caseItem.claims_summary}</span>
-                ) : null}
-              </div>
-            </div>
-          </article>
-        ))
-      }
+          </div>
+        </article>
+      ))}
     </div>
     <Pagination
       basePath="/civil-cases/"

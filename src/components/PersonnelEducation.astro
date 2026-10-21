@@ -20,7 +20,9 @@ const formatRecordedDate = (value: string) =>
         type="search"
         aria-controls="personnel-education-records"
       />
-      <button type="button" data-education-clear>Clear search</button>
+      <button type="button" data-education-clear>
+        Clear search
+      </button>
     </div>
     <div class="education-paging">
       <p
@@ -28,60 +30,61 @@ const formatRecordedDate = (value: string) =>
         aria-live="polite"
         aria-atomic="true"
         data-education-status
-      >
-      </p>
+      ></p>
       <div class="education-page-buttons">
         <button
           type="button"
           data-education-previous
-          aria-controls="personnel-education-records">Previous</button
+          aria-controls="personnel-education-records"
         >
+          Previous
+        </button>
         <button
           type="button"
           data-education-next
-          aria-controls="personnel-education-records">Next</button
+          aria-controls="personnel-education-records"
         >
+          Next
+        </button>
       </div>
     </div>
   </div>
   <div id="personnel-education-records">
-    {
-      records.map((record) => (
-        <article
-          class="education-record"
-          data-education-id={record.id}
-          data-search={`${record.name} ${record.sponsorName ?? ""} ${record.sponsorInstructor ?? ""}`}
-        >
-          <strong>{record.name}</strong>
-          <dl>
-            {record.completionDate && (
-              <div>
-                <dt>Completed</dt>
-                <dd>{formatRecordedDate(record.completionDate)}</dd>
-              </div>
-            )}
-            {record.credits !== null && (
-              <div>
-                <dt>Credits</dt>
-                <dd>{record.credits}</dd>
-              </div>
-            )}
-            {record.sponsorName && (
-              <div>
-                <dt>Sponsor</dt>
-                <dd>{record.sponsorName}</dd>
-              </div>
-            )}
-            {record.sponsorInstructor && (
-              <div>
-                <dt>Instructor</dt>
-                <dd>{record.sponsorInstructor}</dd>
-              </div>
-            )}
-          </dl>
-        </article>
-      ))
-    }
+    {records.map((record) => (
+      <article
+        class="education-record"
+        data-education-id={record.id}
+        data-search={`${record.name} ${record.sponsorName ?? ""} ${record.sponsorInstructor ?? ""}`}
+      >
+        <strong>{record.name}</strong>
+        <dl>
+          {record.completionDate && (
+            <div>
+              <dt>Completed</dt>
+              <dd>{formatRecordedDate(record.completionDate)}</dd>
+            </div>
+          )}
+          {record.credits !== null && (
+            <div>
+              <dt>Credits</dt>
+              <dd>{record.credits}</dd>
+            </div>
+          )}
+          {record.sponsorName && (
+            <div>
+              <dt>Sponsor</dt>
+              <dd>{record.sponsorName}</dd>
+            </div>
+          )}
+          {record.sponsorInstructor && (
+            <div>
+              <dt>Instructor</dt>
+              <dd>{record.sponsorInstructor}</dd>
+            </div>
+          )}
+        </dl>
+      </article>
+    ))}
   </div>
 </div>
 

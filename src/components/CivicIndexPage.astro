@@ -64,32 +64,28 @@ const statColumns = model.statCells.length + 1;
   heading={heading}
   lede={model.description}
 >
-  {
-    authorityHref && (
-      <a slot="actions" href={authorityHref}>
-        Licensing authority
-      </a>
-    )
-  }
+  {authorityHref && (
+    <a slot="actions" href={authorityHref}>
+      Licensing authority
+    </a>
+  )}
   <StatStrip
     ariaLabel={`${heading} coverage totals`}
     drillFirst
     columns={statColumns === 4 ? "three-plus-jump" : "four-plus-jump"}
   >
-    {
-      model.statCells.map((cell) => (
-        <StatCell
-          label={cell.label}
-          value={cell.value}
-          meta={cell.meta}
-          href={cell.href}
-          actionLabel={cell.actionLabel}
-          role={cell.role}
-          helpCollectHref={cell.pendingHelp?.href}
-          helpCollectLabel={cell.pendingHelp?.label}
-        />
-      ))
-    }
+    {model.statCells.map((cell) => (
+      <StatCell
+        label={cell.label}
+        value={cell.value}
+        meta={cell.meta}
+        href={cell.href}
+        actionLabel={cell.actionLabel}
+        role={cell.role}
+        helpCollectHref={cell.pendingHelp?.href}
+        helpCollectLabel={cell.pendingHelp?.label}
+      />
+    ))}
     <StatCell
       drill
       childCount={model.jumpCell.count}
@@ -104,19 +100,17 @@ const statColumns = model.statCells.length + 1;
 
   <section class="civic-section" aria-label="Additional civic metrics">
     <ul class="topic-row">
-      {
-        model.pendingTopics.map((topic) => (
-          <StatCell
-            variant="topic"
-            label={topic.label}
-            gloss={topic.gloss}
-            role={topic.role}
-            empty
-            helpCollectHref={topic.help.href}
-            helpCollectLabel={topic.help.label}
-          />
-        ))
-      }
+      {model.pendingTopics.map((topic) => (
+        <StatCell
+          variant="topic"
+          label={topic.label}
+          gloss={topic.gloss}
+          role={topic.role}
+          empty
+          helpCollectHref={topic.help.href}
+          helpCollectLabel={topic.help.label}
+        />
+      ))}
     </ul>
   </section>
 
@@ -126,7 +120,9 @@ const statColumns = model.statCells.length + 1;
     <ul class="entity-side-list">
       <li>
         <span>Share an experience</span>
-        <a class="entity-side-link" href="/report/new/">Start</a>
+        <a class="entity-side-link" href="/report/new/">
+          Start
+        </a>
       </li>
       <li>
         <span>Add an agency</span>

@@ -181,80 +181,66 @@ const structuredData = {
 
   <section class="civic-section">
     <dl class="fact-list">
-      {
-        data.civilCase.cause_number ? (
-          <div>
-            <dt>Cause number</dt>
-            <dd>{data.civilCase.cause_number}</dd>
-          </div>
-        ) : null
-      }
-      {
-        data.civilCase.court ? (
-          <div>
-            <dt>Court</dt>
-            <dd>{data.civilCase.court}</dd>
-          </div>
-        ) : null
-      }
+      {data.civilCase.cause_number ? (
+        <div>
+          <dt>Cause number</dt>
+          <dd>{data.civilCase.cause_number}</dd>
+        </div>
+      ) : null}
+      {data.civilCase.court ? (
+        <div>
+          <dt>Court</dt>
+          <dd>{data.civilCase.court}</dd>
+        </div>
+      ) : null}
       <div>
         <dt>Filed</dt>
         <dd>{formatLongDate(data.civilCase.filed_date)}</dd>
       </div>
-      {
-        data.civilCase.date_terminated ? (
-          <div>
-            <>
-              <dt>Closed</dt>
-              <dd>{formatLongDate(data.civilCase.date_terminated)}</dd>
-            </>
-          </div>
-        ) : null
-      }
-      {
-        data.civilCase.location_path ? (
-          <div>
-            <>
-              <dt>Incident location</dt>
-              <dd>
-                <a href={data.civilCase.location_path}>
-                  {data.civilCase.location_name!}
-                </a>
-              </dd>
-            </>
-          </div>
-        ) : null
-      }
-      {
-        data.civilCase.updated_at ? (
-          <div>
-            <>
-              <dt>Updated</dt>
-              <dd>{formatLongDate(data.civilCase.updated_at)}</dd>
-            </>
-          </div>
-        ) : null
-      }
-      {
-        data.civilCase.outcome ? (
-          <div>
-            <dt>Outcome</dt>
-            <dd>{data.civilCase.outcome}</dd>
-          </div>
-        ) : null
-      }
-      {
-        caseMetaItems.map((item) => (
-          <div>
-            <dt>{item.label}</dt>
+      {data.civilCase.date_terminated ? (
+        <div>
+          <>
+            <dt>Closed</dt>
+            <dd>{formatLongDate(data.civilCase.date_terminated)}</dd>
+          </>
+        </div>
+      ) : null}
+      {data.civilCase.location_path ? (
+        <div>
+          <>
+            <dt>Incident location</dt>
             <dd>
-              <a href={item.href} target="_blank" rel="noopener noreferrer">
-                {item.value}
+              <a href={data.civilCase.location_path}>
+                {data.civilCase.location_name!}
               </a>
             </dd>
-          </div>
-        ))
-      }
+          </>
+        </div>
+      ) : null}
+      {data.civilCase.updated_at ? (
+        <div>
+          <>
+            <dt>Updated</dt>
+            <dd>{formatLongDate(data.civilCase.updated_at)}</dd>
+          </>
+        </div>
+      ) : null}
+      {data.civilCase.outcome ? (
+        <div>
+          <dt>Outcome</dt>
+          <dd>{data.civilCase.outcome}</dd>
+        </div>
+      ) : null}
+      {caseMetaItems.map((item) => (
+        <div>
+          <dt>{item.label}</dt>
+          <dd>
+            <a href={item.href} target="_blank" rel="noopener noreferrer">
+              {item.value}
+            </a>
+          </dd>
+        </div>
+      ))}
     </dl>
   </section>
 
@@ -263,66 +249,56 @@ const structuredData = {
       <h2>What the complaint says</h2>
       <p>{data.civilCase.claims_summary}</p>
 
-      {
-        data.officers.length ? (
-          <>
-            <h3>Personnel named in this case</h3>
-            {data.officers.map((officer) => (
-              <p>
-                <a href={`/personnel/${officer.slug}/`}>
-                  {officer.first_name} {officer.last_name}
-                </a>
-                {officer.title ? ` — ${officer.title}` : ""}
-              </p>
-            ))}
-          </>
-        ) : null
-      }
+      {data.officers.length ? (
+        <>
+          <h3>Personnel named in this case</h3>
+          {data.officers.map((officer) => (
+            <p>
+              <a href={`/personnel/${officer.slug}/`}>
+                {officer.first_name} {officer.last_name}
+              </a>
+              {officer.title ? ` — ${officer.title}` : ""}
+            </p>
+          ))}
+        </>
+      ) : null}
 
-      {
-        data.agencies.length ? (
-          <>
-            <h3>Agencies</h3>
-            {data.agencies.map((agency) => (
-              <p>
-                <a href={agency.canonicalPath}>{agency.name}</a>
-                {agency.city || agency.state
-                  ? ` — ${[agency.city, agency.state]
-                      .filter(Boolean)
-                      .join(", ")}`
-                  : ""}
-              </p>
-            ))}
-          </>
-        ) : null
-      }
+      {data.agencies.length ? (
+        <>
+          <h3>Agencies</h3>
+          {data.agencies.map((agency) => (
+            <p>
+              <a href={agency.canonicalPath}>{agency.name}</a>
+              {agency.city || agency.state
+                ? ` — ${[agency.city, agency.state].filter(Boolean).join(", ")}`
+                : ""}
+            </p>
+          ))}
+        </>
+      ) : null}
 
-      {
-        coverageLinks.length ? (
-          <>
-            <h3>Related links</h3>
-            {coverageLinks.map((link) => (
-              <p>
-                <a
-                  href={
-                    getVideoEmbedUrl(link.url)
-                      ? `${casePath}watch/${link.id}/`
-                      : link.url
-                  }
-                  target={getVideoEmbedUrl(link.url) ? undefined : "_blank"}
-                  rel={
-                    getVideoEmbedUrl(link.url)
-                      ? undefined
-                      : "noopener noreferrer"
-                  }
-                >
-                  {link.title}
-                </a>
-              </p>
-            ))}
-          </>
-        ) : null
-      }
+      {coverageLinks.length ? (
+        <>
+          <h3>Related links</h3>
+          {coverageLinks.map((link) => (
+            <p>
+              <a
+                href={
+                  getVideoEmbedUrl(link.url)
+                    ? `${casePath}watch/${link.id}/`
+                    : link.url
+                }
+                target={getVideoEmbedUrl(link.url) ? undefined : "_blank"}
+                rel={
+                  getVideoEmbedUrl(link.url) ? undefined : "noopener noreferrer"
+                }
+              >
+                {link.title}
+              </a>
+            </p>
+          ))}
+        </>
+      ) : null}
 
       <p class="civic-limit-note">
         The summary above describes allegations and outcomes from court filings.

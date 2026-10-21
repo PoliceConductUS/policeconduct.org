@@ -93,11 +93,9 @@ const serializeStructuredData = (value: unknown) =>
     <meta name="robots" content={robotsContent} />
     <meta name="author" content={ORG_LEGAL_NAME} />
     {title ? <meta property="og:title" content={title} /> : null}
-    {
-      description ? (
-        <meta property="og:description" content={description} />
-      ) : null
-    }
+    {description ? (
+      <meta property="og:description" content={description} />
+    ) : null}
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalHref} />
     <meta property="og:site_name" content="PoliceConduct.org" />
@@ -105,38 +103,42 @@ const serializeStructuredData = (value: unknown) =>
     <meta property="og:image:alt" content="PoliceConduct.org overview" />
     <meta name="twitter:card" content="summary_large_image" />
     {title ? <meta name="twitter:title" content={title} /> : null}
-    {
-      description ? (
-        <meta name="twitter:description" content={description} />
-      ) : null
-    }
+    {description ? (
+      <meta name="twitter:description" content={description} />
+    ) : null}
     <meta name="twitter:image" content={socialImageUrl} />
 
     <meta name="HandheldFriendly" content="true" />
-    {
-      structuredDataEntries.length
-        ? structuredDataEntries.map((entry) => (
-            <script
-              type="application/ld+json"
-              set:html={serializeStructuredData(entry)}
-              is:inline
-            />
-          ))
-        : null
-    }
+    {structuredDataEntries.length
+      ? structuredDataEntries.map((entry) => (
+          <script
+            type="application/ld+json"
+            set:html={serializeStructuredData(entry)}
+            is:inline
+          />
+        ))
+      : null}
     <title>{title}</title>
     <GoogleAnalytics />
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to main content</a>
+    <a class="skip-link" href="#main">
+      Skip to main content
+    </a>
 
     <header class="masthead" data-pagefind-ignore>
       <div class="container">
-        <a class="masthead-mark" href="/">Police<span>Conduct</span>.org</a>
+        <a class="masthead-mark" href="/">
+          Police<span>Conduct</span>.org
+        </a>
         <MastheadSearch />
         <nav class="masthead-nav" aria-label="Primary">
-          <a class="masthead-nav-link" href="/news/">News</a>
-          <a class="masthead-nav-link" href="/donate/">Donate</a>
+          <a class="masthead-nav-link" href="/news/">
+            News
+          </a>
+          <a class="masthead-nav-link" href="/donate/">
+            Donate
+          </a>
           <a class="nav-action nav-action-share" href="/report/new/">
             Share an experience
           </a>
@@ -151,63 +153,65 @@ const serializeStructuredData = (value: unknown) =>
 
     <footer class="border-top mt-auto d-print-none" data-pagefind-ignore>
       <div class="container py-5">
-        <div
-          class="d-flex justify-content-center align-items-center gap-4 mb-4"
-        >
-          {
-            ORG_SOCIAL_LINKS.map((social) => (
-              <a
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-muted"
-              >
-                <svg width="24" height="24" aria-hidden="true">
-                  <use href={`/icons.svg#${social.iconId}`} />
-                </svg>
-                <span class="visually-hidden">{social.label}</span>
-              </a>
-            ))
-          }
+        <div class="d-flex justify-content-center align-items-center gap-4 mb-4">
+          {ORG_SOCIAL_LINKS.map((social) => (
+            <a
+              href={social.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-muted"
+            >
+              <svg width="24" height="24" aria-hidden="true">
+                <use href={`/icons.svg#${social.iconId}`} />
+              </svg>
+              <span class="visually-hidden">{social.label}</span>
+            </a>
+          ))}
         </div>
         <div class="row g-4 mb-4">
           <div class="col-12 col-md">
             <h3 class="ipc-subsection-title mb-3">About</h3>
             <ul class="list-unstyled text-muted mb-0">
               <li class="mb-2">
-                <a class="text-muted text-decoration-none" href="/about"
-                  >About Us</a
-                >
+                <a class="text-muted text-decoration-none" href="/about">
+                  About Us
+                </a>
               </li>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/about/financial-reports">Financial Reports</a
+                  href="/about/financial-reports"
                 >
+                  Financial Reports
+                </a>
               </li>
               <li class="mb-2">
-                <a class="text-muted text-decoration-none" href="/about/board"
-                  >Board of Directors</a
-                >
+                <a class="text-muted text-decoration-none" href="/about/board">
+                  Board of Directors
+                </a>
               </li>
               <li class="mb-2">
-                <a class="text-muted text-decoration-none" href="/about/contact"
-                  >Contact Us</a
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/about/contact"
                 >
+                  Contact Us
+                </a>
               </li>
               <li class="mb-2">
-                <a class="text-muted text-decoration-none" href="/news/">News</a
-                >
+                <a class="text-muted text-decoration-none" href="/news/">
+                  News
+                </a>
               </li>
               <li class="mb-2">
-                <a class="text-muted text-decoration-none" href="/donate/"
-                  >Donate</a
-                >
+                <a class="text-muted text-decoration-none" href="/donate/">
+                  Donate
+                </a>
               </li>
               <li class="mb-2">
-                <a class="text-muted text-decoration-none" href="/volunteer/"
-                  >Volunteer</a
-                >
+                <a class="text-muted text-decoration-none" href="/volunteer/">
+                  Volunteer
+                </a>
               </li>
             </ul>
             <p class="text-muted small mt-3 mb-0">
@@ -233,24 +237,31 @@ const serializeStructuredData = (value: unknown) =>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/data-and-methods/">Data and Methods</a
+                  href="/data-and-methods/"
                 >
-              </li>
-              <li class="mb-2">
-                <a class="text-muted text-decoration-none" href="/find-records/"
-                  >Find Records</a
-                >
-              </li>
-              <li class="mb-2">
-                <a class="text-muted text-decoration-none" href="/civil-cases/"
-                  >Civil Cases</a
-                >
+                  Data and Methods
+                </a>
               </li>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/frequently-asked-questions/">FAQ</a
+                  href="/find-records/"
                 >
+                  Find Records
+                </a>
+              </li>
+              <li class="mb-2">
+                <a class="text-muted text-decoration-none" href="/civil-cases/">
+                  Civil Cases
+                </a>
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/frequently-asked-questions/"
+                >
+                  FAQ
+                </a>
               </li>
             </ul>
           </div>
@@ -260,25 +271,34 @@ const serializeStructuredData = (value: unknown) =>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/partner/academic">Academic / Research Institutions</a
+                  href="/partner/academic"
                 >
+                  Academic / Research Institutions
+                </a>
               </li>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/partner/law-firm">Law Firm</a
+                  href="/partner/law-firm"
                 >
-              </li>
-              <li class="mb-2">
-                <a class="text-muted text-decoration-none" href="/partner/media"
-                  >Media and Journalism</a
-                >
+                  Law Firm
+                </a>
               </li>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/partner/nonprofit">Non profit / Advocacy Group</a
+                  href="/partner/media"
                 >
+                  Media and Journalism
+                </a>
+              </li>
+              <li class="mb-2">
+                <a
+                  class="text-muted text-decoration-none"
+                  href="/partner/nonprofit"
+                >
+                  Non profit / Advocacy Group
+                </a>
               </li>
             </ul>
           </div>
@@ -289,13 +309,15 @@ const serializeStructuredData = (value: unknown) =>
                 <a
                   class="text-muted text-decoration-none"
                   href="#report-issue"
-                  data-issue-message={issueMessage}>Report a site issue</a
+                  data-issue-message={issueMessage}
                 >
+                  Report a site issue
+                </a>
               </li>
               <li class="mb-2">
-                <a class="text-muted text-decoration-none" href="/help-center"
-                  >Help Center</a
-                >
+                <a class="text-muted text-decoration-none" href="/help-center">
+                  Help Center
+                </a>
               </li>
 
               <li class="mb-2">
@@ -352,64 +374,82 @@ const serializeStructuredData = (value: unknown) =>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/legal-notice/acceptable-use">Acceptable Use Policy</a
+                  href="/legal-notice/acceptable-use"
                 >
+                  Acceptable Use Policy
+                </a>
               </li>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/legal-notice/comment-policy">Comment Policy</a
+                  href="/legal-notice/comment-policy"
                 >
+                  Comment Policy
+                </a>
               </li>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
                   href="/legal-notice/community-guidelines"
-                  >Community Guidelines</a
                 >
+                  Community Guidelines
+                </a>
               </li>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/legal-notice/cookie">Cookie Policy</a
+                  href="/legal-notice/cookie"
                 >
+                  Cookie Policy
+                </a>
               </li>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
                   href="/legal-notice/data-subject-access-request"
-                  >Data Subject Access Request</a
                 >
+                  Data Subject Access Request
+                </a>
               </li>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/legal-notice/disclaimer">Disclaimer Policy</a
+                  href="/legal-notice/disclaimer"
                 >
+                  Disclaimer Policy
+                </a>
               </li>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/legal-notice/eula">End User License Agreement</a
+                  href="/legal-notice/eula"
                 >
+                  End User License Agreement
+                </a>
               </li>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/legal-notice/privacy">Privacy Policy</a
+                  href="/legal-notice/privacy"
                 >
+                  Privacy Policy
+                </a>
               </li>
               <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
-                  href="/legal-notice/refund">Refund Policy</a
+                  href="/legal-notice/refund"
                 >
+                  Refund Policy
+                </a>
               </li>
               <li>
                 <a
                   class="text-muted text-decoration-none"
-                  href="/legal-notice/terms-of-service">Terms of Service</a
+                  href="/legal-notice/terms-of-service"
                 >
+                  Terms of Service
+                </a>
               </li>
             </ul>
           </div>
@@ -428,8 +468,11 @@ const serializeStructuredData = (value: unknown) =>
             them as established fact. See our{" "}
             <a
               class="text-muted text-decoration-underline"
-              href="/legal-notice/terms-of-service">Terms of Service</a
-            >.
+              href="/legal-notice/terms-of-service"
+            >
+              Terms of Service
+            </a>
+            .
           </p>
           <p class="mb-1">{ORG_LEGAL_NAME}</p>
           <p class="mb-1">{ORG_ADDRESS.streetAddress}</p>
@@ -441,12 +484,12 @@ const serializeStructuredData = (value: unknown) =>
             <a
               class="text-muted text-decoration-none"
               href="/about/contact/"
-              data-issue-message={issueMessage}>Report issue</a
+              data-issue-message={issueMessage}
             >
+              Report issue
+            </a>
           </p>
-          <p class="mb-0">
-            © 2026 {ORG_LEGAL_NAME} All rights reserved.
-          </p>
+          <p class="mb-0">© 2026 {ORG_LEGAL_NAME} All rights reserved.</p>
         </div>
       </div>
     </footer>

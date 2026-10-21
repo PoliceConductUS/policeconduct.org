@@ -89,9 +89,9 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                   name="jurisdiction"
                   placeholder="Jurisdiction (city/state/federal)"
                 />
-                <label for="jurisdiction"
-                  >Jurisdiction (city/state/federal)</label
-                >
+                <label for="jurisdiction">
+                  Jurisdiction (city/state/federal)
+                </label>
               </div>
               <div class="form-floating mb-3">
                 <input
@@ -118,7 +118,8 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                   class="form-control"
                   id="pastAgencyInfo"
                   name="pastAgencyInfo"
-                  placeholder="Past agency information"></textarea>
+                  placeholder="Past agency information"
+                ></textarea>
                 <label for="pastAgencyInfo">Past agency information</label>
               </div>
               <div class="form-floating mb-3">
@@ -148,7 +149,8 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                   class="form-control"
                   id="socialLinks"
                   name="socialLinks"
-                  placeholder="Social media links"></textarea>
+                  placeholder="Social media links"
+                ></textarea>
                 <label for="socialLinks">Social media links</label>
                 <div class="form-text">
                   List any official or public social profiles, one per line.
@@ -159,9 +161,11 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                   class="form-control"
                   id="civilLitigation"
                   name="civilLitigation"
-                  placeholder="Civil litigation corrections"></textarea>
-                <label for="civilLitigation">Civil litigation corrections</label
-                >
+                  placeholder="Civil litigation corrections"
+                ></textarea>
+                <label for="civilLitigation">
+                  Civil litigation corrections
+                </label>
                 <div class="form-text">
                   Include case numbers, court, and links if available.
                 </div>
@@ -208,9 +212,9 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
                       name="submitterPhone"
                       placeholder="Phone"
                     />
-                    <label for="submitterPhone"
-                      >Submitter phone (optional)</label
-                    >
+                    <label for="submitterPhone">
+                      Submitter phone (optional)
+                    </label>
                   </div>
                 </div>
               </div>
@@ -263,7 +267,6 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
       });
     }
   </script>
-
   <script is:inline>
     const prefill = window.__IPC_PREFILL__;
     if (prefill?.prefillFields) {

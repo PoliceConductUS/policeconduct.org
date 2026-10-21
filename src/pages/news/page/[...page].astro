@@ -73,50 +73,41 @@ const structuredData = buildCollectionPage({
   <section class="py-vh-2">
     <div class="container">
       <div class="list-group shadow-sm">
-        {
-          page.data.map((article: NewsMeta) => (
-            <a
-              class="list-group-item list-group-item-action"
-              href={article.href}
-            >
-              <div class="row g-2 align-items-start">
-                <div class="col">
-                  <div class="text-uppercase small text-muted">
-                    {formatNewsDate(article.date)}
-                  </div>
-                  <div class="fw-semibold">{article.title}</div>
-                  <p class="mb-1 text-muted">{article.description}</p>
+        {page.data.map((article: NewsMeta) => (
+          <a class="list-group-item list-group-item-action" href={article.href}>
+            <div class="row g-2 align-items-start">
+              <div class="col">
+                <div class="text-uppercase small text-muted">
+                  {formatNewsDate(article.date)}
                 </div>
-                {article.badge ? (
-                  <div class="col-auto">
-                    <span class={newsBadgeClassName(article.badge)}>
-                      {article.badge}
-                    </span>
-                  </div>
-                ) : null}
+                <div class="fw-semibold">{article.title}</div>
+                <p class="mb-1 text-muted">{article.description}</p>
               </div>
-            </a>
-          ))
-        }
+              {article.badge ? (
+                <div class="col-auto">
+                  <span class={newsBadgeClassName(article.badge)}>
+                    {article.badge}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          </a>
+        ))}
       </div>
 
       <div class="d-flex justify-content-between gap-2 mt-3">
-        {
-          prevUrl ? (
-            <a class="btn btn-outline-dark rounded-0" href={prevUrl}>
-              Newer News
-            </a>
-          ) : (
-            <span />
-          )
-        }
-        {
-          nextUrl ? (
-            <a class="btn btn-outline-dark rounded-0" href={nextUrl}>
-              Older News
-            </a>
-          ) : null
-        }
+        {prevUrl ? (
+          <a class="btn btn-outline-dark rounded-0" href={prevUrl}>
+            Newer News
+          </a>
+        ) : (
+          <span />
+        )}
+        {nextUrl ? (
+          <a class="btn btn-outline-dark rounded-0" href={nextUrl}>
+            Older News
+          </a>
+        ) : null}
       </div>
     </div>
   </section>

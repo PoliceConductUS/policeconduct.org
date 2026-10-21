@@ -86,22 +86,24 @@ const sampleRows = [
       sourcePage={pagePath}
       topic="Fatal Force Incidents"
     />
-    <button type="button" class="entity-action"> Share </button>
-    <button type="button" class="entity-action"> Download report </button>
+    <button type="button" class="entity-action">
+      Share
+    </button>
+    <button type="button" class="entity-action">
+      Download report
+    </button>
   </Fragment>
 
   <MetricGrid metrics={metricCards} columns="auto" />
 
   <div class="entity-chart-grid">
-    {
-      chartTitles.map((chartTitle) => (
-        <DataPanel title={chartTitle}>
-          <SampleMeasurementChart
-            ariaLabel={`Sample ${chartTitle} chart`}
-            rows={sampleRows}
-          />
-        </DataPanel>
-      ))
-    }
+    {chartTitles.map((chartTitle) => (
+      <DataPanel title={chartTitle}>
+        <SampleMeasurementChart
+          ariaLabel={`Sample ${chartTitle} chart`}
+          rows={sampleRows}
+        />
+      </DataPanel>
+    ))}
   </div>
 </PageShell>

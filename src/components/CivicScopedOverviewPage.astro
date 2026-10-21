@@ -76,29 +76,27 @@ const hasRows = records ? records.rows.length > 0 : false;
   heading={pageConfig.title}
   lede={pageConfig.description}
 >
-  {
-    hasRows ? (
-      <section class="civic-section civic-section--last">
-        <slot />
-        <p class="civic-limit-note">
-          Case records come from court dockets. A pending case is an allegation,
-          not a finding. A dismissal is a court outcome, not a statement that no
-          misconduct occurred.
-        </p>
-      </section>
-    ) : (
-      <section class="civic-section civic-section--last">
-        <ul class="topic-row">
-          <StatCell
-            variant="topic"
-            label={pageConfig.title}
-            gloss={pageConfig.gloss}
-            role={pageConfig.role ?? undefined}
-            empty
-            helpCollectHref={volunteerHref}
-          />
-        </ul>
-      </section>
-    )
-  }
+  {hasRows ? (
+    <section class="civic-section civic-section--last">
+      <slot />
+      <p class="civic-limit-note">
+        Case records come from court dockets. A pending case is an allegation,
+        not a finding. A dismissal is a court outcome, not a statement that no
+        misconduct occurred.
+      </p>
+    </section>
+  ) : (
+    <section class="civic-section civic-section--last">
+      <ul class="topic-row">
+        <StatCell
+          variant="topic"
+          label={pageConfig.title}
+          gloss={pageConfig.gloss}
+          role={pageConfig.role ?? undefined}
+          empty
+          helpCollectHref={volunteerHref}
+        />
+      </ul>
+    </section>
+  )}
 </PageShell>

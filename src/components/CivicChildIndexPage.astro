@@ -55,29 +55,25 @@ for (const row of page.data) {
 >
   <section class="civic-section civic-section--last">
     <div class="alpha-nav">
-      {
-        [...alphaGroups.entries()].map(([letter, rows]) => (
-          <section class="alpha-group">
-            <h2>{letter}</h2>
-            <ul>
-              {rows.map((row) => (
-                <li>
-                  <a href={row.href}>{row.label}</a>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))
-      }
+      {[...alphaGroups.entries()].map(([letter, rows]) => (
+        <section class="alpha-group">
+          <h2>{letter}</h2>
+          <ul>
+            {rows.map((row) => (
+              <li>
+                <a href={row.href}>{row.label}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
-    {
-      page.lastPage > 1 ? (
-        <Pagination
-          basePath={pagePath}
-          currentPage={page.currentPage}
-          lastPage={page.lastPage}
-        />
-      ) : null
-    }
+    {page.lastPage > 1 ? (
+      <Pagination
+        basePath={pagePath}
+        currentPage={page.currentPage}
+        lastPage={page.lastPage}
+      />
+    ) : null}
   </section>
 </PageShell>

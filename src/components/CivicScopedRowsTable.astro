@@ -23,58 +23,56 @@ const formatDate = (value: string) =>
   }).format(new Date(value));
 ---
 
-{
-  renderTable && !empty ? (
-    <div>
-      <div class="list-tools">
-        <span class="list-count">
-          {records.totalCount.toLocaleString("en-US")} cases
-          {records.totalCount > civilCaseRows.length
-            ? ` · showing the ${civilCaseRows.length} most recent`
-            : ""}
-        </span>
-      </div>
-      <TableScroll>
-        <table class="record-table">
-          <thead>
-            <tr>
-              <th scope="col">Case</th>
-              <th scope="col">Court</th>
-              <th scope="col">Filed</th>
-              <th scope="col">Connection</th>
-              <th scope="col">Agencies</th>
-            </tr>
-          </thead>
-          <tbody>
-            {civilCaseRows.map((row) => (
-              <tr>
-                <td>
-                  <a class="row-link" href={row.href}>
-                    {row.title}
-                  </a>
-                </td>
-                <td>{row.court || ""}</td>
-                <td>{formatDate(row.filedDate)}</td>
-                <td>{row.connectionType}</td>
-                <td>
-                  {row.agencies.map((agency, index) => (
-                    <>
-                      {index > 0 ? ", " : ""}
-                      <a class="row-link" href={agency.href}>
-                        {agency.name}
-                      </a>
-                    </>
-                  ))}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </TableScroll>
-      <div class="list-foot">
-        <span>Sorted by filing date, newest first</span>
-        <CivilCaseScopeNote />
-      </div>
+{renderTable && !empty ? (
+  <div>
+    <div class="list-tools">
+      <span class="list-count">
+        {records.totalCount.toLocaleString("en-US")} cases
+        {records.totalCount > civilCaseRows.length
+          ? ` · showing the ${civilCaseRows.length} most recent`
+          : ""}
+      </span>
     </div>
-  ) : null
-}
+    <TableScroll>
+      <table class="record-table">
+        <thead>
+          <tr>
+            <th scope="col">Case</th>
+            <th scope="col">Court</th>
+            <th scope="col">Filed</th>
+            <th scope="col">Connection</th>
+            <th scope="col">Agencies</th>
+          </tr>
+        </thead>
+        <tbody>
+          {civilCaseRows.map((row) => (
+            <tr>
+              <td>
+                <a class="row-link" href={row.href}>
+                  {row.title}
+                </a>
+              </td>
+              <td>{row.court || ""}</td>
+              <td>{formatDate(row.filedDate)}</td>
+              <td>{row.connectionType}</td>
+              <td>
+                {row.agencies.map((agency, index) => (
+                  <>
+                    {index > 0 ? ", " : ""}
+                    <a class="row-link" href={agency.href}>
+                      {agency.name}
+                    </a>
+                  </>
+                ))}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </TableScroll>
+    <div class="list-foot">
+      <span>Sorted by filing date, newest first</span>
+      <CivilCaseScopeNote />
+    </div>
+  </div>
+) : null}

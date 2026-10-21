@@ -122,30 +122,28 @@ const formatDate = (value?: string | null) =>
             </tr>
           </thead>
           <tbody>
-            {
-              page.data.map((caseItem: CivilCaseRow) => (
-                <tr>
-                  <td>
-                    <a href={caseItem.caseUrl}>
-                      {caseItem.title || "Civil case"}
-                    </a>
-                  </td>
-                  <td>{caseItem.type}</td>
-                  <td>{formatDate(caseItem.filed_date)}</td>
-                  <td>{caseItem.court || ""}</td>
-                  <td>{caseItem.outcome}</td>
-                  <td>{caseItem.cause_number || ""}</td>
-                  <td>
-                    {caseItem.personnel.map((person, index) => (
-                      <>
-                        {index > 0 ? ", " : null}
-                        <a href={person.href}>{person.name}</a>
-                      </>
-                    ))}
-                  </td>
-                </tr>
-              ))
-            }
+            {page.data.map((caseItem: CivilCaseRow) => (
+              <tr>
+                <td>
+                  <a href={caseItem.caseUrl}>
+                    {caseItem.title || "Civil case"}
+                  </a>
+                </td>
+                <td>{caseItem.type}</td>
+                <td>{formatDate(caseItem.filed_date)}</td>
+                <td>{caseItem.court || ""}</td>
+                <td>{caseItem.outcome}</td>
+                <td>{caseItem.cause_number || ""}</td>
+                <td>
+                  {caseItem.personnel.map((person, index) => (
+                    <>
+                      {index > 0 ? ", " : null}
+                      <a href={person.href}>{person.name}</a>
+                    </>
+                  ))}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

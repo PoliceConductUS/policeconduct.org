@@ -72,27 +72,23 @@ const hasHero = Astro.slots.has("hero");
     <section class="civic-index-page-main">
       <div class="container">
         <Breadcrumb items={breadcrumbs} className="mb-2" />
-        {
-          hasHero ? (
-            <slot name="hero" />
-          ) : (
-            <div class:list={[{ "entity-hero": hasAside }]}>
-              <div
-                class:list={[{ "entity-hero-grid page-hero-grid": hasAside }]}
+        {hasHero ? (
+          <slot name="hero" />
+        ) : (
+          <div class:list={[{ "entity-hero": hasAside }]}>
+            <div class:list={[{ "entity-hero-grid page-hero-grid": hasAside }]}>
+              <PageHeader
+                eyebrow={eyebrow}
+                title={heading ?? ""}
+                description={lede}
               >
-                <PageHeader
-                  eyebrow={eyebrow}
-                  title={heading ?? ""}
-                  description={lede}
-                >
-                  <slot name="header" slot="default" />
-                  <slot name="actions" slot="actions" />
-                </PageHeader>
-                {hasAside ? <slot name="aside" /> : null}
-              </div>
+                <slot name="header" slot="default" />
+                <slot name="actions" slot="actions" />
+              </PageHeader>
+              {hasAside ? <slot name="aside" /> : null}
             </div>
-          )
-        }
+          </div>
+        )}
         <slot />
       </div>
     </section>

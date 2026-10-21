@@ -19,9 +19,7 @@ export type IconSymbol = {
 };
 
 export type IconId =
-  | `social-${SocialIconName}`
-  | `metric-${MetricIconName}`
-  | "chevron-down";
+  `social-${SocialIconName}` | `metric-${MetricIconName}` | "chevron-down";
 
 export type SocialIconName =
   | "youtube"
