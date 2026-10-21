@@ -57,7 +57,15 @@ const extractTokensFromFiles = async (files) => {
       const file = files[index++];
       const html = await readFile(file, "utf8");
       const matches = html.match(TOKEN_RE);
-      if (matches) for (const token of matches) tokens.add(token);
+      if (matches) {
+        for (const token of matches) {
+          if (!tokens.has(token)) {
+            // Regex matches can retain the entire HTML string as a sliced
+            // string. Copy new tokens so completed pages can be collected.
+            tokens.add(Buffer.from(token).toString("utf8"));
+          }
+        }
+      }
     }
   };
   await Promise.all(Array.from({ length: READ_CONCURRENCY }, () => worker()));
