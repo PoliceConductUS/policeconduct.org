@@ -28,6 +28,7 @@
     "openspec:status": "node scripts/openspec-status.mjs",
     "preview": "astro preview",
     "refresh:build-projections": "node scripts/refresh-build-projections.mjs",
+    "report:coverage": "node scripts/coverage-report.mjs",
     "review": "ocr review --audience agent --from main --to HEAD",
     "review:workspace": "ocr review --audience agent",
     "scan:personal-data": "node scripts/scan-personal-data.mjs --tracked",

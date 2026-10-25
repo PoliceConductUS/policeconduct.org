@@ -76,6 +76,23 @@ export const GAP_KIND = Object.freeze({
    * above 100% — it is a universe mismatch, and it is reported as one.
    */
   HELD_EXCEEDS_DENOMINATOR: "held_exceeds_denominator",
+  /**
+   * We hold a denominator for the state and zero agencies in it. Not an error
+   * and not a zero percentage to be averaged away — it is the finding that
+   * directs acquisition work, which is the whole point of this report.
+   */
+  NO_RECORDS_HELD: "no_records_held",
+  /**
+   * The numerator's universe is unknown: we cannot say which of the agencies we
+   * hold are general-purpose, so we cannot divide them by a general-purpose
+   * denominator. Blocks percentages even where the count fits inside one.
+   */
+  NUMERATOR_UNIVERSE_UNVERIFIED: "numerator_universe_unverified",
+  /**
+   * Two stores we control disagree about how many agencies we hold. Until they
+   * agree there is no single held count to report, and we say so.
+   */
+  CORPUS_COUNT_DISPUTED: "corpus_count_disputed",
 });
 
 export class CoverageProvenanceError extends Error {
@@ -524,6 +541,47 @@ export const formatCoverage = ({
     percent,
     stale,
     denominatorAgeYears: age,
+    sentence,
+  });
+};
+
+/**
+ * A ceiling, not an achievement.
+ *
+ * Our numerator is a count of agencies we hold, drawn from state licensing and
+ * employment sources. Nothing in it tells us which of those agencies BJS would
+ * classify as general purpose. So `held / generalPurposeDenominator` is not our
+ * coverage — our coverage is at most that, because some unknown share of the
+ * numerator belongs to a different universe.
+ *
+ * Reporting the bound is honest in the direction the anti-goal demands: it can
+ * only ever overstate the ceiling, never overstate what we have achieved. The
+ * phrasing is deliberately "no more than" so a reader cannot lift the number out
+ * as a coverage figure, and the universe caveat is inside the returned sentence
+ * for the same reason the staleness note is.
+ */
+export const formatCoverageCeiling = ({
+  held,
+  denominator,
+  asOfYear,
+  audience = AUDIENCE.INTERNAL,
+}) => {
+  const measured = formatCoverage({ held, denominator, asOfYear, audience });
+  const rendered =
+    measured.percent >= 10
+      ? measured.percent.toFixed(0)
+      : measured.percent.toFixed(1);
+  const sentence =
+    `No more than ${rendered}% of ${formatDenominator(denominator, { audience })}` +
+    ` — we hold ${held.toLocaleString("en-US")} agencies here, but we cannot yet say` +
+    ` which of them are in that universe, so this is a ceiling and not a coverage figure.` +
+    (measured.stale
+      ? ` That denominator is ${measured.denominatorAgeYears} years old and is not a current count.`
+      : "");
+
+  return Object.freeze({
+    ...measured,
+    isCeiling: true,
     sentence,
   });
 };
