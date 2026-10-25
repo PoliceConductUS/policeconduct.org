@@ -35,7 +35,6 @@
       "Bash(psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -c 'SELECT lp.path, lp.administrative_area_name, lp.place_name FROM agency a JOIN location_path lp ON lp.location_path_id=a.location_path_id WHERE a.id='\\\\''__CMDSUB_OUTPUT__'\\\\'';')",
       "Bash(psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -tAc 'SELECT count\\(*\\) FROM location_path WHERE state_or_territory_slug='\\\\''tx'\\\\'' AND administrative_area_slug='\\\\''dallas-county'\\\\'' AND level='\\\\''place'\\\\'';')",
       "Bash(node -e ' *)",
-      "Bash(ls -la '/Users/dalelotts/Library/CloudStorage/GoogleDrive-dale@dalelotts.com/My Drive/police-conduct/website-and-brand')",
       "Bash(psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -tAc 'SELECT id FROM reviews WHERE title LIKE '\\\\''First Amendment%'\\\\'';')",
       "Bash(psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -c 'SELECT o.first_name, o.last_name, ao.badge_number, ao.license_type FROM review_officers ro JOIN agency_officers ao ON ao.id=ro.agency_officer_id JOIN officers o ON o.id=ao.officer_id WHERE ro.review_id='\\\\''__CMDSUB_OUTPUT__'\\\\'';')",
       "Bash(psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -c 'SELECT title, url FROM review_links WHERE review_id='\\\\''__CMDSUB_OUTPUT__'\\\\'';')",
