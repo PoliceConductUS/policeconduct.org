@@ -1,6 +1,6 @@
 # Agency coverage report v1
 
-Generated 2026-10-25T05:43:24.697Z from database `postgres`, dialled at 127.0.0.1:54322/postgres (server reports itself as 172.18.0.10:5432).
+Generated 2026-10-25T05:55:12.823Z from database `postgres`, dialled at 127.0.0.1:54322/postgres (server reports itself as 172.18.0.10:5432).
 
 That store is **the intake agency corpus**, the single source of record for agency counts, verified here by schema signature rather than by address. Intake is the only path that populates it, so the counts below are this organisation's agency counts rather than one store's opinion of them — there is no second store to reconcile against. See `docs/0007-authoritative-agency-store.md`.
 
@@ -31,7 +31,7 @@ Read the national ceilings with this in mind: in 4 of the 7 jurisdictions we hol
 
 ### numerator universe unverified
 
-655 held agencies, in DC, IL, MN, OR, VA, WA, carry no sourced agency type, so they cannot be placed in the BJS universes the denominators are drawn from. These states' sources enumerate entities that employ licensed peace officers without saying what kind of entity each one is: MN POST's productions key agencies by name only and publish no type column, and the Oregon records have no registered intake source at all. No percentage is reported for these jurisdictions or for the national total; ceilings are reported instead. States whose agencies all carry a sourced type are not affected and do report achieved coverage.
+655 held agencies, in DC, IL, MN, OR, VA, WA, carry no sourced agency type, so they cannot be placed in the BJS universes the denominators are drawn from. These states' sources enumerate entities that employ licensed peace officers without saying what kind of entity each one is: MN POST's productions key agencies by name only and publish no type column, and Oregon's DPSST loader emits an agency's name, address, contact and status but no type field. No percentage is reported for these jurisdictions or for the national total; ceilings are reported instead. States whose agencies all carry a sourced type are not affected and do report achieved coverage.
 
 _Unblocked by:_ Obtain a per-agency type for these states — a state roster that publishes one, or an authoritative national roster with types (INS-31). Name matching is not a substitute: it was tested on INS-79 and, beyond leaving most records unclassified, an unconstrained name join silently gave 22 Minnesota and Oregon agencies a Texas classification.
 
