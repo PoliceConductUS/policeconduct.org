@@ -48,7 +48,38 @@ TARGETS=""
 log()  { printf '\033[1m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[33mWARN\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[31mFATAL\033[0m %s\n' "$*" >&2; exit 1; }
-run()  { if [[ $APPLY -eq 1 ]]; then "$@"; else printf '  [dry-run] %s\n' "$*"; fi; }
+# Echo a command for dry-run WITHOUT printing secret values.
+#
+# This exists because the naive version leaked. The merged Lambda environment
+# is passed as a literal argument and contains RESEND_API_KEY and
+# EMAIL_VERIFICATION_HMAC_SECRET, so `printf '%s' "$*"` wrote both secrets to
+# the terminal, to any CI log, and to any agent transcript capturing stdout.
+# A dry run is the mode people run casually and paste the output of, which
+# makes it the worst possible place to print a secret.
+#
+# Any argument that parses as a Lambda environment object is reduced to its key
+# names -- the only part a reader needs in order to check that the merge kept
+# everything it should.
+redact_arg() {
+  local arg="$1"
+  if [[ "$arg" == '{"Variables":'* ]]; then
+    printf '{"Variables": <%s keys: %s>}' \
+      "$(jq -r '.Variables | keys | length' <<<"$arg")" \
+      "$(jq -r '.Variables | keys | join(", ")' <<<"$arg")"
+  else
+    printf '%s' "$arg"
+  fi
+}
+
+run() {
+  if [[ $APPLY -eq 1 ]]; then
+    "$@"
+  else
+    local out="" a
+    for a in "$@"; do out+=" $(redact_arg "$a")"; done
+    printf '  [dry-run]%s\n' "$out"
+  fi
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

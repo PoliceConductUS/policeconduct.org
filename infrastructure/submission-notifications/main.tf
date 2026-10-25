@@ -53,6 +53,11 @@ locals {
     for e in var.notification_canary_alert_endpoints : trimspace(e) if trimspace(e) != ""
   ])
   canary_metric_namespace = "PoliceConduct/Notifications"
+  # Single source of truth for the metric dimension. The canary stamps every
+  # datapoint with Environment=<this>, and the alarms must match it exactly or
+  # they watch a series nothing writes to. See the comment on
+  # aws_cloudwatch_metric_alarm.canary_delivery.
+  canary_environment = "production"
 }
 
 # ------------------------------------------------------------------- topics --
@@ -278,7 +283,18 @@ data "archive_file" "canary" {
   type        = "zip"
   source_dir  = "${path.module}/notification-canary"
   output_path = "${path.module}/.build/notification-canary.zip"
-  excludes    = ["*.zip", "index.test.mjs"]
+  # node_modules is excluded so the artifact is DETERMINISTIC: without this the
+  # zip silently depends on whether whoever runs the apply happened to have run
+  # `npm install` in this directory, so two people applying the same commit can
+  # ship different Lambdas.
+  #
+  # The three @aws-sdk/* clients the canary imports are therefore resolved from
+  # the Lambda runtime, which bundles AWS SDK v3 (verified on
+  # nodejs:22.mainline.v122). The package.json dependencies exist for local
+  # `node --test` only. If a future runtime drops the bundled SDK this breaks
+  # at import time on the first scheduled run, and the delivery alarm's
+  # treat_missing_data = "breaching" is what reports it.
+  excludes = ["*.zip", "index.test.mjs", "node_modules", ".build"]
 }
 
 data "aws_iam_policy_document" "canary_assume_role" {
@@ -364,7 +380,7 @@ resource "aws_lambda_function" "canary" {
 
   environment {
     variables = {
-      CANARY_ENVIRONMENT                   = "production"
+      CANARY_ENVIRONMENT                   = local.canary_environment
       SUBMISSIONS_BUCKET                   = data.aws_s3_bucket.submissions.id
       SUBMISSION_NOTIFICATION_RECIPIENTS   = join(",", local.recipients)
       SUBMISSION_NOTIFICATION_FROM_ADDRESS = var.notification_from_address
@@ -402,8 +418,25 @@ resource "aws_cloudwatch_metric_alarm" "canary_delivery" {
   alarm_name        = "${var.project_name}-notification-canary-delivery-failed"
   alarm_description = "The submission notification path did not deliver to a human on its scheduled check. A submission arriving now would tell nobody (INS-35)."
 
-  namespace           = local.canary_metric_namespace
-  metric_name         = "CanaryDelivered"
+  namespace   = local.canary_metric_namespace
+  metric_name = "CanaryDelivered"
+
+  # REQUIRED, not cosmetic. The canary publishes every datapoint with
+  # Dimensions: [{Environment: <env>}], and a CloudWatch alarm only matches
+  # datapoints whose dimensions match EXACTLY. Omit this and the alarm watches
+  # a dimensionless series nothing ever writes to -- so it reads as configured
+  # and is inert.
+  #
+  # Both alarms in this file shipped that way on 2026-10-25. It was caught only
+  # by invoking the canary and then reading the alarm state, rather than
+  # trusting that a clean apply meant a working monitor. The
+  # submissions-without-notification alarm sat at OK, reason "no datapoints
+  # were received", while the canary was publishing a value of 2. That is the
+  # subject of INS-35 reproduced inside its own fix.
+  dimensions = {
+    Environment = local.canary_environment
+  }
+
   statistic           = "Maximum"
   period              = 86400
   evaluation_periods  = 2
@@ -424,8 +457,15 @@ resource "aws_cloudwatch_metric_alarm" "submissions_without_notification" {
   alarm_name        = "${var.project_name}-submissions-without-notification"
   alarm_description = "A submission was stored with no notification receipt beside it. This is the INS-20 failure recurring: it arrived and nobody was told."
 
-  namespace           = local.canary_metric_namespace
-  metric_name         = "SubmissionsWithoutNotification"
+  namespace   = local.canary_metric_namespace
+  metric_name = "SubmissionsWithoutNotification"
+
+  # See the dimension comment on canary_delivery. Without this the alarm reads
+  # OK forever while submissions go unannounced.
+  dimensions = {
+    Environment = local.canary_environment
+  }
+
   statistic           = "Maximum"
   period              = 86400
   evaluation_periods  = 1

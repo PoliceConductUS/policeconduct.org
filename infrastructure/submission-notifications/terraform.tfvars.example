@@ -22,10 +22,16 @@ submission_notification_recipients = ["hello@policeconduct.org"]
 # alert sent there would die with the thing it is reporting.
 notification_canary_alert_endpoints = ["dlotts@knightrider.com"]
 
-# Set to the date this stack is first applied. Submissions stored before it have
-# no notification receipt and never will; they are INS-16 backlog, not a
-# monitoring signal.
-notification_receipts_since = "2026-10-25"
+# Set to the first FULL day AFTER this stack is applied, not the day of.
+#
+# The comparison is a lexical date compare against the date segment of the
+# submission key, so it is day-granular with no upper bound. Setting it to the
+# day of the apply permanently flags anything that arrived earlier THAT DAY --
+# which happened on 2026-10-25: two DSARs stored hours before the pipe went
+# live were reported as unannounced on every run, and a permanently-breached
+# monitor is a muted monitor. The cost is that submissions on the apply day
+# itself are never reconciled.
+notification_receipts_since = "2026-10-26"
 
 # Verified sender for the canary delivery probe. Must match the identity the
 # submitter verification mail already uses -- read from the live Lambda, not
