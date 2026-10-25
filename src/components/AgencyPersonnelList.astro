@@ -1,5 +1,6 @@
 ---
 import "#src/styles/civic-ledger.css";
+import { isEndedAssignment } from "#src/lib/data/assignment-status.js";
 
 // The full agency roster on one page — a scannable research surface, not a bare
 // phone book. Every officer shows a quiet context line (status · rank · tenure ·
@@ -48,7 +49,9 @@ const rows: RosterRow[] = employees.map((employee) => {
   const label = lastName
     ? [lastName, firstName].filter(Boolean).join(", ")
     : firstName || "Unnamed record";
-  const isFormer = Boolean(employee.entry?.end_date);
+  // Shared with the personnel profile so a roster and a profile cannot
+  // disagree about whether the same assignment has ended (INS-75).
+  const isFormer = isEndedAssignment(employee.entry);
   const startYear = year(employee.entry?.start_date);
   const endYear = year(employee.entry?.end_date);
   const tenure = isFormer
