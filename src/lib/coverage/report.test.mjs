@@ -15,6 +15,13 @@ const fakeClient = ({
   hasPagePayload = true,
   federalHeld = 0,
   published = 0,
+  /**
+   * The schema signature `verifyAuthoritativeStore` reads. Defaults to the
+   * authoritative store so that existing tests describe the normal case; the
+   * legacy corpus is modelled by overriding these.
+   */
+  signatureTables = ["agency", "personnel", "build_page_payload"],
+  signatureColumns = ["agency.parent_federal_agency_id", "agency.status"],
   fingerprint = {
     rows: 0,
     newest_updated_at: "2026-10-24T00:00:00.000Z",
@@ -22,6 +29,20 @@ const fakeClient = ({
   },
 }) => ({
   query: async (sql, params) => {
+    // The signature probes list the whole schema; the optional-feature probes
+    // ask about one name with a bound parameter. Split on that, not on the
+    // table being queried, since both read information_schema.
+    if (sql.includes("information_schema.tables") && !sql.includes("$1")) {
+      return { rows: signatureTables.map((table) => ({ table_name: table })) };
+    }
+    if (sql.includes("information_schema.columns") && !sql.includes("$1")) {
+      return {
+        rows: signatureColumns.map((key) => {
+          const [table_name, column_name] = key.split(".");
+          return { table_name, column_name };
+        }),
+      };
+    }
     if (sql.includes("information_schema.columns")) {
       return { rows: hasFederalParent && params[1] ? [{ "?column?": 1 }] : [] };
     }
@@ -193,12 +214,12 @@ test("a jurisdiction we hold records in but have no denominator for still appear
   assert.match(puertoRico.generalPurpose.gap.detail, /not apportioned/);
 });
 
-test("stores that disagree about the held count produce a reported finding", async () => {
+test("an unidentified store's count is a reported finding", async () => {
   const report = await build(
     { stateRows: [{ code: "TX", held: 2883 }] },
     {
       corpusCrossChecks: [
-        { store: "seed.sql dump", count: 3003 },
+        { store: "some other database", count: 3003 },
         { store: "agreeing store", count: 2883 },
       ],
     },
@@ -208,9 +229,143 @@ test("stores that disagree about the held count produce a reported finding", asy
     (g) => g.kind === GAP_KIND.CORPUS_COUNT_DISPUTED,
   );
   assert.ok(gap, "expected a disputed-count gap");
-  assert.match(gap.detail, /seed\.sql dump reports 3,003/);
+  assert.match(gap.detail, /some other database reports 3,003/);
+  assert.match(gap.detail, /cannot say what store that is/);
   assert.doesNotMatch(gap.detail, /agreeing store/);
-  assert.match(gap.detail, /no single authoritative held count/);
+  assert.match(gap.detail, /single source of record/);
+  assert.equal(report.corpusCrossChecks[0].status, "unrecorded");
+});
+
+test("an abandoned store's count is never a finding, whatever number it reports", async () => {
+  // The board's ruling: intake is the only path that populates the database, so
+  // the legacy dump is not a rival count. Both the real row count and the long-
+  // quoted statement count must be treated the same way — as not a count.
+  for (const count of [3008, 3003]) {
+    const report = await build(
+      { stateRows: [{ code: "TX", held: 3538 }], published: 3393 },
+      { corpusCrossChecks: [{ store: "legacy seed.sql dump", count }] },
+    );
+
+    assert.equal(
+      report.gaps.find((g) => g.kind === GAP_KIND.CORPUS_COUNT_DISPUTED),
+      undefined,
+      `an abandoned store reporting ${count} must not raise a dispute`,
+    );
+    const [check] = report.corpusCrossChecks;
+    assert.equal(check.status, "abandoned");
+    // The label must survive the classification spread, not be shadowed by it.
+    assert.equal(check.store, "legacy seed.sql dump");
+
+    const markdown = renderCoverageReportMarkdown(report);
+    assert.match(
+      markdown,
+      new RegExp(
+        `legacy seed\\.sql dump\\*\\*: ${count.toLocaleString("en-US")} — abandoned`,
+      ),
+    );
+    assert.match(markdown, /not a count of record/);
+  }
+});
+
+test("the derived projection is checked against what this report measured", async () => {
+  const report = await build(
+    { stateRows: [{ code: "TX", held: 3538 }], published: 3393 },
+    {
+      corpusCrossChecks: [
+        { store: "build_page_payload agency pages", count: 3393 },
+      ],
+    },
+  );
+
+  assert.equal(
+    report.gaps.find((g) => g.kind === GAP_KIND.CORPUS_COUNT_DISPUTED),
+    undefined,
+    "a projection that matches the measured published count is not a finding",
+  );
+  assert.equal(report.corpusCrossChecks[0].status, "derived");
+});
+
+test("a projection that disagrees with the store it projects is a finding", async () => {
+  // This is the one comparison still worth making under a single source: the
+  // projection is derived from the store, so it cannot legitimately differ.
+  const report = await build(
+    { stateRows: [{ code: "TX", held: 3538 }], published: 3393 },
+    {
+      corpusCrossChecks: [
+        { store: "build_page_payload agency pages", count: 3000 },
+      ],
+    },
+  );
+
+  const gap = report.gaps.find(
+    (g) => g.kind === GAP_KIND.CORPUS_COUNT_DISPUTED,
+  );
+  assert.ok(gap, "a drifted projection must be reported");
+  assert.match(gap.detail, /reports 3,000, but this report measured 3,393/);
+  assert.match(gap.detail, /cannot disagree with the store it projects/);
+  assert.match(gap.unblockedBy, /refresh-build-projections/);
+  assert.equal(report.corpusCrossChecks[0].status, "derived_drifted");
+});
+
+test("a projection cannot be confirmed when the published count is unavailable", async () => {
+  // Absence of the projection table must not read as agreement.
+  const report = await build(
+    {
+      stateRows: [{ code: "TX", held: 3538 }],
+      hasPagePayload: false,
+    },
+    {
+      corpusCrossChecks: [
+        { store: "build_page_payload agency pages", count: 3393 },
+      ],
+    },
+  );
+
+  const gap = report.gaps.find(
+    (g) => g.kind === GAP_KIND.CORPUS_COUNT_DISPUTED,
+  );
+  assert.ok(gap, "an unverifiable projection is a finding, not a pass");
+  assert.match(gap.detail, /could not measure the published-page count/);
+  assert.equal(report.corpusCrossChecks[0].status, "derived_drifted");
+});
+
+test("measuring the authoritative store raises no authority gap and says so", async () => {
+  const report = await build({ stateRows: [{ code: "TX", held: 3538 }] });
+
+  assert.equal(report.measurement.storeAuthority.isAuthoritative, true);
+  assert.equal(
+    report.gaps.find(
+      (g) => g.kind === GAP_KIND.MEASURED_STORE_NOT_AUTHORITATIVE,
+    ),
+    undefined,
+  );
+  const markdown = renderCoverageReportMarkdown(report);
+  assert.match(markdown, /the single source of record for\s+agency counts/);
+  // The point of the ruling: no second store to reconcile against.
+  assert.match(markdown, /no second store to\s+reconcile against/);
+});
+
+test("the legacy corpus is detected by its pre-rename tables, not by its address", async () => {
+  // The seed dump's defining feature: it predates the officers-to-personnel
+  // rename. Measuring it must not be allowed to answer as the corpus count,
+  // even though every count it returns is internally consistent.
+  const report = await build({
+    stateRows: [{ code: "TX", held: 2937 }],
+    signatureTables: ["agency", "officers", "agency_officers"],
+    signatureColumns: [],
+  });
+
+  const gap = report.gaps.find(
+    (g) => g.kind === GAP_KIND.MEASURED_STORE_NOT_AUTHORITATIVE,
+  );
+  assert.ok(gap, "expected a store-authority gap");
+  assert.match(gap.detail, /pre-rename officers, agency_officers/);
+  assert.match(gap.detail, /personnel, build_page_payload/);
+  assert.match(gap.detail, /none of them is the corpus count/);
+  assert.match(
+    renderCoverageReportMarkdown(report),
+    /\*\*This is not the intake agency corpus\*\*/,
+  );
 });
 
 test("agreeing stores raise no dispute", async () => {

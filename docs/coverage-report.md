@@ -1,8 +1,8 @@
 # Agency coverage report v1
 
-Generated 2026-10-25T05:13:39.875Z from database `postgres`, dialled at 127.0.0.1:54322/postgres (server reports itself as 172.18.0.10:5432).
+Generated 2026-10-25T05:55:12.823Z from database `postgres`, dialled at 127.0.0.1:54322/postgres (server reports itself as 172.18.0.10:5432).
 
-Which store this is matters as much as the counts. Read the address above before quoting any number here: a local re-import and the production corpus do not agree, and this report asserts only what the store it measured contains.
+That store is **the intake agency corpus**, the single source of record for agency counts, verified here by schema signature rather than by address. Intake is the only path that populates it, so the counts below are this organisation's agency counts rather than one store's opinion of them — there is no second store to reconcile against. See `docs/0007-authoritative-agency-store.md`.
 
 **This report contains no achieved coverage percentage.** Not one. The reason is in _Why there are no percentages_ below, and it is the most important finding here.
 
@@ -31,15 +31,9 @@ Read the national ceilings with this in mind: in 4 of the 7 jurisdictions we hol
 
 ### numerator universe unverified
 
-655 held agencies, in DC, IL, MN, OR, VA, WA, carry no sourced agency type, so they cannot be placed in the BJS universes the denominators are drawn from. These states' sources enumerate entities that employ licensed peace officers without saying what kind of entity each one is: MN POST's productions key agencies by name only and publish no type column, and the Oregon records have no registered intake source at all. No percentage is reported for these jurisdictions or for the national total; ceilings are reported instead. States whose agencies all carry a sourced type are not affected and do report achieved coverage.
+655 held agencies, in DC, IL, MN, OR, VA, WA, carry no sourced agency type, so they cannot be placed in the BJS universes the denominators are drawn from. These states' sources enumerate entities that employ licensed peace officers without saying what kind of entity each one is: MN POST's productions key agencies by name only and publish no type column, and Oregon's DPSST loader emits an agency's name, address, contact and status but no type field. No percentage is reported for these jurisdictions or for the national total; ceilings are reported instead. States whose agencies all carry a sourced type are not affected and do report achieved coverage.
 
 _Unblocked by:_ Obtain a per-agency type for these states — a state roster that publishes one, or an authoritative national roster with types (INS-31). Name matching is not a substitute: it was tested on INS-79 and, beyond leaving most records unclassified, an unconstrained name join silently gave 22 Minnesota and Oregon agencies a Texas classification.
-
-### corpus count disputed
-
-The measured store reports 3,538 agencies, but local dev seed.sql dump, statement-level parse (2026-10-24) reports 3,008. These are stores we control and they do not agree, so there is no single authoritative held count today. The numbers in this report are the measured store's, identified above, and are not claimed to be the production corpus.
-
-_Unblocked by:_ Establish which store is authoritative for coverage reporting and reconcile the others against it, or record why they legitimately differ.
 
 ## What kind of agencies we hold
 
@@ -172,7 +166,3 @@ AK (49 agencies exist), AL (401 agencies exist), AR (364 agencies exist), AZ (13
 - **local_police_count_lear_vs_csllea** — LEAR 2016 counts 12,695 local and county police departments; CSLLEA 2018 counts 11,824. The gap of 871 is larger than two years of consolidation plausibly explains. CSLLEA excludes any agency without at least one full-time-equivalent sworn officer and LEAR does not, which accounts for an unknown share of it. We have not reconciled the two and do not claim to have.
 - **tribal_police_universe** — BJS classifies the 217 tribal police departments as their own type, outside 'general purpose'. A reader would call a tribal police department general-purpose. Our general-purpose denominator follows the BJS definition so it stays comparable to the published tables; tribal agencies are inside the all-agency denominator. If we ever report tribal coverage it needs its own denominator, not a share of this one.
 - **state_counts_are_estimates** — The per-state agency counts in CSLLEA 2018 table 3 carry standard errors (appendix table 3) — they are estimates, not exact enumerations. Summing the 51 published state rows gives 17,540 against a published national total of 17,541 (local police 11,825 vs 11,824; sheriffs' offices 3,054 vs 3,051). BJS notes details may not sum to totals. We store the published state values and the published standard errors, and do not force them to reconcile.
-
-## Cross-checks against other stores
-
-- local dev seed.sql dump, statement-level parse (2026-10-24): 3,008

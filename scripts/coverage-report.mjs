@@ -5,14 +5,25 @@
  * Reads the corpus through the same database door the site build uses, so the
  * report cannot drift from what we actually publish from.
  *
+ * Point DATABASE_URL at the single source of record — the intake agency corpus
+ * (ADR 0007). Intake is the only path that populates the database, so there is
+ * nothing to reconcile against and the normal invocation takes no cross-checks:
+ *
  *   DATABASE_URL=postgres://... node scripts/coverage-report.mjs \
  *     --out docs/coverage-report.md \
- *     --json docs/coverage-report.json \
- *     --cross-check "seed.sql dump=3003"
+ *     --json docs/coverage-report.json
  *
- * `--cross-check` is repeatable and exists because more than one store claims to
- * hold our corpus. Passing the others in makes a disagreement a reported finding
- * instead of something only the person running the script notices.
+ * Any other store is still measured honestly, but the report says in its opening
+ * lines that its numbers are not the corpus count — decided by schema signature
+ * rather than by address, since a forwarded port proves nothing.
+ *
+ * `--cross-check "label=count"` remains for the case where someone arrives
+ * holding a number and wants to know what it is. The legacy seed.sql dump is
+ * reported as abandoned rather than as a disagreement; a count derived from the
+ * source of record (the `build_page_payload` projection) is checked live against
+ * what this run measured; and a store we cannot identify is a reported gap. So
+ * passing a cross-check cannot clear a finding, and cannot manufacture one out
+ * of a retired artifact.
  */
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
