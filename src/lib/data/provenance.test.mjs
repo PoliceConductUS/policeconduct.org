@@ -289,6 +289,40 @@ test("a name coerced from a boolean quarantines the whole row", () => {
   );
 });
 
+// INS-69 measured this: Null, None, True and Na are real surnames and name
+// components held by real officers in this corpus. A token sweep across every
+// name field would unpublish the people these rules exist to protect.
+test("a real surname that looks like a placeholder still publishes", () => {
+  useLedger([`personnel\treal-true\t${TCOLE}\tunique_name`]);
+  enforce();
+  for (const surname of ["True", "Null", "None", "Na", "False"]) {
+    const cited = citeRow("personnel", {
+      id: "real-true",
+      slug: `officer-${surname.toLowerCase()}-aa11bb`,
+      last_name: surname,
+    });
+    const projected = projectedText(cited, "last_name");
+    assert.ok(projected, `${surname} must still publish`);
+    assert.equal(projected.kind, "cited");
+    assert.equal(cited.rowWithheld, false);
+  }
+});
+
+test("a middle name is narrowed to the placeholder the production actually uses", () => {
+  useLedger([`personnel\tmiddle\t${TCOLE}\tunique_name`]);
+  enforce();
+  const cited = citeRow("personnel", {
+    id: "middle",
+    slug: "officer-middle-aa11bb",
+    middle_name: "None",
+    suffix: "None",
+  });
+  // `None` is a plausible middle name and not a measured placeholder there.
+  assert.equal(projectedText(cited, "middle_name").kind, "cited");
+  // A suffix has a closed vocabulary, so the full list applies.
+  assert.equal(projectedText(cited, "suffix"), null);
+});
+
 test("records with perfect lineage and a wrong value are still withheld", () => {
   useLedger([`personnel\ttest-record\t${TCOLE}\tunique_name`]);
   enforce();

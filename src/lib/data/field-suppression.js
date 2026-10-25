@@ -210,12 +210,18 @@ export const evaluateField = (context) => {
         break;
       }
       case "value_token": {
+        // A field with a narrower vocabulary gets a narrower list. A name
+        // column is not a suffix column: `None` and `Na` are real name
+        // components held by real officers, so sweeping one list across every
+        // name field would unpublish the people the rule exists to protect.
+        const tokens =
+          match.fieldTokens?.[`${table}.${column}`] || match.tokens;
         if (
           enforced &&
           appliesToField(match.fields, table, column) &&
           value !== null &&
           value !== undefined &&
-          match.tokens.includes(normalizeToken(value))
+          tokens.includes(normalizeToken(value))
         ) {
           return {
             kind: "withhold",

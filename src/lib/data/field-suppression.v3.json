@@ -63,10 +63,13 @@
           "--",
           "1",
           "0"
-        ]
+        ],
+        "fieldTokens": {
+          "personnel.middle_name": ["null", "n/a", "n.a."]
+        }
       },
-      "reason": "TCOLE uses in-band placeholders in SFX: 27 'N/A', 9 'n/a', one '1'. We published them verbatim as name suffixes on 37 live pages, including in the page title and baked into the canonical URL. A placeholder is not a fact about a person.",
-      "evidence": "INS-18 report rev 3 section 18 item 2",
+      "reason": "TCOLE uses in-band placeholders in SFX: 27 'N/A', 9 'n/a', one '1'. We published them verbatim as name suffixes on 37 live pages, including in the page title and baked into the canonical URL. A placeholder is not a fact about a person. Only the fields with a genuinely closed vocabulary get the full list: a prefix, a suffix and a job title cannot be 'None' or '0', but a middle name can, so middle name is narrowed to the literal 'NULL' that the production carries 10,340 times as its own placeholder. A token sweep across every name field would unpublish real people — Null, None and Na are real name components held by real officers.",
+      "evidence": "INS-18 report rev 3 section 18 item 2; narrowing per field follows the measurement on INS-69 (PR #18)",
       "decidedBy": "accuracy; engineering call recorded on INS-10"
     },
     {
@@ -79,10 +82,10 @@
           "personnel.middle_name",
           "personnel.last_name"
         ],
-        "tokens": ["1", "0", "true", "false", "nan"]
+        "tokens": ["1", "0"]
       },
-      "reason": "Five people with the surname True broke the identity mapper, which coerced the string to a boolean and wrote 1. A name column that holds a coerced boolean publishes a wrong name about a real person, and a provenance gate alone passes it because the lineage is perfect. Name columns must be read as text and never coerced: Null, None, True, False, NA and NaN are all real surnames or legitimate name fragments.",
-      "evidence": "INS-18 report rev 3 section 18 items 3 and 4; generalised on INS-68",
+      "reason": "Five people with the surname True broke the identity mapper, which coerced the string to a boolean and wrote 1. A name column holding a coerced boolean publishes a wrong name about a real person, and a provenance gate alone passes it because the lineage is perfect. The tokens are the coercion artifacts only — '1' and '0'. They are deliberately NOT 'True', 'False', 'Null' or 'NaN': those are real surnames and name fragments held by real officers in this corpus, and matching them would unpublish the very people this rule exists to protect. The five known coerced rows are withheld by slug under traceable-but-not-correct, which is evidence rather than a guess. Generally: name columns must be read as text and never coerced.",
+      "evidence": "INS-18 report rev 3 section 18 items 3 and 4; token list narrowed to the measurement on INS-69 (PR #18); generalised on INS-68",
       "decidedBy": "accuracy; engineering call recorded on INS-10"
     },
     {
