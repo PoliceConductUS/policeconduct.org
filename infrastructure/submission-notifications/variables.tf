@@ -101,24 +101,6 @@ variable "forms_api_prod_function_name" {
   default     = "policeconduct-forms-api-prod"
 }
 
-variable "notification_from_address" {
-  description = "Verified sender for the canary delivery probe. Same identity the submitter verification mail already uses."
-  type        = string
-}
-
-variable "resend_api_key" {
-  description = <<-EOT
-    Resend key for the canary delivery probe.
-
-    The probe needs per-message delivery status, which is the whole reason the
-    human-facing notification is sent over Resend and not SNS email: SNS
-    publishes no delivery status for the email protocol, so a subscription to a
-    mailbox that quietly dies reports Confirmed forever.
-  EOT
-  type        = string
-  sensitive   = true
-}
-
 variable "lambda_nodejs_runtime" {
   description = "Node runtime for the canary, matching the bootstrap stack."
   type        = string

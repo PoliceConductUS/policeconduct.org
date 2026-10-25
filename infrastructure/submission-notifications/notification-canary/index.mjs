@@ -1,43 +1,4 @@
-/**
- * Notification path canary (INS-35).
- *
- * The notification pipe INS-35 builds is only worth what its liveness is worth.
- * Two channels this organization believed were live turned out to be dead and
- * neither reported it: the submissions bucket told nobody for six months
- * (INS-20), and the Workspace admin mailbox bounced for 3.5 months (INS-55).
- * Both were found by accident. A third instance is not a coincidence, it is the
- * default outcome for any channel nobody asserts on.
- *
- * So this runs on a schedule and asserts two different things:
- *
- *   1. DELIVERY PROBE — send a message down the real notification path to the
- *      real recipients and require the transport to confirm it was *delivered*,
- *      not merely accepted. This is what catches a mailbox that dies in
- *      November. SNS email subscriptions cannot support this check at all: SNS
- *      publishes no delivery status for the `email` protocol, so a subscription
- *      to a dead mailbox reads `Confirmed` forever. Resend reports a per-message
- *      `last_event`, so "did it land" is a fact we can read.
- *
- *   2. RECONCILIATION — over REAL traffic, diff what arrived in the submissions
- *      bucket against the notification receipts written beside it. A submission
- *      with no receipt is the original INS-20 failure happening again, and this
- *      is the check that would have caught it. Synthetic traffic cannot catch
- *      this class; only the real corpus can.
- *
- * WHAT THIS DELIBERATELY DOES NOT DO: submit through the public form. Every
- * submission path is gated on a reCAPTCHA Enterprise token, which a scheduled
- * job cannot mint without a browser. The alternative — a bypass header on the
- * submit endpoint — is the exact class of hole INS-21 was filed to close, and
- * is not worth building to make a monitor tidier. Between the delivery probe
- * (transport + mailbox, synthetic) and the reconciliation (form + storage +
- * notify, real traffic), every hop is asserted; no single message traverses all
- * of them at once. That gap is stated here rather than papered over.
- *
- * BOUNDARY: this reads object KEYS only, never object bodies. Submission
- * contents route to the queue holder untouched (INS-9). The reconciliation
- * needs an id and a form name, and both are in the key, so the canary has no
- * business decrypting anything and is not granted KMS decrypt.
- */
+/** Reconcile keys only; daily delivery probing retired by board direction (INS-94). */
 
 import {
   CloudWatchClient,
@@ -51,29 +12,11 @@ const sns = new SNSClient({});
 const cloudwatch = new CloudWatchClient({});
 
 const METRIC_NAMESPACE = "PoliceConduct/Notifications";
-const RESEND_API = "https://api.resend.com/emails";
-
-/** Resend `last_event` values that mean the message reached the mailbox. */
-const DELIVERED_EVENTS = new Set(["delivered", "opened", "clicked"]);
-
-/**
- * Terminal failures. `bounced` is the one that matters most — it is the signal
- * that was missing for 3.5 months in INS-55.
- */
-const FAILED_EVENTS = new Set(["bounced", "complained", "failed", "canceled"]);
-
 export function parseList(value) {
   return String(value || "")
     .split(",")
     .map((entry) => entry.trim())
     .filter(Boolean);
-}
-
-export function classifyDeliveryEvent(lastEvent) {
-  const event = String(lastEvent || "").toLowerCase();
-  if (DELIVERED_EVENTS.has(event)) return "delivered";
-  if (FAILED_EVENTS.has(event)) return "failed";
-  return "pending";
 }
 
 /**
@@ -181,94 +124,6 @@ async function listKeys(bucket, prefix) {
   return keys;
 }
 
-function canaryBody(runId, recipients) {
-  return [
-    "This is an automated liveness check of the PoliceConduct.org submission",
-    "notification path. No action is required and nothing has gone wrong.",
-    "",
-    `run: ${runId}`,
-    `recipients: ${recipients.join(", ")}`,
-    "",
-    "Why it exists: a real submission notification and this message travel the",
-    "same path. If this mailbox stops working, the check fails and an alert is",
-    "sent to a DIFFERENT address, because an alert sent here would die with it.",
-    "",
-    "If these stop arriving, the notification path is unverified. Say so.",
-  ].join("\n");
-}
-
-async function sendCanaryEmail({ apiKey, fromAddress, recipients, runId }) {
-  const response = await fetch(RESEND_API, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: fromAddress,
-      to: recipients,
-      subject: `[CANARY] submission notification path check ${runId}`,
-      text: canaryBody(runId, recipients),
-      tags: [{ name: "kind", value: "notification_canary" }],
-    }),
-    signal: AbortSignal.timeout(10000),
-  });
-
-  const payload = await response.json().catch(() => null);
-  if (!response.ok) {
-    throw new Error(
-      `Resend canary send failed (${response.status})${
-        payload?.message ? `: ${payload.message}` : ""
-      }`,
-    );
-  }
-  if (!payload?.id) throw new Error("Resend canary send returned no id");
-  return payload.id;
-}
-
-async function fetchDeliveryEvent({ apiKey, emailId }) {
-  const response = await fetch(`${RESEND_API}/${encodeURIComponent(emailId)}`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-    signal: AbortSignal.timeout(10000),
-  });
-  if (!response.ok) {
-    throw new Error(`Resend status lookup failed (${response.status})`);
-  }
-  const payload = await response.json();
-  return payload?.last_event || "unknown";
-}
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * Poll until the transport commits to an answer.
- *
- * A timeout is reported as `pending`, not as failure. The alarm behind this
- * metric requires two consecutive breaches, so one slow delivery does not page
- * anyone while a genuinely dead mailbox still fails twice in a row and does.
- * A monitor that cries wolf gets muted, and a muted monitor is the state we are
- * trying to leave.
- */
-export async function awaitDelivery({
-  apiKey,
-  emailId,
-  attempts = 10,
-  intervalMs = 6000,
-  now = () => undefined,
-  lookup = fetchDeliveryEvent,
-  wait = sleep,
-}) {
-  let lastEvent = "unknown";
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
-    lastEvent = await lookup({ apiKey, emailId, now });
-    const status = classifyDeliveryEvent(lastEvent);
-    if (status !== "pending")
-      return { status, lastEvent, attempts: attempt + 1 };
-    if (attempt < attempts - 1) await wait(intervalMs);
-  }
-  return { status: "pending", lastEvent, attempts };
-}
-
 async function putMetrics(environment, metrics) {
   await cloudwatch.send(
     new PutMetricDataCommand({
@@ -306,12 +161,6 @@ async function alertOutOfBand({ topicArn, subject, body }) {
 export async function handler(event = {}) {
   const runId = event.runId || `canary-${Math.floor(Date.now() / 1000)}`;
   const environment = (process.env.CANARY_ENVIRONMENT || "production").trim();
-  const apiKey = (process.env.RESEND_API_KEY || "").trim();
-  const fromAddress = (
-    process.env.SUBMISSION_NOTIFICATION_FROM_ADDRESS ||
-    process.env.EMAIL_VERIFICATION_FROM_ADDRESS ||
-    ""
-  ).trim();
   const recipients = parseList(process.env.SUBMISSION_NOTIFICATION_RECIPIENTS);
   const alertTopicArn = (process.env.CANARY_ALERT_TOPIC_ARN || "").trim();
   const alertEndpoints = parseList(process.env.CANARY_ALERT_ENDPOINTS);
@@ -333,53 +182,6 @@ export async function handler(event = {}) {
         overlap: independence.overlap,
       }),
     );
-  }
-
-  let delivery;
-  if (!apiKey || !fromAddress || recipients.length === 0) {
-    delivery = { status: "misconfigured", lastEvent: null };
-    failures.push(
-      `delivery probe not runnable: ${
-        recipients.length === 0
-          ? "SUBMISSION_NOTIFICATION_RECIPIENTS is empty — nobody is being told"
-          : "missing Resend credentials or from address"
-      }`,
-    );
-  } else {
-    try {
-      const emailId = await sendCanaryEmail({
-        apiKey,
-        fromAddress,
-        recipients,
-        runId,
-      });
-      delivery = await awaitDelivery({ apiKey, emailId });
-      delivery.emailId = emailId;
-      console.info(
-        JSON.stringify({
-          msg: "canary.delivery_probe",
-          runId,
-          emailId,
-          status: delivery.status,
-          lastEvent: delivery.lastEvent,
-        }),
-      );
-      if (delivery.status === "failed") {
-        failures.push(
-          `notification email to [${recipients.join(", ")}] was not delivered ` +
-            `(transport reported "${delivery.lastEvent}"). The notification ` +
-            `path is DOWN: a submission arriving now would tell nobody.`,
-        );
-      } else if (delivery.status === "pending") {
-        failures.push(
-          `notification email to [${recipients.join(", ")}] was accepted but ` +
-            `delivery was never confirmed (last event "${delivery.lastEvent}").`,
-        );
-      }
-    } catch (error) {
-      delivery = { status: "error", lastEvent: null, error: String(error) };
-      failures.push(`delivery probe threw: ${error}`);
-    }
   }
 
   let missing = [];
@@ -419,10 +221,6 @@ export async function handler(event = {}) {
 
   try {
     await putMetrics(environment, [
-      {
-        name: "CanaryDelivered",
-        value: delivery.status === "delivered" ? 1 : 0,
-      },
       { name: "SubmissionsWithoutNotification", value: missing.length },
     ]);
   } catch (error) {
@@ -463,7 +261,6 @@ export async function handler(event = {}) {
   return {
     runId,
     ok: failures.length === 0,
-    delivery,
     missingNotificationCount: missing.length,
     alertIndependent: independence.independent,
     failures,

@@ -2,9 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  awaitDelivery,
   checkAlertIndependence,
-  classifyDeliveryEvent,
   parseList,
   parseReceiptKey,
   parseSubmissionKey,
@@ -15,23 +13,6 @@ test("parseList trims and drops blanks", () => {
   assert.deepEqual(parseList(" a@x.org , ,b@y.org "), ["a@x.org", "b@y.org"]);
   assert.deepEqual(parseList(""), []);
   assert.deepEqual(parseList(undefined), []);
-});
-
-test("a bounce is a failure, not a pending state", () => {
-  // This is the INS-55 signal. If it ever classifies as pending the canary
-  // waits forever and reports nothing, which is the failure it exists to catch.
-  assert.equal(classifyDeliveryEvent("bounced"), "failed");
-  assert.equal(classifyDeliveryEvent("complained"), "failed");
-  assert.equal(classifyDeliveryEvent("delivered"), "delivered");
-  assert.equal(classifyDeliveryEvent("sent"), "pending");
-  assert.equal(classifyDeliveryEvent("queued"), "pending");
-  assert.equal(classifyDeliveryEvent(undefined), "pending");
-});
-
-test("accepted-but-not-delivered is not success", () => {
-  // Resend "sent" means the API accepted it. INS-16 exists because a 200 was
-  // read as proof of an outcome it does not prove.
-  assert.notEqual(classifyDeliveryEvent("sent"), "delivered");
 });
 
 test("alert destination overlapping the monitored mailbox is flagged", () => {
@@ -138,43 +119,59 @@ test("submissions predating the cutoff are not alarmed on forever", () => {
   assert.deepEqual(missing, []);
 });
 
-test("awaitDelivery stops as soon as the transport commits", async () => {
-  let calls = 0;
-  const result = await awaitDelivery({
-    apiKey: "k",
-    emailId: "e",
-    attempts: 5,
-    lookup: async () => {
-      calls += 1;
-      return calls < 2 ? "sent" : "delivered";
-    },
-    wait: async () => {},
-  });
-  assert.equal(result.status, "delivered");
-  assert.equal(calls, 2);
-});
+import { S3Client } from "@aws-sdk/client-s3";
+import { SNSClient } from "@aws-sdk/client-sns";
+import { CloudWatchClient } from "@aws-sdk/client-cloudwatch";
+import { handler } from "./index.mjs";
 
-test("awaitDelivery reports pending rather than inventing a verdict", async () => {
-  const result = await awaitDelivery({
-    apiKey: "k",
-    emailId: "e",
-    attempts: 3,
-    lookup: async () => "sent",
-    wait: async () => {},
+test("retired probe makes no provider calls and retains reconciliation and alerts", async (t) => {
+  Object.assign(process.env, {
+    SUBMISSIONS_BUCKET: "synthetic-test-bucket",
+    SUBMISSION_NOTIFICATION_RECIPIENTS: "notifications@example.org",
+    CANARY_ALERT_ENDPOINTS: "alerts@example.net",
+    CANARY_ALERT_TOPIC_ARN: "synthetic-alert-topic",
+    NOTIFICATION_RECEIPTS_SINCE: "2026-10-25",
+    RESEND_API_KEY: "synthetic-unused-key",
+    SUBMISSION_NOTIFICATION_FROM_ADDRESS: "synthetic@example.org",
   });
-  assert.equal(result.status, "pending");
-  assert.equal(result.attempts, 3);
-});
-
-test("awaitDelivery surfaces a bounce immediately", async () => {
-  const result = await awaitDelivery({
-    apiKey: "k",
-    emailId: "e",
-    attempts: 5,
-    lookup: async () => "bounced",
-    wait: async () => {},
+  let providerCalls = 0;
+  t.mock.method(globalThis, "fetch", async () => {
+    providerCalls++;
+    throw new Error("No provider calls permitted");
   });
-  assert.equal(result.status, "failed");
-  assert.equal(result.lastEvent, "bounced");
-  assert.equal(result.attempts, 1);
+  const prefixes = [];
+  t.mock.method(S3Client.prototype, "send", async (command) => {
+    prefixes.push(command.input.Prefix);
+    return {
+      Contents:
+        command.input.Prefix === "submissions/"
+          ? [
+              {
+                Key: "submissions/2026-10-25/dataSubjectAccessRequest/synthetic.json",
+              },
+            ]
+          : [],
+    };
+  });
+  const metrics = [];
+  t.mock.method(CloudWatchClient.prototype, "send", async (command) => {
+    metrics.push(...command.input.MetricData);
+    return {};
+  });
+  const alerts = [];
+  t.mock.method(SNSClient.prototype, "send", async (command) => {
+    alerts.push(command.input);
+    return {};
+  });
+  const result = await handler({ runId: "synthetic-retirement-test" });
+  assert.equal(providerCalls, 0);
+  assert.deepEqual(prefixes.sort(), ["notifications/", "submissions/"]);
+  assert.equal(result.missingNotificationCount, 1);
+  assert.equal(alerts.length, 1);
+  assert.deepEqual(
+    metrics.map((m) => m.MetricName),
+    ["SubmissionsWithoutNotification"],
+  );
+  assert.equal(metrics[0].Value, 1);
+  assert.equal(result.delivery, undefined);
 });

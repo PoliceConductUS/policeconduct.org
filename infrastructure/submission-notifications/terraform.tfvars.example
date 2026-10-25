@@ -11,7 +11,7 @@
 # (INS-55). It is confirmed monitored (INS-16 §14), and the SNS confirmation
 # click will prove it independently — an unconfirmed subscription reads as
 # PendingConfirmation and receives nothing. If it ever stops being read, the
-# canary below is what notices.
+# reconciliation cannot detect an unread mailbox.
 submission_notification_recipients = ["hello@policeconduct.org"]
 
 # Who is told the notification path itself is broken.
@@ -32,18 +32,3 @@ notification_canary_alert_endpoints = ["dlotts@knightrider.com"]
 # monitor is a muted monitor. The cost is that submissions on the apply day
 # itself are never reconciled.
 notification_receipts_since = "2026-10-26"
-
-# Verified sender for the canary delivery probe. Must match the identity the
-# submitter verification mail already uses -- read from the live Lambda, not
-# guessed:
-#   aws lambda get-function-configuration \
-#     --function-name policeconduct-forms-api-prod \
-#     --query 'Environment.Variables.EMAIL_VERIFICATION_FROM_ADDRESS' --output text
-notification_from_address = "noreply@mail.policeconduct.org"
-
-# Resend API key. Do NOT commit the filled-in file.
-# Read it from the live forms API Lambda rather than keeping a second copy:
-#   aws lambda get-function-configuration \
-#     --function-name policeconduct-forms-api-prod \
-#     --query 'Environment.Variables.RESEND_API_KEY' --output text
-resend_api_key = "re_..."

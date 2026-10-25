@@ -56,7 +56,7 @@ locals {
   # Single source of truth for the metric dimension. The canary stamps every
   # datapoint with Environment=<this>, and the alarms must match it exactly or
   # they watch a series nothing writes to. See the comment on
-  # aws_cloudwatch_metric_alarm.canary_delivery.
+  # aws_cloudwatch_metric_alarm.submissions_without_notification.
   canary_environment = "production"
 }
 
@@ -292,8 +292,7 @@ data "archive_file" "canary" {
   # the Lambda runtime, which bundles AWS SDK v3 (verified on
   # nodejs:22.mainline.v122). The package.json dependencies exist for local
   # `node --test` only. If a future runtime drops the bundled SDK this breaks
-  # at import time on the first scheduled run, and the delivery alarm's
-  # treat_missing_data = "breaching" is what reports it.
+  # at import time on the first scheduled run. Lambda errors need separate monitoring.
   excludes = ["*.zip", "index.test.mjs", "node_modules", ".build"]
 }
 
@@ -371,8 +370,7 @@ resource "aws_lambda_function" "canary" {
   handler       = "index.handler"
   runtime       = var.lambda_nodejs_runtime
 
-  # The delivery probe polls the transport for a real delivery event rather
-  # than assuming an accepted send succeeded, so it needs room to wait.
+  # Preserve the existing time budget for paginated key reconciliation.
   timeout = 120
 
   filename         = data.archive_file.canary.output_path
@@ -380,21 +378,19 @@ resource "aws_lambda_function" "canary" {
 
   environment {
     variables = {
-      CANARY_ENVIRONMENT                   = local.canary_environment
-      SUBMISSIONS_BUCKET                   = data.aws_s3_bucket.submissions.id
-      SUBMISSION_NOTIFICATION_RECIPIENTS   = join(",", local.recipients)
-      SUBMISSION_NOTIFICATION_FROM_ADDRESS = var.notification_from_address
-      RESEND_API_KEY                       = var.resend_api_key
-      CANARY_ALERT_TOPIC_ARN               = aws_sns_topic.canary_alerts.arn
-      CANARY_ALERT_ENDPOINTS               = join(",", local.canary_alert_endpoints)
-      NOTIFICATION_RECEIPTS_SINCE          = var.notification_receipts_since
+      CANARY_ENVIRONMENT                 = local.canary_environment
+      SUBMISSIONS_BUCKET                 = data.aws_s3_bucket.submissions.id
+      SUBMISSION_NOTIFICATION_RECIPIENTS = join(",", local.recipients)
+      CANARY_ALERT_TOPIC_ARN             = aws_sns_topic.canary_alerts.arn
+      CANARY_ALERT_ENDPOINTS             = join(",", local.canary_alert_endpoints)
+      NOTIFICATION_RECEIPTS_SINCE        = var.notification_receipts_since
     }
   }
 }
 
 resource "aws_cloudwatch_event_rule" "canary" {
   name                = "${var.project_name}-notification-canary"
-  description         = "Assert the submission notification path still reaches a human (INS-35)."
+  description         = "Reconcile submission keys against notification receipt keys (INS-94)."
   schedule_expression = var.notification_canary_schedule
 }
 
@@ -412,44 +408,6 @@ resource "aws_lambda_permission" "canary" {
   source_arn    = aws_cloudwatch_event_rule.canary.arn
 }
 
-# Two consecutive misses, not one. A single slow delivery is not an outage, and
-# a monitor that cries wolf gets muted — which is the state we are leaving.
-resource "aws_cloudwatch_metric_alarm" "canary_delivery" {
-  alarm_name        = "${var.project_name}-notification-canary-delivery-failed"
-  alarm_description = "The submission notification path did not deliver to a human on its scheduled check. A submission arriving now would tell nobody (INS-35)."
-
-  namespace   = local.canary_metric_namespace
-  metric_name = "CanaryDelivered"
-
-  # REQUIRED, not cosmetic. The canary publishes every datapoint with
-  # Dimensions: [{Environment: <env>}], and a CloudWatch alarm only matches
-  # datapoints whose dimensions match EXACTLY. Omit this and the alarm watches
-  # a dimensionless series nothing ever writes to -- so it reads as configured
-  # and is inert.
-  #
-  # Both alarms in this file shipped that way on 2026-10-25. It was caught only
-  # by invoking the canary and then reading the alarm state, rather than
-  # trusting that a clean apply meant a working monitor. The
-  # submissions-without-notification alarm sat at OK, reason "no datapoints
-  # were received", while the canary was publishing a value of 2. That is the
-  # subject of INS-35 reproduced inside its own fix.
-  dimensions = {
-    Environment = local.canary_environment
-  }
-
-  statistic           = "Maximum"
-  period              = 86400
-  evaluation_periods  = 2
-  threshold           = 1
-  comparison_operator = "LessThanThreshold"
-
-  # A canary that stops running is the same failure as a canary that fails.
-  treat_missing_data = "breaching"
-
-  alarm_actions = [aws_sns_topic.canary_alerts.arn]
-  ok_actions    = [aws_sns_topic.canary_alerts.arn]
-}
-
 # The check no synthetic message can perform: it runs over real traffic. A
 # submission stored with no notification receipt beside it is INS-20 recurring,
 # and this is the assertion that would have caught the original backlog.
@@ -460,8 +418,7 @@ resource "aws_cloudwatch_metric_alarm" "submissions_without_notification" {
   namespace   = local.canary_metric_namespace
   metric_name = "SubmissionsWithoutNotification"
 
-  # See the dimension comment on canary_delivery. Without this the alarm reads
-  # OK forever while submissions go unannounced.
+  # Match the Environment dimension emitted by reconciliation.
   dimensions = {
     Environment = local.canary_environment
   }

@@ -84,46 +84,22 @@ The prefix sits **beside** `submissions/`, never under it, for two reasons:
 Receipts are what make the reconciliation below possible. Without them, the only
 evidence a notification was attempted is a log line that expires.
 
-## Liveness: the canary (`notification-canary/`)
+## Scheduled reconciliation (`notification-canary/`)
 
-A notification path configured today and silently dead in November puts us back
-exactly where we started, and the belief that it works will be just as
-reasonable and just as wrong. So the path asserts itself on a schedule, and
-makes two independent checks:
+The existing resource names are retained so retirement does not replace shared
+infrastructure. This Lambda lists submission and notification keys, compares
+them, emits `SubmissionsWithoutNotification`, and alerts through the independent
+SNS topic. It never reads object bodies or decrypts submissions.
 
-1. **Delivery probe** — sends a message down the real path to the real
-   recipients and requires the transport to confirm it was **delivered**, not
-   merely accepted. This is the check that catches a mailbox dying.
-2. **Reconciliation** — over **real traffic**, diffs what arrived in
-   `submissions/` against the receipts in `notifications/`. A submission with no
-   receipt is INS-20 happening again. Synthetic traffic cannot catch this class;
-   only the real corpus can.
+There is no synthetic delivery check. No mail-provider credential, sender,
+sending function, status polling, delivery metric, or delivery alarm remains.
+The schedule stays enabled because reconciliation still uses it. Receipt
+metadata describes a notification attempt, not manual review or handling.
 
-**The alert goes somewhere the monitored channel's failure cannot reach.** A
-canary that emails the dead mailbox is the same failure again (INS-58), so
-`notification_canary_alert_endpoints` must not overlap
-`submission_notification_email_endpoints` — enforced by a Terraform `validation`
-block, by a guard in `scripts/ins35-apply.sh`, and re-checked at runtime by the
-canary itself, which puts a warning in the alert body if it ever becomes true.
-
-Because `policeconduct.org` mail lives in a Workspace tenant IPC does not own
-(INS-55), a tenant-level failure takes every `policeconduct.org` address at
-once. Prefer an alert address on a **different domain**.
-
-### What the canary deliberately does not do
-
-It does not submit through the public form. Every submission path is gated on a
-reCAPTCHA Enterprise token, which a scheduled job cannot mint without a browser.
-The alternative — a bypass header on the submit endpoint — is the exact class of
-hole INS-21 was filed to close, and is not worth building to make a monitor
-tidier.
-
-So: the delivery probe covers transport and mailbox; the reconciliation covers
-form, storage and notify, against real traffic. Every hop is asserted, but **no
-single message traverses all of them at once.** That gap is stated rather than
-papered over. Closing it needs either a headless-browser canary or a signed
-canary credential on the submit path, and both are larger decisions than this
-issue.
+The alert destination must not overlap the intake recipient list. Terraform
+validation and the runtime independence check retain that boundary. Human
+preview acceptance verifies actual receipt with reCAPTCHA and access controls
+intact; it is not a scheduled test or a production synthetic request.
 
 ### Reconciliation cutoff
 
@@ -179,7 +155,6 @@ option for it until INS-39 imports state.
 | `…-forms-api-prod-notify-publish-failed`       | a submission stored but the notification failed to publish |
 | `…-forms-api-prod-notify-topic-not-configured` | the pre-INS-35 silent-intake state reasserting itself      |
 | `…-forms-api-prod-notify-nobody-told`          | both paths failed for the same submission                  |
-| `…-notification-canary-delivery-failed`        | the path did not deliver to a human, twice running         |
 | `…-submissions-without-notification`           | a submission stored with no receipt beside it              |
 
 The notify alarms route to the submissions topic; the canary alarms route to the
@@ -188,8 +163,8 @@ independent canary topic. None route to `policeconduct-alerts`, which as of
 alarm in this stack currently fires into nothing. That is a separate problem and
 is not fixed here.
 
-The delivery alarm uses `treat_missing_data = "breaching"`: a canary that stops
-running is the same failure as a canary that fails.
+The reconciliation alarm retains its existing missing-data behavior. Delivery
+watchdog coverage is retired, not replaced by a claim of mailbox monitoring.
 
 The log-line alarms key off the `msg` field of structured log lines
 (`forms.notify.publish_failed`, `forms.notify.topic_not_configured`,

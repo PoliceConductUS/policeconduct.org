@@ -59,18 +59,11 @@ submission keys are `submissions/<date>/<formName>/<id>.json` — the form name
 sits in the _middle_ of the key, and S3 prefix filters are literal strings, so
 no bucket-level filter can isolate a DSAR.
 
-### The human-facing path is Resend, not SNS email
+### Delivery evidence
 
-**SNS publishes no delivery status for the `email` protocol.** A subscription to
-a mailbox that quietly dies reports `Confirmed` forever, and no API will tell
-you otherwise. An SNS-email design is therefore _structurally incapable_ of
-carrying the liveness signal this issue requires — a canary bolted onto it would
-have passed every day while the mailbox was dead, which is exactly the INS-55
-failure it is meant to detect.
-
-Resend reports a per-message `last_event` (`delivered`, `bounced`, …). It is
-already the transport behind the submitter verification email, so this adds no
-vendor and no spend.
+Resend sends the staff notification after verification. A provider accepting a
+message is not proof that a human received it. Obtain receipt evidence from the
+recipient during preview acceptance testing; automated delivery probing is retired.
 
 ## Notifications carry no submission content
 
@@ -129,58 +122,44 @@ Three things to confirm, in order:
 1. Every recipient reads `Confirmed`, not `PendingConfirmation`.
 2. The bucket notification config has both rules. An empty result is the INS-20
    state.
-3. The canary's `deliveryProbe.status` reads **`delivered`**. `accepted` means
-   the transport took the message, not that it arrived — treating those as the
-   same thing is the mistake INS-16 is about, one layer down.
+3. Exercise a synthetic request through the preview form with reCAPTCHA intact.
+   Confirm the submitter verification email, no staff notification before
+   verification, and the staff notification after verification. Record receipt
+   metadata only; never inspect existing request contents.
 
-## What the canary does and does not prove
+## Scheduled reconciliation
 
-Two assertions, on a daily schedule:
+The existing Lambda and EventBridge schedule remain for key-only reconciliation.
+The job compares submission keys with notification receipt keys and alerts on
+missing receipts. It does not send synthetic mail, call Resend, or hold a mail
+provider credential. A receipt indicates a notification attempt, not human
+review, action, or a decision to ignore a submission. Those remain manual.
 
-- **Delivery probe** — sends down the real path to the real recipients and
-  requires the transport to confirm _delivered_.
-- **Reconciliation** — over **real traffic**, diffs objects under
-  `submissions/` against notification receipts under `notifications/`. A
-  submission with no receipt is INS-20 recurring. No synthetic message can
-  catch that class of failure; only the real corpus can.
+INS-94 retires the delivery-only alarm and metric publication. Historical
+CloudWatch datapoints age out under the provider's retention policy. The shared
+schedule, IAM role, alert topic, and reconciliation alarm remain. Removing the
+delivery alarm also removes its missing-data watchdog; this change makes no
+claim of end-to-end monitoring or mailbox delivery verification.
 
-**The gap, stated plainly:** there is no synthetic submission through the real
-form. Every submission path is gated on a reCAPTCHA Enterprise token, which a
-scheduled job cannot mint without a browser. The only ways through are a
-headless browser on a schedule, or a bypass header on the submit endpoint — and
-a bypass there is the exact class of hole INS-21 was filed to close.
+## Retirement deployment
 
-So every hop is covered, but **no single message traverses all of them at
-once**: the delivery probe covers transport and mailbox, the reconciliation
-covers form, storage and notify. Closing that properly means a headless-browser
-canary, which is a larger decision than this change.
+Review the Terraform plan before applying it. Expect the reconciliation Lambda
+code/environment update, a schedule description update, and deletion of the
+single delivery-only alarm. The schedule must remain enabled, and no intake
+Lambda, submission bucket, recipient subscription, or reconciliation alarm may
+be removed. Drop the retired sender/key inputs from local tfvars without printing
+those values. Historical state-secret remediation remains tracked separately.
 
-The delivery alarm sets `treat_missing_data = "breaching"`: a canary that stops
-running is the same failure as a canary that fails.
-
-## Cost
-
-About **$1.10/month**:
-
-- 2 custom metrics published daily by the canary — $0.60
-- 5 alarms — $0.50
-- 3 log-metric-filter metrics — **$0**, because a log metric filter only
-  publishes a data point when its pattern matches, and these patterns match
-  only when a notification has failed. They start costing money exactly when
-  something has gone wrong, which is the right time to be paying for them.
-
-SNS, EventBridge and Lambda are inside the free tier at this volume, and Resend
-adds nothing.
-
-The board approved "roughly $1/month" on 2026-10-25 against a figure of ~$0.80
-for 2 metrics and 2 alarms. This stack has 3 more alarms than that estimate (the
-notify-failure alarms were counted as one pair, and `nobody_told` was added),
-so the real number is ~$1.10. Stated here rather than quietly absorbed.
+Merge and production deployment retain their existing human approval gates.
+After deployment, verify the delivery alarm is absent, the Lambda environment
+has no mail-provider credential, the schedule remains enabled, and a direct
+reconciliation invocation emits no provider send/status calls. Code deletion
+alone is not evidence of deployed retirement.
 
 ## Further reading
 
 `DESIGN.md` in this directory — the per-path failure analysis, receipt layout,
-alarm/log-line coupling, and what the canary deliberately does not do.
+alarm/log-line coupling, and the limits of key reconciliation.
 
 ## Related
 

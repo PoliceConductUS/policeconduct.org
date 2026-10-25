@@ -9,7 +9,7 @@ output "canary_alert_topic_arn" {
 }
 
 output "canary_function_name" {
-  description = "Invoke this directly to run the liveness check on demand rather than waiting for the schedule."
+  description = "Invoke this directly to run key reconciliation on demand rather than waiting for the schedule."
   value       = aws_lambda_function.canary.function_name
 }
 
@@ -27,7 +27,7 @@ output "verify_commands" {
     "# 2. Both rules must be present. An empty result is the INS-20 state.",
     "aws s3api get-bucket-notification-configuration --bucket ${data.aws_s3_bucket.submissions.id}",
     "",
-    "# 3. Run the liveness check now instead of waiting a day. deliveryProbe.status must read 'delivered', not 'accepted'.",
+    "# 3. Run key reconciliation. Review failures and missingNotificationCount; this does not prove mailbox receipt.",
     "aws lambda invoke --function-name ${aws_lambda_function.canary.function_name} --payload '{}' /dev/stdout",
   ])
 }
