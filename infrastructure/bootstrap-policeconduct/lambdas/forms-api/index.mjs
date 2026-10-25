@@ -783,6 +783,17 @@ async function sendSubmissionNotificationEmail({
   }
 
   if (!resendApiKey || !fromAddress) {
+    // Name the variables that are missing rather than logging a derived
+    // Boolean of each. Same diagnostic value, more precise, and no expression
+    // reading a secret ever reaches a log sink — CodeQL flags
+    // `Boolean(resendApiKey)` as clear-text logging of the key, and it is
+    // right to: the day someone "improves" that to log a length or a prefix,
+    // the log line starts leaking key material and nothing objects.
+    const missing = [];
+    if (!resendApiKey) missing.push("RESEND_API_KEY");
+    if (!fromAddress) {
+      missing.push("SUBMISSION_NOTIFICATION_FROM_ADDRESS");
+    }
     console.error(
       JSON.stringify({
         msg: "forms.notify.email_misconfigured",
@@ -790,8 +801,7 @@ async function sendSubmissionNotificationEmail({
         eventType,
         formName,
         submissionId,
-        hasApiKey: Boolean(resendApiKey),
-        hasFromAddress: Boolean(fromAddress),
+        missingConfig: missing,
       }),
     );
     return { sent: false, reason: "email_misconfigured", recipients };

@@ -558,6 +558,59 @@ test("a Resend failure is captured rather than thrown at the submitter", async (
   }
 });
 
+test("a misconfigured transport names the missing variable and leaks no key material", async () => {
+  const secret = "re_do_not_log_me_0123456789";
+  process.env.RESEND_API_KEY = secret;
+  process.env.SUBMISSION_NOTIFICATION_RECIPIENTS = "hello@policeconduct.org";
+  const savedFrom = process.env.SUBMISSION_NOTIFICATION_FROM_ADDRESS;
+  const savedVerifyFrom = process.env.EMAIL_VERIFICATION_FROM_ADDRESS;
+  delete process.env.SUBMISSION_NOTIFICATION_FROM_ADDRESS;
+  delete process.env.EMAIL_VERIFICATION_FROM_ADDRESS;
+
+  const errors = [];
+  const originalError = console.error;
+  console.error = (line) => errors.push(line);
+
+  try {
+    const result = await __testables.sendSubmissionNotificationEmail({
+      eventType: "received",
+      formName: "dataSubjectAccessRequest",
+      submissionId: "sub_abc123",
+      bucket: "b",
+      key: "k",
+      occurredAt: "2026-10-25T12:00:00.000Z",
+      requestId: "req_1",
+    });
+
+    assert.equal(result.sent, false);
+    assert.equal(result.reason, "email_misconfigured");
+
+    const line = errors.at(-1);
+    const parsed = JSON.parse(line);
+    assert.equal(parsed.msg, "forms.notify.email_misconfigured");
+    // Name the variable that is missing, so the fix is obvious from the log.
+    assert.deepEqual(parsed.missingConfig, [
+      "SUBMISSION_NOTIFICATION_FROM_ADDRESS",
+    ]);
+
+    // The point of this assertion: the key IS set on this path, and no part of
+    // it -- not the value, not its length, not its prefix -- may reach the log.
+    assert.ok(!line.includes(secret));
+    assert.ok(!line.includes(String(secret.length)));
+    assert.ok(!line.includes("re_"));
+  } finally {
+    console.error = originalError;
+    delete process.env.SUBMISSION_NOTIFICATION_RECIPIENTS;
+    delete process.env.RESEND_API_KEY;
+    if (savedFrom !== undefined) {
+      process.env.SUBMISSION_NOTIFICATION_FROM_ADDRESS = savedFrom;
+    }
+    if (savedVerifyFrom !== undefined) {
+      process.env.EMAIL_VERIFICATION_FROM_ADDRESS = savedVerifyFrom;
+    }
+  }
+});
+
 test("receipts are written beside submissions, never underneath them", () => {
   const key = __testables.notificationReceiptKey({
     submissionId: "sub_abc123",
