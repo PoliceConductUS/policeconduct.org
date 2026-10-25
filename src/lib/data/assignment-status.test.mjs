@@ -36,10 +36,34 @@ test("a past end_date is ended", () => {
   assert.equal(status.endDate, "2023-07-24");
 });
 
-test("a future end_date is still current", () => {
+test("a near-future end_date is still current", () => {
+  // A scheduled separation has not happened yet.
   const status = getAssignmentStatus({ end_date: "2027-01-01" }, { now });
   assert.equal(status.isCurrent, true);
   assert.equal(status.isEnded, false);
+  assert.equal(status.endDateImplausible, false);
+});
+
+test("an end_date exactly one year out is still current", () => {
+  const status = getAssignmentStatus({ end_date: "2027-10-24" }, { now });
+  assert.equal(status.isCurrent, true);
+  assert.equal(status.endDateImplausible, false);
+});
+
+test("an implausibly far end_date is ended, not current", () => {
+  // The only future-dated row in the corpus: end_date 2109-02-27 on a 2015
+  // start. Reading that as present-tense employment would turn a typo into a
+  // confident claim that a named person currently works somewhere.
+  const status = getAssignmentStatus({ end_date: "2109-02-27" }, { now });
+  assert.equal(status.isEnded, true);
+  assert.equal(status.isCurrent, false);
+  assert.equal(status.endDateImplausible, true);
+});
+
+test("the implausible bound never promotes a null end_date to ended", () => {
+  const status = getAssignmentStatus({ end_date: null }, { now });
+  assert.equal(status.isEnded, false);
+  assert.equal(status.endDateImplausible, false);
 });
 
 test("an end_date of today is still current", () => {

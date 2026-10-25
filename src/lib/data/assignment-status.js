@@ -15,10 +15,19 @@
 //     roster we hold with no separation date on file. It must never be swept
 //     into "former" just because we lack a date.
 //  2. An `end_date` strictly in the past is ENDED.
-//  3. An `end_date` today or in the future is CURRENT. A scheduled separation
-//     has not happened yet, and a future date is also the shape a bad source
-//     row takes; neither justifies telling the public someone has left.
-//  4. An unparseable `end_date` is CURRENT, and `endDateInvalid` is set so a
+//  3. An `end_date` from today up to one year out is CURRENT. A scheduled
+//     separation has not happened yet, so calling it "former" would be wrong
+//     today.
+//  4. An `end_date` more than a year out is ENDED, and `endDateImplausible` is
+//     set. This bound matters more than it looks. The one such row in the
+//     corpus is `2109-02-27` on a 2015 start — a typo, not a plan. Treating it
+//     as current would convert a corrupt field into a confident present-tense
+//     employment claim carrying `worksFor`, which is a *stronger* false claim
+//     about a named person than the self-evidently broken date the page
+//     already shows. Of the two unsupportable renderings, pick the one that
+//     does not assert present employment, and surface the flag so the row can
+//     be corrected at the source.
+//  5. An unparseable `end_date` is CURRENT, and `endDateInvalid` is set so a
 //     caller can refuse to render rather than guess. We hold a value we cannot
 //     read; asserting "former" from it would be inventing a claim.
 
@@ -89,6 +98,7 @@ const toUtcDay = (value) => {
  *   isEnded: boolean,
  *   endDate: string | null,
  *   endDateInvalid: boolean,
+ *   endDateImplausible: boolean,
  * }}
  */
 export const getAssignmentStatus = (assignment, options = {}) => {
@@ -102,12 +112,13 @@ export const getAssignmentStatus = (assignment, options = {}) => {
         : String(rawEndDate).trim() || null;
 
   if (day === null) {
-    // Rules 1 and 4: no readable separation date, so the association stands.
+    // Rules 1 and 5: no readable separation date, so the association stands.
     return {
       isCurrent: true,
       isEnded: false,
       endDate,
       endDateInvalid: invalid,
+      endDateImplausible: false,
     };
   }
 
@@ -117,9 +128,23 @@ export const getAssignmentStatus = (assignment, options = {}) => {
     now.getUTCMonth(),
     now.getUTCDate(),
   );
-  const isEnded = day < today; // rule 2; rule 3 falls out of the strict compare
+  // Rule 3's horizon. A separation more than a year out is not a plan we should
+  // read as present employment; it is what a mistyped year looks like.
+  const horizon = Date.UTC(
+    now.getUTCFullYear() + 1,
+    now.getUTCMonth(),
+    now.getUTCDate(),
+  );
+  const endDateImplausible = day > horizon; // rule 4
+  const isEnded = day < today || endDateImplausible; // rules 2 and 4
 
-  return { isCurrent: !isEnded, isEnded, endDate, endDateInvalid: false };
+  return {
+    isCurrent: !isEnded,
+    isEnded,
+    endDate,
+    endDateInvalid: false,
+    endDateImplausible,
+  };
 };
 
 /**
@@ -160,6 +185,7 @@ export const isEndedAssignment = (assignment, options) =>
  *   isCurrent: boolean,
  *   endDate: string | null,
  *   endDateInvalid: boolean,
+ *   endDateImplausible: boolean,
  * }}
  */
 export const selectHeadlineAssignment = (history, options) => {
@@ -170,6 +196,7 @@ export const selectHeadlineAssignment = (history, options) => {
       isCurrent: false,
       endDate: null,
       endDateInvalid: false,
+      endDateImplausible: false,
     };
   }
 
@@ -181,6 +208,7 @@ export const selectHeadlineAssignment = (history, options) => {
         isCurrent: true,
         endDate: status.endDate,
         endDateInvalid: status.endDateInvalid,
+        endDateImplausible: status.endDateImplausible,
       };
     }
   }
@@ -205,5 +233,6 @@ export const selectHeadlineAssignment = (history, options) => {
     isCurrent: false,
     endDate: bestStatus.endDate,
     endDateInvalid: bestStatus.endDateInvalid,
+    endDateImplausible: bestStatus.endDateImplausible,
   };
 };
