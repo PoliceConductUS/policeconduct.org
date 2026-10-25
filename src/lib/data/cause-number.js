@@ -29,13 +29,26 @@
 /**
  * @typedef {"absent"
  *   | "federal_docket"
+ *   | "federal_appellate_docket"
  *   | "state_docket"
  *   | "synthetic_placeholder"
  *   | "unrecognized"} CauseNumberKind
  */
 
-/** Federal docket: office number, two-digit year, case type, sequence. */
+/** Federal district docket: office number, two-digit year, case type, sequence. */
 const FEDERAL_DOCKET = /^\d{1,2}:\d{2}-[a-z]{2,5}-\d{3,6}(?:-[a-z]{1,5})*$/i;
+
+/**
+ * Federal appellate docket: two-digit year, sequence. `23-20281`, `24-10663`.
+ *
+ * Named explicitly because a live sweep of the published corpus found 23 of 570
+ * cause numbers are Fifth Circuit appeals, and the generic state-docket rule
+ * below swept them up. Both rules publish the value, so this does not change
+ * what any page shows — but the kind is what the build gate reports and what
+ * the INS-18 census vocabulary counts, and calling a Fifth Circuit docket a
+ * state docket is wrong in both.
+ */
+const FEDERAL_APPELLATE_DOCKET = /^\d{2}-\d{4,6}$/;
 
 /** Characters a docket number is made of. Anything else is not one. */
 const DOCKET_CHARACTERS = /^[a-z0-9][a-z0-9 ./:-]*$/i;
@@ -82,6 +95,9 @@ export const classifyCauseNumber = (value) => {
   if (FEDERAL_DOCKET.test(candidate)) {
     return "federal_docket";
   }
+  if (FEDERAL_APPELLATE_DOCKET.test(candidate)) {
+    return "federal_appellate_docket";
+  }
   if (CAPTION_YEAR_PLACEHOLDER.test(candidate.toLowerCase())) {
     return "synthetic_placeholder";
   }
@@ -92,7 +108,11 @@ export const classifyCauseNumber = (value) => {
 };
 
 /** Kinds a published page may show. */
-const PUBLISHABLE_KINDS = new Set(["federal_docket", "state_docket"]);
+const PUBLISHABLE_KINDS = new Set([
+  "federal_docket",
+  "federal_appellate_docket",
+  "state_docket",
+]);
 
 /** @param {CauseNumberKind} kind */
 export const isPublishableCauseNumberKind = (kind) =>

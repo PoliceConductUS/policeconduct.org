@@ -90,6 +90,65 @@ test("every measured state docket stays published", () => {
   }
 });
 
+/**
+ * Every Fifth Circuit appellate docket in the published corpus, from a live
+ * sweep of all 570 `/civil-cases/` records on 2026-10-25.
+ *
+ * Pinned because these are the near-miss case: the generic state-docket rule
+ * published them for the right reason but labelled them wrong, and the label is
+ * what the build gate reports. They also stand as evidence against the risk the
+ * allowlist direction carries — it is not withholding real identifiers in the
+ * corpus that actually shipped.
+ */
+const LIVE_APPELLATE_DOCKETS = [
+  "22-40559",
+  "23-10246",
+  "23-10395",
+  "23-20054",
+  "23-20281",
+  "23-20539",
+  "23-40653",
+  "23-50885",
+  "24-10663",
+  "24-20521",
+  "24-50783",
+  "24-50826",
+  "25-10259",
+  "25-10979",
+  "25-20309",
+  "25-40106",
+  "25-40302",
+  "25-40481",
+  "25-50246",
+  "25-50293",
+  "25-50717",
+  "25-50719",
+  "25-50786",
+];
+
+test("every live appellate docket stays published, labelled federal", () => {
+  for (const docket of LIVE_APPELLATE_DOCKETS) {
+    assert.equal(
+      classifyCauseNumber(docket),
+      "federal_appellate_docket",
+      `${docket} is a Fifth Circuit docket, not a state docket`,
+    );
+    assert.equal(publishableCauseNumber(docket), docket);
+  }
+});
+
+test("nothing in the live published corpus is withheld", () => {
+  // The 2026-10-25 sweep found 570 published cause numbers: 547 federal
+  // district, 23 Fifth Circuit, 0 manufactured. If a future change starts
+  // withholding these shapes, the gate would strip real citations off every
+  // case page, so the corpus that shipped is pinned as a floor.
+  const live = [...MEASURED_FEDERAL_DOCKETS, ...LIVE_APPELLATE_DOCKETS];
+  assert.deepEqual(
+    live.filter((value) => publishableCauseNumber(value) === null),
+    [],
+  );
+});
+
 test("every measured manufactured docket is withheld", () => {
   for (const [placeholder, court] of MEASURED_PLACEHOLDERS) {
     assert.equal(
