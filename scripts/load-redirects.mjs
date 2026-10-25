@@ -16,8 +16,11 @@ function validatePath(path, source) {
     typeof path !== "string" ||
     !path.startsWith("/") ||
     path.startsWith("//") ||
-    // eslint-disable-next-line no-control-regex -- Reject control characters in redirect paths.
-    /[\\\s?#\x00-\x1f\x7f]/.test(path)
+    /[\\\s?#]/.test(path) ||
+    [...path].some((character) => {
+      const code = character.charCodeAt(0);
+      return code <= 0x1f || code === 0x7f;
+    })
   ) {
     throw new Error(`Invalid redirect path: ${JSON.stringify(path)}`);
   }

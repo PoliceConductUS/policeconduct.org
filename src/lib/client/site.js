@@ -234,7 +234,7 @@ const copyTextToClipboard = async (text) => {
   scratch.select();
   scratch.setSelectionRange(0, scratch.value.length);
 
-  let succeeded = false;
+  let succeeded;
   try {
     succeeded = document.execCommand("copy");
   } catch (_error) {

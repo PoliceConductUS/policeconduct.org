@@ -1,4 +1,5 @@
 ---
+import type { GetStaticPathsOptions, GetStaticPathsResult, Page } from "astro";
 import AgencyReportsPage from "#src/components/AgencyReportsPage.astro";
 import { timeBuildStep } from "#src/lib/build-timing.js";
 import {
@@ -7,10 +8,10 @@ import {
 } from "#src/lib/data/agency-detail.js";
 import { PAGE_SIZE } from "#src/lib/pagination.js";
 
-export async function getStaticPaths({ paginate }: { paginate: any }) {
+export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
   return timeBuildStep("agency reports pagination static paths", async () => {
     const agencyPaths = await loadAgencyLocationStaticPathsForTopic("reports");
-    const pages: any[] = [];
+    const pages: GetStaticPathsResult = [];
 
     for (const agencyPath of agencyPaths) {
       const data = await loadAgencyDetailByRouteParams(agencyPath.params);
@@ -18,7 +19,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
         pageSize: PAGE_SIZE,
         params: agencyPath.params,
       })
-        .filter((page: any) => {
+        .filter((page) => {
           const pageParam = page.params?.page;
           if (Array.isArray(pageParam)) {
             return pageParam.length > 0 && pageParam[0] !== "1";
@@ -29,14 +30,20 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
             pageParam !== "1"
           );
         })
-        .forEach((page: any) => pages.push(page));
+        .forEach((page) => pages.push(page));
     }
 
     return pages;
   });
 }
 
-const { page } = Astro.props;
+const { page } = Astro.props as {
+  page: Page<
+    Awaited<
+      ReturnType<typeof loadAgencyDetailByRouteParams>
+    >["reportedReports"][number]
+  >;
+};
 const data = await loadAgencyDetailByRouteParams(Astro.params);
 ---
 

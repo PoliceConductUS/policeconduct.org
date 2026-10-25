@@ -114,7 +114,7 @@ const agencyEntities = data.agencies.map((agency) =>
     name: agency.name,
   }),
 );
-const legalCaseEntity: Record<string, any> = {
+const legalCaseEntity: Record<string, unknown> = {
   "@type": "LegalCase",
   "@id": legalCaseId,
   name: caseTitle,

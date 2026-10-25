@@ -335,7 +335,7 @@ export async function handler(event = {}) {
     );
   }
 
-  let delivery = { status: "skipped", lastEvent: null };
+  let delivery;
   if (!apiKey || !fromAddress || recipients.length === 0) {
     delivery = { status: "misconfigured", lastEvent: null };
     failures.push(
