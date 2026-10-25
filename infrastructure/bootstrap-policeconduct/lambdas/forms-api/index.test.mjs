@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { S3Client } from "@aws-sdk/client-s3";
+import { SNSClient } from "@aws-sdk/client-sns";
 
 process.env.SENTRY_DSN = "";
 process.env.SENTRY_ENVIRONMENT = "";
@@ -631,7 +632,7 @@ test("receipts are written beside submissions, never underneath them", () => {
   assert.ok(!key.startsWith("submissions/"));
 });
 
-test("both notification paths failing is called out on its own line", async () => {
+test("both verified notification paths failing is called out on its own line", async () => {
   delete process.env.SUBMISSION_NOTIFICATIONS_TOPIC_ARN;
   delete process.env.SUBMISSION_NOTIFICATION_RECIPIENTS;
 
@@ -643,7 +644,7 @@ test("both notification paths failing is called out on its own line", async () =
 
   try {
     await __testables.notifySubmissionEvent({
-      eventType: "received",
+      eventType: "verified",
       formName: "dataSubjectAccessRequest",
       submissionId: "sub_abc123",
       bucket: "b",
@@ -977,4 +978,97 @@ test("a first-time submission records the provider message id", async () => {
     assert.equal(stored.providerMessageId, "email_1");
     assert.ok(stored.sentAt, "sentAt makes the send time recoverable");
   });
+});
+
+// Regression: receipt must not send staff mail, publish SNS, write a
+// notification receipt, or raise a failed-notification alarm.
+for (const eventType of ["received", "unexpected"]) {
+  test(`${eventType} events do not notify staff`, async () => {
+    const originalFetch = global.fetch;
+    const originalSend = S3Client.prototype.send;
+    const originalPublish = SNSClient.prototype.send;
+    const originalError = console.error;
+    const calls = [];
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.SUBMISSION_NOTIFICATION_RECIPIENTS = "staff@example.org";
+    process.env.SUBMISSION_NOTIFICATIONS_TOPIC_ARN =
+      "arn:aws:sns:us-east-1:123456789012:test";
+    SNSClient.prototype.send = async () => {
+      calls.push("sns");
+      return { MessageId: "test" };
+    };
+    global.fetch = async (url) => {
+      calls.push(String(url));
+      return new Response(JSON.stringify({ id: "test_email" }), {
+        status: 200,
+      });
+    };
+    S3Client.prototype.send = async () => {
+      calls.push("s3");
+      return {};
+    };
+    console.error = (line) => calls.push(line);
+    try {
+      for (const formName of __testables.ALLOWED_FORM_NAMES) {
+        await __testables.notifySubmissionEvent({
+          eventType,
+          formName,
+          submissionId: "test_submission",
+          bucket: "test-bucket",
+          key: "submissions/test.json",
+          kmsKeyId: "test-kms",
+          occurredAt: "2026-10-25T12:00:00.000Z",
+          requestId: "test_request",
+        });
+      }
+      assert.deepEqual(calls, []);
+    } finally {
+      global.fetch = originalFetch;
+      S3Client.prototype.send = originalSend;
+      SNSClient.prototype.send = originalPublish;
+      delete process.env.SUBMISSION_NOTIFICATIONS_TOPIC_ARN;
+      console.error = originalError;
+      delete process.env.RESEND_API_KEY;
+      delete process.env.SUBMISSION_NOTIFICATION_RECIPIENTS;
+    }
+  });
+}
+
+test("verified events still send staff mail and persist the delivery receipt", async () => {
+  const originalFetch = global.fetch;
+  const originalSend = S3Client.prototype.send;
+  const emails = [];
+  const writes = [];
+  process.env.RESEND_API_KEY = "re_test";
+  process.env.SUBMISSION_NOTIFICATION_RECIPIENTS = "staff@example.org";
+  global.fetch = async (url, init) => {
+    emails.push(JSON.parse(init.body));
+    return new Response(JSON.stringify({ id: "test_email" }), { status: 200 });
+  };
+  S3Client.prototype.send = async (command) => {
+    writes.push(command.input);
+    return {};
+  };
+  try {
+    await __testables.notifySubmissionEvent({
+      eventType: "verified",
+      formName: "contact",
+      submissionId: "test_submission",
+      bucket: "test-bucket",
+      key: "submissions/status/test_submission.json",
+      kmsKeyId: "test-kms",
+      occurredAt: "2026-10-25T12:00:00.000Z",
+      requestId: "test_request",
+    });
+    assert.equal(emails.length, 1);
+    assert.deepEqual(emails[0].to, ["staff@example.org"]);
+    assert.match(emails[0].subject, /VERIFIED/);
+    assert.equal(writes.length, 1);
+    assert.equal(JSON.parse(writes[0].Body).eventType, "verified");
+  } finally {
+    global.fetch = originalFetch;
+    S3Client.prototype.send = originalSend;
+    delete process.env.RESEND_API_KEY;
+    delete process.env.SUBMISSION_NOTIFICATION_RECIPIENTS;
+  }
 });

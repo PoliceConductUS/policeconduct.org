@@ -28,7 +28,7 @@ INS-35 was therefore first written as a hand-run bash script making targeted
 API calls. That was the wrong instrument, for two reasons:
 
 1. A script's effect can only be reviewed by reading the script. `terraform
-   plan` *is* a reviewable description of what will change.
+plan` _is_ a reviewable description of what will change.
 2. The script could not create the liveness canary at all — an IAM role, a
    packaged Lambda and an EventBridge schedule were out of its reach, and those
    are the parts that make this fix permanent rather than another thing that
@@ -46,24 +46,24 @@ an application artifact this stack does not own.
 
 ## Two paths, on purpose
 
-| Path | Fires on | Subject | Survives |
-|---|---|---|---|
-| forms-api Lambda → Resend | submission write **and** verification transition | `[DSAR] dataSubjectAccessRequest received <id>` | — |
-| S3 event → SNS → email | `ObjectCreated` under `submissions/2*` and `submissions/status/` | generic `Amazon S3 Notification` | a bug anywhere in the Lambda |
+| Path                      | Fires on                                                         | Subject                                         | Survives                     |
+| ------------------------- | ---------------------------------------------------------------- | ----------------------------------------------- | ---------------------------- |
+| forms-api Lambda → Resend | submission write **and** verification transition                 | `[DSAR] dataSubjectAccessRequest received <id>` | —                            |
+| S3 event → SNS → email    | `ObjectCreated` under `submissions/2*` and `submissions/status/` | generic `Amazon S3 Notification`                | a bug anywhere in the Lambda |
 
 Expect **two messages per event**. Seeing the SNS one without the Resend one
 means the application path is broken, and that is visible from the inbox.
 
 The Lambda path is not optional: only a publisher can set a subject line, and
 submission keys are `submissions/<date>/<formName>/<id>.json` — the form name
-sits in the *middle* of the key, and S3 prefix filters are literal strings, so
+sits in the _middle_ of the key, and S3 prefix filters are literal strings, so
 no bucket-level filter can isolate a DSAR.
 
 ### The human-facing path is Resend, not SNS email
 
 **SNS publishes no delivery status for the `email` protocol.** A subscription to
 a mailbox that quietly dies reports `Confirmed` forever, and no API will tell
-you otherwise. An SNS-email design is therefore *structurally incapable* of
+you otherwise. An SNS-email design is therefore _structurally incapable_ of
 carrying the liveness signal this issue requires — a canary bolted onto it would
 have passed every day while the mailbox was dead, which is exactly the INS-55
 failure it is meant to detect.
@@ -138,7 +138,7 @@ Three things to confirm, in order:
 Two assertions, on a daily schedule:
 
 - **Delivery probe** — sends down the real path to the real recipients and
-  requires the transport to confirm *delivered*.
+  requires the transport to confirm _delivered_.
 - **Reconciliation** — over **real traffic**, diffs objects under
   `submissions/` against notification receipts under `notifications/`. A
   submission with no receipt is INS-20 recurring. No synthetic message can

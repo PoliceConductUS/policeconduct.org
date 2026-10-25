@@ -60,12 +60,7 @@ const DELIVERED_EVENTS = new Set(["delivered", "opened", "clicked"]);
  * Terminal failures. `bounced` is the one that matters most — it is the signal
  * that was missing for 3.5 months in INS-55.
  */
-const FAILED_EVENTS = new Set([
-  "bounced",
-  "complained",
-  "failed",
-  "canceled",
-]);
+const FAILED_EVENTS = new Set(["bounced", "complained", "failed", "canceled"]);
 
 export function parseList(value) {
   return String(value || "")
@@ -124,18 +119,16 @@ export function checkAlertIndependence({
  * reconciled against (`submissions/verify/`, `submissions/status/`).
  */
 export function parseSubmissionKey(key) {
-  const match = /^submissions\/(\d{4}-\d{2}-\d{2})\/([^/]+)\/([^/]+)\.json$/.exec(
-    key,
-  );
+  const match =
+    /^submissions\/(\d{4}-\d{2}-\d{2})\/([^/]+)\/([^/]+)\.json$/.exec(key);
   if (!match) return null;
   return { day: match[1], formName: match[2], submissionId: match[3] };
 }
 
 /** `notifications/{YYYY-MM-DD}/{submissionId}-{eventType}.json` */
 export function parseReceiptKey(key) {
-  const match = /^notifications\/(\d{4}-\d{2}-\d{2})\/(.+)-([a-z]+)\.json$/.exec(
-    key,
-  );
+  const match =
+    /^notifications\/(\d{4}-\d{2}-\d{2})\/(.+)-([a-z]+)\.json$/.exec(key);
   if (!match) return null;
   return { day: match[1], submissionId: match[2], eventType: match[3] };
 }
@@ -181,7 +174,9 @@ async function listKeys(bucket, prefix) {
       }),
     );
     for (const object of page.Contents || []) keys.push(object.Key);
-    continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+    continuationToken = page.IsTruncated
+      ? page.NextContinuationToken
+      : undefined;
   } while (continuationToken);
   return keys;
 }
@@ -267,7 +262,8 @@ export async function awaitDelivery({
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     lastEvent = await lookup({ apiKey, emailId, now });
     const status = classifyDeliveryEvent(lastEvent);
-    if (status !== "pending") return { status, lastEvent, attempts: attempt + 1 };
+    if (status !== "pending")
+      return { status, lastEvent, attempts: attempt + 1 };
     if (attempt < attempts - 1) await wait(intervalMs);
   }
   return { status: "pending", lastEvent, attempts };
@@ -423,12 +419,18 @@ export async function handler(event = {}) {
 
   try {
     await putMetrics(environment, [
-      { name: "CanaryDelivered", value: delivery.status === "delivered" ? 1 : 0 },
+      {
+        name: "CanaryDelivered",
+        value: delivery.status === "delivered" ? 1 : 0,
+      },
       { name: "SubmissionsWithoutNotification", value: missing.length },
     ]);
   } catch (error) {
     console.error(
-      JSON.stringify({ msg: "canary.put_metrics_failed", error: String(error) }),
+      JSON.stringify({
+        msg: "canary.put_metrics_failed",
+        error: String(error),
+      }),
     );
   }
 
@@ -453,9 +455,7 @@ export async function handler(event = {}) {
       subject: `[ALERT] submission notification path check FAILED`,
       body,
     });
-    console.error(
-      JSON.stringify({ msg: "canary.failed", runId, failures }),
-    );
+    console.error(JSON.stringify({ msg: "canary.failed", runId, failures }));
   } else {
     console.info(JSON.stringify({ msg: "canary.ok", runId }));
   }

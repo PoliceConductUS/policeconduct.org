@@ -64,7 +64,9 @@ test("a genuinely independent destination passes clean", () => {
 
 test("parseSubmissionKey accepts only real submission keys", () => {
   assert.deepEqual(
-    parseSubmissionKey("submissions/2026-09-16/dataSubjectAccessRequest/abc123.json"),
+    parseSubmissionKey(
+      "submissions/2026-09-16/dataSubjectAccessRequest/abc123.json",
+    ),
     {
       day: "2026-09-16",
       formName: "dataSubjectAccessRequest",
@@ -75,20 +77,29 @@ test("parseSubmissionKey accepts only real submission keys", () => {
   // reconciled against, or every verified submission reports as un-notified.
   assert.equal(parseSubmissionKey("submissions/verify/abc123.json"), null);
   assert.equal(parseSubmissionKey("submissions/status/abc123.json"), null);
-  assert.equal(parseSubmissionKey("notifications/2026-09-16/abc-received.json"), null);
+  assert.equal(
+    parseSubmissionKey("notifications/2026-09-16/abc-received.json"),
+    null,
+  );
 });
 
 test("parseReceiptKey splits id and event type", () => {
-  assert.deepEqual(parseReceiptKey("notifications/2026-09-16/abc123-received.json"), {
-    day: "2026-09-16",
-    submissionId: "abc123",
-    eventType: "received",
-  });
-  assert.deepEqual(parseReceiptKey("notifications/2026-09-16/abc123-verified.json"), {
-    day: "2026-09-16",
-    submissionId: "abc123",
-    eventType: "verified",
-  });
+  assert.deepEqual(
+    parseReceiptKey("notifications/2026-09-16/abc123-received.json"),
+    {
+      day: "2026-09-16",
+      submissionId: "abc123",
+      eventType: "received",
+    },
+  );
+  assert.deepEqual(
+    parseReceiptKey("notifications/2026-09-16/abc123-verified.json"),
+    {
+      day: "2026-09-16",
+      submissionId: "abc123",
+      eventType: "verified",
+    },
+  );
 });
 
 test("reconcile finds a submission nobody was told about", () => {
@@ -118,7 +129,9 @@ test("submissions predating the cutoff are not alarmed on forever", () => {
   // The 104 historical submissions have no receipts and never will. Alarming on
   // them every run would get the canary muted, which is how monitors die.
   const missing = reconcile({
-    submissionKeys: ["submissions/2026-03-01/dataSubjectAccessRequest/old.json"],
+    submissionKeys: [
+      "submissions/2026-03-01/dataSubjectAccessRequest/old.json",
+    ],
     receiptKeys: [],
     since: "2026-09-01",
   });
