@@ -1,8 +1,8 @@
 # Verification
 
-- Cached baseline: origin/main cd8bd59; current GitHub main is not yet verified.
-- New receipt/unknown-event tests failed before implementation because staff email and notification receipts were emitted.
-- Final Lambda suite: 26 passed, 0 failed. Suppression tests cover all supported forms and configure both SNS and staff email; verified-event delivery and receipt remain covered.
-- npm test: unit and Lambda stages passed; browser stage could not start because mise could not write its trusted-config link outside the sandbox. Full suite is not green.
-- OpenSpec strict validation passed. ESLint: 0 errors, one existing unused-disable warning at index.mjs:554. Diff whitespace check passed.
-- No live sends, deployment, source-record changes, or TTL changes performed. Current upstream reconciliation and PR creation await connection card 21701b02-27f3-47e6-a838-937343ec3c57.
+- Reconciled against main 9c53457 using existing host Git credentials. Connector setup was unnecessary and its request was withdrawn.
+- Base branch ins89/selective-revert retains expired-link recovery and providerMessageId/sentAt, restores 15-minute verification defaults and unrelated prior behavior, and removes the reporting additions. Its Lambda suite passed 32/32.
+- Notification change is stacked on that base. Final Lambda suite passed 35/35, including suppression across all forms with SNS and staff email configured and preservation of verified-event delivery and receipts.
+- Full npm test passed redirects, media, Lambda, CSS, personal-data, and coverage stages. Browser tests could not start because mise could not write its trusted-config link outside the sandbox; full suite is not green.
+- OpenSpec strict validation and formatting passed. ESLint: no errors, one existing unused-disable warning. Diff whitespace check passed. Personal-data scan: 0 findings.
+- No production sends or deployment performed. Only the board user may manually merge into main.
