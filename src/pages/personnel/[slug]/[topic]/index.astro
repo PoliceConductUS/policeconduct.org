@@ -6,7 +6,6 @@ import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro
 import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
 import { formatPersonName } from "#src/lib/data/person-name.js";
-import { loadWithheldPersonnelSlugs } from "#src/lib/data/person-name-db.js";
 import { formatShortDate } from "#src/lib/format.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
@@ -20,8 +19,7 @@ export async function getStaticPaths() {
     return [];
   }
   const officers = await withDb(async (client) => {
-    const withheld = await loadWithheldPersonnelSlugs(client);
-    const rows = (
+    return (
       await client.query(
         `
           select
@@ -40,15 +38,7 @@ export async function getStaticPaths() {
           order by o.slug
         `,
       )
-    ).rows as {
-      agency_count: string | number;
-      civil_case_count: string | number;
-      report_count: string | number;
-      slug: string;
-    }[];
-    // Same withhold set as the profile route, so a topic page can never
-    // outlive the profile it belongs to.
-    return rows.filter((officer) => !withheld.has(officer.slug));
+    ).rows;
   });
   return officers.flatMap(
     (officer: {
@@ -149,11 +139,6 @@ const officerName = formatPersonName({
   first_name: data.officer.first_name,
   last_name: data.officer.last_name,
 });
-if (!officerName) {
-  throw new Error(
-    `Personnel ${slug} failed the name-quality rules and must not be published.`,
-  );
-}
 const pagePath = `/personnel/${slug}/${topicKey}/`;
 const pageTitle = `${officerName} ${topicConfig.label}`;
 const countValue =
