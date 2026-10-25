@@ -224,14 +224,125 @@ test("agreeing stores raise no dispute", async () => {
   );
 });
 
-test("the unverified numerator universe is always reported", async () => {
+const universeGap = (report) =>
+  report.gaps.find((g) => g.kind === GAP_KIND.NUMERATOR_UNIVERSE_UNVERIFIED);
+
+/** A state whose every held agency carries a sourced type. */
+const classifiedState = ({
+  code,
+  generalPurposeHeld,
+  allAgencyHeld,
+  held = allAgencyHeld,
+}) => ({
+  code,
+  held,
+  generalPurposeHeld,
+  allAgencyHeld,
+  unclassifiedHeld: 0,
+  numeratorComplete: true,
+  byCategory: {},
+});
+
+test("the unverified numerator universe is reported while agencies are untyped", async () => {
   const report = await build({ stateRows: [{ code: "VA", held: 5 }] });
-  const gap = report.gaps.find(
-    (g) => g.kind === GAP_KIND.NUMERATOR_UNIVERSE_UNVERIFIED,
-  );
+  const gap = universeGap(report);
   assert.ok(gap);
-  assert.match(gap.detail, /no agency-type column/);
-  assert.match(gap.unblockedBy, /Name matching is not sufficient/);
+  assert.match(gap.detail, /carry no sourced agency type/);
+  assert.match(gap.detail, /VA/);
+  assert.match(gap.unblockedBy, /Name matching is not a substitute/);
+});
+
+test("the unverified numerator gap disappears only when nothing is untyped", async () => {
+  // The paired half of the test above. Without this, the assertion that the
+  // gap is present would still pass if the gap were unconditional again.
+  const report = await build(
+    { stateRows: [{ code: "MN", held: 394 }] },
+    {
+      classification: [
+        classifiedState({
+          code: "MN",
+          held: 394,
+          generalPurposeHeld: 300,
+          allAgencyHeld: 390,
+        }),
+      ],
+    },
+  );
+  assert.equal(universeGap(report), undefined);
+  assert.equal(report.summary.unclassifiedHeld, 0);
+});
+
+test("a fully classified state reports achieved coverage, not a ceiling", async () => {
+  const report = await build(
+    { stateRows: [{ code: "MN", held: 394 }] },
+    {
+      classification: [
+        classifiedState({
+          code: "MN",
+          held: 394,
+          // MN denominators are 392 general-purpose and 417 all-agency.
+          generalPurposeHeld: 196,
+          allAgencyHeld: 300,
+        }),
+      ],
+    },
+  );
+  const mn = stateIn(report, "MN");
+  assert.ok(mn.generalPurpose.coverage, "expected an achieved percentage");
+  assert.equal(mn.generalPurpose.ceiling, null);
+  assert.equal(mn.generalPurpose.coverage.held, 196);
+  assert.equal(Math.round(mn.generalPurpose.coverage.percent), 50);
+  assert.equal(report.summary.achievedPercentagesReported, 2);
+  assert.equal(report.summary.jurisdictionsFullyClassified, 1);
+});
+
+test("one untyped agency sends the whole state back to a ceiling", async () => {
+  const report = await build(
+    { stateRows: [{ code: "MN", held: 394 }] },
+    {
+      classification: [
+        {
+          ...classifiedState({
+            code: "MN",
+            held: 394,
+            generalPurposeHeld: 196,
+            allAgencyHeld: 300,
+          }),
+          unclassifiedHeld: 1,
+          numeratorComplete: false,
+        },
+      ],
+    },
+  );
+  const mn = stateIn(report, "MN");
+  assert.equal(mn.generalPurpose.coverage, null);
+  assert.equal(report.summary.achievedPercentagesReported, 0);
+  assert.ok(universeGap(report));
+});
+
+test("a classified numerator over the denominator is still never a percentage", async () => {
+  // Texas as it actually measures: the numerator is now the right population
+  // and still exceeds a 2018 count. That is a gap, not 102% coverage.
+  const report = await build(
+    { stateRows: [{ code: "TX", held: 2883 }] },
+    {
+      classification: [
+        classifiedState({
+          code: "TX",
+          held: 2883,
+          generalPurposeHeld: 1064,
+          allAgencyHeld: 2559,
+        }),
+      ],
+    },
+  );
+  const tx = stateIn(report, "TX");
+  assert.equal(tx.generalPurpose.coverage, null);
+  assert.equal(tx.generalPurpose.ceiling, null);
+  const gap = tx.gaps.find((g) => g.kind === GAP_KIND.HELD_EXCEEDS_DENOMINATOR);
+  assert.ok(gap);
+  assert.match(gap.detail, /carry a sourced type/);
+  assert.match(gap.unblockedBy, /full-time-equivalent/);
 });
 
 test("missing optional columns become recorded limitations, not crashes", async () => {
