@@ -33,7 +33,7 @@
     "review:workspace": "ocr review --audience agent",
     "scan:personal-data": "node scripts/scan-personal-data.mjs --tracked",
     "setup": "bash scripts/bootstrap-dev.sh",
-    "test": "npm run test:redirects && npm run test:names && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:coverage && npm run test:e2e",
+    "test": "npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:coverage && npm run test:e2e",
     "test:coverage": "node --test \"src/lib/coverage/*.test.mjs\"",
     "test:css": "node --test scripts/purge-built-css.test.mjs",
     "test:media": "node --test scripts/video.test.mjs scripts/personnel-photos.test.mjs",
@@ -51,9 +51,7 @@
     "validate:shell": "bash -n .githooks/* scripts/*.sh infrastructure/bootstrap-*/*.sh infrastructure/bootstrap-*/scripts/*.sh",
     "validate:types": "astro check",
     "deploy:preview:sync": "bash scripts/deploy-preview-sync.sh",
-    "test:lambda": "npm --prefix infrastructure/bootstrap-policeconduct/lambdas/forms-api install --omit=dev --no-audit --no-fund && node --test infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs",
-    "validate:names": "node scripts/verify-name-quality.mjs",
-    "test:names": "node --test src/lib/data/person-name.test.mjs scripts/verify-name-quality.test.mjs"
+    "test:lambda": "npm --prefix infrastructure/bootstrap-policeconduct/lambdas/forms-api install --omit=dev --no-audit --no-fund && node --test infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

@@ -1,12 +1,10 @@
 ---
 import type { PersonnelSummary } from "#src/lib/data/types.js";
-import { renderableSuffix } from "#src/lib/data/person-name.js";
 
 const { person } = Astro.props as {
   person: PersonnelSummary;
 };
 const reportHref = `/${person.agencyState}/reports/`;
-const suffix = renderableSuffix(person.nameSuffix);
 ---
 
 <article class="card shadow-sm border-0 rounded-0 h-100">
@@ -17,7 +15,7 @@ const suffix = renderableSuffix(person.nameSuffix);
         <a class="link-dark fw-semibold" href={`/personnel/${person.slug}/`}>
           {person.firstName}
           {person.lastName}
-          {suffix ? ` ${suffix}` : ""}
+          {person.nameSuffix ? ` ${person.nameSuffix}` : ""}
         </a>
       </div>
       <div class="col-12 col-md-6 col-xl-2">

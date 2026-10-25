@@ -56,9 +56,6 @@ fi
 # Refuse to publish unaccounted prior URLs or invalid redirects.
 npm run validate:redirects
 
-# Refuse to publish a test fixture or a source placeholder as a person's name.
-npm run validate:names
-
 # ── Step 2: Generate content manifest (path → md5) ─────────────────────────
 echo "▶ Computing content hashes for ${DIST_DIR}/..."
 

@@ -1,14 +1,14 @@
 ---
 import type { PersonnelSummary } from "#src/lib/data/types.js";
-import { renderableSuffix } from "#src/lib/data/person-name.js";
 
 const { person } = Astro.props as { person: PersonnelSummary };
 
 const nameCore = person.lastName
   ? `${person.lastName}, ${person.firstName}`
   : person.firstName;
-const suffix = renderableSuffix(person.nameSuffix);
-const fullName = `${nameCore}${suffix ? ` ${suffix}` : ""}`;
+const fullName = `${nameCore}${
+  person.nameSuffix ? ` ${person.nameSuffix}` : ""
+}`;
 const initials =
   `${person.firstName?.[0] || ""}${person.lastName?.[0] || ""}`.toUpperCase();
 const detailUrl = `/personnel/${person.slug}/`;

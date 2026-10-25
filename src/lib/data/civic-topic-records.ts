@@ -2,7 +2,6 @@ import { groupBy } from "#src/lib/data.js";
 import { withDb } from "#src/lib/db.js";
 import type { CivicIndexModel } from "./civic-index.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
-import { formatPersonName } from "./person-name.js";
 
 export type CivicTopicKind =
   | "budget"
@@ -68,7 +67,7 @@ const fullName = (row: {
   first_name?: string | null;
   last_name?: string | null;
   suffix?: string | null;
-}) => formatPersonName(row);
+}) => [row.first_name, row.last_name, row.suffix].filter(Boolean).join(" ");
 
 const scopedAgencyPredicate = "lp.path like $1 || '%'";
 

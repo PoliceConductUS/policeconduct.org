@@ -5,7 +5,6 @@ import MetricGrid from "#src/components/MetricGrid.astro";
 import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
-import { formatPersonName } from "#src/lib/data/person-name.js";
 import { formatShortDate } from "#src/lib/format.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
@@ -135,10 +134,9 @@ const data = await withDb(async (client) => {
   return { assignments, civilCases, officer, reports };
 });
 
-const officerName = formatPersonName({
-  first_name: data.officer.first_name,
-  last_name: data.officer.last_name,
-});
+const officerName = [data.officer.first_name, data.officer.last_name]
+  .filter(Boolean)
+  .join(" ");
 const pagePath = `/personnel/${slug}/${topicKey}/`;
 const pageTitle = `${officerName} ${topicConfig.label}`;
 const countValue =

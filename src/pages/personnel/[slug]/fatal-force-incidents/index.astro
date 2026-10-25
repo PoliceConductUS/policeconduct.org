@@ -1,7 +1,6 @@
 ---
 import FatalForceIncidentsPage from "#src/components/FatalForceIncidentsPage.astro";
 import { withDb } from "#src/lib/db.js";
-import { formatPersonName } from "#src/lib/data/person-name.js";
 import { metricLabels } from "#src/lib/metric-vocabulary.js";
 
 export async function getStaticPaths() {
@@ -24,7 +23,14 @@ if (!officer) {
   throw new Error(`Personnel ${officerId} was not found.`);
 }
 
-const officerName = formatPersonName(officer);
+const officerName = [
+  officer.first_name,
+  officer.middle_name,
+  officer.last_name,
+  officer.suffix,
+]
+  .filter(Boolean)
+  .join(" ");
 const officerPath = `/personnel/${officer.slug}/`;
 const pagePath = `${officerPath}fatal-force-incidents/`;
 const title = `${officerName} ${metricLabels.fatalForceIncidents}`;
