@@ -1,0 +1,11 @@
+# Holds the Resend API key.
+terraform.tfvars
+*.auto.tfvars
+
+# .terraform.lock.hcl is deliberately NOT ignored: provider versions are pinned
+# so a later apply cannot quietly change what these resources mean.
+.terraform/
+.build/
+*.tfstate
+*.tfstate.*
+*.tfplan

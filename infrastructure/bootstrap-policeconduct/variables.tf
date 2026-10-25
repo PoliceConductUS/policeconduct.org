@@ -351,6 +351,27 @@ variable "alert_email_endpoints" {
   default     = []
 }
 
+variable "submission_notification_email_endpoints" {
+  description = <<-EOT
+    Email endpoints told when a form submission arrives or is verified (INS-35).
+
+    Different audience from alert_email_endpoints: these are the people who work
+    the submissions queue, not the people who get paged by a Lambda p95 alarm.
+    Data subject access requests carry a 5-business-day acknowledgement
+    commitment (INS-16), so at least one of these addresses has to belong to
+    someone who reads it on that cadence.
+
+    Leaving this empty disables the whole notification path rather than creating
+    a topic nobody is subscribed to. That is deliberate: a topic with zero
+    subscribers is what INS-20 found, and it reads as working.
+
+    Notifications carry no submission content -- only form type, submission id
+    and S3 key.
+  EOT
+  type        = list(string)
+  default     = []
+}
+
 variable "site_bucket_force_destroy" {
   description = "If true, allows deleting a non-empty site bucket."
   type        = bool
@@ -439,4 +460,39 @@ variable "tags" {
     Project   = "policeconduct.org"
     Stack     = "bootstrap"
   }
+}
+
+variable "submission_notifications_topic_arn" {
+  description = <<-EOT
+    ARN of the submission notifications SNS topic, taken from the
+    submission_notifications_topic_arn output of
+    infrastructure/submission-notifications.
+
+    That stack owns the topic, the S3 event notifications and the liveness
+    canary. This stack only grants the forms API permission to publish and puts
+    the ARN in its environment, so it needs the ARN and nothing else.
+
+    Empty means the forms API gets no topic and no publish grant — which is the
+    pre-INS-35 state where a submission stored and nobody was told. It is the
+    default only because this stack must still plan before the other one has
+    been applied.
+  EOT
+  type        = string
+  default     = ""
+}
+
+variable "notification_receipts_since" {
+  description = <<-EOT
+    Reconciliation cutoff date (YYYY-MM-DD) for the notification canary (INS-35).
+
+    Notification receipts only exist from the day this ships. The submissions
+    that predate it have none and never will (138 as of 2026-10-24); without a
+    cutoff the canary would report them as unnotified on every run and be muted
+    within a week. Those are INS-16's backlog, worked by a human, not a
+    monitoring signal.
+
+    Set this to the date the change is applied.
+  EOT
+  type        = string
+  default     = ""
 }
