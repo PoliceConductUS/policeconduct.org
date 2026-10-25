@@ -750,10 +750,16 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
         typeof (result as { requestId?: unknown })?.requestId === "string"
           ? (result as { requestId: string }).requestId.trim()
           : "";
+      // This fallback runs only when the API returned no message of its own.
+      // It deliberately states no expiry duration: the window lives in exactly
+      // one place (DEFAULT_VERIFICATION_TTL_SECONDS in the forms-api lambda)
+      // and the client cannot know it. The previous fallback hard-coded "15
+      // minutes" and the claim that unverified submissions are not reviewed.
+      // Both outlived their truth — see INS-89.
       let detailMessage =
         getSuccessDetail?.({ result }) ||
         message ||
-        "We received your submission. Check your email and open the verification link within 15 minutes. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+        "We received your submission and have saved it. We have emailed a verification link to the address you gave us — please open it so we know the address is yours and can reach you about what you sent. Please contact hello@policeconduct.org if you need help.";
       if (!verificationPending) {
         console.error("Form verification email failed", result);
         if (requestId) {

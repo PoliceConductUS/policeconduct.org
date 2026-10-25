@@ -231,9 +231,23 @@ variable "forms_email_dmarc_aggregate_report_address" {
 }
 
 variable "forms_email_verification_ttl_seconds" {
+  # 86400 = 24 hours. Raised from 900 (15 minutes) by INS-89, which measured
+  # that five of the 49 submitters who ever verified used more than ten of
+  # their fifteen minutes and the slowest used 830 of 900 seconds. A verified
+  # link is single-use and only marks one submission verified, so the window
+  # is a cheap thing to be generous with. The rationale in full, and the
+  # reason nothing user-facing may restate this number as a literal, is on
+  # DEFAULT_VERIFICATION_TTL_SECONDS in lambdas/forms-api/index.mjs.
   description = "Lifetime of post-submit verification links in seconds."
   type        = number
-  default     = 900
+  default     = 86400
+
+  validation {
+    # Minutes-long windows are what INS-89 was filed about. The lambda clamps
+    # the upper end; this catches the lower end before it reaches an apply.
+    condition     = var.forms_email_verification_ttl_seconds >= 3600 && var.forms_email_verification_ttl_seconds <= 604800
+    error_message = "Verification link TTL must be between 1 hour and 7 days (see INS-89)."
+  }
 }
 
 variable "forms_api_rate_limit_per_5m" {

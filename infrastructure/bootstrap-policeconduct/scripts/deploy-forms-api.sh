@@ -45,6 +45,22 @@ RECIPIENTS=""
 RECEIPTS_SINCE=""
 TARGETS=""
 
+# Lifetime of a submission verification link, in seconds.
+#
+# This has to be set here, and it is the reason INS-89's window change can take
+# effect at all. The Lambda reads EMAIL_VERIFICATION_TTL_SECONDS from its
+# environment and only falls back to the constant in index.mjs when the variable
+# is absent. The deployed environment has carried 900 since the feature shipped,
+# the bootstrap stack that declares this Lambda has no Terraform state (INS-39)
+# so applying it is not an option, and the merge below preserves every existing
+# key by design. Shipping the new default in code alone would therefore have
+# left the live window at 15 minutes while every test and every user-facing
+# string said 24 hours — a worse state than the bug, because it reads as fixed.
+#
+# Keep equal to DEFAULT_VERIFICATION_TTL_SECONDS in lambdas/forms-api/index.mjs,
+# which carries the reasoning for the value itself.
+VERIFICATION_TTL_SECONDS="86400"
+
 log()  { printf '\033[1m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[33mWARN\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[31mFATAL\033[0m %s\n' "$*" >&2; exit 1; }
@@ -193,12 +209,25 @@ deploy_one() {
     --arg recips "$RECIPIENTS" \
     --arg since "$RECEIPTS_SINCE" \
     --arg label "$label" \
+    --arg ttl "$VERIFICATION_TTL_SECONDS" \
     '. + {
        SUBMISSION_NOTIFICATIONS_TOPIC_ARN: $topic,
        SUBMISSION_NOTIFICATION_RECIPIENTS: $recips,
-       NOTIFICATION_RECEIPTS_SINCE: $since
+       NOTIFICATION_RECEIPTS_SINCE: $since,
+       EMAIL_VERIFICATION_TTL_SECONDS: $ttl
      } + (if $label == "" then {} else {NOTIFICATION_ENV_LABEL: $label} end)' \
     <<< "$current")"
+
+  # Report the window change explicitly. A number that moves silently inside a
+  # merged environment object is how 900 survived in production while the code
+  # and the copy said otherwise; see VERIFICATION_TTL_SECONDS above.
+  local current_ttl
+  current_ttl="$(jq -r '.EMAIL_VERIFICATION_TTL_SECONDS // "unset"' <<< "$current")"
+  if [[ "$current_ttl" != "$VERIFICATION_TTL_SECONDS" ]]; then
+    log "  verification link TTL: ${current_ttl}s -> ${VERIFICATION_TTL_SECONDS}s"
+  else
+    log "  verification link TTL: ${VERIFICATION_TTL_SECONDS}s (unchanged)"
+  fi
 
   # Sanity check the merge before sending it: the keys that were there must
   # still be there.
