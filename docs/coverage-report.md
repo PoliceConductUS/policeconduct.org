@@ -1,6 +1,6 @@
 # Agency coverage report v1
 
-Generated 2026-10-25T04:45:33.497Z from database `postgres`, dialled at 127.0.0.1:54322/postgres (server reports itself as 172.18.0.10:5432).
+Generated 2026-10-25T05:13:39.875Z from database `postgres`, dialled at 127.0.0.1:54322/postgres (server reports itself as 172.18.0.10:5432).
 
 Which store this is matters as much as the counts. Read the address above before quoting any number here: a local re-import and the production corpus do not agree, and this report asserts only what the store it measured contains.
 
@@ -31,19 +31,37 @@ Read the national ceilings with this in mind: in 4 of the 7 jurisdictions we hol
 
 ### numerator universe unverified
 
-The agency table has no agency-type column, so we cannot classify the agencies we hold into the BJS universes the denominators are drawn from. Our sources enumerate entities that employ licensed peace officers, which is not the same population as general-purpose law enforcement agencies. No achieved coverage percentage is reported anywhere in this report; ceilings are reported instead.
+655 held agencies, in DC, IL, MN, OR, VA, WA, carry no sourced agency type, so they cannot be placed in the BJS universes the denominators are drawn from. These states' sources enumerate entities that employ licensed peace officers without saying what kind of entity each one is: MN POST's productions key agencies by name only and publish no type column, and the Oregon records have no registered intake source at all. No percentage is reported for these jurisdictions or for the national total; ceilings are reported instead. States whose agencies all carry a sourced type are not affected and do report achieved coverage.
 
-_Unblocked by:_ Classify held agencies by BJS agency type, sourced per agency rather than inferred from the name. Name matching is not sufficient — it leaves the majority of the Texas corpus unclassified.
+_Unblocked by:_ Obtain a per-agency type for these states — a state roster that publishes one, or an authoritative national roster with types (INS-31). Name matching is not a substitute: it was tested on INS-79 and, beyond leaving most records unclassified, an unconstrained name join silently gave 22 Minnesota and Oregon agencies a Texas classification.
 
 ### corpus count disputed
 
-The measured store reports 3,538 agencies, but local dev seed.sql dump (2026-10-24) reports 3,003. These are stores we control and they do not agree, so there is no single authoritative held count today. The numbers in this report are the measured store's, identified above, and are not claimed to be the production corpus.
+The measured store reports 3,538 agencies, but local dev seed.sql dump, statement-level parse (2026-10-24) reports 3,008. These are stores we control and they do not agree, so there is no single authoritative held count today. The numbers in this report are the measured store's, identified above, and are not claimed to be the production corpus.
 
 _Unblocked by:_ Establish which store is authoritative for coverage reporting and reconcile the others against it, or record why they legitimately differ.
 
+## What kind of agencies we hold
+
+Agency type comes from the source's own classification of the entity, never from its name. Where no source publishes a type, the agencies are `untyped` and the state reports a ceiling rather than a percentage — `untyped` is a gap, not a category.
+
+The three leftmost count columns sum to the general-purpose numerator. `constable / marshal` and `special jurisdiction` are law enforcement agencies that BJS counts in the all-agency total but not in general-purpose. `outside the census` are entities that employ licensed peace officers — prosecutors' investigators, probation and parole, courts, jails, 911 centres — which the BJS census does not enumerate at all, so they belong in neither numerator and are the reason a licensing roster is not an agency roster.
+
+| state |  held | local police | sheriff | primary state | **general-purpose** | constable / marshal | special jurisdiction | **all-agency** | outside the census | federal | tribal | untyped |
+| ----- | ----: | -----------: | ------: | ------------: | ------------------: | ------------------: | -------------------: | -------------: | -----------------: | ------: | -----: | ------: |
+| TX    | 2,883 |          809 |     254 |             1 |           **1,064** |                 742 |                  753 |      **2,559** |                319 |       3 |      2 |       0 |
+| MN    |   394 |            0 |       0 |             0 |               **0** |                   0 |                    0 |          **0** |                  0 |       0 |      0 |     394 |
+| OR    |   237 |            0 |       0 |             0 |               **0** |                   0 |                    0 |          **0** |                  0 |       0 |      0 |     237 |
+| DC    |    17 |            0 |       0 |             0 |               **0** |                   0 |                    0 |          **0** |                  0 |       0 |      0 |      17 |
+| VA    |     5 |            0 |       0 |             0 |               **0** |                   0 |                    0 |          **0** |                  0 |       0 |      0 |       5 |
+| IL    |     1 |            0 |       0 |             0 |               **0** |                   0 |                    0 |          **0** |                  0 |       0 |      0 |       1 |
+| WA    |     1 |            0 |       0 |             0 |               **0** |                   0 |                    0 |          **0** |                  0 |       0 |      0 |       1 |
+
+Read the Texas row against that state's denominators — 1,041 general-purpose and 1,935 all-agency. The corpus looked like 2.8x the state's general-purpose count because most of it was never general-purpose: Texas elects a constable per justice-of-the-peace precinct, and the licensing roster additionally carries school district, campus, fire marshal, hospital and water district agencies plus several hundred entities the census does not count. Decomposed, the general-purpose figure lands within a few percent of the published denominator.
+
 ## By state
 
-`held` is agency records in the measured store. The two denominator columns are that state's own published counts — never a share of the national figure. `reading` is a ceiling or the name of a gap, never achieved coverage.
+`held` is agency records in the measured store. The two denominator columns are that state's own published counts — never a share of the national figure. A reading of **`= N%`** is achieved coverage: every agency held in that state carries a sourced type, so the numerator counts only agencies in that denominator's universe. A reading of `≤ N%` is a ceiling, not a measurement. Anything else is the name of a gap.
 
 A high ceiling is not near-complete coverage. `≤ 94%` means only that we hold enough records that coverage _could_ be as high as 94% if every one of them were in that universe and matched a distinct agency in it — neither of which is established. Where the same state reads `universe mismatch` in the other column, we already know the count includes records outside at least one of these universes.
 
@@ -134,10 +152,10 @@ AK (49 agencies exist), AL (401 agencies exist), AR (364 agencies exist), AZ (13
 
 #### TX — 2,883 held
 
-- **universe mismatch** — 2,883 agencies held in TX against 1,041 general-purpose agencies in TX (BJS Census of State and Local Law Enforcement Agencies, 2018). Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage and no ceiling is reported.
-  - _Unblocked by:_ Reconcile the held records against the denominator's universe. Candidate explanations, none yet tested: duplicate agency rows, sub-units such as constable precincts counted as separate agencies, entities that employ licensed officers but are not law enforcement agencies, and the BJS exclusion of agencies with less than one full-time-equivalent sworn officer.
-- **universe mismatch** — 2,883 agencies held in TX against 1,935 law enforcement agencies of all types in TX (BJS Census of State and Local Law Enforcement Agencies, 2018). Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage and no ceiling is reported.
-  - _Unblocked by:_ Reconcile the held records against the denominator's universe. Candidate explanations, none yet tested: duplicate agency rows, sub-units such as constable precincts counted as separate agencies, entities that employ licensed officers but are not law enforcement agencies, and the BJS exclusion of agencies with less than one full-time-equivalent sworn officer.
+- **universe mismatch** — 1,064 of the 2,883 agencies held in TX carry a sourced type placing them in this universe, against 1,041 general-purpose agencies in TX (BJS Census of State and Local Law Enforcement Agencies, 2018). The numerator is now the right population and still exceeds the denominator, so this is no longer an unexplained universe mismatch — it is a residual difference between our count and a 2018 enumeration, and no percentage is reported.
+  - _Unblocked by:_ Two untested causes remain, both on the denominator's side: BJS excludes agencies employing less than one full-time-equivalent sworn officer, and the enumeration is from 2018. Neither can be applied to our numerator without a sworn-headcount field BJS would recognise.
+- **universe mismatch** — 2,559 of the 2,883 agencies held in TX carry a sourced type placing them in this universe, against 1,935 law enforcement agencies of all types in TX (BJS Census of State and Local Law Enforcement Agencies, 2018). The numerator is now the right population and still exceeds the denominator, so this is no longer an unexplained universe mismatch — it is a residual difference between our count and a 2018 enumeration, and no percentage is reported.
+  - _Unblocked by:_ Two untested causes remain, both on the denominator's side: BJS excludes agencies employing less than one full-time-equivalent sworn officer, and the enumeration is from 2018. Neither can be applied to our numerator without a sworn-headcount field BJS would recognise.
 
 ## National gaps
 
@@ -157,4 +175,4 @@ AK (49 agencies exist), AL (401 agencies exist), AR (364 agencies exist), AZ (13
 
 ## Cross-checks against other stores
 
-- local dev seed.sql dump (2026-10-24): 3,003
+- local dev seed.sql dump, statement-level parse (2026-10-24): 3,008

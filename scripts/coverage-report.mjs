@@ -15,11 +15,13 @@
  * instead of something only the person running the script notices.
  */
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
 import { withDb } from "../src/lib/db.js";
 import { measureHeldAgencies } from "../src/lib/coverage/held-counts.js";
+import { summarizeClassifications } from "../src/lib/coverage/agency-types.js";
+import { classifyHeldAgencies } from "../src/lib/coverage/classify-held-agencies.js";
 import {
   buildCoverageReport,
   renderCoverageReportMarkdown,
@@ -103,12 +105,35 @@ const main = async () => {
   const options = parseArgs(process.argv.slice(2));
   const connectionTarget = describeTarget();
 
-  const measurement = await withDb((client) =>
-    measureHeldAgencies(client, { connectionTarget }),
+  const roster = JSON.parse(
+    await readFile(
+      new URL(
+        "../src/lib/coverage/data/tcole-department-types.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
   );
+
+  const { measurement, classification } = await withDb(async (client) => {
+    const measured = await measureHeldAgencies(client, { connectionTarget });
+    // Every held agency, so a state is only ever reported as fully classified
+    // when the classifier actually saw all of its rows.
+    const { rows } = await client.query(
+      `select id, name, upper(btrim(state)) as state from public.agency`,
+    );
+    return {
+      measurement: measured,
+      classification: summarizeClassifications(
+        classifyHeldAgencies(rows, roster),
+      ),
+    };
+  });
+
   const report = buildCoverageReport({
     measurement,
     corpusCrossChecks: options.crossChecks,
+    classification,
   });
   const markdown = renderCoverageReportMarkdown(report);
 
@@ -124,17 +149,38 @@ const main = async () => {
 
   // A report that claims coverage it cannot defend is the failure mode this
   // issue was opened to prevent, so assert it here rather than trusting review.
-  if (report.summary.achievedPercentagesReported !== 0) {
-    throw new Error(
-      "Coverage report claimed an achieved percentage. v1 reports ceilings only.",
-    );
+  //
+  // Until INS-79 this read `achievedPercentagesReported !== 0`, because no
+  // numerator could be placed in a denominator's universe. Now that some can,
+  // the guard checks the property that actually matters and that will still
+  // matter when more states are classified: a percentage may only appear for a
+  // state where every held agency carries a sourced type. Deleting the guard
+  // along with the condition it used to enforce is how a control disappears.
+  const fullyClassified = new Set(
+    classification
+      .filter((row) => row.numeratorComplete)
+      .map((row) => row.code),
+  );
+  for (const state of report.states) {
+    for (const reading of [state.generalPurpose, state.allAgency]) {
+      if (reading.coverage && !fullyClassified.has(state.code)) {
+        throw new Error(
+          `Coverage report claimed an achieved percentage for ${state.code}, which has ` +
+            `agencies with no sourced type. A percentage requires a numerator drawn from ` +
+            `the denominator's universe; this one is not.`,
+        );
+      }
+    }
   }
 
   console.error(
     `coverage report: ${report.national.held} agencies held, ` +
       `${report.summary.jurisdictionsWithRecords} jurisdictions with records, ` +
       `${report.summary.jurisdictionsWithoutRecords} with none, ` +
-      `${report.summary.universeMismatches} universe mismatches.`,
+      `${report.summary.universeMismatches} universe mismatches, ` +
+      `${report.summary.achievedPercentagesReported} achieved percentages from ` +
+      `${report.summary.jurisdictionsFullyClassified} fully classified jurisdictions, ` +
+      `${report.summary.unclassifiedHeld} agencies still untyped.`,
   );
 };
 
