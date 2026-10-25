@@ -1,8 +1,8 @@
 {
-  "asOf": "2026-10-25T05:05:24.525Z",
+  "asOf": "2026-10-25T05:13:39.875Z",
   "asOfYear": 2026,
   "measurement": {
-    "measuredAt": "2026-10-25T05:05:24.490Z",
+    "measuredAt": "2026-10-25T05:13:39.802Z",
     "database": {
       "database": "postgres",
       "host": "172.18.0.10",
@@ -51,8 +51,8 @@
   },
   "corpusCrossChecks": [
     {
-      "store": "local dev seed.sql dump (2026-10-24)",
-      "count": 3003
+      "store": "local dev seed.sql dump, statement-level parse (2026-10-24)",
+      "count": 3008
     }
   ],
   "national": {
@@ -4595,7 +4595,7 @@
     {
       "kind": "corpus_count_disputed",
       "scope": "national",
-      "detail": "The measured store reports 3,538 agencies, but local dev seed.sql dump (2026-10-24) reports 3,003. These are stores we control and they do not agree, so there is no single authoritative held count today. The numbers in this report are the measured store's, identified above, and are not claimed to be the production corpus.",
+      "detail": "The measured store reports 3,538 agencies, but local dev seed.sql dump, statement-level parse (2026-10-24) reports 3,008. These are stores we control and they do not agree, so there is no single authoritative held count today. The numbers in this report are the measured store's, identified above, and are not claimed to be the production corpus.",
       "unblockedBy": "Establish which store is authoritative for coverage reporting and reconcile the others against it, or record why they legitimately differ."
     }
   ],
