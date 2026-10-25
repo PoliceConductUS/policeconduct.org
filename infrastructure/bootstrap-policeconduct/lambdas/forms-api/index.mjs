@@ -154,10 +154,38 @@ function pendingStatusPayload(submissionId) {
   };
 }
 
+/**
+ * Message for a verification attempt that did not succeed.
+ *
+ * The previous version of this appended, to every failure, "Your submission
+ * will not be accepted for review unless it is verified." INS-89 found that
+ * sentence to be false as written: a human is notified of every submission on
+ * receipt, before any verification happens (`notifySubmissionEvent` with
+ * eventType "received"), and INS-16 §10 settled that an unverified data
+ * subject access request is still a live request. We do not throw unverified
+ * submissions away, so we should stop telling people we do — the 45 submitters
+ * whose links expired include four asking to have their own information
+ * removed, and that sentence told each of them their request was void.
+ *
+ * It was also a cul-de-sac. The commonest failure by far is an expired link,
+ * and the only thing we offered was an unmonitored contact address.
+ */
 function verificationLinkFailureMessage(message) {
   const detail =
     typeof message === "string" && message.trim() ? `${message.trim()} ` : "";
-  return `We could not verify your submission. ${detail}Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.`;
+  return `We could not verify your submission. ${detail}We still have what you sent us. Please contact hello@policeconduct.org if you need help.`;
+}
+
+/**
+ * Message for an expired link, which is recoverable and should say so.
+ *
+ * Kept separate from the generic failure text because this is the one failure
+ * with an action attached, and the action is the whole point: the submitter
+ * must not conclude they have to fill the form in again. Two of the people in
+ * the INS-89 sample did exactly that.
+ */
+function verificationLinkExpiredMessage(ttlMs) {
+  return `This verification link has expired. Links stay valid for ${formatApproximateDuration(ttlMs)}. We still have your submission and you do not need to fill the form in again — ask us for a new link below and we will email one to the same address.`;
 }
 
 function sentryRequestContext(context, extra = {}) {
@@ -318,6 +346,70 @@ function getSiteOrigin(event) {
   return isAllowedOrigin(origin) ? origin : "";
 }
 
+/**
+ * Lifetime of a post-submit verification link.
+ *
+ * The prior value was 15 minutes, written as a bare `900` with no stated
+ * reason. INS-89 measured the store: of the 49 submitters who ever verified,
+ * the median took 37 seconds — but five used more than ten minutes of the
+ * fifteen available, and the slowest used 830 of 900 seconds. A hard wall with
+ * a measured tail pressed against it is truncating real people, and two of the
+ * 45 lost submitters are visible in the store coming back 47 minutes and 19
+ * hours later to fill the whole form in again because their link had died.
+ *
+ * 24 hours covers one full mail-checking cycle: someone who submits from a
+ * phone at 11pm and opens their mail the next morning still has a live link.
+ *
+ * The security cost of the longer window is small and bounded, which is why
+ * this is a cheap knob to turn. The token is single-use, HMAC-bound to one
+ * verificationId, and the only thing it authorizes is marking that one
+ * submission verified. It grants no read access to the submission, no account,
+ * and no power over anyone else's record. Lengthening it ages a bearer token
+ * that can still only ever be spent once.
+ *
+ * Do not reintroduce a bare number here. Anything user-facing that states this
+ * duration must render it with `formatApproximateDuration` from this same
+ * value, or the published promise and the code drift apart again — which is
+ * exactly how the site came to tell submitters "15 minutes" from a string
+ * literal sitting two files away from the only real deadline.
+ */
+const DEFAULT_VERIFICATION_TTL_SECONDS = 24 * 60 * 60;
+
+/**
+ * Upper bound on the configured window.
+ *
+ * Not a security boundary — a typo guard. `EMAIL_VERIFICATION_TTL_SECONDS` is
+ * a plain string in Lambda environment config; an extra zero should not mint
+ * month-long links silently.
+ */
+const MAX_VERIFICATION_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+/** How many replacement links one expired link may be traded in for. */
+const MAX_VERIFICATION_RESENDS = 3;
+
+/** Minimum gap between two replacement links for the same submission. */
+const VERIFICATION_RESEND_COOLDOWN_MS = 60 * 1000;
+
+/**
+ * Render a duration the way a person reading an email would say it.
+ *
+ * Every user-facing mention of the expiry window goes through here so that
+ * changing the TTL changes the sentence. Rounds to the nearest whole unit,
+ * because "expires in 23 hours 59 minutes" is not how anyone talks.
+ */
+function formatApproximateDuration(ms) {
+  const totalMinutes = Math.max(1, Math.round(ms / 60000));
+  if (totalMinutes < 60) {
+    return `${totalMinutes} minute${totalMinutes === 1 ? "" : "s"}`;
+  }
+  const totalHours = Math.round(totalMinutes / 60);
+  if (totalHours < 48) {
+    return `${totalHours} hour${totalHours === 1 ? "" : "s"}`;
+  }
+  const totalDays = Math.round(totalHours / 24);
+  return `${totalDays} day${totalDays === 1 ? "" : "s"}`;
+}
+
 function verificationConfig() {
   const bucket = process.env.SUBMISSIONS_BUCKET;
   const kmsKeyId = process.env.SUBMISSIONS_KMS_KEY_ID;
@@ -330,7 +422,8 @@ function verificationConfig() {
   const resendApiKey = (process.env.RESEND_API_KEY || "").trim();
   const hmacSecret = (process.env.EMAIL_VERIFICATION_HMAC_SECRET || "").trim();
   const ttlSeconds = Number(
-    process.env.EMAIL_VERIFICATION_TTL_SECONDS || "900",
+    process.env.EMAIL_VERIFICATION_TTL_SECONDS ||
+      String(DEFAULT_VERIFICATION_TTL_SECONDS),
   );
 
   if (!bucket) {
@@ -356,12 +449,20 @@ function verificationConfig() {
     kmsKeyId,
     prefix,
     resendApiKey,
-    ttlMs:
-      Number.isFinite(ttlSeconds) && ttlSeconds > 0
-        ? ttlSeconds * 1000
-        : 900000,
+    ttlMs: resolveVerificationTtlMs(ttlSeconds),
     verificationPrefix,
   };
+}
+
+/**
+ * Clamp a configured TTL to something sane, falling back to the documented
+ * default rather than to a second magic number.
+ */
+function resolveVerificationTtlMs(ttlSeconds) {
+  if (!Number.isFinite(ttlSeconds) || ttlSeconds <= 0) {
+    return DEFAULT_VERIFICATION_TTL_SECONDS * 1000;
+  }
+  return Math.min(ttlSeconds, MAX_VERIFICATION_TTL_SECONDS) * 1000;
 }
 
 function verificationKey(verificationPrefix, verificationId) {
@@ -377,6 +478,54 @@ function hashVerificationSecret(verificationId, secret, hmacSecret) {
 
 function createVerificationSecret() {
   return crypto.randomBytes(24).toString("base64url");
+}
+
+/**
+ * Compare two hex digests without leaking where they diverge.
+ *
+ * `crypto.timingSafeEqual` throws on a length mismatch, and a stored hash is
+ * the empty string once a link has been used, so the length guard has to come
+ * first and has to be plain equality on a non-secret quantity.
+ */
+function timingSafeEqualHex(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") {
+    return false;
+  }
+  if (a.length === 0 || a.length !== b.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(Buffer.from(a, "hex"), Buffer.from(b, "hex"));
+}
+
+/**
+ * Stamp the verification record with what the mail provider said.
+ *
+ * INS-89 could not tell deliverability from abandonment for 28 of 45 lost
+ * submissions, because the store records that we *tried* to send and nothing
+ * about what happened next. Keeping Resend's message id makes the record
+ * joinable to Resend's own delivery and bounce history after the fact, which
+ * is the cheapest possible step toward answering that question. It is not a
+ * substitute for consuming delivery webhooks (INS-89 follow-up) — it is what
+ * makes consuming them useful, since without an id there is nothing to join on.
+ *
+ * Best effort by design: the link is already live and the submitter already has
+ * it, so failing to annotate the record must not fail the request.
+ */
+async function recordVerificationSend(key, record, sendResult, config) {
+  const providerMessageId =
+    sendResult && typeof sendResult.id === "string" ? sendResult.id : "";
+  if (!providerMessageId) {
+    return;
+  }
+  try {
+    await writeJsonObject(config.bucket, config.kmsKeyId, key, {
+      ...record,
+      providerMessageId,
+      sentAt: new Date().toISOString(),
+    });
+  } catch (_error) {
+    // Swallowed on purpose. See the note above.
+  }
 }
 
 async function readJsonObject(bucket, key) {
@@ -457,26 +606,43 @@ function getVerificationEmail(data, formName) {
 async function sendVerificationEmail({
   formName,
   origin,
+  replacement = false,
   submissionId,
   toAddress,
   token,
   ttlMs,
 }) {
   const { fromAddress, resendApiKey } = verificationConfig();
-  const ttlMinutes = Math.max(1, Math.round(ttlMs / 60000));
+  const window = formatApproximateDuration(ttlMs);
   const verifyUrl = `${origin}/verify/?token=${encodeURIComponent(token)}`;
   const subjectPrefix =
     sentryEnvironment && sentryEnvironment !== "production"
       ? `[${sentryEnvironment}] `
       : "";
   const body = [
-    "PoliceConduct.org submission verification",
+    replacement
+      ? "PoliceConduct.org replacement verification link"
+      : "PoliceConduct.org submission verification",
     "",
+    ...(replacement
+      ? [
+          "You asked for a new verification link because the previous one had",
+          "expired. Your original submission is still held; you do not need to",
+          "fill the form in again.",
+          "",
+        ]
+      : []),
     "Please verify your submission by opening this link:",
     verifyUrl,
     "",
-    `This link expires in ${ttlMinutes} minute${ttlMinutes === 1 ? "" : "s"}.`,
+    `This link expires in ${window}.`,
+    ...(replacement
+      ? ["Any earlier link for this submission no longer works."]
+      : []),
     `Form: ${formName}`,
+    "",
+    "If the link has expired by the time you read this, open it anyway and we",
+    "will offer to email you a new one.",
     "",
     "If you did not request this, you can ignore this email.",
     "This mailbox is not monitored.",
@@ -490,10 +656,13 @@ async function sendVerificationEmail({
     },
     body: JSON.stringify({
       from: fromAddress,
-      subject: `${subjectPrefix}Verify your PoliceConduct.org submission`,
+      subject: replacement
+        ? `${subjectPrefix}Your new PoliceConduct.org verification link`
+        : `${subjectPrefix}Verify your PoliceConduct.org submission`,
       tags: [
         { name: "formName", value: formName },
         { name: "submissionId", value: submissionId },
+        { name: "replacement", value: replacement ? "true" : "false" },
         {
           name: "environment",
           value:
@@ -1056,7 +1225,15 @@ async function notifySubmissionEvent({
 export const __testables = {
   ALLOWED_FORM_NAMES,
   CLOCKED_FORM_NAMES,
+  DEFAULT_VERIFICATION_TTL_SECONDS,
+  MAX_VERIFICATION_RESENDS,
+  MAX_VERIFICATION_TTL_SECONDS,
   NOTIFICATION_RECEIPTS_PREFIX,
+  formatApproximateDuration,
+  hashVerificationSecret,
+  resolveVerificationTtlMs,
+  verificationLinkExpiredMessage,
+  verificationLinkFailureMessage,
   notificationReceiptKey,
   notifySubmissionEvent,
   publishSubmissionNotification,
@@ -1479,30 +1656,64 @@ async function verifySubmissionLink(event, requestId) {
   const { config, key, record } = await loadVerificationRecord(verificationId);
   if (!record) {
     return json(400, {
+      reason: "not_found",
       message: verificationLinkFailureMessage("Verification link not found."),
-    });
-  }
-  if (verificationExpired(record)) {
-    return json(400, {
-      message: verificationLinkFailureMessage("Verification link expired."),
     });
   }
   if (record.usedAt) {
     return json(400, {
+      reason: "already_used",
       message: verificationLinkFailureMessage(
-        "Verification link already used.",
+        "That verification link has already been used, so this submission is already verified.",
       ),
     });
   }
 
+  // The secret is checked before the expiry branch, not after. Expiry is now
+  // the branch that can mint a replacement link and send mail, so it must sit
+  // behind proof that the caller actually holds the link we issued. Checking
+  // expiry first — as this did — would let anyone who turned up a
+  // verificationId trigger mail to the submitter.
   const expectedHash = hashVerificationSecret(
     verificationId,
     secret,
     config.hmacSecret,
   );
-  if (expectedHash !== record.secretHash) {
+  if (!timingSafeEqualHex(expectedHash, record.secretHash)) {
     return json(400, {
+      reason: "invalid_token",
       message: verificationLinkFailureMessage("Invalid verification token."),
+    });
+  }
+
+  if (verificationExpired(record)) {
+    const resendsLeft =
+      MAX_VERIFICATION_RESENDS - (Number(record.resendCount) || 0);
+    console.info(
+      JSON.stringify({
+        msg: "forms.verify.expired",
+        requestId,
+        submissionId: record.submissionId,
+        verificationId,
+        formName: record.formName || null,
+        // How late they were. This is the number that tells us whether the
+        // window is still costing us submitters after INS-89 widened it.
+        secondsLate: Math.round(
+          (Date.now() - new Date(record.expiresAt || 0).getTime()) / 1000,
+        ),
+        ttlSeconds: Math.round(config.ttlMs / 1000),
+        resendCount: Number(record.resendCount) || 0,
+      }),
+    );
+    return json(400, {
+      reason: "expired",
+      canResend: resendsLeft > 0,
+      message:
+        resendsLeft > 0
+          ? verificationLinkExpiredMessage(config.ttlMs)
+          : verificationLinkFailureMessage(
+              "This verification link has expired and we have already sent as many replacements as we can.",
+            ),
     });
   }
 
@@ -1540,10 +1751,191 @@ async function verifySubmissionLink(event, requestId) {
     }),
   );
 
+  // This used to repeat "Your submission will not be accepted for review
+  // unless it is verified" on the *success* path, where it reads as a threat
+  // about something the reader has just done. It was also not true. See
+  // verificationLinkFailureMessage.
   return json(200, {
     message:
-      "Your submission has been verified. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.",
+      "Your submission has been verified. We have confirmed this email address belongs to you, which helps us reach you if we have questions about what you sent.",
     submissionId: record.submissionId,
+  });
+}
+
+/**
+ * Trade an expired-but-authentic verification link for a fresh one.
+ *
+ * This is deliberately not a "resend verification email" form. There is no
+ * address input: the caller must present a token whose HMAC matches a
+ * verification record we issued, and the replacement goes to the address
+ * already stored on that record. That makes the endpoint useless as a mail
+ * amplifier — the only mailbox it can reach is one that already received our
+ * mail — which is why it needs no reCAPTCHA of its own and can be reached
+ * straight from a dead link.
+ *
+ * Rotating the secret is the point, not a side effect: the expired link stops
+ * working the moment a replacement is issued, so a link that leaked out of a
+ * forwarded email cannot be redeemed after the submitter has moved on.
+ */
+async function resendVerificationLink(event, requestId) {
+  const payload = parseJsonBody(event);
+  const { verificationId, secret } = parseVerificationToken(payload?.token);
+
+  if (!verificationId || !secret) {
+    return json(400, {
+      reason: "invalid_token",
+      message: verificationLinkFailureMessage("Invalid verification token."),
+    });
+  }
+
+  const origin = getSiteOrigin(event);
+  if (!origin) {
+    return json(400, {
+      reason: "missing_origin",
+      message: verificationLinkFailureMessage(
+        "We could not build a new link for this request.",
+      ),
+    });
+  }
+
+  const { config, key, record } = await loadVerificationRecord(verificationId);
+  if (!record) {
+    return json(400, {
+      reason: "not_found",
+      message: verificationLinkFailureMessage("Verification link not found."),
+    });
+  }
+  if (record.usedAt) {
+    return json(400, {
+      reason: "already_used",
+      message: verificationLinkFailureMessage(
+        "That submission is already verified, so there is nothing to send.",
+      ),
+    });
+  }
+
+  const expectedHash = hashVerificationSecret(
+    verificationId,
+    secret,
+    config.hmacSecret,
+  );
+  if (!timingSafeEqualHex(expectedHash, record.secretHash)) {
+    return json(400, {
+      reason: "invalid_token",
+      message: verificationLinkFailureMessage("Invalid verification token."),
+    });
+  }
+
+  const resendCount = Number(record.resendCount) || 0;
+  if (resendCount >= MAX_VERIFICATION_RESENDS) {
+    return json(429, {
+      reason: "resend_limit",
+      message: verificationLinkFailureMessage(
+        "We have already sent as many replacement links as we can for this submission.",
+      ),
+    });
+  }
+
+  const lastResentAtMs = record.lastResentAt
+    ? new Date(record.lastResentAt).getTime()
+    : 0;
+  if (
+    lastResentAtMs &&
+    Date.now() - lastResentAtMs < VERIFICATION_RESEND_COOLDOWN_MS
+  ) {
+    return json(429, {
+      reason: "resend_cooldown",
+      message: verificationLinkFailureMessage(
+        "We just sent a new link. Please check your email, including your spam folder, before asking for another.",
+      ),
+    });
+  }
+
+  if (!record.email || !isValidEmail(record.email)) {
+    return json(400, {
+      reason: "no_address",
+      message: verificationLinkFailureMessage(
+        "We do not have a usable email address for this submission.",
+      ),
+    });
+  }
+
+  const nextSecret = createVerificationSecret();
+  const resentAt = new Date().toISOString();
+  const nextRecord = {
+    ...record,
+    expiresAt: new Date(Date.now() + config.ttlMs).toISOString(),
+    lastResentAt: resentAt,
+    resendCount: resendCount + 1,
+    secretHash: hashVerificationSecret(
+      verificationId,
+      nextSecret,
+      config.hmacSecret,
+    ),
+  };
+
+  // Write before sending, so a send that half-succeeds cannot leave a live
+  // link we have no record of. The cost is that a failed send burns one of the
+  // three attempts, which is the safer way round.
+  await writeJsonObject(config.bucket, config.kmsKeyId, key, nextRecord);
+
+  try {
+    const sendResult = await sendVerificationEmail({
+      formName: record.formName || "unknown",
+      origin,
+      replacement: true,
+      submissionId: record.submissionId,
+      toAddress: record.email,
+      token: `${verificationId}.${nextSecret}`,
+      ttlMs: config.ttlMs,
+    });
+    await recordVerificationSend(key, nextRecord, sendResult, config);
+  } catch (error) {
+    captureLambdaException(
+      error,
+      { requestId, stage: event?.requestContext?.stage || null },
+      {
+        operation: "resend_verification_email",
+        submissionId: record.submissionId,
+        verificationId,
+      },
+    );
+    console.error(
+      JSON.stringify({
+        msg: "forms.verify.resend_failed",
+        requestId,
+        submissionId: record.submissionId,
+        verificationId,
+        error: errorInfo(error),
+      }),
+    );
+    return json(502, {
+      reason: "send_failed",
+      message: verificationLinkFailureMessage(
+        "We could not send a new link just now.",
+      ),
+    });
+  }
+
+  console.info(
+    JSON.stringify({
+      msg: "forms.verify.resend_sent",
+      requestId,
+      submissionId: record.submissionId,
+      verificationId,
+      formName: record.formName || null,
+      resendCount: resendCount + 1,
+      // Domain only. The address itself is submitter data and does not belong
+      // in a log line, but the provider is the one dimension INS-89 found that
+      // actually predicts whether our mail arrives.
+      emailDomain: emailDomain(record.email),
+    }),
+  );
+
+  // Deliberately does not echo the address back. The caller proved they hold
+  // the link, not that they are the submitter reading that mailbox.
+  return json(200, {
+    message: `We have emailed a new verification link to the address on this submission. It is valid for ${formatApproximateDuration(config.ttlMs)}. If it does not arrive, please check your spam folder.`,
   });
 }
 
@@ -1779,6 +2171,7 @@ async function submitForm(event, requestId) {
       secret,
       config.hmacSecret,
     ),
+    resendCount: 0,
     submissionId,
     usedAt: null,
     verificationId,
@@ -1786,8 +2179,9 @@ async function submitForm(event, requestId) {
   };
 
   try {
-    await saveVerificationRecord(verificationRecord);
-    await sendVerificationEmail({
+    const { key: verificationRecordKey } =
+      await saveVerificationRecord(verificationRecord);
+    const sendResult = await sendVerificationEmail({
       formName,
       origin,
       submissionId,
@@ -1795,6 +2189,12 @@ async function submitForm(event, requestId) {
       token: `${verificationId}.${secret}`,
       ttlMs: config.ttlMs,
     });
+    await recordVerificationSend(
+      verificationRecordKey,
+      verificationRecord,
+      sendResult,
+      config,
+    );
   } catch (error) {
     captureLambdaException(
       error,
@@ -1822,9 +2222,19 @@ async function submitForm(event, requestId) {
     return verificationFailureResponse(requestId, "send_failed");
   }
 
+  // The duration is rendered from the one configured TTL, never typed out.
+  // The old copy said "within 15 minutes" as a literal, so the deadline in the
+  // sentence and the deadline in the code were only ever equal by coincidence.
+  //
+  // The claim that an unverified submission "will not be accepted for review"
+  // is gone because it was false: the submission is already written to S3 and
+  // already announced to a human above this line, and INS-16 §10 holds that an
+  // unverified data subject access request is a live request. INS-89 ships this
+  // wording as the accurate description of what verification actually buys —
+  // a confirmed way to reach the submitter — and flags it to the Executive
+  // Director as a public representation about how we handle submissions.
   return json(200, {
-    message:
-      "We received your submission. Check your email and open the verification link within 15 minutes. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.",
+    message: `We received your submission and have saved it. We have emailed a verification link to the address you gave us — please open it within ${formatApproximateDuration(config.ttlMs)} so we know the address is yours and can reach you about what you sent. If the link has expired by the time you find it, open it anyway and we will offer to email you a new one. Please contact hello@policeconduct.org if you need help.`,
     verificationPending: true,
   });
 }
@@ -1917,6 +2327,13 @@ export const handler = async (event) => {
     if (method === "POST" && path === "/forms/verify-link") {
       return withCors(
         await verifySubmissionLink(event, requestId),
+        allowedOrigin,
+      );
+    }
+
+    if (method === "POST" && path === "/forms/resend-verification") {
+      return withCors(
+        await resendVerificationLink(event, requestId),
         allowedOrigin,
       );
     }

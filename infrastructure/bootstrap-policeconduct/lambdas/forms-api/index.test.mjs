@@ -25,7 +25,12 @@ function apiEvent({ method, path, origin, body }) {
   };
 }
 
-const WRITE_ROUTES = ["/forms/submit", "/forms/draft", "/forms/verify-link"];
+const WRITE_ROUTES = [
+  "/forms/submit",
+  "/forms/draft",
+  "/forms/verify-link",
+  "/forms/resend-verification",
+];
 
 const UNTRUSTED_ORIGINS = [
   // No Origin header at all — the curl default, and the bug in INS-21.
@@ -81,6 +86,7 @@ test("sendVerificationEmail sends the expected Resend request", async () => {
     assert.deepEqual(requestBody.tags, [
       { name: "formName", value: "contact" },
       { name: "submissionId", value: "sub_123" },
+      { name: "replacement", value: "false" },
       { name: "environment", value: "unknown" },
     ]);
     assert.deepEqual(result, { id: "email_123" });
@@ -653,4 +659,384 @@ test("both notification paths failing is called out on its own line", async () =
     console.error = originalError;
     console.warn = originalWarn;
   }
+});
+
+// ---------------------------------------------------------------------------
+// INS-89: the expiry window, and the way out of an expired link.
+// ---------------------------------------------------------------------------
+
+test("the verification window is hours, not minutes, and is the documented default", () => {
+  // The number INS-89 was filed about was 900. Guard the floor rather than the
+  // exact value, so raising the window further does not break the test but
+  // quietly reverting to minutes does.
+  assert.equal(__testables.DEFAULT_VERIFICATION_TTL_SECONDS, 86400);
+  assert.ok(
+    __testables.DEFAULT_VERIFICATION_TTL_SECONDS >= 3600,
+    "a verification link must stay valid for at least an hour",
+  );
+
+  const previous = process.env.EMAIL_VERIFICATION_TTL_SECONDS;
+  delete process.env.EMAIL_VERIFICATION_TTL_SECONDS;
+  process.env.RESEND_API_KEY = "re_test_123";
+  try {
+    // With nothing configured, the fallback must be the documented constant.
+    // It used to be a second, independent literal 900000.
+    assert.equal(
+      __testables.verificationConfig().ttlMs,
+      __testables.DEFAULT_VERIFICATION_TTL_SECONDS * 1000,
+    );
+  } finally {
+    if (previous === undefined) {
+      delete process.env.EMAIL_VERIFICATION_TTL_SECONDS;
+    } else {
+      process.env.EMAIL_VERIFICATION_TTL_SECONDS = previous;
+    }
+  }
+});
+
+test("a garbled or absurd TTL falls back or clamps instead of being honoured", () => {
+  const { resolveVerificationTtlMs, DEFAULT_VERIFICATION_TTL_SECONDS } =
+    __testables;
+  const fallback = DEFAULT_VERIFICATION_TTL_SECONDS * 1000;
+
+  assert.equal(resolveVerificationTtlMs(Number.NaN), fallback);
+  assert.equal(resolveVerificationTtlMs(0), fallback);
+  assert.equal(resolveVerificationTtlMs(-60), fallback);
+  assert.equal(resolveVerificationTtlMs(7200), 7200 * 1000);
+  // An extra zero on a week must not mint ten-week links.
+  assert.equal(
+    resolveVerificationTtlMs(__testables.MAX_VERIFICATION_TTL_SECONDS * 10),
+    __testables.MAX_VERIFICATION_TTL_SECONDS * 1000,
+  );
+});
+
+test("user-facing durations are rendered from the TTL, never written out", () => {
+  const { formatApproximateDuration } = __testables;
+  assert.equal(formatApproximateDuration(60 * 1000), "1 minute");
+  assert.equal(formatApproximateDuration(15 * 60 * 1000), "15 minutes");
+  assert.equal(formatApproximateDuration(60 * 60 * 1000), "1 hour");
+  assert.equal(formatApproximateDuration(24 * 60 * 60 * 1000), "24 hours");
+  assert.equal(formatApproximateDuration(72 * 60 * 60 * 1000), "3 days");
+
+  // The mutation that matters: if the window changes, the sentence changes.
+  // A hard-coded "15 minutes" in the copy is what INS-89 found shipped.
+  const sentence = __testables.verificationLinkExpiredMessage(
+    __testables.DEFAULT_VERIFICATION_TTL_SECONDS * 1000,
+  );
+  assert.match(sentence, /24 hours/);
+  assert.doesNotMatch(sentence, /15 minutes/);
+  assert.match(
+    __testables.verificationLinkExpiredMessage(15 * 60 * 1000),
+    /15 minutes/,
+  );
+});
+
+test("no user-facing verification copy claims unverified submissions are discarded", () => {
+  // The published sentence INS-89 found to be false. It is not enough to have
+  // removed it from one string: it was duplicated across the submit response,
+  // the verify success response and every failure message.
+  const claim = /will not be accepted for review/;
+  assert.doesNotMatch(__testables.verificationLinkFailureMessage("x"), claim);
+  assert.doesNotMatch(
+    __testables.verificationLinkExpiredMessage(86400000),
+    claim,
+  );
+});
+
+/**
+ * Stand up an in-memory S3 holding one verification record, and a Resend stub.
+ *
+ * Returns the store so a test can assert on what was written back, which is
+ * where the resend count, the rotated secret and the new expiry live.
+ */
+function withVerificationStore(record, run) {
+  const originalSend = S3Client.prototype.send;
+  const originalFetch = global.fetch;
+  const store = new Map();
+  const sent = [];
+  if (record) {
+    store.set(`submissions/verify/${record.verificationId}.json`, record);
+  }
+
+  S3Client.prototype.send = async function (command) {
+    const name = command?.constructor?.name ?? "unknown";
+    const key = command?.input?.Key;
+    if (name === "GetObjectCommand") {
+      if (!store.has(key)) {
+        const error = new Error("NoSuchKey");
+        error.name = "NoSuchKey";
+        throw error;
+      }
+      return {
+        Body: { transformToString: async () => JSON.stringify(store.get(key)) },
+      };
+    }
+    if (name === "PutObjectCommand") {
+      store.set(key, JSON.parse(command.input.Body));
+      return {};
+    }
+    return {};
+  };
+  global.fetch = async (_url, init) => {
+    sent.push(JSON.parse(init.body));
+    return new Response(JSON.stringify({ id: `email_${sent.length}` }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+
+  return (async () => {
+    try {
+      return await run({ store, sent });
+    } finally {
+      S3Client.prototype.send = originalSend;
+      global.fetch = originalFetch;
+    }
+  })();
+}
+
+function verificationFixture({ ageMs = 0, ttlMs = 86400000, ...overrides }) {
+  const secret = "test-secret-value";
+  const createdAt = new Date(Date.now() - ageMs).toISOString();
+  return {
+    secret,
+    record: {
+      createdAt,
+      email: "person@example.org",
+      expiresAt: new Date(Date.now() - ageMs + ttlMs).toISOString(),
+      formName: "reportNew",
+      resendCount: 0,
+      secretHash: __testables.hashVerificationSecret(
+        "verif_abc",
+        secret,
+        process.env.EMAIL_VERIFICATION_HMAC_SECRET,
+      ),
+      submissionId: "sub_abc",
+      usedAt: null,
+      verificationId: "verif_abc",
+      verifiedAt: null,
+      ...overrides,
+    },
+  };
+}
+
+function verifyEvent(path, token) {
+  return apiEvent({
+    method: "POST",
+    path,
+    origin: "https://www.policeconduct.org",
+    body: { token },
+  });
+}
+
+test("an expired link is no longer a dead end: it offers a resend", async () => {
+  process.env.RESEND_API_KEY = "re_test_123";
+  const { record, secret } = verificationFixture({
+    // Two days late under a 24-hour window.
+    ageMs: 48 * 60 * 60 * 1000,
+  });
+
+  await withVerificationStore(record, async () => {
+    const response = await handler(
+      verifyEvent("/forms/verify-link", `verif_abc.${secret}`),
+    );
+    assert.equal(response.statusCode, 400);
+    const body = JSON.parse(response.body);
+    assert.equal(body.reason, "expired");
+    assert.equal(body.canResend, true);
+    assert.match(body.message, /do not need to fill the form in again/);
+    assert.doesNotMatch(body.message, /will not be accepted for review/);
+  });
+});
+
+test("a resend rotates the secret, extends the window, and mails the stored address", async () => {
+  process.env.RESEND_API_KEY = "re_test_123";
+  const { record, secret } = verificationFixture({
+    ageMs: 48 * 60 * 60 * 1000,
+  });
+  const originalHash = record.secretHash;
+  const originalExpiry = record.expiresAt;
+
+  await withVerificationStore(record, async ({ store, sent }) => {
+    const response = await handler(
+      verifyEvent("/forms/resend-verification", `verif_abc.${secret}`),
+    );
+    assert.equal(response.statusCode, 200);
+
+    const stored = store.get("submissions/verify/verif_abc.json");
+    assert.equal(stored.resendCount, 1);
+    assert.notEqual(
+      stored.secretHash,
+      originalHash,
+      "the expired link must stop working once it has been traded in",
+    );
+    assert.ok(
+      new Date(stored.expiresAt).getTime() > new Date(originalExpiry).getTime(),
+      "the replacement link must have a live expiry",
+    );
+    assert.ok(
+      new Date(stored.expiresAt).getTime() > Date.now(),
+      "the replacement window must start now, not from the original creation",
+    );
+    assert.equal(stored.providerMessageId, "email_1");
+
+    // The address is not an input. It can only ever be the one on the record.
+    assert.equal(sent.length, 1);
+    assert.deepEqual(sent[0].to, ["person@example.org"]);
+    assert.match(sent[0].subject, /new PoliceConduct\.org verification link/);
+    assert.match(sent[0].text, /still held; you do not need to/);
+    assert.deepEqual(
+      sent[0].tags.find((tag) => tag.name === "replacement"),
+      { name: "replacement", value: "true" },
+    );
+
+    // And the response must not confirm the address back to the caller, who
+    // proved only that they hold the link.
+    assert.doesNotMatch(response.body, /person@example\.org/);
+  });
+});
+
+test("the replacement link actually verifies, and the old one does not", async () => {
+  process.env.RESEND_API_KEY = "re_test_123";
+  const { record, secret } = verificationFixture({
+    ageMs: 48 * 60 * 60 * 1000,
+  });
+
+  await withVerificationStore(record, async ({ sent }) => {
+    await handler(
+      verifyEvent("/forms/resend-verification", `verif_abc.${secret}`),
+    );
+
+    // Recover the new token from the link we mailed, the way a submitter does.
+    const newToken = decodeURIComponent(
+      /\/verify\/\?token=([^\s]+)/.exec(sent[0].text)[1],
+    );
+    assert.notEqual(newToken, `verif_abc.${secret}`);
+
+    const stale = await handler(
+      verifyEvent("/forms/verify-link", `verif_abc.${secret}`),
+    );
+    assert.equal(stale.statusCode, 400);
+    assert.equal(JSON.parse(stale.body).reason, "invalid_token");
+
+    const fresh = await handler(verifyEvent("/forms/verify-link", newToken));
+    assert.equal(fresh.statusCode, 200, fresh.body);
+    assert.equal(JSON.parse(fresh.body).submissionId, "sub_abc");
+    assert.doesNotMatch(fresh.body, /will not be accepted for review/);
+  });
+});
+
+test("resend refuses a token it did not issue, and sends no mail", async () => {
+  process.env.RESEND_API_KEY = "re_test_123";
+  const { record } = verificationFixture({ ageMs: 48 * 60 * 60 * 1000 });
+
+  await withVerificationStore(record, async ({ sent }) => {
+    // The whole abuse case: somebody who knows a verificationId but not the
+    // secret must not be able to make us mail the submitter.
+    const response = await handler(
+      verifyEvent("/forms/resend-verification", "verif_abc.wrong-secret"),
+    );
+    assert.equal(response.statusCode, 400);
+    assert.equal(JSON.parse(response.body).reason, "invalid_token");
+    assert.deepEqual(sent, [], "no mail may be sent for a bad token");
+  });
+});
+
+test("resend is capped and cooled down, so one link cannot flood a mailbox", async () => {
+  process.env.RESEND_API_KEY = "re_test_123";
+
+  // At the cap already.
+  const atCap = verificationFixture({
+    ageMs: 48 * 60 * 60 * 1000,
+    resendCount: __testables.MAX_VERIFICATION_RESENDS,
+  });
+  await withVerificationStore(atCap.record, async ({ sent }) => {
+    const response = await handler(
+      verifyEvent("/forms/resend-verification", `verif_abc.${atCap.secret}`),
+    );
+    assert.equal(response.statusCode, 429);
+    assert.equal(JSON.parse(response.body).reason, "resend_limit");
+    assert.deepEqual(sent, []);
+  });
+
+  // Within the cooldown.
+  const justSent = verificationFixture({
+    ageMs: 48 * 60 * 60 * 1000,
+    lastResentAt: new Date().toISOString(),
+    resendCount: 1,
+  });
+  await withVerificationStore(justSent.record, async ({ sent }) => {
+    const response = await handler(
+      verifyEvent("/forms/resend-verification", `verif_abc.${justSent.secret}`),
+    );
+    assert.equal(response.statusCode, 429);
+    assert.equal(JSON.parse(response.body).reason, "resend_cooldown");
+    assert.deepEqual(sent, []);
+  });
+
+  // And an expired link already at the cap must stop advertising a resend.
+  await withVerificationStore(atCap.record, async () => {
+    const response = await handler(
+      verifyEvent("/forms/verify-link", `verif_abc.${atCap.secret}`),
+    );
+    assert.equal(JSON.parse(response.body).canResend, false);
+  });
+});
+
+test("an already-verified submission cannot be resent or re-verified", async () => {
+  process.env.RESEND_API_KEY = "re_test_123";
+  const verifiedAt = new Date().toISOString();
+  const { record, secret } = verificationFixture({
+    secretHash: "",
+    usedAt: verifiedAt,
+    verifiedAt,
+  });
+
+  await withVerificationStore(record, async ({ sent }) => {
+    const resend = await handler(
+      verifyEvent("/forms/resend-verification", `verif_abc.${secret}`),
+    );
+    assert.equal(resend.statusCode, 400);
+    assert.equal(JSON.parse(resend.body).reason, "already_used");
+    assert.deepEqual(sent, [], "a verified submission needs no new link");
+
+    const verify = await handler(
+      verifyEvent("/forms/verify-link", `verif_abc.${secret}`),
+    );
+    assert.equal(verify.statusCode, 400);
+    assert.equal(JSON.parse(verify.body).reason, "already_used");
+  });
+});
+
+test("resend rejects an unverifiable origin like every other write", async () => {
+  process.env.RESEND_API_KEY = "re_test_123";
+  for (const origin of UNTRUSTED_ORIGINS) {
+    const response = await handler(
+      apiEvent({
+        method: "POST",
+        path: "/forms/resend-verification",
+        origin,
+        body: { token: "verif_abc.whatever" },
+      }),
+    );
+    assert.equal(response.statusCode, 403, String(origin));
+  }
+});
+
+test("a first-time submission records the provider message id", async () => {
+  // Without an id on the record there is nothing to join a Resend delivery or
+  // bounce event to, which is why INS-89 could not separate deliverability
+  // from abandonment for most of the 45 lost submissions.
+  process.env.RESEND_API_KEY = "re_test_123";
+  const { record, secret } = verificationFixture({
+    ageMs: 48 * 60 * 60 * 1000,
+  });
+  await withVerificationStore(record, async ({ store }) => {
+    await handler(
+      verifyEvent("/forms/resend-verification", `verif_abc.${secret}`),
+    );
+    const stored = store.get("submissions/verify/verif_abc.json");
+    assert.equal(stored.providerMessageId, "email_1");
+    assert.ok(stored.sentAt, "sentAt makes the send time recoverable");
+  });
 });
