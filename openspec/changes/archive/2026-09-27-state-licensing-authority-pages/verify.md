@@ -18,4 +18,4 @@
 
 The existing localhost-only Astro dev server was restarted on 127.0.0.1 so the unchanged aggregate test runner could connect. The normal test wrapper refreshed build projections. No full static production build or deployment was performed; dev-mode Astro injects style tags, so its HTML is not a substitute for production no-inline-CSS validation. build.inlineStylesheets remains never and new component/page code adds no CSS/style attributes. DC remains unpopulated because official names conflict and no current board homepage was verified.
 
-Research: authorities-a.json and authorities-b.json preserve official sources and selection notes. Durable intake audit: /Users/dalelotts/dev/PoliceConductUS/intake-workspace/dev-copy/audits/2026-09-27-state-licensing-authorities/. No shared database reset or unrelated pending import was applied.
+Research: authorities-a.json and authorities-b.json preserve official sources and selection notes. Durable intake audit: `../intake-workspace/dev-copy/audits/2026-09-27-state-licensing-authorities/` in the sibling intake checkout. No shared database reset or unrelated pending import was applied.

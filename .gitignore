@@ -21,6 +21,13 @@ pnpm-debug.log*
 .env
 .env.production
 .env-*
+!.env*.example
+
+# Per-machine state. This is a public repo: machine-local files carry home
+# paths and account names. See docs/third-party-personal-data.md (INS-65).
+# `.claude/settings.local.json` predates this rule and is still tracked
+# pending a disposition decision; gitignore does not affect tracked files.
+*.local.*
 
 # macOS-specific files
 .DS_Store
