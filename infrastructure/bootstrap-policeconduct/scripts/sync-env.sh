@@ -100,6 +100,8 @@ S3_BUCKET="$(tf_output site_bucket_name)"
 S3_BUCKET_PREVIEW="$(tf_output preview_bucket_name)"
 CLOUDFRONT_DIST_ID="$(tf_output cloudfront_distribution_id)"
 CLOUDFRONT_DIST_PREVIEW="$(tf_output preview_cloudfront_distribution_id)"
+KVS_ARN="$(tf_output site_redirects_kvs_arn)"
+KVS_ARN_PREVIEW="$(tf_output preview_redirects_kvs_arn)"
 AWS_ROLE_ARN="$(tf_output aws_role_arn)"
 DRAFTS_BUCKET="$(tf_output forms_drafts_bucket_name)"
 SUBMISSIONS_BUCKET="$(tf_output forms_submissions_bucket_name)"
@@ -195,6 +197,13 @@ fi
 if [[ -n "${CLOUDFRONT_DIST_PREVIEW}" ]]; then
   upsert_key "CLOUDFRONT_DIST_PREVIEW" "${CLOUDFRONT_DIST_PREVIEW}"
 fi
+if [[ -n "${KVS_ARN}" ]]; then
+  upsert_key "KVS_ARN" "${KVS_ARN}"
+fi
+if [[ -n "${KVS_ARN_PREVIEW}" ]]; then
+  upsert_key "KVS_ARN_PREVIEW" "${KVS_ARN_PREVIEW}"
+fi
+
 # Mirror all Terraform outputs into .env as TF_OUT_<OUTPUT_NAME>.
 outputs_json="$(tf_output_json)"
 if ! command -v jq >/dev/null 2>&1; then

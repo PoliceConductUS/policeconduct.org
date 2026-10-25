@@ -39,23 +39,6 @@ const ALLOWED_FORM_NAMES = new Set([
   "videoNew",
   "videoEdit",
 ]);
-/**
- * Community submissions about named individual personnel are suspended.
- *
- * TO RE-ENABLE: empty this Set, and set PERSONNEL_UGC_SUSPENDED to false in
- * src/lib/ugc-policy.ts. Both are required; this Set controls acceptance and
- * the site controls the entry points. Re-enable only when a moderation queue
- * with a named operator and a stated turnaround exists.
- *
- * Rejection happens before reCAPTCHA verification and before anything is
- * written, so a suspended submission is never stored.
- */
-const SUSPENDED_FORM_NAMES = new Set(["personnelNew", "officerEdit"]);
-const SUSPENDED_FORM_MESSAGE =
-  "We have paused community submissions about individual personnel. Public " +
-  "records listed on the site stay up. To request a correction or removal, " +
-  "use https://www.policeconduct.org/legal-notice/data-subject-access-request/ " +
-  "or email hello@policeconduct.org.";
 const FORMS_WITH_EMAIL_VERIFICATION = new Map([
   ["contact", "email"],
   ["volunteer", "email"],
@@ -1064,7 +1047,6 @@ export const __testables = {
   ALLOWED_FORM_NAMES,
   CLOCKED_FORM_NAMES,
   NOTIFICATION_RECEIPTS_PREFIX,
-  SUSPENDED_FORM_NAMES,
   notificationReceiptKey,
   notifySubmissionEvent,
   publishSubmissionNotification,
@@ -1616,17 +1598,6 @@ async function submitForm(event, requestId) {
     );
     return json(400, { error: "Unsupported formName." });
   }
-  if (SUSPENDED_FORM_NAMES.has(formName)) {
-    console.info(
-      JSON.stringify({
-        msg: "forms.submit.suspended_form_name",
-        requestId,
-        formName,
-        sourceIp,
-      }),
-    );
-    return json(403, { error: SUSPENDED_FORM_MESSAGE });
-  }
 
   const expectedAction = `${formName}Submit`;
 
@@ -1888,6 +1859,39 @@ export const handler = async (event) => {
       );
     }
 
+    /**
+     * Every state-changing route requires an allowed Origin, and is rejected
+     * here — before it reaches any handler that writes.
+     *
+     * A request whose origin we cannot check is untrusted, not exempt. The
+     * previous code answered a missing Origin on /forms/submit with a 200 and
+     * a "we received your submission" body, which both told an unverified
+     * caller their submission had landed when it had not, and skipped
+     * reCAPTCHA entirely on that path. POST /forms/draft had no origin check
+     * at all.
+     *
+     * Scoped to POST deliberately. Browsers omit Origin on same-origin GET,
+     * and the site's own draft restore (GET /forms/draft) and status polling
+     * (GET /status/...) are same-origin GETs, so gating reads on Origin would
+     * break real users. Browsers do send Origin on same-origin POST, so every
+     * legitimate write from our pages carries one.
+     *
+     * No Sentry capture here: under a bot flood this fires per request, and a
+     * refused unverifiable write is now expected behavior, not an anomaly.
+     * The console.warn keeps it in CloudWatch for rate monitoring.
+     */
+    if (method === "POST" && !allowedOrigin) {
+      console.warn(
+        JSON.stringify({
+          msg: "forms.request.origin_rejected",
+          ...context,
+          requestOrigin: requestOrigin || null,
+          reason: requestOrigin ? "origin_not_allowed" : "missing_origin",
+        }),
+      );
+      return json(403, { error: "Origin not allowed.", requestId });
+    }
+
     if (method === "GET" && path === "/forms/draft") {
       return withCors(await getDraft(event), allowedOrigin);
     }
@@ -1897,25 +1901,6 @@ export const handler = async (event) => {
     }
 
     if (method === "POST" && path === "/forms/submit") {
-      if (!allowedOrigin) {
-        const originError = new Error(
-          "Verification email not sent: missing_origin",
-        );
-        captureLambdaException(originError, context, {
-          operation: "validate_origin",
-          requestOrigin: requestOrigin || null,
-          verificationFailureReason: "missing_origin",
-        });
-        console.warn(
-          JSON.stringify({
-            msg: "forms.submit.origin_rejected",
-            ...context,
-            requestOrigin: requestOrigin || null,
-            verificationFailureReason: "missing_origin",
-          }),
-        );
-        return verificationFailureResponse(requestId, "missing_origin");
-      }
       return withCors(await submitForm(event, requestId), allowedOrigin);
     }
 

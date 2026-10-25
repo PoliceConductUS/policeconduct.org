@@ -22,26 +22,59 @@ const variantClass =
   variant === "link" ? "border-0 bg-transparent p-0 text-start" : "";
 ---
 
-<button type="button" class:list={[variantClass, className]} {...rest}>
+<button
+  type="button"
+  class:list={[variantClass, className]}
+  data-prefill-to={to}
+  data-prefill-key={storageKey}
+  data-prefill-payload={payloadJson}
+  {...rest}
+>
   <slot />
 </button>
 
-<script is:inline define:vars={{ payloadJson, storageKey, to }}>
-  (() => {
-    const button = document.currentScript?.previousElementSibling;
-    if (!(button instanceof HTMLButtonElement)) {
+<script>
+  // One delegated click handler for every PrefillNavButton on the page. This
+  // <script> is bundled and hoisted by Astro, so no matter how many buttons a
+  // page renders it is emitted once as a shared, cached file — the per-button
+  // data (payload / destination / storage key) rides on `data-prefill-*`
+  // attributes instead of being inlined per button.
+  interface PrefillAnalytics {
+    track?: (event: string, payload: Record<string, unknown>) => void;
+  }
+
+  const bindPrefillDelegation = () => {
+    const w = window as typeof window & {
+      __ipcPrefillBound?: boolean;
+      __IPC_ANALYTICS__?: PrefillAnalytics;
+    };
+    if (w.__ipcPrefillBound) {
       return;
     }
-    if (button.dataset.prefillBound === "1") {
-      return;
-    }
-    button.dataset.prefillBound = "1";
-    button.addEventListener("click", () => {
-      const normalizeText = (value) =>
+    w.__ipcPrefillBound = true;
+
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      const button =
+        target instanceof Element
+          ? target.closest<HTMLButtonElement>("button[data-prefill-to]")
+          : null;
+      if (!button) {
+        return;
+      }
+
+      const to = button.dataset.prefillTo || "";
+      const storageKey = button.dataset.prefillKey || "";
+      const payloadJson = button.dataset.prefillPayload ?? "";
+      if (!to) {
+        return;
+      }
+
+      const normalizeText = (value: string | null) =>
         value ? value.replace(/\s+/g, " ").trim() : "";
       const mapLinkType = button.dataset.mapLinkType || "";
       const destinationUrl = new URL(to, window.location.origin).toString();
-      const analytics = window.__IPC_ANALYTICS__;
+      const analytics = w.__IPC_ANALYTICS__;
       analytics?.track?.("prefill_link_click", {
         href_path: new URL(to, window.location.origin).pathname,
         link_text: normalizeText(button.textContent),
@@ -56,12 +89,16 @@ const variantClass =
           page_path: window.location.pathname,
         });
       }
-      try {
-        window.sessionStorage.setItem(storageKey, payloadJson);
-      } catch (_error) {
-        // Ignore sessionStorage failures and continue navigating.
+      if (storageKey) {
+        try {
+          window.sessionStorage.setItem(storageKey, payloadJson);
+        } catch (_error) {
+          // Ignore sessionStorage failures and continue navigating.
+        }
       }
       window.location.assign(to);
     });
-  })();
+  };
+
+  bindPrefillDelegation();
 </script>

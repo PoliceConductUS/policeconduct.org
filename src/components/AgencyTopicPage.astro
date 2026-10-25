@@ -1,0 +1,62 @@
+---
+import PageShell from "#src/layouts/PageShell.astro";
+import { buildCollectionPage, getSiteUrl } from "#src/lib/structured-data.js";
+import "#src/styles/civic-ledger.css";
+
+const { data, topicLabel, topicSlug, description } = Astro.props as {
+  data: {
+    agencyName: string;
+    agencyPath: string;
+    administrativeArea: string;
+    administrativeAreaSlug: string;
+    categoryLabel: string;
+    categorySlug: string;
+    placeLabel: string;
+    placePath: string;
+  };
+  description: string;
+  topicLabel: string;
+  topicSlug: string;
+};
+
+const toDisplayName = (value: string) =>
+  value === value.toUpperCase()
+    ? value
+        .toLocaleLowerCase("en-US")
+        .replace(/\b[a-z]/g, (letter) => letter.toLocaleUpperCase("en-US"))
+    : value;
+const agencyDisplayName = toDisplayName(data.agencyName);
+const pagePath = `${data.agencyPath}${topicSlug}/`;
+const siteUrl = getSiteUrl(Astro.site);
+const structuredData = buildCollectionPage({
+  siteUrl,
+  pageUrl: new URL(pagePath, siteUrl).toString(),
+  name: `${agencyDisplayName} ${topicLabel} | PoliceConduct.org`,
+  description,
+});
+---
+
+<PageShell
+  title={`${agencyDisplayName} ${topicLabel} | PoliceConduct.org`}
+  description={description}
+  pagePath={pagePath}
+  structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: data.categoryLabel, href: `/${data.categorySlug}/` },
+    {
+      label: data.administrativeArea,
+      href: `/${data.categorySlug}/${data.administrativeAreaSlug}/`,
+    },
+    { label: data.placeLabel, href: data.placePath },
+    { label: agencyDisplayName, href: data.agencyPath },
+    { label: topicLabel, href: pagePath },
+  ]}
+  eyebrow={agencyDisplayName}
+  heading={topicLabel}
+  lede={description}
+>
+  <section class="civic-section civic-section--last">
+    <slot />
+  </section>
+</PageShell>

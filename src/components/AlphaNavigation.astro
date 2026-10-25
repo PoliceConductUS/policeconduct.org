@@ -28,33 +28,31 @@ const activeItem = items.find(
 );
 ---
 
-{
-  items.length ? (
-    <nav aria-label={label} class="alpha-navigation mb-4">
-      <div class="alpha-navigation-control">
-        <label class="alpha-navigation-label" for="alpha-navigation-select">
-          Jump to:
-        </label>
-        <select
-          class="form-select rounded-0 alpha-navigation-select"
-          id="alpha-navigation-select"
-          onchange="if (this.value) window.location.href = this.value"
-        >
-          {items
-            .filter((item) => item.page)
-            .map((item) => (
-              <option
-                selected={item.letter === activeItem?.letter}
-                value={getHref(item.page!)}
-              >
-                {item.letter}
-              </option>
-            ))}
-        </select>
-      </div>
-    </nav>
-  ) : null
-}
+{items.length ? (
+  <nav aria-label={label} class="alpha-navigation mb-4">
+    <div class="alpha-navigation-control">
+      <label class="alpha-navigation-label" for="alpha-navigation-select">
+        Jump to:
+      </label>
+      <select
+        class="form-select rounded-0 alpha-navigation-select"
+        id="alpha-navigation-select"
+        onchange="if (this.value) window.location.href = this.value"
+      >
+        {items
+          .filter((item) => item.page)
+          .map((item) => (
+            <option
+              selected={item.letter === activeItem?.letter}
+              value={getHref(item.page!)}
+            >
+              {item.letter}
+            </option>
+          ))}
+      </select>
+    </div>
+  </nav>
+) : null}
 
 <style>
   .alpha-navigation-control {

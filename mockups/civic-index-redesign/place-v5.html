@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Irving Civic Index v5 | PoliceConduct.org (mockup)</title>
+    <link rel="stylesheet" href="shared-v5.css" />
+  </head>
+  <body>
+    <div class="variant-banner">
+      Design mockup v5 — place index, merged stat band, teal = clickable · up to
+      <a href="county-v5.html">Dallas County</a>
+    </div>
+
+    <header class="masthead">
+      <div class="container">
+        <a class="masthead-mark" href="#">Police<span>Conduct</span>.org</a>
+        <nav class="masthead-nav">
+          <a class="nav-action nav-action-find" href="#">Find an agency</a>
+          <a class="nav-action nav-action-share" href="#"
+            >Share an interaction</a
+          >
+          <a href="#">Volunteer</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="container">
+        <ol class="crumbs">
+          <li><a href="#">Home</a></li>
+          <li><a href="texas-v5.html">Texas</a></li>
+          <li><a href="county-v5.html">Dallas County</a></li>
+          <li aria-current="page">Irving</li>
+        </ol>
+
+        <section class="lede">
+          <p class="kicker">Place civic index</p>
+          <h1>Irving</h1>
+          <p class="lede-sub">
+            Public records for the 4 law enforcement agencies serving Irving,
+            Texas, and their personnel, reports, and civil litigation.
+          </p>
+        </section>
+
+        <section
+          class="stat-strip stat-strip--three"
+          aria-label="Irving coverage totals"
+        >
+          <a class="stat-cell stat-cell--link" href="#">
+            <strong class="ledger-value ledger-value--lg tabular">560</strong>
+            <span class="ledger-label">Personnel records</span>
+            <span class="ledger-meta">Current &amp; former</span>
+            <span class="stat-action">View personnel →</span>
+          </a>
+          <a class="stat-cell stat-cell--link" href="report-detail-v5.html">
+            <strong class="ledger-value ledger-value--lg tabular">1</strong>
+            <span class="ledger-label">Reports</span>
+            <span class="ledger-meta">Shared by the public</span>
+            <span class="stat-action">View reports →</span>
+          </a>
+          <a
+            class="stat-cell stat-cell--link"
+            data-role="civil"
+            href="agency-civil-cases-v5.html"
+          >
+            <strong class="ledger-value ledger-value--lg tabular">21</strong>
+            <span class="ledger-label">Civil cases</span>
+            <span class="ledger-meta">Court records</span>
+            <span class="stat-action">View civil cases →</span>
+          </a>
+          <div class="stat-cell jump-cell">
+            <strong class="ledger-value ledger-value--lg tabular">4</strong>
+            <span class="ledger-label">Agencies</span>
+            <form class="jump-form" data-jump-form>
+              <label for="agency-jump" class="visually-hidden">Agency</label>
+              <select id="agency-jump" class="jump-select" data-jump-select>
+                <option value="" selected disabled>Choose agency…</option>
+                <option value="#">Irving City Marshal's Office</option>
+                <option value="#">Irving Fire Dept.</option>
+                <option value="agency-entity-v5.html">
+                  Irving Police Department
+                </option>
+                <option value="#">
+                  University of Dallas Police Department
+                </option>
+              </select>
+              <button class="jump-go" type="submit">Go →</button>
+            </form>
+            <p class="jump-status" data-jump-status aria-live="polite"></p>
+            <p class="jump-browse"><a href="#">Browse all 4 agencies →</a></p>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <div>
+              <h2>Not yet collected</h2>
+              <p>
+                These record types are not on this site yet. You can help
+                request and review the source records.
+              </p>
+            </div>
+          </div>
+
+          <ul class="topic-row ledger-grid">
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="budget"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Budget</span>
+                <span class="ledger-value">Not yet available</span>
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="#">Help collect this →</a></span
+              >
+            </li>
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="liability"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Liability costs</span>
+                <span class="ledger-value">Not yet available</span>
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="#">Help collect this →</a></span
+              >
+            </li>
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="neutral"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Fatal force incidents</span>
+                <span class="ledger-value">Not yet available</span>
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="#">Help collect this →</a></span
+              >
+            </li>
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="neutral"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Outcomes by income</span>
+                <span class="ledger-value">Not yet available</span>
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="#">Help collect this →</a></span
+              >
+            </li>
+          </ul>
+        </section>
+      </div>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

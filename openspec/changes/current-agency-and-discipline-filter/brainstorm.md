@@ -1,0 +1,5 @@
+# Current agency inclusion and discipline filtering
+
+The user now requires at least one current assignment (`agency_personnel.end_date IS NULL`) for agency office generation, uniformly for federal and non-federal offices. Root federal agencies remain always included. Agency personnel rosters retain former assignments, and gain a checkbox to show only personnel with positive agency-linked discipline counts. The checkbox combines with existing status and name filters and is available on small rosters. Oregon intake code standardization is a separate investigation; unclear source codes must not be given invented meanings. Deployment and projection refresh remain paused during the intake import.
+
+The preview build exposed that personnel history queries incorrectly used generated page projections as their agency record source. Fix those two queries to preserve historical agency identity from agency/location_path; page projections only determine whether to render an agency link. Preserve the strict missing-agency assertion.
