@@ -117,6 +117,19 @@ itself. It deliberately hard-codes what it expects rather than importing the
 policy module, because a guard that derives its expectations from the thing it
 guards cannot notice that thing being deleted.
 
+`.github/workflows/safety-controls.yml` runs that tripwire and the forms-api
+tests on every pull request. **Before INS-70 no workflow in this repo ran
+`npm run test`, `npm run validate`, or `npm run build` at all** — so PR #8's
+build-time validator was never executed by CI even once. That, more than the
+merge itself, is why the regression shipped: the control had a guard, and
+nothing ever ran the guard. The tripwire asserts that this workflow still
+exists, so it cannot be deleted as quietly as the control was.
+
+That workflow is deliberately narrow — only checks that are fast and hermetic,
+with no database, build, or secrets — because `npm run validate` and
+`npm run build` have pre-existing failures on `main` and a permanently red
+check is one everybody learns to ignore. Widen it once the baseline is clean.
+
 Re-enabling intake therefore means deleting that tripwire and the three
 suspension tests in the forms-api test file, in the same commit that lifts the
 suspension — so the intent is recorded rather than inferred from an absence.

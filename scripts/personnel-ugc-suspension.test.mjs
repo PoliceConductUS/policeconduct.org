@@ -214,3 +214,24 @@ test("the build still runs the personnel UGC validator", () => {
     "the validator must still consult the policy flag",
   );
 });
+
+test("CI still runs these guards", () => {
+  // The decisive reason the original regression shipped: no workflow in this
+  // repo ran `npm run test`, `npm run validate`, or `npm run build`, so PR #8's
+  // validator was never executed by CI even once. Without this assertion the
+  // workflow can be deleted as quietly as the control was.
+  const workflow = read(".github/workflows/safety-controls.yml");
+
+  for (const script of ["npm run test:ugc", "npm run test:lambda"]) {
+    assert.match(
+      workflow,
+      new RegExp(script.replace(/[:]/g, "[:]")),
+      `.github/workflows/safety-controls.yml must run ${script}`,
+    );
+  }
+  assert.match(
+    workflow,
+    /pull_request:/,
+    "the guards must run on pull requests, not only on push",
+  );
+});

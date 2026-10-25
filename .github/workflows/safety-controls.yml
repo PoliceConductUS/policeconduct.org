@@ -1,0 +1,58 @@
+name: Safety Controls
+
+# Runs the guards that assert our published-content safety controls still exist
+# (INS-70).
+#
+# Why this workflow exists at all: before it, no workflow in this repo ran
+# `npm run test`, `npm run validate`, or `npm run build`. The personnel UGC
+# suspension shipped in PR #8 with a build-time validator written to catch a
+# redesign reintroducing the control's own removal — and that validator was
+# never executed by CI even once, because nothing here runs the build. The
+# suspension was then dropped in a merge and reached production. A guard that
+# nothing runs is not a guard.
+#
+# Deliberately narrow. It runs only checks that are fast and hermetic — no
+# database, no site build, no secrets — so it stays green and therefore stays
+# trusted. `npm run validate` and `npm run build` have pre-existing failures on
+# `main` (format:check, one load-redirects test, and a required DATABASE_URL),
+# so wiring them up here today would produce a permanently red check that
+# everyone learns to ignore. Widening this to the full suite is tracked
+# separately; do not widen it until the baseline is clean.
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  guards:
+    name: Safety control guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      # Asserts the personnel UGC suspension still exists in every place it
+      # has to exist: the policy flag, the Lambda's SUSPENDED_FORM_NAMES, the
+      # gate's position before reCAPTCHA and before any write, the gating on
+      # each entry-point page, and the validator's own build wiring.
+      # Needs no dependencies — it reads source.
+      - name: Personnel UGC suspension tripwire
+        run: npm run test:ugc
+
+      # Behavioural tests for the forms API, including that a suspended form
+      # name is refused before anything is stored.
+      - name: Forms API tests
+        run: npm run test:lambda
