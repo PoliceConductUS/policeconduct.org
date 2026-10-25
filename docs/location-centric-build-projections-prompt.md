@@ -8,7 +8,7 @@ The goal is to make static generation faster by avoiding repeated joins and aggr
 
 See:
 
-`/Users/dalelotts/dev/PoliceConductUS/policeconduct.org/docs/0006-url-design.md`
+`docs/0006-url-design.md`
 
 for the URL design decision.
 

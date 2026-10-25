@@ -404,8 +404,30 @@ verify_github_cli_auth() {
   fi
 }
 
+# Point git at the tracked hooks so the personal-data pre-commit scan runs
+# locally. Idempotent. CI enforces the same scan regardless, so a missing hook
+# is a lost convenience, not a hole. See docs/third-party-personal-data.md.
+install_git_hooks() {
+  local current
+  current="$(git config --local --get core.hooksPath || true)"
+
+  if [[ "$current" == ".githooks" ]]; then
+    info "Git hooks path already set to .githooks"
+    return
+  fi
+
+  if [[ "$MODE" == "check" ]]; then
+    warn "core.hooksPath is not set to .githooks. Run ./scripts/bootstrap-dev.sh to install the personal-data pre-commit scan."
+    return
+  fi
+
+  info "Setting git hooks path to .githooks"
+  git config --local core.hooksPath .githooks
+}
+
 verify_project_tools() {
   verify_github_cli_auth
+  install_git_hooks
 
   info "Verifying OpenSpec"
   mise exec -- npx openspec --version >/dev/null

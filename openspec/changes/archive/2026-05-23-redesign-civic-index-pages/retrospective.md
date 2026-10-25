@@ -2,7 +2,7 @@
 
 > Written: 2026-05-22 (after verify passed)
 > Commit range: `e5d6aee..3327b5a`
-> Worktree: `/Users/dalelotts/dev/PoliceConductUS/policeconduct.org/.worktrees/redesign-civic-index-pages`
+> Worktree: `.worktrees/redesign-civic-index-pages`
 
 ---
 

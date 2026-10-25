@@ -1,0 +1,47 @@
+name: Personal Data Scan
+
+# The real gate against committing personal data to this public repo (INS-65).
+# The pre-commit hook running the same script is bypassable with --no-verify
+# and is not installed in agent runs; this job is not.
+# See docs/third-party-personal-data.md.
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Scan for personal data
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        # Full history: the scan needs the PR's merge base.
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Scan pull request diff
+        if: github.event_name == 'pull_request'
+        run: node scripts/scan-personal-data.mjs --base ${{ github.event.pull_request.base.sha }}
+
+      # On main, scan the whole tracked tree. A blocking gate is only
+      # trustworthy if the baseline it protects is itself clean.
+      - name: Scan tracked tree
+        if: github.event_name == 'push'
+        run: node scripts/scan-personal-data.mjs --tracked
+
+      - name: Regression tests for both historical blobs
+        run: node --test scripts/scan-personal-data.test.mjs
