@@ -13,6 +13,7 @@ import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
+import { PERSONNEL_UGC_SUSPENDED } from "#src/lib/ugc-policy.js";
 import { getPersonnelPhotoById } from "#src/lib/personnel-photos.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
@@ -574,13 +575,15 @@ const structuredData = {
             sourcePage={officerPath}
             topic="Personnel"
           />
-          <PrefillNavButton
-            to={suggestEditHref}
-            payload={suggestEditPrefillPayload}
-            class="personnel-action"
-          >
-            Suggest edit
-          </PrefillNavButton>
+          {!PERSONNEL_UGC_SUSPENDED && (
+            <PrefillNavButton
+              to={suggestEditHref}
+              payload={suggestEditPrefillPayload}
+              class="personnel-action"
+            >
+              Suggest edit
+            </PrefillNavButton>
+          )}
           <PrefillNavButton
             to="/report/new/"
             payload={reportNewPrefillPayload}
@@ -832,13 +835,15 @@ const structuredData = {
     >
       Add a civil case
     </PrefillNavButton>
-    <PrefillNavButton
-      to={pastEmployerHref}
-      payload={pastEmployerPrefillPayload}
-      class="personnel-action"
-    >
-      Submit past employer
-    </PrefillNavButton>
+    {!PERSONNEL_UGC_SUSPENDED && (
+      <PrefillNavButton
+        to={pastEmployerHref}
+        payload={pastEmployerPrefillPayload}
+        class="personnel-action"
+      >
+        Submit past employer
+      </PrefillNavButton>
+    )}
     <PrefillNavButton
       to="/about/contact/"
       payload={{

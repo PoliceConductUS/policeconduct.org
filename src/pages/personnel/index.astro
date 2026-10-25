@@ -4,6 +4,7 @@ import { loadPersonnelSummaries } from "#src/lib/data/summaries.js";
 import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { PERSONNEL_UGC_SUSPENDED } from "#src/lib/ugc-policy.js";
 import {
   buildItemList,
   buildWebPage,
@@ -93,11 +94,15 @@ if (personnelItemList) {
       subtitle="Select a state to browse available records by place."
       emptyLabel="No personnel yet"
       interactionLabel="Hover for counts; click a state to browse available records."
-      headerAction={{
-        href: suggestPersonnelHref,
-        label: "Suggest new person",
-        target: "_self",
-      }}
+      headerAction={
+        PERSONNEL_UGC_SUSPENDED
+          ? undefined
+          : {
+              href: suggestPersonnelHref,
+              label: "Suggest new person",
+              target: "_self",
+            }
+      }
       federalPanel={{
         title: "Federal agencies",
         value: federalAgencies.length,

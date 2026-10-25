@@ -9,6 +9,7 @@ import PageShell from "#src/layouts/PageShell.astro";
 import StatCell from "#src/components/StatCell.astro";
 import StatStrip from "#src/components/StatStrip.astro";
 import { buildHelpCollectHref } from "#src/lib/data/civic-index.js";
+import { PERSONNEL_UGC_SUSPENDED } from "#src/lib/ugc-policy.js";
 import {
   loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPaths,
@@ -420,17 +421,19 @@ const structuredData = {
     <p class="civic-kicker">Help improve this page</p>
     <h2>Add what is missing</h2>
     <ul class="entity-side-list">
-      <li>
-        <span>Add personnel</span>
-        <PrefillNavButton
-          to="/personnel/new/"
-          payload={suggestPersonnelPrefillPayload}
-          aria-label="Suggest new personnel"
-          class="entity-side-link"
-        >
-          Start
-        </PrefillNavButton>
-      </li>
+      {!PERSONNEL_UGC_SUSPENDED && (
+        <li>
+          <span>Add personnel</span>
+          <PrefillNavButton
+            to="/personnel/new/"
+            payload={suggestPersonnelPrefillPayload}
+            aria-label="Suggest new personnel"
+            class="entity-side-link"
+          >
+            Start
+          </PrefillNavButton>
+        </li>
+      )}
       <li>
         <span>Get updates</span>
         <PrefillNavButton

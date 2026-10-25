@@ -276,19 +276,75 @@ test("origin header casing does not change the verdict", async () => {
   }
 });
 
-test("personnel suggestions and edits reach normal reCAPTCHA validation", async () => {
-  for (const formName of ["personnelNew", "officerEdit"]) {
-    const response = await __testables.submitForm(
-      {
-        requestContext: { http: { sourceIp: "203.0.113.10" } },
-        body: JSON.stringify({
-          formName,
-          data: { submitterEmail: "person@example.org" },
-        }),
-      },
-      "req_test",
+// INS-70. These three tests exist because the personnel UGC suspension was
+// added (PR #8), silently dropped in a merge from a branch that predated it,
+// and ran unsuspended in production for six days without any test failing. The
+// test that stood here previously asserted the opposite — that `personnelNew`
+// and `officerEdit` reach reCAPTCHA — so CI actively certified the regression.
+// If the suspension is lifted deliberately, delete these tests in the same
+// commit that empties SUSPENDED_FORM_NAMES, so the intent is on the record.
+
+test("submitForm rejects suspended personnel form names before storing anything", async () => {
+  const originalSend = S3Client.prototype.send;
+  const commands = [];
+  S3Client.prototype.send = async function (command) {
+    commands.push(command?.constructor?.name ?? "unknown");
+    throw new Error("S3 must not be called for a suspended form name");
+  };
+
+  try {
+    for (const formName of ["personnelNew", "officerEdit"]) {
+      const response = await __testables.submitForm(
+        {
+          requestContext: { http: { sourceIp: "203.0.113.10" } },
+          body: JSON.stringify({
+            formName,
+            // A valid-looking token: rejection must not depend on reCAPTCHA
+            // failing, because the gate runs before reCAPTCHA is checked.
+            recaptchaToken: "looks-real-enough",
+            data: { submitterEmail: "person@example.org" },
+          }),
+        },
+        "req_test",
+      );
+      assert.equal(response.statusCode, 403, formName);
+      assert.match(JSON.parse(response.body).error, /paused/i, formName);
+    }
+    assert.deepEqual(commands, [], "no S3 command should be issued");
+  } finally {
+    S3Client.prototype.send = originalSend;
+  }
+});
+
+test("suspended personnel form names remain known form names", () => {
+  // A suspended name must stay in the allow-list, so it returns the 403
+  // suspension notice rather than a generic "Unsupported formName." 400.
+  for (const formName of __testables.SUSPENDED_FORM_NAMES) {
+    assert.ok(
+      __testables.ALLOWED_FORM_NAMES.has(formName),
+      `${formName} should still be a known form name`,
     );
-    assert.equal(response.statusCode, 400);
-    assert.match(JSON.parse(response.body).error, /recaptcha/i);
+  }
+});
+
+test("agency and site-wide form names are not suspended", () => {
+  // The suspension covers named-individual intake only. If it ever widens to
+  // these, that is a policy change and should fail here first.
+  for (const formName of [
+    "contact",
+    "volunteer",
+    "civilLitigationNew",
+    "civilLitigationEdit",
+    "agencyNew",
+    "agencyEdit",
+    "dataSubjectAccessRequest",
+    "reportNew",
+    "videoNew",
+    "videoEdit",
+  ]) {
+    assert.ok(
+      !__testables.SUSPENDED_FORM_NAMES.has(formName),
+      `${formName} should not be suspended`,
+    );
   }
 });
