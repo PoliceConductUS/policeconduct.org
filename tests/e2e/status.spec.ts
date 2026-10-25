@@ -1,16 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("submission status", () => {
-  // These mirror what the forms-api actually returns. INS-89 replaced the
-  // previous copy, which told submitters on both the success and failure paths
-  // that an unverified submission "will not be accepted for review" — a claim
-  // the store contradicts.
   const verifiedMessage =
-    "Your submission has been verified. We have confirmed this email address belongs to you, which helps us reach you if we have questions about what you sent.";
+    "Your submission has been verified. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
   const verificationFailedMessage =
-    "We could not verify your submission. Verification link not found. We still have what you sent us. Please contact hello@policeconduct.org if you need help.";
+    "We could not verify your submission. Verification link expired. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
   const verificationExpiredMessage =
-    "This verification link has expired. Links stay valid for 24 hours. We still have your submission and you do not need to fill the form in again — ask us for a new link below and we will email one to the same address.";
+    "This verification link has expired. Links stay valid for 15 minutes. We still have your submission and you do not need to fill the form in again — ask us for a new link below and we will email one to the same address.";
 
   test("verification link success shows submission ID and passes it to status lookup", async ({
     page,
@@ -263,7 +259,7 @@ test.describe("submission status", () => {
         contentType: "application/json",
         body: JSON.stringify({
           message:
-            "We have emailed a new verification link to the address on this submission. It is valid for 24 hours. If it does not arrive, please check your spam folder.",
+            "We have emailed a new verification link to the address on this submission. It is valid for 15 minutes. If it does not arrive, please check your spam folder.",
         }),
       });
     });

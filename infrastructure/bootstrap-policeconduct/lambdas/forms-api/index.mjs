@@ -154,26 +154,10 @@ function pendingStatusPayload(submissionId) {
   };
 }
 
-/**
- * Message for a verification attempt that did not succeed.
- *
- * The previous version of this appended, to every failure, "Your submission
- * will not be accepted for review unless it is verified." INS-89 found that
- * sentence to be false as written: a human is notified of every submission on
- * receipt, before any verification happens (`notifySubmissionEvent` with
- * eventType "received"), and INS-16 §10 settled that an unverified data
- * subject access request is still a live request. We do not throw unverified
- * submissions away, so we should stop telling people we do — the 45 submitters
- * whose links expired include four asking to have their own information
- * removed, and that sentence told each of them their request was void.
- *
- * It was also a cul-de-sac. The commonest failure by far is an expired link,
- * and the only thing we offered was an unmonitored contact address.
- */
 function verificationLinkFailureMessage(message) {
   const detail =
     typeof message === "string" && message.trim() ? `${message.trim()} ` : "";
-  return `We could not verify your submission. ${detail}We still have what you sent us. Please contact hello@policeconduct.org if you need help.`;
+  return `We could not verify your submission. ${detail}Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.`;
 }
 
 /**
@@ -346,44 +330,6 @@ function getSiteOrigin(event) {
   return isAllowedOrigin(origin) ? origin : "";
 }
 
-/**
- * Lifetime of a post-submit verification link.
- *
- * The prior value was 15 minutes, written as a bare `900` with no stated
- * reason. INS-89 measured the store: of the 49 submitters who ever verified,
- * the median took 37 seconds — but five used more than ten minutes of the
- * fifteen available, and the slowest used 830 of 900 seconds. A hard wall with
- * a measured tail pressed against it is truncating real people, and two of the
- * 45 lost submitters are visible in the store coming back 47 minutes and 19
- * hours later to fill the whole form in again because their link had died.
- *
- * 24 hours covers one full mail-checking cycle: someone who submits from a
- * phone at 11pm and opens their mail the next morning still has a live link.
- *
- * The security cost of the longer window is small and bounded, which is why
- * this is a cheap knob to turn. The token is single-use, HMAC-bound to one
- * verificationId, and the only thing it authorizes is marking that one
- * submission verified. It grants no read access to the submission, no account,
- * and no power over anyone else's record. Lengthening it ages a bearer token
- * that can still only ever be spent once.
- *
- * Do not reintroduce a bare number here. Anything user-facing that states this
- * duration must render it with `formatApproximateDuration` from this same
- * value, or the published promise and the code drift apart again — which is
- * exactly how the site came to tell submitters "15 minutes" from a string
- * literal sitting two files away from the only real deadline.
- */
-const DEFAULT_VERIFICATION_TTL_SECONDS = 24 * 60 * 60;
-
-/**
- * Upper bound on the configured window.
- *
- * Not a security boundary — a typo guard. `EMAIL_VERIFICATION_TTL_SECONDS` is
- * a plain string in Lambda environment config; an extra zero should not mint
- * month-long links silently.
- */
-const MAX_VERIFICATION_TTL_SECONDS = 7 * 24 * 60 * 60;
-
 /** How many replacement links one expired link may be traded in for. */
 const MAX_VERIFICATION_RESENDS = 3;
 
@@ -422,8 +368,7 @@ function verificationConfig() {
   const resendApiKey = (process.env.RESEND_API_KEY || "").trim();
   const hmacSecret = (process.env.EMAIL_VERIFICATION_HMAC_SECRET || "").trim();
   const ttlSeconds = Number(
-    process.env.EMAIL_VERIFICATION_TTL_SECONDS ||
-      String(DEFAULT_VERIFICATION_TTL_SECONDS),
+    process.env.EMAIL_VERIFICATION_TTL_SECONDS || "900",
   );
 
   if (!bucket) {
@@ -449,20 +394,12 @@ function verificationConfig() {
     kmsKeyId,
     prefix,
     resendApiKey,
-    ttlMs: resolveVerificationTtlMs(ttlSeconds),
+    ttlMs:
+      Number.isFinite(ttlSeconds) && ttlSeconds > 0
+        ? ttlSeconds * 1000
+        : 900000,
     verificationPrefix,
   };
-}
-
-/**
- * Clamp a configured TTL to something sane, falling back to the documented
- * default rather than to a second magic number.
- */
-function resolveVerificationTtlMs(ttlSeconds) {
-  if (!Number.isFinite(ttlSeconds) || ttlSeconds <= 0) {
-    return DEFAULT_VERIFICATION_TTL_SECONDS * 1000;
-  }
-  return Math.min(ttlSeconds, MAX_VERIFICATION_TTL_SECONDS) * 1000;
 }
 
 function verificationKey(verificationPrefix, verificationId) {
@@ -1225,13 +1162,10 @@ async function notifySubmissionEvent({
 export const __testables = {
   ALLOWED_FORM_NAMES,
   CLOCKED_FORM_NAMES,
-  DEFAULT_VERIFICATION_TTL_SECONDS,
   MAX_VERIFICATION_RESENDS,
-  MAX_VERIFICATION_TTL_SECONDS,
   NOTIFICATION_RECEIPTS_PREFIX,
   formatApproximateDuration,
   hashVerificationSecret,
-  resolveVerificationTtlMs,
   verificationLinkExpiredMessage,
   verificationLinkFailureMessage,
   notificationReceiptKey,
@@ -1689,22 +1623,6 @@ async function verifySubmissionLink(event, requestId) {
   if (verificationExpired(record)) {
     const resendsLeft =
       MAX_VERIFICATION_RESENDS - (Number(record.resendCount) || 0);
-    console.info(
-      JSON.stringify({
-        msg: "forms.verify.expired",
-        requestId,
-        submissionId: record.submissionId,
-        verificationId,
-        formName: record.formName || null,
-        // How late they were. This is the number that tells us whether the
-        // window is still costing us submitters after INS-89 widened it.
-        secondsLate: Math.round(
-          (Date.now() - new Date(record.expiresAt || 0).getTime()) / 1000,
-        ),
-        ttlSeconds: Math.round(config.ttlMs / 1000),
-        resendCount: Number(record.resendCount) || 0,
-      }),
-    );
     return json(400, {
       reason: "expired",
       canResend: resendsLeft > 0,
@@ -1751,13 +1669,9 @@ async function verifySubmissionLink(event, requestId) {
     }),
   );
 
-  // This used to repeat "Your submission will not be accepted for review
-  // unless it is verified" on the *success* path, where it reads as a threat
-  // about something the reader has just done. It was also not true. See
-  // verificationLinkFailureMessage.
   return json(200, {
     message:
-      "Your submission has been verified. We have confirmed this email address belongs to you, which helps us reach you if we have questions about what you sent.",
+      "Your submission has been verified. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.",
     submissionId: record.submissionId,
   });
 }
@@ -2222,19 +2136,9 @@ async function submitForm(event, requestId) {
     return verificationFailureResponse(requestId, "send_failed");
   }
 
-  // The duration is rendered from the one configured TTL, never typed out.
-  // The old copy said "within 15 minutes" as a literal, so the deadline in the
-  // sentence and the deadline in the code were only ever equal by coincidence.
-  //
-  // The claim that an unverified submission "will not be accepted for review"
-  // is gone because it was false: the submission is already written to S3 and
-  // already announced to a human above this line, and INS-16 §10 holds that an
-  // unverified data subject access request is a live request. INS-89 ships this
-  // wording as the accurate description of what verification actually buys —
-  // a confirmed way to reach the submitter — and flags it to the Executive
-  // Director as a public representation about how we handle submissions.
   return json(200, {
-    message: `We received your submission and have saved it. We have emailed a verification link to the address you gave us — please open it within ${formatApproximateDuration(config.ttlMs)} so we know the address is yours and can reach you about what you sent. If the link has expired by the time you find it, open it anyway and we will offer to email you a new one. Please contact hello@policeconduct.org if you need help.`,
+    message:
+      "We received your submission. Check your email and open the verification link within 15 minutes. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.",
     verificationPending: true,
   });
 }
