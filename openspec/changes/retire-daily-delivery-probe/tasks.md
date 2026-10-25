@@ -1,9 +1,7 @@
-## 1. Remove delivery probing
+## 1. Remove monitoring
 
-- [x] Delete runtime provider calls and their dedicated tests.
-- [x] Remove sender/credential inputs, delivery alarm, and delivery metric.
-- [x] Update active documentation and example configuration.
-- [x] Verify reconciliation still lists keys and alerts without provider calls.
-- [x] Review Terraform plan and complete scoped validation.
+- [x] Delete monitor source, tests, configuration, and dedicated infrastructure.
+- [x] Keep actual verified-submission notifications.
+- [x] Run scoped checks and review the deletion plan.
 - [ ] Obtain manual merge and production deployment approval.
-- [ ] Verify deployed retirement and preview receipt evidence.
+- [ ] Record human preview receipts and verify deployed removal.

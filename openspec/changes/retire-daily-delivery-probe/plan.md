@@ -1,8 +1,6 @@
-# Implementation plan
+# Plan
 
-1. Reuse the reviewed draft on the approved isolated branch from main.
-2. Prove a missing receipt still alerts while all provider calls are forbidden.
-3. Remove provider code, exclusive inputs/alarm, tests, and active documentation.
-4. Validate tests, lint, specification, formatting, and the live Terraform plan.
-5. Open a PR for manual merge; keep production retirement behind its deployment gate.
-6. Exercise verified-only preview intake and collect human receipt metadata.
+1. Remove the monitor and all dedicated resources and configuration.
+2. Verify actual notification code still passes its tests.
+3. Review the Terraform deletion plan and update PR #30.
+4. Obtain manual merge/deployment approval and human preview receipt evidence.

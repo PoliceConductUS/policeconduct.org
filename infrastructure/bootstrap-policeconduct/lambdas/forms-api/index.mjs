@@ -824,16 +824,7 @@ async function publishSubmissionNotification({
   }
 }
 
-/**
- * Who gets told, as a configured value rather than an assumption in code.
- *
- * `hello@policeconduct.org` is the documented fallback channel and is confirmed
- * monitored (INS-16 §14), but it lives in a Google Workspace tenant IPC does
- * not own (INS-55). A mailbox we do not control can stop being read without
- * telling us — that already happened once, undetected for 3.5 months. So the
- * recipient list is configuration, and the canary in lambdas/notification-canary
- * is what asserts the list still terminates at a live mailbox.
- */
+/** Staff recipient addresses come from deployment configuration. */
 function submissionNotificationRecipients() {
   return (process.env.SUBMISSION_NOTIFICATION_RECIPIENTS || "")
     .split(",")
@@ -1011,16 +1002,9 @@ function notificationReceiptKey({ submissionId, eventType, occurredAt }) {
 }
 
 /**
- * Write down that we told someone, so "did anyone get told?" is answerable.
- *
- * Without this, the only evidence a notification was attempted is a CloudWatch
- * log line that expires. The receipt makes the reconciliation in
- * lambdas/notification-canary possible: list what arrived, list what we
- * announced, and alarm on the difference. That reconciliation runs against real
- * traffic, which is the only check that would have caught the original 104.
- *
- * Contains routing facts and our own staff recipient addresses. No
- * submitter-supplied field, same rule as the notification itself.
+ * Store notification-attempt metadata for audit and receipt verification.
+ * Contains routing facts and staff recipient addresses, never request content.
+ * This record does not prove a human read or handled the request.
  */
 async function writeNotificationReceipt({
   bucket,

@@ -1,29 +1,25 @@
 ## ADDED Requirements
 
-### Requirement: Reconciliation without synthetic delivery probing
+### Requirement: No scheduled monitoring
 
-The scheduled reconciliation job SHALL NOT send synthetic mail, query delivery status, or receive a mail-provider credential. It SHALL retain key-only reconciliation, metrics, and independent alerts.
+The notification stack SHALL contain no scheduled checks or resources dedicated to monitoring. Actual verified-submission notifications SHALL remain.
 
-#### Scenario: A notification receipt is missing
+#### Scenario: Removal is deployed
 
-- **WHEN** reconciliation finds a submission without its expected receipt
-- **THEN** it emits the missing-receipt metric and independent alert without calling a mail provider
+- **WHEN** the approved removal plan is applied
+- **THEN** the monitor, schedule, monitoring role, alert topic, and monitoring alarms are absent
+- **AND** verified-submission notifications remain configured
 
-#### Scenario: Infrastructure retirement
+### Requirement: Staff alerts require verification
 
-- **WHEN** the reviewed retirement plan is deployed
-- **THEN** the delivery-only alarm is removed and the shared schedule, reconciliation alarm, and intake notification paths remain
-
-### Requirement: Staff alerts require verification across every path
-
-Staff notification infrastructure SHALL NOT alert on initial submission writes. Key reconciliation SHALL require a verification status key and a verified-event receipt.
+Staff notifications SHALL occur only after successful email verification.
 
 #### Scenario: Unverified request is stored
 
-- **WHEN** a request has no verification status key
-- **THEN** no S3 notification is triggered by its initial write and reconciliation does not flag it for a missing staff receipt
+- **WHEN** an initial request is stored
+- **THEN** only the submitter verification email is sent
 
-#### Scenario: Verified request lacks its receipt
+#### Scenario: Verification succeeds
 
-- **WHEN** a verification status key exists without a verified-event receipt
-- **THEN** reconciliation reports the request using metadata only
+- **WHEN** the submitter verifies their email
+- **THEN** staff notification and its verification-status S3 backstop run

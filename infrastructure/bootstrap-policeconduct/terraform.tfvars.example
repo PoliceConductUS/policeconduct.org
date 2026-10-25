@@ -40,9 +40,6 @@ submission_notification_email_endpoints  = ["hello@policeconduct.org"]
 # infrastructure/submission-notifications. Empty means the forms API has no
 # topic to publish to, which is the pre-INS-35 state.
 submission_notifications_topic_arn       = ""
-# Date the notification path went live. Submissions older than this have no
-# receipt and never will; see the variable description.
-notification_receipts_since              = ""
 enable_site_bucket_versioning = true
 ga_measurement_id_production = null
 ga_measurement_id_preview    = null

@@ -1,20 +1,19 @@
 ## Why
 
-The board retired daily delivery verification and requested deletion of its code.
+The board removed monitoring from scope.
 
 ## What Changes
 
-- Delete synthetic sending, status polling, delivery-only tests and configuration.
-- Delete the delivery alarm and stop publishing its metric.
-- Preserve shared scheduling and verified intake notifications.
-- Remove initial-write S3 filters and reconcile only verified requests, matching the approved verified-only acceptance behavior.
+- Delete all scheduled checks and their dedicated infrastructure, configuration, tests, and documentation.
+- Retain verified-only staff notifications, their S3 backstop, and receipt metadata.
+- Remove the unused receipt-cutoff deployment option.
 
 ## Capabilities
 
 ### Modified Capabilities
 
-- `submission-notifications`: remove scheduled synthetic delivery verification.
+- `submission-notifications`: actual notifications without scheduled monitoring.
 
 ## Impact
 
-Only the submission-notifications stack changes. Merge and production deployment require human approval. Preview acceptance follows verified-only staff notifications.
+Manual merge and production deployment gates remain. Preview receipt evidence remains outstanding.

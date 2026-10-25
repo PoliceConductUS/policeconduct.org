@@ -1,31 +1,4 @@
-# ---------------------------------------------------------------------------
-# Submission notifications and their liveness check (INS-35).
-#
-# Before this, a form submission landed in the submissions bucket and no human
-# was told: empty bucket notification config, no consumer, zero subscribers on
-# any topic (INS-20). As of 2026-10-24 that store holds 138 submissions,
-# 23 of them data subject access requests, and nobody was ever notified of one.
-#
-# Two independent paths tell a human, because one path is a single point of
-# failure and the failure mode is silent:
-#
-#   forms-api Lambda -> Resend     subject line names the form type, so a DSAR
-#                                  is identifiable without opening the object,
-#                                  and the transport reports per-message
-#                                  delivery status.
-#   S3 event        -> SNS -> email  generic subject, but it fires on the
-#                                  storage fact itself and therefore survives a
-#                                  bug anywhere in the Lambda.
-#
-# Expect two messages per event. Seeing the SNS one without the Resend one
-# means the application path is broken, visible from the inbox.
-#
-# Nothing here reads a submission. The notifications carry form type, id,
-# timestamp, bucket and key — no name, no contact detail, no free text.
-# Submissions concern named human beings and sit under a KMS key with
-# deliberate access controls; relaying their contents to a mailing list would
-# route around all of it (same boundary as INS-9).
-# ---------------------------------------------------------------------------
+# Verified-submission notifications. No scheduled monitoring.
 
 data "aws_caller_identity" "current" {}
 
@@ -49,27 +22,13 @@ locals {
   recipients = distinct([
     for e in var.submission_notification_recipients : trimspace(e) if trimspace(e) != ""
   ])
-  canary_alert_endpoints = distinct([
-    for e in var.notification_canary_alert_endpoints : trimspace(e) if trimspace(e) != ""
-  ])
-  canary_metric_namespace = "PoliceConduct/Notifications"
-  # Single source of truth for the metric dimension. The canary stamps every
-  # datapoint with Environment=<this>, and the alarms must match it exactly or
-  # they watch a series nothing writes to. See the comment on
-  # aws_cloudwatch_metric_alarm.submissions_without_notification.
-  canary_environment = "production"
+
 }
 
 # ------------------------------------------------------------------- topics --
 
 resource "aws_sns_topic" "submission_notifications" {
   name = "${var.project_name}-submission-notifications"
-}
-
-# Separate topic from the submissions topic ON PURPOSE. The same topic would
-# mean the alert about a dead channel fans out to the dead channel (INS-58).
-resource "aws_sns_topic" "canary_alerts" {
-  name = "${var.project_name}-notification-canary-alerts"
 }
 
 data "aws_iam_policy_document" "submission_notifications" {
@@ -143,14 +102,6 @@ resource "aws_sns_topic_subscription" "submission_notifications" {
   endpoint  = each.value
 }
 
-resource "aws_sns_topic_subscription" "canary_alerts" {
-  for_each = toset(local.canary_alert_endpoints)
-
-  topic_arn = aws_sns_topic.canary_alerts.arn
-  protocol  = "email"
-  endpoint  = each.value
-}
-
 # -------------------------------------------------- bucket event notifications
 
 # Only verification status writes notify staff. Initial submission writes must
@@ -181,229 +132,4 @@ resource "aws_s3_bucket_notification" "submissions_preview" {
   }
 
   depends_on = [aws_sns_topic_policy.submission_notifications]
-}
-
-# ------------------------------------------------- forms-api notify alarms ---
-#
-# These watch the application path from the other side: the Lambda storing a
-# submission and then failing to tell anyone. Both route to the submissions
-# topic rather than policeconduct-alerts, because the failure they describe is
-# "the queue holder stopped being told" and the queue holder is who needs to
-# hear it — and because policeconduct-alerts still has zero subscribers
-# (verified again 2026-10-24), so routing there would be routing to nowhere.
-
-locals {
-  notify_log_metrics = {
-    publish_failed = {
-      msg         = "forms.notify.publish_failed"
-      slug        = "notify-publish-failed"
-      description = "A submission was stored but the arrival notification failed to publish. Someone filed something and nobody was told."
-    }
-    # The pre-INS-35 state reasserting itself: the Lambda ran, the submission
-    # stored, and no topic was configured to tell anyone.
-    topic_not_configured = {
-      msg         = "forms.notify.topic_not_configured"
-      slug        = "notify-topic-not-configured"
-      description = "The forms API stored a submission with no notification topic configured. This is the INS-20 state recurring."
-    }
-    nobody_told = {
-      msg         = "forms.notify.nobody_told"
-      slug        = "notify-nobody-told"
-      description = "Both notification paths failed for the same submission. It is stored and no human has been told by any route."
-    }
-  }
-}
-
-resource "aws_cloudwatch_log_metric_filter" "notify" {
-  for_each = local.notify_log_metrics
-
-  name           = "${var.project_name}-forms-api-prod-${each.value.slug}"
-  log_group_name = "/aws/lambda/${var.forms_api_prod_function_name}"
-  pattern        = "{ $.msg = \"${each.value.msg}\" }"
-
-  metric_transformation {
-    name      = "${var.project_name}-forms-api-prod-${each.value.slug}"
-    namespace = "${var.project_name}/FormsApi"
-    value     = "1"
-  }
-}
-
-# Threshold 1: one submission nobody was told about is already too many.
-resource "aws_cloudwatch_metric_alarm" "notify" {
-  for_each = local.notify_log_metrics
-
-  alarm_name          = "${var.project_name}-forms-api-prod-${each.value.slug}"
-  alarm_description   = each.value.description
-  namespace           = "${var.project_name}/FormsApi"
-  metric_name         = aws_cloudwatch_log_metric_filter.notify[each.key].metric_transformation[0].name
-  statistic           = "Sum"
-  period              = 300
-  evaluation_periods  = 1
-  threshold           = 1
-  comparison_operator = "GreaterThanOrEqualToThreshold"
-  treat_missing_data  = "notBreaching"
-  alarm_actions       = [aws_sns_topic.submission_notifications.arn]
-  ok_actions          = [aws_sns_topic.submission_notifications.arn]
-}
-
-# ------------------------------------------------------------------ canary ---
-#
-# The liveness check. INS-55 and INS-57 were two channels that were believed
-# live and had been dead for months, neither self-reporting, both found by
-# accident. A notification path that is configured today and silently stops in
-# November puts us back exactly there, and the belief that it works will be
-# just as reasonable and just as wrong.
-
-data "archive_file" "canary" {
-  type        = "zip"
-  source_dir  = "${path.module}/notification-canary"
-  output_path = "${path.module}/.build/notification-canary.zip"
-  # node_modules is excluded so the artifact is DETERMINISTIC: without this the
-  # zip silently depends on whether whoever runs the apply happened to have run
-  # `npm install` in this directory, so two people applying the same commit can
-  # ship different Lambdas.
-  #
-  # The three @aws-sdk/* clients the canary imports are therefore resolved from
-  # the Lambda runtime, which bundles AWS SDK v3 (verified on
-  # nodejs:22.mainline.v122). The package.json dependencies exist for local
-  # `node --test` only. If a future runtime drops the bundled SDK this breaks
-  # at import time on the first scheduled run. Lambda errors need separate monitoring.
-  excludes = ["*.zip", "index.test.mjs", "node_modules", ".build"]
-}
-
-data "aws_iam_policy_document" "canary_assume_role" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "canary" {
-  name               = "${var.project_name}-notification-canary"
-  assume_role_policy = data.aws_iam_policy_document.canary_assume_role.json
-}
-
-# Deliberately NO s3:GetObject and NO kms:Decrypt. The canary reconciles by
-# listing keys, and the submission id and form name are both in the key, so it
-# never needs to decrypt anything. Submission contents route to the queue
-# holder untouched (INS-9); the cheapest way to guarantee a monitor never reads
-# a DSAR is to make it unable to.
-data "aws_iam_policy_document" "canary" {
-  statement {
-    sid    = "CloudWatchLogsWrite"
-    effect = "Allow"
-    actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-    ]
-    resources = ["arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:*"]
-  }
-
-  statement {
-    sid       = "ListSubmissionKeysOnly"
-    effect    = "Allow"
-    actions   = ["s3:ListBucket"]
-    resources = [data.aws_s3_bucket.submissions.arn]
-  }
-
-  statement {
-    sid       = "PublishCanaryMetrics"
-    effect    = "Allow"
-    actions   = ["cloudwatch:PutMetricData"]
-    resources = ["*"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "cloudwatch:namespace"
-      values   = [local.canary_metric_namespace]
-    }
-  }
-
-  statement {
-    sid       = "AlertOutOfBand"
-    effect    = "Allow"
-    actions   = ["sns:Publish"]
-    resources = [aws_sns_topic.canary_alerts.arn]
-  }
-}
-
-resource "aws_iam_role_policy" "canary" {
-  name   = "${var.project_name}-notification-canary"
-  role   = aws_iam_role.canary.id
-  policy = data.aws_iam_policy_document.canary.json
-}
-
-resource "aws_lambda_function" "canary" {
-  function_name = "${var.project_name}-notification-canary"
-  role          = aws_iam_role.canary.arn
-  handler       = "index.handler"
-  runtime       = var.lambda_nodejs_runtime
-
-  # Preserve the existing time budget for paginated key reconciliation.
-  timeout = 120
-
-  filename         = data.archive_file.canary.output_path
-  source_code_hash = data.archive_file.canary.output_base64sha256
-
-  environment {
-    variables = {
-      CANARY_ENVIRONMENT                 = local.canary_environment
-      SUBMISSIONS_BUCKET                 = data.aws_s3_bucket.submissions.id
-      SUBMISSION_NOTIFICATION_RECIPIENTS = join(",", local.recipients)
-      CANARY_ALERT_TOPIC_ARN             = aws_sns_topic.canary_alerts.arn
-      CANARY_ALERT_ENDPOINTS             = join(",", local.canary_alert_endpoints)
-      NOTIFICATION_RECEIPTS_SINCE        = var.notification_receipts_since
-    }
-  }
-}
-
-resource "aws_cloudwatch_event_rule" "canary" {
-  name                = "${var.project_name}-notification-canary"
-  description         = "Reconcile submission keys against notification receipt keys (INS-94)."
-  schedule_expression = var.notification_canary_schedule
-}
-
-resource "aws_cloudwatch_event_target" "canary" {
-  rule      = aws_cloudwatch_event_rule.canary.name
-  target_id = "notification-canary"
-  arn       = aws_lambda_function.canary.arn
-}
-
-resource "aws_lambda_permission" "canary" {
-  statement_id  = "AllowExecutionFromEventBridge"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.canary.function_name
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.canary.arn
-}
-
-# The check no synthetic message can perform: it runs over real traffic. A
-# submission stored with no notification receipt beside it is INS-20 recurring,
-# and this is the assertion that would have caught the original backlog.
-resource "aws_cloudwatch_metric_alarm" "submissions_without_notification" {
-  alarm_name        = "${var.project_name}-submissions-without-notification"
-  alarm_description = "A submission was stored with no notification receipt beside it. This is the INS-20 failure recurring: it arrived and nobody was told."
-
-  namespace   = local.canary_metric_namespace
-  metric_name = "SubmissionsWithoutNotification"
-
-  # Match the Environment dimension emitted by reconciliation.
-  dimensions = {
-    Environment = local.canary_environment
-  }
-
-  statistic           = "Maximum"
-  period              = 86400
-  evaluation_periods  = 1
-  threshold           = 0
-  comparison_operator = "GreaterThanThreshold"
-  treat_missing_data  = "notBreaching"
-
-  alarm_actions = [aws_sns_topic.canary_alerts.arn]
 }
