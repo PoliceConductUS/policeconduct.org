@@ -248,6 +248,12 @@ variable "site_rate_limit_per_5m" {
   default     = 3000
 }
 
+variable "rate_limit_retry_after_seconds" {
+  description = "Retry-After value (seconds) sent with a 429 from the WAF rate-limit rules. Matches the rules' 300s evaluation window."
+  type        = number
+  default     = 300
+}
+
 variable "forms_api_alarm_5xx_threshold" {
   description = "CloudWatch alarm threshold for forms API Lambda errors in one period."
   type        = number
