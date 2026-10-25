@@ -1,6 +1,10 @@
 import { withDb } from "#src/lib/db.js";
 import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
+import {
+  assertNoSuppressedColumns,
+  projection,
+} from "./personnel-projection.js";
 import type { PersonnelSummary } from "./types.js";
 
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
@@ -35,10 +39,11 @@ export const loadPersonnelSummaries = async (
       const where = filters.length ? `where ${filters.join(" and ")}` : "";
       const agencyOfficers = (
         await client.query(
-          `select * from public.agency_personnel ao ${where}`,
+          `select ${projection("agency_personnel", "ao")} from public.agency_personnel ao ${where}`,
           params,
         )
       ).rows;
+      assertNoSuppressedColumns("agency_personnel", agencyOfficers);
       const officerIds = [
         ...new Set(
           agencyOfficers.map(

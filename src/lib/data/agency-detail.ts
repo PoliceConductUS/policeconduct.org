@@ -5,6 +5,10 @@ import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
 import { normalizeLicenseStatus, normalizeLicenseType } from "./licensing.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
+import {
+  assertNoSuppressedColumns,
+  projection,
+} from "./personnel-projection.js";
 
 export type AgencyScopedTopicKind =
   | "personnel"
@@ -293,10 +297,11 @@ const loadAgencyRows = async (agencyId: string) =>
     ).rows;
     const agencyOfficers = (
       await client.query(
-        "select * from public.agency_personnel where agency_id = $1",
+        `select ${projection("agency_personnel", "ap")} from public.agency_personnel ap where ap.agency_id = $1`,
         [agencyId],
       )
     ).rows;
+    assertNoSuppressedColumns("agency_personnel", agencyOfficers);
     const federalAgency = (
       await client.query(
         `select fa.id, fa.name, fa.slug
@@ -659,7 +664,6 @@ const buildAgencyDetail = async (agencyId: string) => {
     .map(
       (entry: {
         personnel_id: string;
-        badge_number?: string | null;
         start_date?: string | null;
         end_date?: string | null;
         title?: string | null;

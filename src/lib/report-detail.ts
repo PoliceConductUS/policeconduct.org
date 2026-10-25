@@ -2,6 +2,10 @@ import { withDb } from "./db.js";
 import { mapBy } from "./data.js";
 import { requireAgencyCanonicalPath } from "./data/location-paths.js";
 import { buildReportCanonicalPath } from "./data/report-paths.js";
+import {
+  assertNoSuppressedColumns,
+  projection,
+} from "./data/personnel-projection.js";
 
 const assertValue = <T>(value: T | null | undefined, message: string): T => {
   if (value === null || value === undefined) {
@@ -15,7 +19,6 @@ type ReportOfficerEntry = {
   agencyOfficer: Record<string, unknown>;
   agency: Record<string, unknown>;
   path: string;
-  badge: string | null;
   ratingOverall: number | null;
 };
 
@@ -135,7 +138,6 @@ const buildOfficerEntries = (
         canonicalPath: requireAgencyCanonicalPath(agency),
       },
       path,
-      badge: agencyOfficer.badge_number || null,
       ratingOverall,
     };
   });
@@ -229,8 +231,11 @@ export const loadReportDetail = async (
       )
     ).rows;
     const agencyOfficers = (
-      await client.query("select * from public.agency_personnel")
+      await client.query(
+        `select ${projection("agency_personnel", "ap")} from public.agency_personnel ap`,
+      )
     ).rows;
+    assertNoSuppressedColumns("agency_personnel", agencyOfficers);
     return {
       report,
       reportOfficers,

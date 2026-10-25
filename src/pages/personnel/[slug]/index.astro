@@ -181,7 +181,6 @@ if (!currentAssignment) {
   );
 }
 const hasCurrentAssignment = Boolean(activeAssignment);
-const currentBadge = currentAssignment?.badge_number || null;
 const currentTitle =
   typeof currentAssignment?.title === "string"
     ? currentAssignment.title.trim()
@@ -290,9 +289,6 @@ const pastEmployerSummary = assignmentHistory
     if (dateRange) {
       segments.push(dateRange);
     }
-    if (entry.badge_number) {
-      segments.push(`Badge ${entry.badge_number}`);
-    }
     return segments.filter(Boolean).join(" — ");
   })
   .join("\n");
@@ -330,7 +326,6 @@ const pastEmployerPrefillPayload = JSON.stringify({
   firstName: data.officer.first_name || "",
   lastName: data.officer.last_name || "",
   suffix: data.officer.suffix || "",
-  badgeNumber: currentBadge || "",
   currentAgency: currentAgencyPrefillName,
   currentAgencyCity: currentAgency?.city || "",
   currentAgencyState: currentAgency?.state || "",
@@ -342,7 +337,6 @@ const suggestEditHref = "/personnel/suggest-edit/";
 const suggestEditPrefillPayload = JSON.stringify({
   officerPath,
   officerName,
-  badgeNumber: currentBadge || "",
   currentEmployer: currentAgencyPrefillName,
   pastEmployers: pastEmployerSummary,
   civilLitigation: civilLitigationSummary,
@@ -607,12 +601,6 @@ const structuredData = {
             <dt>{metricLabels.totalTimeAsOfficer}</dt>
             <dd>{totalTimeAsOfficer}</dd>
           </div>
-          {currentBadge ? (
-            <div>
-              <dt>Badge Number</dt>
-              <dd>{currentBadge}</dd>
-            </div>
-          ) : null}
           <div>
             <dt>{assignmentStatusLabel}</dt>
             <dd>
