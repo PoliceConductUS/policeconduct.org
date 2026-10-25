@@ -1088,7 +1088,7 @@ async function writeNotificationReceipt({
 }
 
 /**
- * Tell a human, three ways, and write down that we did.
+ * Notify staff only after verification and record the delivery outcome.
  *
  * Every step is non-fatal. By the time this runs the submission is durably
  * stored; failing the request would only push the submitter to resubmit and
@@ -1105,6 +1105,10 @@ async function notifySubmissionEvent({
   occurredAt,
   requestId,
 }) {
+  // Board direction: receipt alone must never notify staff. Keep this gate
+  // ahead of every transport, receipt write, and delivery-failure alarm.
+  if (eventType !== "verified") return;
+
   const sns = await publishSubmissionNotification({
     eventType,
     formName,
@@ -1646,9 +1650,7 @@ async function verifySubmissionLink(event, requestId) {
   await writeJsonObject(config.bucket, config.kmsKeyId, key, nextRecord);
   await saveSubmissionStatus(record.submissionId, "in_review", verificationId);
 
-  // Second notification: the submitter confirmed their address. A captured but
-  // unverified request already started the clock, so this is a state change on
-  // an item the queue holder has already seen, not a first sighting.
+  // Notify staff after the verified record and review status are persisted.
   await notifySubmissionEvent({
     eventType: "verified",
     formName: record.formName || "unknown",
@@ -1982,19 +1984,6 @@ async function submitForm(event, requestId) {
       SSEKMSKeyId: kmsKeyId,
     }),
   );
-
-  // The submission is stored. Tell a human before doing anything else — the
-  // receipt clock for a DSAR starts here, not at verification (INS-16 §2).
-  await notifySubmissionEvent({
-    eventType: "received",
-    formName,
-    submissionId,
-    bucket,
-    key,
-    kmsKeyId,
-    occurredAt: receivedAt,
-    requestId,
-  });
 
   if (draftId) {
     try {
