@@ -233,9 +233,7 @@ for (const [index, agency] of missingAgencies.entries()) {
   }
 
   const address = cleanAddress(agency.address);
-  let match = null;
-
-  match = await nominatimSearch({
+  let match = await nominatimSearch({
     q: `${agency.name}, ${agency.city}, ${agency.state}`,
   });
   if (match) {

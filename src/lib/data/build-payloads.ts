@@ -110,7 +110,7 @@ let reportSummaryPayloadCache: Promise<ReportSummaryPayload[]> | null = null;
 export const loadLocationBuildPayloads = async () => {
   locationPayloadCache ??= withDb(async (client) => {
     const rows = (
-      await client.query(
+      await client.query<{ payload: LocationPagePayload }>(
         `
           select path, entity_id, payload
           from public.build_page_payload
@@ -120,7 +120,7 @@ export const loadLocationBuildPayloads = async () => {
       )
     ).rows;
 
-    return rows.map((row: any) => row.payload as LocationPagePayload);
+    return rows.map((row) => row.payload);
   });
 
   return locationPayloadCache;
@@ -129,7 +129,7 @@ export const loadLocationBuildPayloads = async () => {
 export const loadReportSummaryBuildPayloads = async () => {
   reportSummaryPayloadCache ??= withDb(async (client) => {
     const rows = (
-      await client.query(
+      await client.query<{ payload: ReportSummaryPayload }>(
         `
           select payload
           from public.build_page_payload
@@ -139,7 +139,7 @@ export const loadReportSummaryBuildPayloads = async () => {
       )
     ).rows;
 
-    return rows.map((row: any) => row.payload as ReportSummaryPayload);
+    return rows.map((row) => row.payload);
   });
 
   return reportSummaryPayloadCache;

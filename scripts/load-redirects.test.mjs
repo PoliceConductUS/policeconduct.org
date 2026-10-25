@@ -176,6 +176,10 @@ for (const [name, map] of [
   ],
   ["relative source", { redirects: [entry("a/", "/b/")] }],
   ["backslash destination", { redirects: [entry("/a/", "/\\example.com/")] }],
+  ...[...Array(32).keys(), 127].map((code) => [
+    `control character ${code}`,
+    { redirects: [entry("/a/", `/b/${String.fromCharCode(code)}/`)] },
+  ]),
   ["query destination", { redirects: [entry("/a/", "/b/?x=1")] }],
   ["fragment destination", { redirects: [entry("/a/", "/b/#x")] }],
   ["nonterminal wildcard", { redirects: [entry("/a/*/b/", "/b/")] }],

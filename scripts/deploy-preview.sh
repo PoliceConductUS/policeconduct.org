@@ -6,6 +6,8 @@ cd "${ROOT_DIR}"
 
 if [[ -f .env-policeconduct ]]; then
   set -a
+  # This optional secret-bearing file is local-only and cannot be checked in
+  # or resolved by ShellCheck in a clean checkout. The existence check guards it.
   # shellcheck disable=SC1091
   source .env-policeconduct
   set +a

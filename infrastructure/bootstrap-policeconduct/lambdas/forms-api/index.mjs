@@ -466,7 +466,7 @@ async function recordVerificationSend(key, record, sendResult, config) {
 }
 
 async function readJsonObject(bucket, key) {
-  let raw = "";
+  let raw;
   try {
     const object = await s3.send(
       new GetObjectCommand({
@@ -615,7 +615,7 @@ async function sendVerificationEmail({
   });
 
   const contentType = response.headers.get("content-type") || "";
-  let payload = null;
+  let payload;
   if (contentType.includes("application/json")) {
     payload = await response.json();
   } else {
@@ -657,7 +657,6 @@ function sanitizeSubject(value) {
   // Strip anything SNS will reject, then hard-truncate.
   const flattened = String(value)
     .replace(/[\r\n\t]+/g, " ")
-    // eslint-disable-next-line no-control-regex
     .replace(/[^\x20-\x7E]/g, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -1389,7 +1388,7 @@ async function getDraft(event) {
   }
 
   const key = `${prefix}${draftId}.json`;
-  let rawDraft = "";
+  let rawDraft;
 
   try {
     const object = await s3.send(
@@ -1524,7 +1523,7 @@ async function getSubmissionStatus(event, requestId) {
     requestId,
   };
   const path = normalizedPath(event);
-  let decodedId = "";
+  let decodedId;
   try {
     decodedId = decodeURIComponent(path.slice("/status/".length));
   } catch (_error) {
