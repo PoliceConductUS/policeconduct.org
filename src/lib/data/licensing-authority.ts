@@ -1,4 +1,5 @@
 import { withDb } from "#src/lib/db.js";
+import { formatPersonName } from "./person-name.js";
 
 export type StateAuthority = {
   id: string;
@@ -119,10 +120,20 @@ export const loadAuthorityRecords = async (
         [authorityId],
       )
     ).rows;
+    // Name components are selected individually and joined in JS, not with
+    // concat_ws: the name-quality rules decide which components may render,
+    // and SQL concatenation bypasses them.
     const discipline = (
-      await client.query<AuthorityRecords["discipline"][number]>(
+      await client.query<
+        Omit<AuthorityRecords["discipline"][number], "personnelName"> & {
+          first_name: string | null;
+          middle_name: string | null;
+          last_name: string | null;
+          suffix: string | null;
+        }
+      >(
         `
-    select d.id, concat_ws(' ', p.first_name, p.middle_name, p.last_name, p.suffix) as "personnelName",
+    select d.id, p.first_name, p.middle_name, p.last_name, p.suffix,
       p.slug as "personnelSlug", d.action, d.effective_date::text as "effectiveDate",
       d.expiration_date::text as "expirationDate", d.case_number as "caseNumber",
       d.document_url as "documentUrl", d.allegation, d.violation, d.finding,
@@ -132,7 +143,15 @@ export const loadAuthorityRecords = async (
     order by d.effective_date desc nulls last, d.id`,
         [authorityId],
       )
-    ).rows;
+    ).rows.map(({ first_name, middle_name, last_name, suffix, ...row }) => ({
+      ...row,
+      personnelName: formatPersonName({
+        first_name,
+        middle_name,
+        last_name,
+        suffix,
+      }),
+    }));
     const collator = new Intl.Collator("en", { sensitivity: "base" });
     licenses.sort(
       (a, b) =>

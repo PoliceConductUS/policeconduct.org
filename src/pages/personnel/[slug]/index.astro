@@ -9,6 +9,8 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
+import { formatPersonName } from "#src/lib/data/person-name.js";
+import { loadWithheldPersonnelSlugs } from "#src/lib/data/person-name-db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
@@ -43,13 +45,19 @@ export async function getStaticPaths() {
   }
 
   const officers = await withDb(async (client) => {
-    return (
+    const withheld = await loadWithheldPersonnelSlugs(client);
+    const rows = (
       await client.query(
         `select distinct o.slug
          from public.personnel o
          join public.agency_personnel ao on ao.personnel_id = o.id`,
       )
-    ).rows;
+    ).rows as { slug: string }[];
+    // A record whose name fails the name-quality rules gets no page at all.
+    // A test fixture or a source placeholder published as part of a person's
+    // name is a false claim about a named human being, so it is withheld
+    // rather than rendered.
+    return rows.filter((officer) => !withheld.has(officer.slug));
   });
 
   return officers.map((officer: { slug: string }) => ({
@@ -246,15 +254,15 @@ const reportItems = data.reports.map(
 );
 
 const officerPath = `/personnel/${data.officer.slug}/`;
-const officerName = [
-  data.officer.prefix,
-  data.officer.first_name,
-  data.officer.middle_name,
-  data.officer.last_name,
-  data.officer.suffix,
-]
-  .filter(Boolean)
-  .join(" ");
+const officerName = formatPersonName(data.officer);
+if (!officerName) {
+  // getStaticPaths withholds these, so reaching here means a route generated a
+  // page for a record the rules reject. Fail the build rather than publish a
+  // page with an empty or placeholder name.
+  throw new Error(
+    `Personnel ${slug} failed the name-quality rules and must not be published.`,
+  );
+}
 const deceasedOnValue = data.officer.deceased_on;
 const isDeceased = Boolean(deceasedOnValue);
 const deceasedOnDisplay = deceasedOnValue

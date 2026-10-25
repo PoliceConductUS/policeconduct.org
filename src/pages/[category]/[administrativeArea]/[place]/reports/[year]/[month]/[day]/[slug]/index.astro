@@ -9,6 +9,7 @@ import { getVideoEmbedUrl } from "#src/lib/video.js";
 import PageShell from "#src/layouts/PageShell.astro";
 import { loadReportSummaries } from "#src/lib/data/summaries.js";
 import { parseLocationPathParts } from "#src/lib/data/report-paths.js";
+import { formatPersonName } from "#src/lib/data/person-name.js";
 import { formatLongDate } from "#src/lib/format.js";
 import { loadReportDetail } from "#src/lib/report-detail.js";
 import {
@@ -151,13 +152,7 @@ const officerEntities = Array.from(
         if (!entry.officer || !entry.path) {
           return null;
         }
-        const officerName = [
-          entry.officer.first_name,
-          entry.officer.last_name,
-          entry.officer.suffix,
-        ]
-          .filter(Boolean)
-          .join(" ");
+        const officerName = formatPersonName(entry.officer);
         const officerUrl = new URL(entry.path, siteUrl).toString();
         return [
           `${officerUrl}#person`,
@@ -378,8 +373,7 @@ const structuredData = {
           {officers.map((entry) => (
             <p>
               <a href={entry.path}>
-                {entry.officer!.first_name} {entry.officer!.last_name}
-                {entry.officer!.suffix ? ` ${entry.officer!.suffix}` : ""}
+                {formatPersonName(entry.officer!)}
               </a>
               {entry.agencyOfficer.title
                 ? ` — ${entry.agencyOfficer.title}`
