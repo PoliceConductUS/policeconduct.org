@@ -22,6 +22,14 @@ import PersonnelDeceasedNotice from "#src/components/PersonnelDeceasedNotice.ast
 import PersonnelArrestProfiles from "#src/components/PersonnelArrestProfiles.astro";
 import { loadArrestProfilesForPersonnel } from "#src/lib/data/arrest-profiles.js";
 import PersonnelEducation from "#src/components/PersonnelEducation.astro";
+import CitedValue from "#src/components/CitedValue.astro";
+import ProvenancePanel from "#src/components/ProvenancePanel.astro";
+import {
+  assertNoSuppressedColumns,
+  citeRow,
+  projection,
+  projectedText,
+} from "#src/lib/data/personnel-projection.js";
 import {
   loadDisciplineForPersonnel,
   loadLicensingForPersonnel,
@@ -63,18 +71,23 @@ if (!slug) {
 }
 const data = await withDb(async (client) => {
   const officer = (
-    await client.query("select * from public.personnel where slug = $1", [slug])
+    await client.query(
+      `select ${projection("personnel", "p")} from public.personnel p where p.slug = $1`,
+      [slug],
+    )
   ).rows[0];
   if (!officer || officer.slug !== slug) {
     throw new Error(`Personnel ${slug} not found.`);
   }
+  assertNoSuppressedColumns("personnel", [officer]);
   const officerId = officer.id;
   const agencyOfficers = (
     await client.query(
-      "select * from public.agency_personnel where personnel_id = $1",
+      `select ${projection("agency_personnel", "ap")} from public.agency_personnel ap where ap.personnel_id = $1`,
       [officerId],
     )
   ).rows;
+  assertNoSuppressedColumns("agency_personnel", agencyOfficers);
   const agencyIds = agencyOfficers.map(
     (entry: { agency_id: string }) => entry.agency_id,
   );
@@ -158,6 +171,75 @@ const discipline = await loadDisciplineForPersonnel(data.officer.id);
 const education = await loadEducationForPersonnel(data.officer.id);
 const agenciesById = mapBy(data.agencies, "id");
 const history = normalizeAgencyHistory(data.agencyOfficers);
+
+/** Reader-facing names for the fields, for the citation panel. */
+const fieldLabels: Record<string, string> = {
+  "personnel.prefix": "Name",
+  "personnel.first_name": "Name",
+  "personnel.middle_name": "Name",
+  "personnel.last_name": "Name",
+  "personnel.suffix": "Name",
+  "agency_personnel.title": "Job title",
+  "agency_personnel.license_id": "License",
+  "agency_personnel.start_date": "Start date",
+  "agency_personnel.end_date": "End date",
+  "agency_personnel.badge_number": "Badge number",
+};
+/**
+ * What this page may publish about this person, decided at the data-access
+ * layer rather than in the markup below.
+ *
+ * Every value the template renders from `personnel` or `agency_personnel` comes
+ * through these two, so a field with no citation has nowhere to enter the page
+ * from — including the prefill payloads, which ship in the page source and are
+ * where the last round of suppression leaked.
+ */
+const citedOfficer = citeRow("personnel", data.officer);
+const citedAssignments = new Map(
+  data.agencyOfficers.map((entry: { id: string }) => [
+    entry.id,
+    citeRow("agency_personnel", entry, { slug: data.officer.slug }),
+  ]),
+);
+const officerField = (column: string) => projectedText(citedOfficer, column);
+const assignmentField = (assignmentId: string, column: string) => {
+  const cited = citedAssignments.get(assignmentId);
+  return cited ? projectedText(cited, column) : null;
+};
+const assignmentText = (assignmentId: string, column: string) =>
+  assignmentField(assignmentId, column)?.value || null;
+/** A projected date, formatted, still carrying its citation. */
+const assignmentDate = (assignmentId: string, column: string) => {
+  const projected = assignmentField(assignmentId, column);
+  return projected
+    ? { ...projected, value: formatShortDate(projected.value) }
+    : null;
+};
+/**
+ * True when a field was withheld rather than simply empty.
+ *
+ * The distinction decides what a cell may say. An empty end date means the
+ * assignment is current, and "Present" is the right word for it. A *withheld*
+ * end date means we are not showing what we hold — and printing "Present"
+ * there would turn a withheld field into a claim that the person still works
+ * at that agency.
+ */
+const isAssignmentFieldWithheld = (assignmentId: string, column: string) =>
+  Boolean(
+    citedAssignments
+      .get(assignmentId)
+      ?.withheld.some((entry) => entry.column === column),
+  );
+const withheldFieldLabels = [
+  ...new Set(
+    [
+      ...citedOfficer.withheld,
+      ...[...citedAssignments.values()].flatMap((cited) => [...cited.withheld]),
+    ].map(
+      (entry) => fieldLabels[`${entry.table}.${entry.column}`] || entry.column,
+    ),
+  ),
+];
 const missingAgencyAssignment = history.find(
   (entry) => !agenciesById[entry.agency_id],
 );
@@ -181,7 +263,16 @@ if (!currentAssignment) {
   );
 }
 const hasCurrentAssignment = Boolean(activeAssignment);
-const currentTitle =
+/**
+ * The stored title, used only to assert the row is complete.
+ *
+ * Kept separate from the displayed title because the two answer different
+ * questions. "Does this assignment record have a role?" is a data-integrity
+ * check and a missing one is a loader bug worth failing on. "May we show it to
+ * a reader?" is the contract's call, and a withheld title must not take the
+ * build down with it.
+ */
+const currentTitleStored =
   typeof currentAssignment?.title === "string"
     ? currentAssignment.title.trim()
     : "";
@@ -198,7 +289,7 @@ const isPlaceholderPersonnel =
   data.officer.slug === "unknown-personnel-935d1d" ||
   (data.officer.first_name === "Unknown" &&
     data.officer.last_name === "Personnel");
-if (!isPlaceholderPersonnel && !currentTitle) {
+if (!isPlaceholderPersonnel && !currentTitleStored) {
   throw new Error(
     `Personnel ${data.officer.slug} is missing required title on agency_personnel ${currentAssignment?.id || "unknown"}`,
   );
@@ -245,15 +336,49 @@ const reportItems = data.reports.map(
 );
 
 const officerPath = `/personnel/${data.officer.slug}/`;
-const officerName = [
-  data.officer.prefix,
-  data.officer.first_name,
-  data.officer.middle_name,
-  data.officer.last_name,
-  data.officer.suffix,
-]
+const nameColumns = [
+  "prefix",
+  "first_name",
+  "middle_name",
+  "last_name",
+  "suffix",
+];
+const citedName = nameColumns
+  .map((column) => officerField(column)?.value)
   .filter(Boolean)
   .join(" ");
+const storedName = nameColumns
+  .map((column) => data.officer[column])
+  .filter(Boolean)
+  .join(" ");
+/**
+ * The page's subject name, which is a different question from a field value.
+ *
+ * Attribute fields below are withheld when they fail the contract. The subject
+ * name is not, and the reason is that withholding it cannot make this page say
+ * less: the name is in the URL, in the canonical link and in the sitemap, all
+ * of which are already published. Blanking the heading or failing the build
+ * would remove the page rather than the claim — a takedown by other means, and
+ * INS-11 section 1 declined to do that on purpose.
+ *
+ * So when a name fails the contract the page keeps rendering the name it is
+ * already published under and says plainly that we are not standing behind it.
+ * Correcting those records is INS-68; whether the pages exist is INS-11.
+ */
+const nameFailedContract = citedName === "" && storedName !== "";
+const officerName = citedName || storedName;
+/**
+ * The citation the panel shows for the name.
+ *
+ * Taken from the last name when it passed, because the whole name comes from
+ * one source row and one dataset: citing each part separately would print the
+ * same paragraph five times.
+ */
+const citedNameProjection = citedName
+  ? officerField("last_name") ||
+    officerField("first_name") ||
+    officerField("prefix")
+  : null;
 const deceasedOnValue = data.officer.deceased_on;
 const isDeceased = Boolean(deceasedOnValue);
 const deceasedOnDisplay = deceasedOnValue
@@ -280,9 +405,11 @@ const pastEmployerSummary = assignmentHistory
   }))
   .map((entry) => {
     const segments = [entry.agency?.name];
+    const startDate = assignmentText(entry.id, "start_date");
+    const endDate = assignmentText(entry.id, "end_date");
     const dateRange = [
-      entry.start_date ? formatShortDate(entry.start_date) : null,
-      entry.end_date ? formatShortDate(entry.end_date) : "Current",
+      startDate ? formatShortDate(startDate) : null,
+      endDate ? formatShortDate(endDate) : "Current",
     ]
       .filter(Boolean)
       .join(" to ");
@@ -323,9 +450,9 @@ const addCivilCasePrefillPayload = JSON.stringify({
 });
 const pastEmployerHref = "/personnel/new/";
 const pastEmployerPrefillPayload = JSON.stringify({
-  firstName: data.officer.first_name || "",
-  lastName: data.officer.last_name || "",
-  suffix: data.officer.suffix || "",
+  firstName: officerField("first_name")?.value || "",
+  lastName: officerField("last_name")?.value || "",
+  suffix: officerField("suffix")?.value || "",
   currentAgency: currentAgencyPrefillName,
   currentAgencyCity: currentAgency?.city || "",
   currentAgencyState: currentAgency?.state || "",
@@ -471,6 +598,10 @@ const personnelMetricCards: MetricCardItem[] = [
         }
       : {}),
     accent: metricVisuals.reports.accent,
+    // Roster facts and things people sent us sit side by side in this grid, and
+    // a reader cannot tell them apart from a number alone. Reports are
+    // submitted and unchecked; the card has to say so where the count is.
+    detail: "Sent in by the public, not checked by us",
     icon: metricVisuals.reports.icon,
     label: metricVisuals.reports.label,
     value: formatCount(reportItems.length),
@@ -560,6 +691,16 @@ const structuredData = {
               message={deceasedPublicMessage}
               source={data.officer.deceased_source}
             />
+          </div>
+        ) : null}
+        {nameFailedContract ? (
+          <div class="personnel-status-note" role="status">
+            <strong>We may have this name wrong.</strong>
+            <span>
+              This name did not pass our records check, so we are not standing
+              behind the spelling on this page. If this is your record, or you
+              know the correct name, please tell us.
+            </span>
           </div>
         ) : null}
         <EntityActionBar>
@@ -772,7 +913,12 @@ const structuredData = {
                       entry.agency.name
                     )}
                   </th>
-                  <td>{entry.title || currentTitle}</td>
+                  <td>
+                    <CitedValue
+                      projected={assignmentField(entry.id, "title")}
+                      detailHref="#where-this-came-from"
+                    />
+                  </td>
                   <td>
                     {entry.license_id &&
                       (() => {
@@ -791,12 +937,23 @@ const structuredData = {
                       })()}
                   </td>
                   <td>
-                    {entry.start_date ? formatShortDate(entry.start_date) : ""}
+                    <CitedValue
+                      projected={assignmentDate(entry.id, "start_date")}
+                      detailHref="#where-this-came-from"
+                    />
                   </td>
                   <td>
-                    {entry.end_date
-                      ? formatShortDate(entry.end_date)
-                      : "Present"}
+                    {assignmentDate(entry.id, "end_date") ? (
+                      <CitedValue
+                        projected={assignmentDate(entry.id, "end_date")}
+                        detailHref="#where-this-came-from"
+                      />
+                    ) : isAssignmentFieldWithheld(
+                        entry.id,
+                        "end_date",
+                      ) ? null : (
+                      "Present"
+                    )}
                   </td>
                   <td>
                     <span class="personnel-status-pill">
@@ -810,6 +967,31 @@ const structuredData = {
         </div>
       ) : null}
     </section>
+
+    <ProvenancePanel
+      entries={[
+        { label: "Name", projected: citedNameProjection },
+        {
+          label: "Job title",
+          projected: currentAssignment
+            ? assignmentField(currentAssignment.id, "title")
+            : null,
+        },
+        {
+          label: "Start date",
+          projected: currentAssignment
+            ? assignmentDate(currentAssignment.id, "start_date")
+            : null,
+        },
+        {
+          label: "End date",
+          projected: currentAssignment
+            ? assignmentDate(currentAssignment.id, "end_date")
+            : null,
+        },
+      ]}
+      withheldLabels={withheldFieldLabels}
+    />
   </div>
 
   <div class="personnel-footer-actions">

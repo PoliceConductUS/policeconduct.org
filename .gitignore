@@ -59,3 +59,6 @@ rollback.json
 
 # Personnel portraits staged from intake database associations.
 /public/img/personnel-photos/
+
+# provenance ledger: generated from the source production and the identity map
+provenance/

@@ -1,0 +1,150 @@
+{
+  "version": 3,
+  "title": "Personnel field suppression contract",
+  "reconstructedFrom": "INS-18 report revision 3, sections 15-21. The spike that first emitted this file (spikes/ins18-lineage/out/field-suppression.v3.json) is not present on any checkout, so the nine rules are re-expressed here from the report that specifies them, and committed so the data-access layer reads a version-controlled input rather than an artifact that can disappear.",
+  "enforcementPoint": "src/lib/data/personnel-projection.js — the select list and the cited projection. A suppressed column is never fetched, so it cannot reach a template, a schema.org graph, a data- attribute, or an inline prefill payload.",
+  "insufficientEnforcementPoints": [
+    "A template guard. It hides a value from the visible DOM and still ships it in the page source, in prefill payloads and in structured data (INS-18 section 4b).",
+    "A column-level rule alone. Badge numbers also publish inside narrative prose, where dropping a column does not reach them (INS-18 section 16)."
+  ],
+  "defaultForUncitedFields": "withhold",
+  "rules": [
+    {
+      "id": "badge-number-unsourceable",
+      "action": "suppress_field",
+      "match": {
+        "kind": "column",
+        "fields": ["agency_personnel.badge_number"]
+      },
+      "reason": "The TCOLE public-records production has four sheets and 31 columns and no badge-number column anywhere. Badge is not a field awaiting provenance work; the only established channel cannot ever supply it. All 7 badge values in the corpus are hand-authored, 4 of them attached to a person we label Unknown, and one (49112) is a squad-car number the seed's own narrative calls a vehicle number. A wrong badge number routes a real allegation onto the wrong human being.",
+      "evidence": "INS-18 report rev 3 section 16",
+      "decidedBy": "INS-11 section 3; deploy condition on INS-34"
+    },
+    {
+      "id": "badge-number-in-prose",
+      "action": "suppress_field",
+      "match": {
+        "kind": "narrative_pattern",
+        "fields": ["civil_cases.claims_summary", "reviews.narrative"],
+        "pattern": "\\b(?:badge|shield)\\s*(?:no\\.?|number|#)?\\s*#?\\s*\\d{1,6}\\b",
+        "flags": "i"
+      },
+      "reason": "Suppressing agency_personnel.badge_number does not touch badge numbers published inside prose. One civil_cases row publishes three officer badge numbers in its claims summary. A field-level rule is required, not only a column rule.",
+      "evidence": "INS-18 report rev 3 section 16, 'Column suppression does not suppress the field'",
+      "decidedBy": "INS-18 rev 3, carried into v3"
+    },
+    {
+      "id": "no-established-channel",
+      "action": "suppress_field",
+      "match": { "kind": "uncited" },
+      "reason": "110 live profiles are hand-authored with no source dataset. They need no enumeration: a row that no attestation covers is not_traceable by default, and default-deny is what makes the rule survive new rows nobody told us about.",
+      "evidence": "INS-18 report rev 3 sections 14, 17 and 20 correction 2",
+      "decidedBy": "INS-10 — render provenance only where lineage is demonstrable, suppress the field otherwise"
+    },
+    {
+      "id": "source-placeholder-as-data",
+      "action": "suppress_field",
+      "match": {
+        "kind": "value_token",
+        "fields": [
+          "personnel.prefix",
+          "personnel.suffix",
+          "personnel.middle_name",
+          "agency_personnel.title"
+        ],
+        "tokens": [
+          "n/a",
+          "na",
+          "n.a.",
+          "none",
+          "null",
+          "unknown",
+          "-",
+          "--",
+          "1",
+          "0"
+        ]
+      },
+      "reason": "TCOLE uses in-band placeholders in SFX: 27 'N/A', 9 'n/a', one '1'. We published them verbatim as name suffixes on 37 live pages, including in the page title and baked into the canonical URL. A placeholder is not a fact about a person.",
+      "evidence": "INS-18 report rev 3 section 18 item 2",
+      "decidedBy": "accuracy; engineering call recorded on INS-10"
+    },
+    {
+      "id": "name-literal-coercion",
+      "action": "quarantine_row",
+      "match": {
+        "kind": "value_token",
+        "fields": [
+          "personnel.first_name",
+          "personnel.middle_name",
+          "personnel.last_name"
+        ],
+        "tokens": ["1", "0", "true", "false", "nan"]
+      },
+      "reason": "Five people with the surname True broke the identity mapper, which coerced the string to a boolean and wrote 1. A name column that holds a coerced boolean publishes a wrong name about a real person, and a provenance gate alone passes it because the lineage is perfect. Name columns must be read as text and never coerced: Null, None, True, False, NA and NaN are all real surnames or legitimate name fragments.",
+      "evidence": "INS-18 report rev 3 section 18 items 3 and 4; generalised on INS-68",
+      "decidedBy": "accuracy; engineering call recorded on INS-10"
+    },
+    {
+      "id": "epoch-sentinel-start-date",
+      "action": "suppress_field",
+      "match": {
+        "kind": "value_equals",
+        "fields": ["agency_personnel.start_date"],
+        "values": ["1970-01-01"]
+      },
+      "reason": "117 assignment rows carry start_date 1970-01-01 and 102 publish. The cause is in the seed: hand-authored rows for people whose start date is unknown, with NOT NULL forbidding the honest value. The sentinel is a missing value wearing a date.",
+      "evidence": "INS-18 report rev 3 sections 5 and 18 item 6",
+      "decidedBy": "accuracy; engineering call recorded on INS-10"
+    },
+    {
+      "id": "retrieval-date-missing",
+      "action": "cap_class",
+      "match": { "kind": "provenance_class" },
+      "capAt": "source_and_dataset_verified",
+      "reason": "No attested retrieval date exists for any row by any load path. manifest.json records processed_at_utc, which is the date we processed the file, not the date the agency produced it. An attestation that names a source, names a dataset and verifies a hash is still not traceable, and no configuration may promote it. Rendering is allowed at this class, but the citation states that the retrieval date is unattested.",
+      "evidence": "INS-18 report rev 3 sections 0 and 15; blocker carried on INS-64",
+      "decidedBy": "INS-18; enforced in classify() in provenance.ts"
+    },
+    {
+      "id": "traceable-but-not-correct",
+      "action": "suppress_field",
+      "match": {
+        "kind": "row_enumeration",
+        "fields": [
+          "personnel.first_name",
+          "personnel.last_name",
+          "personnel.suffix"
+        ],
+        "slugs": [
+          "jailer-1-test-68994f",
+          "joseph-a7211c",
+          "belinda-28d9da",
+          "robert-349789",
+          "hunter-914e15",
+          "kolya-e99c28",
+          "chris-true-6639a9",
+          "patrick-true-a21229",
+          "dowell-true-jr-c6a02b",
+          "true-miller-29bb24",
+          "trevor-true-7a9d94"
+        ]
+      },
+      "reason": "These records reproduce the source production exactly and are still wrong on the page: one is a TCOLE test record published as a human being; five had a surname deleted by a NULL-literal collision where Null may be the real surname; five carry a boolean coerced from the surname True. Provenance and accuracy are different properties and a provenance gate alone passes every one of them. The surname question is a genuine source ambiguity for TCOLE to answer, not for an automated cleanup to guess.",
+      "evidence": "INS-18 report rev 3 section 18 items 1, 3 and 4",
+      "decidedBy": "INS-68 owns the page-level remediation; the field-level withholding is this contract's"
+    },
+    {
+      "id": "identity-collision-risk",
+      "action": "disclose",
+      "match": {
+        "kind": "identity_confidence",
+        "disclose": ["name_plus_services", "unknown"],
+        "suppress": ["duplicate_order"]
+      },
+      "reason": "Identity resolution is name-based: 124,383 unique-name matches, 5,579 resolved by service history, 6 decided by arbitrary duplicate ordering, and nothing records which 6. A per-row citation that hides a name collision claims more than we measured, so the collision tier is disclosed to the reader. The 6 rows whose match was decided by row order are not a match at all and are withheld.",
+      "evidence": "INS-18 report rev 3 section 19",
+      "decidedBy": "INS-18 requirement carried to INS-5; tier split is an engineering call recorded on INS-10"
+    }
+  ]
+}

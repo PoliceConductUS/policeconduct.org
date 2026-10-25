@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "title": "Datasets this site may cite for personnel fields",
+  "rules": [
+    "An entry here is a claim we can defend about a dataset we hold. Adding one without the artifact in hand is a fabricated citation.",
+    "retrievedAt is the date the SOURCE produced or published the data, attested by the source. The date we downloaded, processed or loaded a file is not this field. Leave it null when we hold no attestation and let the class fall to source_and_dataset_verified.",
+    "fields lists what the dataset is capable of sourcing. A field absent from this list cannot be cited to this dataset even if a row claims it — which is how badge number stays uncitable to a production that has no badge column."
+  ],
+  "attestations": [
+    {
+      "datasetId": "tx-tcole-2025-02-17-all-officers",
+      "sourceName": "Texas Commission on Law Enforcement (TCOLE)",
+      "sourceKind": "public_records_request",
+      "recordsRequestId": null,
+      "sourceUrl": null,
+      "retrievedAt": null,
+      "contentSha256": "46f9d380b16919f9f7a46c939d2468cab00f003e4ef78332c4f1ff8231610774",
+      "fields": [
+        "personnel.first_name",
+        "personnel.middle_name",
+        "personnel.last_name",
+        "personnel.suffix",
+        "agency_personnel.title",
+        "agency_personnel.license_id",
+        "agency_personnel.start_date",
+        "agency_personnel.end_date"
+      ],
+      "notes": "One Texas Public Information Act production, not a scrape. Workbook PublicInformationRequest_2025-02-10_1410.xlsx, 16,983,932 bytes, four sheets: Departments 3,906, Officers 129,973, Services 170,754, OfficersLicensesActions 189,629. The hash above was recomputed on 2026-10-24 and matches the recorded manifest. recordsRequestId is null because no request letter, response letter or tracking number has been preserved — the only identifier we hold is the production filename, which is not an identifier the agency would recognise. retrievedAt is null because the manifest records processed_at_utc 2026-05-07, the date we processed the file, not the date TCOLE produced it; INS-64 owns preserving the correspondence that would supply both. The Officers sheet carries PUBLIC_GUID, FNAME, MNAME, LNAME and SFX only — no date of birth, address, government identifier or internal personnel id. No badge-number column exists in any sheet."
+    }
+  ]
+}

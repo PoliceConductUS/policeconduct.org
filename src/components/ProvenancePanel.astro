@@ -1,0 +1,190 @@
+---
+/**
+ * "Where this came from" — the full citation for every field the page renders.
+ *
+ * The charter requires four things per displayed field: source dataset,
+ * retrieval date, source URL or records-request identifier, and confidence.
+ * They are here rather than beside each value because a profile renders about
+ * ten fields from one dataset, and ten copies of the same paragraph is noise a
+ * reader learns to skip. Each value carries a short marker that links here.
+ *
+ * What this panel will not do is round up. When no retrieval date is attested
+ * it says so in those words; when the match to the source row could be a
+ * different person with the same name it says that too. An honest gap keeps a
+ * reader's trust. A specific claim we cannot defend loses it, and about a named
+ * human being it does worse than that.
+ */
+import {
+  classDisclosure,
+  identityDisclosure,
+  isSubmittedSource,
+  sourceKindLabel,
+} from "#src/lib/data/provenance.js";
+
+interface Props {
+  /** Label and projected value for each field the page rendered. */
+  entries: {
+    label: string;
+    projected: any;
+  }[];
+  /** Fields withheld, so the page can say a field is missing on purpose. */
+  withheldLabels?: string[];
+  id?: string;
+}
+
+const {
+  entries,
+  withheldLabels = [],
+  id = "where-this-came-from",
+} = Astro.props;
+const rendered = entries.filter((entry) => entry.projected);
+const groups = new Map<string, { citation: any; labels: string[] }>();
+for (const entry of rendered) {
+  if (entry.projected.kind !== "cited") {
+    continue;
+  }
+  const citation = entry.projected.citation;
+  const key = `${citation.datasetId}:${citation.identityConfidence}`;
+  const group = groups.get(key);
+  if (group) {
+    group.labels.push(entry.label);
+    continue;
+  }
+  groups.set(key, { citation, labels: [entry.label] });
+}
+const uncited = rendered.filter((entry) => entry.projected.kind === "uncited");
+---
+
+{rendered.length || withheldLabels.length ? (
+  <section
+    id={id}
+    class="personnel-panel personnel-panel-wide provenance-panel"
+  >
+    <div class="personnel-panel-heading">
+      <h2>Where this came from</h2>
+      <p>
+        Every fact on this page is listed here with the records it came from.
+      </p>
+    </div>
+
+    {[...groups.values()].map((group) => (
+      <article
+        class="provenance-source"
+        data-source-origin={
+          isSubmittedSource(group.citation.sourceKind) ? "submitted" : "records"
+        }
+      >
+        <h3>{group.labels.join(", ")}</h3>
+        <dl>
+          <div>
+            <dt>Where we got it</dt>
+            <dd>
+              {sourceKindLabel(group.citation.sourceKind)} —{" "}
+              {group.citation.sourceUrl ? (
+                <a href={group.citation.sourceUrl} rel="nofollow">
+                  {group.citation.sourceName}
+                </a>
+              ) : (
+                group.citation.sourceName
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt>Records file</dt>
+            <dd>
+              <code>{group.citation.datasetId}</code>
+              {group.citation.recordsRequestId ? (
+                <Fragment>
+                  {" "}
+                  · Request {group.citation.recordsRequestId}
+                </Fragment>
+              ) : null}
+            </dd>
+          </div>
+          <div>
+            <dt>Date the source produced it</dt>
+            <dd>
+              {group.citation.retrievalDateAttested
+                ? group.citation.retrievedAt
+                : "Not recorded. We do not have a dated receipt from the source."}
+            </dd>
+          </div>
+          <div>
+            <dt>How sure we are</dt>
+            <dd>
+              {classDisclosure(group.citation)}
+              {identityDisclosure(group.citation) ? (
+                <Fragment> {identityDisclosure(group.citation)}</Fragment>
+              ) : null}
+            </dd>
+          </div>
+          {group.citation.contentSha256 ? (
+            <div>
+              <dt>File checksum we hold</dt>
+              <dd>
+                <code>{group.citation.contentSha256}</code>
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+      </article>
+    ))}
+
+    {uncited.length ? (
+      <article class="provenance-source" data-source-origin="unknown">
+        <h3>{uncited.map((entry) => entry.label).join(", ")}</h3>
+        <p>
+          We have not finished tracing where this came from, so we are not
+          naming a source for it yet.
+        </p>
+      </article>
+    ) : null}
+
+    {withheldLabels.length ? (
+      <article class="provenance-source" data-source-origin="withheld">
+        <h3>Not shown on this page</h3>
+        <p>
+          We hold {withheldLabels.join(", ")} for this profile and are not
+          showing it, because we cannot show where it came from or we have
+          reason to think it is wrong.
+        </p>
+      </article>
+    ) : null}
+  </section>
+) : null}
+
+<style>
+  .provenance-source {
+    border-top: 1px solid var(--ipc-color-rule);
+    padding: 0.9rem 0;
+  }
+
+  .provenance-source[data-source-origin="submitted"] {
+    border-left: 3px solid var(--ipc-color-ink-soft);
+    padding-left: 0.75rem;
+  }
+
+  .provenance-source[data-source-origin="unknown"],
+  .provenance-source[data-source-origin="withheld"] {
+    font-style: italic;
+  }
+
+  .provenance-source dl {
+    display: grid;
+    gap: 0.6rem 1.4rem;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    margin: 0;
+  }
+
+  .provenance-source dt {
+    color: var(--ipc-color-ink-soft);
+    font-size: var(--ipc-type-caption);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .provenance-source dd {
+    margin: 0.2rem 0 0;
+    overflow-wrap: anywhere;
+  }
+</style>

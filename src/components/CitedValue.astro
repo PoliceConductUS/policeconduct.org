@@ -1,0 +1,96 @@
+---
+/**
+ * One personnel value, rendered with where it came from attached.
+ *
+ * Two readings the page must never let a reader confuse: a record a government
+ * body keeps, and something a person typed into a form on this site. They are
+ * marked differently in the markup (`data-source-origin`), labelled differently
+ * in words, and styled differently — in that order of importance, because a
+ * colour difference alone is not a distinction for a reader using a screen
+ * reader or a monochrome display.
+ *
+ * `null` renders nothing at all. A withheld field leaves no trace on the page:
+ * no label, no dash, no "not listed". Rendering a placeholder would assert we
+ * checked and found nothing, which is a claim of its own.
+ */
+import {
+  isSubmittedSource,
+  sourceKindLabel,
+} from "#src/lib/data/provenance.js";
+
+interface Props {
+  /** The projected value, or null when the page may not render it. */
+  projected:
+    | {
+        kind: "cited";
+        value: string;
+        citation: {
+          sourceName: string;
+          sourceKind: Parameters<typeof sourceKindLabel>[0];
+        };
+      }
+    | { kind: "uncited"; value: string }
+    | null;
+  /** Anchor for the full citation, when the page carries a provenance panel. */
+  detailHref?: string;
+}
+
+const { projected, detailHref } = Astro.props;
+const origin =
+  projected === null
+    ? null
+    : projected.kind === "uncited"
+      ? "unknown"
+      : isSubmittedSource(projected.citation.sourceKind)
+        ? "submitted"
+        : "records";
+const label =
+  projected === null || projected.kind === "uncited"
+    ? "Source not shown"
+    : `${sourceKindLabel(projected.citation.sourceKind)} — ${projected.citation.sourceName}`;
+---
+
+{projected ? (
+  <span class="cited-value" data-source-origin={origin}>
+    <span class="cited-value-text">{projected.value}</span>
+    {detailHref ? (
+      <a class="cited-value-source" href={detailHref}>
+        {label}
+      </a>
+    ) : (
+      <span class="cited-value-source">{label}</span>
+    )}
+  </span>
+) : null}
+
+<style>
+  /* A record a government body keeps and a note someone typed into a form on
+     this site must not read alike. The distinction is carried by the markup and
+     by the words first; these rules make it visible at a glance. Colour is
+     never the only difference. */
+  .cited-value {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .cited-value-source {
+    color: var(--ipc-color-ink-soft);
+    font-size: var(--ipc-type-caption);
+    letter-spacing: 0.02em;
+  }
+
+  .cited-value[data-source-origin="submitted"] .cited-value-text {
+    border-left: 3px solid var(--ipc-color-ink-soft);
+    padding-left: 0.5rem;
+  }
+
+  .cited-value[data-source-origin="submitted"] .cited-value-source::before {
+    content: "Unverified · ";
+    font-weight: 700;
+  }
+
+  .cited-value[data-source-origin="unknown"] .cited-value-source {
+    font-style: italic;
+  }
+</style>
