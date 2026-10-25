@@ -24,11 +24,11 @@ scheduled executions**, and has not run since 2026-09-16.
 
 Three paths, each covering a failure the others cannot.
 
-| Path | Fires on | Carries | Survives |
-|---|---|---|---|
-| **Resend email** from the forms Lambda | submission stored; verification completed | `[DSAR] dataSubjectAccessRequest received <id>` | — |
-| **SNS topic** publish from the forms Lambda | same two events | subject line + message attributes | a broken email transport |
-| **S3 event notification** → SNS | `ObjectCreated` under `submissions/2` and `submissions/status/` | generic `Amazon S3 Notification` | a bug anywhere in the Lambda |
+| Path                                        | Fires on                                                        | Carries                                         | Survives                     |
+| ------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------- | ---------------------------- |
+| **Resend email** from the forms Lambda      | submission stored; verification completed                       | `[DSAR] dataSubjectAccessRequest received <id>` | —                            |
+| **SNS topic** publish from the forms Lambda | same two events                                                 | subject line + message attributes               | a broken email transport     |
+| **S3 event notification** → SNS             | `ObjectCreated` under `submissions/2` and `submissions/status/` | generic `Amazon S3 Notification`                | a bug anywhere in the Lambda |
 
 **The human-facing path is Resend, not SNS email.** That is the one design
 decision here worth defending. SNS publishes **no delivery status for the
@@ -44,7 +44,7 @@ The S3 event path remains because it fires on the storage fact itself and
 therefore survives a bug in the Lambda — the exact class of failure that
 produced this issue. Its subject line is generic, which is why it cannot be the
 only path: `submissions/<date>/<formName>/<id>.json` puts the form name in the
-*middle* of the key, and S3 prefix filters are literal strings, so no filter
+_middle_ of the key, and S3 prefix filters are literal strings, so no filter
 isolates DSARs.
 
 **Expect two emails per event.** If the S3 one ever arrives without the Resend
@@ -174,13 +174,13 @@ option for it until INS-39 imports state.
 
 ## Alarms
 
-| Alarm | Fires when |
-|---|---|
-| `…-forms-api-prod-notify-publish-failed` | a submission stored but the notification failed to publish |
-| `…-forms-api-prod-notify-topic-not-configured` | the pre-INS-35 silent-intake state reasserting itself |
-| `…-forms-api-prod-notify-nobody-told` | both paths failed for the same submission |
-| `…-notification-canary-delivery-failed` | the path did not deliver to a human, twice running |
-| `…-submissions-without-notification` | a submission stored with no receipt beside it |
+| Alarm                                          | Fires when                                                 |
+| ---------------------------------------------- | ---------------------------------------------------------- |
+| `…-forms-api-prod-notify-publish-failed`       | a submission stored but the notification failed to publish |
+| `…-forms-api-prod-notify-topic-not-configured` | the pre-INS-35 silent-intake state reasserting itself      |
+| `…-forms-api-prod-notify-nobody-told`          | both paths failed for the same submission                  |
+| `…-notification-canary-delivery-failed`        | the path did not deliver to a human, twice running         |
+| `…-submissions-without-notification`           | a submission stored with no receipt beside it              |
 
 The notify alarms route to the submissions topic; the canary alarms route to the
 independent canary topic. None route to `policeconduct-alerts`, which as of
