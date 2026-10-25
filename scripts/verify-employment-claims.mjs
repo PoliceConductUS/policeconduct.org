@@ -124,12 +124,19 @@ const sampleDeterministic = (items, count, seed) => {
   return out;
 };
 
+// `/personnel/new/` and `/personnel/suggest-edit/` live under the same prefix
+// but are submission forms, not profiles. They carry no employment headline, so
+// counting them as profiles makes the guard report two undetectable claims and
+// fail for the wrong reason. The --host path already skips them.
+const NON_PROFILE_SLUGS = new Set(["new", "suggest-edit"]);
+
 const collectDistPages = async (distDir) => {
   const root = path.join(distDir, "personnel");
   const entries = await readdir(root, { withFileTypes: true });
   const pages = [];
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
+    if (NON_PROFILE_SLUGS.has(entry.name)) continue;
     pages.push({
       id: `/personnel/${entry.name}/`,
       read: () => readFile(path.join(root, entry.name, "index.html"), "utf8"),
@@ -169,7 +176,7 @@ const collectHostPages = async (host, sample, seed) => {
   const profiles = urls.filter(
     (u) =>
       /\/personnel\/[^/]+\/$/.test(u) &&
-      !/\/personnel\/(new|suggest-edit)\/$/.test(u),
+      !NON_PROFILE_SLUGS.has(u.replace(/\/$/, "").split("/").pop()),
   );
   if (!profiles.length) {
     throw new Error(
