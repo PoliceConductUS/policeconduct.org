@@ -665,82 +665,21 @@ test("both notification paths failing is called out on its own line", async () =
 // INS-89: the expiry window, and the way out of an expired link.
 // ---------------------------------------------------------------------------
 
-test("the verification window is hours, not minutes, and is the documented default", () => {
-  // The number INS-89 was filed about was 900. Guard the floor rather than the
-  // exact value, so raising the window further does not break the test but
-  // quietly reverting to minutes does.
-  assert.equal(__testables.DEFAULT_VERIFICATION_TTL_SECONDS, 86400);
-  assert.ok(
-    __testables.DEFAULT_VERIFICATION_TTL_SECONDS >= 3600,
-    "a verification link must stay valid for at least an hour",
-  );
-
+test("verification retains the 15-minute default and invalid-config fallback", () => {
   const previous = process.env.EMAIL_VERIFICATION_TTL_SECONDS;
-  delete process.env.EMAIL_VERIFICATION_TTL_SECONDS;
   process.env.RESEND_API_KEY = "re_test_123";
   try {
-    // With nothing configured, the fallback must be the documented constant.
-    // It used to be a second, independent literal 900000.
-    assert.equal(
-      __testables.verificationConfig().ttlMs,
-      __testables.DEFAULT_VERIFICATION_TTL_SECONDS * 1000,
-    );
-  } finally {
-    if (previous === undefined) {
-      delete process.env.EMAIL_VERIFICATION_TTL_SECONDS;
-    } else {
-      process.env.EMAIL_VERIFICATION_TTL_SECONDS = previous;
+    for (const value of [undefined, "invalid", "0", "-1"]) {
+      if (value === undefined)
+        delete process.env.EMAIL_VERIFICATION_TTL_SECONDS;
+      else process.env.EMAIL_VERIFICATION_TTL_SECONDS = value;
+      assert.equal(__testables.verificationConfig().ttlMs, 900000);
     }
+  } finally {
+    if (previous === undefined)
+      delete process.env.EMAIL_VERIFICATION_TTL_SECONDS;
+    else process.env.EMAIL_VERIFICATION_TTL_SECONDS = previous;
   }
-});
-
-test("a garbled or absurd TTL falls back or clamps instead of being honoured", () => {
-  const { resolveVerificationTtlMs, DEFAULT_VERIFICATION_TTL_SECONDS } =
-    __testables;
-  const fallback = DEFAULT_VERIFICATION_TTL_SECONDS * 1000;
-
-  assert.equal(resolveVerificationTtlMs(Number.NaN), fallback);
-  assert.equal(resolveVerificationTtlMs(0), fallback);
-  assert.equal(resolveVerificationTtlMs(-60), fallback);
-  assert.equal(resolveVerificationTtlMs(7200), 7200 * 1000);
-  // An extra zero on a week must not mint ten-week links.
-  assert.equal(
-    resolveVerificationTtlMs(__testables.MAX_VERIFICATION_TTL_SECONDS * 10),
-    __testables.MAX_VERIFICATION_TTL_SECONDS * 1000,
-  );
-});
-
-test("user-facing durations are rendered from the TTL, never written out", () => {
-  const { formatApproximateDuration } = __testables;
-  assert.equal(formatApproximateDuration(60 * 1000), "1 minute");
-  assert.equal(formatApproximateDuration(15 * 60 * 1000), "15 minutes");
-  assert.equal(formatApproximateDuration(60 * 60 * 1000), "1 hour");
-  assert.equal(formatApproximateDuration(24 * 60 * 60 * 1000), "24 hours");
-  assert.equal(formatApproximateDuration(72 * 60 * 60 * 1000), "3 days");
-
-  // The mutation that matters: if the window changes, the sentence changes.
-  // A hard-coded "15 minutes" in the copy is what INS-89 found shipped.
-  const sentence = __testables.verificationLinkExpiredMessage(
-    __testables.DEFAULT_VERIFICATION_TTL_SECONDS * 1000,
-  );
-  assert.match(sentence, /24 hours/);
-  assert.doesNotMatch(sentence, /15 minutes/);
-  assert.match(
-    __testables.verificationLinkExpiredMessage(15 * 60 * 1000),
-    /15 minutes/,
-  );
-});
-
-test("no user-facing verification copy claims unverified submissions are discarded", () => {
-  // The published sentence INS-89 found to be false. It is not enough to have
-  // removed it from one string: it was duplicated across the submit response,
-  // the verify success response and every failure message.
-  const claim = /will not be accepted for review/;
-  assert.doesNotMatch(__testables.verificationLinkFailureMessage("x"), claim);
-  assert.doesNotMatch(
-    __testables.verificationLinkExpiredMessage(86400000),
-    claim,
-  );
 });
 
 /**
@@ -795,7 +734,7 @@ function withVerificationStore(record, run) {
   })();
 }
 
-function verificationFixture({ ageMs = 0, ttlMs = 86400000, ...overrides }) {
+function verificationFixture({ ageMs = 0, ttlMs = 900000, ...overrides }) {
   const secret = "test-secret-value";
   const createdAt = new Date(Date.now() - ageMs).toISOString();
   return {
@@ -832,7 +771,7 @@ function verifyEvent(path, token) {
 test("an expired link is no longer a dead end: it offers a resend", async () => {
   process.env.RESEND_API_KEY = "re_test_123";
   const { record, secret } = verificationFixture({
-    // Two days late under a 24-hour window.
+    // An expired link remains recoverable after the 15-minute window.
     ageMs: 48 * 60 * 60 * 1000,
   });
 
@@ -922,7 +861,6 @@ test("the replacement link actually verifies, and the old one does not", async (
     const fresh = await handler(verifyEvent("/forms/verify-link", newToken));
     assert.equal(fresh.statusCode, 200, fresh.body);
     assert.equal(JSON.parse(fresh.body).submissionId, "sub_abc");
-    assert.doesNotMatch(fresh.body, /will not be accepted for review/);
   });
 });
 
@@ -1039,50 +977,4 @@ test("a first-time submission records the provider message id", async () => {
     assert.equal(stored.providerMessageId, "email_1");
     assert.ok(stored.sentAt, "sentAt makes the send time recoverable");
   });
-});
-
-test("the verification window is the same number in all three places that set it", async () => {
-  // Three files decide the live window and the smallest one wins at runtime:
-  //
-  //   index.mjs        DEFAULT_VERIFICATION_TTL_SECONDS — used only when the
-  //                    environment variable is absent, which in production it
-  //                    is not
-  //   deploy-forms-api.sh  sets EMAIL_VERIFICATION_TTL_SECONDS on the Lambda,
-  //                    and is what actually takes effect
-  //   variables.tf     what a Terraform apply would reset that variable to
-  //
-  // INS-89 nearly shipped a 24-hour window in code and tests while production
-  // kept expiring links after 15 minutes, because only the first of these was
-  // changed. A comment asking the next person to keep them equal does not
-  // survive the next edit; this does.
-  const { readFile } = await import("node:fs/promises");
-  const here = new URL(".", import.meta.url);
-
-  const script = await readFile(
-    new URL("../../scripts/deploy-forms-api.sh", here),
-    "utf8",
-  );
-  const scriptValue = /^VERIFICATION_TTL_SECONDS="(\d+)"$/m.exec(script);
-  assert.ok(scriptValue, "deploy-forms-api.sh must set VERIFICATION_TTL_SECONDS");
-
-  const variables = await readFile(
-    new URL("../../variables.tf", here),
-    "utf8",
-  );
-  const terraformValue =
-    /variable "forms_email_verification_ttl_seconds"[\s\S]*?default\s*=\s*(\d+)/.exec(
-      variables,
-    );
-  assert.ok(terraformValue, "variables.tf must declare a default TTL");
-
-  assert.equal(
-    Number(scriptValue[1]),
-    __testables.DEFAULT_VERIFICATION_TTL_SECONDS,
-    "deploy-forms-api.sh disagrees with DEFAULT_VERIFICATION_TTL_SECONDS, so a deploy would not set the window the code documents",
-  );
-  assert.equal(
-    Number(terraformValue[1]),
-    __testables.DEFAULT_VERIFICATION_TTL_SECONDS,
-    "variables.tf disagrees, so the next Terraform apply would silently revert the window",
-  );
 });

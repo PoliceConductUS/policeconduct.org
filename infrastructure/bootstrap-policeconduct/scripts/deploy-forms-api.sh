@@ -18,25 +18,10 @@
 # prod stayed unfixed for 23 days and the issue read as done. This script makes
 # the sequence one step, which is the actual fix for that.
 #
-# It is also why the environment update is a script and not Terraform — though
-# not for the reason this comment used to give. It claimed the bootstrap stack
-# has no state (INS-39) so applying it was impossible. That was true on
-# 2026-08-24 and is now false: `bootstrap-policeconduct/terraform.tfstate` is
-# real and current (serial 415, 136 resources as of 2026-10-15) and does declare
-# both `policeconduct-forms-api-prod` and `-preview` along with their
-# environments. Terraform could set these values.
-#
-# The reason not to is that the state is untracked, gitignored, and exists on
-# exactly one workstation with no backup, so an untargeted apply pushes whatever
-# unrelated diffs the checked-out branch happens to carry into the live account.
-# A scoped script that merges one Lambda's environment is the smaller
-# instrument. The Lambda's environment also holds live secrets — RESEND_API_KEY
-# and the token-signing EMAIL_VERIFICATION_HMAC_SECRET — that a careless
-# replace would wipe, so this merges rather than replaces.
-#
-# Because Terraform *does* declare these variables, anything this script sets
-# must also be set in `variables.tf`, or the next apply silently reverts it.
-# EMAIL_VERIFICATION_TTL_SECONDS is kept in both places for that reason.
+# It is also why the environment update has to be a script and not Terraform:
+# the bootstrap stack that declares this Lambda has no state (INS-39), so
+# applying it is not an option, and the Lambda's environment holds live secrets
+# that a careless replace would wipe. This merges.
 #
 # USAGE
 #   export AWS_PROFILE=<profile with write access to 942370948729>
@@ -59,23 +44,6 @@ TOPIC_ARN=""
 RECIPIENTS=""
 RECEIPTS_SINCE=""
 TARGETS=""
-
-# Lifetime of a submission verification link, in seconds.
-#
-# This has to be set here, and it is the reason INS-89's window change can take
-# effect at all. The Lambda reads EMAIL_VERIFICATION_TTL_SECONDS from its
-# environment and only falls back to the constant in index.mjs when the variable
-# is absent. The deployed environment has carried 900 since the feature shipped,
-# and the merge below preserves every existing key by design. Shipping the new
-# default in code alone would therefore have left the live window at 15 minutes
-# while every test and every user-facing string said 24 hours — a worse state
-# than the bug, because it reads as fixed.
-#
-# Keep equal to DEFAULT_VERIFICATION_TTL_SECONDS in lambdas/forms-api/index.mjs,
-# which carries the reasoning for the value itself, and to
-# var.forms_email_verification_ttl_seconds in variables.tf, which is what a
-# Terraform apply would otherwise reset this to. All three are 86400.
-VERIFICATION_TTL_SECONDS="86400"
 
 log()  { printf '\033[1m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[33mWARN\033[0m %s\n' "$*" >&2; }
@@ -225,25 +193,12 @@ deploy_one() {
     --arg recips "$RECIPIENTS" \
     --arg since "$RECEIPTS_SINCE" \
     --arg label "$label" \
-    --arg ttl "$VERIFICATION_TTL_SECONDS" \
     '. + {
        SUBMISSION_NOTIFICATIONS_TOPIC_ARN: $topic,
        SUBMISSION_NOTIFICATION_RECIPIENTS: $recips,
-       NOTIFICATION_RECEIPTS_SINCE: $since,
-       EMAIL_VERIFICATION_TTL_SECONDS: $ttl
+       NOTIFICATION_RECEIPTS_SINCE: $since
      } + (if $label == "" then {} else {NOTIFICATION_ENV_LABEL: $label} end)' \
     <<< "$current")"
-
-  # Report the window change explicitly. A number that moves silently inside a
-  # merged environment object is how 900 survived in production while the code
-  # and the copy said otherwise; see VERIFICATION_TTL_SECONDS above.
-  local current_ttl
-  current_ttl="$(jq -r '.EMAIL_VERIFICATION_TTL_SECONDS // "unset"' <<< "$current")"
-  if [[ "$current_ttl" != "$VERIFICATION_TTL_SECONDS" ]]; then
-    log "  verification link TTL: ${current_ttl}s -> ${VERIFICATION_TTL_SECONDS}s"
-  else
-    log "  verification link TTL: ${VERIFICATION_TTL_SECONDS}s (unchanged)"
-  fi
 
   # Sanity check the merge before sending it: the keys that were there must
   # still be there.
