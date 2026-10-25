@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Control A over staged content. INS-65.
+#
+# This hook is a convenience, not the gate: it is bypassable with
+# `git commit --no-verify` and it is not installed in agent runs. The real gate
+# is .github/workflows/personal-data-scan.yml, which runs the same script over
+# the pull request diff. See docs/third-party-personal-data.md.
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+
+if ! command -v node >/dev/null 2>&1; then
+  printf 'WARN: node not found; skipping the personal-data scan. CI still enforces it.\n' >&2
+  exit 0
+fi
+
+node "$ROOT_DIR/scripts/scan-personal-data.mjs" --staged

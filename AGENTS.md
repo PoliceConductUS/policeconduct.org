@@ -17,6 +17,15 @@ Prime Directive
 - Start outside-in: define the observable user, community, data, or system outcome before choosing an implementation.
 - Avoid hidden product decisions. If a requirement is unclear, either inspect existing repo context or ask before encoding a new policy.
 
+This Repository Is Public
+
+- Everything committed here is world-readable the moment it is pushed, and permanently readable by anyone who forked it. History rewriting does not undo that: a third-party fork retains every blob, and `main` blocks force-pushes. Read `docs/third-party-personal-data.md` before committing anything that mentions a person or a filesystem path.
+- Personal information that a third party gave us — volunteers, tipsters, applicants, correspondents, donors, members of the public — must never be committed to this repository, in any file, in any form, including comments, fixtures, tests, and commit messages. It goes in the database behind the personnel publication gate. A scanner cannot enforce this, because a volunteer's name and email are textually identical to the public-official contacts that legitimately belong in our corpus. You have to not do it.
+- Public-official contact data is different. Agency contact names, work emails, and published phone numbers for officials acting in their official capacity are sourced corpus data and belong in the database and on the site.
+- Never commit absolute home directory paths (`/Users/<name>/`, `/home/<name>/`, or the Windows user-profile equivalent), cloud-storage account folders, machine-local files (`*.local.*`), environment files, or credential material. Use repo-relative paths. Agent temp-directory slugs encode the home path too — strip them.
+- `npm run scan:personal-data` runs the gate locally. `.github/workflows/personal-data-scan.yml` runs it on every pull request and is the enforcing gate. Do not bypass it with `git commit --no-verify`, and do not loosen a rule to get a change through; add a reviewed, dated `ALLOWLIST` entry in `scripts/scan-personal-data.mjs` instead.
+- If you believe something personal has already been pushed, stop and escalate. Do not delete, amend, or rewrite it first — the remediation path depends on what is already mirrored.
+
 Workflow Standards
 
 - This repo uses Codex App, OpenSpec, Superpowers, and the OpenSpec Superpowers bridge for behavior-changing work.

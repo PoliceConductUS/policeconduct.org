@@ -5,9 +5,9 @@ max_score: 32
 na_heuristics: 5,9
 p0_count: 0
 p1_count: 2
-target_identity: "file:/Users/dalelotts/dev/PoliceConductUS/policeconduct.org/.worktrees/redesign-civic-index-pages/src/pages/[category]/licensing-authority/index.astro"
+target_identity: "file:src/pages/[category]/licensing-authority/index.astro"
 target_fingerprint: "sha256:1c79138788feae75f9157facd3a5459d5a71ea004c3c8cf9d489d725fa9eb339"
-target_path: /Users/dalelotts/dev/PoliceConductUS/policeconduct.org/.worktrees/redesign-civic-index-pages/src/pages/[category]/licensing-authority/index.astro
+target_path: src/pages/[category]/licensing-authority/index.astro
 timestamp: 2026-09-27T14-21-29Z
 slug: src-pages-category-licensing-authority-index-astro
 ---
