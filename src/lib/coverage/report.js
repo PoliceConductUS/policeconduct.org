@@ -49,6 +49,11 @@ import {
   nationalCoverage,
 } from "./denominators.js";
 import { BJS_CATEGORY } from "./agency-types.js";
+import {
+  SOURCE_OF_RECORD,
+  STORE_STATUS,
+  classifyCrossCheck,
+} from "./authoritative-store.js";
 
 /**
  * Why we cannot turn a held count into a coverage percentage. Attached to the
@@ -72,28 +77,76 @@ const numeratorUniverseGap = ({ unclassifiedHeld, unclassifiedStates }) => {
 };
 
 /**
- * Two stores we control disagree about how many agencies we hold. That is a
- * reportable finding about our own data, not a footnote.
+ * Classify every cross-checked count against the single source of record.
+ *
+ * There is only one source (board ruling, 2026-10-25), so this is not an
+ * arbitration between rival stores. An abandoned artifact's count is simply not
+ * a count of record; what still deserves a finding is a *derived* count that
+ * disagrees with the store it is derived from, or a store nobody can identify.
  */
-const disputedCountGap = (crossChecks, measuredTotal) => {
-  const disagreeing = crossChecks.filter(
-    (check) => Number.isInteger(check.count) && check.count !== measuredTotal,
+const classifyCrossChecks = (crossChecks, measurement) =>
+  crossChecks
+    .filter((check) => Number.isInteger(check.count))
+    .map((check) =>
+      Object.freeze({ ...check, ...classifyCrossCheck(check, measurement) }),
+    );
+
+/** Statuses that are findings rather than explanations. */
+const IS_FINDING = Object.freeze([
+  STORE_STATUS.UNRECORDED,
+  STORE_STATUS.DERIVED_DRIFTED,
+]);
+
+/**
+ * A count we cannot account for against the source of record. Either a store we
+ * cannot identify, or a projection that has drifted from the store it projects.
+ */
+const disputedCountGap = (classified, measuredTotal) => {
+  const findings = classified.filter((check) =>
+    IS_FINDING.includes(check.status),
   );
-  if (disagreeing.length === 0) {
+  if (findings.length === 0) {
     return null;
   }
-  const detail = disagreeing
-    .map(
-      (check) =>
-        `${check.store} reports ${check.count.toLocaleString("en-US")}`,
-    )
-    .join("; ");
+  const detail = findings
+    .map((check) => {
+      const head = `${check.store} reports ${check.count.toLocaleString("en-US")}`;
+      return check.detail
+        ? check.detail
+        : `${head}, and we cannot say what store that is.`;
+    })
+    .join(" ");
   return Object.freeze({
     kind: GAP_KIND.CORPUS_COUNT_DISPUTED,
     scope: "national",
-    detail: `The measured store reports ${measuredTotal.toLocaleString("en-US")} agencies, but ${detail}. These are stores we control and they do not agree, so there is no single authoritative held count today. The numbers in this report are the measured store's, identified above, and are not claimed to be the production corpus.`,
-    unblockedBy:
-      "Establish which store is authoritative for coverage reporting and reconcile the others against it, or record why they legitimately differ.",
+    detail: `${SOURCE_OF_RECORD.label} holds ${measuredTotal.toLocaleString("en-US")} agencies and is the single source of record, so that count stands. ${detail}`,
+    unblockedBy: `Identify the store and either record it in NON_SOURCE_STORES with what it is, or correct the cross-checked figure. If a projection has drifted, re-run scripts/refresh-build-projections.mjs against ${SOURCE_OF_RECORD.label}.`,
+  });
+};
+
+/**
+ * The report measured a store that is not the authoritative one. Its counts are
+ * still true of that store, which is why this is a named gap rather than a
+ * thrown error — but none of them may be quoted as the corpus count.
+ */
+const storeAuthorityGap = (authority) => {
+  if (!authority || authority.isAuthoritative) {
+    return null;
+  }
+  const reasons = [];
+  if (authority.missing.length > 0) {
+    reasons.push(`it is missing ${authority.missing.join(", ")}`);
+  }
+  if (authority.unexpected.length > 0) {
+    reasons.push(
+      `it carries the pre-rename ${authority.unexpected.join(", ")}, which only the legacy corpus has`,
+    );
+  }
+  return Object.freeze({
+    kind: GAP_KIND.MEASURED_STORE_NOT_AUTHORITATIVE,
+    scope: "national",
+    detail: `This report did not measure ${SOURCE_OF_RECORD.label}, the single source of record for agency counts: ${reasons.join("; ")}. Every count below is true of the store identified above and of no other, and none of them is the corpus count.`,
+    unblockedBy: `Point DATABASE_URL at ${SOURCE_OF_RECORD.label} and re-run. The designation and the evidence for it are in docs/0007-authoritative-agency-store.md.`,
   });
 };
 
@@ -350,7 +403,20 @@ export const buildCoverageReport = ({
   if (universeGap) {
     reportGaps.push(universeGap);
   }
-  const disputed = disputedCountGap(corpusCrossChecks, measurement.totalHeld);
+  // Whether the right store was measured comes before any finding about how a
+  // count presented to the report relates to it.
+  const notAuthoritative = storeAuthorityGap(measurement.storeAuthority);
+  if (notAuthoritative) {
+    reportGaps.push(notAuthoritative);
+  }
+  const classifiedCrossChecks = classifyCrossChecks(
+    corpusCrossChecks,
+    measurement,
+  );
+  const disputed = disputedCountGap(
+    classifiedCrossChecks,
+    measurement.totalHeld,
+  );
   if (disputed) {
     reportGaps.push(disputed);
   }
@@ -364,7 +430,8 @@ export const buildCoverageReport = ({
     asOf: asOf.toISOString(),
     asOfYear,
     measurement,
-    corpusCrossChecks: Object.freeze(corpusCrossChecks),
+    sourceOfRecord: SOURCE_OF_RECORD,
+    corpusCrossChecks: Object.freeze(classifiedCrossChecks),
     national: Object.freeze({
       held: measurement.totalHeld,
       primary: Object.freeze({
@@ -421,6 +488,7 @@ const GAP_LABEL = Object.freeze({
   [GAP_KIND.NO_RECORDS_HELD]: "nothing held",
   [GAP_KIND.NUMERATOR_UNIVERSE_UNVERIFIED]: "numerator universe unverified",
   [GAP_KIND.CORPUS_COUNT_DISPUTED]: "corpus count disputed",
+  [GAP_KIND.MEASURED_STORE_NOT_AUTHORITATIVE]: "store not authoritative",
 });
 
 const num = (value) =>
@@ -463,11 +531,23 @@ export const renderCoverageReportMarkdown = (report) => {
       ` (server reports itself as ${report.measurement.database.host}:${report.measurement.database.port}).`,
   );
   push();
-  push(
-    "Which store this is matters as much as the counts. Read the address above before" +
-      " quoting any number here: a local re-import and the production corpus do not agree," +
-      " and this report asserts only what the store it measured contains.",
-  );
+  const authority = report.measurement.storeAuthority;
+  if (authority?.isAuthoritative) {
+    push(
+      `That store is **${report.sourceOfRecord.label}**, the single source of record for` +
+        " agency counts, verified here by schema signature rather than by address. Intake is" +
+        " the only path that populates it, so the counts below are this organisation's agency" +
+        " counts rather than one store's opinion of them — there is no second store to" +
+        " reconcile against. See `docs/0007-authoritative-agency-store.md`.",
+    );
+  } else {
+    push(
+      `**This is not ${report.sourceOfRecord.label}**, the single source of record for agency` +
+        " counts. Read the address above before quoting any number here: this report asserts" +
+        " only what the store it measured contains, and that store is not the one our corpus" +
+        " count comes from. See *store not authoritative* below.",
+    );
+  }
   push();
   const achieved = report.summary.achievedPercentagesReported;
   if (achieved === 0) {
@@ -736,12 +816,21 @@ export const renderCoverageReportMarkdown = (report) => {
   }
 
   if (report.corpusCrossChecks.length > 0) {
-    push("## Cross-checks against other stores");
+    push("## Other counts presented to this report");
+    push();
+    push(
+      `${report.sourceOfRecord.label} is the single source of record, so nothing below is a rival count. Each is labelled with what it actually is. A count marked _derived drifted_ or _unrecorded_ is a gap above, not a footnote.`,
+    );
     push();
     for (const check of report.corpusCrossChecks) {
       push(
-        `- ${check.store}: ${num(check.count)}${check.note ? ` — ${check.note}` : ""}`,
+        `- **${check.store}**: ${num(check.count)} — ${check.status.replace(/_/g, " ")}${check.note ? ` (${check.note})` : ""}`,
       );
+      if (check.detail) {
+        push(`  - ${check.detail}`);
+      } else if (check.storeRecord) {
+        push(`  - ${check.storeRecord.note}`);
+      }
     }
     push();
   }

@@ -1,8 +1,8 @@
 {
-  "asOf": "2026-10-25T05:13:39.875Z",
+  "asOf": "2026-10-25T05:43:24.697Z",
   "asOfYear": 2026,
   "measurement": {
-    "measuredAt": "2026-10-25T05:13:39.802Z",
+    "measuredAt": "2026-10-25T05:43:24.416Z",
     "database": {
       "database": "postgres",
       "host": "172.18.0.10",
@@ -13,6 +13,12 @@
       "rows": 3538,
       "newest_updated_at": "2026-10-06T18:05:22.188Z",
       "oldest_created_at": "2026-09-30T17:33:15.846Z"
+    },
+    "storeAuthority": {
+      "storeId": "intake-agency-corpus",
+      "isAuthoritative": true,
+      "missing": [],
+      "unexpected": []
     },
     "totalHeld": 3538,
     "federalHeld": 11,
@@ -49,12 +55,22 @@
     ],
     "limitations": []
   },
-  "corpusCrossChecks": [
-    {
-      "store": "local dev seed.sql dump, statement-level parse (2026-10-24)",
-      "count": 3008
-    }
-  ],
+  "sourceOfRecord": {
+    "id": "intake-agency-corpus",
+    "label": "the intake agency corpus",
+    "ruling": {
+      "on": "2026-10-25",
+      "by": "board",
+      "text": "seed.sql is legacy and abandoned - intake repo is the only path to populate the database - there are not three sources, only one = intake"
+    },
+    "basis": [
+      "Intake is the only populate path: intake ADR 0033 sets sql_paths = [] and builds the database from migrations plus the configured sources.",
+      "Production serves pages that exist only here. All 237 Oregon agencies are absent from the legacy dump, and /or/linn-county/albany/albany-police-department/ returns 200.",
+      "Production serves this store's slugs. Legacy slugs redirect into them — /law-enforcement-agency/mn/minneapolis-police-department-mn-n6rd/ 301s to /mn/hennepin-county/minneapolis/minneapolis-police-dept-gs3yan/.",
+      "Its schema is forward of the legacy dump's, which predates the officers-to-personnel rename."
+    ]
+  },
+  "corpusCrossChecks": [],
   "national": {
     "held": 3538,
     "primary": {
@@ -4591,12 +4607,6 @@
       "scope": "national",
       "detail": "655 held agencies, in DC, IL, MN, OR, VA, WA, carry no sourced agency type, so they cannot be placed in the BJS universes the denominators are drawn from. These states' sources enumerate entities that employ licensed peace officers without saying what kind of entity each one is: MN POST's productions key agencies by name only and publish no type column, and the Oregon records have no registered intake source at all. No percentage is reported for these jurisdictions or for the national total; ceilings are reported instead. States whose agencies all carry a sourced type are not affected and do report achieved coverage.",
       "unblockedBy": "Obtain a per-agency type for these states — a state roster that publishes one, or an authoritative national roster with types (INS-31). Name matching is not a substitute: it was tested on INS-79 and, beyond leaving most records unclassified, an unconstrained name join silently gave 22 Minnesota and Oregon agencies a Texas classification."
-    },
-    {
-      "kind": "corpus_count_disputed",
-      "scope": "national",
-      "detail": "The measured store reports 3,538 agencies, but local dev seed.sql dump, statement-level parse (2026-10-24) reports 3,008. These are stores we control and they do not agree, so there is no single authoritative held count today. The numbers in this report are the measured store's, identified above, and are not claimed to be the production corpus.",
-      "unblockedBy": "Establish which store is authoritative for coverage reporting and reconcile the others against it, or record why they legitimately differ."
     }
   ],
   "lineage": [
