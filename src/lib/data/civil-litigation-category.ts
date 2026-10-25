@@ -24,7 +24,8 @@ export type CivilCaseSummary = {
   state: string;
   locationPath: string;
   title: string;
-  cause_number: string;
+  /** Null when no publishable docket exists for the case (INS-42). */
+  cause_number: string | null;
   court: string | null;
   filed_date: string;
   claims_summary: string | null;

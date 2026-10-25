@@ -37,7 +37,8 @@ export type CivilCaseDetail = {
     location_name: string | null;
     state_or_territory_slug: string | null;
     title: string;
-    cause_number: string;
+    /** Null when no publishable docket exists for the case (INS-42). */
+    cause_number: string | null;
     court: string | null;
     filed_date: string;
     date_terminated: string | null;

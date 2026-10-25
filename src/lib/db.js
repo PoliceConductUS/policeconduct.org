@@ -1,6 +1,8 @@
 import "dotenv/config";
 import { Pool } from "pg";
 
+import { suppressCauseNumbers } from "./data/cause-number.js";
+
 /** @typedef {import("pg").PoolClient} PgClient */
 
 const getDatabaseUrl = () => {
@@ -33,6 +35,12 @@ const pool = new Pool({
 });
 
 /**
+ * Every database read the site performs goes through here, which makes this the
+ * only place a field-level suppression rule can be complete. `suppressCauseNumbers`
+ * is applied to the client, not to a loader, because the surfaces that publish
+ * `cause_number` include inline UGC prefill payloads that no template
+ * conditional covers (INS-42, INS-18 §11).
+ *
  * @template T
  * @param {(client: PgClient) => Promise<T>} fn
  * @returns {Promise<T>}
@@ -40,7 +48,7 @@ const pool = new Pool({
 export const withDb = async (fn) => {
   const client = await pool.connect();
   try {
-    return await fn(client);
+    return await fn(suppressCauseNumbers(client));
   } finally {
     client.release();
   }
