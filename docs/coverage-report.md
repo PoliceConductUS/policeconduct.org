@@ -1,6 +1,6 @@
 # Agency coverage report v1
 
-Generated 2026-10-25T04:43:11.560Z from database `postgres`, dialled at 127.0.0.1:54322/postgres (server reports itself as 172.18.0.10:5432).
+Generated 2026-10-25T04:45:33.497Z from database `postgres`, dialled at 127.0.0.1:54322/postgres (server reports itself as 172.18.0.10:5432).
 
 Which store this is matters as much as the counts. Read the address above before quoting any number here: a local re-import and the production corpus do not agree, and this report asserts only what the store it measured contains.
 
@@ -37,7 +37,7 @@ _Unblocked by:_ Classify held agencies by BJS agency type, sourced per agency ra
 
 ### corpus count disputed
 
-The measured store reports 3,538 agencies, but seed.sql dump (/Users/dalelotts/dev/PoliceConductUS/seed.sql, 2026-10-24) reports 3,003. These are stores we control and they do not agree, so there is no single authoritative held count today. The numbers in this report are the measured store's, identified above, and are not claimed to be the production corpus.
+The measured store reports 3,538 agencies, but local dev seed.sql dump (2026-10-24) reports 3,003. These are stores we control and they do not agree, so there is no single authoritative held count today. The numbers in this report are the measured store's, identified above, and are not claimed to be the production corpus.
 
 _Unblocked by:_ Establish which store is authoritative for coverage reporting and reconcile the others against it, or record why they legitimately differ.
 
@@ -157,4 +157,4 @@ AK (49 agencies exist), AL (401 agencies exist), AR (364 agencies exist), AZ (13
 
 ## Cross-checks against other stores
 
-- seed.sql dump (/Users/dalelotts/dev/PoliceConductUS/seed.sql, 2026-10-24): 3,003
+- local dev seed.sql dump (2026-10-24): 3,003

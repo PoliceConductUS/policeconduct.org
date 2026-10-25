@@ -25,6 +25,9 @@ import {
   renderCoverageReportMarkdown,
 } from "../src/lib/coverage/report.js";
 
+/** Matches `/Users/<name>` and `/home/<name>`, the shapes the repo gate flags. */
+const HOME_PATH = /\/(?:Users|home)\/[^/\s]+/;
+
 const parseArgs = (argv) => {
   const options = { out: null, json: null, crossChecks: [] };
   for (let index = 0; index < argv.length; index += 1) {
@@ -52,6 +55,15 @@ const parseArgs = (argv) => {
       if (!store || !Number.isInteger(count)) {
         throw new Error(
           `--cross-check expects "store=count" with an integer count, got "${raw}".`,
+        );
+      }
+      // The store label is rendered into a report that gets committed to a
+      // public repository. An absolute home path there leaks the committer's
+      // account name, which the repo's personal-data gate rejects — fail here
+      // instead, where the message can say what to do about it.
+      if (HOME_PATH.test(store)) {
+        throw new Error(
+          `--cross-check store label "${store}" contains an absolute home directory path. Name the store, not its location on your machine — the report is committed to a public repository.`,
         );
       }
       options.crossChecks.push({ store, count });
