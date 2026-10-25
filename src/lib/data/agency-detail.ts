@@ -1,6 +1,7 @@
 import { groupBy, mapBy } from "#src/lib/data.js";
 import { withDb } from "#src/lib/db.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { publishableEndDate } from "./assignment-dates.js";
 import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
 import { normalizeLicenseStatus, normalizeLicenseType } from "./licensing.js";
@@ -767,7 +768,15 @@ const buildAgencyDetail = async (agencyId: string) => {
         targetAgencyAssignment: {
           title: entry.target_title || null,
           startDate: entry.target_start_date || null,
-          endDate: entry.target_end_date || null,
+          // Withheld when the stored value cannot be true (INS-88), so a future
+          // consumer of this payload cannot publish it. `relationship` still
+          // reads the stored value: the separation happened, its date is not
+          // usable.
+          endDate:
+            publishableEndDate(
+              entry.target_start_date,
+              entry.target_end_date,
+            ) || null,
           relationship: entry.target_end_date ? "former" : "current",
         },
       })),

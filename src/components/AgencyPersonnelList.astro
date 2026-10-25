@@ -1,5 +1,6 @@
 ---
 import "#src/styles/civic-ledger.css";
+import { publishableEndDate } from "#src/lib/data/assignment-dates.js";
 
 // The full agency roster on one page — a scannable research surface, not a bare
 // phone book. Every officer shows a quiet context line (status · rank · tenure ·
@@ -50,7 +51,12 @@ const rows: RosterRow[] = employees.map((employee) => {
     : firstName || "Unnamed record";
   const isFormer = Boolean(employee.entry?.end_date);
   const startYear = year(employee.entry?.start_date);
-  const endYear = year(employee.entry?.end_date);
+  // A separation date that cannot be true is withheld, so the tenure line falls
+  // back to "from <year>" (INS-88). `isFormer` still reads the stored value, so
+  // the roster keeps listing the officer as former.
+  const endYear = year(
+    publishableEndDate(employee.entry?.start_date, employee.entry?.end_date),
+  );
   const tenure = isFormer
     ? startYear && endYear
       ? `${startYear}–${endYear}`

@@ -5,6 +5,7 @@ import MetricGrid from "#src/components/MetricGrid.astro";
 import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
+import { publishableEndDate } from "#src/lib/data/assignment-dates.js";
 import { formatShortDate } from "#src/lib/format.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
@@ -242,7 +243,13 @@ const fallbackChart =
                       : ""}
                   </td>
                   <td>
-                    {assignment.end_date
+                    {/* A separation date that cannot be true is not published
+                        (INS-88); the cell is blank, as it is for an assignment
+                        with no recorded end. */}
+                    {publishableEndDate(
+                      assignment.start_date,
+                      assignment.end_date,
+                    )
                       ? formatShortDate(assignment.end_date)
                       : ""}
                   </td>

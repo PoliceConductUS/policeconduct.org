@@ -10,6 +10,10 @@ import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
+import {
+  assignmentMonths,
+  publishableEndDate,
+} from "#src/lib/data/assignment-dates.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
@@ -170,6 +174,11 @@ const assignmentHistory = history
   .map((entry) => ({
     ...entry,
     agency: agenciesById[entry.agency_id],
+    // The separation date this page is allowed to state. `null` while `end_date`
+    // is set means the stored value cannot be true and is withheld (INS-88);
+    // "ended vs. current" below still reads the stored `end_date`, so withholding
+    // the date never promotes a separated assignment to current employment.
+    publishedEndDate: publishableEndDate(entry.start_date, entry.end_date),
   }))
   .filter((entry) => entry.agency);
 const activeAssignment =
@@ -274,6 +283,12 @@ const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | $
 const pageDescription = isDeceased
   ? `${officerName} personnel profile with agency assignments, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
   : `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}, agency assignments, public reports, coverage, and civil litigation records.`;
+// Shown in place of a separation date the source recorded but that cannot be
+// true. It says the date is missing from the page, not that the person never
+// separated — the assignment still reads as ended everywhere else.
+const withheldEndDateLabel = "Not published";
+const withheldEndDateReason =
+  "The source record's separation date is not usable, so it is not published.";
 const pastEmployerSummary = assignmentHistory
   .filter((entry) => entry.id !== activeAssignment?.id)
   .map((entry) => ({
@@ -283,7 +298,11 @@ const pastEmployerSummary = assignmentHistory
     const segments = [entry.agency?.name];
     const dateRange = [
       entry.start_date ? formatShortDate(entry.start_date) : null,
-      entry.end_date ? formatShortDate(entry.end_date) : "Current",
+      entry.end_date
+        ? entry.publishedEndDate
+          ? formatShortDate(entry.publishedEndDate)
+          : "(end date not published)"
+        : "Current",
     ]
       .filter(Boolean)
       .join(" to ");
@@ -382,25 +401,11 @@ const formatMonthsDuration = (months: number) => {
     ? `${years} yrs${remainingMonths ? `, ${remainingMonths} mos` : ""}`
     : `${remainingMonths} mos`;
 };
-const countAssignmentMonths = (start?: string | null, end?: string | null) => {
-  if (!start) {
-    return 0;
-  }
-  const startDate = new Date(start);
-  const endDate = end ? new Date(end) : new Date();
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-    return 0;
-  }
-  return Math.max(
-    0,
-    (endDate.getFullYear() - startDate.getFullYear()) * 12 +
-      endDate.getMonth() -
-      startDate.getMonth(),
-  );
-};
+// An assignment whose separation date cannot be true contributes nothing to the
+// total rather than a fabricated span: a 2109 end on a 2015 start otherwise
+// published 93 years of service (INS-88).
 const totalAssignmentMonths = assignmentHistory.reduce(
-  (total, entry) =>
-    total + countAssignmentMonths(entry.start_date, entry.end_date),
+  (total, entry) => total + assignmentMonths(entry.start_date, entry.end_date),
   0,
 );
 const totalTimeAsOfficer = totalAssignmentMonths
@@ -806,9 +811,20 @@ const structuredData = {
                     {entry.start_date ? formatShortDate(entry.start_date) : ""}
                   </td>
                   <td>
-                    {entry.end_date
-                      ? formatShortDate(entry.end_date)
-                      : "Present"}
+                    {entry.end_date ? (
+                      entry.publishedEndDate ? (
+                        formatShortDate(entry.publishedEndDate)
+                      ) : (
+                        <span
+                          class="personnel-end-date-withheld"
+                          title={withheldEndDateReason}
+                        >
+                          {withheldEndDateLabel}
+                        </span>
+                      )
+                    ) : (
+                      "Present"
+                    )}
                   </td>
                   <td>
                     <span class="personnel-status-pill">
@@ -946,6 +962,12 @@ const structuredData = {
     font-weight: 750;
     line-height: 1;
     padding: 0.25rem 0.55rem;
+  }
+
+  .personnel-end-date-withheld {
+    color: #5b6472;
+    cursor: help;
+    font-style: italic;
   }
 
   .personnel-license-cards {
