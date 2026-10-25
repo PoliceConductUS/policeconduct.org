@@ -2,20 +2,23 @@
 
 ## What this exists to prevent
 
-Between the launch of the forms and 2026-08-24, 104 submissions landed in
+Between the launch of the forms and 2026-10-24, **138 submissions** landed in
 `policeconduct-submissions-942370948729` and no human was ever told. The bucket
 notification config was empty, there was no consumer Lambda, no EventBridge
 rule, and zero SNS subscriptions anywhere in the account (INS-20). The only
 outbound mail went to the submitter.
 
-Five of those were data subject access requests. Four asked for deletion. The
-oldest went unanswered for 179 days.
+**23 of them are data subject access requests.** When INS-20 found this there
+were 5, the oldest unanswered for 179 days. 18 more have arrived since, 12 of
+them in the 72 hours before 2026-10-24, and one that landed on 2026-10-10 has
+now passed the 5-business-day acknowledgement standard without anyone being
+told it existed.
 
 INS-16 commits the organization to acknowledging a DSAR within 5 business days
 of **receipt**. This is the mechanism behind that commitment. Without it the
 commitment is satisfied only by someone remembering to go read a bucket — and
 the interim manual sweep that stood in for this work ran **1 time out of 8
-scheduled executions** before this shipped.
+scheduled executions**, and has not run since 2026-09-16.
 
 ## Shape
 
@@ -81,7 +84,7 @@ The prefix sits **beside** `submissions/`, never under it, for two reasons:
 Receipts are what make the reconciliation below possible. Without them, the only
 evidence a notification was attempted is a log line that expires.
 
-## Liveness: the canary (`lambdas/notification-canary`)
+## Liveness: the canary (`notification-canary/`)
 
 A notification path configured today and silently dead in November puts us back
 exactly where we started, and the belief that it works will be just as
@@ -124,7 +127,7 @@ issue.
 
 ### Reconciliation cutoff
 
-`notification_receipts_since` must be set to the date this is applied. The 104
+`notification_receipts_since` must be set to the date this is applied. The
 pre-existing submissions have no receipts and never will; without the cutoff the
 canary reports them every run and gets muted within a week, which is how
 monitors die. Those are INS-16's backlog, worked by a human.
@@ -132,37 +135,42 @@ monitors die. Those are INS-16's backlog, worked by a human.
 ## Enabling it
 
 ```hcl
-submission_notification_email_endpoints = ["someone@example.org"]
-notification_canary_alert_endpoints     = ["someone-else@other-domain.org"]
-notification_receipts_since             = "2026-09-16"
+submission_notification_recipients  = ["hello@policeconduct.org"]
+notification_canary_alert_endpoints = ["dlotts@knightrider.com"]
+notification_receipts_since         = "2026-10-25"
 ```
 
-With the recipient list empty, **none** of this is created — no topic, no bucket
-notification, no canary, no alarms — and the Lambda logs
-`forms.notify.recipients_not_configured` on every submission. That is
-deliberate. A topic that exists with zero subscribers is what INS-20 found, and
-from the console it reads as working.
+There are no defaults for those three, and empty lists are rejected by variable
+validation. A topic that exists with zero subscribers is what INS-20 found, and
+from the console it reads as working — so this stack cannot be applied at all
+without naming a human. A second validation refuses a canary alert address that
+also appears in the recipient list.
 
 Each SNS endpoint must confirm its subscription by clicking a link. That
 confirmation click is itself evidence a human reads the mailbox; an unconfirmed
-subscription receives nothing and shows as `PendingConfirmation`.
+subscription receives nothing and shows as `PendingConfirmation`. It also means
+**the apply cannot be finished by one person alone** — somebody with access to
+the recipient mailbox has to click. The Resend path needs no click.
 
 ## Applying it
 
-**Not with `terraform apply`.** There is no Terraform state for this stack
-(INS-39): the state bucket is empty, there is no backend block, and there is no
-local state file, so `scripts/apply.sh` would plan a create-from-scratch of the
-entire live stack — a second CloudFront distribution, duplicate KMS keys,
-duplicate buckets.
+`terraform apply`, in this directory. See the README.
 
-Use `scripts/ins35-apply.sh`, which makes the same changes as targeted API
-calls. It is dry-run by default, refuses the wrong account, refuses an empty
-recipient list, refuses a canary alert address that overlaps a recipient,
-refuses to overwrite a bucket notification configuration it did not expect, and
-writes a rollback record first.
+This used to be a hand-run script (`ins35-apply.sh`, deleted), because the
+resources were declared in `bootstrap-policeconduct`, which cannot be applied —
+it has no Terraform state (INS-39), so `terraform apply` there plans a
+create-from-scratch of the entire live estate.
 
-The Terraform here remains the source of truth for what *should* exist and is
-what INS-39 will import.
+The fix was to stop borrowing that stack's problem. Everything here is a new
+resource with nothing to import, so it has its own S3-backed state, and the
+pre-existing resources it touches are read through data sources. Against the
+live account the plan reads **21 to add, 0 to change, 0 to destroy** — which a
+script could never have demonstrated about itself.
+
+What remains hand-applied is the forms API Lambda, via
+`../bootstrap-policeconduct/scripts/deploy-forms-api.sh`. That Lambda belongs to
+the stateless stack and is an application artifact, so Terraform is not an
+option for it until INS-39 imports state.
 
 ## Alarms
 
@@ -170,12 +178,13 @@ what INS-39 will import.
 |---|---|
 | `…-forms-api-prod-notify-publish-failed` | a submission stored but the notification failed to publish |
 | `…-forms-api-prod-notify-topic-not-configured` | the pre-INS-35 silent-intake state reasserting itself |
+| `…-forms-api-prod-notify-nobody-told` | both paths failed for the same submission |
 | `…-notification-canary-delivery-failed` | the path did not deliver to a human, twice running |
 | `…-submissions-without-notification` | a submission stored with no receipt beside it |
 
-The first two route to the submissions topic; the canary alarms route to the
+The notify alarms route to the submissions topic; the canary alarms route to the
 independent canary topic. None route to `policeconduct-alerts`, which as of
-2026-08-24 has **zero subscriptions** — every Lambda error, throttle and latency
+2026-10-24 still has **zero subscriptions** — every Lambda error, throttle and latency
 alarm in this stack currently fires into nothing. That is a separate problem and
 is not fixed here.
 
