@@ -243,9 +243,8 @@ prove.
   done
   # both must print: $SRC_SHA
 
-  # Run the liveness check now rather than waiting for the schedule.
-  # deliveryProbe.status must read 'delivered' — 'accepted' means the transport
-  # took the message, not that it arrived.
+  # Run key reconciliation now rather than waiting for the schedule.
+  # This checks notification receipts, not mailbox delivery or manual handling.
   aws lambda invoke --function-name policeconduct-notification-canary \\
     --payload '{}' /dev/stdout
 
