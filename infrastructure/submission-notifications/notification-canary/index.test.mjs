@@ -88,8 +88,10 @@ test("reconcile finds a submission nobody was told about", () => {
     submissionKeys: [
       "submissions/2026-09-16/dataSubjectAccessRequest/told.json",
       "submissions/2026-09-16/reportNew/silent.json",
+      "submissions/status/told.json",
+      "submissions/status/silent.json",
     ],
-    receiptKeys: ["notifications/2026-09-16/told-received.json"],
+    receiptKeys: ["notifications/2026-09-16/told-verified.json"],
     since: "2026-09-01",
   });
   assert.deepEqual(missing, [
@@ -97,10 +99,13 @@ test("reconcile finds a submission nobody was told about", () => {
   ]);
 });
 
-test("a verified-only receipt does not count as having been told on arrival", () => {
+test("an arrival receipt does not count as a verified notification", () => {
   const missing = reconcile({
-    submissionKeys: ["submissions/2026-09-16/dataSubjectAccessRequest/x.json"],
-    receiptKeys: ["notifications/2026-09-16/x-verified.json"],
+    submissionKeys: [
+      "submissions/2026-09-16/dataSubjectAccessRequest/x.json",
+      "submissions/status/x.json",
+    ],
+    receiptKeys: ["notifications/2026-09-16/x-received.json"],
     since: "2026-09-01",
   });
   assert.equal(missing.length, 1);
@@ -112,6 +117,7 @@ test("submissions predating the cutoff are not alarmed on forever", () => {
   const missing = reconcile({
     submissionKeys: [
       "submissions/2026-03-01/dataSubjectAccessRequest/old.json",
+      "submissions/status/old.json",
     ],
     receiptKeys: [],
     since: "2026-09-01",
@@ -149,6 +155,7 @@ test("retired probe makes no provider calls and retains reconciliation and alert
               {
                 Key: "submissions/2026-10-25/dataSubjectAccessRequest/synthetic.json",
               },
+              { Key: "submissions/status/synthetic.json" },
             ]
           : [],
     };
@@ -174,4 +181,36 @@ test("retired probe makes no provider calls and retains reconciliation and alert
   );
   assert.equal(metrics[0].Value, 1);
   assert.equal(result.delivery, undefined);
+});
+
+test("unverified requests do not require a staff receipt", () => {
+  assert.deepEqual(
+    reconcile({
+      submissionKeys: [
+        "submissions/2026-10-25/dataSubjectAccessRequest/pending.json",
+      ],
+      receiptKeys: [],
+      since: "2026-10-25",
+    }),
+    [],
+  );
+});
+
+test("verified requests are reconciled against verified receipts", () => {
+  const submissionKeys = [
+    "submissions/2026-10-25/dataSubjectAccessRequest/verified.json",
+    "submissions/status/verified.json",
+  ];
+  assert.equal(
+    reconcile({ submissionKeys, receiptKeys: [], since: "2026-10-25" }).length,
+    1,
+  );
+  assert.deepEqual(
+    reconcile({
+      submissionKeys,
+      receiptKeys: ["notifications/2026-10-25/verified-verified.json"],
+      since: "2026-10-25",
+    }),
+    [],
+  );
 });

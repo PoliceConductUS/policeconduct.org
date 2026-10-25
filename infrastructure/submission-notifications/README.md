@@ -46,12 +46,12 @@ an application artifact this stack does not own.
 
 ## Two paths, on purpose
 
-| Path                      | Fires on                                                         | Subject                                         | Survives                     |
-| ------------------------- | ---------------------------------------------------------------- | ----------------------------------------------- | ---------------------------- |
-| forms-api Lambda → Resend | submission write **and** verification transition                 | `[DSAR] dataSubjectAccessRequest received <id>` | —                            |
-| S3 event → SNS → email    | `ObjectCreated` under `submissions/2*` and `submissions/status/` | generic `Amazon S3 Notification`                | a bug anywhere in the Lambda |
+| Path                      | Fires on                                    | Subject                                         | Survives                     |
+| ------------------------- | ------------------------------------------- | ----------------------------------------------- | ---------------------------- |
+| forms-api Lambda → Resend | successful verification                     | `[DSAR] dataSubjectAccessRequest verified <id>` | —                            |
+| S3 event → SNS → email    | `ObjectCreated` under `submissions/status/` | generic `Amazon S3 Notification`                | a bug anywhere in the Lambda |
 
-Expect **two messages per event**. Seeing the SNS one without the Resend one
+Expect notifications after verification. Seeing the SNS one without the Resend one
 means the application path is broken, and that is visible from the inbox.
 
 The Lambda path is not optional: only a publisher can set a subject line, and
@@ -120,7 +120,7 @@ terraform output -raw verify_commands
 Three things to confirm, in order:
 
 1. Every recipient reads `Confirmed`, not `PendingConfirmation`.
-2. The bucket notification config has both rules. An empty result is the INS-20
+2. The bucket notification config has only the verification-status rule. An empty result is the INS-20
    state.
 3. Exercise a synthetic request through the preview form with reCAPTCHA intact.
    Confirm the submitter verification email, no staff notification before
@@ -130,8 +130,8 @@ Three things to confirm, in order:
 ## Scheduled reconciliation
 
 The existing Lambda and EventBridge schedule remain for key-only reconciliation.
-The job compares submission keys with notification receipt keys and alerts on
-missing receipts. It does not send synthetic mail, call Resend, or hold a mail
+The job selects submissions with a verification status key and compares them
+with verified-event receipt keys. It alerts on missing verified receipts. It does not send synthetic mail, call Resend, or hold a mail
 provider credential. A receipt indicates a notification attempt, not human
 review, action, or a decision to ignore a submission. Those remain manual.
 
@@ -144,8 +144,8 @@ claim of end-to-end monitoring or mailbox delivery verification.
 ## Retirement deployment
 
 Review the Terraform plan before applying it. Expect the reconciliation Lambda
-code/environment update, a schedule description update, and deletion of the
-single delivery-only alarm. The schedule must remain enabled, and no intake
+code/environment update, a schedule description update, removal of the initial-write S3 filter from
+both buckets, and deletion of the single delivery-only alarm. The schedule must remain enabled, and no intake
 Lambda, submission bucket, recipient subscription, or reconciliation alarm may
 be removed. Drop the retired sender/key inputs from local tfvars without printing
 those values. Historical state-secret remediation remains tracked separately.

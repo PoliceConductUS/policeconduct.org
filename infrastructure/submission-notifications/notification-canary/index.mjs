@@ -86,10 +86,15 @@ export function parseReceiptKey(key) {
  * this.
  */
 export function reconcile({ submissionKeys, receiptKeys, since }) {
+  const verified = new Set(
+    submissionKeys
+      .map((key) => /^submissions\/status\/([^/]+)\.json$/.exec(key)?.[1])
+      .filter(Boolean),
+  );
   const announced = new Set(
     receiptKeys
       .map(parseReceiptKey)
-      .filter((receipt) => receipt && receipt.eventType === "received")
+      .filter((receipt) => receipt && receipt.eventType === "verified")
       .map((receipt) => receipt.submissionId),
   );
 
@@ -97,6 +102,7 @@ export function reconcile({ submissionKeys, receiptKeys, since }) {
     .map(parseSubmissionKey)
     .filter(Boolean)
     .filter((submission) => !since || submission.day >= since)
+    .filter((submission) => verified.has(submission.submissionId))
     .filter((submission) => !announced.has(submission.submissionId))
     .map((submission) => ({
       submissionId: submission.submissionId,

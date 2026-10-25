@@ -153,31 +153,13 @@ resource "aws_sns_topic_subscription" "canary_alerts" {
 
 # -------------------------------------------------- bucket event notifications
 
-# The dumb path. It fires on the storage fact, so a bug in the Lambda's publish
-# code cannot silently swallow an arrival the way one did for six months.
-#
-# Prefix filters are literal strings and submission keys are
-# submissions/<YYYY-MM-DD>/<formName>/<id>.json — the form name sits in the
-# MIDDLE of the key, so it cannot be filtered on here. That is why the Lambda
-# path exists too: only a publisher can set a subject line. "submissions/2"
-# selects the date-partitioned objects and excludes submissions/status/ and
-# submissions/verify/.
-#
-# No rule matches notifications/, deliberately: a receipt written under a
-# watched prefix would notify about itself in a loop, billed per message.
+# Only verification status writes notify staff. Initial submission writes must
+# not trigger the raw S3 path before email verification. Keep the independent
+# status-write backstop; notification receipts remain outside this prefix.
 resource "aws_s3_bucket_notification" "submissions" {
   bucket = data.aws_s3_bucket.submissions.id
 
-  topic {
-    id            = "submission-received"
-    topic_arn     = aws_sns_topic.submission_notifications.arn
-    events        = ["s3:ObjectCreated:*"]
-    filter_prefix = "submissions/2"
-  }
-
-  # The verification transition writes submissions/status/<id>.json. A captured
-  # but unverified request already starts the DSAR clock (INS-16 §2), so both
-  # events have to be visible, not just the first write.
+  # saveSubmissionStatus is called only after successful verification.
   topic {
     id            = "submission-verified"
     topic_arn     = aws_sns_topic.submission_notifications.arn
@@ -190,13 +172,6 @@ resource "aws_s3_bucket_notification" "submissions" {
 
 resource "aws_s3_bucket_notification" "submissions_preview" {
   bucket = data.aws_s3_bucket.submissions_preview.id
-
-  topic {
-    id            = "submission-received"
-    topic_arn     = aws_sns_topic.submission_notifications.arn
-    events        = ["s3:ObjectCreated:*"]
-    filter_prefix = "submissions/2"
-  }
 
   topic {
     id            = "submission-verified"

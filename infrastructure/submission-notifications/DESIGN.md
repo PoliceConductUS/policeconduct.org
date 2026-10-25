@@ -24,21 +24,15 @@ scheduled executions**, and has not run since 2026-09-16.
 
 Three paths, each covering a failure the others cannot.
 
-| Path                                        | Fires on                                                        | Carries                                         | Survives                     |
-| ------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------- | ---------------------------- |
-| **Resend email** from the forms Lambda      | submission stored; verification completed                       | `[DSAR] dataSubjectAccessRequest received <id>` | —                            |
-| **SNS topic** publish from the forms Lambda | same two events                                                 | subject line + message attributes               | a broken email transport     |
-| **S3 event notification** → SNS             | `ObjectCreated` under `submissions/2` and `submissions/status/` | generic `Amazon S3 Notification`                | a bug anywhere in the Lambda |
+| Path                                        | Fires on                                    | Carries                                         | Survives                     |
+| ------------------------------------------- | ------------------------------------------- | ----------------------------------------------- | ---------------------------- |
+| **Resend email** from the forms Lambda      | verification completed                      | `[DSAR] dataSubjectAccessRequest verified <id>` | —                            |
+| **SNS topic** publish from the forms Lambda | verification completed                      | subject line + message attributes               | a broken email transport     |
+| **S3 event notification** → SNS             | `ObjectCreated` under `submissions/status/` | generic `Amazon S3 Notification`                | a bug anywhere in the Lambda |
 
-**The human-facing path is Resend, not SNS email.** That is the one design
-decision here worth defending. SNS publishes **no delivery status for the
-`email` protocol** — a subscription to a mailbox that quietly dies keeps
-reporting `Confirmed` forever and nobody finds out. That is not hypothetical:
-the IPC Workspace admin mailbox bounced for 3.5 months and was discovered by
-accident (INS-55). Resend reports a per-message `last_event` (`delivered`,
-`bounced`, …), which turns "is anyone actually receiving this" from a belief
-into a fact a machine can check every day. It is also already the transport
-behind the submitter verification email, so it adds no vendor and no spend.
+Resend supplies the staff notification subject and metadata. SNS supplies an
+independent backstop for the verification status write. Neither provider
+acceptance nor a stored receipt proves a human read the message.
 
 The S3 event path remains because it fires on the storage fact itself and
 therefore survives a bug in the Lambda — the exact class of failure that
@@ -47,15 +41,16 @@ only path: `submissions/<date>/<formName>/<id>.json` puts the form name in the
 _middle_ of the key, and S3 prefix filters are literal strings, so no filter
 isolates DSARs.
 
-**Expect two emails per event.** If the S3 one ever arrives without the Resend
+**The S3 backstop fires only after verification.** If the S3 one ever arrives without the Resend
 one, the application path is broken and you can see that from your inbox.
 
-## The two events
+## Verification-only notifications
 
-1. **received** — the submission object is written. For a DSAR this is when the
-   clock starts (INS-16 §2), verified or not.
-2. **verified** — the submitter confirmed their email; `submissions/status/<id>.json`
-   is written. A state change on something you have already been told about.
+Initial submission storage sends only the submitter verification email. The
+application dispatcher rejects non-verified staff events. Both buckets notify
+SNS only for `submissions/status/`, which the application writes after successful
+verification. Reconciliation uses those status keys to select verified submissions
+and checks for verified-event receipts; it never reads submission bodies.
 
 ## What the notification does and does not contain
 
@@ -180,7 +175,7 @@ aws sns list-subscriptions-by-topic \
   --topic-arn arn:aws:sns:us-east-1:942370948729:policeconduct-submission-notifications \
   --query 'Subscriptions[].[Endpoint,SubscriptionArn]' --output table
 
-# The bucket must have both filters. An empty result is the INS-20 state.
+# The bucket must have only the verification-status filter. An empty result is the INS-20 state.
 aws s3api get-bucket-notification-configuration \
   --bucket policeconduct-submissions-942370948729
 

@@ -6,7 +6,8 @@ The board retired daily delivery verification and requested deletion of its code
 
 - Delete synthetic sending, status polling, delivery-only tests and configuration.
 - Delete the delivery alarm and stop publishing its metric.
-- Preserve key reconciliation, shared scheduling, and actual intake notifications.
+- Preserve shared scheduling and verified intake notifications.
+- Remove initial-write S3 filters and reconcile only verified requests, matching the approved verified-only acceptance behavior.
 
 ## Capabilities
 

@@ -24,7 +24,7 @@ output "verify_commands" {
     "aws sns list-subscriptions-by-topic --topic-arn ${aws_sns_topic.submission_notifications.arn} --query 'Subscriptions[].[Endpoint,SubscriptionArn]' --output table",
     "aws sns list-subscriptions-by-topic --topic-arn ${aws_sns_topic.canary_alerts.arn} --query 'Subscriptions[].[Endpoint,SubscriptionArn]' --output table",
     "",
-    "# 2. Both rules must be present. An empty result is the INS-20 state.",
+    "# 2. Only the verification-status rule must be present; initial writes must not alert staff.",
     "aws s3api get-bucket-notification-configuration --bucket ${data.aws_s3_bucket.submissions.id}",
     "",
     "# 3. Run key reconciliation. Review failures and missingNotificationCount; this does not prove mailbox receipt.",
