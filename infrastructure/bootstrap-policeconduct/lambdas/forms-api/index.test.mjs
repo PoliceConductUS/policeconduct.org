@@ -1040,3 +1040,49 @@ test("a first-time submission records the provider message id", async () => {
     assert.ok(stored.sentAt, "sentAt makes the send time recoverable");
   });
 });
+
+test("the verification window is the same number in all three places that set it", async () => {
+  // Three files decide the live window and the smallest one wins at runtime:
+  //
+  //   index.mjs        DEFAULT_VERIFICATION_TTL_SECONDS — used only when the
+  //                    environment variable is absent, which in production it
+  //                    is not
+  //   deploy-forms-api.sh  sets EMAIL_VERIFICATION_TTL_SECONDS on the Lambda,
+  //                    and is what actually takes effect
+  //   variables.tf     what a Terraform apply would reset that variable to
+  //
+  // INS-89 nearly shipped a 24-hour window in code and tests while production
+  // kept expiring links after 15 minutes, because only the first of these was
+  // changed. A comment asking the next person to keep them equal does not
+  // survive the next edit; this does.
+  const { readFile } = await import("node:fs/promises");
+  const here = new URL(".", import.meta.url);
+
+  const script = await readFile(
+    new URL("../../scripts/deploy-forms-api.sh", here),
+    "utf8",
+  );
+  const scriptValue = /^VERIFICATION_TTL_SECONDS="(\d+)"$/m.exec(script);
+  assert.ok(scriptValue, "deploy-forms-api.sh must set VERIFICATION_TTL_SECONDS");
+
+  const variables = await readFile(
+    new URL("../../variables.tf", here),
+    "utf8",
+  );
+  const terraformValue =
+    /variable "forms_email_verification_ttl_seconds"[\s\S]*?default\s*=\s*(\d+)/.exec(
+      variables,
+    );
+  assert.ok(terraformValue, "variables.tf must declare a default TTL");
+
+  assert.equal(
+    Number(scriptValue[1]),
+    __testables.DEFAULT_VERIFICATION_TTL_SECONDS,
+    "deploy-forms-api.sh disagrees with DEFAULT_VERIFICATION_TTL_SECONDS, so a deploy would not set the window the code documents",
+  );
+  assert.equal(
+    Number(terraformValue[1]),
+    __testables.DEFAULT_VERIFICATION_TTL_SECONDS,
+    "variables.tf disagrees, so the next Terraform apply would silently revert the window",
+  );
+});
