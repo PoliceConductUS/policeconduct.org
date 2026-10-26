@@ -88,8 +88,9 @@ the final PR head, including documentation-only PRs.
 - [ ] Add task-relevant checks beyond the aggregate: form validation,
       payload/reset behavior, accessible labels and keyboard focus, and mobile
       and desktop placement for form/UI changes. For generated HTML changes run
-      the appropriate build and `validate:no-inline-css`; `npm run build`
-      includes the latter. Record commands and outcomes.
+      targeted rendering and `validate:no-inline-css` checks appropriate to the
+      change. Record commands and outcomes. A full final build and sitemap
+      verification are production-release gates, not PR merge prerequisites.
 - [ ] Inspect the final diff, preserve unrelated changes, and verify GitHub CI
       for the exact final PR SHA. The current workflows run CodeQL and the
       personal-data scan, **not the full aggregate**. Copilot setup installs
@@ -192,8 +193,9 @@ Optional tuning for large sites:
 ## End-to-End Form Tests
 
 Required search coverage needs generated assets. With the intended local database,
-intake fixtures, environment, and Playwright browsers configured, build and serve
-on loopback before the full gate:
+intake fixtures, environment, and Playwright browsers configured, generate the
+HTML needed by the tests and its Pagefind index, then serve on loopback before
+the full validation gate. A full build is one way to prepare those assets:
 
 ```bash
 mise exec -- npm run build
@@ -203,7 +205,11 @@ mise exec -- npm run validate
 ```
 
 The browser runner reuses the server on port 4321. Confirm it serves this head's
-fresh build, not an unrelated or stale process. Without a built server the runner
+matching generated HTML and index, not an unrelated or stale process. Existing
+assets may be reused when their source matches the final head (for example,
+a documentation-only change). `npm run build:search-index` generates the index
+from rendered `dist/` HTML. Required browser assertions must actually run;
+preparing their assets does not make the complete build or sitemap a merge gate. Without a built server the runner
 starts the development server, which cannot satisfy required Pagefind coverage;
 missing search assets fail instead of skipping. Scoped `npm run test:e2e -- ...`
 runs remain useful development feedback only.
@@ -226,6 +232,10 @@ npm run deploy:preview
 ```
 
 ### Production Deploy
+
+Before production release, require an error-free full final build and sitemap
+verification for the release artifact. Record these separately from PR merge
+evidence; merging a PR does not satisfy or waive either release check.
 
 Production deploy uses the incremental deploy script. It runs a fresh build by
 default, uploads only changed files from `dist/`, deletes removed objects, and

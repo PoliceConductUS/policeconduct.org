@@ -125,6 +125,7 @@ Validation Expectations
 - Missing configuration, services, data, browsers, or generated assets block verification. Set up the intended environment safely; do not modify production data or publish personnel to satisfy checks. Never commit credentials, absolute home paths, or private data.
 - Account for every skipped test. Required coverage must run in the correct environment, including built and served Pagefind search. A skipped behavior did not pass. Any warning or coverage exception needs a linked, explicit human decision stating reason, affected check, scope, and duration. Silence or acknowledgment of a limitation is not permission.
 - Record final commit SHA, runtime and dependency verification, command, exit code, each stage outcome, test counts, warning/hint dispositions, skip accounting, task-specific checks, and actual CI status for that head. Inspect the final diff and preserve unrelated changes. PR descriptions and completion reports must reflect final scope and evidence.
+- Full final-build and sitemap verification are required before production release, not before PR merge. Keep task-relevant rendering/no-inline-CSS checks and required browser assets in merge verification without treating them as a full-build prerequisite.
 - Merge readiness, human-reviewed merge, deployment, and public release are separate states. Use feature branches and PRs only. Retain production-release and personnel-publication approval gates. Never claim deployment without deployed evidence.
 
 Legal Notices

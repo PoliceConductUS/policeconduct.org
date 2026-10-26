@@ -23,3 +23,7 @@ The UI should feel sober, civic, trustworthy, accountability-oriented, and evide
 ## Merge checks
 
 Follow `AGENTS.md` and the complete [README merge checklist](../README.md#pr-merge-checklist). Use mise and exact lockfile dependencies, run full validation on the final head, fix all errors and warnings, and account for hints and skips. Exit zero or green CI alone is not merge readiness. Warning/coverage exceptions require explicit scoped human permission.
+
+Full final-build and sitemap verification are required before production release,
+not PR merge. Required task-specific rendering checks and browser coverage still
+apply; record release evidence separately from merge evidence.
