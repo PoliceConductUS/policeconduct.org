@@ -37,8 +37,11 @@ import PageShell from "#src/layouts/PageShell.astro";
         </p>
         <p>
           Public record information displayed on the site is{" "}
-          <strong>not subject to deletion, suppression, or modification</strong>{" "}
-          through privacy opt-out rights. Submitting a privacy preference will{" "}
+          <strong>not subject to deletion, suppression, or modification</strong
+          >{" "}
+          through privacy opt-out rights. Submitting a privacy preference will{
+            " "
+          }
           <strong>not</strong> remove or alter public record information.
         </p>
         <p>
@@ -146,9 +149,7 @@ import PageShell from "#src/layouts/PageShell.astro";
             name="compliance_type"
             required
           >
-            <option value="" selected>
-              Please select a law
-            </option>
+            <option value="" selected> Please select a law </option>
             <option value="gdpr">GDPR</option>
             <option value="ccpa">CCPA</option>
             <option value="cpa">CPA</option>
@@ -306,8 +307,7 @@ import PageShell from "#src/layouts/PageShell.astro";
             class="form-control"
             id="dsarDetails"
             name="content"
-            placeholder="Details"
-          ></textarea>
+            placeholder="Details"></textarea>
           <label for="dsarDetails">
             Please leave details regarding your action request or question.
           </label>
@@ -382,9 +382,7 @@ import PageShell from "#src/layouts/PageShell.astro";
         <div class="small text-muted mb-3">
           Protected by reCAPTCHA Enterprise.
         </div>
-        <button type="submit" class="btn btn-dark rounded-0">
-          Submit
-        </button>
+        <button type="submit" class="btn btn-dark rounded-0"> Submit </button>
       </form>
     </div>
   </div>
