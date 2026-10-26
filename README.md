@@ -155,10 +155,9 @@ Build metadata is derived from git state automatically:
 - `GIT_COMMIT_SHA` defaults to the current git commit.
 - `GIT_COMMIT_DIRTY` defaults to `1` when tracked or untracked changes exist.
 
-The build emits these page meta tags:
-
-- `build-commit`
-- `build-commit-dirty`
+The current layout does not emit these values as page meta tags. Record the
+build's commit and clean/dirty state in the verification evidence; compare served
+artifacts with that build rather than assuming a page exposes its source SHA.
 
 Production deploys also attach build metadata to each uploaded S3 object as
 `build-commit` and `build-dirty`. `build.json` is not part of the standard
