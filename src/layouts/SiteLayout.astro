@@ -93,11 +93,9 @@ const serializeStructuredData = (value: unknown) =>
     <meta name="robots" content={robotsContent} />
     <meta name="author" content={ORG_LEGAL_NAME} />
     {title ? <meta property="og:title" content={title} /> : null}
-    {
-      description ? (
-        <meta property="og:description" content={description} />
-      ) : null
-    }
+    {description ? (
+      <meta property="og:description" content={description} />
+    ) : null}
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalHref} />
     <meta property="og:site_name" content="PoliceConduct.org" />
@@ -105,30 +103,29 @@ const serializeStructuredData = (value: unknown) =>
     <meta property="og:image:alt" content="PoliceConduct.org overview" />
     <meta name="twitter:card" content="summary_large_image" />
     {title ? <meta name="twitter:title" content={title} /> : null}
-    {
-      description ? (
-        <meta name="twitter:description" content={description} />
-      ) : null
-    }
+    {description ? (
+      <meta name="twitter:description" content={description} />
+    ) : null}
     <meta name="twitter:image" content={socialImageUrl} />
 
     <meta name="HandheldFriendly" content="true" />
-    {
-      structuredDataEntries.length
-        ? structuredDataEntries.map((entry) => (
-            <script
-              type="application/ld+json"
-              set:html={serializeStructuredData(entry)}
-              is:inline
-            />
-          ))
-        : null
-    }
+    {structuredDataEntries.length
+      ? structuredDataEntries.map((entry) => (
+          <script
+            type="application/ld+json"
+            set:html={serializeStructuredData(entry)}
+            is:inline
+          />
+        ))
+      : null}
     <title>{title}</title>
     <GoogleAnalytics />
   </head>
   <body>
-    <a class="skip-link" href="#main"> Skip to main content </a>
+    <a class="skip-link" href="#main">
+      {" "}
+      Skip to main content{" "}
+    </a>
 
     <header class="masthead" data-pagefind-ignore>
       <div class="container">
@@ -137,8 +134,14 @@ const serializeStructuredData = (value: unknown) =>
         </a>
         <MastheadSearch />
         <nav class="masthead-nav" aria-label="Primary">
-          <a class="masthead-nav-link" href="/news/"> News </a>
-          <a class="masthead-nav-link" href="/donate/"> Donate </a>
+          <a class="masthead-nav-link" href="/news/">
+            {" "}
+            News{" "}
+          </a>
+          <a class="masthead-nav-link" href="/donate/">
+            {" "}
+            Donate{" "}
+          </a>
           <a class="nav-action nav-action-share" href="/report/new/">
             Share an experience
           </a>
@@ -153,24 +156,20 @@ const serializeStructuredData = (value: unknown) =>
 
     <footer class="border-top mt-auto d-print-none" data-pagefind-ignore>
       <div class="container py-5">
-        <div
-          class="d-flex justify-content-center align-items-center gap-4 mb-4"
-        >
-          {
-            ORG_SOCIAL_LINKS.map((social) => (
-              <a
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-muted"
-              >
-                <svg width="24" height="24" aria-hidden="true">
-                  <use href={`/icons.svg#${social.iconId}`} />
-                </svg>
-                <span class="visually-hidden">{social.label}</span>
-              </a>
-            ))
-          }
+        <div class="d-flex justify-content-center align-items-center gap-4 mb-4">
+          {ORG_SOCIAL_LINKS.map((social) => (
+            <a
+              href={social.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-muted"
+            >
+              <svg width="24" height="24" aria-hidden="true">
+                <use href={`/icons.svg#${social.iconId}`} />
+              </svg>
+              <span class="visually-hidden">{social.label}</span>
+            </a>
+          ))}
         </div>
         <div class="row g-4 mb-4">
           <div class="col-12 col-md">
