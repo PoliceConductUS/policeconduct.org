@@ -25,7 +25,7 @@
 #
 # USAGE
 #   export AWS_PROFILE=<profile with write access to 942370948729>
-#   ./deploy-forms-api.sh --topic-arn <arn> --recipients <csv> --receipts-since <YYYY-MM-DD>
+#   ./deploy-forms-api.sh --topic-arn <arn> --recipients <csv>
 #   ./deploy-forms-api.sh ... --apply        # actually do it
 #
 # Dry run by default: prints the plan, mutates nothing.
@@ -42,7 +42,6 @@ readonly SRC_DIR="${SCRIPT_DIR}/../lambdas/forms-api"
 APPLY=0
 TOPIC_ARN=""
 RECIPIENTS=""
-RECEIPTS_SINCE=""
 TARGETS=""
 
 log()  { printf '\033[1m==>\033[0m %s\n' "$*"; }
@@ -86,7 +85,6 @@ while [[ $# -gt 0 ]]; do
     --apply)          APPLY=1; shift ;;
     --topic-arn)      TOPIC_ARN="${2:?}"; shift 2 ;;
     --recipients)     RECIPIENTS="${2:?}"; shift 2 ;;
-    --receipts-since) RECEIPTS_SINCE="${2:?}"; shift 2 ;;
     --only)           TARGETS="${2:?}"; shift 2 ;;
     *) die "unknown argument: $1" ;;
   esac
@@ -110,8 +108,7 @@ log "account $ACCOUNT as $(aws sts get-caller-identity --query Arn --output text
   die "--topic-arn '$TOPIC_ARN' is not an SNS ARN in account $EXPECTED_ACCOUNT."
 [[ -n "$RECIPIENTS" ]] ||
   die "--recipients is required. A configured topic with no recipient list in the Lambda means the Resend path has nowhere to send."
-[[ "$RECEIPTS_SINCE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] ||
-  die "--receipts-since must be YYYY-MM-DD (the date the notification path went live)."
+
 
 # The topic must exist and the recipients must be subscribed to it before the
 # Lambda is told to use it. Deploying code that publishes to a topic nobody
@@ -191,19 +188,16 @@ deploy_one() {
   merged="$(jq -c \
     --arg topic "$TOPIC_ARN" \
     --arg recips "$RECIPIENTS" \
-    --arg since "$RECEIPTS_SINCE" \
     --arg label "$label" \
-    '. + {
+    'del(.NOTIFICATION_RECEIPTS_SINCE) + {
        SUBMISSION_NOTIFICATIONS_TOPIC_ARN: $topic,
-       SUBMISSION_NOTIFICATION_RECIPIENTS: $recips,
-       NOTIFICATION_RECEIPTS_SINCE: $since
+       SUBMISSION_NOTIFICATION_RECIPIENTS: $recips
      } + (if $label == "" then {} else {NOTIFICATION_ENV_LABEL: $label} end)' \
     <<< "$current")"
 
-  # Sanity check the merge before sending it: the keys that were there must
-  # still be there.
+  # Preserve existing keys except the retired monitor cutoff.
   local before after
-  before="$(jq -r 'keys | length' <<< "$current")"
+  before="$(jq -r 'del(.NOTIFICATION_RECEIPTS_SINCE) | keys | length' <<< "$current")"
   after="$(jq -r 'keys | length' <<< "$merged")"
   [[ "$after" -ge "$before" ]] ||
     die "environment merge for $fn would DROP variables ($before -> $after). Refusing."
@@ -242,12 +236,6 @@ prove.
     curl -s "\$url" -o /tmp/\$fn.zip && unzip -p /tmp/\$fn.zip index.mjs | shasum -a 256
   done
   # both must print: $SRC_SHA
-
-  # Run the liveness check now rather than waiting for the schedule.
-  # deliveryProbe.status must read 'delivered' — 'accepted' means the transport
-  # took the message, not that it arrived.
-  aws lambda invoke --function-name policeconduct-notification-canary \\
-    --payload '{}' /dev/stdout
 
   # Then submit through the preview form and confirm a message ARRIVED.
 

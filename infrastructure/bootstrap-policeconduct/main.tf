@@ -1110,7 +1110,6 @@ resource "aws_lambda_function" "forms_api_prod" {
       SENTRY_ENVIRONMENT                   = "production"
       SUBMISSION_NOTIFICATIONS_TOPIC_ARN   = trimspace(var.submission_notifications_topic_arn)
       SUBMISSION_NOTIFICATION_RECIPIENTS   = join(",", local.normalized_submission_notification_emails)
-      NOTIFICATION_RECEIPTS_SINCE          = var.notification_receipts_since
     }
   }
 }
@@ -1155,7 +1154,6 @@ resource "aws_lambda_function" "forms_api_preview" {
       # mistaken for a real request with a real clock on it.
       NOTIFICATION_ENV_LABEL             = "preview"
       SUBMISSION_NOTIFICATION_RECIPIENTS = join(",", local.normalized_submission_notification_emails)
-      NOTIFICATION_RECEIPTS_SINCE        = var.notification_receipts_since
     }
   }
 }
@@ -2477,7 +2475,7 @@ resource "github_actions_environment_secret" "sentry_auth_token" {
 }
 
 # ---------------------------------------------------------------------------
-# INS-35 — submission notifications and their liveness canary
+# INS-35 — submission notifications
 #
 # Those resources are NOT here. They live in
 # infrastructure/submission-notifications, which has its own Terraform state.
