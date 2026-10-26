@@ -47,8 +47,6 @@ async function mappedTarget(namespace, uri) {
 }
 
 // CloudFront requires a global handler and invokes it outside this module.
-// An ES export would change the deployed runtime contract; there is no local caller.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Required CloudFront global entry point.
 async function handler(event) {
   const request = event.request;
   const host = request.headers.host
@@ -91,3 +89,6 @@ async function handler(event) {
   request.uri = prefix + path;
   return request;
 }
+
+// Register the entry point on the runtime global rather than exporting a module.
+globalThis.handler = handler;

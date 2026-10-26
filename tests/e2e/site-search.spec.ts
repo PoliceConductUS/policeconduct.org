@@ -18,23 +18,13 @@ test.describe("masthead search (Pagefind-enhanced)", () => {
   test("typing a known agency name surfaces a result that navigates to its page", async ({
     page,
   }) => {
-    // Pagefind's index (/pagefind/pagefind.js and friends) is produced by
-    // `npm run build:search-index` after `astro build` -- see package.json's
-    // `build` script. It does not exist when e2e runs against the plain
-    // `astro dev` server (scripts/run-e2e.mjs / playwright.config.mjs), so
-    // this test is a no-op there: it needs a built `dist/` (e.g. served via
-    // `astro preview` after a full `npm run build`) to exercise the live
-    // search path. See sdd/task-4-report.md for the exact commands CI should
-    // run to get real coverage here.
-    const pagefindProbe = await page.request
-      .get("/pagefind/pagefind.js")
-      .catch(() => null);
-    test.skip(
-      !pagefindProbe || !pagefindProbe.ok(),
-      "Requires a built Pagefind index (dist/pagefind/pagefind.js) served from " +
-        "the site origin; not present against the dev server this harness runs " +
-        "by default. Run against a built + previewed dist/ to exercise this path.",
-    );
+    // Required coverage: build the site and serve dist/ before full validation.
+    // Missing generated assets are a verification blocker, never a passing skip.
+    const pagefindProbe = await page.request.get("/pagefind/pagefind.js");
+    expect(
+      pagefindProbe.ok(),
+      "Serve the built Pagefind index before validation",
+    ).toBe(true);
 
     await page.goto(KNOWN_AGENCY.path);
 

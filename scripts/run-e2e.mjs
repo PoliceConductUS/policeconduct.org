@@ -5,7 +5,7 @@ const port = "4321";
 const baseUrl = `http://${host}:${port}`;
 const timeoutMs = 120_000;
 
-const env = { ...process.env };
+const env = { ...process.env, DISABLE_ASTRO_DEV_TOOLBAR: "1" };
 delete env.FORCE_COLOR;
 delete env.NO_COLOR;
 
@@ -117,7 +117,18 @@ const devServer = hadExistingServer
   ? null
   : spawnProcess(
       "mise",
-      ["exec", "--", "node", "scripts/dev.mjs", "--host", host, "--port", port],
+      [
+        "exec",
+        "--",
+        "node",
+        "scripts/dev.mjs",
+        "--host",
+        host,
+        "--port",
+        port,
+        // The test runner owns the server lifecycle, including under agents.
+        "--ignore-lock",
+      ],
       {
         detached: true,
         stdio: ["ignore", "pipe", "pipe"],

@@ -189,8 +189,12 @@ test("recorded name and former agency label retain exact license relationship", 
     rows: [person],
   } =
     await client.query(`select p.* from public.personnel p where p.middle_name is not null and p.last_name is not null
- and exists(select 1 from public.agency_personnel a where a.personnel_id=p.id)
- and not exists(select 1 from public.agency_personnel a where a.personnel_id=p.id and a.end_date is null) limit 1`);
+ and exists(select 1 from public.agency_personnel a
+   join public.license l on l.id=a.license_id
+   join public.authority_license al on al.id=l.authority_license_id
+   where a.personnel_id=p.id)
+ and not exists(select 1 from public.agency_personnel a where a.personnel_id=p.id and a.end_date is null)
+ order by p.id limit 1`);
   await page.goto(`/personnel/${person.slug}/`);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     [

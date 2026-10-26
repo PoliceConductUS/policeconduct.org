@@ -26,6 +26,26 @@ import PageShell from "#src/layouts/PageShell.astro";
 
   <div class="row justify-content-center">
     <div class="col-lg-8" data-form-shell="dataSubjectAccessRequest">
+      <section aria-labelledby="public-record-notice" class="mb-4">
+        <h2 id="public-record-notice" class="ipc-section-title">
+          Privacy opt-outs do not remove public records
+        </h2>
+        <p>
+          We display public records released by federal, state, and local
+          government agencies. These records are not created by us and are not
+          collected from site visitors.
+        </p>
+        <p>
+          Public record information displayed on the site is{" "}
+          <strong>not subject to deletion, suppression, or modification</strong>{" "}
+          through privacy opt-out rights. Submitting a privacy preference will{" "}
+          <strong>not</strong> remove or alter public record information.
+        </p>
+        <p>
+          To request corrections or changes to a public record, you must contact
+          the government agency that maintains the original record.
+        </p>
+      </section>
       <form
         name="dataSubjectAccessRequest"
         method="POST"
@@ -338,6 +358,22 @@ import PageShell from "#src/layouts/PageShell.astro";
             <label class="form-check-label" for="confirmEmail">
               I understand that I will be required to validate my request by
               email, and I may be contacted in order to complete the request.
+            </label>
+            <div class="invalid-feedback">This confirmation is required.</div>
+          </div>
+          <div class="form-check mt-2">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="confirmPublicRecords"
+              name="understand_public_records"
+              value="Yes"
+              required
+            />
+            <label class="form-check-label" for="confirmPublicRecords">
+              I understand that public record information displayed on the site
+              is not subject to deletion, suppression, or modification through
+              privacy opt-out rights or laws.
             </label>
             <div class="invalid-feedback">This confirmation is required.</div>
           </div>
