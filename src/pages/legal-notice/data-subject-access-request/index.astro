@@ -26,6 +26,26 @@ import PageShell from "#src/layouts/PageShell.astro";
 
   <div class="row justify-content-center">
     <div class="col-lg-8" data-form-shell="dataSubjectAccessRequest">
+      <section aria-labelledby="public-record-notice" class="mb-4">
+        <h2 id="public-record-notice" class="ipc-section-title">
+          Important: Privacy opt-outs do not remove public records
+        </h2>
+        <p>
+          We display public records released by federal, state, and local
+          government agencies. These records are not created by us and are not
+          collected from site visitors.
+        </p>
+        <p>
+          Public record information displayed on the site is <strong
+            >not subject to deletion, suppression, or modification</strong
+          > through privacy opt-out rights. Submitting a privacy preference will
+          <strong>not</strong> remove or alter public record information.
+        </p>
+        <p>
+          To request corrections or changes to a public record, you must contact
+          the government agency that maintains the original record.
+        </p>
+      </section>
       <form
         name="dataSubjectAccessRequest"
         method="POST"
@@ -126,9 +146,7 @@ import PageShell from "#src/layouts/PageShell.astro";
             name="compliance_type"
             required
           >
-            <option value="" selected>
-              Please select a law
-            </option>
+            <option value="" selected> Please select a law </option>
             <option value="gdpr">GDPR</option>
             <option value="ccpa">CCPA</option>
             <option value="cpa">CPA</option>
@@ -286,8 +304,7 @@ import PageShell from "#src/layouts/PageShell.astro";
             class="form-control"
             id="dsarDetails"
             name="content"
-            placeholder="Details"
-          ></textarea>
+            placeholder="Details"></textarea>
           <label for="dsarDetails">
             Please leave details regarding your action request or question.
           </label>
@@ -346,9 +363,7 @@ import PageShell from "#src/layouts/PageShell.astro";
         <div class="small text-muted mb-3">
           Protected by reCAPTCHA Enterprise.
         </div>
-        <button type="submit" class="btn btn-dark rounded-0">
-          Submit
-        </button>
+        <button type="submit" class="btn btn-dark rounded-0"> Submit </button>
       </form>
     </div>
   </div>
