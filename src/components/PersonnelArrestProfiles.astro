@@ -24,11 +24,9 @@ const dimensions = [
     "Distinct reported charge records by level",
   ],
   ["by_source_district", "District source codes"],
-  ["by_arrest_beat", "Arrest-location beat codes"],
-  ["by_beat_status", "Arrest-location matching results"],
-  ["by_residential_tract", "Residential census tract codes"],
-  ["by_income_status", "Residential income matching results"],
 ] as const;
+const percentage = (count: number, total: number) =>
+  total === 0 ? "—" : `${((count / total) * 100).toFixed(1)}%`;
 const collator = new Intl.Collator("en", { numeric: true });
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const rowsFor = (
@@ -94,6 +92,73 @@ const rowsFor = (
           historical boundary dates. Residential tracts describe home
           neighborhoods, not arrest locations or personal income.
         </p>
+        {Object.hasOwn(profile.breakdowns, "by_income_status") &&
+          (() => {
+            if (!profile.incomeRows)
+              throw new Error(
+                `Missing income comparison for arrest profile ${profile.id}`,
+              );
+            const agencyTotal = profile.incomeRows.reduce(
+              (sum, row) => sum + row.agencyCount,
+              0,
+            );
+            const rows = [
+              ...profile.incomeRows,
+              {
+                label: "Total",
+                count: profile.coverage.totalArrests,
+                agencyCount: agencyTotal,
+              },
+            ];
+            return (
+              <details open>
+                <summary>Arrests by estimated household income</summary>
+                <div class="table-responsive">
+                  <table class="table" data-breakdown="by_income_range">
+                    <caption>Arrests by estimated household income</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Estimated household income</th>
+                        <th scope="col">Count</th>
+                        <th scope="col">Percentage</th>
+                        <th scope="col">Agency Percentage</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row) => (
+                        <tr>
+                          <th scope="row">{row.label}</th>
+                          <td>{row.count.toLocaleString("en-US")}</td>
+                          <td>
+                            {percentage(
+                              row.count,
+                              profile.coverage.totalArrests,
+                            )}
+                          </td>
+                          <td>{percentage(row.count, row.agencyCount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p>
+                  Income is the Census estimate of median annual household
+                  income in the arrested person's home neighborhood, not their
+                  personal income. Unknown means neighborhood income could not
+                  be determined.
+                </p>
+                <p>
+                  Count is this personnel member's recorded arrests. Percentage
+                  is the share of their arrests. Agency Percentage is their
+                  share of all agency arrests in the same income range, using
+                  the same source and recorded months (
+                  {profile.coverage.firstMonth} to {profile.coverage.lastMonth}
+                  ). An em dash means the agency has no recorded arrests in that
+                  range.
+                </p>
+              </details>
+            );
+          })()}
         {dimensions
           .filter(
             ([key]) =>

@@ -1,0 +1,5 @@
+- [x] Test range boundaries, Unknown, totals, and same-period agency denominators.
+- [x] Load matching agency evidence and render the approved table and explanation.
+- [x] Remove the two public geography diagnostic tables without altering source data.
+- [x] Verify component rendering at desktop/mobile widths, types, lint, and OpenSpec.
+- [ ] Verify actual personnel/agency comparisons after the local arrest data has been restored.

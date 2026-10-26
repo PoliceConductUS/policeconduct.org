@@ -1,0 +1,205 @@
+---
+import "leaflet/dist/leaflet.css";
+import type { BeatMap } from "#src/lib/data/arrest-beats.js";
+interface Props {
+  data: BeatMap;
+  agencyName: string;
+  firstMonth: string;
+  lastMonth: string;
+  source: string;
+  scope: "agency" | "personnel";
+}
+const { data, agencyName, firstMonth, lastMonth, source, scope } = Astro.props;
+---
+
+<section
+  class="arrest-beat-panel"
+  aria-label={`Arrests by patrol beat — ${agencyName}`}
+>
+  <h2>Arrests by patrol beat</h2>
+  <p>
+    {agencyName} · {firstMonth} to {lastMonth} ·{" "}
+    {scope === "agency" ? "Agency arrests" : "This personnel member’s arrests"}
+  </p>
+  <p>
+    <strong>{data.total.toLocaleString("en-US")} recorded arrests</strong> ·{" "}
+    {data.unmapped.toLocaleString("en-US")} not mapped to a patrol beat
+  </p>
+  {data.beats.length > 0 && (
+    <div
+      class="arrest-beat-map"
+      data-arrest-beat-map
+      data-beats={JSON.stringify(data.beats)}
+      role="region"
+      aria-label="Patrol beat boundaries and arrest counts"
+    />
+  )}
+  <p>
+    Labels show beat name · arrest count. Drag or zoom to explore. Source:{" "}
+    {source}. Boundaries are the supplied map snapshot; historical boundary
+    dates were not provided.
+  </p>
+  <details>
+    <summary>Arrest counts by beat</summary>
+    <ul class="arrest-beat-counts">
+      {data.beats.map((beat) => (
+        <li>
+          <strong>Beat {beat.name}</strong>:{" "}
+          {beat.count.toLocaleString("en-US")} arrests
+        </li>
+      ))}
+      <li>
+        <strong>Not mapped to a patrol beat</strong>:{" "}
+        {data.unmapped.toLocaleString("en-US")} arrests
+      </li>
+      <li>
+        <strong>Total</strong>: {data.total.toLocaleString("en-US")} arrests
+      </li>
+    </ul>
+  </details>
+</section>
+<script>
+  import L from "leaflet";
+  import type { BeatMap } from "#src/lib/data/arrest-beats.js";
+  document
+    .querySelectorAll<HTMLElement>("[data-arrest-beat-map]")
+    .forEach((element) => {
+      const beats: BeatMap["beats"] = JSON.parse(element.dataset.beats!);
+      const map = L.map(element, { scrollWheelZoom: false });
+      const layers = L.featureGroup();
+      const color = getComputedStyle(element)
+        .getPropertyValue("--ipc-color-teal")
+        .trim();
+      const labels: {
+        anchor: L.LatLng;
+        tooltip: L.Tooltip;
+        connector: L.Polyline;
+      }[] = [];
+      beats.forEach((beat) => {
+        const label = document.createElement("span");
+        label.textContent = `${beat.name} · ${beat.count.toLocaleString("en-US")}`;
+        L.geoJSON(beat.geometry, {
+          style: { color, weight: 2, fillOpacity: 0.12 },
+        }).addTo(layers);
+        const anchor = L.latLng(beat.anchor);
+        const tooltip = L.tooltip({
+          permanent: true,
+          direction: "center",
+          className: "arrest-beat-label",
+          opacity: 1,
+        })
+          .setLatLng(anchor)
+          .setContent(label);
+        const connector = L.polyline([], {
+          color,
+          weight: 1,
+          interactive: false,
+        });
+        labels.push({ anchor, tooltip, connector });
+      });
+      // Keep all labels readable without discarding names or counts at small widths.
+      const arrangeLabels = () => {
+        const size = map.getSize();
+        const occupied: {
+          left: number;
+          right: number;
+          top: number;
+          bottom: number;
+        }[] = [];
+        for (const { anchor, tooltip, connector } of labels) {
+          const origin = map.latLngToContainerPoint(anchor);
+          tooltip.setLatLng(anchor);
+          connector.setLatLngs([]);
+          if (
+            origin.x < 0 ||
+            origin.y < 0 ||
+            origin.x > size.x ||
+            origin.y > size.y
+          )
+            continue;
+          const element = tooltip.getElement()!;
+          const width = element.offsetWidth + 8,
+            height = element.offsetHeight + 8;
+          const candidates: L.Point[] = [origin];
+          for (
+            let radius = 12;
+            radius < Math.max(size.x, size.y);
+            radius += 12
+          ) {
+            for (let delta = -radius; delta <= radius; delta += 12) {
+              candidates.push(
+                L.point(origin.x + delta, origin.y - radius),
+                L.point(origin.x + delta, origin.y + radius),
+              );
+              candidates.push(
+                L.point(origin.x - radius, origin.y + delta),
+                L.point(origin.x + radius, origin.y + delta),
+              );
+            }
+          }
+          const point = candidates.find((point) => {
+            const box = {
+              left: point.x - width / 2,
+              right: point.x + width / 2,
+              top: point.y - height / 2,
+              bottom: point.y + height / 2,
+            };
+            if (
+              box.left < 4 ||
+              box.top < 4 ||
+              box.right > size.x - 4 ||
+              box.bottom > size.y - 4
+            )
+              return false;
+            if (
+              occupied.some(
+                (other) =>
+                  box.left < other.right &&
+                  box.right > other.left &&
+                  box.top < other.bottom &&
+                  box.bottom > other.top,
+              )
+            )
+              return false;
+            occupied.push(box);
+            return true;
+          });
+          if (point) {
+            const position = map.containerPointToLatLng(point);
+            tooltip.setLatLng(position);
+            if (!point.equals(origin)) connector.setLatLngs([anchor, position]);
+          }
+        }
+      };
+      map.fitBounds(layers.getBounds(), { padding: [28, 28] });
+      layers.addTo(map);
+      labels.forEach(({ tooltip, connector }) => {
+        tooltip.addTo(map);
+        connector.addTo(map);
+      });
+      map.on("zoomend moveend resize", arrangeLabels);
+      arrangeLabels();
+    });
+</script>
+<style>
+  .arrest-beat-panel {
+    grid-column: 1 / -1;
+    margin-block: 1rem;
+  }
+  .arrest-beat-map {
+    height: 42rem;
+    width: 100%;
+    border: 1px solid var(--ipc-color-rule);
+    background: var(--ipc-color-paper);
+  }
+  .arrest-beat-counts {
+    columns: 16rem;
+  }
+  :global(.arrest-beat-label) {
+    font-family: inherit;
+    font-size: 1rem;
+    color: var(--ipc-color-ink);
+    background: var(--ipc-color-paper);
+    border-color: var(--ipc-color-rule);
+  }
+</style>

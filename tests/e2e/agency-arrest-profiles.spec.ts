@@ -33,10 +33,11 @@ test("agency arrest loader uses the imported agency profile without summing pers
   });
   expect(await loadArrestProfilesForAgency("no-such-agency")).toEqual([]);
 });
-test("Irving agency page omits the deferred arrest display", async ({
+test("Irving agency page shows a beat map without the deferred full arrest display", async ({
   page,
 }) => {
   await page.goto("/tx/dallas-county/irving/irving-police-department-049f9a/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Irving");
   await expect(page.locator("#arrest-records")).toHaveCount(0);
+  await expect(page.locator("[data-arrest-beat-map]")).toBeVisible();
 });

@@ -1,6 +1,8 @@
 ---
 import "#src/styles/civic-ledger.css";
 import { agencyStatusPresentation } from "#src/lib/agency-status";
+import ArrestBeatMap from "#src/components/ArrestBeatMap.astro";
+import { loadArrestProfilesForAgency } from "#src/lib/data/arrest-profiles.js";
 import CoverageLinks from "#src/components/CoverageLinks.astro";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
@@ -32,6 +34,7 @@ type PersonnelLinkedCivilCaseRecord =
   AgencyDetail["personnelLinkedCivilCases"][number];
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
+const arrestProfiles = await loadArrestProfilesForAgency(data.agency.id);
 
 const {
   agencyName,
@@ -522,6 +525,20 @@ const structuredData = {
       </a>
       {" linked to this agency’s personnel."}
     </p>
+  )}
+
+  {arrestProfiles.map(
+    (profile) =>
+      profile.beatMap && (
+        <ArrestBeatMap
+          data={profile.beatMap}
+          agencyName={profile.agency.name}
+          firstMonth={profile.coverage.firstMonth}
+          lastMonth={profile.coverage.lastMonth}
+          source={profile.coverage.source}
+          scope="agency"
+        />
+      ),
   )}
 
   {recentReports.length ? (

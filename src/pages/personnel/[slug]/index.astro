@@ -19,6 +19,7 @@ import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import LicenseTimeline from "#src/components/LicenseTimeline.astro";
 import PersonnelDiscipline from "#src/components/PersonnelDiscipline.astro";
 import PersonnelDeceasedNotice from "#src/components/PersonnelDeceasedNotice.astro";
+import ArrestBeatMap from "#src/components/ArrestBeatMap.astro";
 import PersonnelArrestProfiles from "#src/components/PersonnelArrestProfiles.astro";
 import { loadArrestProfilesForPersonnel } from "#src/lib/data/arrest-profiles.js";
 import PersonnelEducation from "#src/components/PersonnelEducation.astro";
@@ -636,6 +637,19 @@ const structuredData = {
 
   <div class="personnel-section-grid">
     <PersonnelArrestProfiles profiles={arrestProfiles} />
+    {arrestProfiles.map(
+      (profile) =>
+        profile.beatMap && (
+          <ArrestBeatMap
+            data={profile.beatMap}
+            agencyName={profile.agency.name}
+            firstMonth={profile.coverage.firstMonth}
+            lastMonth={profile.coverage.lastMonth}
+            source={profile.coverage.source}
+            scope="personnel"
+          />
+        ),
+    )}
     <CoverageLinks links={coverageLinks} />
     {licensing.licenses.length ? (
       <section class="personnel-panel personnel-panel-wide">
