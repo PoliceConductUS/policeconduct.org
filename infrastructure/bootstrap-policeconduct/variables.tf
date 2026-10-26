@@ -468,30 +468,13 @@ variable "submission_notifications_topic_arn" {
     submission_notifications_topic_arn output of
     infrastructure/submission-notifications.
 
-    That stack owns the topic, the S3 event notifications and the liveness
-    canary. This stack only grants the forms API permission to publish and puts
+    That stack owns the topic and the S3 event notifications. This stack only grants the forms API permission to publish and puts
     the ARN in its environment, so it needs the ARN and nothing else.
 
     Empty means the forms API gets no topic and no publish grant — which is the
     pre-INS-35 state where a submission stored and nobody was told. It is the
     default only because this stack must still plan before the other one has
     been applied.
-  EOT
-  type        = string
-  default     = ""
-}
-
-variable "notification_receipts_since" {
-  description = <<-EOT
-    Reconciliation cutoff date (YYYY-MM-DD) for the notification canary (INS-35).
-
-    Notification receipts only exist from the day this ships. The submissions
-    that predate it have none and never will (138 as of 2026-10-24); without a
-    cutoff the canary would report them as unnotified on every run and be muted
-    within a week. Those are INS-16's backlog, worked by a human, not a
-    monitoring signal.
-
-    Set this to the date the change is applied.
   EOT
   type        = string
   default     = ""
