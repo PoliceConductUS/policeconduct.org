@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change redesign-civic-index-to-production. Update Purpose after archive.
+Provide self-hosted search over generated site content with accessible masthead results and a working navigation fallback when JavaScript is unavailable.
 
 ## Requirements
 

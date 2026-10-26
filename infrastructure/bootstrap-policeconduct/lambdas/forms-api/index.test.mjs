@@ -1042,6 +1042,7 @@ test("verified events still send staff mail and persist the delivery receipt", a
   process.env.RESEND_API_KEY = "re_test";
   process.env.SUBMISSION_NOTIFICATION_RECIPIENTS = "staff@example.org";
   global.fetch = async (url, init) => {
+    assert.equal(url, "https://api.resend.com/emails");
     emails.push(JSON.parse(init.body));
     return new Response(JSON.stringify({ id: "test_email" }), { status: 200 });
   };

@@ -233,8 +233,8 @@ detect_npm_dependencies() {
   if [[ -d node_modules ]] && have mise && mise exec -- npm ls --depth=0 >/dev/null 2>&1; then
     append_unique INFO_ITEMS "project npm dependencies are installed"
   else
-    append_unique INSTALL_ITEMS "project npm dependencies with npm install"
-    append_unique INSTALL_COMMANDS "mise exec -- npm install"
+    append_unique INSTALL_ITEMS "project npm dependencies with npm ci"
+    append_unique INSTALL_COMMANDS "mise exec -- npm ci"
   fi
 }
 
@@ -272,15 +272,15 @@ detect_project_tools() {
   if [[ -x node_modules/.bin/openspec ]]; then
     append_unique INFO_ITEMS "local OpenSpec CLI package is installed"
   else
-    append_unique INSTALL_ITEMS "OpenSpec CLI npm package via npm install"
-    append_unique INSTALL_COMMANDS "mise exec -- npm install"
+    append_unique INSTALL_ITEMS "OpenSpec CLI npm package via npm ci"
+    append_unique INSTALL_COMMANDS "mise exec -- npm ci"
   fi
 
   if [[ -x node_modules/.bin/supabase ]]; then
     append_unique INFO_ITEMS "local Supabase CLI package is installed"
   else
-    append_unique INSTALL_ITEMS "Supabase CLI npm package via npm install"
-    append_unique INSTALL_COMMANDS "mise exec -- npm install"
+    append_unique INSTALL_ITEMS "Supabase CLI npm package via npm ci"
+    append_unique INSTALL_COMMANDS "mise exec -- npm ci"
   fi
 }
 
@@ -385,7 +385,7 @@ install_npm_dependencies_if_needed() {
   fi
 
   info "Installing project npm dependencies"
-  mise exec -- npm install
+  mise exec -- npm ci
 }
 
 install_missing() {
