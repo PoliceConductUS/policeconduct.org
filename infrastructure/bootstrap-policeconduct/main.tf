@@ -1980,7 +1980,8 @@ locals {
 }
 
 resource "aws_cloudfront_key_value_store" "site_redirects" {
-  name = "${var.project_name}-site-redirects"
+  name    = "${var.project_name}-site-redirects"
+  comment = "Production site redirects managed by bootstrap-policeconduct Terraform"
 }
 
 resource "aws_cloudfront_function" "index_rewrite" {
@@ -2139,7 +2140,8 @@ resource "aws_cloudfront_distribution" "site" {
 # Preview uses the same router as production with a separate redirect store.
 # Keys are r:<label>:<path> = <target>, loaded from the build's _redirect-map.json.
 resource "aws_cloudfront_key_value_store" "preview_redirects" {
-  name = "${var.project_name}-preview-redirects"
+  name    = "${var.project_name}-preview-redirects"
+  comment = "Redirect maps for preview builds using the shared site router."
 }
 
 resource "aws_cloudfront_function" "preview_router" {
