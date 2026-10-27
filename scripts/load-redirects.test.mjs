@@ -14,8 +14,10 @@ import { spawnSync } from "node:child_process";
 const script = resolve("scripts/load-redirects.mjs");
 const entry = (from, to) => ({ from, to, status: 301, source: "test" });
 function run(map, initial = [], namespace = "r:prod:") {
-  const dir = mkdtempSync(join(tmpdir(), "redirect-loader-"));
+  const dir = mkdtempSync(join(resolve(tmpdir()), "redirect-loader-"));
   try {
+    // Keep the fake CLI CommonJS even when TMPDIR is inside this ESM repo.
+    writeFileSync(join(dir, "package.json"), '{"type":"commonjs"}');
     writeFileSync(
       join(dir, "map.json"),
       typeof map === "string" ? map : JSON.stringify(map),
@@ -256,7 +258,7 @@ function deploy(
   args = [],
   { unchanged = false, failSync = false } = {},
 ) {
-  const dir = mkdtempSync(join(tmpdir(), "redirect-deploy-"));
+  const dir = mkdtempSync(join(resolve(tmpdir()), "redirect-deploy-"));
   try {
     for (const name of ["scripts", "dist", "bin", ".deploy-cache"])
       mkdirSync(join(dir, name));

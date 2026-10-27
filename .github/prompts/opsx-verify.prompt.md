@@ -121,7 +121,7 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
       - Missing requirement implementations
       - Each with specific, actionable recommendation
 
-   2. **WARNING** (Should fix):
+   2. **WARNING** (Must fix or obtain explicit scoped human permission):
       - Spec/design divergences
       - Missing scenario coverage
       - Each with specific recommendation
@@ -133,8 +133,8 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
 
    **Final Assessment**:
    - If CRITICAL issues: "X critical issue(s) found. Fix before archiving."
-   - If only warnings: "No critical issues. Y warning(s) to consider. Ready for archive (with noted improvements)."
-   - If all clear: "All checks passed. Ready for archive."
+   - If only warnings: "Y unresolved warning(s). Not merge-ready. Fix them or link an explicit human exception stating reason, affected check, scope, and duration."
+   - If all clear: "OpenSpec verification passed. Separately complete the README.md PR merge checklist on the final head; archive readiness is not merge or release permission."
 
 **Verification Heuristics**
 
@@ -149,7 +149,7 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
 - If only tasks.md exists: verify task completion only, skip spec/design checks
 - If tasks + specs exist: verify completeness and correctness, skip design
 - If full artifacts: verify all three dimensions
-- Always note which checks were skipped and why
+- Always note which checks were skipped and why. Required coverage must actually run; missing configuration is a blocker, and any coverage exception requires explicit scoped human permission. Run the full package.json validation chain on the final head and record SHA, command, exit code, stages, test counts, diagnostic dispositions, and actual CI status as required by README.md.
 
 **Output Format**
 

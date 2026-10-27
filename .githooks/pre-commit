@@ -10,8 +10,8 @@ set -euo pipefail
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 
 if ! command -v node >/dev/null 2>&1; then
-  printf 'WARN: node not found; skipping the personal-data scan. CI still enforces it.\n' >&2
-  exit 0
+  printf 'ERROR: node not found; activate the mise runtime before committing.\n' >&2
+  exit 1
 fi
 
 node "$ROOT_DIR/scripts/scan-personal-data.mjs" --staged
