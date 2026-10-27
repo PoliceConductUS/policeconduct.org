@@ -25,8 +25,9 @@
 //
 // Exits non-zero when any violation is found.
 
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ENDED_LABEL = "Most recent agency";
 const CURRENT_LABEL = "Current agency";
@@ -151,6 +152,8 @@ const collectDistPages = async (distDir) => {
 const fetchText = async (url) => {
   const res = await fetch(String(url), {
     headers: { "user-agent": "IPC-employment-claims-guard/1.0" },
+    // A redirect must not silently turn a preview check into a production check.
+    redirect: "error",
   });
   if (!res.ok) {
     throw new Error(`GET ${url} returned HTTP ${res.status}`);
@@ -159,6 +162,16 @@ const fetchText = async (url) => {
 };
 
 const collectHostPages = async (host, sample, seed) => {
+  // Preview sitemaps may retain production canonical URLs. Keep their paths,
+  // but make every request against the explicitly selected deployment.
+  const onSelectedHost = (location) => {
+    const source = new URL(location, host);
+    const target = new URL(host);
+    target.pathname = source.pathname;
+    target.search = source.search;
+    target.hash = "";
+    return target.href;
+  };
   const index = await fetchText(new URL("/sitemap-index.xml", host));
   const children = [...index.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
   if (!children.length) {
@@ -166,7 +179,7 @@ const collectHostPages = async (host, sample, seed) => {
   }
   const urls = [];
   for (const child of children) {
-    const xml = await fetchText(child);
+    const xml = await fetchText(onSelectedHost(child));
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
     if (!locs.length) {
       throw new Error(`Child sitemap ${child} listed no URLs.`);
@@ -187,8 +200,8 @@ const collectHostPages = async (host, sample, seed) => {
     `sitemap lists ${profiles.length} personnel profile pages; sampling ${Math.min(sample, profiles.length)} (seed ${seed})`,
   );
   return sampleDeterministic(profiles, sample, seed).map((url) => ({
-    id: url,
-    read: () => fetchText(url),
+    id: onSelectedHost(url),
+    read: () => fetchText(onSelectedHost(url)),
   }));
 };
 
@@ -285,7 +298,11 @@ const main = async () => {
   );
 };
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (
+  process.argv[1] &&
+  (await realpath(fileURLToPath(import.meta.url))) ===
+    (await realpath(process.argv[1]))
+) {
   try {
     await main();
   } catch (error) {
