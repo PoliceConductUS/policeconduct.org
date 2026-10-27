@@ -862,6 +862,10 @@ test("the replacement link actually verifies, and the old one does not", async (
     const fresh = await handler(verifyEvent("/forms/verify-link", newToken));
     assert.equal(fresh.statusCode, 200, fresh.body);
     assert.equal(JSON.parse(fresh.body).submissionId, "sub_abc");
+    assert.equal(
+      JSON.parse(fresh.body).message,
+      "Your submission has been verified and is now pending review. Please contact hello@policeconduct.org if you need help.",
+    );
   });
 });
 
