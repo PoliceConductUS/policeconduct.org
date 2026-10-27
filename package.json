@@ -28,11 +28,14 @@
     "openspec:status": "node scripts/openspec-status.mjs",
     "preview": "astro preview",
     "refresh:build-projections": "node scripts/refresh-build-projections.mjs",
+    "report:coverage": "node scripts/coverage-report.mjs",
     "review": "ocr review --audience agent --from main --to HEAD",
     "review:workspace": "ocr review --audience agent",
     "scan:personal-data": "node scripts/scan-personal-data.mjs --tracked",
     "setup": "bash scripts/bootstrap-dev.sh",
-    "test": "npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:data && npm run test:e2e",
+    "test:client": "node --test scripts/copy-link.test.mjs",
+    "test": "npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:data && npm run test:coverage && npm run test:e2e",
+    "test:coverage": "node --test \"src/lib/coverage/*.test.mjs\"",
     "test:css": "node --test scripts/purge-built-css.test.mjs",
     "test:data": "node --test src/lib/data/assignment-status.test.mjs scripts/verify-employment-claims.test.mjs",
     "verify:employment-claims": "node scripts/verify-employment-claims.mjs",
@@ -51,26 +54,26 @@
     "validate:shell": "bash -n .githooks/* scripts/*.sh infrastructure/bootstrap-*/*.sh infrastructure/bootstrap-*/scripts/*.sh",
     "validate:types": "astro check",
     "deploy:preview:sync": "bash scripts/deploy-preview-sync.sh",
-    "test:lambda": "npm --prefix infrastructure/bootstrap-policeconduct/lambdas/forms-api install --omit=dev --no-audit --no-fund && node --test infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs"
+    "test:lambda": "npm --prefix infrastructure/bootstrap-policeconduct/lambdas/forms-api ci --omit=dev --no-audit --no-fund && node --test infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
     "@fontsource/public-sans": "^5.3.0",
-    "@sentry/astro": "^11.8.0",
+    "@sentry/astro": "^11.9.0",
     "aos": "^2.3.4",
     "astro": "^7.4.2",
     "bootstrap": "^5.3.8",
-    "dotenv": "^18.0.8",
+    "dotenv": "^18.0.9",
     "leaflet": "^1.9.4",
     "pg": "^8.23.1"
   },
   "devDependencies": {
-    "@alibaba-group/open-code-review": "^1.13.2",
+    "@alibaba-group/open-code-review": "^1.13.3",
     "@astrojs/check": "^0.9.12",
     "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^10.0.1",
-    "@fission-ai/openspec": "1.14.3",
-    "@fullhuman/postcss-purgecss": "^7.0.2",
+    "@fission-ai/openspec": "1.15.0",
+    "@fullhuman/postcss-purgecss": "^8.0.0",
     "@playwright/test": "^1.64.1",
     "@types/leaflet": "^1.9.22",
     "@types/pg": "^8.23.1",
@@ -78,15 +81,19 @@
     "eslint-plugin-astro": "^3.2.1",
     "globals": "^17.13.0",
     "pagefind": "^1.5.2",
-    "postcss": "^8.5.31",
+    "postcss": "^8.5.32",
     "prettier": "^3.9.10",
-    "prettier-plugin-astro": "^1.1.1",
-    "supabase": "2.121.0",
-    "typescript-eslint": "^8.72.0"
+    "prettier-plugin-astro": "^1.1.2",
+    "supabase": "2.122.0",
+    "typescript-eslint": "^8.72.1"
   },
   "overrides": {
     "purgecss": {
       "postcss-selector-parser": "7.1.7"
     }
+  },
+  "allowScripts": {
+    "@alibaba-group/open-code-review@1.13.2": true,
+    "fsevents@2.3.3": true
   }
 }

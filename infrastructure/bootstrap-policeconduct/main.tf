@@ -95,9 +95,19 @@ locals {
     for endpoint in var.alert_email_endpoints : trimspace(endpoint)
     if trimspace(endpoint) != ""
   ])
-  has_sentry_auth_token    = nonsensitive(local.sentry_auth_token != null)
-  effective_alarm_actions  = concat(var.alarm_actions, length(local.normalized_alert_email_endpoints) > 0 ? [aws_sns_topic.infrastructure_alerts[0].arn] : [])
-  github_environment_names = toset(["production", "preview"])
+  # Submission notifications (INS-35) live in their OWN stack —
+  # infrastructure/submission-notifications — because they are all-new
+  # resources and that stack has real Terraform state, while this one has none
+  # (INS-39). This stack only has to know the topic ARN so the forms API can
+  # publish to it; it neither creates nor owns the topic.
+  normalized_submission_notification_emails = distinct([
+    for endpoint in var.submission_notification_email_endpoints : trimspace(endpoint)
+    if trimspace(endpoint) != ""
+  ])
+  enable_submission_notifications = trimspace(var.submission_notifications_topic_arn) != ""
+  has_sentry_auth_token           = nonsensitive(local.sentry_auth_token != null)
+  effective_alarm_actions         = concat(var.alarm_actions, length(local.normalized_alert_email_endpoints) > 0 ? [aws_sns_topic.infrastructure_alerts[0].arn] : [])
+  github_environment_names        = toset(["production", "preview"])
   github_environment_variables = {
     production = merge(
       {
@@ -984,6 +994,17 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
       values   = [var.forms_email_verification_from_address]
     }
   }
+
+  dynamic "statement" {
+    for_each = local.enable_submission_notifications ? [1] : []
+
+    content {
+      sid       = "PublishSubmissionNotifications"
+      effect    = "Allow"
+      actions   = ["sns:Publish"]
+      resources = [trimspace(var.submission_notifications_topic_arn)]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "forms_lambda_permissions" {
@@ -1087,6 +1108,8 @@ resource "aws_lambda_function" "forms_api_prod" {
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
       SENTRY_DSN                           = local.sentry_dsn_production == null ? "" : local.sentry_dsn_production
       SENTRY_ENVIRONMENT                   = "production"
+      SUBMISSION_NOTIFICATIONS_TOPIC_ARN   = trimspace(var.submission_notifications_topic_arn)
+      SUBMISSION_NOTIFICATION_RECIPIENTS   = join(",", local.normalized_submission_notification_emails)
     }
   }
 }
@@ -1124,6 +1147,13 @@ resource "aws_lambda_function" "forms_api_preview" {
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
       SENTRY_DSN                           = local.sentry_dsn_preview == null ? "" : local.sentry_dsn_preview
       SENTRY_ENVIRONMENT                   = "preview"
+      SUBMISSION_NOTIFICATIONS_TOPIC_ARN   = trimspace(var.submission_notifications_topic_arn)
+      # Preview shares the topic so the pipe can be exercised end to end
+      # without writing a synthetic DSAR into the production submissions store.
+      # The label prefixes the subject with [PREVIEW] so a drill is never
+      # mistaken for a real request with a real clock on it.
+      NOTIFICATION_ENV_LABEL             = "preview"
+      SUBMISSION_NOTIFICATION_RECIPIENTS = join(",", local.normalized_submission_notification_emails)
     }
   }
 }
@@ -1950,7 +1980,8 @@ locals {
 }
 
 resource "aws_cloudfront_key_value_store" "site_redirects" {
-  name = "${var.project_name}-site-redirects"
+  name    = "${var.project_name}-site-redirects"
+  comment = "Production site redirects managed by bootstrap-policeconduct Terraform"
 }
 
 resource "aws_cloudfront_function" "index_rewrite" {
@@ -2109,7 +2140,8 @@ resource "aws_cloudfront_distribution" "site" {
 # Preview uses the same router as production with a separate redirect store.
 # Keys are r:<label>:<path> = <target>, loaded from the build's _redirect-map.json.
 resource "aws_cloudfront_key_value_store" "preview_redirects" {
-  name = "${var.project_name}-preview-redirects"
+  name    = "${var.project_name}-preview-redirects"
+  comment = "Redirect maps for preview builds using the shared site router."
 }
 
 resource "aws_cloudfront_function" "preview_router" {
@@ -2443,3 +2475,21 @@ resource "github_actions_environment_secret" "sentry_auth_token" {
 
   depends_on = [github_repository_environment.environments]
 }
+
+# ---------------------------------------------------------------------------
+# INS-35 — submission notifications
+#
+# Those resources are NOT here. They live in
+# infrastructure/submission-notifications, which has its own Terraform state.
+#
+# They were originally written into this file, which cannot be applied: this
+# stack has no state at all (INS-39), so `terraform apply` here plans a
+# create-from-scratch of the entire live estate. Everything INS-35 adds is a
+# brand-new resource with nothing to import, so it costs nothing to give it a
+# state file of its own — and buys a reviewable `terraform plan` instead of a
+# hand-run script.
+#
+# What stays here is only the part that modifies resources THIS stack owns: the
+# forms API Lambda environment and its sns:Publish grant, both driven by
+# var.submission_notifications_topic_arn.
+# ---------------------------------------------------------------------------

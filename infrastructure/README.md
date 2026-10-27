@@ -1,6 +1,6 @@
 # Infrastructure
 
-This repo uses two Terraform entrypoints:
+This repo uses three Terraform entrypoints:
 
 1. `infrastructure/bootstrap-policeconduct` (policeconduct.org foundation + static-site infra)
 2. `infrastructure/bootstrap-iceconduct` (independent iceconduct.org redirect infra)

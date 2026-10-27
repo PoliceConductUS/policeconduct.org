@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change redesign-civic-index-to-production. Update Purpose after archive.
+Provide consistent shared navigation, search, accessible page landmarks, and entity actions across site pages using the canonical design system.
 
 ## Requirements
 

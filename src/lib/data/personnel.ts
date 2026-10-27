@@ -20,11 +20,31 @@ export const loadPersonnelSummaries = async (
     async (
       client,
     ): Promise<{
-      agencyOfficers: any[];
-      officers: any[];
-      agencies: any[];
-      reportCounts: any[];
-      civilCaseCounts: any[];
+      agencyOfficers: {
+        personnel_id: string;
+        agency_id: string;
+        start_date: string | null;
+        end_date: string | null;
+        title: string | null;
+      }[];
+      officers: {
+        id: string;
+        slug: string;
+        first_name: string;
+        last_name: string | null;
+        suffix: string | null;
+      }[];
+      agencies: {
+        id: string;
+        name: string;
+        state: string;
+        canonical_path: string;
+      }[];
+      reportCounts: { personnel_id: string; report_count: string | number }[];
+      civilCaseCounts: {
+        personnel_id: string;
+        civil_case_count: string | number;
+      }[];
     }> => {
       const params: Array<string> = [];
       const filters = ["ao.end_date is null"];

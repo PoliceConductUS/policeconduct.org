@@ -4,12 +4,14 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 import { GoogleAuth } from "google-auth-library";
 import { RecaptchaEnterpriseServiceClient } from "@google-cloud/recaptcha-enterprise";
 import { createId } from "@paralleldrive/cuid2";
 import crypto from "crypto";
 
 const s3 = new S3Client({});
+const sns = new SNSClient({});
 const sentryDsn = (process.env.SENTRY_DSN || "").trim();
 const sentryEnvironment = (process.env.SENTRY_ENVIRONMENT || "").trim();
 const sentryRelease = (process.env.SENTRY_RELEASE || "").trim();
@@ -156,6 +158,18 @@ function verificationLinkFailureMessage(message) {
   const detail =
     typeof message === "string" && message.trim() ? `${message.trim()} ` : "";
   return `We could not verify your submission. ${detail}Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.`;
+}
+
+/**
+ * Message for an expired link, which is recoverable and should say so.
+ *
+ * Kept separate from the generic failure text because this is the one failure
+ * with an action attached, and the action is the whole point: the submitter
+ * must not conclude they have to fill the form in again. Two of the people in
+ * the INS-89 sample did exactly that.
+ */
+function verificationLinkExpiredMessage(ttlMs) {
+  return `This verification link has expired. Links stay valid for ${formatApproximateDuration(ttlMs)}. We still have your submission and you do not need to fill the form in again — ask us for a new link below and we will email one to the same address.`;
 }
 
 function sentryRequestContext(context, extra = {}) {
@@ -316,6 +330,32 @@ function getSiteOrigin(event) {
   return isAllowedOrigin(origin) ? origin : "";
 }
 
+/** How many replacement links one expired link may be traded in for. */
+const MAX_VERIFICATION_RESENDS = 3;
+
+/** Minimum gap between two replacement links for the same submission. */
+const VERIFICATION_RESEND_COOLDOWN_MS = 60 * 1000;
+
+/**
+ * Render a duration the way a person reading an email would say it.
+ *
+ * Every user-facing mention of the expiry window goes through here so that
+ * changing the TTL changes the sentence. Rounds to the nearest whole unit,
+ * because "expires in 23 hours 59 minutes" is not how anyone talks.
+ */
+function formatApproximateDuration(ms) {
+  const totalMinutes = Math.max(1, Math.round(ms / 60000));
+  if (totalMinutes < 60) {
+    return `${totalMinutes} minute${totalMinutes === 1 ? "" : "s"}`;
+  }
+  const totalHours = Math.round(totalMinutes / 60);
+  if (totalHours < 48) {
+    return `${totalHours} hour${totalHours === 1 ? "" : "s"}`;
+  }
+  const totalDays = Math.round(totalHours / 24);
+  return `${totalDays} day${totalDays === 1 ? "" : "s"}`;
+}
+
 function verificationConfig() {
   const bucket = process.env.SUBMISSIONS_BUCKET;
   const kmsKeyId = process.env.SUBMISSIONS_KMS_KEY_ID;
@@ -377,8 +417,56 @@ function createVerificationSecret() {
   return crypto.randomBytes(24).toString("base64url");
 }
 
+/**
+ * Compare two hex digests without leaking where they diverge.
+ *
+ * `crypto.timingSafeEqual` throws on a length mismatch, and a stored hash is
+ * the empty string once a link has been used, so the length guard has to come
+ * first and has to be plain equality on a non-secret quantity.
+ */
+function timingSafeEqualHex(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") {
+    return false;
+  }
+  if (a.length === 0 || a.length !== b.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(Buffer.from(a, "hex"), Buffer.from(b, "hex"));
+}
+
+/**
+ * Stamp the verification record with what the mail provider said.
+ *
+ * INS-89 could not tell deliverability from abandonment for 28 of 45 lost
+ * submissions, because the store records that we *tried* to send and nothing
+ * about what happened next. Keeping Resend's message id makes the record
+ * joinable to Resend's own delivery and bounce history after the fact, which
+ * is the cheapest possible step toward answering that question. It is not a
+ * substitute for consuming delivery webhooks (INS-89 follow-up) — it is what
+ * makes consuming them useful, since without an id there is nothing to join on.
+ *
+ * Best effort by design: the link is already live and the submitter already has
+ * it, so failing to annotate the record must not fail the request.
+ */
+async function recordVerificationSend(key, record, sendResult, config) {
+  const providerMessageId =
+    sendResult && typeof sendResult.id === "string" ? sendResult.id : "";
+  if (!providerMessageId) {
+    return;
+  }
+  try {
+    await writeJsonObject(config.bucket, config.kmsKeyId, key, {
+      ...record,
+      providerMessageId,
+      sentAt: new Date().toISOString(),
+    });
+  } catch (_error) {
+    // Swallowed on purpose. See the note above.
+  }
+}
+
 async function readJsonObject(bucket, key) {
-  let raw = "";
+  let raw;
   try {
     const object = await s3.send(
       new GetObjectCommand({
@@ -455,26 +543,43 @@ function getVerificationEmail(data, formName) {
 async function sendVerificationEmail({
   formName,
   origin,
+  replacement = false,
   submissionId,
   toAddress,
   token,
   ttlMs,
 }) {
   const { fromAddress, resendApiKey } = verificationConfig();
-  const ttlMinutes = Math.max(1, Math.round(ttlMs / 60000));
+  const window = formatApproximateDuration(ttlMs);
   const verifyUrl = `${origin}/verify/?token=${encodeURIComponent(token)}`;
   const subjectPrefix =
     sentryEnvironment && sentryEnvironment !== "production"
       ? `[${sentryEnvironment}] `
       : "";
   const body = [
-    "PoliceConduct.org submission verification",
+    replacement
+      ? "PoliceConduct.org replacement verification link"
+      : "PoliceConduct.org submission verification",
     "",
+    ...(replacement
+      ? [
+          "You asked for a new verification link because the previous one had",
+          "expired. Your original submission is still held; you do not need to",
+          "fill the form in again.",
+          "",
+        ]
+      : []),
     "Please verify your submission by opening this link:",
     verifyUrl,
     "",
-    `This link expires in ${ttlMinutes} minute${ttlMinutes === 1 ? "" : "s"}.`,
+    `This link expires in ${window}.`,
+    ...(replacement
+      ? ["Any earlier link for this submission no longer works."]
+      : []),
     `Form: ${formName}`,
+    "",
+    "If the link has expired by the time you read this, open it anyway and we",
+    "will offer to email you a new one.",
     "",
     "If you did not request this, you can ignore this email.",
     "This mailbox is not monitored.",
@@ -488,10 +593,13 @@ async function sendVerificationEmail({
     },
     body: JSON.stringify({
       from: fromAddress,
-      subject: `${subjectPrefix}Verify your PoliceConduct.org submission`,
+      subject: replacement
+        ? `${subjectPrefix}Your new PoliceConduct.org verification link`
+        : `${subjectPrefix}Verify your PoliceConduct.org submission`,
       tags: [
         { name: "formName", value: formName },
         { name: "submissionId", value: submissionId },
+        { name: "replacement", value: replacement ? "true" : "false" },
         {
           name: "environment",
           value:
@@ -507,7 +615,7 @@ async function sendVerificationEmail({
   });
 
   const contentType = response.headers.get("content-type") || "";
-  let payload = null;
+  let payload;
   if (contentType.includes("application/json")) {
     payload = await response.json();
   } else {
@@ -531,10 +639,533 @@ async function sendVerificationEmail({
   return payload;
 }
 
+/**
+ * Form types that start a statutory response clock on receipt.
+ *
+ * INS-16 commits the organization to acknowledging a data subject access
+ * request within 5 business days of receipt. Whoever holds the queue has to be
+ * able to tell a DSAR from a volunteer signup in the notification *subject
+ * line*, without opening the object — so this set drives a subject marker, not
+ * just a body field.
+ */
+const CLOCKED_FORM_NAMES = new Set(["dataSubjectAccessRequest"]);
+
+// SNS caps Subject at 100 printable ASCII characters and rejects newlines.
+const SNS_SUBJECT_MAX_LENGTH = 100;
+
+function sanitizeSubject(value) {
+  // Strip anything SNS will reject, then hard-truncate.
+  const flattened = String(value)
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/[^\x20-\x7E]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return flattened.length > SNS_SUBJECT_MAX_LENGTH
+    ? flattened.slice(0, SNS_SUBJECT_MAX_LENGTH)
+    : flattened;
+}
+
+function submissionNotificationSubject({ eventType, formName, submissionId }) {
+  const label = (process.env.NOTIFICATION_ENV_LABEL || "").trim();
+  const envTag = label ? `[${label.toUpperCase()}] ` : "";
+  const clockTag = CLOCKED_FORM_NAMES.has(formName) ? "[DSAR] " : "";
+  const action = eventType === "verified" ? "VERIFIED" : "received";
+  return sanitizeSubject(
+    `${envTag}${clockTag}${formName} ${action} ${submissionId}`,
+  );
+}
+
+/**
+ * The notification is a pointer, never a payload.
+ *
+ * Submissions can contain names, contact details and free text about named
+ * individuals. None of that belongs in an email relayed through SNS to an
+ * unknown number of subscribers. The body carries only routing facts: what
+ * kind of form, which id, where the object is. Whoever holds the queue reads
+ * the contents in S3, under the KMS key and the access controls that already
+ * govern it.
+ */
+function submissionNotificationBody({
+  eventType,
+  formName,
+  submissionId,
+  bucket,
+  key,
+  occurredAt,
+}) {
+  const lines = [
+    `event:        ${eventType}`,
+    `formName:     ${formName}`,
+    `submissionId: ${submissionId}`,
+    `occurredAt:   ${occurredAt}`,
+    `bucket:       ${bucket}`,
+    `key:          ${key}`,
+  ];
+
+  if (CLOCKED_FORM_NAMES.has(formName)) {
+    lines.push(
+      "",
+      "This form type carries a statutory response clock. Per INS-16 the",
+      "acknowledgement is due within 5 business days of RECEIPT — the clock",
+      "starts at 'received', not at 'verified'.",
+    );
+  }
+
+  lines.push(
+    "",
+    "This notification intentionally contains no submission content. Read the",
+    "object above in S3.",
+  );
+
+  return lines.join("\n");
+}
+
+/**
+ * Tell a human that a submission arrived.
+ *
+ * Deliberately non-fatal: by the time this runs the submission is already
+ * durably stored, and failing the request would only push the submitter to
+ * resubmit and create a duplicate record. A failure here is surfaced through
+ * the `forms.notify.*` log lines, which have CloudWatch metric filters and
+ * alarms behind them, and through the independent S3 event notification on the
+ * bucket, which fires whether or not this code path ran.
+ */
+async function publishSubmissionNotification({
+  eventType,
+  formName,
+  submissionId,
+  bucket,
+  key,
+  occurredAt,
+  requestId,
+}) {
+  const topicArn = (
+    process.env.SUBMISSION_NOTIFICATIONS_TOPIC_ARN || ""
+  ).trim();
+
+  if (!topicArn) {
+    // This is the INS-20 state: a submission lands and nobody is told. It is
+    // logged at warn with its own message so it can alarm rather than sit
+    // silently in a log group.
+    console.warn(
+      JSON.stringify({
+        msg: "forms.notify.topic_not_configured",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+      }),
+    );
+    return { published: false, reason: "topic_not_configured" };
+  }
+
+  try {
+    await sns.send(
+      new PublishCommand({
+        TopicArn: topicArn,
+        Subject: submissionNotificationSubject({
+          eventType,
+          formName,
+          submissionId,
+        }),
+        Message: submissionNotificationBody({
+          eventType,
+          formName,
+          submissionId,
+          bucket,
+          key,
+          occurredAt,
+        }),
+        MessageAttributes: {
+          eventType: { DataType: "String", StringValue: eventType },
+          formName: { DataType: "String", StringValue: formName },
+          statutoryClock: {
+            DataType: "String",
+            StringValue: String(CLOCKED_FORM_NAMES.has(formName)),
+          },
+        },
+      }),
+    );
+
+    console.info(
+      JSON.stringify({
+        msg: "forms.notify.published",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        key,
+      }),
+    );
+    return { published: true };
+  } catch (error) {
+    captureLambdaException(
+      error,
+      { requestId },
+      {
+        operation: "publish_submission_notification",
+        eventType,
+        formName,
+        submissionId,
+      },
+    );
+    console.error(
+      JSON.stringify({
+        msg: "forms.notify.publish_failed",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        key,
+        error: errorInfo(error),
+      }),
+    );
+    return { published: false, reason: "publish_failed" };
+  }
+}
+
+/** Staff recipient addresses come from deployment configuration. */
+function submissionNotificationRecipients() {
+  return (process.env.SUBMISSION_NOTIFICATION_RECIPIENTS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Send the notification over the transport we can observe.
+ *
+ * SNS email subscriptions are deliberately NOT the human-facing path. SNS does
+ * not report delivery status for the `email` protocol, so a subscription to a
+ * mailbox that quietly dies keeps reporting `Confirmed` forever and nobody
+ * finds out. That is exactly the INS-55 failure — mail bouncing for 3.5 months,
+ * believed live, discovered by accident.
+ *
+ * Resend reports a per-message `last_event` (`delivered`, `bounced`, ...), so a
+ * dead mailbox becomes a machine-checkable fact instead of a belief. It is also
+ * already the transport behind the submitter verification email, so this adds
+ * no vendor and no spend.
+ */
+async function sendSubmissionNotificationEmail({
+  eventType,
+  formName,
+  submissionId,
+  bucket,
+  key,
+  occurredAt,
+  requestId,
+}) {
+  const recipients = submissionNotificationRecipients();
+  const resendApiKey = (process.env.RESEND_API_KEY || "").trim();
+  const fromAddress = (
+    process.env.SUBMISSION_NOTIFICATION_FROM_ADDRESS ||
+    process.env.EMAIL_VERIFICATION_FROM_ADDRESS ||
+    ""
+  ).trim();
+
+  if (recipients.length === 0) {
+    // The INS-20 state, stated out loud: a submission landed and there is
+    // nobody to tell. Alarmed on, not merely logged.
+    console.warn(
+      JSON.stringify({
+        msg: "forms.notify.recipients_not_configured",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+      }),
+    );
+    return { sent: false, reason: "recipients_not_configured", recipients };
+  }
+
+  if (!resendApiKey || !fromAddress) {
+    // Name the variables that are missing rather than logging a derived
+    // Boolean of each. Same diagnostic value, more precise, and no expression
+    // reading a secret ever reaches a log sink — CodeQL flags
+    // `Boolean(resendApiKey)` as clear-text logging of the key, and it is
+    // right to: the day someone "improves" that to log a length or a prefix,
+    // the log line starts leaking key material and nothing objects.
+    const missing = [];
+    if (!resendApiKey) missing.push("RESEND_API_KEY");
+    if (!fromAddress) {
+      missing.push("SUBMISSION_NOTIFICATION_FROM_ADDRESS");
+    }
+    console.error(
+      JSON.stringify({
+        msg: "forms.notify.email_misconfigured",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        missingConfig: missing,
+      }),
+    );
+    return { sent: false, reason: "email_misconfigured", recipients };
+  }
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: fromAddress,
+        to: recipients,
+        subject: submissionNotificationSubject({
+          eventType,
+          formName,
+          submissionId,
+        }),
+        text: submissionNotificationBody({
+          eventType,
+          formName,
+          submissionId,
+          bucket,
+          key,
+          occurredAt,
+        }),
+        tags: [
+          { name: "kind", value: "submission_notification" },
+          { name: "eventType", value: eventType },
+          { name: "formName", value: formName },
+        ],
+      }),
+      signal: AbortSignal.timeout(5000),
+    });
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        `Resend notification send failed (${response.status})${
+          payload?.message ? `: ${payload.message}` : ""
+        }`,
+      );
+    }
+
+    const emailId = payload?.id || null;
+    console.info(
+      JSON.stringify({
+        msg: "forms.notify.email_sent",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        emailId,
+        recipientCount: recipients.length,
+      }),
+    );
+    return { sent: true, emailId, recipients };
+  } catch (error) {
+    captureLambdaException(
+      error,
+      { requestId },
+      {
+        operation: "send_submission_notification_email",
+        eventType,
+        formName,
+        submissionId,
+      },
+    );
+    console.error(
+      JSON.stringify({
+        msg: "forms.notify.email_failed",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        error: errorInfo(error),
+      }),
+    );
+    return { sent: false, reason: "email_failed", recipients };
+  }
+}
+
+/**
+ * The receipt prefix sits BESIDE `submissions/`, never under it.
+ *
+ * Two reasons. The S3 event notification filters on `submissions/2` and
+ * `submissions/status/`, so a receipt written under `submissions/` would fire a
+ * notification about a notification — an infinite loop billed by the message.
+ * And the established invariant that a count over `submissions/<date>/` is a
+ * complete count of real submissions (INS-20) must keep holding; a fourth key
+ * layout inside that namespace would quietly break it.
+ */
+const NOTIFICATION_RECEIPTS_PREFIX =
+  process.env.NOTIFICATION_RECEIPTS_PREFIX ?? "notifications/";
+
+function notificationReceiptKey({ submissionId, eventType, occurredAt }) {
+  const day = String(occurredAt || "").slice(0, 10) || "unknown-date";
+  return `${NOTIFICATION_RECEIPTS_PREFIX}${day}/${submissionId}-${eventType}.json`;
+}
+
+/**
+ * Store notification-attempt metadata for audit and receipt verification.
+ * Contains routing facts and staff recipient addresses, never request content.
+ * This record does not prove a human read or handled the request.
+ */
+async function writeNotificationReceipt({
+  bucket,
+  kmsKeyId,
+  eventType,
+  formName,
+  submissionId,
+  key,
+  occurredAt,
+  requestId,
+  sns,
+  email,
+}) {
+  const receiptKey = notificationReceiptKey({
+    submissionId,
+    eventType,
+    occurredAt,
+  });
+
+  try {
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: receiptKey,
+        Body: JSON.stringify({
+          submissionId,
+          formName,
+          eventType,
+          occurredAt,
+          submissionKey: key,
+          statutoryClock: CLOCKED_FORM_NAMES.has(formName),
+          snsPublished: Boolean(sns?.published),
+          snsReason: sns?.reason ?? null,
+          emailSent: Boolean(email?.sent),
+          emailId: email?.emailId ?? null,
+          emailReason: email?.reason ?? null,
+          recipients: email?.recipients ?? [],
+        }),
+        ContentType: "application/json",
+        ServerSideEncryption: "aws:kms",
+        SSEKMSKeyId: kmsKeyId,
+      }),
+    );
+    return { written: true, key: receiptKey };
+  } catch (error) {
+    captureLambdaException(
+      error,
+      { requestId },
+      { operation: "write_notification_receipt", submissionId, eventType },
+    );
+    console.error(
+      JSON.stringify({
+        msg: "forms.notify.receipt_failed",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        receiptKey,
+        error: errorInfo(error),
+      }),
+    );
+    return { written: false, key: receiptKey };
+  }
+}
+
+/**
+ * Notify staff only after verification and record the delivery outcome.
+ *
+ * Every step is non-fatal. By the time this runs the submission is durably
+ * stored; failing the request would only push the submitter to resubmit and
+ * create a duplicate record about a named person. Failures surface through the
+ * `forms.notify.*` log lines, their alarms, and the receipt.
+ */
+async function notifySubmissionEvent({
+  eventType,
+  formName,
+  submissionId,
+  bucket,
+  key,
+  kmsKeyId,
+  occurredAt,
+  requestId,
+}) {
+  // Board direction: receipt alone must never notify staff. Keep this gate
+  // ahead of every transport, receipt write, and delivery-failure alarm.
+  if (eventType !== "verified") return;
+
+  const sns = await publishSubmissionNotification({
+    eventType,
+    formName,
+    submissionId,
+    bucket,
+    key,
+    occurredAt,
+    requestId,
+  });
+
+  const email = await sendSubmissionNotificationEmail({
+    eventType,
+    formName,
+    submissionId,
+    bucket,
+    key,
+    occurredAt,
+    requestId,
+  });
+
+  // Nothing reached a human. This is the condition the whole issue exists to
+  // prevent, so it gets its own log line and its own alarm rather than being
+  // inferred from the absence of a success line.
+  if (!sns.published && !email.sent) {
+    console.error(
+      JSON.stringify({
+        msg: "forms.notify.nobody_told",
+        requestId,
+        eventType,
+        formName,
+        submissionId,
+        key,
+        snsReason: sns.reason ?? null,
+        emailReason: email.reason ?? null,
+      }),
+    );
+  }
+
+  const receipt = await writeNotificationReceipt({
+    bucket,
+    kmsKeyId,
+    eventType,
+    formName,
+    submissionId,
+    key,
+    occurredAt,
+    requestId,
+    sns,
+    email,
+  });
+
+  return { sns, email, receipt };
+}
+
 export const __testables = {
+  ALLOWED_FORM_NAMES,
+  CLOCKED_FORM_NAMES,
+  MAX_VERIFICATION_RESENDS,
+  NOTIFICATION_RECEIPTS_PREFIX,
+  formatApproximateDuration,
+  hashVerificationSecret,
+  verificationLinkExpiredMessage,
+  verificationLinkFailureMessage,
+  notificationReceiptKey,
+  notifySubmissionEvent,
+  publishSubmissionNotification,
+  sendSubmissionNotificationEmail,
   sendVerificationEmail,
+  submissionNotificationBody,
+  submissionNotificationRecipients,
+  submissionNotificationSubject,
   submitForm,
   verificationConfig,
+  writeNotificationReceipt,
 };
 
 function normalizedPath(event) {
@@ -745,7 +1376,7 @@ async function getDraft(event) {
   }
 
   const key = `${prefix}${draftId}.json`;
-  let rawDraft = "";
+  let rawDraft;
 
   try {
     const object = await s3.send(
@@ -880,7 +1511,7 @@ async function getSubmissionStatus(event, requestId) {
     requestId,
   };
   const path = normalizedPath(event);
-  let decodedId = "";
+  let decodedId;
   try {
     decodedId = decodeURIComponent(path.slice("/status/".length));
   } catch (_error) {
@@ -946,30 +1577,48 @@ async function verifySubmissionLink(event, requestId) {
   const { config, key, record } = await loadVerificationRecord(verificationId);
   if (!record) {
     return json(400, {
+      reason: "not_found",
       message: verificationLinkFailureMessage("Verification link not found."),
-    });
-  }
-  if (verificationExpired(record)) {
-    return json(400, {
-      message: verificationLinkFailureMessage("Verification link expired."),
     });
   }
   if (record.usedAt) {
     return json(400, {
+      reason: "already_used",
       message: verificationLinkFailureMessage(
-        "Verification link already used.",
+        "That verification link has already been used, so this submission is already verified.",
       ),
     });
   }
 
+  // The secret is checked before the expiry branch, not after. Expiry is now
+  // the branch that can mint a replacement link and send mail, so it must sit
+  // behind proof that the caller actually holds the link we issued. Checking
+  // expiry first — as this did — would let anyone who turned up a
+  // verificationId trigger mail to the submitter.
   const expectedHash = hashVerificationSecret(
     verificationId,
     secret,
     config.hmacSecret,
   );
-  if (expectedHash !== record.secretHash) {
+  if (!timingSafeEqualHex(expectedHash, record.secretHash)) {
     return json(400, {
+      reason: "invalid_token",
       message: verificationLinkFailureMessage("Invalid verification token."),
+    });
+  }
+
+  if (verificationExpired(record)) {
+    const resendsLeft =
+      MAX_VERIFICATION_RESENDS - (Number(record.resendCount) || 0);
+    return json(400, {
+      reason: "expired",
+      canResend: resendsLeft > 0,
+      message:
+        resendsLeft > 0
+          ? verificationLinkExpiredMessage(config.ttlMs)
+          : verificationLinkFailureMessage(
+              "This verification link has expired and we have already sent as many replacements as we can.",
+            ),
     });
   }
 
@@ -984,6 +1633,18 @@ async function verifySubmissionLink(event, requestId) {
   await writeJsonObject(config.bucket, config.kmsKeyId, key, nextRecord);
   await saveSubmissionStatus(record.submissionId, "in_review", verificationId);
 
+  // Notify staff after the verified record and review status are persisted.
+  await notifySubmissionEvent({
+    eventType: "verified",
+    formName: record.formName || "unknown",
+    submissionId: record.submissionId,
+    bucket: config.bucket,
+    key: `${config.prefix}status/${record.submissionId}.json`,
+    kmsKeyId: config.kmsKeyId,
+    occurredAt: verifiedAt,
+    requestId,
+  });
+
   console.info(
     JSON.stringify({
       msg: "forms.verify.success",
@@ -995,8 +1656,185 @@ async function verifySubmissionLink(event, requestId) {
 
   return json(200, {
     message:
-      "Your submission has been verified. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.",
+      "Your submission has been verified and is now pending review. Please contact hello@policeconduct.org if you need help.",
     submissionId: record.submissionId,
+  });
+}
+
+/**
+ * Trade an expired-but-authentic verification link for a fresh one.
+ *
+ * This is deliberately not a "resend verification email" form. There is no
+ * address input: the caller must present a token whose HMAC matches a
+ * verification record we issued, and the replacement goes to the address
+ * already stored on that record. That makes the endpoint useless as a mail
+ * amplifier — the only mailbox it can reach is one that already received our
+ * mail — which is why it needs no reCAPTCHA of its own and can be reached
+ * straight from a dead link.
+ *
+ * Rotating the secret is the point, not a side effect: the expired link stops
+ * working the moment a replacement is issued, so a link that leaked out of a
+ * forwarded email cannot be redeemed after the submitter has moved on.
+ */
+async function resendVerificationLink(event, requestId) {
+  const payload = parseJsonBody(event);
+  const { verificationId, secret } = parseVerificationToken(payload?.token);
+
+  if (!verificationId || !secret) {
+    return json(400, {
+      reason: "invalid_token",
+      message: verificationLinkFailureMessage("Invalid verification token."),
+    });
+  }
+
+  const origin = getSiteOrigin(event);
+  if (!origin) {
+    return json(400, {
+      reason: "missing_origin",
+      message: verificationLinkFailureMessage(
+        "We could not build a new link for this request.",
+      ),
+    });
+  }
+
+  const { config, key, record } = await loadVerificationRecord(verificationId);
+  if (!record) {
+    return json(400, {
+      reason: "not_found",
+      message: verificationLinkFailureMessage("Verification link not found."),
+    });
+  }
+  if (record.usedAt) {
+    return json(400, {
+      reason: "already_used",
+      message: verificationLinkFailureMessage(
+        "That submission is already verified, so there is nothing to send.",
+      ),
+    });
+  }
+
+  const expectedHash = hashVerificationSecret(
+    verificationId,
+    secret,
+    config.hmacSecret,
+  );
+  if (!timingSafeEqualHex(expectedHash, record.secretHash)) {
+    return json(400, {
+      reason: "invalid_token",
+      message: verificationLinkFailureMessage("Invalid verification token."),
+    });
+  }
+
+  const resendCount = Number(record.resendCount) || 0;
+  if (resendCount >= MAX_VERIFICATION_RESENDS) {
+    return json(429, {
+      reason: "resend_limit",
+      message: verificationLinkFailureMessage(
+        "We have already sent as many replacement links as we can for this submission.",
+      ),
+    });
+  }
+
+  const lastResentAtMs = record.lastResentAt
+    ? new Date(record.lastResentAt).getTime()
+    : 0;
+  if (
+    lastResentAtMs &&
+    Date.now() - lastResentAtMs < VERIFICATION_RESEND_COOLDOWN_MS
+  ) {
+    return json(429, {
+      reason: "resend_cooldown",
+      message: verificationLinkFailureMessage(
+        "We just sent a new link. Please check your email, including your spam folder, before asking for another.",
+      ),
+    });
+  }
+
+  if (!record.email || !isValidEmail(record.email)) {
+    return json(400, {
+      reason: "no_address",
+      message: verificationLinkFailureMessage(
+        "We do not have a usable email address for this submission.",
+      ),
+    });
+  }
+
+  const nextSecret = createVerificationSecret();
+  const resentAt = new Date().toISOString();
+  const nextRecord = {
+    ...record,
+    expiresAt: new Date(Date.now() + config.ttlMs).toISOString(),
+    lastResentAt: resentAt,
+    resendCount: resendCount + 1,
+    secretHash: hashVerificationSecret(
+      verificationId,
+      nextSecret,
+      config.hmacSecret,
+    ),
+  };
+
+  // Write before sending, so a send that half-succeeds cannot leave a live
+  // link we have no record of. The cost is that a failed send burns one of the
+  // three attempts, which is the safer way round.
+  await writeJsonObject(config.bucket, config.kmsKeyId, key, nextRecord);
+
+  try {
+    const sendResult = await sendVerificationEmail({
+      formName: record.formName || "unknown",
+      origin,
+      replacement: true,
+      submissionId: record.submissionId,
+      toAddress: record.email,
+      token: `${verificationId}.${nextSecret}`,
+      ttlMs: config.ttlMs,
+    });
+    await recordVerificationSend(key, nextRecord, sendResult, config);
+  } catch (error) {
+    captureLambdaException(
+      error,
+      { requestId, stage: event?.requestContext?.stage || null },
+      {
+        operation: "resend_verification_email",
+        submissionId: record.submissionId,
+        verificationId,
+      },
+    );
+    console.error(
+      JSON.stringify({
+        msg: "forms.verify.resend_failed",
+        requestId,
+        submissionId: record.submissionId,
+        verificationId,
+        error: errorInfo(error),
+      }),
+    );
+    return json(502, {
+      reason: "send_failed",
+      message: verificationLinkFailureMessage(
+        "We could not send a new link just now.",
+      ),
+    });
+  }
+
+  console.info(
+    JSON.stringify({
+      msg: "forms.verify.resend_sent",
+      requestId,
+      submissionId: record.submissionId,
+      verificationId,
+      formName: record.formName || null,
+      resendCount: resendCount + 1,
+      // Domain only. The address itself is submitter data and does not belong
+      // in a log line, but the provider is the one dimension INS-89 found that
+      // actually predicts whether our mail arrives.
+      emailDomain: emailDomain(record.email),
+    }),
+  );
+
+  // Deliberately does not echo the address back. The caller proved they hold
+  // the link, not that they are the submitter reading that mailbox.
+  return json(200, {
+    message: `We have emailed a new verification link to the address on this submission. It is valid for ${formatApproximateDuration(config.ttlMs)}. If it does not arrive, please check your spam folder.`,
   });
 }
 
@@ -1219,6 +2057,7 @@ async function submitForm(event, requestId) {
       secret,
       config.hmacSecret,
     ),
+    resendCount: 0,
     submissionId,
     usedAt: null,
     verificationId,
@@ -1226,8 +2065,9 @@ async function submitForm(event, requestId) {
   };
 
   try {
-    await saveVerificationRecord(verificationRecord);
-    await sendVerificationEmail({
+    const { key: verificationRecordKey } =
+      await saveVerificationRecord(verificationRecord);
+    const sendResult = await sendVerificationEmail({
       formName,
       origin,
       submissionId,
@@ -1235,6 +2075,12 @@ async function submitForm(event, requestId) {
       token: `${verificationId}.${secret}`,
       ttlMs: config.ttlMs,
     });
+    await recordVerificationSend(
+      verificationRecordKey,
+      verificationRecord,
+      sendResult,
+      config,
+    );
   } catch (error) {
     captureLambdaException(
       error,
@@ -1357,6 +2203,13 @@ export const handler = async (event) => {
     if (method === "POST" && path === "/forms/verify-link") {
       return withCors(
         await verifySubmissionLink(event, requestId),
+        allowedOrigin,
+      );
+    }
+
+    if (method === "POST" && path === "/forms/resend-verification") {
+      return withCors(
+        await resendVerificationLink(event, requestId),
         allowedOrigin,
       );
     }

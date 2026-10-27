@@ -51,7 +51,7 @@ type FlattenedPrimitive = string | string[];
 interface FlattenedObject {
   [key: string]: FlattenedValue;
 }
-interface FlattenedArray extends Array<FlattenedValue> {}
+type FlattenedArray = FlattenedValue[];
 type FlattenedValue = FlattenedPrimitive | FlattenedObject | FlattenedArray;
 type FlattenedContainer = FlattenedObject | FlattenedArray;
 
@@ -487,7 +487,7 @@ const getRecaptchaToken = async (action: string) => {
   }
   await recaptchaReadyPromise;
 
-  let token: string | null = null;
+  let token: string | null;
   try {
     token = await enterprise.execute(recaptchaSiteKey, { action });
   } catch (error) {

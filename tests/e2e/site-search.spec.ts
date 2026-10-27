@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import { createIndex, close } from "pagefind";
 
 // Known fixture agency also used by tests/e2e/prefill.spec.ts.
 const KNOWN_AGENCY = {
@@ -18,23 +19,41 @@ test.describe("masthead search (Pagefind-enhanced)", () => {
   test("typing a known agency name surfaces a result that navigates to its page", async ({
     page,
   }) => {
-    // Pagefind's index (/pagefind/pagefind.js and friends) is produced by
-    // `npm run build:search-index` after `astro build` -- see package.json's
-    // `build` script. It does not exist when e2e runs against the plain
-    // `astro dev` server (scripts/run-e2e.mjs / playwright.config.mjs), so
-    // this test is a no-op there: it needs a built `dist/` (e.g. served via
-    // `astro preview` after a full `npm run build`) to exercise the live
-    // search path. See sdd/task-4-report.md for the exact commands CI should
-    // run to get real coverage here.
-    const pagefindProbe = await page.request
-      .get("/pagefind/pagefind.js")
-      .catch(() => null);
-    test.skip(
-      !pagefindProbe || !pagefindProbe.ok(),
-      "Requires a built Pagefind index (dist/pagefind/pagefind.js) served from " +
-        "the site origin; not present against the dev server this harness runs " +
-        "by default. Run against a built + previewed dist/ to exercise this path.",
-    );
+    // Index the actual rendered agency page with the production search engine.
+    // This exercises search without building every page on the site.
+    const agencyPage = await page.request.get(KNOWN_AGENCY.path);
+    expect(agencyPage.ok()).toBe(true);
+    const { index, errors } = await createIndex();
+    expect(errors).toEqual([]);
+    if (!index) throw new Error("Pagefind did not create an index");
+    let files;
+    try {
+      const added = await index.addHTMLFile({
+        url: KNOWN_AGENCY.path,
+        content: await agencyPage.text(),
+      });
+      expect(added.errors).toEqual([]);
+      const generated = await index.getFiles();
+      expect(generated.errors).toEqual([]);
+      files = generated.files;
+    } finally {
+      await close();
+    }
+    await page.route("**/pagefind/**", async (route) => {
+      const path = new URL(route.request().url()).pathname.slice(
+        "/pagefind/".length,
+      );
+      const file = files.find((entry) => entry.path === path);
+      if (!file) throw new Error(`Missing generated Pagefind asset: ${path}`);
+      await route.fulfill({
+        body: Buffer.from(file.content),
+        contentType: path.endsWith(".js")
+          ? "text/javascript"
+          : path.endsWith(".wasm")
+            ? "application/wasm"
+            : "application/octet-stream",
+      });
+    });
 
     await page.goto(KNOWN_AGENCY.path);
 

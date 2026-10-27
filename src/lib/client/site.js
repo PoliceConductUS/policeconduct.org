@@ -212,36 +212,18 @@ const initMapAnalyticsClicks = () => {
   });
 };
 
-// Copy the given text to the clipboard, preferring the async Clipboard API
-// and falling back to the classic select + execCommand("copy") trick for
-// browsers/contexts (e.g. non-secure origins) where it is unavailable.
+// Use the supported Clipboard API. Report failure to the action bar when
+// access is unavailable or denied instead of invoking deprecated DOM commands.
 const copyTextToClipboard = async (text) => {
-  if (navigator.clipboard && window.isSecureContext) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (_error) {
-      // Fall through to the select+execCommand fallback below.
-    }
+  if (!navigator.clipboard || !window.isSecureContext) {
+    return false;
   }
-
-  const scratch = document.createElement("textarea");
-  scratch.value = text;
-  scratch.setAttribute("readonly", "");
-  scratch.style.position = "fixed";
-  scratch.style.opacity = "0";
-  document.body.appendChild(scratch);
-  scratch.select();
-  scratch.setSelectionRange(0, scratch.value.length);
-
-  let succeeded = false;
   try {
-    succeeded = document.execCommand("copy");
+    await navigator.clipboard.writeText(text);
+    return true;
   } catch (_error) {
-    succeeded = false;
+    return false;
   }
-  document.body.removeChild(scratch);
-  return succeeded;
 };
 
 // Shared entity action-bar "Copy link" behavior (EntityActionBar.astro).

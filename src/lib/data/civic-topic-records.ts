@@ -194,65 +194,98 @@ const loadCivilCaseRecords = async (
 
   const agenciesByCase = groupBy(rows.agencies, "civil_case_id");
   const officersByCase = groupBy(rows.officers, "civil_case_id");
-  const civilCases = rows.cases.map((civilCase: any): CivicCivilCaseRecord => {
-    const id = requireText(civilCase.id, "id", "unknown");
-    const title = requireText(civilCase.title, "title", id);
-    const href = `/civil-cases/${requireText(civilCase.slug, "slug", id)}/`;
-    const agencies = (agenciesByCase[id] || []).map((agency: any) => {
-      const agencyId = requireText(agency.id, "agency id", id);
-      return {
-        href: requireAgencyCanonicalPath({
-          id: agencyId,
-          location_path: requireText(agency.location_path, "agency path", id),
-          slug: requireText(agency.slug, "agency slug", id),
-        }),
-        id: agencyId,
-        name: requireText(agency.name, "agency name", id),
-      };
-    });
-    const personnel: CivicTopicPersonnelRef[] = (officersByCase[id] || []).map(
-      (officer: any) => {
-        const officerId = requireText(officer.id, "officer id", id);
-        const name = requireText(fullName(officer), "officer name", officerId);
-        return {
-          href: `/personnel/${requireText(officer.slug, "officer slug", officerId)}/`,
-          id: officerId,
-          name,
-        };
-      },
-    );
-    const hasDirectConnection = Boolean(civilCase.has_direct_connection);
-    const hasOfficerTransferConnection = Boolean(
-      civilCase.has_officer_transfer_connection,
-    );
-    const connectionType =
-      hasDirectConnection && hasOfficerTransferConnection
-        ? "Direct + officer transfer"
-        : hasOfficerTransferConnection
-          ? "Officer transfer"
-          : "Direct";
+  const civilCases = rows.cases.map(
+    (civilCase: {
+      id: string;
+      slug: string;
+      title: string;
+      court: string | null;
+      filed_date: string;
+      date_terminated: string | null;
+      has_direct_connection: boolean;
+      has_officer_transfer_connection: boolean;
+    }): CivicCivilCaseRecord => {
+      const id = requireText(civilCase.id, "id", "unknown");
+      const title = requireText(civilCase.title, "title", id);
+      const href = `/civil-cases/${requireText(civilCase.slug, "slug", id)}/`;
+      const agencies = (agenciesByCase[id] || []).map(
+        (agency: {
+          id: string;
+          name: string;
+          location_path: string;
+          slug: string;
+        }) => {
+          const agencyId = requireText(agency.id, "agency id", id);
+          return {
+            href: requireAgencyCanonicalPath({
+              id: agencyId,
+              location_path: requireText(
+                agency.location_path,
+                "agency path",
+                id,
+              ),
+              slug: requireText(agency.slug, "agency slug", id),
+            }),
+            id: agencyId,
+            name: requireText(agency.name, "agency name", id),
+          };
+        },
+      );
+      const personnel: CivicTopicPersonnelRef[] = (
+        officersByCase[id] || []
+      ).map(
+        (
+          officer: Parameters<typeof fullName>[0] & {
+            id: string;
+            slug: string;
+          },
+        ) => {
+          const officerId = requireText(officer.id, "officer id", id);
+          const name = requireText(
+            fullName(officer),
+            "officer name",
+            officerId,
+          );
+          return {
+            href: `/personnel/${requireText(officer.slug, "officer slug", officerId)}/`,
+            id: officerId,
+            name,
+          };
+        },
+      );
+      const hasDirectConnection = Boolean(civilCase.has_direct_connection);
+      const hasOfficerTransferConnection = Boolean(
+        civilCase.has_officer_transfer_connection,
+      );
+      const connectionType =
+        hasDirectConnection && hasOfficerTransferConnection
+          ? "Direct + officer transfer"
+          : hasOfficerTransferConnection
+            ? "Officer transfer"
+            : "Direct";
 
-    return {
-      agencies,
-      connectionType,
-      court: civilCase.court || null,
-      dateTerminated: civilCase.date_terminated || null,
-      filedDate: requireText(civilCase.filed_date, "filed_date", id),
-      href,
-      id,
-      personnel,
-      searchText: [
-        title,
+      return {
+        agencies,
         connectionType,
-        civilCase.court,
-        ...agencies.map((agency: CivicTopicAgencyRef) => agency.name),
-        ...personnel.map((person: CivicTopicPersonnelRef) => person.name),
-      ]
-        .filter(Boolean)
-        .join(" "),
-      title,
-    };
-  });
+        court: civilCase.court || null,
+        dateTerminated: civilCase.date_terminated || null,
+        filedDate: requireText(civilCase.filed_date, "filed_date", id),
+        href,
+        id,
+        personnel,
+        searchText: [
+          title,
+          connectionType,
+          civilCase.court,
+          ...agencies.map((agency: CivicTopicAgencyRef) => agency.name),
+          ...personnel.map((person: CivicTopicPersonnelRef) => person.name),
+        ]
+          .filter(Boolean)
+          .join(" "),
+        title,
+      };
+    },
+  );
 
   return {
     emptyLabel: "No civil cases are connected to agencies in this scope.",

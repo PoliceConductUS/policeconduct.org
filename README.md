@@ -33,6 +33,77 @@ for local UI testing against deployed forms infrastructure.
 - `npm run validate:openspec`: validate all OpenSpec artifacts.
 - `npm run validate`: run the aggregate validation gate.
 
+## PR merge checklist
+
+`package.json` defines the executable gates. Keep this checklist and the PR
+template synchronized whenever those scripts change. All items below apply to
+the final PR head, including documentation-only PRs.
+
+- [ ] Use `mise exec -- node --version` and `mise exec -- npm --version` to record
+      the configured runtime (`mise.toml`, currently Node 24). Install with
+      `mise exec -- npm ci`; use the nested lockfile for any nested package.
+      Compare every installed package version to its `package-lock.json` entry
+      (including transitive packages); do not borrow shared `node_modules`.
+- [ ] Record `git rev-parse HEAD`, then run `mise exec -- npm run validate` in
+      full. Preserve complete output and command exit status. Re-run the entire
+      command after fixes or any head change. Scoped checks do not replace it.
+- [ ] Record the outcome of every stage below. An early failure means later
+      stages did not run, not that they passed.
+
+| Aggregate stage          | Current scripts / required evidence                                        |
+| ------------------------ | -------------------------------------------------------------------------- |
+| Repository formatting    | `format:check`: repository-wide Prettier                                   |
+| JavaScript and SQL lint  | `lint` → `lint:es` (ESLint), `lint:sql` (pinned SQLFluff through mise)     |
+| Astro/type diagnostics   | `validate:types`: errors, warnings, and individually reviewed hints        |
+| Shell syntax             | `validate:shell`: hooks and deployment/bootstrap scripts                   |
+| Database schema contract | `validate:schema`: configured local database and table outcome             |
+| OpenSpec                 | `validate:openspec`: all changes/specs, including warning output           |
+| Personal-data scan       | `scan:personal-data`: tracked tree, finding count                          |
+| Redirect tests           | `test:redirects`: coverage, router, loading, map generation, release guard |
+| Media tests              | `test:media`: video and personnel photos                                   |
+| Forms API tests          | `test:lambda`: nested locked dependencies and Lambda suite                 |
+| CSS tests                | `test:css`: built CSS purging                                              |
+| Personal-data tests      | `test:personal-data`: scanner regressions                                  |
+| Coverage tests           | `test:coverage`: coverage calculations                                     |
+| Browser tests            | `test:e2e`: all Playwright suites, including built-index search            |
+
+- [ ] Fix every error and warning, including pre-existing findings. An exit-zero
+      run with unresolved warnings is not merge-ready. Inspect each diagnostic
+      hint and fix it or document a specific technical justification. Labels
+      such as advisory, harmless, baseline, and out of scope do not waive review.
+- [ ] Fix causes without disabling rules, adding ignores, weakening assertions,
+      hiding output, skipping tests, or changing fixtures merely to get green.
+      Fixtures must retain the tested behavior: resolve temporary paths properly,
+      isolate module scope, supply required form fields, and select records that
+      actually meet the tested relationship instead of relaxing expectations.
+- [ ] Resolve missing local configuration, services, database/intake fixtures,
+      browsers, and generated assets safely. These are verification blockers.
+      Never change production data, publish personnel, or commit credentials,
+      absolute home paths, or private data to make a test pass.
+- [ ] Report passed/failed/skipped counts for each suite. Build and serve the
+      Pagefind index and actually run its browser assertions; a dev-server skip
+      does not verify search. Explain every skip. Any warning or coverage
+      exception requires a linked, explicit human decision with reason, affected
+      check, scope, and duration. Silence and acknowledgment are not permission.
+- [ ] Add task-relevant checks beyond the aggregate: form validation,
+      payload/reset behavior, accessible labels and keyboard focus, and mobile
+      and desktop placement for form/UI changes. For generated HTML changes run
+      targeted rendering and `validate:no-inline-css` checks appropriate to the
+      change. Record commands and outcomes. A full final build and sitemap
+      verification are production-release gates, not PR merge prerequisites.
+- [ ] Inspect the final diff, preserve unrelated changes, and verify GitHub CI
+      for the exact final PR SHA. The current workflows run CodeQL and the
+      personal-data scan, **not the full aggregate**. Copilot setup installs
+      dependencies/browsers only; preview cleanup is not validation. Green CI
+      therefore does not substitute for full local validation evidence.
+- [ ] Update the PR description and completion report to the final scope, SHA,
+      commands, exit codes, stage outcomes, counts, diagnostic dispositions,
+      exceptions, and remaining blockers. Partial success is not full validation.
+- [ ] Retain human review/merge, production release, and personnel publication
+      gates. Merge readiness is not merge permission; merge is not deployment;
+      deployment is not evidence of an authorized public release. Claim deployed
+      only with deployed evidence. Use feature branches and PRs only.
+
 ## Agent Workflow
 
 This repo uses Codex App, OpenSpec, Superpowers, and the OpenSpec Superpowers
@@ -49,8 +120,8 @@ npx openspec schemas
 npx openspec status --change <change-name>
 ```
 
-Then brainstorm the outcome, create or switch to a repo-local worktree under
-`.worktrees/<change-name>`, and ask Codex to turn the brainstorm into an
+Then brainstorm the outcome, reuse the active branch and worktree (creating
+another requires explicit human permission), and ask Codex to turn the brainstorm into an
 OpenSpec change. Use `/opsx:continue <change-name>` until proposal/spec/task/plan
 artifacts are coherent, then `/opsx:apply <change-name>`, `/opsx:verify
 <change-name>`, `/opsx:continue <change-name>` for the retrospective, and
@@ -85,10 +156,9 @@ Build metadata is derived from git state automatically:
 - `GIT_COMMIT_SHA` defaults to the current git commit.
 - `GIT_COMMIT_DIRTY` defaults to `1` when tracked or untracked changes exist.
 
-The build emits these page meta tags:
-
-- `build-commit`
-- `build-commit-dirty`
+The current layout does not emit these values as page meta tags. Record the
+build's commit and clean/dirty state in the verification evidence; compare served
+artifacts with that build rather than assuming a page exposes its source SHA.
 
 Production deploys also attach build metadata to each uploaded S3 object as
 `build-commit` and `build-dirty`. `build.json` is not part of the standard
@@ -122,9 +192,27 @@ Optional tuning for large sites:
 
 ## End-to-End Form Tests
 
+Required search coverage needs generated assets. With the intended local database,
+intake fixtures, environment, and Playwright browsers configured, generate the
+HTML needed by the tests and its Pagefind index, then serve on loopback before
+the full validation gate. A full build is one way to prepare those assets:
+
 ```bash
-npm run test:e2e
+mise exec -- npm run build
+mise exec -- npm run preview -- --host 127.0.0.1 --port 4321
+# In another terminal with the same configured environment:
+mise exec -- npm run validate
 ```
+
+The browser runner reuses the server on port 4321. Confirm it serves this head's
+matching generated HTML and index, not an unrelated or stale process. Existing
+assets may be reused when their source matches the final head (for example,
+a documentation-only change). `npm run build:search-index` generates the index
+from rendered `dist/` HTML. Required browser assertions must actually run;
+preparing their assets does not make the complete build or sitemap a merge gate. Without a built server the runner
+starts the development server, which cannot satisfy required Pagefind coverage;
+missing search assets fail instead of skipping. Scoped `npm run test:e2e -- ...`
+runs remain useful development feedback only.
 
 These tests mock reCAPTCHA and `/api/forms/*` responses to keep runs stable and
 independent from external services.
@@ -144,6 +232,10 @@ npm run deploy:preview
 ```
 
 ### Production Deploy
+
+Before production release, require an error-free full final build and sitemap
+verification for the release artifact. Record these separately from PR merge
+evidence; merging a PR does not satisfy or waive either release check.
 
 Production deploy uses the incremental deploy script. It runs a fresh build by
 default, uploads only changed files from `dist/`, deletes removed objects, and

@@ -7,6 +7,32 @@ import { loadCoverageLinksForAgency } from "./coverage.js";
 import { normalizeLicenseStatus, normalizeLicenseType } from "./licensing.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
 
+type PersonnelLinkedCivilCaseRow = {
+  civil_case_id: string;
+  slug: string;
+  title: string;
+  filed_date: string;
+  personnel_id: string;
+  officer_slug: string;
+  first_name: string;
+  case_agency_id: string;
+  case_agency_name: string;
+  case_agency_slug: string;
+  case_agency_location_path: string;
+  case_agency_canonical_path: string;
+  cause_number: string | null;
+  date_terminated: string | null;
+  court: string | null;
+  outcome: string | null;
+  primary_source_url: string | null;
+  last_name: string | null;
+  suffix: string | null;
+  case_title: string | null;
+  target_title: string | null;
+  target_start_date: string | null;
+  target_end_date: string | null;
+};
+
 export type AgencyScopedTopicKind =
   | "personnel"
   | "reports"
@@ -40,24 +66,30 @@ export const loadAgencyStaticPaths = async () => {
     ).rows;
   });
 
-  return agencies.map((row: { payload: any }) => {
-    const agency = row.payload?.agency;
-    const agencyId = requireAgencyText(agency?.id, "id", "unknown");
+  return agencies.map(
+    (row: {
+      payload: {
+        agency?: { id: string; state: string; slug: string; path: string };
+      };
+    }) => {
+      const agency = row.payload?.agency;
+      const agencyId = requireAgencyText(agency?.id, "id", "unknown");
 
-    return {
-      params: {
-        category: requireAgencyText(agency?.state, "state", agencyId),
-        slug: requireAgencyText(agency?.slug, "slug", agencyId),
-      },
-      props: {
-        canonicalAgencyPath: requireAgencyText(
-          agency?.path,
-          "canonical path",
-          agencyId,
-        ),
-      },
-    };
-  });
+      return {
+        params: {
+          category: requireAgencyText(agency?.state, "state", agencyId),
+          slug: requireAgencyText(agency?.slug, "slug", agencyId),
+        },
+        props: {
+          canonicalAgencyPath: requireAgencyText(
+            agency?.path,
+            "canonical path",
+            agencyId,
+          ),
+        },
+      };
+    },
+  );
 };
 
 export const loadAgencyLocationStaticPaths = async () => {
@@ -74,7 +106,7 @@ export const loadAgencyLocationStaticPaths = async () => {
     ).rows;
   });
 
-  return agencies.map((agency: any) => {
+  return agencies.map((agency: { entity_id: string; path: string }) => {
     const agencyId = requireAgencyText(agency.entity_id, "id", "unknown");
     const pathParts = requireAgencyText(agency.path, "path", agencyId)
       .split("/")
@@ -446,7 +478,7 @@ const loadAgencyRows = async (agencyId: string) =>
     ];
     const personnelLinkedCivilCases = targetOfficerIds.length
       ? (
-          await client.query(
+          await client.query<PersonnelLinkedCivilCaseRow>(
             `
               select
                 c.id as civil_case_id,
@@ -732,7 +764,7 @@ const buildAgencyDetail = async (agencyId: string) => {
   const personnelLinkedCivilCases = (
     Object.values(
       groupBy(data.personnelLinkedCivilCases || [], "civil_case_id"),
-    ) as any[][]
+    ) as (typeof data.personnelLinkedCivilCases)[]
   ).map((entries) => {
     const record = entries[0];
     return {
