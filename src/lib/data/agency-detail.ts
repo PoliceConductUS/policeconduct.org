@@ -1,6 +1,7 @@
 import { groupBy, mapBy } from "#src/lib/data.js";
 import { withDb } from "#src/lib/db.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { isEndedAssignment } from "./assignment-status.js";
 import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
 import { normalizeLicenseStatus, normalizeLicenseType } from "./licensing.js";
@@ -800,7 +801,11 @@ const buildAgencyDetail = async (agencyId: string) => {
           title: entry.target_title || null,
           startDate: entry.target_start_date || null,
           endDate: entry.target_end_date || null,
-          relationship: entry.target_end_date ? "former" : "current",
+          // Same end_date rule as the personnel profile and the roster, so one
+          // assignment cannot read "former" here and "current" there (INS-75).
+          relationship: isEndedAssignment({ end_date: entry.target_end_date })
+            ? "former"
+            : "current",
         },
       })),
     };

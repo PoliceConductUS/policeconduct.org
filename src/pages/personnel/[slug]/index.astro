@@ -10,6 +10,7 @@ import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
+import { selectHeadlineAssignment } from "#src/lib/data/assignment-status.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
@@ -172,15 +173,28 @@ const assignmentHistory = history
     agency: agenciesById[entry.agency_id],
   }))
   .filter((entry) => entry.agency);
-const activeAssignment =
-  [...history].reverse().find((entry) => !entry.end_date) || null;
-const currentAssignment = activeAssignment || history[history.length - 1];
+// Which assignment this page headlines is decided by `end_date`, never by
+// array position. `history[history.length - 1]` used to win here, which
+// published present-tense employment for assignments our own source records as
+// ended (INS-63 / INS-75).
+const headline = selectHeadlineAssignment(history);
+const currentAssignment = headline.assignment;
 if (!currentAssignment) {
   throw new Error(
     `Personnel ${data.officer.slug} is missing required agency assignment history.`,
   );
 }
-const hasCurrentAssignment = Boolean(activeAssignment);
+// An `end_date` we hold but cannot parse must not be turned into either claim.
+if (headline.endDateInvalid) {
+  throw new Error(
+    `Personnel ${data.officer.slug} assignment ${currentAssignment.id} has an unreadable end_date ${String(currentAssignment.end_date)}; refusing to assert an employment status.`,
+  );
+}
+const hasCurrentAssignment = headline.isCurrent;
+const activeAssignment = hasCurrentAssignment ? currentAssignment : null;
+const headlineEndDateDisplay = headline.endDate
+  ? formatShortDate(headline.endDate)
+  : null;
 const currentBadge = currentAssignment?.badge_number || null;
 const currentTitle =
   typeof currentAssignment?.title === "string"
@@ -273,7 +287,13 @@ const assignmentStatusLabel = hasCurrentAssignment
 const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${hasCurrentAssignment ? currentAgency!.name : `Most recent: ${currentAgency!.name}`} | PoliceConduct.org`;
 const pageDescription = isDeceased
   ? `${officerName} personnel profile with agency assignments, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
-  : `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}, agency assignments, public reports, coverage, and civil litigation records.`;
+  : // The snippet is the claim most readers see, so the qualifier and the end
+    // date have to survive into it rather than only appearing on the page.
+    `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}${
+      !hasCurrentAssignment && headlineEndDateDisplay
+        ? ` (assignment ended ${headlineEndDateDisplay})`
+        : ""
+    }, agency assignments, public reports, coverage, and civil litigation records.`;
 const pastEmployerSummary = assignmentHistory
   .filter((entry) => entry.id !== activeAssignment?.id)
   .map((entry) => ({
@@ -506,7 +526,17 @@ const person = buildPersonNode({
     : undefined,
   mainEntityOfPageId: profilePageId,
   deathDate: isDeceased ? String(deceasedOnValue) : undefined,
-  worksForId: organization ? organization["@id"] : undefined,
+  // `worksFor` is a present-tense employment assertion, so it is emitted only
+  // for an assignment our source still records as open. For an ended
+  // association the organization node stays in the graph (the page links to
+  // the agency, and that association is real) but no employment edge is made
+  // to it — a crawler that flattens the graph must not be able to read
+  // "currently employed by" off a separation we already hold. Encoding it as
+  // `worksFor` → `OrganizationRole` with an `endDate` was considered and
+  // rejected: consumers routinely flatten the Role wrapper, which would
+  // reintroduce exactly the false claim this fixes.
+  worksForId:
+    organization && hasCurrentAssignment ? organization["@id"] : undefined,
 });
 const structuredData = {
   "@context": "https://schema.org",
@@ -556,6 +586,14 @@ const structuredData = {
           )}
           <span aria-hidden="true"> · </span>
           {currentAgencyLocation}
+          {!hasCurrentAssignment && headlineEndDateDisplay ? (
+            <Fragment>
+              <span aria-hidden="true"> · </span>
+              <span class="personnel-assignment-ended">
+                assignment ended {headlineEndDateDisplay}
+              </span>
+            </Fragment>
+          ) : null}
         </p>
         <p class="personnel-profile-note">
           Combined career data aggregated across all known agencies.
@@ -623,6 +661,12 @@ const structuredData = {
               )}
             </dd>
           </div>
+          {!hasCurrentAssignment && headlineEndDateDisplay ? (
+            <div>
+              <dt>Assignment ended</dt>
+              <dd>{headlineEndDateDisplay}</dd>
+            </div>
+          ) : null}
           <div>
             <dt>Updated</dt>
             <dd>{formatShortDate(data.officer.updated_at)}</dd>
@@ -1094,6 +1138,12 @@ const structuredData = {
     font-weight: 750;
     line-height: 1.45;
     margin: 0.7rem 0 0;
+  }
+
+  /* The separation date is part of the employment claim, not a footnote to it,
+     so it keeps the headline's weight instead of being de-emphasised. */
+  .personnel-assignment-ended {
+    white-space: nowrap;
   }
 
   .personnel-profile-note {
