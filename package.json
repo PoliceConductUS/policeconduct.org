@@ -82,7 +82,7 @@
     "postcss": "^8.5.32",
     "prettier": "^3.9.10",
     "prettier-plugin-astro": "^1.1.2",
-    "supabase": "2.121.0",
+    "supabase": "2.122.0",
     "typescript-eslint": "^8.72.1"
   },
   "overrides": {
