@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import { createIndex, close } from "pagefind";
 
 // Known fixture agency also used by tests/e2e/prefill.spec.ts.
 const KNOWN_AGENCY = {
@@ -18,13 +19,41 @@ test.describe("masthead search (Pagefind-enhanced)", () => {
   test("typing a known agency name surfaces a result that navigates to its page", async ({
     page,
   }) => {
-    // Required coverage: build the site and serve dist/ before full validation.
-    // Missing generated assets are a verification blocker, never a passing skip.
-    const pagefindProbe = await page.request.get("/pagefind/pagefind.js");
-    expect(
-      pagefindProbe.ok(),
-      "Serve the built Pagefind index before validation",
-    ).toBe(true);
+    // Index the actual rendered agency page with the production search engine.
+    // This exercises search without building every page on the site.
+    const agencyPage = await page.request.get(KNOWN_AGENCY.path);
+    expect(agencyPage.ok()).toBe(true);
+    const { index, errors } = await createIndex();
+    expect(errors).toEqual([]);
+    if (!index) throw new Error("Pagefind did not create an index");
+    let files;
+    try {
+      const added = await index.addHTMLFile({
+        url: KNOWN_AGENCY.path,
+        content: await agencyPage.text(),
+      });
+      expect(added.errors).toEqual([]);
+      const generated = await index.getFiles();
+      expect(generated.errors).toEqual([]);
+      files = generated.files;
+    } finally {
+      await close();
+    }
+    await page.route("**/pagefind/**", async (route) => {
+      const path = new URL(route.request().url()).pathname.slice(
+        "/pagefind/".length,
+      );
+      const file = files.find((entry) => entry.path === path);
+      if (!file) throw new Error(`Missing generated Pagefind asset: ${path}`);
+      await route.fulfill({
+        body: Buffer.from(file.content),
+        contentType: path.endsWith(".js")
+          ? "text/javascript"
+          : path.endsWith(".wasm")
+            ? "application/wasm"
+            : "application/octet-stream",
+      });
+    });
 
     await page.goto(KNOWN_AGENCY.path);
 

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.describe("submission status", () => {
   const verifiedMessage =
-    "Your submission has been verified. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+    "Your submission has been verified and is now pending review. Please contact hello@policeconduct.org if you need help.";
   const verificationFailedMessage =
     "We could not verify your submission. Verification link expired. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
   const verificationExpiredMessage =
@@ -144,6 +144,9 @@ test.describe("submission status", () => {
     const result = page.locator("#verificationResult");
     await expect(result).toBeVisible();
     await expect(result).toContainText("Submission Verified");
+    await expect(result).toContainText(
+      "Your submission has been verified and is now pending review.",
+    );
     await expect(result).toContainText(
       "Submission ID: sub_e2e_fallback_message.",
     );

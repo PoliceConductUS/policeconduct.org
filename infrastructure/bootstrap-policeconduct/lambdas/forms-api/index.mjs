@@ -1656,7 +1656,7 @@ async function verifySubmissionLink(event, requestId) {
 
   return json(200, {
     message:
-      "Your submission has been verified. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.",
+      "Your submission has been verified and is now pending review. Please contact hello@policeconduct.org if you need help.",
     submissionId: record.submissionId,
   });
 }

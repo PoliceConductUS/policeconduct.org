@@ -138,7 +138,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
         body.textContent =
           typeof messageText === "string" && messageText.trim()
             ? messageText.trim()
-            : "Your submission has been verified.";
+            : "Your submission has been verified and is now pending review.";
 
         const details = document.createElement("p");
         details.className = "mb-0";
