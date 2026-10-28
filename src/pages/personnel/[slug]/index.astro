@@ -1,10 +1,6 @@
 ---
 import { annotationsEnabled } from "#src/lib/data/annotation-access.js";
-import {
-  assignmentMonths,
-  assignmentDuration,
-  isReportedDate,
-} from "#src/lib/data/annotation-values.js";
+import { isReportedDate } from "#src/lib/data/annotation-values.js";
 import DataAnnotations from "#src/components/DataAnnotations.astro";
 import CoverageLinks from "#src/components/CoverageLinks.astro";
 import { loadCoverageLinksForOfficer } from "#src/lib/data/coverage.js";
@@ -387,45 +383,7 @@ function formatAssignmentDate(value: string) {
     ? value
     : formatShortDate(value);
 }
-const formatMonthsDuration = (months: number) => {
-  const sign = months < 0 ? "−" : "";
-  const years = Math.floor(Math.abs(months) / 12);
-  const remainingMonths = Math.abs(months) % 12;
-  return years
-    ? `${sign}${years} yrs${remainingMonths ? `, ${remainingMonths} mos` : ""}`
-    : `${sign}${remainingMonths} mos`;
-};
-const countAssignmentMonths = (start?: string | null, end?: string | null) => {
-  if (annotationsEnabled) return assignmentMonths(start, end);
-  if (!start) {
-    return 0;
-  }
-  const startDate = new Date(start);
-  const endDate = end ? new Date(end) : new Date();
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-    return 0;
-  }
-  return Math.max(
-    0,
-    (endDate.getFullYear() - startDate.getFullYear()) * 12 +
-      endDate.getMonth() -
-      startDate.getMonth(),
-  );
-};
-const assignmentDurations = assignmentHistory.map((entry) =>
-  countAssignmentMonths(entry.start_date, entry.end_date),
-);
-const totalAssignmentMonths = assignmentDurations.some(
-  (value) => value === null,
-)
-  ? null
-  : assignmentDurations.reduce<number>(
-      (total, value) => total + (value ?? 0),
-      0,
-    );
-const totalTimeAsOfficer = totalAssignmentMonths
-  ? formatMonthsDuration(totalAssignmentMonths)
-  : unavailableValue;
+
 const personnelMetricCards: MetricCardItem[] = [
   {
     ...(associatedAgencyCount > 1
@@ -622,10 +580,6 @@ const structuredData = {
             <dd>
               <span class="personnel-status-pill">{statusLabel}</span>
             </dd>
-          </div>
-          <div>
-            <dt>{metricLabels.totalTimeAsOfficer}</dt>
-            <dd>{totalTimeAsOfficer}</dd>
           </div>
           {currentBadge ? (
             <div>
@@ -843,14 +797,6 @@ const structuredData = {
                         field="end_date"
                       />
                     )}
-                    {annotationsEnabled &&
-                      assignmentDuration(entry.start_date, entry.end_date) !==
-                        null && (
-                        <div>
-                          Reported duration:{" "}
-                          {assignmentDuration(entry.start_date, entry.end_date)}
-                        </div>
-                      )}
                   </td>
                   <td>
                     <span class="personnel-status-pill">

@@ -3,7 +3,7 @@
 - [x] Validate the generated contract and source-aware date display.
 - [x] Collect stored annotations with exact record owners and explicit provider attribution.
 - [x] Add central and authority static routes, filters, pagination, and complete CSV exports.
-- [x] Render findings beside affected records and retain signed tenure.
+- [x] Render findings beside affected records and show reported dates without calculated tenure.
 
 ## Verification
 

@@ -159,36 +159,3 @@ export function isReportedDate(value) {
     parsed.toISOString().slice(0, 10) === value
   );
 }
-
-export function assignmentMonths(start, end, today = new Date()) {
-  if (!isReportedDate(start) || (end != null && !isReportedDate(end)))
-    return null;
-  if (!start) return null;
-  const first = new Date(start);
-  const last = end === null || end === undefined ? today : new Date(end);
-  if (!Number.isFinite(first.getTime()) || !Number.isFinite(last.getTime()))
-    return null;
-  return (
-    (last.getUTCFullYear() - first.getUTCFullYear()) * 12 +
-    last.getUTCMonth() -
-    first.getUTCMonth()
-  );
-}
-
-export function assignmentDuration(start, end, today = new Date()) {
-  const months = assignmentMonths(start, end, today);
-  if (months === null) return null;
-  if (months === 0) {
-    const last = end == null ? today : new Date(end);
-    const days = Math.trunc(
-      (last.getTime() - new Date(start).getTime()) / 86400000,
-    );
-    return `${days < 0 ? "−" : ""}${Math.abs(days)} ${Math.abs(days) === 1 ? "day" : "days"}`;
-  }
-  const sign = months < 0 ? "−" : "";
-  const years = Math.floor(Math.abs(months) / 12);
-  const remaining = Math.abs(months) % 12;
-  return years
-    ? `${sign}${years} yrs${remaining ? `, ${remaining} mos` : ""}`
-    : `${sign}${remaining} mos`;
-}

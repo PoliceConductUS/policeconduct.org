@@ -7,8 +7,7 @@ import {
   filterAnnotations,
   annotationsCsv,
   annotationValue,
-  assignmentMonths,
-  assignmentDuration,
+  isReportedDate,
   reportedDate,
   paginateAnnotations,
 } from "../../src/lib/data/annotation-values.js";
@@ -70,10 +69,7 @@ test("CSV quotes source text and losslessly encodes non-string values", () => {
   );
   assert.equal(annotationValue(null), "null");
 });
-test("signed and long tenure are preserved; unparseable dates have no duration", () => {
-  assert.equal(assignmentMonths("2020-01-01", "2019-01-01"), -12);
-  assert.equal(assignmentMonths("1900-01-01", "2025-01-01"), 1500);
-  assert.equal(assignmentMonths("not a date", null), null);
+test("source evidence distinguishes invalid dates from corrected nulls", () => {
   assert.equal(
     reportedDate(null, {
       value: "invalid",
@@ -110,16 +106,9 @@ test("annotation staging is disabled unless explicitly enabled", () => {
   );
 });
 
-test("calendar overflow cannot create a calculated duration", () => {
-  assert.equal(assignmentMonths("2020-02-30", "2021-01-01"), null);
-  assert.equal(assignmentMonths("2020-01-01", "2021-02-30"), null);
-});
-
-test("negative spans within one month remain visible in days", () => {
-  assert.equal(assignmentDuration("2024-06-17", "2024-06-14"), "−3 days");
-  assert.equal(assignmentDuration("2024-01-22", "2024-01-17"), "−5 days");
-  assert.equal(assignmentDuration("1900-01-01", "2025-01-01"), "125 yrs");
-  assert.equal(assignmentDuration("invalid", "2025-01-01"), null);
+test("calendar overflow is not formatted as a valid source date", () => {
+  assert.equal(isReportedDate("2020-02-30"), false);
+  assert.equal(isReportedDate("2020-02-29"), true);
 });
 
 test("internal history preserves invalid end-date evidence instead of claiming current employment", () => {
@@ -158,10 +147,9 @@ test("internal history preserves invalid end-date evidence instead of claiming c
   }
 });
 
-test("database DATE objects retain their calendar date for duration calculation", () => {
+test("database DATE objects retain their calendar date for display", () => {
   const start = reportedDate(new Date(2024, 5, 17));
   const end = reportedDate(new Date(2024, 5, 14));
   assert.equal(start, "2024-06-17");
   assert.equal(end, "2024-06-14");
-  assert.equal(assignmentDuration(start, end), "−3 days");
 });

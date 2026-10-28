@@ -9,7 +9,7 @@ The intake change of the same name owns the annotation schema, source evidence, 
 - Authority attribution uses licensing_authority.source_namespaces, not employment or name matching.
 - Build finite source/type filter combinations, pagination, and full-result CSV files from one collection. Keep page 1 at the base URL.
 - Render text through Astro escaping. Use shared table/layout styles and accessible navigation labels. Keep supplied evidence inspectable as text; do not turn untrusted source strings into executable links.
-- Retain signed tenure; an unrepresentable effective date displays its literal value and has no calculated duration. Stored-null end dates use persisted source evidence to distinguish invalid literals from open employment.
+- Show reported dates without calculated tenure; an unrepresentable effective date displays its literal value. Stored-null end dates use persisted source evidence to distinguish invalid literals from open employment.
 
 ## Internal staging
 
