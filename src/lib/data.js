@@ -1,4 +1,3 @@
-import { annotationsEnabled } from "./data/annotation-access.js";
 import { parseSourceValues, reportedDate } from "./data/annotation-values.js";
 export const groupBy = (rows, key) =>
   rows.reduce((acc, row) => {
@@ -27,7 +26,6 @@ export const mapBy = (rows, key) =>
 export const normalizeAgencyHistory = (entries) =>
   entries
     .map((entry) => {
-      if (!annotationsEnabled) return entry;
       const evidence = parseSourceValues(entry.data_source_values);
       return {
         ...entry,

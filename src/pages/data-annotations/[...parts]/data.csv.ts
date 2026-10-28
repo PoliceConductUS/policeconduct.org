@@ -1,10 +1,8 @@
-import { annotationsEnabled } from "#src/lib/data/annotation-access.js";
 import type { APIRoute } from "astro";
 import { loadDataAnnotations } from "#src/lib/data/data-annotations.js";
 import { annotationFilters } from "#src/lib/data/annotation-views.js";
 import { annotationsCsv } from "#src/lib/data/annotation-values.js";
 export async function getStaticPaths() {
-  if (!annotationsEnabled) return [];
   return annotationFilters(await loadDataAnnotations()).map(({ parts }) => ({
     params: { parts: parts || undefined },
   }));

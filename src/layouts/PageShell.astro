@@ -1,5 +1,4 @@
 ---
-import { annotationsEnabled } from "#src/lib/data/annotation-access.js";
 import { loadDataAnnotations } from "#src/lib/data/data-annotations.js";
 import DataAnnotations from "#src/components/DataAnnotations.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
@@ -58,12 +57,11 @@ const {
   lede,
   searchable = true,
 } = Astro.props;
-const recordAnnotations =
-  annotationsEnabled && pagePath
-    ? (await loadDataAnnotations()).filter(
-        (entry) => entry.record_url === pagePath,
-      )
-    : [];
+const recordAnnotations = pagePath
+  ? (await loadDataAnnotations()).filter(
+      (entry) => entry.record_url === pagePath,
+    )
+  : [];
 const hasAside = Astro.slots.has("aside");
 const hasHero = Astro.slots.has("hero");
 ---

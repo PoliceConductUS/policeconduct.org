@@ -1,5 +1,4 @@
 import { spawnSync } from "node:child_process";
-import { internalAnnotationsEnabled } from "../../src/lib/data/annotation-access.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -90,28 +89,12 @@ test("source evidence distinguishes invalid dates from corrected nulls", () => {
   );
 });
 
-test("annotation staging is disabled unless explicitly enabled", () => {
-  assert.equal(internalAnnotationsEnabled({}), false);
-  assert.equal(
-    internalAnnotationsEnabled({ DATA_ANNOTATIONS_INTERNAL: "0" }),
-    false,
-  );
-  assert.equal(
-    internalAnnotationsEnabled({ DATA_ANNOTATIONS_INTERNAL: "true" }),
-    false,
-  );
-  assert.equal(
-    internalAnnotationsEnabled({ DATA_ANNOTATIONS_INTERNAL: "1" }),
-    true,
-  );
-});
-
 test("calendar overflow is not formatted as a valid source date", () => {
   assert.equal(isReportedDate("2020-02-30"), false);
   assert.equal(isReportedDate("2020-02-29"), true);
 });
 
-test("internal history preserves invalid end-date evidence instead of claiming current employment", () => {
+test("history preserves invalid end-date evidence instead of claiming current employment", () => {
   const moduleUrl = new URL("../../src/lib/data.js", import.meta.url).href;
   const row = {
     id: "synthetic",
@@ -126,25 +109,20 @@ test("internal history preserves invalid end-date evidence instead of claiming c
       },
     },
   };
-  for (const enabled of ["0", "1"]) {
-    const result = spawnSync(
-      process.execPath,
-      [
-        "--input-type=module",
-        "-e",
-        `import { normalizeAgencyHistory } from ${JSON.stringify(moduleUrl)}; console.log(JSON.stringify(normalizeAgencyHistory([${JSON.stringify(row)}])));`,
-      ],
-      {
-        env: { ...process.env, DATA_ANNOTATIONS_INTERNAL: enabled },
-        encoding: "utf8",
-      },
-    );
-    assert.equal(result.status, 0, result.stderr);
-    assert.equal(
-      JSON.parse(result.stdout)[0].end_date,
-      enabled === "1" ? "not a date" : null,
-    );
-  }
+  const result = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      `import { normalizeAgencyHistory } from ${JSON.stringify(moduleUrl)}; console.log(JSON.stringify(normalizeAgencyHistory([${JSON.stringify(row)}])));`,
+    ],
+    {
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout)[0].end_date, "not a date");
 });
 
 test("database DATE objects retain their calendar date for display", () => {

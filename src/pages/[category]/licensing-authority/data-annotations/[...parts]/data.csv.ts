@@ -1,5 +1,4 @@
 import type { APIRoute } from "astro";
-import { annotationsEnabled } from "#src/lib/data/annotation-access.js";
 import { loadDataAnnotations } from "#src/lib/data/data-annotations.js";
 import {
   loadStateAuthorityPaths,
@@ -9,7 +8,6 @@ import {
 import { annotationFilters } from "#src/lib/data/annotation-views.js";
 import { annotationsCsv } from "#src/lib/data/annotation-values.js";
 export async function getStaticPaths() {
-  if (!annotationsEnabled) return [];
   const entries = await loadDataAnnotations();
   return (
     await Promise.all(
@@ -26,7 +24,6 @@ export async function getStaticPaths() {
   ).flat();
 }
 export const GET: APIRoute = async ({ params }) => {
-  if (!annotationsEnabled) return new Response(null, { status: 404 });
   const authority = await loadStateAuthority(`/${params.category}/`);
   const filter = annotationFilters(
     await loadDataAnnotations(),

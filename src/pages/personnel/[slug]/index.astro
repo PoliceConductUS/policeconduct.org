@@ -1,5 +1,4 @@
 ---
-import { annotationsEnabled } from "#src/lib/data/annotation-access.js";
 import { isReportedDate } from "#src/lib/data/annotation-values.js";
 import DataAnnotations from "#src/components/DataAnnotations.astro";
 import CoverageLinks from "#src/components/CoverageLinks.astro";
@@ -379,9 +378,7 @@ const formatCount = (value: number) =>
   new Intl.NumberFormat("en-US").format(value);
 const unavailableValue = "--";
 function formatAssignmentDate(value: string) {
-  return annotationsEnabled && !isReportedDate(value)
-    ? value
-    : formatShortDate(value);
+  return !isReportedDate(value) ? value : formatShortDate(value);
 }
 
 const personnelMetricCards: MetricCardItem[] = [
@@ -780,23 +777,19 @@ const structuredData = {
                     {entry.start_date
                       ? formatAssignmentDate(entry.start_date)
                       : ""}
-                    {annotationsEnabled && (
-                      <DataAnnotations
-                        annotations={entry.data_annotations}
-                        field="start_date"
-                      />
-                    )}
+                    <DataAnnotations
+                      annotations={entry.data_annotations}
+                      field="start_date"
+                    />
                   </td>
                   <td>
                     {entry.end_date != null
                       ? formatAssignmentDate(entry.end_date)
                       : "Present"}
-                    {annotationsEnabled && (
-                      <DataAnnotations
-                        annotations={entry.data_annotations}
-                        field="end_date"
-                      />
-                    )}
+                    <DataAnnotations
+                      annotations={entry.data_annotations}
+                      field="end_date"
+                    />
                   </td>
                   <td>
                     <span class="personnel-status-pill">

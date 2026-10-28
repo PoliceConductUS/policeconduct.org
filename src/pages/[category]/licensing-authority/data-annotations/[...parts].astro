@@ -1,5 +1,4 @@
 ---
-import { annotationsEnabled } from "#src/lib/data/annotation-access.js";
 import PageShell from "#src/layouts/PageShell.astro";
 import DataAnnotationIndex from "#src/components/DataAnnotationIndex.astro";
 import { loadDataAnnotations } from "#src/lib/data/data-annotations.js";
@@ -14,7 +13,6 @@ import {
   annotationHref,
 } from "#src/lib/data/annotation-views.js";
 export async function getStaticPaths() {
-  if (!annotationsEnabled) return [];
   const entries = await loadDataAnnotations();
   return (
     await Promise.all(

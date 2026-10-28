@@ -1,4 +1,3 @@
-import { annotationsEnabled } from "./annotation-access.js";
 import { withDb } from "#src/lib/db.js";
 import contract from "./annotation-contract.json";
 import { parseAnnotations, type AnnotationEntry } from "./annotation-values.js";
@@ -187,7 +186,6 @@ async function collect(client: PoolClient): Promise<AnnotationEntry[]> {
 }
 let collected: Promise<AnnotationEntry[]> | undefined;
 export function loadDataAnnotations() {
-  if (!annotationsEnabled) return Promise.resolve([] as AnnotationEntry[]);
   collected ??= withDb(collect);
   return collected;
 }

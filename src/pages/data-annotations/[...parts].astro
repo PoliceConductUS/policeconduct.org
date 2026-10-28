@@ -1,5 +1,4 @@
 ---
-import { annotationsEnabled } from "#src/lib/data/annotation-access.js";
 import PageShell from "#src/layouts/PageShell.astro";
 import DataAnnotationIndex from "#src/components/DataAnnotationIndex.astro";
 import { loadDataAnnotations } from "#src/lib/data/data-annotations.js";
@@ -10,7 +9,6 @@ import {
 } from "#src/lib/data/annotation-views.js";
 import "#src/styles/civic-ledger.css";
 export async function getStaticPaths() {
-  if (!annotationsEnabled) return [];
   return annotationPages(await loadDataAnnotations()).map(({ parts }) => ({
     params: { parts: parts || undefined },
   }));

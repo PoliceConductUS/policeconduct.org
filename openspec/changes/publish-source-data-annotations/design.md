@@ -11,6 +11,6 @@ The intake change of the same name owns the annotation schema, source evidence, 
 - Render text through Astro escaping. Use shared table/layout styles and accessible navigation labels. Keep supplied evidence inspectable as text; do not turn untrusted source strings into executable links.
 - Show reported dates without calculated tenure; an unrepresentable effective date displays its literal value. Stored-null end dates use persisted source evidence to distinguish invalid literals from open employment.
 
-## Internal staging
+## Normal rendering
 
-`DATA_ANNOTATIONS_INTERNAL=1` enables the new collection, routes, links, notes, and date-evidence display for internal testing. It is disabled by default. This temporary staging boundary allowed local implementation after automatic review rejected public rendering. Enabling public rollout remains a separate release decision.
+Annotations use the normal collection, routes, links, notes, and date-evidence display without a separate enablement switch. Existing NO_PERSONNEL controls remain. Merge and deployment remain separate actions.

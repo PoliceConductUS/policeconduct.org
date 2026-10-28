@@ -1,9 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { withDb } from "../../src/lib/db.js";
-import {
-  annotationsEnabled,
-  currentAssignmentSql,
-} from "../../src/lib/data/annotation-access.js";
+import { currentAssignmentSql } from "../../src/lib/data/annotation-access.js";
 
 test("current assignment SQL distinguishes open dates from unrepresentable source dates", async () => {
   const rows = await withDb(
@@ -20,11 +17,7 @@ test("current assignment SQL distinguishes open dates from unrepresentable sourc
   `)
       ).rows,
   );
-  expect(rows.map((row) => row.id)).toEqual(
-    annotationsEnabled
-      ? ["explicit-null", "open"]
-      : ["empty", "explicit-null", "invalid", "open"],
-  );
+  expect(rows.map((row) => row.id)).toEqual(["explicit-null", "open"]);
 });
 
 test("personnel profiles show reported dates without calculated tenure", async ({
