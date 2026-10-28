@@ -1,3 +1,4 @@
+import { currentAssignmentSql } from "../src/lib/data/annotation-access.js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { statSync } from "node:fs";
 import path from "node:path";
@@ -240,7 +241,7 @@ const redirects = await withDb(async (client) => {
             lower(a.state) as category
           from public.agency_personnel ao
           join public.agency a on a.id = ao.agency_id
-          where ao.end_date is null
+          where ${currentAssignmentSql("ao")}
             and a.state is not null
           order by ao.personnel_id, ao.start_date desc
         )
@@ -257,7 +258,7 @@ const redirects = await withDb(async (client) => {
       `
         select a.id, a.slug, lp.path as location_path,
           (select count(*) from public.agency_personnel ap
-           where ap.agency_id = a.id and ap.end_date is null) as assignment_count
+           where ap.agency_id = a.id and ${currentAssignmentSql("ap")} ) as assignment_count
         from public.agency a
         join public.location_path lp
           on lp.location_path_id = a.location_path_id
