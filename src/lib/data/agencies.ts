@@ -1,3 +1,4 @@
+import { currentAssignmentSql } from "./annotation-access.js";
 import { withDb } from "#src/lib/db.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
 import type { AgencyFinderResult, AgencySummary } from "./types.js";
@@ -61,7 +62,7 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
              agency_id,
              count(distinct personnel_id) as active_personnel_count
            from public.agency_personnel
-           where end_date is null
+           where ${currentAssignmentSql()}
            group by agency_id
          ),
          report_counts as (

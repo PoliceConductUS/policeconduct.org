@@ -180,7 +180,7 @@ const assignmentHistory = history
   }))
   .filter((entry) => entry.agency);
 const activeAssignment =
-  [...history].reverse().find((entry) => !entry.end_date) || null;
+  [...history].reverse().find((entry) => entry.end_date == null) || null;
 const currentAssignment = activeAssignment || history[history.length - 1];
 if (!currentAssignment) {
   throw new Error(
@@ -290,7 +290,7 @@ const pastEmployerSummary = assignmentHistory
     const segments = [entry.agency?.name];
     const dateRange = [
       entry.start_date ? formatAssignmentDate(entry.start_date) : null,
-      entry.end_date ? formatAssignmentDate(entry.end_date) : "Current",
+      entry.end_date != null ? formatAssignmentDate(entry.end_date) : "Current",
     ]
       .filter(Boolean)
       .join(" to ");
@@ -834,7 +834,7 @@ const structuredData = {
                     )}
                   </td>
                   <td>
-                    {entry.end_date
+                    {entry.end_date != null
                       ? formatAssignmentDate(entry.end_date)
                       : "Present"}
                     {annotationsEnabled && (
@@ -854,7 +854,7 @@ const structuredData = {
                   </td>
                   <td>
                     <span class="personnel-status-pill">
-                      {entry.end_date ? "Completed" : "Active"}
+                      {entry.end_date != null ? "Completed" : "Active"}
                     </span>
                   </td>
                 </tr>

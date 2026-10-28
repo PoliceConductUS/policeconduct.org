@@ -1,4 +1,4 @@
-import { annotationsEnabled } from "#src/lib/data/annotation-access.js";
+import { currentAssignmentSql } from "#src/lib/data/annotation-access.js";
 import { withDb } from "#src/lib/db.js";
 import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
@@ -48,11 +48,7 @@ export const loadPersonnelSummaries = async (
       }[];
     }> => {
       const params: Array<string> = [];
-      const filters = ["ao.end_date is null"];
-      if (annotationsEnabled)
-        filters.push(
-          "(ao.data_source_values->'end_date'->'effective_value' is null or ao.data_source_values->'end_date'->'effective_value' = 'null'::jsonb)",
-        );
+      const filters = [currentAssignmentSql("ao")];
       if (agencyId) {
         params.push(agencyId);
         filters.push(`ao.agency_id = $${params.length}`);
@@ -153,7 +149,9 @@ export const loadPersonnelSummaries = async (
       const history = normalizeAgencyHistory<
         (typeof data.agencyOfficers)[number]
       >(agencyOfficersByOfficer[officerId] || []);
-      const activeAssignments = history.filter((entry) => !entry.end_date);
+      const activeAssignments = history.filter(
+        (entry) => entry.end_date == null,
+      );
       if (activeAssignments.length === 0) {
         return null;
       }
