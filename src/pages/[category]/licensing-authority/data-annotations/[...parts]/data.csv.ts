@@ -16,6 +16,7 @@ export async function getStaticPaths() {
         return annotationFilters(
           entries,
           await loadAuthorityNamespaces(authority.id),
+          authority.id,
         ).map(({ parts }) => ({
           params: { ...params, parts: parts || undefined },
         }));
@@ -28,6 +29,7 @@ export const GET: APIRoute = async ({ params }) => {
   const filter = annotationFilters(
     await loadDataAnnotations(),
     await loadAuthorityNamespaces(authority.id),
+    authority.id,
   ).find((filter) => filter.parts === (params.parts || ""));
   if (!filter) throw new Error("Unknown authority annotation export.");
   return new Response(annotationsCsv(filter.entries), {

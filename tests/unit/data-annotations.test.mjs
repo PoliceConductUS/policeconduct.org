@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   parseAnnotations,
+  authorityAnnotations,
   filterAnnotations,
   annotationsCsv,
   annotationValue,
@@ -130,4 +131,33 @@ test("database DATE objects retain their calendar date for display", () => {
   const end = reportedDate(new Date(2024, 5, 14));
   assert.equal(start, "2024-06-17");
   assert.equal(end, "2024-06-14");
+});
+
+test("authority views include directly owned manual exclusions without claiming other manual records", () => {
+  const entries = [
+    {
+      source_namespace: "provider",
+      entity_kind: "Agency",
+      canonical_id: "agency",
+    },
+    {
+      source_namespace: "manual",
+      entity_kind: "LicensingAuthority",
+      canonical_id: "board",
+    },
+    {
+      source_namespace: "manual",
+      entity_kind: "LicensingAuthority",
+      canonical_id: "other",
+    },
+    {
+      source_namespace: "manual",
+      entity_kind: "Agency",
+      canonical_id: "board",
+    },
+  ];
+  assert.deepEqual(
+    authorityAnnotations(entries, ["provider"], "board"),
+    entries.slice(0, 2),
+  );
 });

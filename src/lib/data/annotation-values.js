@@ -159,3 +159,13 @@ export function isReportedDate(value) {
     parsed.toISOString().slice(0, 10) === value
   );
 }
+
+/** @param {AnnotationEntry[]} entries */
+export function authorityAnnotations(entries, namespaces, authorityId) {
+  return entries.filter(
+    (entry) =>
+      namespaces.includes(entry.source_namespace) ||
+      (entry.entity_kind === "LicensingAuthority" &&
+        entry.canonical_id === authorityId),
+  );
+}

@@ -1,5 +1,6 @@
 import {
   filterAnnotations,
+  authorityAnnotations,
   paginateAnnotations,
   type AnnotationEntry,
 } from "./annotation-values.js";
@@ -8,11 +9,12 @@ const types = ["", "warning", "error", "correction"];
 export function annotationFilters(
   entries: AnnotationEntry[],
   namespaces?: string[],
+  authorityId?: string,
 ) {
   const eligible =
     namespaces === undefined
       ? entries
-      : entries.filter((entry) => namespaces.includes(entry.source_namespace));
+      : authorityAnnotations(entries, namespaces, authorityId);
   const providers =
     namespaces === undefined
       ? ["", ...new Set(eligible.map((entry) => entry.source_namespace))]
@@ -37,8 +39,9 @@ export function annotationFilters(
 export function annotationPages(
   entries: AnnotationEntry[],
   namespaces?: string[],
+  authorityId?: string,
 ) {
-  return annotationFilters(entries, namespaces).flatMap((filter) =>
+  return annotationFilters(entries, namespaces, authorityId).flatMap((filter) =>
     Array.from(
       { length: Math.max(1, Math.ceil(filter.entries.length / PAGE_SIZE)) },
       (_, index) => ({

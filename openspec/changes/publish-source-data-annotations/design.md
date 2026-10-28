@@ -14,3 +14,5 @@ The intake change of the same name owns the annotation schema, source evidence, 
 ## Normal rendering
 
 Annotations use the normal collection, routes, links, notes, and date-evidence display without a separate enablement switch. Existing NO_PERSONNEL controls remain. Merge and deployment remain separate actions.
+
+Authority HTML views and CSV exports include annotations directly attached to that authority, regardless of the annotation's source namespace. This displays explicitly assigned manual exclusions without treating all manual records as that authority's source data.
