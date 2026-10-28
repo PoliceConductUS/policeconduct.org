@@ -7,7 +7,6 @@ import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
 import { formatShortDate } from "#src/lib/format.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
-import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import {
   personnelTopics,
   type PersonnelTopic,
@@ -23,7 +22,6 @@ export async function getStaticPaths() {
         `
           select
             o.slug,
-            count(distinct ao.agency_id) as agency_count,
             count(distinct ro.review_id) as report_count,
             count(distinct cco.civil_case_id) as civil_case_count
           from public.personnel o
@@ -41,15 +39,11 @@ export async function getStaticPaths() {
   });
   return officers.flatMap(
     (officer: {
-      agency_count: string | number;
       civil_case_count: string | number;
       report_count: string | number;
       slug: string;
     }) => {
       const availableTopics: PersonnelTopic[] = [];
-      if (Number(officer.agency_count) > 1) {
-        availableTopics.push("agencies");
-      }
       if (Number(officer.report_count) > 0) {
         availableTopics.push("reports");
       }
@@ -76,32 +70,17 @@ const data = await withDb(async (client) => {
   if (!officer) {
     throw new Error(`Personnel ${slug} not found.`);
   }
-  const assignments = (
+  const assignmentIds = (
     await client.query(
       `
-        select
-          ao.*,
-          a.name as agency_name,
-          a.slug as agency_slug,
-          lp.display_name as place_name,
-          split_part(lp.path, '/', 2) as state_or_territory_slug,
-          lp.path as location_path,
-          bpp.page_type
+        select ao.id
         from public.agency_personnel ao
-        join public.agency a on a.id = ao.agency_id
-        join public.location_path lp on lp.location_path_id = a.location_path_id
-        left join public.build_page_payload bpp
-          on bpp.page_type = 'agency'
-         and bpp.entity_id = a.id
         where ao.personnel_id = $1
-        order by ao.start_date desc nulls last, a.name asc
+        order by ao.id
       `,
       [officer.id],
     )
-  ).rows;
-  const assignmentIds = assignments.map(
-    (assignment: { id: string }) => assignment.id,
-  );
+  ).rows.map((assignment: { id: string }) => assignment.id);
   const reports = assignmentIds.length
     ? (
         await client.query(
@@ -131,7 +110,7 @@ const data = await withDb(async (client) => {
         )
       ).rows
     : [];
-  return { assignments, civilCases, officer, reports };
+  return { civilCases, officer, reports };
 });
 
 const officerName = [data.officer.first_name, data.officer.last_name]
@@ -140,13 +119,11 @@ const officerName = [data.officer.first_name, data.officer.last_name]
 const pagePath = `/personnel/${slug}/${topicKey}/`;
 const pageTitle = `${officerName} ${topicConfig.label}`;
 const countValue =
-  topicKey === "agencies"
-    ? data.assignments.length
-    : topicKey === "civil-cases"
-      ? data.civilCases.length
-      : topicKey === "reports"
-        ? data.reports.length
-        : 0;
+  topicKey === "civil-cases"
+    ? data.civilCases.length
+    : topicKey === "reports"
+      ? data.reports.length
+      : 0;
 const metricCards = [
   {
     ...topicConfig.metric,
@@ -207,51 +184,7 @@ const fallbackChart =
     <MetricGrid metrics={metricCards} columns="four" />
 
     <div class="entity-chart-grid">
-      {topicKey === "agencies" ? (
-        <DataPanel title={topicConfig.label} className="entity-table-panel">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Agency</th>
-                <th scope="col">Role</th>
-                <th scope="col">Start Date</th>
-                <th scope="col">End Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.assignments.map((assignment) => (
-                <tr>
-                  <th scope="row">
-                    {assignment.page_type === "agency" ? (
-                      <a
-                        href={requireAgencyCanonicalPath({
-                          location_path: assignment.location_path,
-                          slug: assignment.agency_slug,
-                        })}
-                      >
-                        {assignment.agency_name}
-                      </a>
-                    ) : (
-                      assignment.agency_name
-                    )}
-                  </th>
-                  <td>{assignment.title}</td>
-                  <td>
-                    {assignment.start_date
-                      ? formatShortDate(assignment.start_date)
-                      : ""}
-                  </td>
-                  <td>
-                    {assignment.end_date
-                      ? formatShortDate(assignment.end_date)
-                      : ""}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </DataPanel>
-      ) : topicKey === "reports" ? (
+      {topicKey === "reports" ? (
         <DataPanel title={topicConfig.label} className="entity-table-panel">
           <table>
             <thead>

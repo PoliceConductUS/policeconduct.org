@@ -408,15 +408,11 @@ const totalTimeAsOfficer = totalAssignmentMonths
   : unavailableValue;
 const personnelMetricCards: MetricCardItem[] = [
   {
-    ...(associatedAgencyCount > 1
-      ? {
-          action: {
-            href: `${officerPath}agencies/`,
-            kind: "link" as const,
-            label: "View details",
-          },
-        }
-      : {}),
+    action: {
+      href: "#agency-assignments",
+      kind: "link" as const,
+      label: "View details",
+    },
     accent: metricVisuals.agencies.accent,
     icon: metricVisuals.agencies.icon,
     label: metricVisuals.agencies.label,
@@ -754,7 +750,10 @@ const structuredData = {
       ) : null}
     </section>
 
-    <section class="personnel-panel personnel-panel-wide">
+    <section
+      id="agency-assignments"
+      class="personnel-panel personnel-panel-wide"
+    >
       <div class="personnel-panel-heading">
         <h2>{metricLabels.agencies}</h2>
         <p>Known agency assignments linked to this profile.</p>
