@@ -1,3 +1,5 @@
+import { annotationsEnabled } from "./data/annotation-access.js";
+import { parseSourceValues, reportedDate } from "./data/annotation-values.js";
 export const groupBy = (rows, key) =>
   rows.reduce((acc, row) => {
     const value = row?.[key];
@@ -17,9 +19,24 @@ export const mapBy = (rows, key) =>
     return acc;
   }, {});
 
+/**
+ * @template T
+ * @param {T[]} entries
+ * @returns {T[]}
+ */
 export const normalizeAgencyHistory = (entries) =>
-  [...entries].sort((a, b) => {
-    const aDate = a.start_date ? new Date(a.start_date) : new Date(0);
-    const bDate = b.start_date ? new Date(b.start_date) : new Date(0);
-    return aDate - bDate;
-  });
+  entries
+    .map((entry) => {
+      if (!annotationsEnabled) return entry;
+      const evidence = parseSourceValues(entry.data_source_values);
+      return {
+        ...entry,
+        start_date: reportedDate(entry.start_date, evidence.start_date),
+        end_date: reportedDate(entry.end_date, evidence.end_date),
+      };
+    })
+    .sort((a, b) => {
+      const aDate = a.start_date ? new Date(a.start_date) : new Date(0);
+      const bDate = b.start_date ? new Date(b.start_date) : new Date(0);
+      return aDate - bDate;
+    });

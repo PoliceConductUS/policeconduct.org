@@ -1,0 +1,50 @@
+---
+import {
+  parseAnnotations,
+  annotationValue,
+} from "#src/lib/data/annotation-values.js";
+interface Props {
+  annotations: unknown;
+  field?: string;
+}
+const { annotations, field } = Astro.props;
+const entries = parseAnnotations(annotations).filter(
+  (entry) => field === undefined || entry.field === field,
+);
+const labels = {
+  warning: "Our warning",
+  error: "Data error",
+  correction: "Our correction",
+};
+---
+
+{entries.length > 0 && (
+  <ul class="list-unstyled mb-0">
+    {entries.map((entry) => (
+      <li class="mt-2">
+        <strong>
+          {labels[entry.type]}
+          {field === undefined ? ` (${entry.field})` : ""}:
+        </strong>{" "}
+        {entry.message}
+        <div>
+          Reported value: <span>{annotationValue(entry.value)}</span>
+        </div>
+        {entry.type === "correction" && (
+          <div>
+            Replacement: <span>{annotationValue(entry.replacement_value)}</span>
+          </div>
+        )}
+        <div>
+          Source: {entry.source_namespace} · Record {entry.source_record_id}
+        </div>
+        {entry.evidence !== undefined && (
+          <details>
+            <summary>Supporting evidence</summary>
+            <pre>{JSON.stringify(entry.evidence,null,2)}</pre>
+          </details>
+        )}
+      </li>
+    ))}
+  </ul>
+)}

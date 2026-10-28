@@ -1,4 +1,7 @@
 ---
+import { annotationsEnabled } from "#src/lib/data/annotation-access.js";
+import { loadDataAnnotations } from "#src/lib/data/data-annotations.js";
+import DataAnnotations from "#src/components/DataAnnotations.astro";
 import SiteLayout from "#src/layouts/SiteLayout.astro";
 import Breadcrumb from "#src/components/Breadcrumb.astro";
 import PageHeader from "#src/components/PageHeader.astro";
@@ -55,6 +58,12 @@ const {
   lede,
   searchable = true,
 } = Astro.props;
+const recordAnnotations =
+  annotationsEnabled && pagePath
+    ? (await loadDataAnnotations()).filter(
+        (entry) => entry.record_url === pagePath,
+      )
+    : [];
 const hasAside = Astro.slots.has("aside");
 const hasHero = Astro.slots.has("hero");
 ---
@@ -90,6 +99,38 @@ const hasHero = Astro.slots.has("hero");
           </div>
         )}
         <slot />
+        {recordAnnotations.length > 0 && (
+          <section aria-label="Source data annotations" class="mt-4">
+            <h2>Data notes</h2>
+            <DataAnnotations
+              annotations={recordAnnotations.map(
+                ({
+                  field,
+                  value,
+                  type,
+                  message,
+                  source_namespace,
+                  source_record_id,
+                  replacement_value,
+                  evidence,
+                }) => ({
+                  field,
+                  value,
+                  type,
+                  message,
+                  source_namespace,
+                  source_record_id,
+                  ...(type === "correction"
+                    ? {
+                        replacement_value,
+                        ...(evidence === undefined ? {} : { evidence }),
+                      }
+                    : {}),
+                }),
+              )}
+            />
+          </section>
+        )}
       </div>
     </section>
   </main>

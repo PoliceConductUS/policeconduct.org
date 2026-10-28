@@ -1,0 +1,133 @@
+---
+import { annotationValue } from "#src/lib/data/annotation-values.js";
+import {
+  annotationFilters,
+  annotationHref,
+  type annotationPages,
+} from "#src/lib/data/annotation-views.js";
+interface Props {
+  base: string;
+  view: ReturnType<typeof annotationPages>[number];
+  filters: ReturnType<typeof annotationFilters>;
+}
+const { base, view, filters } = Astro.props;
+const pageHref = (page: number) =>
+  annotationHref(
+    base,
+    [view.filterParts, page === 1 ? "" : `page/${page}`]
+      .filter(Boolean)
+      .join("/"),
+  );
+---
+
+<nav aria-label="Filter data notes" class="mb-3">
+  <p>
+    Show:{" "}
+    {filters
+      .filter((filter) => filter.provider === view.provider)
+      .map((filter) => (
+        <a
+          class="me-3"
+          href={annotationHref(base, filter.parts)}
+          aria-current={filter.type === view.type ? "page" : undefined}
+        >
+          {filter.type || "All types"}
+        </a>
+      ))}
+  </p>
+  {filters.some((filter) => filter.provider) && (
+    <p>
+      Source:{" "}
+      {filters
+        .filter((filter) => filter.type === view.type)
+        .map((filter) => (
+          <a
+            class="me-3"
+            href={annotationHref(base, filter.parts)}
+            aria-current={
+              filter.provider === view.provider ? "page" : undefined
+            }
+          >
+            {filter.provider || "All sources"}
+          </a>
+        ))}
+    </p>
+  )}
+</nav>
+<p>
+  {view.entries.length.toLocaleString("en-US")} matching notes.{" "}
+  <a href={`${annotationHref(base, view.filterParts)}data.csv`} download>
+    Download all matching notes (CSV)
+  </a>
+</p>
+{view.rows.length ? (
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Record</th>
+          <th scope="col">Field and value</th>
+          <th scope="col">Note</th>
+          <th scope="col">Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        {view.rows.map((entry) => (
+          <tr>
+            <td>
+              <a href={entry.record_url}>{entry.record_label}</a>
+            </td>
+            <td>
+              {entry.field}
+              <div>{annotationValue(entry.value)}</div>
+              {entry.type === "correction" && (
+                <div>
+                  Replacement: {annotationValue(entry.replacement_value)}
+                </div>
+              )}
+            </td>
+            <td>
+              <strong>
+                {entry.type === "warning"
+                  ? "Our warning"
+                  : entry.type === "error"
+                    ? "Data error"
+                    : "Our correction"}
+              </strong>
+              <div>{entry.message}</div>
+              {entry.evidence !== undefined && (
+                <details>
+                  <summary>Supporting evidence</summary>
+                  <pre>{JSON.stringify(entry.evidence,null,2)}</pre>
+                </details>
+              )}
+            </td>
+            <td>
+              {entry.source_provider}
+              <div>{entry.source_record_id}</div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+) : (
+  <p>No data notes match these filters.</p>
+)}
+{view.pageCount > 1 && (
+  <nav aria-label="Data notes pages">
+    <ul class="pagination">
+      {Array.from({ length: view.pageCount }, (_, i) => (
+        <li class:list={["page-item", { active: view.page === i + 1 }]}>
+          <a
+            class="page-link"
+            href={pageHref(i + 1)}
+            aria-current={view.page === i + 1 ? "page" : undefined}
+          >
+            {i + 1}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+)}

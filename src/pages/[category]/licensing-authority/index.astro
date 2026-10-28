@@ -1,4 +1,5 @@
 ---
+import { annotationsEnabled } from "#src/lib/data/annotation-access.js";
 import PageShell from "#src/layouts/PageShell.astro";
 import LicensingAuthorityRecords from "#src/components/LicensingAuthorityRecords.astro";
 import {
@@ -30,6 +31,13 @@ const pagePath = `${authority.statePath}licensing-authority/`;
     <a slot="actions" href={authority.website} rel="noopener">
       Official website
     </a>
+  )}
+  {annotationsEnabled && (
+    <p>
+      <a href={`${pagePath}data-annotations/`}>
+        Source data notes and downloads
+      </a>
+    </p>
   )}
   <LicensingAuthorityRecords {...records} />
 </PageShell>

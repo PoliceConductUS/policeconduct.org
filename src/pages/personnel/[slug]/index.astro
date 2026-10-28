@@ -1,4 +1,11 @@
 ---
+import { annotationsEnabled } from "#src/lib/data/annotation-access.js";
+import {
+  assignmentMonths,
+  assignmentDuration,
+  isReportedDate,
+} from "#src/lib/data/annotation-values.js";
+import DataAnnotations from "#src/components/DataAnnotations.astro";
 import CoverageLinks from "#src/components/CoverageLinks.astro";
 import { loadCoverageLinksForOfficer } from "#src/lib/data/coverage.js";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
@@ -282,8 +289,8 @@ const pastEmployerSummary = assignmentHistory
   .map((entry) => {
     const segments = [entry.agency?.name];
     const dateRange = [
-      entry.start_date ? formatShortDate(entry.start_date) : null,
-      entry.end_date ? formatShortDate(entry.end_date) : "Current",
+      entry.start_date ? formatAssignmentDate(entry.start_date) : null,
+      entry.end_date ? formatAssignmentDate(entry.end_date) : "Current",
     ]
       .filter(Boolean)
       .join(" to ");
@@ -375,14 +382,21 @@ const statusLabel = isDeceased
 const formatCount = (value: number) =>
   new Intl.NumberFormat("en-US").format(value);
 const unavailableValue = "--";
+function formatAssignmentDate(value: string) {
+  return annotationsEnabled && !isReportedDate(value)
+    ? value
+    : formatShortDate(value);
+}
 const formatMonthsDuration = (months: number) => {
-  const years = Math.floor(months / 12);
-  const remainingMonths = months % 12;
+  const sign = months < 0 ? "−" : "";
+  const years = Math.floor(Math.abs(months) / 12);
+  const remainingMonths = Math.abs(months) % 12;
   return years
-    ? `${years} yrs${remainingMonths ? `, ${remainingMonths} mos` : ""}`
-    : `${remainingMonths} mos`;
+    ? `${sign}${years} yrs${remainingMonths ? `, ${remainingMonths} mos` : ""}`
+    : `${sign}${remainingMonths} mos`;
 };
 const countAssignmentMonths = (start?: string | null, end?: string | null) => {
+  if (annotationsEnabled) return assignmentMonths(start, end);
   if (!start) {
     return 0;
   }
@@ -398,11 +412,17 @@ const countAssignmentMonths = (start?: string | null, end?: string | null) => {
       startDate.getMonth(),
   );
 };
-const totalAssignmentMonths = assignmentHistory.reduce(
-  (total, entry) =>
-    total + countAssignmentMonths(entry.start_date, entry.end_date),
-  0,
+const assignmentDurations = assignmentHistory.map((entry) =>
+  countAssignmentMonths(entry.start_date, entry.end_date),
 );
+const totalAssignmentMonths = assignmentDurations.some(
+  (value) => value === null,
+)
+  ? null
+  : assignmentDurations.reduce<number>(
+      (total, value) => total + (value ?? 0),
+      0,
+    );
 const totalTimeAsOfficer = totalAssignmentMonths
   ? formatMonthsDuration(totalAssignmentMonths)
   : unavailableValue;
@@ -803,12 +823,34 @@ const structuredData = {
                       })()}
                   </td>
                   <td>
-                    {entry.start_date ? formatShortDate(entry.start_date) : ""}
+                    {entry.start_date
+                      ? formatAssignmentDate(entry.start_date)
+                      : ""}
+                    {annotationsEnabled && (
+                      <DataAnnotations
+                        annotations={entry.data_annotations}
+                        field="start_date"
+                      />
+                    )}
                   </td>
                   <td>
                     {entry.end_date
-                      ? formatShortDate(entry.end_date)
+                      ? formatAssignmentDate(entry.end_date)
                       : "Present"}
+                    {annotationsEnabled && (
+                      <DataAnnotations
+                        annotations={entry.data_annotations}
+                        field="end_date"
+                      />
+                    )}
+                    {annotationsEnabled &&
+                      assignmentDuration(entry.start_date, entry.end_date) !==
+                        null && (
+                        <div>
+                          Reported duration:{" "}
+                          {assignmentDuration(entry.start_date, entry.end_date)}
+                        </div>
+                      )}
                   </td>
                   <td>
                     <span class="personnel-status-pill">
