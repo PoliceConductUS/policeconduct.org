@@ -202,18 +202,20 @@ test("native warnings and errors retain supporting evidence", () => {
     };
     const parsed = annotationFromRecord(record);
     assert.deepEqual(parsed, record);
-    assert.ok(
-      annotationsCsv([
-        {
-          ...parsed,
-          canonical_id: "assignment",
-          entity_kind: "AgencyPersonnel",
-          record_url: "/personnel/example/",
-          record_label: "Example Officer",
-          source_provider: "Provider A",
-        },
-      ]).includes("https://example.invalid/evidence"),
+    const csv = annotationsCsv([
+      {
+        ...parsed,
+        canonical_id: "assignment",
+        entity_kind: "AgencyPersonnel",
+        record_url: "/personnel/example/",
+        record_label: "Example Officer",
+        source_provider: "Provider A",
+      },
+    ]);
+    const fields = [...csv.split("\r\n")[1].matchAll(/"((?:[^"]|"")*)"/g)].map(
+      (match) => match[1].replaceAll('""', '"'),
     );
+    assert.deepEqual(JSON.parse(fields.at(-1)), record.evidence);
   }
 });
 
