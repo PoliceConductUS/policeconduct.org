@@ -5,6 +5,7 @@ The intake change of the same name owns the annotation schema, source evidence, 
 ## Decisions
 
 - Generate annotation-contract.json from intake's owning exporter. Validate stored JSON at the data-access boundary.
+- Read active first-class `public.data_annotation` records for manual, source, and intake producers. Resolved records remain stored but are not published. Subject records retain raw source evidence without embedded annotation arrays.
 - One collected entry per stored finding; route ownership follows existing entity relationships and database-backed paths. Fail on missing owners instead of inventing record URLs.
 - Authority attribution uses licensing_authority.source_namespaces, not employment or name matching.
 - Build finite source/type filter combinations, pagination, and full-result CSV files from one collection. Keep page 1 at the base URL.

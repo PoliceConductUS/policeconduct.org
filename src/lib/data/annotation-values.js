@@ -169,3 +169,20 @@ export function authorityAnnotations(entries, namespaces, authorityId) {
         entry.canonical_id === authorityId),
   );
 }
+
+/** Convert a native database record to the generated annotation payload contract. */
+export function annotationFromRecord(record) {
+  const annotation = {
+    field: record.field,
+    value: record.value,
+    type: record.type,
+    message: record.message,
+    source_namespace: record.source_namespace,
+    source_record_id: record.source_record_id,
+    ...(record.type === "correction"
+      ? { replacement_value: record.replacement_value }
+      : {}),
+    ...(record.evidence == null ? {} : { evidence: record.evidence }),
+  };
+  return parseAnnotations([annotation])[0];
+}

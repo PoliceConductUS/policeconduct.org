@@ -1,4 +1,5 @@
 ---
+import { annotationFromRecord } from "#src/lib/data/annotation-values.js";
 import { isReportedDate } from "#src/lib/data/annotation-values.js";
 import DataAnnotations from "#src/components/DataAnnotations.astro";
 import CoverageLinks from "#src/components/CoverageLinks.astro";
@@ -77,6 +78,12 @@ const data = await withDb(async (client) => {
       [officerId],
     )
   ).rows;
+  const assignmentAnnotations = (
+    await client.query(
+      "select * from public.data_annotation where status = 'active' and subject_kind = 'AgencyPersonnel' and subject_id = any($1) order by id",
+      [agencyOfficers.map((entry: { id: string }) => entry.id)],
+    )
+  ).rows;
   const agencyIds = agencyOfficers.map(
     (entry: { agency_id: string }) => entry.agency_id,
   );
@@ -148,6 +155,7 @@ const data = await withDb(async (client) => {
   return {
     officer,
     agencyOfficers,
+    assignmentAnnotations,
     agencies,
     reports,
     civilCases,
@@ -777,7 +785,11 @@ const structuredData = {
                       ? formatAssignmentDate(entry.start_date)
                       : ""}
                     <DataAnnotations
-                      annotations={entry.data_annotations}
+                      annotations={data.assignmentAnnotations
+                        .filter(
+                          (annotation) => annotation.subject_id === entry.id,
+                        )
+                        .map(annotationFromRecord)}
                       field="start_date"
                     />
                   </td>
@@ -786,7 +798,11 @@ const structuredData = {
                       ? formatAssignmentDate(entry.end_date)
                       : "Present"}
                     <DataAnnotations
-                      annotations={entry.data_annotations}
+                      annotations={data.assignmentAnnotations
+                        .filter(
+                          (annotation) => annotation.subject_id === entry.id,
+                        )
+                        .map(annotationFromRecord)}
                       field="end_date"
                     />
                   </td>

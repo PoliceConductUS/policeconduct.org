@@ -41,29 +41,30 @@ test("agency findings without a public agency page remain visible through their 
         `update public.licensing_authority set source_namespaces = array_append(source_namespaces, 'fixture.no-page') where id = (select id from public.licensing_authority order by id limit 1)`,
       );
       await client.query(
-        `insert into public.agency (id, slug, name, state, location_path_id, address, city, zip_code, latitude, longitude, data_annotations) select $1::jsonb->>'id', $1::jsonb->>'slug', $1::jsonb->>'name', a.state, a.location_path_id, a.address, a.city, a.zip_code, a.latitude, a.longitude, $1::jsonb->'data_annotations' from public.agency a limit 1`,
+        `insert into public.agency (id, slug, name, state, location_path_id, address, city, zip_code, latitude, longitude) select $1::jsonb->>'id', $1::jsonb->>'slug', $1::jsonb->>'name', a.state, a.location_path_id, a.address, a.city, a.zip_code, a.latitude, a.longitude from public.agency a limit 1`,
         [
           JSON.stringify({
             id: "annotation-no-page-fixture",
             slug: "annotation-no-page-fixture",
             name: "Fixture agency without assignments",
-            data_annotations: [
-              {
-                type: "error",
-                field: "contact_email",
-                value: "invalid",
-                message: "Invalid source email",
-                source_namespace: "fixture.no-page",
-                source_record_id: "fixture-1",
-              },
-            ],
           }),
         ],
+      );
+      for (const producer of ["manual", "fixture.no-page", "intake"]) {
+        await client.query(
+          `insert into public.data_annotation (id, subject_kind, subject_id, type, field, value, message, source_namespace, source_record_id, producer_namespace, producer_record_id, status)
+           values ($1, 'Agency', 'annotation-no-page-fixture', 'error', 'contact_email', '"invalid"'::jsonb, 'Invalid source email', 'fixture.no-page', 'fixture-1', $2, 'fixture-1', 'active')`,
+          [`annotation-fixture-${producer}`, producer],
+        );
+      }
+      await client.query(
+        `insert into public.data_annotation (id, subject_kind, subject_id, type, field, value, message, source_namespace, source_record_id, producer_namespace, producer_record_id, status)
+         values ('annotation-fixture-resolved', 'Agency', 'annotation-no-page-fixture', 'error', 'contact_email', '"resolved"'::jsonb, 'Resolved finding', 'fixture.no-page', 'fixture-2', 'manual', 'fixture-2', 'resolved')`,
       );
       const entries = await collectDataAnnotations(client);
       const unlisted = (
         await client.query(
-          `select a.id, jsonb_array_length(a.data_annotations) as count from public.agency a where a.data_annotations <> '[]'::jsonb and not exists (select 1 from public.agency_personnel ap where ap.agency_id=a.id and ${currentAssignmentSql("ap")})`,
+          `select a.id, count(*)::int as count from public.agency a join public.data_annotation da on da.subject_kind='Agency' and da.subject_id=a.id and da.status='active' where not exists (select 1 from public.agency_personnel ap where ap.agency_id=a.id and ${currentAssignmentSql("ap")}) group by a.id`,
         )
       ).rows;
       for (const agency of unlisted) {
@@ -77,6 +78,14 @@ test("agency findings without a public agency page remain visible through their 
             /^\/[^/]+\/licensing-authority\/data-annotations\/$/,
           );
       }
+      expect(
+        entries.filter(
+          (entry) => entry.canonical_id === "annotation-no-page-fixture",
+        ),
+      ).toHaveLength(3);
+      expect(
+        entries.some((entry) => entry.message === "Resolved finding"),
+      ).toBe(false);
       const finding = entries.find(
         (entry) => entry.canonical_id === "annotation-no-page-fixture",
       );
@@ -149,4 +158,22 @@ test("agency email lists render individual addresses without pairing them with a
   expect(
     nodes.find((node) => node["@type"] === "GovernmentOrganization").email,
   ).toEqual(addresses);
+});
+
+test("active native annotations render in the public index and CSV", async ({
+  page,
+  request,
+}) => {
+  const { collectDataAnnotations } =
+    await import("../../src/lib/data/data-annotations");
+  const entries = await withDb(collectDataAnnotations);
+  expect(entries.length).toBeGreaterThan(0);
+  await page.goto("/data-annotations/");
+  const rows = page.locator("main table tbody tr");
+  await expect(rows).toHaveCount(Math.min(entries.length, 50));
+  await expect(rows.first()).toContainText(entries[0].message);
+  await expect(rows.first()).toContainText(entries[0].source_record_id);
+  const csv = await request.get("/data-annotations/data.csv");
+  expect(csv.ok()).toBe(true);
+  expect(await csv.text()).toContain(entries[0].message.replaceAll('"', '""'));
 });

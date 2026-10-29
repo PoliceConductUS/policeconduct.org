@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   parseAnnotations,
+  annotationFromRecord,
   authorityAnnotations,
   filterAnnotations,
   annotationsCsv,
@@ -160,4 +161,75 @@ test("authority views include directly owned manual exclusions without claiming 
     authorityAnnotations(entries, ["provider"], "board"),
     entries.slice(0, 2),
   );
+});
+
+test("native annotation records preserve manual, source, and generated findings", () => {
+  for (const producer_namespace of ["manual", "provider.a", "intake"]) {
+    const record = {
+      ...annotation,
+      id: `annotation-${producer_namespace}`,
+      subject_kind: "AgencyPersonnel",
+      subject_id: "assignment",
+      producer_namespace,
+      producer_record_id: "one",
+      status: "active",
+      replacement_value: null,
+      evidence: null,
+    };
+    assert.deepEqual(annotationFromRecord(record), annotation);
+    assert.deepEqual(
+      annotationFromRecord({
+        ...record,
+        type: "correction",
+        replacement_value: null,
+      }),
+      {
+        ...annotation,
+        type: "correction",
+        replacement_value: null,
+      },
+    );
+  }
+  assert.throws(() => annotationFromRecord({ ...annotation, message: "" }));
+});
+
+test("native warnings and errors retain supporting evidence", () => {
+  for (const type of ["warning", "error"]) {
+    const record = {
+      ...annotation,
+      type,
+      evidence: [{ url: "https://example.invalid/evidence" }],
+    };
+    const parsed = annotationFromRecord(record);
+    assert.deepEqual(parsed, record);
+    assert.ok(
+      annotationsCsv([
+        {
+          ...parsed,
+          canonical_id: "assignment",
+          entity_kind: "AgencyPersonnel",
+          record_url: "/personnel/example/",
+          record_label: "Example Officer",
+          source_provider: "Provider A",
+        },
+      ]).includes("https://example.invalid/evidence"),
+    );
+  }
+});
+
+test("schema validation honors the explicit isolated database connection", () => {
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/validate-schema-contract.mjs"],
+    {
+      cwd: new URL("../../", import.meta.url),
+      env: {
+        ...process.env,
+        DATABASE_URL: "postgres://fixture:fixture@127.0.0.1:1/fixture",
+      },
+      encoding: "utf8",
+    },
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /ECONNREFUSED 127\.0\.0\.1:1/);
 });

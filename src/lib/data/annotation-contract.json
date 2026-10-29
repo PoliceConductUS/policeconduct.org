@@ -17,6 +17,18 @@
             "type": "string",
             "minLength": 1
           },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema1"
+              }
+            }
+          },
           "source_namespace": {
             "type": "string",
             "minLength": 1
@@ -53,6 +65,18 @@
           "message": {
             "type": "string",
             "minLength": 1
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema1"
+              }
+            }
           },
           "source_namespace": {
             "type": "string",
@@ -91,6 +115,18 @@
             "type": "string",
             "minLength": 1
           },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema1"
+              }
+            }
+          },
           "source_namespace": {
             "type": "string",
             "minLength": 1
@@ -104,19 +140,7 @@
             "const": "correction"
           },
           "replacement_value": {
-            "$ref": "#/$defs/__schema1"
-          },
-          "evidence": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "propertyNames": {
-                "type": "string"
-              },
-              "additionalProperties": {
-                "$ref": "#/$defs/__schema2"
-              }
-            }
+            "$ref": "#/$defs/__schema2"
           }
         },
         "required": [
@@ -131,6 +155,196 @@
         "additionalProperties": false
       }
     ],
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema0"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0"
+            }
+          }
+        ]
+      },
+      "__schema1": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema1"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema1"
+            }
+          }
+        ]
+      },
+      "__schema2": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema2"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "annotationRecord": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "subject_kind": {
+        "type": "string",
+        "minLength": 1
+      },
+      "subject_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "producer_namespace": {
+        "type": "string",
+        "minLength": 1
+      },
+      "producer_record_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "source_namespace": {
+        "type": "string",
+        "minLength": 1
+      },
+      "source_record_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "type": {
+        "type": "string",
+        "enum": ["warning", "error", "correction"]
+      },
+      "field": {
+        "type": "string",
+        "minLength": 1
+      },
+      "value": {
+        "$ref": "#/$defs/__schema0"
+      },
+      "replacement_value": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/__schema1"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "message": {
+        "type": "string",
+        "minLength": 1
+      },
+      "evidence": {
+        "anyOf": [
+          {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema2"
+              }
+            }
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "status": {
+        "type": "string",
+        "enum": ["active", "resolved"]
+      }
+    },
+    "required": [
+      "subject_kind",
+      "subject_id",
+      "producer_namespace",
+      "producer_record_id",
+      "source_namespace",
+      "source_record_id",
+      "type",
+      "field",
+      "value",
+      "message",
+      "status"
+    ],
+    "additionalProperties": false,
     "$defs": {
       "__schema0": {
         "anyOf": [

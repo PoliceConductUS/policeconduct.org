@@ -1,6 +1,9 @@
 import { withDb } from "#src/lib/db.js";
 import contract from "./annotation-contract.json" with { type: "json" };
-import { parseAnnotations, type AnnotationEntry } from "./annotation-values.js";
+import {
+  annotationFromRecord,
+  type AnnotationEntry,
+} from "./annotation-values.js";
 import { currentAssignmentSql } from "./annotation-access.js";
 import type { PoolClient } from "pg";
 
@@ -168,44 +171,41 @@ export async function collectDataAnnotations(
     throw new Error(`No public annotation owner for ${kind}:${id}.`);
   }
   const entries: AnnotationEntry[] = [];
-  for (const record of contract.records) {
-    const rows = (
-      await client.query(
-        `select * from ${record.table} where data_annotations <> '[]'::jsonb order by ${record.primaryKey}`,
-      )
-    ).rows;
-    for (const row of rows) {
-      const annotations = parseAnnotations(row.data_annotations);
-      const id = required(row[record.primaryKey], record.primaryKey);
-      const target = await owner(record.kind, id, row);
-      if (!target) continue;
-      for (const annotation of annotations) {
-        let recordUrl = target.url;
-        if (recordUrl === null) {
-          const provider = providers.get(annotation.source_namespace);
-          if (!provider)
-            throw new Error(
-              `No source authority for ${record.kind}:${id} from ${annotation.source_namespace}.`,
-            );
-          const authority = await owner("LicensingAuthority", provider.id);
-          if (!authority?.url)
-            throw new Error(
-              `Source authority ${provider.id} requires a public page.`,
-            );
-          recordUrl = `${authority.url}data-annotations/`;
-        }
-        entries.push({
-          ...annotation,
-          canonical_id: id,
-          entity_kind: record.kind,
-          record_url: recordUrl,
-          record_label: target.label,
-          source_provider:
-            providers.get(annotation.source_namespace)?.name ??
-            annotation.source_namespace,
-        });
-      }
+  const rows = (
+    await client.query(
+      "select * from public.data_annotation where status = 'active' order by id",
+    )
+  ).rows;
+  for (const row of rows) {
+    const annotation = annotationFromRecord(row);
+    const kind = required(row.subject_kind, "subject_kind");
+    const id = required(row.subject_id, "subject_id");
+    const target = await owner(kind, id);
+    if (!target) continue;
+    let recordUrl = target.url;
+    if (recordUrl === null) {
+      const provider = providers.get(annotation.source_namespace);
+      if (!provider)
+        throw new Error(
+          `No source authority for ${kind}:${id} from ${annotation.source_namespace}.`,
+        );
+      const authority = await owner("LicensingAuthority", provider.id);
+      if (!authority?.url)
+        throw new Error(
+          `Source authority ${provider.id} requires a public page.`,
+        );
+      recordUrl = `${authority.url}data-annotations/`;
     }
+    entries.push({
+      ...annotation,
+      canonical_id: id,
+      entity_kind: kind,
+      record_url: recordUrl,
+      record_label: target.label,
+      source_provider:
+        providers.get(annotation.source_namespace)?.name ??
+        annotation.source_namespace,
+    });
   }
   const order = (entry: AnnotationEntry) =>
     [

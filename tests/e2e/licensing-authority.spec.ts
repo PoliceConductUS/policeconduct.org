@@ -149,6 +149,9 @@ test("discipline pages browse ten records locally and search the entire collecti
     rows.map((row) => row.getAttribute("data-discipline-id")),
   );
   expect(allIds.length).toBeGreaterThan(10);
+  // Exhaustive keyboard pagination scales with the corpus (currently 54 pages).
+  // Keep every record assertion and allow traced browser actions per page.
+  test.setTimeout(60_000 + Math.ceil(allIds.length / 10) * 3_000);
   const visible = page.locator("[data-discipline-id]:visible");
   await expect(visible).toHaveCount(10);
   const status = page
