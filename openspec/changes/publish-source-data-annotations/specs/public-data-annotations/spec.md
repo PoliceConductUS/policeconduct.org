@@ -79,3 +79,19 @@ Annotations SHALL NOT change agency-page eligibility. When an agency has no curr
 - **WHEN** annotation pages are generated
 - **THEN** the finding appears in the central and TCOLE listings and downloads
 - **AND** no agency page is created merely because the finding exists
+
+### Requirement: Display source contact emails without inferred pairings
+
+Agency pages SHALL display each semicolon-separated contact email address as a separate mailto link and structured-data email value. Contact names SHALL appear separately from email addresses. The site MUST NOT infer name/email pairings from independent source fields.
+
+#### Scenario: One name and multiple addresses
+
+- **WHEN** an agency has a contact name and two semicolon-separated email addresses
+- **THEN** the page displays the name separately and two individual email links
+- **AND** the organization structured data contains both addresses individually
+
+#### Scenario: Empty members in an annotated source value
+
+- **WHEN** a source email field has empty members between or after semicolons
+- **THEN** the site creates no empty mailto links or structured-data recipients
+- **AND** the original source value and intake annotation remain available

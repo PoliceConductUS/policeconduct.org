@@ -113,3 +113,40 @@ test("the conventional favicon URL serves the existing icon", async ({
   expect(response.headers()["content-type"]).toContain("image/");
   expect((await response.body()).length).toBeGreaterThan(0);
 });
+
+test("agency email lists render individual addresses without pairing them with a name", async ({
+  page,
+}) => {
+  const agencies = await withDb(
+    async (client) =>
+      (
+        await client.query(
+          `select a.contact_email, a.contact_name, lp.path || a.slug || '/' as path from public.agency a join public.location_path lp on lp.location_path_id=a.location_path_id where a.contact_email like '%;%' and a.contact_name is not null and exists (select 1 from public.build_page_payload p where p.page_type='agency' and p.entity_id=a.id) order by a.id limit 1`,
+        )
+      ).rows,
+  );
+  expect(agencies).toHaveLength(1);
+  const agency = agencies[0];
+  await page.goto(agency.path);
+  const addresses = agency.contact_email
+    .split(";")
+    .map((value: string) => value.trim());
+  const contacts = page.locator(".entity-contact-email");
+  await expect(contacts.locator("a")).toHaveCount(addresses.length);
+  for (const address of addresses)
+    await expect(contacts.locator(`a[href="mailto:${address}"]`)).toHaveText(
+      address,
+    );
+  await expect(page.locator(".entity-contact-person a")).toHaveCount(0);
+  const nodes = await page
+    .locator('script[type="application/ld+json"]')
+    .evaluateAll((scripts) =>
+      scripts.flatMap((script) => {
+        const data = JSON.parse(script.textContent || "{}");
+        return data["@graph"] || [data];
+      }),
+    );
+  expect(
+    nodes.find((node) => node["@type"] === "GovernmentOrganization").email,
+  ).toEqual(addresses);
+});

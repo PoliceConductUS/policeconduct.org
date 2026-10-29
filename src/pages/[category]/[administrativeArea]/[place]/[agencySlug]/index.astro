@@ -1,5 +1,6 @@
 ---
 import "#src/styles/civic-ledger.css";
+import { contactEmailsForDisplay } from "#src/lib/contact-emails.js";
 import { agencyStatusPresentation } from "#src/lib/agency-status";
 import CoverageLinks from "#src/components/CoverageLinks.astro";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
@@ -253,6 +254,8 @@ const sortRecent = (items: RecentItem[]) =>
 const recentReports = sortRecent(recentReportItems);
 const recentCases = sortRecent(recentCaseItems);
 
+const contactEmails = contactEmailsForDisplay(data.agency.contact_email);
+
 const organization: ReturnType<typeof buildGovernmentOrganizationNode> = {
   ...buildGovernmentOrganizationNode({
     siteUrl,
@@ -260,7 +263,7 @@ const organization: ReturnType<typeof buildGovernmentOrganizationNode> = {
     name: agencyName,
     mainEntityOfPageId: profilePageId,
     address: address || undefined,
-    email: data.agency.contact_email || undefined,
+    email: contactEmails.length ? contactEmails : undefined,
     contactPoint: contactPoints,
     areaServed: { "@type": "AdministrativeArea", name: agencyState },
   }),
@@ -366,26 +369,24 @@ const structuredData = {
           )}
         </p>
       ) : null}
-      {data.agency.contact_name || data.agency.contact_email ? (
-        // Contact name + email are linked in the data model —
-        // render as one visual group; phone links above must not sit
-        // between them.
+      {data.agency.contact_name ? (
         <p class="entity-contact-person">
-          {data.agency.contact_name ? (
-            <>Contact: {toDisplayName(data.agency.contact_name)}</>
-          ) : (
-            "Contact:"
-          )}
-          {data.agency.contact_name && data.agency.contact_email ? (
-            <span class="sep" aria-hidden="true">
-              ·
-            </span>
-          ) : null}
-          {data.agency.contact_email ? (
-            <a href={`mailto:${data.agency.contact_email}`}>
-              {data.agency.contact_email}
-            </a>
-          ) : null}
+          Contact name: {toDisplayName(data.agency.contact_name)}
+        </p>
+      ) : null}
+      {contactEmails.length ? (
+        <p class="entity-contact-email">
+          Email:{" "}
+          {contactEmails.map((address: string, index: number) => (
+            <>
+              {index > 0 ? (
+                <span class="sep" aria-hidden="true">
+                  ·
+                </span>
+              ) : null}
+              <a href={`mailto:${address}`}>{address}</a>
+            </>
+          ))}
         </p>
       ) : null}
     </div>

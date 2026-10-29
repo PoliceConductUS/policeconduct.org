@@ -34,7 +34,7 @@
     "scan:personal-data": "node scripts/scan-personal-data.mjs --tracked",
     "setup": "bash scripts/bootstrap-dev.sh",
     "test:client": "node --test scripts/copy-link.test.mjs",
-    "test": "npm run test:annotations && npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:coverage && npm run test:e2e",
+    "test": "npm run test:contacts && npm run test:annotations && npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:coverage && npm run test:e2e",
     "test:coverage": "node --test \"src/lib/coverage/*.test.mjs\"",
     "test:css": "node --test scripts/purge-built-css.test.mjs",
     "test:media": "node --test scripts/video.test.mjs scripts/personnel-photos.test.mjs",
@@ -53,6 +53,7 @@
     "validate:types": "astro check",
     "deploy:preview:sync": "bash scripts/deploy-preview-sync.sh",
     "test:lambda": "npm --prefix infrastructure/bootstrap-policeconduct/lambdas/forms-api ci --omit=dev --no-audit --no-fund && node --test infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs",
+    "test:contacts": "node --test tests/unit/contact-emails.test.mjs",
     "test:annotations": "node --test tests/unit/data-annotations.test.mjs"
   },
   "dependencies": {
