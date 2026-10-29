@@ -26,7 +26,13 @@ The generated site SHALL provide `/data-annotations/` with pagination and filter
 
 ### Requirement: Complete filtered CSV download
 
-Every annotation listing SHALL offer a CSV download of all matching entries across all pages. CSV SHALL contain `source_provider,source_record_id,record_url,field,reported_value,type,message,replacement_value,evidence`. Correction entries SHALL include their replacement value and supplied evidence; those columns SHALL be empty for annotations without those values. Original values SHALL survive CSV serialization, including quotes, commas and newlines. Downloads SHALL be generated from the same data and filters as the listing without a runtime API.
+Every annotation listing SHALL offer a CSV download of all matching entries across all pages, generated from the listing's data and filters without a runtime API. Original values SHALL survive serialization, including quotes, commas and newlines.
+
+#### Scenario: Export columns preserve source and correction evidence
+
+- **WHEN** any annotation listing is downloaded
+- **THEN** its columns SHALL be `source_provider,source_record_id,record_url,field,reported_value,type,message,replacement_value,evidence`
+- **AND** corrections SHALL include replacement values and supplied evidence; those columns SHALL be empty for annotations without those values
 
 #### Scenario: Download exceeds visible page
 
@@ -57,3 +63,19 @@ Profiles, central and authority listings, type filters and CSV downloads SHALL i
 - **WHEN** an address has an applied correction and its effective value triggers a warning
 - **THEN** the profile and listings SHALL show both entries and the download SHALL include both
 - **AND** filtering to correction SHALL return its original value, replacement value, explanation and supplied evidence
+
+### Requirement: Preserve findings for agencies without public pages
+
+Annotations SHALL NOT change agency-page eligibility. When an agency has no current personnel assignment and therefore no public page, its stored findings SHALL remain in the central and source-authority annotation listings and CSV exports. Each finding SHALL retain the affected agency label, canonical ID, source ID, value and explanation, and link to the explicitly mapped source authority's annotation page.
+
+#### Scenario: Required annotation destination is missing
+
+- **WHEN** source authority ownership is missing or ambiguous, or an eligible agency lacks its required page
+- **THEN** collection SHALL fail rather than discard the finding or invent a record URL
+
+#### Scenario: Agency without personnel has a source finding
+
+- **GIVEN** an agency with no current personnel assignment and a stored TCOLE annotation
+- **WHEN** annotation pages are generated
+- **THEN** the finding appears in the central and TCOLE listings and downloads
+- **AND** no agency page is created merely because the finding exists

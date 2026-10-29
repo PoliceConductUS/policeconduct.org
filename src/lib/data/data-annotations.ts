@@ -1,10 +1,11 @@
 import { withDb } from "#src/lib/db.js";
-import contract from "./annotation-contract.json";
+import contract from "./annotation-contract.json" with { type: "json" };
 import { parseAnnotations, type AnnotationEntry } from "./annotation-values.js";
+import { currentAssignmentSql } from "./annotation-access.js";
 import type { PoolClient } from "pg";
 
 type Row = Record<string, unknown>;
-type Owner = { url: string; label: string };
+type Owner = { url: string | null; label: string };
 const parent: Record<string, [string, string]> = {
   AgencyPersonnel: ["Personnel", "personnel_id"],
   AuthorityLicense: ["LicensingAuthority", "licensing_authority_id"],
@@ -31,20 +32,24 @@ function required(value: unknown, field: string): string {
   return value;
 }
 
-async function collect(client: PoolClient): Promise<AnnotationEntry[]> {
+export async function collectDataAnnotations(
+  client: PoolClient,
+): Promise<AnnotationEntry[]> {
   const authorities = (
-    await client.query<{ name: string; source_namespaces: string[] }>(
-      "select name, source_namespaces from public.licensing_authority",
-    )
+    await client.query<{
+      id: string;
+      name: string;
+      source_namespaces: string[];
+    }>("select id, name, source_namespaces from public.licensing_authority")
   ).rows;
-  const providers = new Map<string, string>();
+  const providers = new Map<string, { id: string; name: string }>();
   for (const authority of authorities)
     for (const namespace of authority.source_namespaces) {
       if (providers.has(namespace))
         throw new Error(
           `Multiple licensing authorities claim source ${namespace}.`,
         );
-      providers.set(namespace, authority.name);
+      providers.set(namespace, authority);
     }
   const owners = new Map<string, Promise<Owner | null>>();
   async function owner(
@@ -100,7 +105,7 @@ async function collect(client: PoolClient): Promise<AnnotationEntry[]> {
         "LocationPath",
         required(row.location_path_id, "location_path_id"),
       );
-      if (!location || !/^\/[^/]+\/$/.test(location.url))
+      if (!location?.url || !/^\/[^/]+\/$/.test(location.url))
         throw new Error(`Authority ${id} requires a state path.`);
       return {
         url: `${location.url}licensing-authority/`,
@@ -117,6 +122,14 @@ async function collect(client: PoolClient): Promise<AnnotationEntry[]> {
         url: `/civil-cases/${required(row.slug, "slug")}/`,
         label: required(row.title, "title"),
       };
+    if (kind === "Agency") {
+      const { rows } = await client.query<{ eligible: boolean }>(
+        `select exists(select 1 from public.agency_personnel ap where ap.agency_id=$1 and ${currentAssignmentSql("ap")}) as eligible`,
+        [id],
+      );
+      if (!rows[0].eligible)
+        return { url: null, label: required(row.name, "name") };
+    }
     if (kind === "Agency" || kind === "Review") {
       const pageType = kind === "Agency" ? "agency" : "report_summary";
       const paths = (
@@ -127,10 +140,19 @@ async function collect(client: PoolClient): Promise<AnnotationEntry[]> {
       ).rows;
       if (paths.length !== 1)
         throw new Error(`Expected one public page for ${kind}:${id}.`);
-      return {
-        url: paths[0].path,
-        label: required(kind === "Agency" ? row.name : row.title, "label"),
-      };
+      if (kind === "Agency") {
+        const location = await owner(
+          "LocationPath",
+          required(row.location_path_id, "location_path_id"),
+        );
+        if (!location?.url)
+          throw new Error(`Agency ${id} requires a location path.`);
+        return {
+          url: `${location.url}${required(row.slug, "slug")}/`,
+          label: required(row.name, "name"),
+        };
+      }
+      return { url: paths[0].path, label: required(row.title, "title") };
     }
     if (kind === "CoverageLink") {
       const links = (
@@ -157,17 +179,32 @@ async function collect(client: PoolClient): Promise<AnnotationEntry[]> {
       const id = required(row[record.primaryKey], record.primaryKey);
       const target = await owner(record.kind, id, row);
       if (!target) continue;
-      for (const annotation of annotations)
+      for (const annotation of annotations) {
+        let recordUrl = target.url;
+        if (recordUrl === null) {
+          const provider = providers.get(annotation.source_namespace);
+          if (!provider)
+            throw new Error(
+              `No source authority for ${record.kind}:${id} from ${annotation.source_namespace}.`,
+            );
+          const authority = await owner("LicensingAuthority", provider.id);
+          if (!authority?.url)
+            throw new Error(
+              `Source authority ${provider.id} requires a public page.`,
+            );
+          recordUrl = `${authority.url}data-annotations/`;
+        }
         entries.push({
           ...annotation,
           canonical_id: id,
           entity_kind: record.kind,
-          record_url: target.url,
+          record_url: recordUrl,
           record_label: target.label,
           source_provider:
-            providers.get(annotation.source_namespace) ??
+            providers.get(annotation.source_namespace)?.name ??
             annotation.source_namespace,
         });
+      }
     }
   }
   const order = (entry: AnnotationEntry) =>
@@ -186,6 +223,6 @@ async function collect(client: PoolClient): Promise<AnnotationEntry[]> {
 }
 let collected: Promise<AnnotationEntry[]> | undefined;
 export function loadDataAnnotations() {
-  collected ??= withDb(collect);
+  collected ??= withDb(collectDataAnnotations);
   return collected;
 }

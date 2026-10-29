@@ -16,3 +16,7 @@ The intake change of the same name owns the annotation schema, source evidence, 
 Annotations use the normal collection, routes, links, notes, and date-evidence display without a separate enablement switch. Existing NO_PERSONNEL controls remain. Merge and deployment remain separate actions.
 
 Authority HTML views and CSV exports include annotations directly attached to that authority, regardless of the annotation's source namespace. This displays explicitly assigned manual exclusions without treating all manual records as that authority's source data.
+
+Agencies without current assignments have no public agency page. Keep their findings visible through the explicitly mapped source authority's annotation page, preserving the affected record label and identifiers. Apply the same current-assignment predicate as projection generation; do not treat an unexpectedly absent eligible page as an excluded agency. Resolve eligible agency URLs through their authoritative location path and slug.
+
+Verification uses an explicitly supplied disposable DATABASE_URL and INTAKE_WORKSPACE. Dev startup preserves those inputs after loading local environment files so the browser server and test queries use the same isolated data.

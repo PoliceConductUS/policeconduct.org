@@ -5,6 +5,8 @@ import dotenv from "dotenv";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
+const databaseUrl = process.env.DATABASE_URL;
+const intakeWorkspace = process.env.INTAKE_WORKSPACE;
 const envFiles = [".env", ".env-recaptcha", ".env-policeconduct"];
 
 for (const envFile of envFiles) {
@@ -13,6 +15,11 @@ for (const envFile of envFiles) {
     override: true,
   });
 }
+
+// Explicit connection/workspace inputs must survive layered local config.
+if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
+if (intakeWorkspace !== undefined)
+  process.env.INTAKE_WORKSPACE = intakeWorkspace;
 
 const formsApiProxyTarget = (process.env.FORMS_API_PROXY_TARGET || "").trim();
 if (formsApiProxyTarget.length === 0) {
