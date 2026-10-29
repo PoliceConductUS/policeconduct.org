@@ -67,6 +67,7 @@ const createFixture = async (t, duplicateRows = retainedAgencies) => {
     "src/lib/data",
     "dist/tx/reports",
     "dist/federal",
+    "dist/personnel/multi-agency-officer",
   ]) {
     await mkdir(path.join(cwd, directory), { recursive: true });
   }
@@ -122,6 +123,7 @@ const createFixture = async (t, duplicateRows = retainedAgencies) => {
       { category: "tx", total: 100 },
       { category: "ak", total: 100 },
     ],
+    [{ slug: "multi-agency-officer" }, { slug: "unbuilt-officer" }],
     duplicateRows,
   ];
   await writeFile(
@@ -131,7 +133,7 @@ const createFixture = async (t, duplicateRows = retainedAgencies) => {
        if (sql.includes("from public.personnel where id")) {
          return {rows: [{slug: "john-farmakes-l2v4t3"}]};
        }
-       if (responses.length >= 6 && (!sql.includes("lp.location_path_id = a.location_path_id")
+       if (responses.length >= 7 && (!sql.includes("lp.location_path_id = a.location_path_id")
            || !sql.includes("lp.path || a.slug || '/' as canonical_path")
            || !sql.includes("bpp.entity_id = a.id") || /bpp\\.path|payload->/.test(sql))) {
          throw new Error("Agency route identity must use the agency location join and stored slug; projections only select eligibility.");
@@ -148,7 +150,12 @@ const createFixture = async (t, duplicateRows = retainedAgencies) => {
        return {rows};
      }});`,
   );
-  for (const route of ["tx", "tx/reports", "federal"]) {
+  for (const route of [
+    "tx",
+    "tx/reports",
+    "federal",
+    "personnel/multi-agency-officer",
+  ]) {
     await writeFile(
       path.join(cwd, "dist", route, "index.html"),
       '<html><head><meta name="robots" content="noindex"></head></html>',
@@ -374,6 +381,27 @@ test("Farmakes duplicate redirects to the retained database slug", async (t) => 
   assert.equal(
     redirects.find((r) => r.from === "/personnel/john-farmakes-k0l1m2/").to,
     "/personnel/john-farmakes-l2v4t3/",
+  );
+});
+
+test("retired personnel agencies subpages fold into built profiles only", async (t) => {
+  const cwd = await createFixture(t);
+  const result = runGenerator(cwd);
+  assert.equal(result.status, 0, result.stderr);
+  const { redirects } = JSON.parse(
+    await readFile(path.join(cwd, "dist/_redirect-map.json"), "utf8"),
+  );
+  const built = redirects.filter(
+    (entry) => entry.from === "/personnel/multi-agency-officer/agencies/",
+  );
+  assert.equal(built.length, 1);
+  assert.equal(built[0].to, "/personnel/multi-agency-officer/");
+  assert.equal(built[0].status, 301);
+  assert.equal(
+    redirects.some(
+      (entry) => entry.from === "/personnel/unbuilt-officer/agencies/",
+    ),
+    false,
   );
 });
 
