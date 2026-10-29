@@ -186,3 +186,28 @@ export function annotationFromRecord(record) {
   };
   return parseAnnotations([annotation])[0];
 }
+
+/** Preserve the excluded subject even when the annotation is filed on an authority. */
+export function annotationRecordLabel(entry) {
+  if (
+    entry.field === "excluded_records" &&
+    entry.value &&
+    typeof entry.value === "object"
+  ) {
+    return entry.value.name || `${entry.value.kind} ${entry.value.key}`;
+  }
+  return entry.record_label;
+}
+
+export function annotationNoteLabel(entry) {
+  if (entry.field === "excluded_records") {
+    return /\bduplicate\b/i.test(entry.message)
+      ? "Excluded duplicate"
+      : "Excluded record";
+  }
+  return entry.type === "warning"
+    ? "Our warning"
+    : entry.type === "error"
+      ? "Data error"
+      : "Our correction";
+}

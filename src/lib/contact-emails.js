@@ -5,7 +5,9 @@
 export const contactEmailsForDisplay = (value) =>
   value
     ? value
-        .split(";")
+        .trim()
+        .replace(/\.$/, "")
+        .split(/[;,]/)
         .map((address) => address.trim())
         .filter((address) => address.length > 0)
     : [];

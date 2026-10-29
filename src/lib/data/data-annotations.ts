@@ -2,6 +2,7 @@ import { withDb } from "#src/lib/db.js";
 import contract from "./annotation-contract.json" with { type: "json" };
 import {
   annotationFromRecord,
+  annotationRecordLabel,
   type AnnotationEntry,
 } from "./annotation-values.js";
 import { currentAssignmentSql } from "./annotation-access.js";
@@ -201,7 +202,10 @@ export async function collectDataAnnotations(
       canonical_id: id,
       entity_kind: kind,
       record_url: recordUrl,
-      record_label: target.label,
+      record_label: annotationRecordLabel({
+        ...annotation,
+        record_label: target.label,
+      }),
       source_provider:
         providers.get(annotation.source_namespace)?.name ??
         annotation.source_namespace,

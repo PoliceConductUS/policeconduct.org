@@ -18,3 +18,10 @@ test("email display keeps separate addresses and no empty mailto recipients", ()
     ["invalid source value", "office@example.org"],
   );
 });
+
+test("email lists accept commas and terminal punctuation", () => {
+  assert.deepEqual(
+    contactEmailsForDisplay("office@example.org, records@example.org."),
+    ["office@example.org", "records@example.org"],
+  );
+});

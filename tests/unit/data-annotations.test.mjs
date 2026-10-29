@@ -2,6 +2,8 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  annotationRecordLabel,
+  annotationNoteLabel,
   parseAnnotations,
   annotationFromRecord,
   authorityAnnotations,
@@ -234,4 +236,31 @@ test("schema validation honors the explicit isolated database connection", () =>
   );
   assert.equal(result.status, 1);
   assert.match(result.stderr, /ECONNREFUSED 127\.0\.0\.1:1/);
+});
+
+test("exclusions display their original subject and explicit duplicate reason", () => {
+  const entry = {
+    ...annotation,
+    type: "warning",
+    field: "excluded_records",
+    value: { kind: "Agency", key: "source-1", name: "Excluded Agency" },
+    message: "Explicitly excluded Agency: User-retired duplicate page",
+    record_label: "Licensing Board",
+  };
+  assert.equal(annotationRecordLabel(entry), "Excluded Agency");
+  assert.equal(annotationNoteLabel(entry), "Excluded duplicate");
+  assert.equal(
+    annotationNoteLabel({
+      ...entry,
+      message: "Explicitly excluded Agency: Administrative placeholder",
+    }),
+    "Excluded record",
+  );
+  assert.equal(
+    annotationRecordLabel({
+      ...entry,
+      value: { kind: "Agency", key: "source-1" },
+    }),
+    "Agency source-1",
+  );
 });

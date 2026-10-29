@@ -1,5 +1,8 @@
 ---
-import { annotationValue } from "#src/lib/data/annotation-values.js";
+import {
+  annotationValue,
+  annotationNoteLabel,
+} from "#src/lib/data/annotation-values.js";
 import {
   annotationFilters,
   annotationHref,
@@ -75,7 +78,11 @@ const pageHref = (page: number) =>
         {view.rows.map((entry) => (
           <tr>
             <td>
-              <a href={entry.record_url}>{entry.record_label}</a>
+              {entry.field === "excluded_records" ? (
+                entry.record_label
+              ) : (
+                <a href={entry.record_url}>{entry.record_label}</a>
+              )}
             </td>
             <td>
               {entry.field}
@@ -87,13 +94,7 @@ const pageHref = (page: number) =>
               )}
             </td>
             <td>
-              <strong>
-                {entry.type === "warning"
-                  ? "Our warning"
-                  : entry.type === "error"
-                    ? "Data error"
-                    : "Our correction"}
-              </strong>
+              <strong>{annotationNoteLabel(entry)}</strong>
               <div>{entry.message}</div>
               {entry.evidence !== undefined && (
                 <details>
