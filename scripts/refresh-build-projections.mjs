@@ -1,3 +1,4 @@
+import { currentAssignmentSql } from "../src/lib/data/annotation-access.js";
 import crypto from "node:crypto";
 import { withDb } from "../src/lib/db.js";
 
@@ -570,7 +571,7 @@ await withDb(async (client) => {
               select 1
               from public.agency_personnel ap
               where ap.agency_id = a.id
-                and ap.end_date is null
+                and ${currentAssignmentSql("ap")}
             )
           ),
           personnel_counts as (
@@ -585,7 +586,7 @@ await withDb(async (client) => {
             from public.agency_personnel ao
             join eligible_agencies ea
               on ea.id = ao.agency_id
-            where ao.end_date is null
+            where ${currentAssignmentSql("ao")}
             group by ao.agency_id
           ),
           report_counts as (

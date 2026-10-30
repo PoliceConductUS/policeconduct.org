@@ -34,7 +34,6 @@ export const metricLabels = {
   reports: "Reports",
   settlements: "Settlements",
   topChargeCategories: "Top Charge Categories",
-  totalTimeAsOfficer: "Total Time as Officer",
 } as const;
 
 export type MetricAccent = "blue" | "green" | "purple" | "red";

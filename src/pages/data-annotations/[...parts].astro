@@ -1,0 +1,36 @@
+---
+import PageShell from "#src/layouts/PageShell.astro";
+import DataAnnotationIndex from "#src/components/DataAnnotationIndex.astro";
+import { loadDataAnnotations } from "#src/lib/data/data-annotations.js";
+import {
+  annotationPages,
+  annotationFilters,
+  annotationHref,
+} from "#src/lib/data/annotation-views.js";
+import "#src/styles/civic-ledger.css";
+export async function getStaticPaths() {
+  return annotationPages(await loadDataAnnotations()).map(({ parts }) => ({
+    params: { parts: parts || undefined },
+  }));
+}
+const entries = await loadDataAnnotations();
+const view = annotationPages(entries).find(
+  (view) => view.parts === (Astro.params.parts || ""),
+);
+if (!view) throw new Error("Data notes route does not match a generated view.");
+const base = "/data-annotations/";
+---
+
+<PageShell
+  title="Data notes | PoliceConduct.org"
+  heading="Data notes"
+  pagePath={annotationHref(base, view.parts)}
+  breadcrumbs={[{ label: "Data notes", current: true }]}
+  lede="Reported values, source errors, warnings, and corrections."
+>
+  <DataAnnotationIndex
+    base={base}
+    view={view}
+    filters={annotationFilters(entries)}
+  />
+</PageShell>
