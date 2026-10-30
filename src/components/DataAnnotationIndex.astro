@@ -1,6 +1,7 @@
 ---
 import {
   annotationValue,
+  annotationDisplay,
   annotationNoteLabel,
 } from "#src/lib/data/annotation-values.js";
 import {
@@ -75,40 +76,45 @@ const pageHref = (page: number) =>
         </tr>
       </thead>
       <tbody>
-        {view.rows.map((entry) => (
-          <tr>
-            <td>
-              {entry.field === "excluded_records" ? (
-                entry.record_label
-              ) : (
-                <a href={entry.record_url}>{entry.record_label}</a>
-              )}
-            </td>
-            <td>
-              {entry.field}
-              <div>{annotationValue(entry.value)}</div>
-              {entry.type === "correction" && (
-                <div>
-                  Replacement: {annotationValue(entry.replacement_value)}
-                </div>
-              )}
-            </td>
-            <td>
-              <strong>{annotationNoteLabel(entry)}</strong>
-              <div>{entry.message}</div>
-              {entry.evidence !== undefined && (
-                <details>
-                  <summary>Supporting evidence</summary>
-                  <pre>{JSON.stringify(entry.evidence,null,2)}</pre>
-                </details>
-              )}
-            </td>
-            <td>
-              {entry.source_provider}
-              <div>{entry.source_record_id}</div>
-            </td>
-          </tr>
-        ))}
+        {view.rows.map((entry) => {
+          const display = annotationDisplay(entry);
+          return (
+            <tr>
+              <td>
+                {entry.field === "excluded_records" ? (
+                  entry.record_label
+                ) : (
+                  <a href={entry.record_url}>{entry.record_label}</a>
+                )}
+              </td>
+              <td>
+                {display.field}
+                {display.showValues && (
+                  <div>{annotationValue(display.value)}</div>
+                )}
+                {entry.type === "correction" && display.showValues && (
+                  <div>
+                    Replacement: {annotationValue(display.replacement_value)}
+                  </div>
+                )}
+              </td>
+              <td>
+                <strong>{annotationNoteLabel(entry)}</strong>
+                <div>{display.message}</div>
+                {display.evidence !== undefined && (
+                  <details>
+                    <summary>Supporting evidence</summary>
+                    <pre>{JSON.stringify(display.evidence,null,2)}</pre>
+                  </details>
+                )}
+              </td>
+              <td>
+                {entry.source_provider}
+                <div>{entry.source_record_id}</div>
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   </div>

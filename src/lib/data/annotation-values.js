@@ -77,6 +77,46 @@ export function annotationValue(value) {
   return typeof value === "string" ? value : JSON.stringify(value);
 }
 
+// Public presentation is separate from the intact intake audit record.
+const internalReferenceField = (field) =>
+  (field === "id" || field.endsWith("_id")) && !field.startsWith("source_");
+function publicEvidence(value) {
+  if (Array.isArray(value)) return value.map(publicEvidence);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([key]) => !internalReferenceField(key))
+        .map(([key, item]) => [key, publicEvidence(item)]),
+    );
+  return value;
+}
+export function annotationDisplay(entry) {
+  const reference = internalReferenceField(entry.field);
+  return {
+    field:
+      entry.field === "location_path_id"
+        ? "Administrative area"
+        : reference
+          ? entry.field.replace(/_id$/, "").replaceAll("_", " ")
+          : entry.field,
+    showValues: !reference,
+    ...(reference
+      ? {}
+      : { value: entry.value, replacement_value: entry.replacement_value }),
+    message:
+      entry.field === "excluded_records" && /\bduplicate\b/i.test(entry.message)
+        ? "Excluded duplicate of an existing record."
+        : reference &&
+            entry.message ===
+              "Applied an explicit conditional source correction."
+          ? "Applied an explicit administrative correction."
+          : entry.message,
+    ...(entry.evidence === undefined
+      ? {}
+      : { evidence: publicEvidence(entry.evidence) }),
+  };
+}
+
 /** @param {AnnotationEntry[]} entries */
 export function filterAnnotations(entries, provider = "", type = "") {
   return entries.filter(
@@ -113,23 +153,24 @@ export function annotationsCsv(entries) {
   const quote = (value) => `"${String(value).replaceAll('"', '""')}"`;
   return [
     columns.join(","),
-    ...entries.map((entry) =>
-      [
+    ...entries.map((entry) => {
+      const display = annotationDisplay(entry);
+      return [
         entry.source_provider,
         entry.source_record_id,
         entry.record_url,
-        entry.field,
-        annotationValue(entry.value),
+        display.field,
+        display.showValues ? annotationValue(display.value) : "",
         entry.type,
-        entry.message,
-        entry.type === "correction"
-          ? annotationValue(entry.replacement_value)
+        display.message,
+        entry.type === "correction" && display.showValues
+          ? annotationValue(display.replacement_value)
           : "",
-        entry.evidence === undefined ? "" : JSON.stringify(entry.evidence),
+        display.evidence === undefined ? "" : JSON.stringify(display.evidence),
       ]
         .map(quote)
-        .join(","),
-    ),
+        .join(",");
+    }),
     "",
   ].join("\r\n");
 }

@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  annotationDisplay,
   annotationRecordLabel,
   annotationNoteLabel,
   parseAnnotations,
@@ -263,4 +264,60 @@ test("exclusions display their original subject and explicit duplicate reason", 
     }),
     "Agency source-1",
   );
+});
+
+test("public notes describe administrative corrections without internal identifiers", () => {
+  const view = annotationDisplay({
+    ...annotation,
+    field: "location_path_id",
+    type: "correction",
+    value: null,
+    replacement_value: "canonical-location",
+    message: "Retained Saltillo to match the source mailing locality.",
+  });
+  assert.equal(view.field, "Administrative area");
+  assert.equal(view.showValues, false);
+  assert.equal(
+    view.message,
+    "Retained Saltillo to match the source mailing locality.",
+  );
+  assert.ok(!JSON.stringify(view).includes("canonical-location"));
+});
+test("public duplicate explanations keep source attribution without canonical target IDs", () => {
+  const entry = {
+    ...annotation,
+    field: "excluded_records",
+    value: { kind: "Agency", key: "source-123", name: "Dallas PD" },
+    message:
+      "Explicitly excluded Agency: User-retired duplicate page. Official existing agency: canonical-target / existing-slug.",
+  };
+  assert.equal(
+    annotationDisplay(entry).message,
+    "Excluded duplicate of an existing record.",
+  );
+  assert.equal(annotationDisplay(entry).value.key, "source-123");
+  assert.ok(!annotationsCsv([entry]).includes("canonical-target"));
+});
+test("reference values and internal evidence identifiers are absent from public exports", () => {
+  const entry = {
+    ...annotation,
+    field: "agency_id",
+    type: "correction",
+    replacement_value: "canonical-target",
+    evidence: [
+      {
+        canonical_id: "internal",
+        source_record_id: "source-123",
+        reason: "Supported correction",
+      },
+    ],
+  };
+  const view = annotationDisplay(entry);
+  assert.equal(view.showValues, false);
+  assert.deepEqual(view.evidence, [
+    { source_record_id: "source-123", reason: "Supported correction" },
+  ]);
+  const csv = annotationsCsv([entry]);
+  assert.ok(!csv.includes("canonical-target"));
+  assert.ok(!csv.includes("canonical_id"));
 });

@@ -66,7 +66,7 @@ Profiles, central and authority listings, type filters and CSV downloads SHALL i
 
 ### Requirement: Preserve findings for agencies without public pages
 
-Annotations SHALL NOT change agency-page eligibility. When an agency has no current personnel assignment and therefore no public page, its stored findings SHALL remain in the central and source-authority annotation listings and CSV exports. Each finding SHALL retain the affected agency label, canonical ID, source ID, value and explanation, and link to the explicitly mapped source authority's annotation page.
+Annotations SHALL NOT change agency-page eligibility. When an agency has no current personnel assignment and therefore no public page, its stored findings SHALL remain in the central and source-authority annotation listings and CSV exports. Each finding SHALL retain the affected agency label, source ID, public value and explanation, and link to the explicitly mapped source authority's annotation page.
 
 #### Scenario: Required annotation destination is missing
 
@@ -95,3 +95,13 @@ Agency pages SHALL display each semicolon-separated contact email address as a s
 - **WHEN** a source email field has empty members between or after semicolons
 - **THEN** the site creates no empty mailto links or structured-data recipients
 - **AND** the original source value and intake annotation remain available
+
+### Requirement: Public annotations omit internal identifiers
+
+The index, record notes and CSV SHALL show source record IDs but SHALL NOT expose canonical reference values. Administrative-area corrections SHALL use the label “Administrative area” instead of `location_path_id`, omit internal before/after IDs, and display the supplied explanation. Internal audit records SHALL remain intact. Duplicate exclusions SHALL describe the duplicate without internal maintenance identifiers.
+
+#### Scenario: Administrative area correction
+
+- **WHEN** an annotation corrects an internal location reference
+- **THEN** public displays show its administrative-area explanation and source record ID
+- **AND** canonical values and internal reference evidence keys are omitted from public displays and CSV

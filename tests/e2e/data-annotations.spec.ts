@@ -175,5 +175,16 @@ test("active native annotations render in the public index and CSV", async ({
   await expect(rows.first()).toContainText(entries[0].source_record_id);
   const csv = await request.get("/data-annotations/data.csv");
   expect(csv.ok()).toBe(true);
-  expect(await csv.text()).toContain(entries[0].message.replaceAll('"', '""'));
+  const exported = await csv.text();
+  expect(exported).toContain(entries[0].message.replaceAll('"', '""'));
+  const locations = entries.filter(
+    (entry) => entry.field === "location_path_id",
+  );
+  expect(locations.length).toBeGreaterThan(0);
+  expect(exported).not.toContain("location_path_id");
+  expect(exported).toContain("Administrative area");
+  for (const entry of locations) {
+    expect(exported).not.toContain(String(entry.replacement_value));
+  }
+  await expect(page.locator("main")).not.toContainText("location_path_id");
 });
