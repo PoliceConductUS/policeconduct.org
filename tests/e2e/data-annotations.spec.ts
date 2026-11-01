@@ -169,6 +169,19 @@ test("active native annotations render in the public index and CSV", async ({
   const entries = await withDb(collectDataAnnotations);
   expect(entries.length).toBeGreaterThan(0);
   await page.goto("/data-annotations/");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    "noindex,follow",
+  );
+  await expect(page.locator("main")).not.toHaveAttribute("data-pagefind-body");
+  await expect(page.locator("main")).toHaveAttribute(
+    "data-pagefind-ignore",
+    "all",
+  );
+  await expect(page.locator('footer a[href="/data-annotations/"]')).toHaveText(
+    "Data notes",
+  );
+
   const rows = page.locator("main table tbody tr");
   await expect(rows).toHaveCount(Math.min(entries.length, 50));
   await expect(rows.first()).toContainText(entries[0].message);

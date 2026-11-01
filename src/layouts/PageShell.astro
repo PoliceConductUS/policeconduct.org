@@ -75,7 +75,12 @@ const hasHero = Astro.slots.has("hero");
   socialImage={socialImage}
   structuredData={structuredData}
 >
-  <main id="main" class="civic-index-page" data-pagefind-body={searchable}>
+  <main
+    id="main"
+    class="civic-index-page"
+    data-pagefind-body={searchable ? "" : undefined}
+    data-pagefind-ignore={searchable ? undefined : "all"}
+  >
     <section class="civic-index-page-main">
       <div class="container">
         <Breadcrumb items={breadcrumbs} className="mb-2" />

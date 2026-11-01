@@ -105,3 +105,13 @@ The index, record notes and CSV SHALL show source record IDs but SHALL NOT expos
 - **WHEN** an annotation corrects an internal location reference
 - **THEN** public displays show its administrative-area explanation and source record ID
 - **AND** canonical values and internal reference evidence keys are omitted from public displays and CSV
+
+### Requirement: Annotation listings remain discoverable without search indexing
+
+The footer SHALL link to Data notes under Data & Methods. Global and licensing-authority annotation listings, including source filters, type filters and pagination, SHALL use `noindex,follow`, SHALL be excluded from on-site search, and SHALL be omitted from the sitemap.
+
+#### Scenario: Browse annotations from the footer
+
+- **WHEN** a visitor follows the Data notes footer link
+- **THEN** the global annotation listing remains browsable with pagination and filters
+- **AND** annotation listing routes are excluded from search indexes and the sitemap
