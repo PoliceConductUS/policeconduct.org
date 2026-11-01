@@ -329,6 +329,44 @@ resource "aws_s3_bucket_versioning" "preview" {
   }
 }
 
+# Versioning above means `aws s3 rm` -- what cleanup-preview.yml runs when a PR
+# closes -- only writes a delete marker. The object becomes noncurrent and keeps
+# billing, so tearing down a preview reclaimed nothing and the object count only
+# ever grew. Measured on 2026-11-01, before this rule existed: 5,589,610 objects
+# and 95.7 GB billed, against 17.7 GB of current versions (INS-106).
+#
+# 7 days, per the board's decision on INS-106. A preview is disposable build
+# output reproducible from its commit, so a week is ample room to notice a
+# mistaken delete. Current versions are untouched, so live previews for open
+# PRs keep serving normally.
+resource "aws_s3_bucket_lifecycle_configuration" "preview" {
+  bucket = aws_s3_bucket.preview.id
+
+  rule {
+    id     = "expire-noncurrent-preview-versions"
+    status = "Enabled"
+
+    # Everything in this bucket is preview build output under pr-<N>/.
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = 7
+    }
+
+    # Sweep the delete marker once every version beneath it has expired;
+    # otherwise the markers accumulate as billable objects forever.
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.preview]
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "preview" {
   bucket = aws_s3_bucket.preview.id
 
