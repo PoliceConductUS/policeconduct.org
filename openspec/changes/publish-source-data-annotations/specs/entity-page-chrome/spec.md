@@ -14,3 +14,15 @@ The page SHALL group a name and email as one contact identity only when the sour
 
 - **WHEN** a source explicitly associates a contact person with an email address
 - **THEN** the page groups that verified pair as one contact identity
+
+### Requirement: Homepage clearly identifies independent ownership
+
+The homepage SHALL display the approved independence statement immediately after its introduction. The existing hero image SHALL span the viewport width, with the introduction, independence statement and calls to action remaining inside the hero over the image.
+
+#### Scenario: Homepage introduction
+
+- **WHEN** a visitor opens the homepage on desktop or mobile
+- **THEN** the hero image spans the viewport without horizontal overflow
+- **AND** the introduction states: “We are independent. PoliceConduct.org is not the police or a government agency. We are not part of, controlled by, or affiliated with any police department or government agency.”
+
+- **AND** the hero text and calls to action sit on a padded, near-opaque white panel so the background image does not impair readability

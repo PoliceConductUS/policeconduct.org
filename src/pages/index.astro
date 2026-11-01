@@ -86,26 +86,21 @@ const structuredData = [
   structuredData={structuredData}
 >
   <main id="main">
-    <div class="w-100 overflow-hidden bg-gray-100" id="top">
-      <div class="container position-relative">
-        <div
-          class="col-12 col-lg-8 mt-0 h-100 position-absolute top-0 end-0 bg-cover"
-          data-aos="fade-left"
-        >
-          <img
-            src="/img/webp/usa-1778524_1280.webp"
-            alt=""
-            width="1280"
-            height="853"
-            class="w-100 h-100 object-fit-cover"
-            fetchpriority="high"
-            loading="eager"
-            decoding="async"
-          />
-        </div>
-        <div class="row">
-          <div class="col-lg-7 py-vh-2 position-relative" data-aos="fade-right">
-            <h1 class="ipc-page-title mt-5">
+    <div class="w-100 overflow-hidden bg-gray-100 position-relative" id="top">
+      <img
+        src="/img/webp/usa-1778524_1280.webp"
+        alt=""
+        width="1280"
+        height="853"
+        class="home-hero-image position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
+        fetchpriority="high"
+        loading="eager"
+        decoding="async"
+      />
+      <div class="container position-relative py-5">
+        <div class="row mx-0">
+          <div class="home-hero-panel col-lg-7 p-4 p-md-5 position-relative">
+            <h1 class="ipc-page-title mt-0">
               A civic record for the whole community.
             </h1>
             <p class="lead">
@@ -114,15 +109,20 @@ const structuredData = [
               experienced in real life: harm, help, professionalism, confusion,
               accountability, trust, and everything in between.
             </p>
+            <p>
+              <strong>We are independent.</strong> PoliceConduct.org is not the
+              police or a government agency. We are not part of, controlled by,
+              or affiliated with any police department or government agency.
+            </p>
             <a
               href="/report/new/"
-              class="btn btn-dark btn-xl shadow me-3 rounded-0 my-5"
+              class="btn btn-dark btn-xl shadow me-3 rounded-0 my-3"
             >
               Share your experience
             </a>
             <a
               href="/find-records/"
-              class="btn btn-outline-dark btn-xl shadow rounded-0 my-5"
+              class="btn btn-outline-dark btn-xl shadow rounded-0 my-3"
             >
               Find Records
             </a>
@@ -365,6 +365,14 @@ const structuredData = [
 </SiteLayout>
 
 <style>
+  .home-hero-panel {
+    background-color: rgba(var(--bs-white-rgb), 0.96);
+  }
+
+  .home-hero-image {
+    display: block;
+  }
+
   .home-mission-image {
     --bs-aspect-ratio: 58%;
     background-image: url("/img/webp/people15.webp");
