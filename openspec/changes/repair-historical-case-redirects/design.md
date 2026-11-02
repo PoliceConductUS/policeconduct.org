@@ -1,15 +1,5 @@
-## Context
+# Design
 
-The generator only sees current slugs; it cannot reconstruct historical slugs. INS-110 explicitly authorizes this scoped repair.
+Read optional `redirects.json` from the configured intake workspace. Its JSON object maps local old paths to local destination paths. Merge configured 301 redirects with generated redirects, deduplicating identical mappings and rejecting conflicting destinations, self redirects, loops and configured targets that redirect again. Every configured destination must have built HTML.
 
-## Goals / Non-Goals
-
-Restore the six supported old routes without changing case titles, slugs or IDs. No public mutation or new acquisition.
-
-## Decisions
-
-Use explicit aliases keyed by retained canonical IDs, following the existing agency alias pattern. A slug match alone cannot identify a case. Resolve destinations from database rows; reject a resolved target without built HTML. Absent case IDs emit no aliases, leaving prior-sitemap coverage fail-closed. Do not infer watch URLs without historical video identity evidence.
-
-## Risks / Trade-offs
-
-The retained ID is the identity anchor. A missing case in another corpus must not redirect to an unrelated row with the same slug. Retained evidence supports route continuity, not substantive allegations or publication approval.
+The file is operator-managed workspace data and is not committed with named-person or corpus snapshots. A missing file means no workspace overrides; an unreadable or malformed file fails. Removing entries regenerates the inventory without those entries. The existing CloudFront deployment flow continues to consume `_redirect-map.json`.

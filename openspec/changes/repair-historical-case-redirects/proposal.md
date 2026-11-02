@@ -1,17 +1,5 @@
-## Why
+# Workspace-managed historical redirects
 
-Six historical case slugs have no redirect although their retained canonical records and built destination pages exist.
+Keep historical URLs reachable after the approved case slug migration. Read an operator-maintained old-path to new-path JSON object from `INTAKE_WORKSPACE/redirects.json` and merge it into the existing CloudFront redirect inventory. Removing an entry retires it on regeneration.
 
-## What Changes
-
-Add exact historical paths keyed by retained case ID. Resolve destinations from current database slugs and require built HTML. Preserve all case data and other redirect holds.
-
-## Capabilities
-
-### New Capabilities
-
-- `historical-case-redirects`: Evidence-backed continuity for six historical cases.
-
-## Impact
-
-Redirect generator and regression tests only. No deployment, database mutation, or identity generation.
+This board-directed format supersedes the six-case retained-ID configuration proposed earlier. Stable identity and source evidence remain in the migration audit; the workspace mapping requires no IDs or expiry fields. No deployment or publication is authorized.

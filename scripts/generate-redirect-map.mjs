@@ -1,3 +1,4 @@
+import { mergeWorkspaceRedirects } from "./workspace-redirects.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { statSync } from "node:fs";
 import path from "node:path";
@@ -98,53 +99,6 @@ const approvedDuplicateAgencyAliases = [
   },
 ];
 
-// Retained docket/ledger evidence and title-history resolution:
-// openspec/changes/repair-historical-case-redirects/evidence.md
-const historicalCaseAliases = [
-  {
-    retainedCaseId: "idku3dncurohcol0mkwguljngats",
-    from: [
-      "/civil-cases/wells-v-hanneman-mnd-0-23-cv-00273/",
-      "/civil-litigation/mn/wells-v-hanneman-mnd-0-23-cv-00273/",
-    ],
-  },
-  {
-    retainedCaseId: "mk8w2bhjx2vgcqgz6atdcb7z",
-    from: [
-      "/civil-cases/grigoryan-v-wheeler-county-texas-txnd-2-25-cv-00276/",
-      "/civil-litigation/tx/grigoryan-v-wheeler-county-texas-txnd-2-25-cv-00276/",
-    ],
-  },
-  {
-    retainedCaseId: "uu32adr1xkzy24d0ty9g1md1",
-    from: [
-      "/civil-cases/young-v-the-city-of-irving-txnd-3-23-cv-01423/",
-      "/civil-litigation/tx/young-v-the-city-of-irving-txnd-3-23-cv-01423/",
-    ],
-  },
-  {
-    retainedCaseId: "ogecfxi5p67286qbmvkfjoa4",
-    from: [
-      "/civil-cases/lotts-v-city-of-irving-txnd-3-25-cv-03329/",
-      "/civil-litigation/tx/lotts-v-city-of-irving-txnd-3-25-cv-03329/",
-    ],
-  },
-  {
-    retainedCaseId: "vi7v2i5uvpqmfihrjggz25bo",
-    from: [
-      "/civil-cases/flash-v-jeff-davis-county-txwd-4-26-cv-00004/",
-      "/civil-litigation/tx/flash-v-jeff-davis-county-txwd-4-26-cv-00004/",
-    ],
-  },
-  {
-    retainedCaseId: "t5x7co7ggo1crdareyf5a2t9",
-    from: [
-      "/civil-cases/roden-sr-v-reamer-txwd-5-26-cv-00081/",
-      "/civil-litigation/tx/roden-sr-v-reamer-txwd-5-26-cv-00081/",
-    ],
-  },
-];
-
 const legacyReportSlugAliases = [
   {
     oldSlug: "2023-12-04-75039-1st-amendment-retaliation-arrest-2c545f",
@@ -194,7 +148,7 @@ const buildReportPath = (report) => {
   );
 };
 
-const redirects = await withDb(async (client) => {
+const generatedRedirects = await withDb(async (client) => {
   const agencyRows = (
     await client.query(
       `
@@ -371,24 +325,6 @@ const redirects = await withDb(async (client) => {
     source: "approved duplicate personnel alias",
   };
 
-  const casesById = new Map(civilCaseRows.map((row) => [row.id, row]));
-  const historicalCaseRedirects = historicalCaseAliases.flatMap((alias) => {
-    const civilCase = casesById.get(alias.retainedCaseId);
-    // A different corpus (including development seeds) may omit this case.
-    // The prior-sitemap coverage gate still holds any unresolved old paths.
-    if (!civilCase) return [];
-    const to = normalizePath(`/civil-cases/${civilCase.slug}/`);
-    if (!hasBuiltDestination({ to })) {
-      throw new Error(`Historical case alias destination was not built: ${to}`);
-    }
-    return alias.from.map((from) => ({
-      from,
-      to,
-      status: 301,
-      source: "retained historical case identity alias",
-    }));
-  });
-
   const reportsBySlug = new Map(
     reportRows.map((report) => [report.slug, report]),
   );
@@ -472,7 +408,6 @@ const redirects = await withDb(async (client) => {
 
   return [
     ...watchRedirects,
-    ...historicalCaseRedirects,
     ...agencyRows.map((agency) => ({
       from: normalizePath(
         `/law-enforcement-agency/${agency.state}/${agency.slug}/`,
@@ -709,6 +644,11 @@ const redirects = await withDb(async (client) => {
       source: "top-level videos retired",
     },
   ];
+});
+
+const redirects = await mergeWorkspaceRedirects(generatedRedirects, {
+  workspace: process.env.INTAKE_WORKSPACE,
+  hasBuiltDestination,
 });
 
 await mkdir(distDir, { recursive: true });

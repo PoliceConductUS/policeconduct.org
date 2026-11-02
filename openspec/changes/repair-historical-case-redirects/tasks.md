@@ -1,7 +1,6 @@
-## 1. Repair
+# Tasks
 
-- [x] Trace retained identity and route evidence.
-- [x] Observe regression failures before implementation.
-- [x] Add ID-keyed aliases with built-destination checks.
-- [x] Verify generated inventory and aggregate checks.
-- [x] Prepare feature PR and parent evidence handoff.
+- [ ] Implement workspace redirect loading and merge validation.
+- [ ] Verify route mappings, retirement and invalid mapping failures.
+- [ ] Generate migration config and verify built destinations.
+- [ ] Complete final repository validation and revise PR #40.

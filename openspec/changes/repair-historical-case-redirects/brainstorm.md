@@ -1,5 +1,5 @@
-# Outcome and bounded design
+# Outcome
 
-The approved assignment requires the six historical cases to resolve directly to existing current pages. Explicit aliases keyed by retained canonical IDs fit the existing generator and preserve database identity. Reconstructing slugs or editing the generated inventory would not provide reproducible continuity. No new source acquisition, data restoration, merge or deployment is authorized.
+Historical URLs should reach the new pages after case slug corrections. The board selected a simple operator-maintained old-path to new-path workspace object. Entries can be removed manually when no longer needed. Keep stable identity evidence in the migration audit, not in the maintained config.
 
-Use the current stored slug for destinations; require built HTML. Omitted cases in other corpora remain omitted and subject to prior-sitemap coverage. Preserve unsupported watch paths and unrelated report holds.
+Validate against built destinations and reject conflicts and loops. Reuse the current CloudFront redirect inventory and deployment flow. No new expiry policy or publication decision is introduced.

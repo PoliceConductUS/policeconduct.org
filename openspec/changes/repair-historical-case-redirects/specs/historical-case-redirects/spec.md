@@ -1,20 +1,20 @@
 ## ADDED Requirements
 
-### Requirement: Historical case aliases preserve retained identity
+### Requirement: Workspace URL redirects
 
-The generator SHALL map the six evidenced historical case paths to the current stored slug of the retained case ID.
+The generator SHALL read optional `INTAKE_WORKSPACE/redirects.json` as an old-path to new-path object and merge it as 301 redirects into the existing CloudFront redirect JSON. Configured destinations SHALL be built final pages. Conflicts, self redirects and loops SHALL fail generation. Stable IDs and automatic expiry SHALL NOT be required in the config.
 
-#### Scenario: Current slug differs
+#### Scenario: Historical URL has a configured destination
 
-- **WHEN** the retained case ID exists with a changed stored slug and built HTML
-- **THEN** each configured historical path produces one 301 directly to that stored slug
+- **WHEN** a configured old path targets a built final page
+- **THEN** the generated inventory contains exactly one matching redirect
 
-#### Scenario: Only an unrelated case has the expected slug
+#### Scenario: Operator retires a redirect
 
-- **WHEN** the retained ID is absent
-- **THEN** no alias is emitted for that identity and the prior-route coverage gate remains authoritative
+- **WHEN** the operator removes an entry and regenerates
+- **THEN** that configured redirect is absent from the new inventory
 
-#### Scenario: Resolved case has no built page
+#### Scenario: Invalid mapping
 
-- **WHEN** the retained ID resolves but its destination HTML is missing
-- **THEN** redirect generation fails
+- **WHEN** the config has a missing target, conflicting mapping, self redirect or loop
+- **THEN** generation fails without writing a new inventory

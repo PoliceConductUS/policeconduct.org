@@ -1,7 +1,3 @@
-# Retrospective
+# Scope adjustment
 
-The defect was missing historical alias knowledge in the generator. ID-keyed aliases preserve current database identity and survive future stored-slug changes. Real retained HTML verification complements regression fixtures.
-
-A STOP comment on a related issue was incorrectly treated as cancelling this task. The board clarified that scope; work resumed under this task's original authorization. Future related-issue context must remain evidence rather than silently overriding the current assignment.
-
-No merge or deployment is part of this repair. Existing unrelated release holds remain explicit.
+The board replaced the original six-case retained-ID config with a workspace old-path to new-path map. Identity reconciliation remains necessary to prepare migration data; it is not a required config field. This change extends the existing generator and CloudFront flow instead of adding a separate redirect mechanism.

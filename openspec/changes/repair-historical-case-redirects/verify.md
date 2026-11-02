@@ -1,14 +1,9 @@
-# Verification
+# Verification status
 
-## Scope and evidence
+All 131 redirect tests passed with Node 24.21.0, zero skipped. These cover historical mappings, retirement after config removal, conflicts, loops, redirect chains, invalid paths, missing built destinations, and fixture isolation from the configured intake workspace.
 
-- The generator previously emitted zero redirects for all six historical slugs; new regression tests failed for missing aliases and missing-HTML enforcement before the implementation.
-- Generator integration tests: 12/12 pass, including all 12 historical route variants, current database slug changes, nonmatching canonical IDs, and a missing built destination.
-- Real isolated inventory: 25,634 redirects; all 12 configured historical variants resolve in one 301 hop to the six existing parent-build HTML files. File digests and exact mappings are retained in `artifacts/ins110-redirects/inventory-check.json`.
-- HTML is reused from parent build `41d80cb060f5950cc50b77bcc04cacb3ea3fffbc`; this change regenerates the inventory, not the full site. Parent HTML and its redirect inventory are not edited.
-- Format, ESLint, SQLFluff, Astro types, shell syntax, schema contract, OpenSpec, personal-data scan and all non-browser tests passed. Browser validation initially stopped on missing local environment settings; after supplying the local forms target and retained intake workspace, all 153 browser tests passed. The aggregate stages were completed across the initial run and this corrected browser rerun; no tests were skipped. The redirect suite passed 122/122 tests.
-- Direct diff review checked ID-based lookup, exact path scope, database-backed destination slugs and preservation of unrelated mappings. No schema, cache, source identity, title or slug edits.
+The full isolated site build completed. The built-route audit verified all 551 migrated case pages and 1,114 retained paths against an inventory of 26,766 redirects: no missing targets, unexpected destinations, duplicate sources, loops, or incorrect status codes. Five unchanged canonical paths require no redirect; the workspace map contains 1,109 entries.
 
-## Existing release holds
+The database audit preserved all 551 case IDs, 552 case links and 1,309 case-personnel links. There were 546 changed slugs, no unexpected non-slug field or dependent-row changes (excluding creation/update timestamps), and an empty case-generation rerun diff.
 
-Good/Pretti target warnings remain unchanged and outside this assignment. Full prior-sitemap coverage/release is not claimed. No inferred historical watch aliases, merge, deployment or public mutation.
+Repository validation completed with exit zero, including all 153 browser tests and zero skipped browser tests. The prefill fixture resolves its case by stable ID so slug changes do not invalidate setup. Warning disposition remains pending: npm audit reports 16 moderate dependency findings, and Lambda dependency installation reports deprecated node-domexception. These findings are unresolved merge gates. Earlier verification of the six-case retained-ID implementation is superseded. No merge, deployment or public mutation.

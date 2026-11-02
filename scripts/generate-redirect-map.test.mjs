@@ -108,7 +108,9 @@ const createFixture = async (
   duplicateRows = retainedAgencies,
   cases = historicalCases,
 ) => {
-  const cwd = await mkdtemp(path.join(tmpdir(), "redirect-generator-"));
+  const cwd = path.resolve(
+    await mkdtemp(path.join(tmpdir(), "redirect-generator-")),
+  );
   t.after(() => rm(cwd, { recursive: true, force: true }));
   for (const directory of [
     "scripts",
@@ -119,6 +121,10 @@ const createFixture = async (
   ]) {
     await mkdir(path.join(cwd, directory), { recursive: true });
   }
+  await copyFile(
+    new URL("./workspace-redirects.mjs", import.meta.url),
+    path.join(cwd, "scripts/workspace-redirects.mjs"),
+  );
   await copyFile(
     new URL("./generate-redirect-map.mjs", import.meta.url),
     path.join(cwd, "scripts/generate-redirect-map.mjs"),
@@ -215,12 +221,27 @@ const createFixture = async (
       "<html></html>",
     );
   }
+  await writeFile(
+    path.join(cwd, "redirects.json"),
+    JSON.stringify(
+      Object.fromEntries(
+        cases.flatMap((c) => [
+          [`/civil-cases/${c.oldSlug}/`, `/civil-cases/${c.slug}/`],
+          [
+            `/civil-litigation/${c.state}/${c.oldSlug}/`,
+            `/civil-cases/${c.slug}/`,
+          ],
+        ]),
+      ),
+    ),
+  );
   return cwd;
 };
 
 const runGenerator = (cwd) =>
   spawnSync(process.execPath, ["scripts/generate-redirect-map.mjs"], {
     cwd,
+    env: { ...process.env, INTAKE_WORKSPACE: cwd },
     encoding: "utf8",
   });
 
@@ -423,11 +444,7 @@ test("legacy watch URLs preserve the stored video link id and resolve to watch p
 
 test("Farmakes duplicate redirects to the retained database slug", async (t) => {
   const fixture = await createFixture(t);
-  const result = spawnSync(
-    process.execPath,
-    ["scripts/generate-redirect-map.mjs"],
-    { cwd: fixture, encoding: "utf8" },
-  );
+  const result = runGenerator(fixture);
   assert.equal(result.status, 0, result.stderr);
   const { redirects } = JSON.parse(
     await readFile(path.join(fixture, "dist/_redirect-map.json"), "utf8"),
@@ -479,7 +496,7 @@ test("legacy static aliases preserve both exact slash variants", async (t) => {
   }
 });
 
-test("historical case paths resolve by retained ID to the current database slug", async (t) => {
+test("workspace historical case mappings target built current pages", async (t) => {
   const cases = historicalCases.map((c) => ({
     ...c,
     slug: `${c.slug}-current`,
@@ -504,12 +521,10 @@ test("historical case paths resolve by retained ID to the current database slug"
   }
 });
 
-test("historical case aliases do not match another ID by slug", async (t) => {
-  const cwd = await createFixture(
-    t,
-    retainedAgencies,
-    historicalCases.map((c) => ({ ...c, id: "unrelated-" + c.id })),
-  );
+test("removing workspace mappings retires historical aliases on regeneration", async (t) => {
+  const cwd = await createFixture(t);
+  assert.equal(runGenerator(cwd).status, 0);
+  await writeFile(path.join(cwd, "redirects.json"), "{}");
   const result = runGenerator(cwd);
   assert.equal(result.status, 0, result.stderr);
   const { redirects } = JSON.parse(
@@ -530,8 +545,5 @@ test("historical case aliases fail when a resolved destination was not built", a
   });
   const result = runGenerator(cwd);
   assert.notEqual(result.status, 0);
-  assert.match(
-    result.stderr,
-    /Historical case alias destination was not built/,
-  );
+  assert.match(result.stderr, /Workspace redirect destination was not built/);
 });
