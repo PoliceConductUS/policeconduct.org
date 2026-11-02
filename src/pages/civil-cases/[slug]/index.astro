@@ -48,6 +48,12 @@ if (!data.civilCase.filed_date) {
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(casePath, siteUrl).toString();
 const coverageLinks = data.coverageLinks;
+const courtListenerCaseUrl = [
+  data.civilCase.primary_source_url,
+  ...coverageLinks.map((link) => link.url),
+].find(
+  (url) => url && /^https:\/\/(www\.)?courtlistener\.com\/docket\//i.test(url),
+);
 const caseMetaItems = [
   data.civilCase.primary_source_url
     ? {
@@ -57,8 +63,6 @@ const caseMetaItems = [
       }
     : null,
 ].filter(Boolean) as { label: string; href: string; value: string }[];
-const collapseWhitespace = (value?: string | null) =>
-  value ? value.replace(/\s+/g, " ").trim() : "";
 const truncateText = (value: string, maxLength: number) => {
   if (value.length <= maxLength) {
     return value;
@@ -92,7 +96,6 @@ const pageDescriptionParts = [
   agencyNames.length
     ? `Agencies: ${formatLabelList(agencyNames.slice(0, 2))}${agencyNames.length > 2 ? ", and others" : ""}.`
     : null,
-  collapseWhitespace(data.civilCase.claims_summary),
 ];
 const pageDescription = truncateText(
   pageDescriptionParts.filter(Boolean).join(" "),
@@ -171,9 +174,6 @@ const structuredData = {
   heading={caseTitle}
 >
   <Fragment slot="header">
-    <p class="civic-lede-sub">
-      {truncateText(collapseWhitespace(data.civilCase.claims_summary), 180)}
-    </p>
     <EntityActionBar
       actions={[{ label: "Suggest edit", href: "/civil-cases/suggest-edit/" }]}
     />
@@ -238,12 +238,9 @@ const structuredData = {
 
   <div class="detail-layout civic-section civic-section--last">
     <article class="detail-body">
-      <h2>What the complaint says</h2>
-      <p>{data.civilCase.claims_summary}</p>
-
       {data.officers.length ? (
         <>
-          <h3>Personnel named in this case</h3>
+          <h2>Personnel named in this case</h2>
           {data.officers.map((officer) => (
             <p>
               <a href={`/personnel/${officer.slug}/`}>
@@ -257,7 +254,7 @@ const structuredData = {
 
       {data.agencies.length ? (
         <>
-          <h3>Agencies</h3>
+          <h2>Agencies</h2>
           {data.agencies.map((agency) => (
             <p>
               <a href={agency.canonicalPath}>{agency.name}</a>
@@ -271,7 +268,7 @@ const structuredData = {
 
       {coverageLinks.length ? (
         <>
-          <h3>Related links</h3>
+          <h2>Related links</h2>
           {coverageLinks.map((link) => (
             <p>
               <a
@@ -291,23 +288,24 @@ const structuredData = {
           ))}
         </>
       ) : null}
-
-      <p class="civic-limit-note">
-        The summary above describes allegations and outcomes from court filings.
-        A pending case is an allegation, not a finding.
-      </p>
     </article>
 
     <aside class="detail-aside">
       <p class="civic-kicker">Court records</p>
-      <h2>Follow this case</h2>
+      <h2>Case notifications</h2>
       <ul>
         <li>
-          The full docket, complaint, and exhibits are public court records.
-        </li>
-        <li>
-          This page updates as new filings connect to the agency and personnel
-          records it names.
+          {courtListenerCaseUrl ? (
+            <a href={courtListenerCaseUrl}>Open this case on CourtListener</a>
+          ) : (
+            <a href="https://www.courtlistener.com/">
+              Find this case on CourtListener
+            </a>
+          )}{" "}
+          to set up notifications.
+          <a href="https://www.courtlistener.com/help/alerts/">
+            Learn about CourtListener alerts →
+          </a>
         </li>
         <li>
           Know something about this case?
