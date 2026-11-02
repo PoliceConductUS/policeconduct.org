@@ -58,7 +58,56 @@ const retainedAgencies = approvedDuplicatePaths.map(([, id], index) => ({
   slug: `current-agency-${index}`,
 }));
 
-const createFixture = async (t, duplicateRows = retainedAgencies) => {
+const historicalCases = [
+  {
+    id: "idku3dncurohcol0mkwguljngats",
+    state: "mn",
+    oldSlug: "wells-v-hanneman-mnd-0-23-cv-00273",
+    slug: "locke-v-city-of-minneapolis-0-23-cv-00273-d-minn-2023",
+    videos: [],
+  },
+  {
+    id: "mk8w2bhjx2vgcqgz6atdcb7z",
+    state: "tx",
+    oldSlug: "grigoryan-v-wheeler-county-texas-txnd-2-25-cv-00276",
+    slug: "grigoryan-v-wheeler-county-texas-2-25-cv-00276-n-d-tex-2025",
+    videos: [],
+  },
+  {
+    id: "uu32adr1xkzy24d0ty9g1md1",
+    state: "tx",
+    oldSlug: "young-v-the-city-of-irving-txnd-3-23-cv-01423",
+    slug: "young-v-city-of-irving-et-al-3-2023cv01423-n-d-tex-2023",
+    videos: [],
+  },
+  {
+    id: "ogecfxi5p67286qbmvkfjoa4",
+    state: "tx",
+    oldSlug: "lotts-v-city-of-irving-txnd-3-25-cv-03329",
+    slug: "lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025",
+    videos: [],
+  },
+  {
+    id: "vi7v2i5uvpqmfihrjggz25bo",
+    state: "tx",
+    oldSlug: "flash-v-jeff-davis-county-txwd-4-26-cv-00004",
+    slug: "flash-v-jeff-davis-county-4-26-cv-00004-w-d-tex-2026",
+    videos: [],
+  },
+  {
+    id: "t5x7co7ggo1crdareyf5a2t9",
+    state: "tx",
+    oldSlug: "roden-sr-v-reamer-txwd-5-26-cv-00081",
+    slug: "roden-sr-v-reamer-5-26-cv-00081-w-d-tex-2026",
+    videos: [],
+  },
+];
+
+const createFixture = async (
+  t,
+  duplicateRows = retainedAgencies,
+  cases = historicalCases,
+) => {
   const cwd = await mkdtemp(path.join(tmpdir(), "redirect-generator-"));
   t.after(() => rm(cwd, { recursive: true, force: true }));
   for (const directory of [
@@ -94,6 +143,7 @@ const createFixture = async (t, duplicateRows = retainedAgencies) => {
     })),
     [],
     [
+      ...cases,
       {
         state: "tx",
         slug: "case-slug",
@@ -154,6 +204,15 @@ const createFixture = async (t, duplicateRows = retainedAgencies) => {
     await writeFile(
       path.join(cwd, "dist", route, "index.html"),
       '<html><head><meta name="robots" content="noindex"></head></html>',
+    );
+  }
+  for (const c of cases) {
+    await mkdir(path.join(cwd, "dist/civil-cases", c.slug), {
+      recursive: true,
+    });
+    await writeFile(
+      path.join(cwd, "dist/civil-cases", c.slug, "index.html"),
+      "<html></html>",
     );
   }
   return cwd;
@@ -418,4 +477,61 @@ test("legacy static aliases preserve both exact slash variants", async (t) => {
     assert.equal(matches[0].to, to);
     assert.equal(matches[0].status, 301);
   }
+});
+
+test("historical case paths resolve by retained ID to the current database slug", async (t) => {
+  const cases = historicalCases.map((c) => ({
+    ...c,
+    slug: `${c.slug}-current`,
+  }));
+  const cwd = await createFixture(t, retainedAgencies, cases);
+  const result = runGenerator(cwd);
+  assert.equal(result.status, 0, result.stderr);
+  const { redirects } = JSON.parse(
+    await readFile(path.join(cwd, "dist/_redirect-map.json"), "utf8"),
+  );
+  for (const c of cases) {
+    for (const from of [
+      `/civil-cases/${c.oldSlug}/`,
+      `/civil-litigation/${c.state}/${c.oldSlug}/`,
+    ]) {
+      const matches = redirects.filter((r) => r.from === from);
+      assert.equal(matches.length, 1, from);
+      assert.equal(matches[0].to, `/civil-cases/${c.slug}/`);
+      assert.equal(matches[0].status, 301);
+      await readFile(path.join(cwd, "dist", matches[0].to, "index.html"));
+    }
+  }
+});
+
+test("historical case aliases do not match another ID by slug", async (t) => {
+  const cwd = await createFixture(
+    t,
+    retainedAgencies,
+    historicalCases.map((c) => ({ ...c, id: "unrelated-" + c.id })),
+  );
+  const result = runGenerator(cwd);
+  assert.equal(result.status, 0, result.stderr);
+  const { redirects } = JSON.parse(
+    await readFile(path.join(cwd, "dist/_redirect-map.json"), "utf8"),
+  );
+  assert.equal(
+    redirects.some((r) =>
+      historicalCases.some((c) => r.from.includes(c.oldSlug)),
+    ),
+    false,
+  );
+});
+
+test("historical case aliases fail when a resolved destination was not built", async (t) => {
+  const cwd = await createFixture(t);
+  await rm(path.join(cwd, "dist/civil-cases", historicalCases[0].slug), {
+    recursive: true,
+  });
+  const result = runGenerator(cwd);
+  assert.notEqual(result.status, 0);
+  assert.match(
+    result.stderr,
+    /Historical case alias destination was not built/,
+  );
 });
