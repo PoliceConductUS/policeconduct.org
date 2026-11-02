@@ -1,3 +1,4 @@
+import { caseSlugRedirects } from "./case-slug-redirects.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { statSync } from "node:fs";
 import path from "node:path";
@@ -194,6 +195,19 @@ const redirects = await withDb(async (client) => {
       `,
     )
   ).rows;
+
+  const historicalCaseRows = (
+    await client.query(`
+    select a.old_path, a.civil_case_id, c.slug
+    from public.civil_case_url_alias a
+    left join public.civil_cases c on c.id = a.civil_case_id
+    order by a.old_path
+  `)
+  ).rows;
+  const historicalCaseRedirects = caseSlugRedirects(
+    historicalCaseRows,
+    hasBuiltDestination,
+  );
 
   const reportRows = (
     await client.query(
@@ -422,6 +436,7 @@ const redirects = await withDb(async (client) => {
       source: "agency.parent_federal_agency_id legacy agency route",
     })),
     ...approvedDuplicateRedirects,
+    ...historicalCaseRedirects,
     ...civilCaseRows.map((civilCase) => ({
       from: normalizePath(
         `/civil-litigation/${civilCase.state}/${civilCase.slug}/`,

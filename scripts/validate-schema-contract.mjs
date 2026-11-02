@@ -143,6 +143,11 @@ const requiredTables = {
     columns: ["id", "civil_case_id", "agency_personnel_id"],
     notNull: ["id", "civil_case_id", "agency_personnel_id"],
   },
+  civil_case_url_alias: {
+    columns: ["old_path", "civil_case_id", "evidence", "recorded_at"],
+    notNull: ["old_path", "civil_case_id", "evidence", "recorded_at"],
+    uniqueColumnSets: [["old_path"]],
+  },
   civil_cases: {
     columns: [
       "id",

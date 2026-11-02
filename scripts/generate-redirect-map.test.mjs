@@ -78,6 +78,10 @@ const createFixture = async (t, duplicateRows = retainedAgencies) => {
     new URL("../src/lib/video.ts", import.meta.url),
     path.join(cwd, "src/lib/video.ts"),
   );
+  await copyFile(
+    new URL("./case-slug-redirects.mjs", import.meta.url),
+    path.join(cwd, "scripts/case-slug-redirects.mjs"),
+  );
   await writeFile(path.join(cwd, "package.json"), '{"type":"module"}');
   await writeFile(
     path.join(cwd, "src/lib/geo/states.ts"),
@@ -125,6 +129,7 @@ const createFixture = async (t, duplicateRows = retainedAgencies) => {
     path.join(cwd, "src/lib/db.js"),
     `const responses = ${JSON.stringify(responses)};
      export const withDb = (run) => run({query: async (sql, values) => {
+       if (sql.includes("from public.civil_case_url_alias")) return { rows: [] };
        if (sql.includes("from public.personnel where id")) {
          return {rows: [{slug: "john-farmakes-l2v4t3"}]};
        }

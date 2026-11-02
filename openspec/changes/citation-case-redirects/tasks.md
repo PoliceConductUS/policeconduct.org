@@ -1,0 +1,3 @@
+- [x] Test historical aliases against current case slugs, duplicate ownership, and absent destinations.
+- [x] Read aliases from the database and generate direct 301 redirects.
+- [x] Verify both old URL formats against the isolated migrated corpus.
