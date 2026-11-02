@@ -155,7 +155,7 @@ test("report keeps authored description and displays distinct narrative fields",
     page.getByRole("heading", { name: "Requested outcome" }),
   ).toBeVisible();
 });
-test("closed case displays ending date, incident geography and update date", async ({
+test("closed case displays ending date and incident geography without an internal update date", async ({
   page,
 }) => {
   const {
@@ -185,7 +185,7 @@ test("closed case displays ending date, incident geography and update date", asy
   ).toHaveAttribute("href", row.path);
   await expect(
     page.locator(".fact-list dt").getByText("Updated", { exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
 });
 test("coverage preserves source, publication date, notes and linked personnel", async ({
   page,
