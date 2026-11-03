@@ -105,15 +105,30 @@ test("missing-copy and processing states give honest copy and a donation link", 
       "retrieval_failed",
       "authentication_failed",
       "generation_failed",
+      "available_unsummarized",
     ]) {
       const html = await container.renderToString(Component, {
-        props: { unavailability: reason ? { reason } : null },
+        props: {
+          unavailability: reason
+            ? { reason, sourceUrl: "https://example.org/complaint.pdf" }
+            : null,
+        },
       });
       assert.match(html, /href="\/donate\/"/);
       if (reason === "missing_copy")
         assert.match(html, /don’t have a copy of the complaint/);
       else
         assert.doesNotMatch(html, /don’t have a copy|complaint is unavailable/);
+      if (reason === "available_unsummarized") {
+        assert.match(
+          html,
+          /The complaint is available, but we were unable to summarize it/,
+        );
+        assert.match(html, /href="https:\/\/example.org\/complaint.pdf"/);
+        assert.match(html, /Read the complaint/);
+      } else {
+        assert.doesNotMatch(html, /Read the complaint/);
+      }
       assert.doesNotMatch(html, /AI-generated summary of the complaint/);
     }
   } finally {

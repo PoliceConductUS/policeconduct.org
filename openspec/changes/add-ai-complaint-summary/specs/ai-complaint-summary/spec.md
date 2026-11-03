@@ -59,3 +59,13 @@ Case detail pages SHALL separate summary, personnel, agencies and related links 
 
 - **WHEN** the page displays the donation message and related entities
 - **THEN** each content section has a visible gap before the next heading and the facts sit below the header without redundant top padding
+
+### Requirement: Available complaint without a reliable summary
+
+The system SHALL retain an `available_unsummarized` disposition with the complaint document URL when a copy is available but automated review cannot produce a reliable summary. This disposition SHALL NOT be treated as a completed AI summary or require user review.
+
+#### Scenario: Complaint cannot be summarized reliably
+
+- **WHEN** a retained complaint cannot be summarized reliably
+- **THEN** the case page states "The complaint is available, but we were unable to summarize it." and links to the complaint document
+- **AND** the disposition is applied through the final intake run after summary calculation is complete

@@ -72,6 +72,13 @@ test("unavailability requires evidence and cannot contradict a completed summary
     detail: "Copy absent from retained records.",
   };
   assert.deepEqual(requireComplaintSummaryUnavailability(state, null), state);
+  assert.deepEqual(
+    requireComplaintSummaryUnavailability(
+      { ...state, reason: "available_unsummarized" },
+      null,
+    ),
+    { ...state, reason: "available_unsummarized" },
+  );
   assert.equal(requireComplaintSummaryUnavailability(null, null), null);
   assert.throws(() => requireComplaintSummaryUnavailability(state, summary));
   for (const key of Object.keys(state)) {

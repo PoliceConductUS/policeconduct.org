@@ -121,7 +121,8 @@ export type ComplaintSummaryUnavailability = {
     | "pending"
     | "retrieval_failed"
     | "authentication_failed"
-    | "generation_failed";
+    | "generation_failed"
+    | "available_unsummarized";
   sourceUrl: string;
   checkedAt: string;
   detail: string;
@@ -142,6 +143,7 @@ export function requireComplaintSummaryUnavailability(
       "retrieval_failed",
       "authentication_failed",
       "generation_failed",
+      "available_unsummarized",
     ].includes(String(state.reason))
   )
     throw new Error("Invalid complaint summary state.");
