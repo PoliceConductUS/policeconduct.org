@@ -11,7 +11,7 @@ test("renders escaped allegations, date-only citation and separate procedural co
   );
   const directory = new URL("../.cache/summary-render-test/", import.meta.url);
   await mkdir(directory, { recursive: true });
-  const compiled = await transform(await readFile(source, "utf8"), {
+  const compiled = transform(await readFile(source, "utf8"), {
     filename: source.pathname,
     internalURL: "astro/compiler-runtime",
     inlineComponentAssets: true,
@@ -81,7 +81,7 @@ test("missing-copy and processing states give honest copy and a donation link", 
     import.meta.url,
   );
   await mkdir(directory, { recursive: true });
-  const compiled = await transform(await readFile(source, "utf8"), {
+  const compiled = transform(await readFile(source, "utf8"), {
     filename: source.pathname,
     internalURL: "astro/compiler-runtime",
     inlineComponentAssets: true,
