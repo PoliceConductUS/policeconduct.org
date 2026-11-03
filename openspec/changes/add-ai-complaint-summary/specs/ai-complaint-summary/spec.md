@@ -32,3 +32,12 @@ The system SHALL distinguish confirmed missing complaint copies from retrieval, 
 
 - **WHEN** no summary exists but the copy is not confirmed missing
 - **THEN** the page states a complaint-based summary is not yet available without claiming the complaint is missing, and offers the same donation navigation
+
+### Requirement: Direct summary opening
+
+The page SHALL begin with the AI summary heading and attributed complaint narrative, without an additional introductory disclaimer.
+
+#### Scenario: Reading a generated summary
+
+- **WHEN** a sourced AI complaint summary renders
+- **THEN** no introductory “The following summarizes” disclaimer appears before the narrative

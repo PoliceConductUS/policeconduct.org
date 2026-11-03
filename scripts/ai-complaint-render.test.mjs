@@ -55,7 +55,8 @@ test("renders escaped allegations, date-only citation and separate procedural co
       },
     });
     assert.match(html, /AI-generated summary of the complaint/);
-    assert.match(html, /plaintiff’s allegations/);
+    assert.doesNotMatch(html, /The following summarizes/);
+    assert.match(html, /Plaintiff alleges/);
     assert.match(html, /&lt;script&gt;/);
     assert.doesNotMatch(html, /<script\b/i);
     assert.match(html, /filed January 2, 2025/);

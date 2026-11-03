@@ -15,10 +15,6 @@ const { summary } = Astro.props;
 
 <section aria-labelledby="complaint-summary-heading">
   <h2 id="complaint-summary-heading">AI-generated summary of the complaint</h2>
-  <p>
-    The following summarizes the plaintiff’s allegations, not findings that
-    those allegations are true.
-  </p>
   {summary.summary.split(/\n\s*\n/).map((paragraph) => (
     <p>{paragraph}</p>
   ))}
