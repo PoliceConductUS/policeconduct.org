@@ -1,5 +1,7 @@
 ---
 import { getVideoEmbedUrl } from "#src/lib/video.js";
+import ComplaintSummaryUnavailable from "#src/components/ComplaintSummaryUnavailable.astro";
+import AiComplaintSummary from "#src/components/AiComplaintSummary.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import "#src/styles/civic-ledger.css";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
@@ -238,6 +240,13 @@ const structuredData = {
 
   <div class="detail-layout civic-section civic-section--last">
     <article class="detail-body">
+      {data.civilCase.ai_complaint_summary ? (
+        <AiComplaintSummary summary={data.civilCase.ai_complaint_summary} />
+      ) : (
+        <ComplaintSummaryUnavailable
+          unavailability={data.civilCase.complaint_summary_unavailability}
+        />
+      )}
       {data.officers.length ? (
         <>
           <h2>Personnel named in this case</h2>
