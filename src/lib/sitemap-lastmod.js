@@ -1,3 +1,4 @@
+import { currentAssignmentSql } from "./data/annotation-access.js";
 import { withDb } from "./db.js";
 import { US_STATE_TILES } from "./geo/states.js";
 
@@ -168,7 +169,7 @@ export const buildSitemapLastmodMap = async () => {
             left join public.agency_personnel ao on ao.agency_id = a.id
             left join public.agency_personnel ao_active
               on ao_active.agency_id = a.id
-             and ao_active.end_date is null
+             and ${currentAssignmentSql("ao_active")}
             left join public.personnel o on o.id = ao.personnel_id
             left join public.review_personnel ro on ro.agency_personnel_id = ao.id
             left join public.reviews r on r.id = ro.review_id
@@ -270,7 +271,7 @@ export const buildSitemapLastmodMap = async () => {
               count(*) over (partition by ao.agency_id) as active_personnel_count
             from public.agency_personnel ao
             join public.agency a on a.id = ao.agency_id
-            where ao.end_date is null
+            where ${currentAssignmentSql("ao")}
           ),
           officer_report_counts as (
             select
