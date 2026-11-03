@@ -50,3 +50,12 @@ The page SHALL omit disclaimer prose, retrieval/model/confidence details, page r
 
 - **WHEN** the summary renders
 - **THEN** readers see the narrative and a compact complaint link without the internal verification display
+
+### Requirement: Consistent case section spacing
+
+Case detail pages SHALL separate summary, personnel, agencies and related links with consistent section gaps and avoid doubled padding between header actions and facts.
+
+#### Scenario: Reading a case with no summary
+
+- **WHEN** the page displays the donation message and related entities
+- **THEN** each content section has a visible gap before the next heading and the facts sit below the header without redundant top padding

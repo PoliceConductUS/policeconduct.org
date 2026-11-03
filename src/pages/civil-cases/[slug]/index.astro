@@ -181,7 +181,7 @@ const structuredData = {
     />
   </Fragment>
 
-  <section class="civic-section">
+  <section class="civic-section civic-section--facts">
     <dl class="fact-list">
       {data.civilCase.cause_number ? (
         <div>
@@ -239,7 +239,7 @@ const structuredData = {
   </section>
 
   <div class="detail-layout civic-section civic-section--last">
-    <article class="detail-body">
+    <article class="detail-body detail-body--sections">
       {data.civilCase.ai_complaint_summary ? (
         <AiComplaintSummary summary={data.civilCase.ai_complaint_summary} />
       ) : (
@@ -248,7 +248,7 @@ const structuredData = {
         />
       )}
       {data.officers.length ? (
-        <>
+        <section>
           <h2>Personnel named in this case</h2>
           {data.officers.map((officer) => (
             <p>
@@ -258,11 +258,11 @@ const structuredData = {
               {officer.title ? ` — ${officer.title}` : ""}
             </p>
           ))}
-        </>
+        </section>
       ) : null}
 
       {data.agencies.length ? (
-        <>
+        <section>
           <h2>Agencies</h2>
           {data.agencies.map((agency) => (
             <p>
@@ -272,11 +272,11 @@ const structuredData = {
                 : ""}
             </p>
           ))}
-        </>
+        </section>
       ) : null}
 
       {coverageLinks.length ? (
-        <>
+        <section>
           <h2>Related links</h2>
           {coverageLinks.map((link) => (
             <p>
@@ -295,7 +295,7 @@ const structuredData = {
               </a>
             </p>
           ))}
-        </>
+        </section>
       ) : null}
     </article>
 
@@ -311,13 +311,13 @@ const structuredData = {
               Find this case on CourtListener
             </a>
           )}{" "}
-          to set up notifications.
+          to set up notifications.{" "}
           <a href="https://www.courtlistener.com/help/alerts/">
             Learn about CourtListener alerts →
           </a>
         </li>
         <li>
-          Know something about this case?
+          Know something about this case?{" "}
           <a href="/civil-cases/suggest-edit/">Suggest an edit →</a>
         </li>
       </ul>
