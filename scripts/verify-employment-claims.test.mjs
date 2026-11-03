@@ -157,13 +157,13 @@ test("CLI checks the selected host even when sitemap URLs name another origin", 
 
 test("CLI refuses redirects rather than verifying a different origin", async (t) => {
   let foreignHits = 0;
-  const foreign = await serve(t, (req, res) => {
+  const foreign = await serve(t, (_req, res) => {
     foreignHits += 1;
     res.end(
       `<sitemapindex><sitemap><loc>${foreign}/sitemap.xml</loc></sitemap></sitemapindex>`,
     );
   });
-  const host = await serve(t, (req, res) => {
+  const host = await serve(t, (_req, res) => {
     res.writeHead(302, { Location: `${foreign}/sitemap-index.xml` });
     res.end();
   });

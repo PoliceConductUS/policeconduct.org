@@ -54,7 +54,8 @@
     "validate:shell": "bash -n .githooks/* scripts/*.sh infrastructure/bootstrap-*/*.sh infrastructure/bootstrap-*/scripts/*.sh",
     "validate:types": "astro check",
     "deploy:preview:sync": "bash scripts/deploy-preview-sync.sh",
-    "test:lambda": "npm --prefix infrastructure/bootstrap-policeconduct/lambdas/forms-api ci --omit=dev --no-audit --no-fund && node --test infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs"
+    "test:lambda": "npm --prefix infrastructure/bootstrap-policeconduct/lambdas/forms-api ci --omit=dev --no-audit --no-fund && node --test infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs",
+    "verify:report-titles": "node scripts/verify-report-titles.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
