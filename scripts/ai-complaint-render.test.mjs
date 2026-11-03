@@ -4,7 +4,7 @@ import { readFile, mkdir, writeFile, rm } from "node:fs/promises";
 import { transform } from "@astrojs/compiler-rs";
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 
-test("renders escaped allegations, date-only citation and separate procedural context", async () => {
+test("renders escaped complaint narrative with a compact citation", async () => {
   const source = new URL(
     "../src/components/AiComplaintSummary.astro",
     import.meta.url,
@@ -59,14 +59,18 @@ test("renders escaped allegations, date-only citation and separate procedural co
     assert.match(html, /Plaintiff alleges/);
     assert.match(html, /&lt;script&gt;/);
     assert.doesNotMatch(html, /<script\b/i);
-    assert.match(html, /filed January 2, 2025/);
     assert.match(html, /href="https:\/\/example.org\/docket\/3\/"/);
-    assert.match(html, /Separate procedural context/);
-    assert.match(html, /A later motion was filed/);
-    assert.ok(
-      html.indexOf("Separate procedural context") <
-        html.indexOf("A later motion was filed"),
-    );
+    assert.match(html, /Read the complaint/);
+    for (const omitted of [
+      "Separate procedural context",
+      "A later motion was filed",
+      "Confidence:",
+      "SHA-256",
+      "Retrieved",
+      "synthetic-model",
+      "Complaint page references",
+    ])
+      assert.ok(!html.includes(omitted));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

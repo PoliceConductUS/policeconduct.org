@@ -1,12 +1,5 @@
 ---
 import type { AiComplaintSummary } from "#src/lib/data/ai-complaint-summary.js";
-const formatSourceDate = (value: string) =>
-  new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(value));
 interface Props {
   summary: AiComplaintSummary;
 }
@@ -19,55 +12,6 @@ const { summary } = Astro.props;
     <p>{paragraph}</p>
   ))}
   <p>
-    Source:{" "}
-    <a href={summary.source.sourcePage}>
-      Filed complaint, document {summary.source.documentNumber}
-    </a>
-    {" — "}filed {formatSourceDate(summary.source.filingDate)}.{" "}
-    <a href={summary.source.url}>Read the complaint PDF</a>.
+    <a href={summary.source.sourcePage}>Read the complaint</a>
   </p>
-  <p>
-    Retrieved{" "}
-    <time datetime={summary.source.retrievedAt}>
-      {summary.source.retrievedAt}
-    </time>
-    . AI model: {summary.model}; generated{" "}
-    {formatSourceDate(summary.generatedAt)}.
-  </p>
-  <p>
-    Confidence: {summary.source.confidence}. {summary.limitations}
-  </p>
-  <p>
-    Complaint page references:{" "}
-    {summary.support
-      .map((entry) => `paragraph ${entry.paragraph}: pages ${entry.pages}`)
-      .join("; ")}
-    .
-  </p>
-  <details>
-    <summary>Source verification</summary>
-    <p>
-      Complaint SHA-1 verified against source metadata:{" "}
-      <code>{summary.source.sha1}</code>
-    </p>
-    <p>
-      SHA-256: <code>{summary.source.sha256}</code>
-    </p>
-  </details>
-</section>
-<section aria-labelledby="procedural-context-heading">
-  <h2 id="procedural-context-heading">Separate procedural context</h2>
-  {summary.proceduralContext.map((entry) => (
-    <div>
-      <p>{entry.text}</p>
-      <p>
-        <a href={entry.url}>
-          Court record dated {formatSourceDate(entry.sourceDate)}
-        </a>
-        . Retrieved{" "}
-        <time datetime={entry.retrievedAt}>{entry.retrievedAt}</time>.{" "}
-        {entry.confidence}
-      </p>
-    </div>
-  ))}
 </section>

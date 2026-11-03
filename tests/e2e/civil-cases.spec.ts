@@ -47,7 +47,7 @@ test.describe("civil cases", () => {
   });
 });
 
-test("renders sourced AI complaint summaries separately from procedural context", async ({
+test("renders complaint summaries with a compact source link", async ({
   page,
 }) => {
   const { Client } = await import("pg");
@@ -68,10 +68,9 @@ test("renders sourced AI complaint summaries separately from procedural context"
         exact: true,
       });
       await expect(section).toBeVisible();
-      await expect(section).toContainText("plaintiff’s allegations");
       await expect(
         section.getByRole("link", {
-          name: `Filed complaint, document ${row.ai_complaint_summary.source.documentNumber}`,
+          name: "Read the complaint",
         }),
       ).toHaveAttribute("href", row.ai_complaint_summary.source.sourcePage);
       await expect(section).toContainText(
@@ -81,9 +80,7 @@ test("renders sourced AI complaint summaries separately from procedural context"
         name: "Separate procedural context",
         exact: true,
       });
-      await expect(context).toBeVisible();
-      for (const entry of row.ai_complaint_summary.proceduralContext)
-        await expect(context).toContainText(entry.text);
+      await expect(context).toHaveCount(0);
     }
     for (const row of absent) {
       await page.goto(`/civil-cases/${row.slug}/`);

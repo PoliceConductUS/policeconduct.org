@@ -12,7 +12,7 @@ The system SHALL store AI complaint summaries independently of claims_summary an
 #### Scenario: Source-bounded rendering
 
 - **WHEN** a complete summary is loaded
-- **THEN** the page displays an AI label, attributed allegations, complaint citation and filing date, retrieval and confidence metadata, and procedural context under a separate heading
+- **THEN** the page displays an AI label, attributed complaint narrative and a compact complaint link; detailed metadata and procedural context remain internal
 
 #### Scenario: No summary
 
@@ -41,3 +41,12 @@ The page SHALL begin with the AI summary heading and attributed complaint narrat
 
 - **WHEN** a sourced AI complaint summary renders
 - **THEN** no introductory “The following summarizes” disclaimer appears before the narrative
+
+### Requirement: Concise complaint presentation
+
+The page SHALL omit disclaimer prose, retrieval/model/confidence details, page references, hashes and procedural-context sections. Full provenance and procedural records SHALL remain stored and validated internally.
+
+#### Scenario: Opening a sourced summary
+
+- **WHEN** the summary renders
+- **THEN** readers see the narrative and a compact complaint link without the internal verification display
