@@ -13,8 +13,8 @@
 - `npm ci` warns that the existing @alibaba-group/open-code-review postinstall is not covered by allowScripts. No exception or script approval was granted.
 - GA Admin Google signals, ads-personalization values and Google Ads links are unverified; an access-provider question is pending on INS-121.
 - No merge or deployment performed. Production still has the original configuration. Full release/build/sitemap checks and deployed HTML/network verification remain required.
-- Five stale inventory passages were prepared for correction in INS-16. Revision-safe writes returned 409 because the Executive Director owns a live checkout; corrections were sent to that issue for incorporation. No document changes claimed.
+- Five stale inventory passages were sent to the Executive Director after revision-safe writes returned 409. The Executive Director reports incorporating the corrections in INS-16.
 
 ## Scope of inventory evidence
 
-The inspected personnel page HTML includes one third-party script, GA4 via gtag.js, not a GTM container. Absence of separate DoubleClick/Disqus/Facebook script tags on that page does not establish absence of downstream network requests or tags on every route. Source still includes Disqus on report routes. Historical processing cannot be inferred from the new defaults.
+The inspected personnel page HTML includes one third-party script, GA4 via gtag.js, not a GTM container. Absence of separate DoubleClick/Disqus/Facebook script tags on that page does not establish absence of downstream network requests or tags on every route. Correction: the earlier Disqus source finding came from the stale ins34 checkout at fa6ca6f. Main and this branch already include ba94ac9c72f6f88d053f3f93fbf56e1dfdee9ef1 (2026-08-30), which removed the component and its report-detail invocation. On 2026-11-04 all three dated report-detail URLs in the five deployed sitemaps returned HTTP 200 with GA4 and no Disqus markers in their HTML. The evidence is limited to those pages and does not assert downstream network behavior. Historical processing cannot be inferred from the new defaults.
