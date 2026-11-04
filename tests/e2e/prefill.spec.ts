@@ -171,12 +171,9 @@ test.beforeAll(async () => {
       from public.civil_cases c
       cross join public.agency a
       join public.location_path lp on lp.location_path_id = a.location_path_id
-      where c.slug = $1 and a.slug = $2
+      where c.id = $1 and a.slug = $2
     `,
-      [
-        "lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025",
-        "irving-police-department-049f9a",
-      ],
+      ["ogecfxi5p67286qbmvkfjoa4", "irving-police-department-049f9a"],
     );
     expect(rows).toHaveLength(1);
     const record = rows[0];
