@@ -37,7 +37,7 @@ for local UI testing against deployed forms infrastructure.
 
 This repository owns no Supabase project. `supabase/` here holds only ignored
 CLI state (`.branches/`, `.temp/`), and there is no `supabase/config.toml`.
-`DATABASE_URL` in `.env` points at `127.0.0.1:54322`, which is the local
+The default local setup points `DATABASE_URL` at `127.0.0.1:54322`, the local
 Supabase instance owned by the **intake** repository
 (`../intake`, `project_id = "police-conduct-intake"`). Schema, migrations, and
 all data loading live there.
@@ -64,20 +64,27 @@ npm run cli -- data reset --no-acquire # full rebuild from already-acquired file
 - `data reset --no-acquire` is the full rebuild: it resets the schema to current
   migrations, moves the existing mutation chain into the reset command's output
   directory, then runs transform → generate → up for every source in dependency
-  order. A complete rebuild takes roughly an hour.
+  order. Rebuild time depends on the retained inputs and local resources.
 - A reset archives the chain it replaced at
   `$INTAKE_WORKSPACE/command/<timestamp>-<id>/intake/output/previous-mutations/`.
   That archive is the fastest recovery path after an unwanted reset: the chain
   that produced the previous dataset is preserved there and can be replayed
   instead of regenerated.
 
-#### This database is shared
+#### The default database is shared
 
-There is exactly one local Supabase instance on port 54322, and every
-policeconduct.org worktree and every intake worktree reads and writes it.
-Intake worktrees declare the same `project_id` and the same ports, so a reset
-started in any one of them replaces the database that all the others are using.
-Nothing locks or leases it.
+Worktrees using the default intake `project_id`, ports, and database connection
+share the instance on port 54322. A reset targeting that instance replaces the
+database for every client connected to it. A separate worktree alone does not
+isolate the database, and no worktree lock or lease protects it.
+
+Explicit isolated setups can use a separate database or container and a different
+loopback port, with `DATABASE_URL` set for that target. A separate Supabase stack
+also needs a distinct `project_id` and non-conflicting service ports. Keep its
+intake workspace and mutation chain separate. Changing `DATABASE_URL` alone does
+not retarget Supabase CLI reset or stop commands: confirm the active project and
+configuration for each command. Before a restore or reset, verify both the
+connection target and the command target; do not assume they match.
 
 Because of that, before running `data reset`, `supabase db reset`, or
 `supabase stop`, confirm no other worktree is mid-verification — a reset during
