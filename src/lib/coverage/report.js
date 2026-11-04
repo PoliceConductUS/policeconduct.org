@@ -125,7 +125,7 @@ const disputedCountGap = (classified, measuredTotal) => {
 };
 
 /**
- * The report measured a store that is not the authoritative one. Its counts are
+ * The measured schema does not match the expected intake schema. Its counts are
  * still true of that store, which is why this is a named gap rather than a
  * thrown error — but none of them may be quoted as the corpus count.
  */
@@ -145,7 +145,7 @@ const storeAuthorityGap = (authority) => {
   return Object.freeze({
     kind: GAP_KIND.MEASURED_STORE_NOT_AUTHORITATIVE,
     scope: "national",
-    detail: `This report did not measure ${SOURCE_OF_RECORD.label}, the single source of record for agency counts: ${reasons.join("; ")}. Every count below is true of the store identified above and of no other, and none of them is the corpus count.`,
+    detail: `The measured schema does not match the expected schema for ${SOURCE_OF_RECORD.label}: ${reasons.join("; ")}. Every count below is true of the store identified above and of no other, and none of them is verified as the current corpus count.`,
     unblockedBy: `Point DATABASE_URL at ${SOURCE_OF_RECORD.label} and re-run. The designation and the evidence for it are in docs/0007-authoritative-agency-store.md.`,
   });
 };
@@ -488,7 +488,8 @@ const GAP_LABEL = Object.freeze({
   [GAP_KIND.NO_RECORDS_HELD]: "nothing held",
   [GAP_KIND.NUMERATOR_UNIVERSE_UNVERIFIED]: "numerator universe unverified",
   [GAP_KIND.CORPUS_COUNT_DISPUTED]: "corpus count disputed",
-  [GAP_KIND.MEASURED_STORE_NOT_AUTHORITATIVE]: "store not authoritative",
+  [GAP_KIND.MEASURED_STORE_NOT_AUTHORITATIVE]:
+    "schema compatibility not established",
 });
 
 const num = (value) =>
@@ -543,10 +544,9 @@ export const renderCoverageReportMarkdown = (report) => {
     );
   } else {
     push(
-      `**This is not ${report.sourceOfRecord.label}**, the single source of record for agency` +
-        " counts. Read the address above before quoting any number here: this report asserts" +
-        " only what the store it measured contains, and that store is not the one our corpus" +
-        " count comes from. See *store not authoritative* below.",
+      "**Schema compatibility with the intake agency corpus is not established.**" +
+        " Counts describe only the measured database. They do not establish its provenance" +
+        " or identity as the current intake corpus. See the schema compatibility finding below.",
     );
   }
   push();

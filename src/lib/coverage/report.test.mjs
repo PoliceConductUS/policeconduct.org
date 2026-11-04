@@ -370,10 +370,13 @@ test("the legacy corpus is detected by its pre-rename tables, not by its address
   assert.ok(gap, "expected a store-authority gap");
   assert.match(gap.detail, /pre-rename officers, agency_officers/);
   assert.match(gap.detail, /personnel, build_page_payload/);
-  assert.match(gap.detail, /none of them is the corpus count/);
+  assert.match(
+    gap.detail,
+    /none of them is verified as the current corpus count/,
+  );
   assert.match(
     renderCoverageReportMarkdown(report),
-    /\*\*This is not the intake agency corpus\*\*/,
+    /Schema compatibility with the intake agency corpus is not established/,
   );
 });
 

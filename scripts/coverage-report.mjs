@@ -3,7 +3,8 @@
  * Generates the agency coverage report (INS-7) from live data.
  *
  * Reads the corpus through the same database door the site build uses, so the
- * report cannot drift from what we actually publish from.
+ * report describes that configured database at the measurement time. It does
+ * not verify rendering, deployment, or live publication.
  *
  * Point DATABASE_URL at the single source of record — the intake agency corpus
  * (ADR 0007). Intake is the only path that populates the database, so there is
@@ -13,9 +14,9 @@
  *     --out docs/coverage-report.md \
  *     --json docs/coverage-report.json
  *
- * Any other store is still measured honestly, but the report says in its opening
- * lines that its numbers are not the corpus count — decided by schema signature
- * rather than by address, since a forwarded port proves nothing.
+ * The schema signature checks compatibility, not provenance or freshness. A
+ * copied database can pass the same check, so counts must retain their measured
+ * database and timestamp rather than being treated as current corpus totals.
  *
  * `--cross-check "label=count"` remains for the case where someone arrives
  * holding a number and wants to know what it is. The legacy seed.sql dump is
