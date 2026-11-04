@@ -49,7 +49,19 @@ The redirect generator SHALL map approved legacy duplicate agency paths to the r
 
 ### Requirement: Legacy agency collections reach existing civic indexes
 
-Legacy state and federal agency collection URLs and their pagination SHALL redirect to the corresponding civic index only when its HTML exists in the build. Exact agency pagination entries SHALL cover pages derived from eligible agency counts at 50 records per page, alongside the scoped pagination wildcard. The federal civil litigation collection SHALL redirect to the existing federal index. Agency record destinations SHALL resolve through `agency.location_path_id` joined to `location_path`, using the stored agency slug; build projections select eligibility only.
+Legacy state and federal agency collection URLs and their pagination SHALL redirect to the corresponding civic index only when its HTML exists in the build. The federal civil litigation collection SHALL redirect to the existing federal index.
+
+#### Scenario: Agency pagination coverage
+
+- **WHEN** legacy agency pagination redirects are generated
+- **THEN** exact entries cover pages derived from eligible agency counts at 50 records per page
+- **AND** the scoped pagination wildcard is retained
+
+#### Scenario: Agency record identity
+
+- **WHEN** an agency record destination is resolved
+- **THEN** it uses `agency.location_path_id` joined to `location_path` and the stored agency slug
+- **AND** build projections select eligibility only
 
 #### Scenario: A collection index exists
 

@@ -180,7 +180,7 @@ output "alert_topic_arn" {
 
 
 output "submission_notifications_enabled" {
-  description = "True when this stack knows a submission notifications topic to publish to. The topic, the canary and the canary alert topic are owned by infrastructure/submission-notifications."
+  description = "True when this stack knows a submission notifications topic to publish to. The topic is owned by infrastructure/submission-notifications."
   value       = local.enable_submission_notifications
 }
 

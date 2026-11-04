@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change align-report-pages. Update Purpose after archive.
+Present approved experience reports with shared editorial structure and factual stored content, preserving canonical routes and consistent navigation.
 
 ## Requirements
 

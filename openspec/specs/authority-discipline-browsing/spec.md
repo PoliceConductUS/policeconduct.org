@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change compact-authority-discipline. Update Purpose after archive.
+Make recorded licensing-authority discipline accessible through compact summaries, complete disclosures, and local search and pagination without losing source facts or keyboard access.
 
 ## Requirements
 

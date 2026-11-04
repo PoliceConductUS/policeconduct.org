@@ -252,6 +252,24 @@ const redirects = await withDb(async (client) => {
     )
   ).rows;
 
+  // Parity with the retired "agencies" topic of
+  // src/pages/personnel/[slug]/[topic]/: it generated
+  // /personnel/{slug}/agencies/ for every officer with more than one distinct
+  // agency assignment. The profile page already carries the full assignment
+  // table, so those URLs fold back into it.
+  const multiAgencyPersonnelRows = (
+    await client.query(
+      `
+        select o.slug
+        from public.personnel o
+        join public.agency_personnel ao on ao.personnel_id = o.id
+        group by o.slug
+        having count(distinct ao.agency_id) > 1
+        order by o.slug
+      `,
+    )
+  ).rows;
+
   const retainedAgencyRows = (
     await client.query(
       `
@@ -604,6 +622,14 @@ const redirects = await withDb(async (client) => {
       }
       return pages.filter(hasBuiltDestination);
     }),
+    ...multiAgencyPersonnelRows
+      .map(({ slug }) => ({
+        from: normalizePath(`/personnel/${slug}/agencies/`),
+        to: normalizePath(`/personnel/${slug}/`),
+        status: 301,
+        source: "personnel agencies subpage retired",
+      }))
+      .filter(hasBuiltDestination),
     {
       from: "/videos/*",
       to: "/find-records/",

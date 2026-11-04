@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change state-licensing-authority-pages. Update Purpose after archive.
+Expose each recorded state licensing authority at its exact database-backed route and present attributed records without guessing identities or missing values.
 
 ## Requirements
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change filter-roster-by-personnel-discipline. Update Purpose after archive.
+Let readers filter agency rosters by discipline applying to each person while preserving employment filters and the separate attribution rules for department totals.
 
 ## Requirements
 

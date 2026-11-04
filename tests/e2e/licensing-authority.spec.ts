@@ -217,11 +217,15 @@ test("discipline pages browse ten records locally and search the entire collecti
 
 test("without JavaScript every compact discipline summary remains accessible", async ({
   browser,
+  baseURL,
 }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false });
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    baseURL,
+  });
   const page = await context.newPage();
   try {
-    await page.goto("http://127.0.0.1:4321/mn/licensing-authority/", {
+    await page.goto("/mn/licensing-authority/", {
       waitUntil: "domcontentloaded",
     });
     const all = page.locator("[data-discipline-id]");

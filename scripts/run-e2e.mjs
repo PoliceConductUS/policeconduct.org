@@ -1,11 +1,20 @@
 import { spawn } from "node:child_process";
+import { createServer } from "node:net";
 
 const host = "127.0.0.1";
-const port = "4321";
+const portProbe = createServer();
+await new Promise((resolve, reject) => {
+  portProbe.once("error", reject);
+  portProbe.listen(0, host, resolve);
+});
+const port = String(portProbe.address().port);
+await new Promise((resolve, reject) => {
+  portProbe.close((error) => (error ? reject(error) : resolve()));
+});
 const baseUrl = `http://${host}:${port}`;
 const timeoutMs = 120_000;
 
-const env = { ...process.env };
+const env = { ...process.env, DISABLE_ASTRO_DEV_TOOLBAR: "1" };
 delete env.FORCE_COLOR;
 delete env.NO_COLOR;
 
@@ -112,17 +121,12 @@ function printDevServerLog() {
   }
 }
 
-const hadExistingServer = await isServerReady();
-const devServer = hadExistingServer
-  ? null
-  : spawnProcess(
-      "mise",
-      ["exec", "--", "node", "scripts/dev.mjs", "--host", host, "--port", port],
-      {
-        detached: true,
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
+// Always serve this checkout; another worktree may already own port 4321.
+const devServer = spawnProcess(
+  process.execPath,
+  ["scripts/dev.mjs", "--host", host, "--port", port, "--ignore-lock"],
+  { detached: true, stdio: ["ignore", "pipe", "pipe"] },
+);
 
 let shuttingDown = false;
 const devServerExit = devServer
@@ -200,6 +204,7 @@ try {
       env: {
         ...env,
         PLAYWRIGHT_SKIP_WEB_SERVER: "1",
+        PLAYWRIGHT_BASE_URL: baseUrl,
       },
     },
   );
