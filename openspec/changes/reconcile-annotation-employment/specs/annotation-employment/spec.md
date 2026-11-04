@@ -33,3 +33,9 @@ An assignment SHALL be current only when its effective end date is absent and it
 
 - **WHEN** a retained separation date precedes the reported start date, or the reported start is invalid or future
 - **THEN** the assignment has uncertain status, both reported values remain visible, and no current-employer assertion is emitted
+
+#### Scenario: Follow-up forms preserve uncertainty
+
+- **WHEN** a profile has no confirmed current assignment
+- **THEN** follow-up forms do not prefill a current employer
+- **AND** only confirmed ended assignments prefill past employers

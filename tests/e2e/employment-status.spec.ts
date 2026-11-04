@@ -33,6 +33,16 @@ test("a retained reversed-date assignment does not claim current or former emplo
     .filter((node) => node["@type"] === "Person");
   expect(people.length).toBeGreaterThan(0);
   for (const person of people) expect(person).not.toHaveProperty("worksFor");
+  for (const destination of ["/personnel/new/", "/personnel/suggest-edit/"]) {
+    const payload = await page
+      .locator(`[data-prefill-to="${destination}"]`)
+      .first()
+      .getAttribute("data-prefill-payload");
+    expect(payload).not.toBeNull();
+    const fields = JSON.parse(payload!);
+    expect(fields.currentAgency ?? fields.currentEmployer).toBe("");
+    expect(fields.pastEmployers).toBe("");
+  }
 });
 
 test("Texas report titles remain report titles in visible links and structured data", async ({

@@ -198,7 +198,6 @@ if (!currentAssignment) {
   );
 }
 const hasCurrentAssignment = headline.isCurrent;
-const activeAssignment = hasCurrentAssignment ? currentAssignment : null;
 const headlineEndDateDisplay =
   headline.isEnded && headline.endDate
     ? formatAssignmentDate(headline.endDate)
@@ -305,7 +304,7 @@ const pageDescription = isDeceased
         : ""
     }, agency assignments, public reports, coverage, and civil litigation records.`;
 const pastEmployerSummary = assignmentHistory
-  .filter((entry) => entry.id !== activeAssignment?.id)
+  .filter((entry) => getAssignmentStatus(entry).isEnded)
   .map((entry) => ({
     ...entry,
   }))
@@ -313,7 +312,7 @@ const pastEmployerSummary = assignmentHistory
     const segments = [entry.agency?.name];
     const dateRange = [
       entry.start_date ? formatAssignmentDate(entry.start_date) : null,
-      entry.end_date != null ? formatAssignmentDate(entry.end_date) : "Current",
+      entry.end_date != null ? formatAssignmentDate(entry.end_date) : null,
     ]
       .filter(Boolean)
       .join(" to ");
@@ -361,9 +360,9 @@ const pastEmployerPrefillPayload = JSON.stringify({
   lastName: data.officer.last_name || "",
   suffix: data.officer.suffix || "",
   badgeNumber: currentBadge || "",
-  currentAgency: currentAgencyPrefillName,
-  currentAgencyCity: currentAgency?.city || "",
-  currentAgencyState: currentAgency?.state || "",
+  currentAgency: hasCurrentAssignment ? currentAgencyPrefillName : "",
+  currentAgencyCity: hasCurrentAssignment ? currentAgency?.city || "" : "",
+  currentAgencyState: hasCurrentAssignment ? currentAgency?.state || "" : "",
   pastEmployers: pastEmployerSummary,
   civilLitigation: civilLitigationSummary,
   reportLinks: reportLinksSummary,
@@ -373,7 +372,7 @@ const suggestEditPrefillPayload = JSON.stringify({
   officerPath,
   officerName,
   badgeNumber: currentBadge || "",
-  currentEmployer: currentAgencyPrefillName,
+  currentEmployer: hasCurrentAssignment ? currentAgencyPrefillName : "",
   pastEmployers: pastEmployerSummary,
   civilLitigation: civilLitigationSummary,
 });
