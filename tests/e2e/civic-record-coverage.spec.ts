@@ -309,7 +309,27 @@ test("excluded former agencies remain in personnel history without links to unge
     page.locator(`[data-agency-assignment-id="${assignment.id}"]`),
   ).toContainText(assignment.name);
   await expect(page.locator(`a[href="${assignment.href}"]`)).toHaveCount(0);
-  await page.goto(`/personnel/${assignment.slug}/agencies/`);
-  await expect(page.locator("tbody")).toContainText(assignment.name);
-  await expect(page.locator(`a[href="${assignment.href}"]`)).toHaveCount(0);
+});
+
+test("multi-agency personnel history lives on the profile, not an agencies subpage", async ({
+  page,
+}) => {
+  const slug = "loren-hansell-342089";
+  const {
+    rows: [officer],
+  } = await client.query(
+    `select count(*)::int as assignment_count,
+            count(distinct ap.agency_id)::int as agency_count
+     from public.personnel p join public.agency_personnel ap on ap.personnel_id=p.id
+     where p.slug=$1`,
+    [slug],
+  );
+  expect(officer.agency_count).toBeGreaterThan(1);
+  await page.goto(`/personnel/${slug}/`);
+  await expect(page.locator("#agency-assignments tbody tr")).toHaveCount(
+    officer.assignment_count,
+  );
+  await expect(
+    page.locator(`a[href="/personnel/${slug}/agencies/"]`),
+  ).toHaveCount(0);
 });

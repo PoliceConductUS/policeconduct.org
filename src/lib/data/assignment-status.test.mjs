@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   getAssignmentStatus,
+  formatAssignmentDate,
   isEndedAssignment,
   selectHeadlineAssignment,
 } from "./assignment-status.js";
@@ -19,13 +20,7 @@ test("a null end_date is current, not former", () => {
 
 test("a missing end_date field is current", () => {
   assert.equal(getAssignmentStatus({}, { now }).isCurrent, true);
-  assert.equal(getAssignmentStatus(undefined, { now }).isCurrent, true);
-});
-
-test("an empty-string end_date is current", () => {
-  const status = getAssignmentStatus({ end_date: "   " }, { now });
-  assert.equal(status.isCurrent, true);
-  assert.equal(status.endDateInvalid, false);
+  assert.equal(getAssignmentStatus(undefined, { now }).isCurrent, false);
 });
 
 test("a past end_date is ended", () => {
@@ -36,57 +31,14 @@ test("a past end_date is ended", () => {
   assert.equal(status.endDate, "2023-07-24");
 });
 
-test("a near-future end_date is still current", () => {
-  // A scheduled separation has not happened yet.
-  const status = getAssignmentStatus({ end_date: "2027-01-01" }, { now });
-  assert.equal(status.isCurrent, true);
-  assert.equal(status.isEnded, false);
-  assert.equal(status.endDateImplausible, false);
-});
-
-test("an end_date exactly one year out is still current", () => {
-  const status = getAssignmentStatus({ end_date: "2027-10-24" }, { now });
-  assert.equal(status.isCurrent, true);
-  assert.equal(status.endDateImplausible, false);
-});
-
-test("an implausibly far end_date is ended, not current", () => {
-  // The only future-dated row in the corpus: end_date 2109-02-27 on a 2015
-  // start. Reading that as present-tense employment would turn a typo into a
-  // confident claim that a named person currently works somewhere.
-  const status = getAssignmentStatus({ end_date: "2109-02-27" }, { now });
-  assert.equal(status.isEnded, true);
-  assert.equal(status.isCurrent, false);
-  assert.equal(status.endDateImplausible, true);
-});
-
 test("the implausible bound never promotes a null end_date to ended", () => {
   const status = getAssignmentStatus({ end_date: null }, { now });
   assert.equal(status.isEnded, false);
   assert.equal(status.endDateImplausible, false);
 });
 
-test("an end_date of today is still current", () => {
-  const status = getAssignmentStatus({ end_date: "2026-10-24" }, { now });
-  assert.equal(status.isCurrent, true);
-  assert.equal(status.isEnded, false);
-});
-
 test("yesterday is ended", () => {
   assert.equal(isEndedAssignment({ end_date: "2026-10-23" }, { now }), true);
-});
-
-test("a timestamp end_date compares at day granularity", () => {
-  // Late-in-day UTC timestamps must not read as a different day.
-  assert.equal(
-    getAssignmentStatus({ end_date: "2026-10-24T23:30:00Z" }, { now })
-      .isCurrent,
-    true,
-  );
-  assert.equal(
-    getAssignmentStatus({ end_date: "2026-10-23T23:30:00Z" }, { now }).isEnded,
-    true,
-  );
 });
 
 test("a Date instance is accepted", () => {
@@ -95,12 +47,6 @@ test("a Date instance is accepted", () => {
       .isEnded,
     true,
   );
-});
-
-test("an unreadable end_date stays current and is flagged", () => {
-  const status = getAssignmentStatus({ end_date: "not a date" }, { now });
-  assert.equal(status.isCurrent, true);
-  assert.equal(status.endDateInvalid, true);
 });
 
 test("headline selection prefers an open assignment over a later-started ended one", () => {
@@ -165,12 +111,89 @@ test("empty history yields no assignment and no employment claim", () => {
   assert.equal(picked.isCurrent, false);
 });
 
-test("a future end_date keeps the profile current", () => {
-  const history = [
-    { id: "a", start_date: "2020-01-01", end_date: "2021-01-01" },
-    { id: "scheduled", start_date: "2021-02-01", end_date: "2027-06-30" },
-  ];
-  const picked = selectHeadlineAssignment(history, { now });
-  assert.equal(picked.assignment.id, "scheduled");
-  assert.equal(picked.isCurrent, true);
+for (const end_date of [
+  "2109-02-27",
+  "2027-01-01",
+  "2026-10-24",
+  "2024-02-30",
+  "not a date",
+  "   ",
+]) {
+  test(`a reported uncertain separation ${JSON.stringify(end_date)} asserts neither current nor former employment`, () => {
+    const status = getAssignmentStatus({ end_date }, { now });
+    assert.equal(status.isCurrent, false);
+    assert.equal(status.isEnded, false);
+    assert.equal(status.isUnknown, true);
+  });
+}
+test("a source end date retained outside the typed column cannot become current", () => {
+  const status = getAssignmentStatus(
+    {
+      end_date: null,
+      data_source_values: { end_date: { effective_value: "unreadable" } },
+    },
+    { now },
+  );
+  assert.equal(status.isCurrent, false);
+  assert.equal(status.isEnded, false);
 });
+test("an explicit effective null correction is an open assignment", () => {
+  assert.equal(
+    getAssignmentStatus(
+      {
+        end_date: null,
+        data_source_values: { end_date: { effective_value: null } },
+      },
+      { now },
+    ).isCurrent,
+    true,
+  );
+});
+
+test("uncertain history is retained without claiming most recent employment", () => {
+  const history = [
+    { id: "uncertain", start_date: "2020-01-01", end_date: "unreadable" },
+    { id: "ended", start_date: "2022-01-01", end_date: "2023-01-01" },
+  ];
+  const headline = selectHeadlineAssignment(history, { now });
+  assert.equal(headline.isCurrent, false);
+  assert.equal(headline.hasUncertainHistory, true);
+});
+
+test("assignment calendar dates do not shift in western time zones", () => {
+  const oldTimezone = process.env.TZ;
+  try {
+    for (const timezone of [
+      "America/Chicago",
+      "America/Los_Angeles",
+      "UTC",
+      "Pacific/Auckland",
+    ]) {
+      process.env.TZ = timezone;
+      assert.equal(formatAssignmentDate("2023-07-24"), "Jul 24, 2023");
+      assert.equal(formatAssignmentDate("2024-02-30"), "2024-02-30");
+      assert.equal(formatAssignmentDate("unreadable"), "unreadable");
+    }
+  } finally {
+    if (oldTimezone === undefined) delete process.env.TZ;
+    else process.env.TZ = oldTimezone;
+  }
+});
+
+for (const assignment of [
+  { start_date: "2024-01-01", end_date: "2023-01-01" },
+  { start_date: "2027-01-01", end_date: null },
+  { start_date: "unreadable", end_date: null },
+  {
+    start_date: null,
+    end_date: null,
+    data_source_values: { start_date: { effective_value: "2024-02-30" } },
+  },
+]) {
+  test(`contradictory or uncertain start date cannot assert employment: ${JSON.stringify(assignment)}`, () => {
+    const status = getAssignmentStatus(assignment, { now });
+    assert.equal(status.isCurrent, false);
+    assert.equal(status.isEnded, false);
+    assert.equal(status.isUnknown, true);
+  });
+}

@@ -1,4 +1,6 @@
 ---
+import { annotationFromRecord } from "#src/lib/data/annotation-values.js";
+import DataAnnotations from "#src/components/DataAnnotations.astro";
 import CoverageLinks from "#src/components/CoverageLinks.astro";
 import { loadCoverageLinksForOfficer } from "#src/lib/data/coverage.js";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
@@ -10,7 +12,11 @@ import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
-import { selectHeadlineAssignment } from "#src/lib/data/assignment-status.js";
+import {
+  selectHeadlineAssignment,
+  getAssignmentStatus,
+  formatAssignmentDate,
+} from "#src/lib/data/assignment-status.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
@@ -74,6 +80,12 @@ const data = await withDb(async (client) => {
     await client.query(
       "select * from public.agency_personnel where personnel_id = $1",
       [officerId],
+    )
+  ).rows;
+  const assignmentAnnotations = (
+    await client.query(
+      "select * from public.data_annotation where status = 'active' and subject_kind = 'AgencyPersonnel' and subject_id = any($1) order by id",
+      [agencyOfficers.map((entry: { id: string }) => entry.id)],
     )
   ).rows;
   const agencyIds = agencyOfficers.map(
@@ -147,6 +159,7 @@ const data = await withDb(async (client) => {
   return {
     officer,
     agencyOfficers,
+    assignmentAnnotations,
     agencies,
     reports,
     civilCases,
@@ -184,17 +197,12 @@ if (!currentAssignment) {
     `Personnel ${data.officer.slug} is missing required agency assignment history.`,
   );
 }
-// An `end_date` we hold but cannot parse must not be turned into either claim.
-if (headline.endDateInvalid) {
-  throw new Error(
-    `Personnel ${data.officer.slug} assignment ${currentAssignment.id} has an unreadable end_date ${String(currentAssignment.end_date)}; refusing to assert an employment status.`,
-  );
-}
 const hasCurrentAssignment = headline.isCurrent;
 const activeAssignment = hasCurrentAssignment ? currentAssignment : null;
-const headlineEndDateDisplay = headline.endDate
-  ? formatShortDate(headline.endDate)
-  : null;
+const headlineEndDateDisplay =
+  headline.isEnded && headline.endDate
+    ? formatAssignmentDate(headline.endDate)
+    : null;
 const currentBadge = currentAssignment?.badge_number || null;
 const currentTitle =
   typeof currentAssignment?.title === "string"
@@ -283,8 +291,10 @@ const deceasedPublicMessage =
     : "This individual is reported deceased.");
 const assignmentStatusLabel = hasCurrentAssignment
   ? "Current agency"
-  : "Most recent agency";
-const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${hasCurrentAssignment ? currentAgency!.name : `Most recent: ${currentAgency!.name}`} | PoliceConduct.org`;
+  : headline.hasUncertainHistory
+    ? "Recorded agency"
+    : "Most recent agency";
+const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${hasCurrentAssignment ? currentAgency!.name : `${headline.hasUncertainHistory ? "Recorded" : "Most recent"}: ${currentAgency!.name}`} | PoliceConduct.org`;
 const pageDescription = isDeceased
   ? `${officerName} personnel profile with agency assignments, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
   : // The snippet is the claim most readers see, so the qualifier and the end
@@ -302,8 +312,8 @@ const pastEmployerSummary = assignmentHistory
   .map((entry) => {
     const segments = [entry.agency?.name];
     const dateRange = [
-      entry.start_date ? formatShortDate(entry.start_date) : null,
-      entry.end_date ? formatShortDate(entry.end_date) : "Current",
+      entry.start_date ? formatAssignmentDate(entry.start_date) : null,
+      entry.end_date != null ? formatAssignmentDate(entry.end_date) : "Current",
     ]
       .filter(Boolean)
       .join(" to ");
@@ -340,7 +350,7 @@ const addCivilCasePrefillPayload = JSON.stringify({
   defendants: [officerName, currentAgencyPrefillName]
     .filter(Boolean)
     .join("\n"),
-  summary: `${officerName} profile: ${officerPath}\nCurrent agency: ${currentAgencyPrefillName}`,
+  summary: `${officerName} profile: ${officerPath}\n${assignmentStatusLabel}: ${currentAgencyPrefillName}`,
   links: [officerPath, ...reportItems.slice(0, 3).map((report) => report.url)]
     .filter(Boolean)
     .join("\n"),
@@ -391,52 +401,20 @@ const statusLabel = isDeceased
   ? "Deceased"
   : hasCurrentAssignment
     ? "Active"
-    : "Former";
+    : headline.isEnded && !headline.hasUncertainHistory
+      ? "Former"
+      : "Status uncertain";
 const formatCount = (value: number) =>
   new Intl.NumberFormat("en-US").format(value);
 const unavailableValue = "--";
-const formatMonthsDuration = (months: number) => {
-  const years = Math.floor(months / 12);
-  const remainingMonths = months % 12;
-  return years
-    ? `${years} yrs${remainingMonths ? `, ${remainingMonths} mos` : ""}`
-    : `${remainingMonths} mos`;
-};
-const countAssignmentMonths = (start?: string | null, end?: string | null) => {
-  if (!start) {
-    return 0;
-  }
-  const startDate = new Date(start);
-  const endDate = end ? new Date(end) : new Date();
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-    return 0;
-  }
-  return Math.max(
-    0,
-    (endDate.getFullYear() - startDate.getFullYear()) * 12 +
-      endDate.getMonth() -
-      startDate.getMonth(),
-  );
-};
-const totalAssignmentMonths = assignmentHistory.reduce(
-  (total, entry) =>
-    total + countAssignmentMonths(entry.start_date, entry.end_date),
-  0,
-);
-const totalTimeAsOfficer = totalAssignmentMonths
-  ? formatMonthsDuration(totalAssignmentMonths)
-  : unavailableValue;
+
 const personnelMetricCards: MetricCardItem[] = [
   {
-    ...(associatedAgencyCount > 1
-      ? {
-          action: {
-            href: `${officerPath}agencies/`,
-            kind: "link" as const,
-            label: "View details",
-          },
-        }
-      : {}),
+    action: {
+      href: "#agency-assignments",
+      kind: "link" as const,
+      label: "View details",
+    },
     accent: metricVisuals.agencies.accent,
     icon: metricVisuals.agencies.icon,
     label: metricVisuals.agencies.label,
@@ -641,10 +619,6 @@ const structuredData = {
               <span class="personnel-status-pill">{statusLabel}</span>
             </dd>
           </div>
-          <div>
-            <dt>{metricLabels.totalTimeAsOfficer}</dt>
-            <dd>{totalTimeAsOfficer}</dd>
-          </div>
           {currentBadge ? (
             <div>
               <dt>Badge Number</dt>
@@ -798,7 +772,10 @@ const structuredData = {
       ) : null}
     </section>
 
-    <section class="personnel-panel personnel-panel-wide">
+    <section
+      id="agency-assignments"
+      class="personnel-panel personnel-panel-wide"
+    >
       <div class="personnel-panel-heading">
         <h2>{metricLabels.agencies}</h2>
         <p>Known agency assignments linked to this profile.</p>
@@ -847,16 +824,38 @@ const structuredData = {
                       })()}
                   </td>
                   <td>
-                    {entry.start_date ? formatShortDate(entry.start_date) : ""}
+                    {entry.start_date
+                      ? formatAssignmentDate(entry.start_date)
+                      : ""}
+                    <DataAnnotations
+                      annotations={data.assignmentAnnotations
+                        .filter(
+                          (annotation) => annotation.subject_id === entry.id,
+                        )
+                        .map(annotationFromRecord)}
+                      field="start_date"
+                    />
                   </td>
                   <td>
-                    {entry.end_date
-                      ? formatShortDate(entry.end_date)
+                    {entry.end_date != null
+                      ? formatAssignmentDate(entry.end_date)
                       : "Present"}
+                    <DataAnnotations
+                      annotations={data.assignmentAnnotations
+                        .filter(
+                          (annotation) => annotation.subject_id === entry.id,
+                        )
+                        .map(annotationFromRecord)}
+                      field="end_date"
+                    />
                   </td>
                   <td>
                     <span class="personnel-status-pill">
-                      {entry.end_date ? "Completed" : "Active"}
+                      {getAssignmentStatus(entry).isEnded
+                        ? "Completed"
+                        : getAssignmentStatus(entry).isCurrent
+                          ? "Active"
+                          : "Status uncertain"}
                     </span>
                   </td>
                 </tr>

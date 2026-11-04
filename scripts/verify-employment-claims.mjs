@@ -31,9 +31,10 @@ import { fileURLToPath } from "node:url";
 
 const ENDED_LABEL = "Most recent agency";
 const CURRENT_LABEL = "Current agency";
+const UNCERTAIN_LABEL = "Recorded agency";
 
 const HEADLINE = new RegExp(
-  `personnel-current-line[^>]*>\\s*(${ENDED_LABEL}|${CURRENT_LABEL})\\s*:`,
+  `personnel-current-line[^>]*>\\s*(${ENDED_LABEL}|${CURRENT_LABEL}|${UNCERTAIN_LABEL})\\s*:`,
 );
 const WORKS_FOR = /"worksFor"\s*:/;
 const ENDED_MARKER = /assignment ended\s+([A-Z][a-z]{2} \d{1,2}, \d{4})/;
@@ -44,7 +45,7 @@ const ENDED_MARKER = /assignment ended\s+([A-Z][a-z]{2} \d{1,2}, \d{4})/;
  *
  * @param {string} html
  * @returns {{
- *   headline: "ended" | "current" | null,
+ *   headline: "ended" | "current" | "uncertain" | null,
  *   worksFor: boolean,
  *   endDate: string | null,
  *   violations: string[],
@@ -55,7 +56,9 @@ export const classifyEmploymentClaims = (html) => {
   const headline = match
     ? match[1] === ENDED_LABEL
       ? "ended"
-      : "current"
+      : match[1] === CURRENT_LABEL
+        ? "current"
+        : "uncertain"
     : null;
   const worksFor = WORKS_FOR.test(html);
   const endedMarker = ENDED_MARKER.exec(html);
@@ -71,6 +74,9 @@ export const classifyEmploymentClaims = (html) => {
     if (!endDate) {
       violations.push("ended assignment renders no explicit end date");
     }
+  }
+  if (headline === "uncertain" && worksFor) {
+    violations.push("uncertain assignment asserts schema.org worksFor");
   }
   if (headline === "current" && endDate) {
     violations.push(
@@ -216,7 +222,7 @@ const main = async () => {
     ? await collectDistPages(args.dist)
     : await collectHostPages(args.host, args.sample, args.seed);
 
-  const counts = { ended: 0, current: 0, unknown: 0, errors: 0 };
+  const counts = { ended: 0, current: 0, uncertain: 0, unknown: 0, errors: 0 };
   const failures = [];
   const CONCURRENCY = args.concurrency ?? (args.dist ? 32 : 4);
 
@@ -238,6 +244,7 @@ const main = async () => {
       const result = classifyEmploymentClaims(html);
       if (result.headline === "ended") counts.ended += 1;
       else if (result.headline === "current") counts.current += 1;
+      else if (result.headline === "uncertain") counts.uncertain += 1;
       else counts.unknown += 1;
       if (result.violations.length) {
         failures.push({ id: page.id, violations: result.violations });
@@ -246,7 +253,8 @@ const main = async () => {
   };
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 
-  const checked = counts.ended + counts.current + counts.unknown;
+  const checked =
+    counts.ended + counts.current + counts.uncertain + counts.unknown;
   if (!checked) {
     console.error(
       "Inspected 0 personnel pages. That is a failure, not a pass: the claims" +
@@ -259,6 +267,7 @@ const main = async () => {
   );
   console.log(`  headline ended   (former association): ${counts.ended}`);
   console.log(`  headline current (open association)  : ${counts.current}`);
+  console.log(`  headline uncertain                   : ${counts.uncertain}`);
   console.log(`  headline not detected                : ${counts.unknown}`);
 
   if (counts.unknown) {

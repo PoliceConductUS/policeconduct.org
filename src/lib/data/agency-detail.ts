@@ -1,7 +1,8 @@
-import { groupBy, mapBy } from "#src/lib/data.js";
+import { currentAssignmentSql } from "./annotation-access.js";
+import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { withDb } from "#src/lib/db.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
-import { isEndedAssignment } from "./assignment-status.js";
+import { isEndedAssignment, isCurrentAssignment } from "./assignment-status.js";
 import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
 import { normalizeLicenseStatus, normalizeLicenseType } from "./licensing.js";
@@ -31,6 +32,11 @@ type PersonnelLinkedCivilCaseRow = {
   target_title: string | null;
   target_start_date: string | null;
   target_end_date: string | null;
+  target_is_current: boolean;
+  target_source_values: {
+    start_date?: { effective_value: unknown };
+    end_date?: { effective_value: unknown };
+  };
 };
 
 export type AgencyScopedTopicKind =
@@ -503,7 +509,9 @@ const loadAgencyRows = async (agencyId: string) =>
                 case_bpp.path as case_agency_canonical_path,
                 target_ao.title as target_title,
                 target_ao.start_date as target_start_date,
-                target_ao.end_date as target_end_date
+                target_ao.end_date as target_end_date,
+                target_ao.data_source_values as target_source_values,
+                ${currentAssignmentSql("target_ao")} as target_is_current
               from public.civil_case_personnel cco
               join public.civil_cases c
                 on c.id = cco.civil_case_id
@@ -524,7 +532,7 @@ const loadAgencyRows = async (agencyId: string) =>
                 where target_assignment.agency_id = $1
                   and target_assignment.personnel_id = case_ao.personnel_id
                 order by
-                  (target_assignment.end_date is null) desc,
+                  (${currentAssignmentSql("target_assignment")}) desc,
                   coalesce(target_assignment.end_date, target_assignment.start_date) desc nulls last,
                   target_assignment.id
                 limit 1
@@ -688,7 +696,7 @@ const buildAgencyDetail = async (agencyId: string) => {
     );
   };
 
-  const employees = data.agencyOfficers
+  const employees = normalizeAgencyHistory(data.agencyOfficers)
     .map(
       (entry: {
         personnel_id: string;
@@ -722,11 +730,11 @@ const buildAgencyDetail = async (agencyId: string) => {
       },
     )
     .sort(comparePersonnelEntry);
-  const currentEmployees = employees.filter(
-    (employee) => !employee.entry.end_date,
+  const currentEmployees = employees.filter((employee) =>
+    isCurrentAssignment(employee.entry),
   );
-  const formerEmployees = employees.filter(
-    (employee) => employee.entry.end_date,
+  const formerEmployees = employees.filter((employee) =>
+    isEndedAssignment(employee.entry),
   );
 
   const civilCases = data.civilCases.map(
@@ -801,11 +809,15 @@ const buildAgencyDetail = async (agencyId: string) => {
           title: entry.target_title || null,
           startDate: entry.target_start_date || null,
           endDate: entry.target_end_date || null,
-          // Same end_date rule as the personnel profile and the roster, so one
-          // assignment cannot read "former" here and "current" there (INS-75).
-          relationship: isEndedAssignment({ end_date: entry.target_end_date })
-            ? "former"
-            : "current",
+          relationship: entry.target_is_current
+            ? "current"
+            : isEndedAssignment({
+                  start_date: entry.target_start_date,
+                  end_date: entry.target_end_date,
+                  data_source_values: entry.target_source_values,
+                })
+              ? "former"
+              : "uncertain",
         },
       })),
     };

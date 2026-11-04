@@ -1,3 +1,4 @@
+import { currentAssignmentSql } from "../src/lib/data/annotation-access.js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { statSync } from "node:fs";
 import path from "node:path";
@@ -240,7 +241,7 @@ const redirects = await withDb(async (client) => {
             lower(a.state) as category
           from public.agency_personnel ao
           join public.agency a on a.id = ao.agency_id
-          where ao.end_date is null
+          where ${currentAssignmentSql("ao")}
             and a.state is not null
           order by ao.personnel_id, ao.start_date desc
         )
@@ -252,12 +253,30 @@ const redirects = await withDb(async (client) => {
     )
   ).rows;
 
+  // Parity with the retired "agencies" topic of
+  // src/pages/personnel/[slug]/[topic]/: it generated
+  // /personnel/{slug}/agencies/ for every officer with more than one distinct
+  // agency assignment. The profile page already carries the full assignment
+  // table, so those URLs fold back into it.
+  const multiAgencyPersonnelRows = (
+    await client.query(
+      `
+        select o.slug
+        from public.personnel o
+        join public.agency_personnel ao on ao.personnel_id = o.id
+        group by o.slug
+        having count(distinct ao.agency_id) > 1
+        order by o.slug
+      `,
+    )
+  ).rows;
+
   const retainedAgencyRows = (
     await client.query(
       `
         select a.id, a.slug, lp.path as location_path,
           (select count(*) from public.agency_personnel ap
-           where ap.agency_id = a.id and ap.end_date is null) as assignment_count
+           where ap.agency_id = a.id and ${currentAssignmentSql("ap")} ) as assignment_count
         from public.agency a
         join public.location_path lp
           on lp.location_path_id = a.location_path_id
@@ -604,6 +623,14 @@ const redirects = await withDb(async (client) => {
       }
       return pages.filter(hasBuiltDestination);
     }),
+    ...multiAgencyPersonnelRows
+      .map(({ slug }) => ({
+        from: normalizePath(`/personnel/${slug}/agencies/`),
+        to: normalizePath(`/personnel/${slug}/`),
+        status: 301,
+        source: "personnel agencies subpage retired",
+      }))
+      .filter(hasBuiltDestination),
     {
       from: "/videos/*",
       to: "/find-records/",

@@ -381,7 +381,9 @@ test.describe("report new", () => {
     const draftSave = page.waitForResponse((response) => {
       return (
         response.url().includes("/api/forms/draft") &&
-        response.request().method() === "POST"
+        response.request().method() === "POST" &&
+        (response.request().postDataJSON() as ReportRequestBody).data
+          .reportPurpose === "Recognize helpful conduct"
       );
     });
     await page

@@ -185,3 +185,16 @@ test("CLI through a symlink with spaces runs and fails for a missing dist", asyn
   assert.equal(result.code, 1, result.output);
   assert.match(result.output, /ENOENT/);
 });
+
+test("uncertain recorded agency is recognized and cannot assert worksFor", () => {
+  const html = '<p class="personnel-current-line">Recorded agency: Example</p>';
+  assert.equal(classifyEmploymentClaims(html).headline, "uncertain");
+  assert.deepEqual(classifyEmploymentClaims(html).violations, []);
+  assert.equal(
+    classifyEmploymentClaims(
+      html +
+        '<script type="application/ld+json">{"worksFor": {"@id":"example"}}</script>',
+    ).violations.length,
+    1,
+  );
+});

@@ -34,7 +34,7 @@
     "scan:personal-data": "node scripts/scan-personal-data.mjs --tracked",
     "setup": "bash scripts/bootstrap-dev.sh",
     "test:client": "node --test scripts/copy-link.test.mjs",
-    "test": "npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:data && npm run test:coverage && npm run test:e2e",
+    "test": "npm run test:contacts && npm run test:annotations && npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:data && npm run test:coverage && npm run test:e2e",
     "test:coverage": "node --test \"src/lib/coverage/*.test.mjs\"",
     "test:css": "node --test scripts/purge-built-css.test.mjs",
     "test:data": "node --test src/lib/data/assignment-status.test.mjs scripts/verify-employment-claims.test.mjs",
@@ -54,8 +54,10 @@
     "validate:shell": "bash -n .githooks/* scripts/*.sh infrastructure/bootstrap-*/*.sh infrastructure/bootstrap-*/scripts/*.sh",
     "validate:types": "astro check",
     "deploy:preview:sync": "bash scripts/deploy-preview-sync.sh",
-    "test:lambda": "npm --prefix infrastructure/bootstrap-policeconduct/lambdas/forms-api ci --omit=dev --no-audit --no-fund && node --test infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs",
-    "verify:report-titles": "node scripts/verify-report-titles.mjs"
+    "test:lambda": "npm --prefix infrastructure/bootstrap-policeconduct/lambdas/forms-api ci --omit=dev --no-audit --no-fund && node --test infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs infrastructure/bootstrap-policeconduct/lambdas/forms-api/dependency-runtime.test.mjs",
+    "verify:report-titles": "node scripts/verify-report-titles.mjs",
+    "test:contacts": "node --test tests/unit/contact-emails.test.mjs",
+    "test:annotations": "node --test tests/unit/data-annotations.test.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
@@ -91,10 +93,12 @@
   "overrides": {
     "purgecss": {
       "postcss-selector-parser": "7.1.7"
-    }
+    },
+    "glob": "14.0.3",
+    "minimatch": "11.0.4"
   },
   "allowScripts": {
-    "@alibaba-group/open-code-review@1.13.2": true,
+    "@alibaba-group/open-code-review@1.13.3": true,
     "fsevents@2.3.3": true
   }
 }
