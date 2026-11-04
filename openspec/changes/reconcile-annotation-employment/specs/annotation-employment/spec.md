@@ -2,7 +2,7 @@
 
 ### Requirement: Employment assertions preserve uncertain source dates
 
-The site SHALL classify an assignment as current only when its effective separation date is absent and its reported start date is absent or a valid calendar date no later than today. It SHALL classify an assignment as ended only when its effective separation date is a valid calendar date before today and no reported start date is invalid, future, or later than the separation date. Other retained separation values SHALL produce uncertain status without a current-employer structured-data assertion.
+An assignment SHALL be current only when its effective end date is absent and its start date is absent or valid and no later than today. It SHALL be ended only when its end date is valid and before today, with no invalid/future start or reversed chronology. Other retained dates SHALL produce uncertain status and no current-employer structured-data assertion.
 
 #### Scenario: Typed null retains an unreadable source value
 
