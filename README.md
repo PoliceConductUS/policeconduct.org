@@ -33,6 +33,68 @@ for local UI testing against deployed forms infrastructure.
 - `npm run validate:openspec`: validate all OpenSpec artifacts.
 - `npm run validate`: run the aggregate validation gate.
 
+### Local Database
+
+This repository owns no Supabase project. `supabase/` here holds only ignored
+CLI state (`.branches/`, `.temp/`), and there is no `supabase/config.toml`.
+The default local setup points `DATABASE_URL` at `127.0.0.1:54322`, the local
+Supabase instance owned by the **intake** repository
+(`../intake`, `project_id = "police-conduct-intake"`). Schema, migrations, and
+all data loading live there.
+
+**`supabase/seed.sql` is retired. Do not look for it in this repository and do
+not reseed from it.** Intake's `supabase/config.toml` sets `[db.seed] sql_paths
+= []`, so `db reset` no longer loads it. The database is built from migrations
+alone and then populated by the config-driven intake sources and the replayable
+data-mutation chain (intake ADR 0033). The legacy `seed.sql` is kept only as a
+record of the old website data.
+
+To populate or repopulate the database, run these from the **intake** repository
+root (they need `INTAKE_WORKSPACE`, set by intake's `mise.toml` / `.env`):
+
+```bash
+npm run cli -- data status            # applied vs pending chain entries
+npm run cli -- data up                # replay already-generated chain entries
+npm run cli -- data reset --no-acquire # full rebuild from already-acquired files
+```
+
+- `data up` only applies chain entries that already exist. It regenerates
+  nothing and is the cheapest way to bring a migrated-but-empty database to the
+  chain head.
+- `data reset --no-acquire` is the full rebuild: it resets the schema to current
+  migrations, moves the existing mutation chain into the reset command's output
+  directory, then runs transform → generate → up for every source in dependency
+  order. Rebuild time depends on the retained inputs and local resources.
+- A reset archives the chain it replaced at
+  `$INTAKE_WORKSPACE/command/<timestamp>-<id>/intake/output/previous-mutations/`.
+  That archive is the fastest recovery path after an unwanted reset: the chain
+  that produced the previous dataset is preserved there and can be replayed
+  instead of regenerated.
+
+#### The default database is shared
+
+Worktrees using the default intake `project_id`, ports, and database connection
+share the instance on port 54322. A reset targeting that instance replaces the
+database for every client connected to it. A separate worktree alone does not
+isolate the database, and no worktree lock or lease protects it.
+
+Explicit isolated setups can use a separate database or container and a different
+loopback port, with `DATABASE_URL` set for that target. A separate Supabase stack
+also needs a distinct `project_id` and non-conflicting service ports. Keep its
+intake workspace and mutation chain separate. Changing `DATABASE_URL` alone does
+not retarget Supabase CLI reset or stop commands: confirm the active project and
+configuration for each command. Before a restore or reset, verify both the
+connection target and the command target; do not assume they match.
+
+Because of that, before running `data reset`, `supabase db reset`, or
+`supabase stop`, confirm no other worktree is mid-verification — a reset during
+another agent's run invalidates that run's results. If the tables are
+unexpectedly empty, check whether a rebuild is already in progress before
+loading anything yourself; writing into an in-flight rebuild corrupts it.
+`docker logs supabase_db_police-conduct-intake` shows whether the data directory
+was re-initialized, and `$INTAKE_WORKSPACE/command/` records which command did
+it.
+
 ## PR merge checklist
 
 `package.json` defines the executable gates. Keep this checklist and the PR
