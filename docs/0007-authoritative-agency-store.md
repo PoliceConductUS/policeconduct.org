@@ -42,14 +42,16 @@ The other two numbers are not rival counts and are not reconciled _to_ agreement
   hand-curated gaps, and it lives in no git repository, so it has no diff and no
   history.
 - **`build_page_payload` is a projection of the source of record**, not another store.
-  It is held minus held-but-not-published.
+  Its rows describe the database projection, not verified public pages.
 
-The site's configured `DATABASE_URL` points at port 55432, which is not running and
-for which no pgdata or compose file exists. It is not a candidate; it is absent.
+At the original investigation, the site's configured `DATABASE_URL` pointed at port 55432, which was not running and
+for which no pgdata or compose file was found. This was a historical observation,
+not a restriction on later isolated database configurations.
 
 ### Corroborating checks
 
-Each is repeatable by someone else, and none of them is "it had the most rows".
+These checks were recorded during the original investigation; they are not live
+verification by later report runs. None of them is "it had the most rows".
 
 1. **Intake is the only populate path** — intake ADR 0033, `sql_paths = []`.
 2. **Production serves pages that exist only here.** All 237 Oregon agencies are absent
@@ -67,18 +69,17 @@ Each is repeatable by someone else, and none of them is "it had the most rows".
   `CORPUS_COUNT_DISPUTED` gap, and its normal invocation passes no `--cross-check`
   arguments at all. INS-7's other gap, `numerator_universe_unverified`, is untouched
   by this ADR.
-- The designation is **enforced, not documented**. `verifyAuthoritativeStore`
-  identifies the store by schema signature — not by address, because a forwarded port
-  or a copied connection string would let the legacy dump answer as though it were the
-  current store. Measuring a store that fails the signature raises
-  `MEASURED_STORE_NOT_AUTHORITATIVE`, and the report says in its opening lines that its
-  numbers are not the corpus count.
+- The report checks schema compatibility with the designated intake corpus.
+  A passing schema signature does not prove the measured database's provenance,
+  freshness, or identity: a copied database can pass it too. A failed signature
+  raises `MEASURED_STORE_NOT_AUTHORITATIVE`. Always scope counts to the recorded
+  connection and measurement time; the source designation remains intake.
 - **The abandoned dump can never raise a dispute.** Presenting its count to the report
   yields "abandoned — not a count of record", not a disagreement. Deliberately, no row
   count for it is stored anywhere in the code: storing one would invite exactly the
   comparison this ruling retired.
 - **The derived projection is checked live, never recorded.** `build_page_payload` is
-  compared against the published-page count the run actually measured. A projection
+  compared against the projected-page count the run actually measured. A projection
   cannot legitimately disagree with the store it projects, so a mismatch is a real
   finding — and because the check is live, it cannot go stale the way a frozen constant
   would.

@@ -2,20 +2,20 @@
 
 Generated 2026-10-25T05:55:12.823Z from database `postgres`, dialled at 127.0.0.1:54322/postgres (server reports itself as 172.18.0.10:5432).
 
-That store is **the intake agency corpus**, the single source of record for agency counts, verified here by schema signature rather than by address. Intake is the only path that populates it, so the counts below are this organisation's agency counts rather than one store's opinion of them — there is no second store to reconcile against. See `docs/0007-authoritative-agency-store.md`.
+The measured database has a schema compatible with **the intake agency corpus**. Intake remains the single source of record for agency counts; there is no second store to reconcile against. Schema compatibility does not establish this database's provenance, freshness, or identity as the current intake corpus: a copied database can pass the same check. Counts describe only the database and measurement time recorded above. See `docs/0007-authoritative-agency-store.md`.
 
 **This report contains no achieved coverage percentage.** Not one. The reason is in _Why there are no percentages_ below, and it is the most important finding here.
 
 ## What we hold
 
 - Agency records in the measured store: **3,538**
-- Of those, rendering as public agency pages: **3,393** (held is not the same as published)
+- Of those, present in the database agency page projection: **3,393** (projection rows do not establish rendering, deployment, or live publication)
 - Federal agency records included in that total: **11** (the BJS denominators count state and local agencies only)
 - Jurisdictions with at least one record: **7**
 - Jurisdictions with a denominator and zero records: **44**
 - Jurisdictions where we hold more than the denominator counts: **4**
 
-Corpus fingerprint: 3,538 rows, newest `updated_at` 2026-10-06T18:05:22.188Z. Quote these counts only with this fingerprint attached — the development database is shared and is reset without notice.
+Corpus fingerprint: 3,538 rows, newest `updated_at` 2026-10-06T18:05:22.188Z. Quote these counts only with this fingerprint attached — a database can be copied or reset, and this fingerprint does not prove provenance.
 
 ## The denominators
 

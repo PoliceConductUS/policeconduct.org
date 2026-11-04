@@ -325,14 +325,14 @@ test("a projection cannot be confirmed when the published count is unavailable",
     (g) => g.kind === GAP_KIND.CORPUS_COUNT_DISPUTED,
   );
   assert.ok(gap, "an unverifiable projection is a finding, not a pass");
-  assert.match(gap.detail, /could not measure the published-page count/);
+  assert.match(gap.detail, /could not measure the projected-page count/);
   assert.equal(report.corpusCrossChecks[0].status, "derived_drifted");
 });
 
-test("measuring the authoritative store raises no authority gap and says so", async () => {
+test("a compatible schema does not establish database provenance or live publication", async () => {
   const report = await build({ stateRows: [{ code: "TX", held: 3538 }] });
 
-  assert.equal(report.measurement.storeAuthority.isAuthoritative, true);
+  assert.equal(report.measurement.storeAuthority.schemaCompatible, true);
   assert.equal(
     report.gaps.find(
       (g) => g.kind === GAP_KIND.MEASURED_STORE_NOT_AUTHORITATIVE,
@@ -341,6 +341,15 @@ test("measuring the authoritative store raises no authority gap and says so", as
   );
   const markdown = renderCoverageReportMarkdown(report);
   assert.match(markdown, /the single source of record for\s+agency counts/);
+  assert.match(markdown, /a copied database can pass the same check/);
+  assert.match(
+    markdown,
+    /projection rows do not establish rendering, deployment, or live publication/,
+  );
+  assert.doesNotMatch(
+    markdown,
+    /verified here by schema signature|rendering as public agency pages/,
+  );
   // The point of the ruling: no second store to reconcile against.
   assert.match(markdown, /no second store to\s+reconcile against/);
 });
@@ -508,12 +517,12 @@ test("missing optional columns become recorded limitations, not crashes", async 
   });
 
   assert.equal(measurement.federalHeld, null);
-  assert.equal(measurement.publishedAsPages, null);
+  assert.equal(measurement.projectedAgencyPages, null);
   assert.equal(measurement.limitations.length, 2);
   assert.match(measurement.limitations[0].consequence, /inflate the numerator/);
   assert.match(
     measurement.limitations[1].consequence,
-    /not the same as published/,
+    /not the same as projected/,
   );
 });
 
@@ -549,7 +558,7 @@ test("the rendered report names the store, the fingerprint and both denominators
   assert.match(markdown, /14,924 general-purpose agencies/);
   assert.match(markdown, /17,541 law enforcement agencies of all types/);
   // Held is not published.
-  assert.match(markdown, /2,800.*held is not the same as published/);
+  assert.match(markdown, /2,800.*projection rows do not establish/);
   assert.match(
     markdown,
     /Federal agency records included in that total: \*\*11\*\*/,

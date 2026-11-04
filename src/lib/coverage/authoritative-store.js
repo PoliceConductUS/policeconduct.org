@@ -15,15 +15,14 @@
  * Two things still have to be enforced, which is why this is code and not a
  * comment:
  *
- * 1. **Verify we measured the source of record.** A store is identified by its
- *    schema, not its address — ports get forwarded and connection strings get
- *    copied between environments, so `127.0.0.1:54322` proves nothing. The
- *    legacy dump's defining feature is the pre-rename `officers` table.
+ * 1. **Check schema compatibility.** A schema signature distinguishes known
+ *    schema generations, but a compatible copy passes too. Neither schema nor
+ *    address establishes provenance, freshness, or live publication.
  *
  * 2. **A derived count is checked live, never recorded.** `build_page_payload`
  *    is a projection of this same store, so the report already knows what it
  *    should say. Comparing against a frozen constant would let the two drift
- *    apart silently; comparing against the measured published-page count
+ *    apart silently; comparing against the measured projected-page count
  *    cannot go stale.
  *
  * See `docs/0007-authoritative-agency-store.md`.
@@ -58,10 +57,10 @@ export const SOURCE_OF_RECORD = Object.freeze({
 });
 
 /**
- * Tables and columns that together identify the source of record.
+ * Tables and columns expected in the designated intake corpus schema.
  *
  * `absentTables` matters as much as the rest: a store carrying the pre-rename
- * `officers` table is the legacy dump, whatever else it has.
+ * `officers` table does not match this expected schema.
  */
 export const SIGNATURE = Object.freeze({
   tables: Object.freeze(["agency", "personnel", "build_page_payload"]),
@@ -111,7 +110,7 @@ export const NON_SOURCE_STORES = Object.freeze([
       /page payload/i,
       /projection/i,
     ]),
-    note: "The published subset of the source of record, not another corpus. refresh-build-projections.mjs filters to agencies eligible to render, so this is held minus held-but-not-published. The report measures it directly, so it is checked live rather than recorded.",
+    note: "The agency page projection in the measured database, not another corpus. Projection rows do not establish successful rendering, deployment, or live publication. The report measures them directly.",
   }),
 ]);
 
@@ -143,7 +142,7 @@ const forReport = (entry) =>
  * a finding — that is the whole content of the board's ruling.
  *
  * @param {{ store: string, count: number }} check
- * @param {{ totalHeld: number, publishedAsPages: number | null }} measurement
+ * @param {{ totalHeld: number, projectedAgencyPages: number | null }} measurement
  */
 export const classifyCrossCheck = (check, measurement) => {
   const entry = findStore(check.store);
@@ -158,19 +157,19 @@ export const classifyCrossCheck = (check, measurement) => {
 
   if (entry?.status === STORE_STATUS.DERIVED) {
     // Checked against the number this report measured, so it cannot go stale.
-    const published = measurement.publishedAsPages;
+    const published = measurement.projectedAgencyPages;
     if (published === null) {
       return Object.freeze({
         status: STORE_STATUS.DERIVED_DRIFTED,
         storeRecord: forReport(entry),
-        detail: `This run could not measure the published-page count, so ${check.count.toLocaleString("en-US")} cannot be confirmed as a projection of the source of record.`,
+        detail: `This run could not measure the projected-page count, so ${check.count.toLocaleString("en-US")} cannot be confirmed as a projection of the source of record.`,
       });
     }
     if (published !== check.count) {
       return Object.freeze({
         status: STORE_STATUS.DERIVED_DRIFTED,
         storeRecord: forReport(entry),
-        detail: `${entry.label} reports ${check.count.toLocaleString("en-US")}, but this report measured ${published.toLocaleString("en-US")} agencies rendering as pages in the source of record. A projection cannot disagree with the store it projects, so one of the two is out of date.`,
+        detail: `${entry.label} reports ${check.count.toLocaleString("en-US")}, but this report measured ${published.toLocaleString("en-US")} agency rows in the measured database projection. A projection cannot disagree with the store it projects, so one of the two is out of date.`,
       });
     }
     return Object.freeze({
@@ -196,7 +195,7 @@ export const classifyCrossCheck = (check, measurement) => {
 };
 
 /**
- * Verify the measured store is the source of record, by schema signature.
+ * Check schema compatibility; this does not verify provenance.
  *
  * @param {{ query: (sql: string, params?: unknown[]) => Promise<{ rows: any[] }> }} client
  */
@@ -226,10 +225,10 @@ export const verifyAuthoritativeStore = async (client) => {
   );
 
   return Object.freeze({
-    storeId: SOURCE_OF_RECORD.id,
-    isAuthoritative: missing.length === 0 && unexpected.length === 0,
+    expectedStoreId: SOURCE_OF_RECORD.id,
+    schemaCompatible: missing.length === 0 && unexpected.length === 0,
     missing: Object.freeze(missing),
-    /** Pre-rename tables, whose presence means this is the legacy dump. */
+    /** Pre-rename tables, whose presence fails the compatibility check. */
     unexpected: Object.freeze(unexpected),
   });
 };

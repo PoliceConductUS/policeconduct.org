@@ -15,14 +15,14 @@
       "oldest_created_at": "2026-09-30T17:33:15.846Z"
     },
     "storeAuthority": {
-      "storeId": "intake-agency-corpus",
-      "isAuthoritative": true,
+      "expectedStoreId": "intake-agency-corpus",
+      "schemaCompatible": true,
       "missing": [],
       "unexpected": []
     },
     "totalHeld": 3538,
     "federalHeld": 11,
-    "publishedAsPages": 3393,
+    "projectedAgencyPages": 3393,
     "byState": [
       {
         "code": "TX",

@@ -130,7 +130,7 @@ const disputedCountGap = (classified, measuredTotal) => {
  * thrown error — but none of them may be quoted as the corpus count.
  */
 const storeAuthorityGap = (authority) => {
-  if (!authority || authority.isAuthoritative) {
+  if (!authority || authority.schemaCompatible) {
     return null;
   }
   const reasons = [];
@@ -139,7 +139,7 @@ const storeAuthorityGap = (authority) => {
   }
   if (authority.unexpected.length > 0) {
     reasons.push(
-      `it carries the pre-rename ${authority.unexpected.join(", ")}, which only the legacy corpus has`,
+      `it carries the pre-rename ${authority.unexpected.join(", ")}, which is incompatible with the expected current schema`,
     );
   }
   return Object.freeze({
@@ -532,13 +532,14 @@ export const renderCoverageReportMarkdown = (report) => {
   );
   push();
   const authority = report.measurement.storeAuthority;
-  if (authority?.isAuthoritative) {
+  if (authority?.schemaCompatible) {
     push(
-      `That store is **${report.sourceOfRecord.label}**, the single source of record for` +
-        " agency counts, verified here by schema signature rather than by address. Intake is" +
-        " the only path that populates it, so the counts below are this organisation's agency" +
-        " counts rather than one store's opinion of them — there is no second store to" +
-        " reconcile against. See `docs/0007-authoritative-agency-store.md`.",
+      `The measured database has a schema compatible with **${report.sourceOfRecord.label}**.` +
+        " Intake remains the single source of record for agency counts; there is no second store to" +
+        " reconcile against. Schema compatibility does not establish this database's provenance," +
+        " freshness, or identity as the current intake corpus: a copied database can pass the same check." +
+        " Counts describe only the database and measurement time recorded above." +
+        " See `docs/0007-authoritative-agency-store.md`.",
     );
   } else {
     push(
@@ -573,9 +574,9 @@ export const renderCoverageReportMarkdown = (report) => {
   push(
     `- Agency records in the measured store: **${num(report.national.held)}**`,
   );
-  if (Number.isInteger(report.measurement.publishedAsPages)) {
+  if (Number.isInteger(report.measurement.projectedAgencyPages)) {
     push(
-      `- Of those, rendering as public agency pages: **${num(report.measurement.publishedAsPages)}** (held is not the same as published)`,
+      `- Of those, present in the database agency page projection: **${num(report.measurement.projectedAgencyPages)}** (projection rows do not establish rendering, deployment, or live publication)`,
     );
   }
   if (Number.isInteger(report.measurement.federalHeld)) {
@@ -594,7 +595,7 @@ export const renderCoverageReportMarkdown = (report) => {
   );
   push();
   push(
-    `Corpus fingerprint: ${num(report.measurement.fingerprint.rows)} rows, newest \`updated_at\` ${report.measurement.fingerprint.newest_updated_at ?? "unknown"}. Quote these counts only with this fingerprint attached — the development database is shared and is reset without notice.`,
+    `Corpus fingerprint: ${num(report.measurement.fingerprint.rows)} rows, newest \`updated_at\` ${report.measurement.fingerprint.newest_updated_at ?? "unknown"}. Quote these counts only with this fingerprint attached — a database can be copied or reset, and this fingerprint does not prove provenance.`,
   );
   push();
 

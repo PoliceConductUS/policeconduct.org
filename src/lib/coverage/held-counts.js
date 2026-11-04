@@ -11,8 +11,8 @@
  *    stores reported three different agency counts; INS-80 designated the intake
  *    agency corpus authoritative and reconciled the other two against it. Every
  *    measurement therefore carries the database it was taken from, the time it
- *    was taken, a corpus fingerprint, and whether the store is the authoritative
- *    one — so neither a stale number nor a non-authoritative one can be quoted
+ *    was taken, a corpus fingerprint, and whether the schema is compatible with intake
+ *    (not proof of provenance) — so neither a stale number nor a non-authoritative one can be quoted
  *    as the corpus count.
  *
  * 2. Query only what the schema contract guarantees. `agency.state` is in
@@ -119,7 +119,7 @@ export const measureHeldAgencies = async (
     limitations.push({
       missing: OPTIONAL.PAGE_PAYLOAD,
       consequence:
-        "Cannot distinguish agencies held in the database from agencies that actually render as public pages. Held is not the same as published and this run cannot report the difference.",
+        "Cannot count agency rows in the database page projection. Held is not the same as projected; neither count establishes live publication.",
     });
   }
 
@@ -132,8 +132,7 @@ export const measureHeldAgencies = async (
     connectedTo: connectionTarget,
   });
   const fingerprint = await fingerprintCorpus(client);
-  // Identity by schema, not by address: a forwarded port or a copied connection
-  // string would let the legacy corpus answer as though it were the current one.
+  // Schema compatibility does not distinguish the current corpus from a copy.
   const storeAuthority = await verifyAuthoritativeStore(client);
 
   // `state` is NOT NULL under the schema contract, but trim and upper-case
@@ -176,7 +175,7 @@ export const measureHeldAgencies = async (
     storeAuthority,
     totalHeld,
     federalHeld: federal,
-    publishedAsPages: published,
+    projectedAgencyPages: published,
     byState: Object.freeze(
       stateRows.map((row) => Object.freeze({ code: row.code, held: row.held })),
     ),
