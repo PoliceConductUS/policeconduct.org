@@ -15,6 +15,8 @@ The page SHALL group a name and email as one contact identity only when the sour
 - **WHEN** a source explicitly associates a contact person with an email address
 - **THEN** the page groups that verified pair as one contact identity
 
+## ADDED Requirements
+
 ### Requirement: Homepage clearly identifies independent ownership
 
 The homepage SHALL display the approved independence statement immediately after its introduction. The existing hero image SHALL span the viewport width, with the introduction, independence statement and calls to action remaining inside the hero over the image.
