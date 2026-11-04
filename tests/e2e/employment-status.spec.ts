@@ -9,8 +9,11 @@ test("a retained reversed-date assignment does not claim current or former emplo
       (
         await client.query<{ slug: string }>(`
     select p.slug from public.personnel p
-    where exists (select 1 from public.agency_personnel ap where ap.personnel_id=p.id and ap.end_date < ap.start_date)
-      and (select count(*) from public.agency_personnel ap where ap.personnel_id=p.id)=1
+    join (
+      select personnel_id from public.agency_personnel
+      group by personnel_id
+      having count(*)=1 and bool_or(end_date < start_date)
+    ) ap on ap.personnel_id=p.id
     order by p.id limit 1
   `)
       ).rows,
