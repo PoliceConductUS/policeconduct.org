@@ -15,6 +15,28 @@ for (const envFile of envFiles) {
 }
 
 const requiredTables = {
+  personnel_photo: {
+    columns: [
+      "id",
+      "personnel_id",
+      "workspace_path",
+      "sha256",
+      "byte_size",
+      "content_type",
+      "source_filename",
+      "source_url",
+    ],
+    notNull: [
+      "id",
+      "personnel_id",
+      "workspace_path",
+      "sha256",
+      "byte_size",
+      "content_type",
+      "source_filename",
+    ],
+    uniqueColumnSets: [["personnel_id"]],
+  },
   agency: {
     columns: [
       "id",
@@ -29,33 +51,65 @@ const requiredTables = {
       "created_at",
       "updated_at",
       "location_path_id",
+      "parent_federal_agency_id",
+      "status",
+      "status_date",
     ],
     notNull: ["id", "name", "slug", "state", "location_path_id"],
     uniqueColumnSets: [["slug"]],
   },
-  agency_links: {
-    columns: ["id", "agency_id", "url", "label", "description"],
-    notNull: ["id", "url", "label"],
-  },
-  agency_officers: {
+  agency_personnel: {
     columns: [
       "id",
       "agency_id",
-      "officer_id",
-      "license_type",
+      "personnel_id",
+      "title",
       "badge_number",
+      "license_id",
       "start_date",
       "end_date",
     ],
-    notNull: ["id", "officer_id", "license_type"],
+    notNull: ["id", "personnel_id", "title"],
+  },
+  agency_arrest_profile: {
+    columns: [
+      "id",
+      "agency_id",
+      "coverage",
+      "breakdowns",
+      "created_at",
+      "updated_at",
+    ],
+    notNull: [
+      "id",
+      "agency_id",
+      "coverage",
+      "breakdowns",
+      "created_at",
+      "updated_at",
+    ],
+  },
+  arrest_profile: {
+    columns: [
+      "id",
+      "agency_personnel_id",
+      "coverage",
+      "breakdowns",
+      "created_at",
+      "updated_at",
+    ],
+    notNull: [
+      "id",
+      "agency_personnel_id",
+      "coverage",
+      "breakdowns",
+      "created_at",
+      "updated_at",
+    ],
   },
   agency_phone_numbers: {
     columns: ["id", "agency_id", "phone_number", "created_at"],
     notNull: ["id", "phone_number"],
-  },
-  agency_stats: {
-    columns: ["id"],
-    notNull: ["id"],
   },
   agency_zip_index: {
     columns: ["postal_code", "agency_id", "relationship_type"],
@@ -85,9 +139,9 @@ const requiredTables = {
     ],
     notNull: ["id", "civil_case_id", "title", "url"],
   },
-  civil_case_officers: {
-    columns: ["id", "civil_case_id", "agency_officer_id"],
-    notNull: ["id", "civil_case_id", "agency_officer_id"],
+  civil_case_personnel: {
+    columns: ["id", "civil_case_id", "agency_personnel_id"],
+    notNull: ["id", "civil_case_id", "agency_personnel_id"],
   },
   civil_cases: {
     columns: [
@@ -98,6 +152,7 @@ const requiredTables = {
       "cause_number",
       "court",
       "filed_date",
+      "date_terminated",
       "claims_summary",
       "outcome",
       "primary_source_url",
@@ -107,17 +162,9 @@ const requiredTables = {
     notNull: ["id", "slug", "title", "cause_number", "filed_date"],
     uniqueColumnSets: [["slug"]],
   },
-  coverage_link_agency_officers: {
-    columns: ["coverage_link_id", "agency_officer_id"],
-    notNull: ["coverage_link_id", "agency_officer_id"],
-  },
-  coverage_link_civil_cases: {
-    columns: ["coverage_link_id", "civil_case_id"],
-    notNull: ["coverage_link_id", "civil_case_id"],
-  },
-  coverage_link_reports: {
-    columns: ["coverage_link_id", "review_id"],
-    notNull: ["coverage_link_id", "review_id"],
+  coverage_link_agency_personnel: {
+    columns: ["coverage_link_id", "agency_personnel_id"],
+    notNull: ["coverage_link_id", "agency_personnel_id"],
   },
   coverage_links: {
     columns: [
@@ -137,27 +184,64 @@ const requiredTables = {
     notNull: ["id", "name", "slug"],
     uniqueColumnSets: [["slug"]],
   },
-  federal_agency_branch: {
-    columns: ["federal_agency_id", "agency_id"],
-    notNull: ["federal_agency_id", "agency_id"],
+  discipline: {
+    columns: [
+      "id",
+      "personnel_id",
+      "licensing_authority_id",
+      "document_url",
+      "allegation",
+      "violation",
+      "finding",
+      "chief_action",
+      "sanction",
+      "action",
+      "effective_date",
+      "expiration_date",
+      "case_number",
+    ],
+    notNull: ["id", "action", "personnel_id", "licensing_authority_id"],
+  },
+  discipline_agency_personnel: {
+    columns: ["id", "discipline_id", "agency_personnel_id"],
+    notNull: ["id", "discipline_id", "agency_personnel_id"],
+    uniqueColumnSets: [["discipline_id", "agency_personnel_id"]],
+  },
+  authority_license: {
+    columns: ["id", "licensing_authority_id", "name"],
+    notNull: ["id", "licensing_authority_id", "name"],
+  },
+  license: {
+    columns: [
+      "id",
+      "personnel_id",
+      "authority_license_id",
+      "status",
+      "first_awarded",
+    ],
+    notNull: ["id", "personnel_id", "authority_license_id"],
+    uniqueColumnSets: [["personnel_id", "authority_license_id"]],
+  },
+  license_action: {
+    columns: ["id", "license_id", "action", "action_date", "status"],
+    notNull: ["id", "license_id", "action"],
+  },
+  licensing_authority: {
+    columns: ["id", "name", "abbreviation", "website", "location_path_id"],
+    notNull: ["id", "name", "location_path_id"],
   },
   location_path: {
     columns: [
       "location_path_id",
       "path",
       "level",
-      "state_or_territory_slug",
-      "administrative_area_slug",
-      "place_slug",
-      "state_or_territory_name",
-      "administrative_area_name",
-      "place_name",
+      "display_name",
       "parent_location_path_id",
       "centroid",
       "bbox",
       "updated_at",
     ],
-    notNull: ["location_path_id", "path", "level", "state_or_territory_slug"],
+    notNull: ["location_path_id", "path", "level", "display_name"],
     uniqueColumnSets: [["path"]],
   },
   location_path_geometry: {
@@ -177,38 +261,41 @@ const requiredTables = {
       "depth",
     ],
   },
-  officers: {
-    columns: ["id", "slug", "first_name", "middle_name", "last_name", "suffix"],
-    notNull: ["id", "slug", "first_name", "last_name"],
+  personnel: {
+    columns: [
+      "id",
+      "slug",
+      "first_name",
+      "middle_name",
+      "last_name",
+      "suffix",
+      "prefix",
+      "deceased_on",
+      "deceased_message",
+      "deceased_source",
+    ],
+    notNull: ["id", "slug", "first_name"],
     uniqueColumnSets: [["slug"]],
   },
-  officers_stats: {
-    columns: ["id"],
-    notNull: ["id"],
-  },
-  review_attachments: {
-    columns: ["id", "review_id"],
-    notNull: ["id"],
+  personnel_education: {
+    columns: [
+      "id",
+      "personnel_id",
+      "name",
+      "completion_date",
+      "credits",
+      "sponsor_name",
+      "sponsor_instructor",
+    ],
+    notNull: ["id", "personnel_id", "name"],
   },
   review_links: {
     columns: ["id", "review_id", "title", "url"],
     notNull: ["id", "title", "url"],
   },
-  review_officers: {
-    columns: ["id", "review_id", "agency_officer_id", "rating_overall"],
-    notNull: ["id", "review_id", "agency_officer_id"],
-  },
-  review_officers_ratings: {
-    columns: ["id", "review_officer_id", "trait_id", "rubric_id"],
-    notNull: ["id"],
-  },
-  review_tags: {
-    columns: ["review_id", "tag_id"],
-    notNull: ["review_id", "tag_id"],
-  },
-  review_witnesses: {
-    columns: ["id", "review_id"],
-    notNull: ["id"],
+  review_personnel: {
+    columns: ["id", "review_id", "agency_personnel_id", "rating_overall"],
+    notNull: ["id", "review_id", "agency_personnel_id"],
   },
   reviews: {
     columns: [
@@ -222,21 +309,23 @@ const requiredTables = {
       "longitude",
       "created_at",
       "updated_at",
+      "description",
+      "submitter_relationship",
+      "interaction_type",
+      "setting",
+      "case_number",
+      "complaint_filed",
+      "bodycam_requested",
+      "incident_time",
+      "charges",
+      "how_felt",
+      "desired_outcome",
+      "what_happened",
+      "what_else",
+      "purpose",
     ],
     notNull: ["id", "slug", "title"],
     uniqueColumnSets: [["slug"]],
-  },
-  rubrics: {
-    columns: ["id", "description", "help"],
-    notNull: ["id", "description"],
-  },
-  tags: {
-    columns: ["id", "label"],
-    notNull: ["id", "label"],
-  },
-  traits: {
-    columns: ["id", "label"],
-    notNull: ["id", "label"],
   },
 };
 

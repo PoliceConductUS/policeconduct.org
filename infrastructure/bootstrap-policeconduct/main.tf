@@ -95,9 +95,19 @@ locals {
     for endpoint in var.alert_email_endpoints : trimspace(endpoint)
     if trimspace(endpoint) != ""
   ])
-  has_sentry_auth_token    = nonsensitive(local.sentry_auth_token != null)
-  effective_alarm_actions  = concat(var.alarm_actions, length(local.normalized_alert_email_endpoints) > 0 ? [aws_sns_topic.infrastructure_alerts[0].arn] : [])
-  github_environment_names = toset(["production", "preview"])
+  # Submission notifications (INS-35) live in their OWN stack —
+  # infrastructure/submission-notifications — because they are all-new
+  # resources and that stack has real Terraform state, while this one has none
+  # (INS-39). This stack only has to know the topic ARN so the forms API can
+  # publish to it; it neither creates nor owns the topic.
+  normalized_submission_notification_emails = distinct([
+    for endpoint in var.submission_notification_email_endpoints : trimspace(endpoint)
+    if trimspace(endpoint) != ""
+  ])
+  enable_submission_notifications = trimspace(var.submission_notifications_topic_arn) != ""
+  has_sentry_auth_token           = nonsensitive(local.sentry_auth_token != null)
+  effective_alarm_actions         = concat(var.alarm_actions, length(local.normalized_alert_email_endpoints) > 0 ? [aws_sns_topic.infrastructure_alerts[0].arn] : [])
+  github_environment_names        = toset(["production", "preview"])
   github_environment_variables = {
     production = merge(
       {
@@ -129,6 +139,12 @@ locals {
         S3_BUCKET          = aws_s3_bucket.preview.id
         CLOUDFRONT_DIST_ID = aws_cloudfront_distribution.preview.id
         FORMS_API_URL      = "/api"
+        # Consumed by the cleanup-preview workflow to prune a closed PR's
+        # r:pr-<N>: redirect namespace. The workflow skips that step while this
+        # is unset, which is why no preview namespace had ever been pruned
+        # (INS-106). Applied together with CloudFrontKeyValueStorePreviewAccess
+        # so the variable never exists without the permission it needs.
+        KVS_ARN_PREVIEW = aws_cloudfront_key_value_store.preview_redirects.arn
       },
       local.ga_measurement_id_preview == null ? {} : {
         GA_MEASUREMENT_ID = local.ga_measurement_id_preview
@@ -164,8 +180,15 @@ locals {
     "object-src 'none';",
     "frame-ancestors 'self';",
     "form-action 'self';",
+    # NOTE: Disqus sources are intentionally still allowed here even though the
+    # Disqus embed was removed from the site. This response-headers policy is
+    # SHARED by the preview and prod CloudFront distributions, and prod has not
+    # yet dropped Disqus. Removing the Disqus allowances now would tighten prod's
+    # CSP too and could break any Disqus still live there. Leaving them is inert
+    # (an unused allowance never breaks anything). Drop these when this branch
+    # merges to prod so both distributions lose Disqus together.
     "img-src 'self' data: blob: https://tile.openstreetmap.org https://i.ytimg.com https://www.google-analytics.com https://stats.g.doubleclick.net https://c.disquscdn.com https://*.disqus.com https://www.gstatic.com https://www.google.com;",
-    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com;",
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com;",
     "style-src 'self' 'unsafe-inline';",
     "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com https://*.ingest.us.sentry.io https://*.sentry.io;",
     "font-src 'self' data:;",
@@ -304,6 +327,44 @@ resource "aws_s3_bucket_versioning" "preview" {
   versioning_configuration {
     status = "Enabled"
   }
+}
+
+# Versioning above means `aws s3 rm` -- what cleanup-preview.yml runs when a PR
+# closes -- only writes a delete marker. The object becomes noncurrent and keeps
+# billing, so tearing down a preview reclaimed nothing and the object count only
+# ever grew. Measured on 2026-11-01, before this rule existed: 5,589,610 objects
+# and 95.7 GB billed, against 17.7 GB of current versions (INS-106).
+#
+# 7 days, per the board's decision on INS-106. A preview is disposable build
+# output reproducible from its commit, so a week is ample room to notice a
+# mistaken delete. Current versions are untouched, so live previews for open
+# PRs keep serving normally.
+resource "aws_s3_bucket_lifecycle_configuration" "preview" {
+  bucket = aws_s3_bucket.preview.id
+
+  rule {
+    id     = "expire-noncurrent-preview-versions"
+    status = "Enabled"
+
+    # Everything in this bucket is preview build output under pr-<N>/.
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = 7
+    }
+
+    # Sweep the delete marker once every version beneath it has expired;
+    # otherwise the markers accumulate as billable objects forever.
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.preview]
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "preview" {
@@ -977,6 +1038,17 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
       values   = [var.forms_email_verification_from_address]
     }
   }
+
+  dynamic "statement" {
+    for_each = local.enable_submission_notifications ? [1] : []
+
+    content {
+      sid       = "PublishSubmissionNotifications"
+      effect    = "Allow"
+      actions   = ["sns:Publish"]
+      resources = [trimspace(var.submission_notifications_topic_arn)]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "forms_lambda_permissions" {
@@ -1080,6 +1152,8 @@ resource "aws_lambda_function" "forms_api_prod" {
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
       SENTRY_DSN                           = local.sentry_dsn_production == null ? "" : local.sentry_dsn_production
       SENTRY_ENVIRONMENT                   = "production"
+      SUBMISSION_NOTIFICATIONS_TOPIC_ARN   = trimspace(var.submission_notifications_topic_arn)
+      SUBMISSION_NOTIFICATION_RECIPIENTS   = join(",", local.normalized_submission_notification_emails)
     }
   }
 }
@@ -1117,6 +1191,13 @@ resource "aws_lambda_function" "forms_api_preview" {
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
       SENTRY_DSN                           = local.sentry_dsn_preview == null ? "" : local.sentry_dsn_preview
       SENTRY_ENVIRONMENT                   = "preview"
+      SUBMISSION_NOTIFICATIONS_TOPIC_ARN   = trimspace(var.submission_notifications_topic_arn)
+      # Preview shares the topic so the pipe can be exercised end to end
+      # without writing a synthetic DSAR into the production submissions store.
+      # The label prefixes the subject with [PREVIEW] so a drill is never
+      # mistaken for a real request with a real clock on it.
+      NOTIFICATION_ENV_LABEL             = "preview"
+      SUBMISSION_NOTIFICATION_RECIPIENTS = join(",", local.normalized_submission_notification_emails)
     }
   }
 }
@@ -1606,6 +1687,26 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     resources = ["*"]
   }
 
+  # The KeyValueStore data plane is a separate service prefix from cloudfront:*,
+  # so CloudFrontAccess above does not reach it. Without this statement the
+  # preview cleanup workflow's redirect-pruning step fails with AccessDenied
+  # (INS-106). These three actions are exactly what scripts/load-redirects.mjs
+  # invokes: list-keys, describe-key-value-store (for the ETag), and update-keys.
+  #
+  # Preview store only. No CI workflow deploys production, and the site store
+  # controls live-site routing, so CI has no reason to hold write access to it.
+  statement {
+    sid    = "CloudFrontKeyValueStorePreviewAccess"
+    effect = "Allow"
+
+    actions = [
+      "cloudfront-keyvaluestore:ListKeys",
+      "cloudfront-keyvaluestore:DescribeKeyValueStore",
+      "cloudfront-keyvaluestore:UpdateKeys",
+    ]
+    resources = [aws_cloudfront_key_value_store.preview_redirects.arn]
+  }
+
   statement {
     sid    = "AcmAccess"
     effect = "Allow"
@@ -1935,131 +2036,27 @@ resource "aws_acm_certificate_validation" "site" {
   validation_record_fqdns = [for record in aws_route53_record.acm_validation : record.fqdn]
 }
 
+locals {
+  shared_router_code = templatefile("${path.module}/functions/router.js", {
+    domain_name    = var.domain_name
+    canonical_host = local.include_www ? local.www_domain : var.domain_name
+  })
+}
+
+resource "aws_cloudfront_key_value_store" "site_redirects" {
+  name    = "${var.project_name}-site-redirects"
+  comment = "Production site redirects managed by bootstrap-policeconduct Terraform"
+}
+
 resource "aws_cloudfront_function" "index_rewrite" {
   name    = local.index_rewrite_function_name
   runtime = "cloudfront-js-2.0"
-  comment = "Rewrite extensionless URIs to index.html."
+  comment = "Apply build redirects and rewrite site file paths."
   publish = true
-  code    = <<-EOF
-function handler(event) {
-  var request = event.request;
-  var host = request.headers.host && request.headers.host.value ? request.headers.host.value.toLowerCase() : '';
-  var apexHost = ${jsonencode(var.domain_name)};
-  var wwwHost = ${jsonencode(local.www_domain)};
-  var enforceWwwRedirect = ${local.include_www ? "true" : "false"};
-  var uri = request.uri;
-  var qs = '';
-
-  if (request.querystring) {
-    var keys = Object.keys(request.querystring);
-    if (keys.length > 0) {
-      var parts = [];
-      for (var i = 0; i < keys.length; i++) {
-        var key = keys[i];
-        var item = request.querystring[key];
-        if (item.multiValue && item.multiValue.length > 0) {
-          for (var j = 0; j < item.multiValue.length; j++) {
-            parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(item.multiValue[j].value || ''));
-          }
-        } else {
-          parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(item.value || ''));
-        }
-      }
-      qs = '?' + parts.join('&');
-    }
-  }
-
-  if (enforceWwwRedirect && host === apexHost) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: 'https://' + wwwHost + uri + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var personnelStatePageMatch = uri.match(/^\/personnel\/([a-z]{2}|federal)\/page(?:\/.*)?\/?$/);
-  if (personnelStatePageMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/' + personnelStatePageMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var personnelStateMatch = uri.match(/^\/personnel\/([a-z]{2}|federal)\/?$/);
-  if (personnelStateMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/' + personnelStateMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var civilStatePageMatch = uri.match(/^\/civil-litigation\/([a-z]{2}|federal)\/page(?:\/.*)?\/?$/);
-  if (civilStatePageMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/' + civilStatePageMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var civilStateMatch = uri.match(/^\/civil-litigation\/([a-z]{2}|federal)\/?$/);
-  if (civilStateMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/' + civilStateMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  var civilCaseMatch = uri.match(/^\/civil-litigation\/[^\/]+\/([^\/]+)\/?$/);
-  if (civilCaseMatch) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/civil-cases/' + civilCaseMatch[1] + '/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  if (uri === '/videos' || uri === '/videos/' || uri.indexOf('/videos/') === 0 || uri === '/video' || uri === '/video/' || uri.indexOf('/video/') === 0) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: '/search/' + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  if (uri.endsWith('/')) {
-    request.uri += 'index.html';
-  } else if (!uri.includes('.')) {
-    request.uri += '/index.html';
-  }
-
-  return request;
-}
-EOF
+  key_value_store_associations = [
+    aws_cloudfront_key_value_store.site_redirects.arn,
+  ]
+  code = local.shared_router_code
 }
 
 resource "aws_cloudfront_response_headers_policy" "site_security_headers" {
@@ -2204,32 +2201,36 @@ resource "aws_cloudfront_distribution" "site" {
   }
 }
 
+# Preview uses the same router as production with a separate redirect store.
+# Keys are r:<label>:<path> = <target>, loaded from the build's _redirect-map.json.
+resource "aws_cloudfront_key_value_store" "preview_redirects" {
+  name    = "${var.project_name}-preview-redirects"
+  comment = "Redirect maps for preview builds using the shared site router."
+}
+
 resource "aws_cloudfront_function" "preview_router" {
   name    = local.preview_router_function_name
   runtime = "cloudfront-js-2.0"
-  comment = "Route preview subdomains to matching S3 prefix."
+  comment = "Route preview/build subdomains to their S3 prefix; apply per-build redirects."
   publish = true
-  code    = <<-EOF
-function handler(event) {
-  var request = event.request;
-  var host = request.headers.host && request.headers.host.value ? request.headers.host.value : '';
-  var uri = request.uri;
-  var match = host.match(/^([^.]+)\.preview\./);
 
-  if (!match) {
-    return request;
-  }
+  key_value_store_associations = [
+    aws_cloudfront_key_value_store.preview_redirects.arn,
+  ]
 
-  if (uri.endsWith('/')) {
-    uri += 'index.html';
-  } else if (!uri.includes('.')) {
-    uri += '/index.html';
-  }
-
-  request.uri = '/' + match[1] + uri;
-  return request;
+  code = local.shared_router_code
 }
-EOF
+
+# Non-canonical preview hosts must not be indexed. Build-once means the same HTML
+# also serves the canonical apex on the prod distribution, so this is applied at
+# the edge here and is NOT attached to the prod distribution.
+resource "aws_cloudfront_function" "preview_noindex" {
+  name    = "${var.project_name}-preview-noindex"
+  runtime = "cloudfront-js-2.0"
+  comment = "Mark preview responses noindex (non-canonical hosts)."
+  publish = true
+
+  code = file("${path.module}/functions/noindex.js")
 }
 
 resource "aws_cloudfront_distribution" "preview" {
@@ -2277,6 +2278,11 @@ resource "aws_cloudfront_distribution" "preview" {
     function_association {
       event_type   = "viewer-request"
       function_arn = aws_cloudfront_function.preview_router.arn
+    }
+
+    function_association {
+      event_type   = "viewer-response"
+      function_arn = aws_cloudfront_function.preview_noindex.arn
     }
   }
 
@@ -2533,3 +2539,21 @@ resource "github_actions_environment_secret" "sentry_auth_token" {
 
   depends_on = [github_repository_environment.environments]
 }
+
+# ---------------------------------------------------------------------------
+# INS-35 — submission notifications
+#
+# Those resources are NOT here. They live in
+# infrastructure/submission-notifications, which has its own Terraform state.
+#
+# They were originally written into this file, which cannot be applied: this
+# stack has no state at all (INS-39), so `terraform apply` here plans a
+# create-from-scratch of the entire live estate. Everything INS-35 adds is a
+# brand-new resource with nothing to import, so it costs nothing to give it a
+# state file of its own — and buys a reviewable `terraform plan` instead of a
+# hand-run script.
+#
+# What stays here is only the part that modifies resources THIS stack owns: the
+# forms API Lambda environment and its sns:Publish grant, both driven by
+# var.submission_notifications_topic_arn.
+# ---------------------------------------------------------------------------

@@ -21,70 +21,68 @@ for (let pageNumber = windowStart; pageNumber <= windowEnd; pageNumber += 1) {
 }
 ---
 
-{
-  lastPage > 1 ? (
-    <nav aria-label="Pagination" class="mt-4">
-      <div class="d-flex flex-wrap align-items-center gap-2">
-        {currentPage > 1 ? (
+{lastPage > 1 ? (
+  <nav aria-label="Pagination" class="mt-4">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      {currentPage > 1 ? (
+        <a
+          class="btn btn-outline-dark rounded-0"
+          href={getPageHref(currentPage - 1)}
+        >
+          Previous
+        </a>
+      ) : null}
+
+      {windowStart > 1 ? (
+        <>
+          <a class="btn btn-outline-dark rounded-0" href={getPageHref(1)}>
+            1
+          </a>
+          {windowStart > 2 ? <span class="px-1 text-muted">…</span> : null}
+        </>
+      ) : null}
+
+      {pageNumbers.map((pageNumber) =>
+        pageNumber === currentPage ? (
+          <span aria-current="page" class="btn btn-dark rounded-0 disabled">
+            {pageNumber}
+          </span>
+        ) : (
           <a
             class="btn btn-outline-dark rounded-0"
-            href={getPageHref(currentPage - 1)}
+            href={getPageHref(pageNumber)}
           >
-            Previous
+            {pageNumber}
           </a>
-        ) : null}
+        ),
+      )}
 
-        {windowStart > 1 ? (
-          <>
-            <a class="btn btn-outline-dark rounded-0" href={getPageHref(1)}>
-              1
-            </a>
-            {windowStart > 2 ? <span class="px-1 text-muted">…</span> : null}
-          </>
-        ) : null}
-
-        {pageNumbers.map((pageNumber) =>
-          pageNumber === currentPage ? (
-            <span aria-current="page" class="btn btn-dark rounded-0 disabled">
-              {pageNumber}
-            </span>
-          ) : (
-            <a
-              class="btn btn-outline-dark rounded-0"
-              href={getPageHref(pageNumber)}
-            >
-              {pageNumber}
-            </a>
-          ),
-        )}
-
-        {windowEnd < lastPage ? (
-          <>
-            {windowEnd < lastPage - 1 ? (
-              <span class="px-1 text-muted">…</span>
-            ) : null}
-            <a
-              class="btn btn-outline-dark rounded-0"
-              href={getPageHref(lastPage)}
-            >
-              {lastPage}
-            </a>
-          </>
-        ) : null}
-
-        {currentPage < lastPage ? (
+      {windowEnd < lastPage ? (
+        <>
+          {windowEnd < lastPage - 1 ? (
+            <span class="px-1 text-muted">…</span>
+          ) : null}
           <a
             class="btn btn-outline-dark rounded-0"
-            href={getPageHref(currentPage + 1)}
+            href={getPageHref(lastPage)}
           >
-            Next
+            {lastPage}
           </a>
-        ) : null}
+        </>
+      ) : null}
 
-        <span class="text-muted small ms-md-2">
-          Page {currentPage} of {lastPage}
-        </span>
-      </div>
-    </nav>
-  ) : null
-}
+      {currentPage < lastPage ? (
+        <a
+          class="btn btn-outline-dark rounded-0"
+          href={getPageHref(currentPage + 1)}
+        >
+          Next
+        </a>
+      ) : null}
+
+      <span class="text-muted small ms-md-2">
+        Page {currentPage} of {lastPage}
+      </span>
+    </div>
+  </nav>
+) : null}

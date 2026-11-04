@@ -30,6 +30,16 @@ recaptcha_min_score                      = 0.5
 alarm_actions                            = []
 alert_topic_name                         = "policeconduct-alerts"
 alert_email_endpoints                    = []
+# Who gets told a submission arrived (INS-35). At least one of these has to be
+# a mailbox someone reads within 5 business days -- that is the DSAR
+# acknowledgement commitment in INS-16. This list only populates the forms API
+# Lambda environment; the SNS topic and its subscriptions are owned by
+# infrastructure/submission-notifications. Keep the two in step.
+submission_notification_email_endpoints  = ["hello@policeconduct.org"]
+# From the submission_notifications_topic_arn output of
+# infrastructure/submission-notifications. Empty means the forms API has no
+# topic to publish to, which is the pre-INS-35 state.
+submission_notifications_topic_arn       = ""
 enable_site_bucket_versioning = true
 ga_measurement_id_production = null
 ga_measurement_id_preview    = null

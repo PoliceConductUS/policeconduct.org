@@ -61,6 +61,7 @@ async function fillRequiredFields(formLocator, formName = "") {
     await formLocator.locator("#confirmAccurate").check();
     await formLocator.locator("#confirmDeletion").check();
     await formLocator.locator("#confirmEmail").check();
+    await formLocator.locator("#confirmPublicRecords").check();
     return;
   }
 

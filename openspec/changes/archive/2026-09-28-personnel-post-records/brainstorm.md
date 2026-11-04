@@ -1,0 +1,3 @@
+# Personnel POST records
+
+User requested showing newly imported discipline, education and related MN POST information on personnel pages. Bounded extension of existing personnel UI, approved by direct implementation request. Current DB: 76 discipline records with source URLs, 69 with detailed facts; 1,769,990 education records for 10,553 people, max795/person. Preserve existing license/history/assignment information. Compact discipline summaries with native detail disclosure, and searchable ten-record education pages. Use direct personnel relationships, not assignment as identity. No new claims, source meanings, schemas or routes. Reuse existing worktree.

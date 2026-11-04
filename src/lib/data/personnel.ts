@@ -20,11 +20,31 @@ export const loadPersonnelSummaries = async (
     async (
       client,
     ): Promise<{
-      agencyOfficers: any[];
-      officers: any[];
-      agencies: any[];
-      reportCounts: any[];
-      civilCaseCounts: any[];
+      agencyOfficers: {
+        personnel_id: string;
+        agency_id: string;
+        start_date: string | null;
+        end_date: string | null;
+        title: string | null;
+      }[];
+      officers: {
+        id: string;
+        slug: string;
+        first_name: string;
+        last_name: string | null;
+        suffix: string | null;
+      }[];
+      agencies: {
+        id: string;
+        name: string;
+        state: string;
+        canonical_path: string;
+      }[];
+      reportCounts: { personnel_id: string; report_count: string | number }[];
+      civilCaseCounts: {
+        personnel_id: string;
+        civil_case_count: string | number;
+      }[];
     }> => {
       const params: Array<string> = [];
       const filters = ["ao.end_date is null"];
@@ -35,14 +55,14 @@ export const loadPersonnelSummaries = async (
       const where = filters.length ? `where ${filters.join(" and ")}` : "";
       const agencyOfficers = (
         await client.query(
-          `select * from public.agency_officers ao ${where}`,
+          `select * from public.agency_personnel ao ${where}`,
           params,
         )
       ).rows;
       const officerIds = [
         ...new Set(
           agencyOfficers.map(
-            (entry: { officer_id: string }) => entry.officer_id,
+            (entry: { personnel_id: string }) => entry.personnel_id,
           ),
         ),
       ];
@@ -54,7 +74,7 @@ export const loadPersonnelSummaries = async (
       const officers = officerIds.length
         ? (
             await client.query(
-              "select * from public.officers where id = any($1)",
+              "select * from public.personnel where id = any($1)",
               [officerIds],
             )
           ).rows
@@ -76,15 +96,15 @@ export const loadPersonnelSummaries = async (
             )
           ).rows
         : [];
-      // Count reports per officer by joining through agency_officers
+      // Count reports per officer by joining through agency_personnel
       const reportCounts = officerIds.length
         ? (
             await client.query(
-              `select ao.officer_id, count(distinct ro.review_id) as report_count
-             from public.review_officers ro
-             join public.agency_officers ao on ao.id = ro.agency_officer_id
-             where ao.officer_id = any($1)
-             group by ao.officer_id`,
+              `select ao.personnel_id, count(distinct ro.review_id) as report_count
+             from public.review_personnel ro
+             join public.agency_personnel ao on ao.id = ro.agency_personnel_id
+             where ao.personnel_id = any($1)
+             group by ao.personnel_id`,
               [officerIds],
             )
           ).rows
@@ -92,11 +112,11 @@ export const loadPersonnelSummaries = async (
       const civilCaseCounts = officerIds.length
         ? (
             await client.query(
-              `select ao.officer_id, count(distinct cco.civil_case_id) as civil_case_count
-             from public.civil_case_officers cco
-             join public.agency_officers ao on ao.id = cco.agency_officer_id
-             where ao.officer_id = any($1)
-             group by ao.officer_id`,
+              `select ao.personnel_id, count(distinct cco.civil_case_id) as civil_case_count
+             from public.civil_case_personnel cco
+             join public.agency_personnel ao on ao.id = cco.agency_personnel_id
+             where ao.personnel_id = any($1)
+             group by ao.personnel_id`,
               [officerIds],
             )
           ).rows
@@ -113,11 +133,11 @@ export const loadPersonnelSummaries = async (
 
   const officersById = mapBy(data.officers, "id");
   const agenciesById = mapBy(data.agencies, "id");
-  const agencyOfficersByOfficer = groupBy(data.agencyOfficers, "officer_id");
-  const reportCountsByOfficer = mapBy(data.reportCounts || [], "officer_id");
+  const agencyOfficersByOfficer = groupBy(data.agencyOfficers, "personnel_id");
+  const reportCountsByOfficer = mapBy(data.reportCounts || [], "personnel_id");
   const civilCaseCountsByOfficer = mapBy(
     data.civilCaseCounts || [],
-    "officer_id",
+    "personnel_id",
   );
   const summaries = Object.keys(agencyOfficersByOfficer)
     .map((officerId) => {
@@ -142,11 +162,10 @@ export const loadPersonnelSummaries = async (
       return {
         id: officer.id,
         slug: officer.slug,
-        lastName: officer.last_name,
+        lastName: officer.last_name || "",
         firstName: officer.first_name,
         nameSuffix: officer.suffix || null,
-        licenseType: eligibleAssignment?.license_type || null,
-        roleTitle: eligibleAssignment?.license_type || null,
+        title: eligibleAssignment?.title || null,
         agencyName: agency.name,
         agencyState: String(agency.state || "").toLowerCase(),
         agencyCanonicalPath: requireAgencyCanonicalPath(agency),

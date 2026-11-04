@@ -233,8 +233,8 @@ detect_npm_dependencies() {
   if [[ -d node_modules ]] && have mise && mise exec -- npm ls --depth=0 >/dev/null 2>&1; then
     append_unique INFO_ITEMS "project npm dependencies are installed"
   else
-    append_unique INSTALL_ITEMS "project npm dependencies with npm install"
-    append_unique INSTALL_COMMANDS "mise exec -- npm install"
+    append_unique INSTALL_ITEMS "project npm dependencies with npm ci"
+    append_unique INSTALL_COMMANDS "mise exec -- npm ci"
   fi
 }
 
@@ -272,15 +272,15 @@ detect_project_tools() {
   if [[ -x node_modules/.bin/openspec ]]; then
     append_unique INFO_ITEMS "local OpenSpec CLI package is installed"
   else
-    append_unique INSTALL_ITEMS "OpenSpec CLI npm package via npm install"
-    append_unique INSTALL_COMMANDS "mise exec -- npm install"
+    append_unique INSTALL_ITEMS "OpenSpec CLI npm package via npm ci"
+    append_unique INSTALL_COMMANDS "mise exec -- npm ci"
   fi
 
   if [[ -x node_modules/.bin/supabase ]]; then
     append_unique INFO_ITEMS "local Supabase CLI package is installed"
   else
-    append_unique INSTALL_ITEMS "Supabase CLI npm package via npm install"
-    append_unique INSTALL_COMMANDS "mise exec -- npm install"
+    append_unique INSTALL_ITEMS "Supabase CLI npm package via npm ci"
+    append_unique INSTALL_COMMANDS "mise exec -- npm ci"
   fi
 }
 
@@ -385,7 +385,7 @@ install_npm_dependencies_if_needed() {
   fi
 
   info "Installing project npm dependencies"
-  mise exec -- npm install
+  mise exec -- npm ci
 }
 
 install_missing() {
@@ -404,8 +404,30 @@ verify_github_cli_auth() {
   fi
 }
 
+# Point git at the tracked hooks so the personal-data pre-commit scan runs
+# locally. Idempotent. CI enforces the same scan regardless, so a missing hook
+# is a lost convenience, not a hole. See docs/third-party-personal-data.md.
+install_git_hooks() {
+  local current
+  current="$(git config --local --get core.hooksPath || true)"
+
+  if [[ "$current" == ".githooks" ]]; then
+    info "Git hooks path already set to .githooks"
+    return
+  fi
+
+  if [[ "$MODE" == "check" ]]; then
+    warn "core.hooksPath is not set to .githooks. Run ./scripts/bootstrap-dev.sh to install the personal-data pre-commit scan."
+    return
+  fi
+
+  info "Setting git hooks path to .githooks"
+  git config --local core.hooksPath .githooks
+}
+
 verify_project_tools() {
   verify_github_cli_auth
+  install_git_hooks
 
   info "Verifying OpenSpec"
   mise exec -- npx openspec --version >/dev/null

@@ -26,9 +26,8 @@ export default [
       },
     },
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-empty-object-type": "off",
-      "@typescript-eslint/no-require-imports": "off",
+      "no-useless-assignment": "error",
+      "prefer-rest-params": "error",
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
@@ -37,14 +36,13 @@ export default [
           varsIgnorePattern: "^_",
         },
       ],
-      "no-empty": ["error", { allowEmptyCatch: true }],
-      "no-useless-assignment": "off",
-      "prefer-rest-params": "off",
+      "no-empty": "error",
     },
   },
   {
     files: [
       "public/**/*.js",
+      "mockups/**/*.js",
       "src/lib/client/**/*.{js,ts}",
       "src/components/**/*.astro",
       "src/pages/**/*.astro",
@@ -56,15 +54,12 @@ export default [
     },
   },
   {
-    files: ["*.cjs"],
+    files: ["**/*.cjs"],
     languageOptions: {
       globals: {
         ...globals.commonjs,
         ...globals.node,
       },
-    },
-    rules: {
-      "@typescript-eslint/no-require-imports": "off",
     },
   },
   {

@@ -46,26 +46,6 @@ export type LocationCoveragePayload = {
   reports: number;
 };
 
-export type LocationReportSourcePayload = {
-  id: string;
-  label: string;
-  sortOrder: number;
-  sourceKey: string;
-  sourceType: string;
-  url: string;
-};
-
-export type LocationReportPayload = {
-  id: string;
-  payload: Record<string, unknown>;
-  reportKey: string;
-  reportType: string;
-  sortOrder: number;
-  sources: LocationReportSourcePayload[];
-  summary: string;
-  title: string;
-};
-
 export type LocationPagePayload = {
   administrativeArea?: string | null;
   administrativeAreaKind?: string | null;
@@ -76,7 +56,6 @@ export type LocationPagePayload = {
   coverage: LocationCoveragePayload;
   displayName: string;
   level: "state" | "administrative_area" | "place";
-  locationReports?: LocationReportPayload[];
   mapBounds?: LocationMapBounds | null;
   mapPositionSource?: "geocoded" | "derived_from_children" | null;
   pageType: "location";
@@ -103,7 +82,7 @@ export type ReportSummaryPayload = {
   month: string;
   pageType: "reportSummary";
   personnel?: {
-    licenseType?: string | null;
+    title?: string | null;
     name: string;
     slug?: string | null;
   }[];
@@ -131,7 +110,7 @@ let reportSummaryPayloadCache: Promise<ReportSummaryPayload[]> | null = null;
 export const loadLocationBuildPayloads = async () => {
   locationPayloadCache ??= withDb(async (client) => {
     const rows = (
-      await client.query(
+      await client.query<{ payload: LocationPagePayload }>(
         `
           select path, entity_id, payload
           from public.build_page_payload
@@ -141,7 +120,7 @@ export const loadLocationBuildPayloads = async () => {
       )
     ).rows;
 
-    return rows.map((row: any) => row.payload as LocationPagePayload);
+    return rows.map((row) => row.payload);
   });
 
   return locationPayloadCache;
@@ -150,7 +129,7 @@ export const loadLocationBuildPayloads = async () => {
 export const loadReportSummaryBuildPayloads = async () => {
   reportSummaryPayloadCache ??= withDb(async (client) => {
     const rows = (
-      await client.query(
+      await client.query<{ payload: ReportSummaryPayload }>(
         `
           select payload
           from public.build_page_payload
@@ -160,7 +139,7 @@ export const loadReportSummaryBuildPayloads = async () => {
       )
     ).rows;
 
-    return rows.map((row: any) => row.payload as ReportSummaryPayload);
+    return rows.map((row) => row.payload);
   });
 
   return reportSummaryPayloadCache;

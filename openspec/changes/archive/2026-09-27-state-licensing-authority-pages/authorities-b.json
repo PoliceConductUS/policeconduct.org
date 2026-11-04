@@ -1,0 +1,202 @@
+[
+  {
+    "state": "mt",
+    "name": "Public Safety Officer Standards and Training Council",
+    "abbreviation": "POST",
+    "website": "https://dojmt.gov/post/",
+    "sourceUrl": "https://dojmt.gov/post/",
+    "notes": "Official Montana DOJ page explicitly assigns certification, recertification, suspension and revocation to the council."
+  },
+  {
+    "state": "ne",
+    "name": "Police Standards Advisory Council",
+    "abbreviation": "PSAC",
+    "website": "https://ncc.nebraska.gov/police-standards-advisory-council",
+    "sourceUrl": "https://ncc.nebraska.gov/police-standards-advisory-council",
+    "notes": "Council establishes standards governing Nebraska law enforcement certification and revokes certificates. Abbreviation verified at https://ncc.nebraska.gov/annual-continuing-education ."
+  },
+  {
+    "state": "nv",
+    "name": "Nevada Commission on Peace Officer Standards and Training",
+    "abbreviation": "POST",
+    "website": "https://post.nv.gov/",
+    "sourceUrl": "https://post.nv.gov/",
+    "notes": "Official homepage identifies POST as regulatory agency and governing authority for peace officer basic and professional certification."
+  },
+  {
+    "state": "nh",
+    "name": "New Hampshire Police Standards and Training Council",
+    "abbreviation": "PSTC",
+    "website": "https://www.pstc.nh.gov/",
+    "sourceUrl": "https://www.nhes.nh.gov/elmi/products/licertocc/documents/appendixe.pdf",
+    "notes": "Official state occupational licensing publication identifies council, certification role and website. PSTC abbreviation and decertification role also verified in https://www.pstc.nh.gov/publications/documents/annual-report-fy-2023.pdf . Homepage direct fetch returned 403; official indexed documents remain accessible."
+  },
+  {
+    "state": "nj",
+    "name": "Police Training Commission",
+    "abbreviation": "PTC",
+    "website": "https://www.njoag.gov/about/divisions-and-offices/office-of-public-integrity-and-accountability-home/police-training-commission/",
+    "sourceUrl": "https://www.njoag.gov/category/commission/police-training-commission/",
+    "notes": "Official OAG page states officers require active licenses issued by PTC. Current 2026 initial and renewal applications verified at https://www.njoag.gov/about/divisions-and-offices/office-of-public-integrity-and-accountability-home/police-training-commission/ptc-forms/ . Main commission page direct fetch returned 403; official indexed pages support identity and role."
+  },
+  {
+    "state": "nm",
+    "name": "Law Enforcement Certification Board",
+    "abbreviation": "LECB",
+    "website": "https://www.lea.nm.gov/law-enforcement-certification-board/",
+    "sourceUrl": "https://www.lea.nm.gov/law-enforcement-certification-board/certifications/",
+    "notes": "Board issues or renews officer certification. Separate New Mexico Law Enforcement Standards and Training Council and academy appear on same official site; do not substitute them for certification board. Abbreviation verified on board homepage."
+  },
+  {
+    "state": "ny",
+    "name": "New York State Division of Criminal Justice Services",
+    "abbreviation": "DCJS",
+    "website": "https://criminaljustice.ny.gov/Officer_Decertification.htm",
+    "sourceUrl": "https://criminaljustice.ny.gov/Officer_Decertification.htm",
+    "notes": "DCJS maintains officer registry and administers training certificate invalidation. Municipal Police Training Council sets standards and advises commissioner; official council page reproduces Executive Law 841 assigning certification issuance to commissioner: https://boards.criminaljustice.ny.gov/municipal-police-training-council . Select DCJS as certifying agency under one-authority scope."
+  },
+  {
+    "state": "nc",
+    "name": "North Carolina Criminal Justice Education and Training Standards Commission",
+    "abbreviation": null,
+    "website": "https://ncdoj.gov/law-enforcement-training/criminal-justice/",
+    "sourceUrl": "https://ncdoj.gov/law-enforcement-training/criminal-justice/",
+    "notes": "Selected police certification commission. Official page says Criminal Justice Standards Division administers commission certification programs covering sworn police officers. Separate Sheriffs' Education and Training Standards Commission exists; one record does not represent that separate commission. No abbreviation invented."
+  },
+  {
+    "state": "nd",
+    "name": "North Dakota Peace Officer Standards and Training Board",
+    "abbreviation": "POST",
+    "website": "https://www.post.nd.gov/",
+    "sourceUrl": "https://www.post.nd.gov/forms/Forms/Officer%20Application%20for%20License%20%28PFN1%29.pdf",
+    "notes": "Official licensing application gives board name and abbreviation. Official homepage has 2026 POST Board meeting and licensing resources."
+  },
+  {
+    "state": "oh",
+    "name": "Ohio Peace Officer Training Commission",
+    "abbreviation": "OPOTC",
+    "website": "https://www.ohioattorneygeneral.gov/Law-Enforcement/Ohio-Peace-Officer-Training-Academy/OPOTC-Forms-and-Resources",
+    "sourceUrl": "https://www.ohioattorneygeneral.gov/getattachment/47d9898f-3404-442b-9dcd-bb38b4cb529a/47d9898f-3404-442b-9dcd-bb38b4cb529a.aspx",
+    "notes": "Official exam completion document identifies commission as issuer of peace officer certificates. Official academy page distinguishes Commission staff, who oversee certification standards, from Academy staff: https://ohioattorneygeneral.gov/Law-Enforcement/Ohio-Peace-Officer-Training-Academy . Website is commission resources within shared academy site."
+  },
+  {
+    "state": "ok",
+    "name": "Council on Law Enforcement Education and Training",
+    "abbreviation": "CLEET",
+    "website": "https://oklahoma.gov/cleet.html",
+    "sourceUrl": "https://www.oklahoma.gov/top/agency/415.html",
+    "notes": "Official state agency profile explicitly assigns peace officer certification standards to CLEET."
+  },
+  {
+    "state": "or",
+    "name": "Department of Public Safety Standards and Training",
+    "abbreviation": "DPSST",
+    "website": "https://www.oregon.gov/dpsst/cj/Pages/default.aspx",
+    "sourceUrl": "https://www.oregon.gov/dpsst/cj/Pages/default.aspx",
+    "notes": "Official department criminal justice page provides basic certification, maintenance and professional standards programs; department issuance also explicit at https://www.oregon.gov/dpsst/CJ/Pages/UpperCerts.aspx ."
+  },
+  {
+    "state": "pa",
+    "name": "Municipal Police Officers' Education and Training Commission",
+    "abbreviation": "MPOETC",
+    "website": "https://www.pa.gov/agencies/mpoetc/programs",
+    "sourceUrl": "https://www.pa.gov/agencies/mpoetc/programs",
+    "notes": "Commission manages municipal police officer certification. Municipal scope is explicit; do not present as certification authority for every Pennsylvania law enforcement role."
+  },
+  {
+    "state": "ri",
+    "name": "Rhode Island Police Officers Commission on Standards and Training",
+    "abbreviation": "POST",
+    "website": "https://rimpa.ri.gov/",
+    "sourceUrl": "https://rimpa.ri.gov/",
+    "notes": "Commission name and POST abbreviation verified on academy's official homepage. Its certification standards authority verified at https://rules.sos.ri.gov/regulations/part/270-30-00-2 . Website is shared academy site. Official page states academy's municipal training/certification scope excludes Providence; do not imply universal coverage."
+  },
+  {
+    "state": "sc",
+    "name": "South Carolina Law Enforcement Training Council",
+    "abbreviation": "LETC",
+    "website": "https://sccja.sc.gov/law-enforcement-training-council/",
+    "sourceUrl": "https://sccja.sc.gov/law-enforcement-training-council/",
+    "notes": "Official council page identifies governing council separately from Criminal Justice Academy and uses LETC Orders label. Council certification authority supported by Training Act; current act linked on council page."
+  },
+  {
+    "state": "sd",
+    "name": "South Dakota Law Enforcement Officers Standards and Training Commission",
+    "abbreviation": "LEOSTC",
+    "website": "https://atg.sd.gov/LawEnforcement/training/faq.aspx",
+    "sourceUrl": "https://atg.sd.gov/OurOffice/Media/pressreleasesdetail.aspx?id=2722",
+    "notes": "January 2025 official AG release identifies full name and certification hearing role; training FAQ verifies certification process. Abbreviation verified in official AG release https://atg.sd.gov/OurOffice/Media/pressreleasesdetail.aspx?id=634 . Website is official training FAQ, not an independent commission domain."
+  },
+  {
+    "state": "tn",
+    "name": "Tennessee Peace Officer Standards and Training Commission",
+    "abbreviation": "P.O.S.T.",
+    "website": "https://www.tn.gov/commerce/post.html",
+    "sourceUrl": "https://www.tn.gov/commerce/post.html",
+    "notes": "Official heading uses singular Officer, while body uses Officers. Commission regulatory role and abbreviation verified; officer certification application linked at https://www.tn.gov/commerce/post/forms-downloads.html ."
+  },
+  {
+    "state": "tx",
+    "name": "Texas Commission on Law Enforcement",
+    "abbreviation": "TCOLE",
+    "website": "https://tcole.texas.gov/",
+    "sourceUrl": "https://tcole.texas.gov/content/commission-rules",
+    "notes": "Official commission rules page states statutory regulatory authority over law enforcement agencies and licensees and details licensing rules."
+  },
+  {
+    "state": "ut",
+    "name": "Division of Peace Officer Standards and Training",
+    "abbreviation": "POST",
+    "website": "https://post.utah.gov/",
+    "sourceUrl": "https://post.utah.gov/about-post-2/",
+    "notes": "Official about page identifies Division and certification mission in concert with Peace Officer Standards and Training Council. Select administering division under one-authority scope; do not rename it the academy. Application page explicitly distinguishes request for certification from academy admission: https://post.utah.gov/post-application-for-training-and-certification-instructions/ ."
+  },
+  {
+    "state": "vt",
+    "name": "Vermont Criminal Justice Council",
+    "abbreviation": "VCJC",
+    "website": "https://vcjc.vermont.gov/",
+    "sourceUrl": "https://vcjc.vermont.gov/about-us",
+    "notes": "Official current council name, abbreviation, and certification standards mission. Some older training-page text retains former Criminal Justice Training Council wording; current branding omits Training."
+  },
+  {
+    "state": "va",
+    "name": "Virginia Department of Criminal Justice Services",
+    "abbreviation": "DCJS",
+    "website": "https://www.dcjs.virginia.gov/division-law-enforcement",
+    "sourceUrl": "https://www.dcjs.virginia.gov/division-law-enforcement",
+    "notes": "Department page provides certification processes and training/certification records. Do not substitute Virginia Law Enforcement Professional Standards Commission, which is agency accreditation rather than individual officer certification."
+  },
+  {
+    "state": "wa",
+    "name": "Washington State Criminal Justice Training Commission",
+    "abbreviation": "WSCJTC",
+    "website": "https://cjtc.wa.gov/certification",
+    "sourceUrl": "https://cjtc.wa.gov/certification/certification-information",
+    "notes": "Official page expressly assigns grant, denial, suspension and revocation of officer certification to commission Certification Bureau."
+  },
+  {
+    "state": "wv",
+    "name": "Law Enforcement Professional Standards Subcommittee",
+    "abbreviation": "LEPS",
+    "website": "https://das.wv.gov/JCS/law-enforcement",
+    "sourceUrl": "https://das.wv.gov/JCS/law-enforcement",
+    "notes": "Official page identifies LEPS Subcommittee of Governor's Committee on Crime, Delinquency and Corrections and LEPS Coordinator as responsible for officer training/certification oversight. Selected subcommittee, not State Police Academy or broad LEPS Program."
+  },
+  {
+    "state": "wi",
+    "name": "Law Enforcement Standards Board",
+    "abbreviation": "LESB",
+    "website": "https://wilenet.widoj.gov/training-standards/law-enforcement-standards-board-lesb",
+    "sourceUrl": "https://wilenet.widoj.gov/training-standards/law-enforcement-standards-board-lesb",
+    "notes": "Official DOJ board page identifies statutory professional employment/training standards authority and current board procedures; board minutes include officer certification approvals."
+  },
+  {
+    "state": "wy",
+    "name": "Wyoming Peace Officer Standards and Training Commission",
+    "abbreviation": "POST",
+    "website": "https://post.wyo.gov/",
+    "sourceUrl": "https://post.wyo.gov/",
+    "notes": "Official commission homepage identifies full name and abbreviation, retaining certifications mission, and certification reciprocity/decertification resources."
+  }
+]

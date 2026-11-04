@@ -1,0 +1,3 @@
+# Restore agency eligibility
+
+The user explicitly requested restoration of the inclusion filter removed during broad record coverage work. Restore its behavior using surviving schema relationships. An agency qualifies through any current or former personnel assignment. Reports, cases and personnel-linked coverage already require an assignment, so the assignment predicate preserves those qualifying paths. `agency_links` was dropped without a replacement and must not be queried. The user explicitly rejected a federal exception: federal offices without personnel must also be excluded, while root federal agency pages and directory entries must always remain included.

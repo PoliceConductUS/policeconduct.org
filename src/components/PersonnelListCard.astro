@@ -14,12 +14,13 @@ const reportHref = `/${person.agencyState}/reports/`;
         <div class="text-uppercase small text-muted">Name</div>
         <a class="link-dark fw-semibold" href={`/personnel/${person.slug}/`}>
           {person.firstName}
-          {person.lastName}{person.nameSuffix ? ` ${person.nameSuffix}` : ""}
+          {person.lastName}
+          {person.nameSuffix ? ` ${person.nameSuffix}` : ""}
         </a>
       </div>
       <div class="col-12 col-md-6 col-xl-2">
-        <div class="text-uppercase small text-muted">License type</div>
-        <div>{person.licenseType}</div>
+        <div class="text-uppercase small text-muted">Role</div>
+        <div>{person.title}</div>
       </div>
       <div class="col-12 col-md-6 col-xl-3">
         <div class="text-uppercase small text-muted">Agency</div>

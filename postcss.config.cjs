@@ -1,51 +1,13 @@
+// No in-build PostCSS transforms.
+//
+// PurgeCSS runs as a POST-BUILD step (scripts/purge-built-css.mjs) against the
+// rendered HTML in dist/, NOT here against source. Purging during the build can
+// only scan source files, so any class introduced dynamically or via data —
+// and every Astro build-time scope class — is invisible to it and gets
+// stripped, making individual pages "drift" (break) while others look fine.
+// Scanning the actual built HTML instead means every class that appears on any
+// of the ~165k pages is seen, so purge can only remove classes used on zero
+// pages. Drift becomes impossible by construction. See scripts/purge-built-css.mjs.
 module.exports = {
-  plugins: [
-    ...(process.env.NODE_ENV === "production"
-      ? [
-          require("@fullhuman/postcss-purgecss")({
-            content: [
-              "./src/**/*.astro",
-              "./src/**/*.ts",
-              "./src/**/*.js",
-              "./src/**/*.html",
-            ],
-            // Bootstrap uses these patterns dynamically
-            safelist: {
-              standard: [
-                /^modal/,
-                /^offcanvas/,
-                /^tooltip/,
-                /^popover/,
-                /^collapse/,
-                /^accordion/,
-                /^dropdown/,
-                /^nav-/,
-                /^navbar-/,
-                /^carousel/,
-                /^alert/,
-                /^fade/,
-                /^show/,
-                /^hide/,
-                /^active/,
-                /^disabled/,
-                /^visually-hidden/,
-                /^sticky-top/,
-                /^shadow/,
-                /^scrolled/,
-                /^aos-/,
-                /^leaflet-/,
-                /^location-map/,
-                /^data-bs-/,
-                /^data-aos/,
-                /^bs-/,
-              ],
-              deep: [/modal/, /offcanvas/, /tooltip/, /popover/, /leaflet/],
-              greedy: [/aos/, /data-bs/, /data-astro-cid/, /leaflet/],
-            },
-            // Keep CSS custom properties (Bootstrap uses many)
-            variables: true,
-          }),
-        ]
-      : []),
-  ],
+  plugins: [],
 };

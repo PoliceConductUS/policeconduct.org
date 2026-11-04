@@ -2,7 +2,7 @@
 
 Redesign the state, administrative-area, and place landing pages as a shared Civic Index page pattern. The current pages are useful as location drill-down directories, but they do not yet frame a jurisdiction as a civic research entry point for residents and defense attorneys. The new pattern should keep the database-backed location hierarchy and routes intact while making record coverage, next actions, one-level-down geography, and future data gaps visible on every jurisdiction page.
 
-The design reference is the provided light-mode mockup at `/Users/dalelotts/Library/CloudStorage/GoogleDrive-dale@dalelotts.com/My Drive/police-conduct/civil-index-page.png`. The shared visual system should be sober, compact, editorial, and public-interest oriented: thin rules, clear table structure, restrained deep red and muted teal accents, no hero hype, no gradients, no glassmorphism, no nested cards, and no sensational language.
+The design reference is the provided light-mode mockup, held locally outside the repo (path redacted). The shared visual system should be sober, compact, editorial, and public-interest oriented: thin rules, clear table structure, restrained deep red and muted teal accents, no hero hype, no gradients, no glassmorphism, no nested cards, and no sensational language.
 
 The page pattern should serve two primary personas:
 

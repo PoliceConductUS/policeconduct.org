@@ -39,6 +39,8 @@ load_env_file_if_present() {
     return 0
   fi
   set -a
+  # Callers choose optional local credential files at runtime. ShellCheck cannot
+  # resolve the dynamic path; the file existence check above guards sourcing.
   # shellcheck disable=SC1090
   source "${file_path}"
   set +a

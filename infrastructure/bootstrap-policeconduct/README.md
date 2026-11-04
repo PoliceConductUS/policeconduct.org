@@ -125,6 +125,19 @@ It also writes all outputs as `TF_OUT_<OUTPUT_NAME>` keys (uppercase, non-alphan
 For reCAPTCHA values, sync falls back to `.env-recaptcha` and fails fast if any required key is still missing.
 Result: `.env-policeconduct` remains the complete runtime env for local site/forms work.
 
+## Shared redirect rollout
+
+Production and preview use `functions/router.js` with separate CloudFront KeyValueStores. Local deployments load the built `_redirect-map.json` after uploading content. `KVS_ARN` selects the production store (`r:prod:`); `KVS_ARN_PREVIEW` selects the preview store (`r:pr-N:`). Terraform outputs and `scripts/sync-env.sh` supply these values.
+
+For the first activation in each environment, **populate the store before publishing the router**. Do not run a full Terraform apply against an empty store: both function resources publish immediately. Use this order:
+
+1. Provision only that environment's store (`aws_cloudfront_key_value_store.site_redirects` or `aws_cloudfront_key_value_store.preview_redirects`). Keep the current live function active.
+2. Use the redirect map belonging to that environment's deployed content. Verify every destination exists, then run `node scripts/load-redirects.mjs <store-arn> <r:prod:|r:pr-N:> <map-path>` with the environment's actual namespace.
+3. Update and test the matching function in CloudFront's DEVELOPMENT stage with its populated store association. Verify exact redirects, pagination patterns, repeated query parameters, ordinary pages, and assets.
+4. Publish only that environment's tested function, then verify live 301 responses and their destinations.
+
+Preview activation does not authorize production activation. Never load a preview build's map into the production namespace. Subsequent local content deployments use the same loader automatically.
+
 ## Which AWS Account Is Used?
 
 Terraform uses the active AWS credentials in your shell.

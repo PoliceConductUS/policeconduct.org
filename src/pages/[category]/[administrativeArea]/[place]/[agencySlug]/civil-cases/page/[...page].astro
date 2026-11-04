@@ -1,8 +1,8 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import type { GetStaticPathsOptions, GetStaticPathsResult, Page } from "astro";
 import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import Pagination from "#src/components/Pagination.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import {
   buildAgencyCivilCaseRows,
   type CivilCaseRow,
@@ -14,13 +14,13 @@ import {
 } from "#src/lib/data/agency-detail.js";
 import { PAGE_SIZE } from "#src/lib/pagination.js";
 
-export async function getStaticPaths({ paginate }: { paginate: any }) {
+export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
   return timeBuildStep(
     "agency civil case pagination static paths",
     async () => {
       const agencyPaths =
         await loadAgencyLocationStaticPathsForTopic("civil-cases");
-      const pages: any[] = [];
+      const pages: GetStaticPathsResult = [];
 
       for (const agencyPath of agencyPaths) {
         const data = await loadAgencyDetailByRouteParams(agencyPath.params);
@@ -28,7 +28,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
           pageSize: PAGE_SIZE,
           params: agencyPath.params,
         })
-          .filter((page: any) => {
+          .filter((page) => {
             const pageParam = page.params?.page;
             if (Array.isArray(pageParam)) {
               return pageParam.length > 0 && pageParam[0] !== "1";
@@ -39,7 +39,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
               pageParam !== "1"
             );
           })
-          .forEach((page: any) => pages.push(page));
+          .forEach((page) => pages.push(page));
       }
 
       return pages;
@@ -47,7 +47,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
   );
 }
 
-const { page } = Astro.props;
+const { page } = Astro.props as { page: Page<CivilCaseRow> };
 const data = await loadAgencyDetailByRouteParams(Astro.params);
 const {
   agencyName,
@@ -75,115 +75,91 @@ const formatDate = (value?: string | null) =>
     : "";
 ---
 
-<SiteLayout
+<PageShell
   title={pageTitle}
   description={pageDescription}
   pagePath={pagePath}
   canonicalUrl={pagePath}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: categoryLabel, href: `/${categorySlug}/` },
+    {
+      label: administrativeArea,
+      href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+    },
+    { label: placeLabel, href: placePath },
+    { label: agencyName, href: agencyPath },
+    { label: "Civil cases", href: civilCasesIndexPath },
+    {
+      label: `Page ${page.currentPage}`,
+      href: pagePath,
+      current: true,
+    },
+  ]}
+  heading={`${agencyName} Civil Cases`}
+  lede={pageDescription}
 >
-  <main>
-    <section class="agency-cases-hero">
-      <div class="container">
-        <Breadcrumbs
-          items={[
-            { label: "Home", href: "/" },
-            { label: categoryLabel, href: `/${categorySlug}/` },
-            {
-              label: administrativeArea,
-              href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
-            },
-            { label: placeLabel, href: placePath },
-            { label: agencyName, href: agencyPath },
-            { label: "Civil cases", href: civilCasesIndexPath },
-            {
-              label: `Page ${page.currentPage}`,
-              href: pagePath,
-              current: true,
-            },
-          ]}
-          className="mb-2"
-        />
-        <div class="agency-cases-heading">
-          <div>
-            <p class="agency-cases-kicker">{placeLabel}</p>
-            <h1 class="ipc-page-title">{agencyName} Civil Cases</h1>
-            <p>{pageDescription}</p>
-          </div>
-          <div class="agency-cases-count">
-            <strong>{caseRows.length.toLocaleString("en")}</strong>
-            <span>case links</span>
-          </div>
-        </div>
-      </div>
-    </section>
+  <Fragment slot="header">
+    <p class="agency-cases-kicker">{placeLabel}</p>
+    <div class="agency-cases-count">
+      <strong>{caseRows.length.toLocaleString("en")}</strong>
+      <span>case links</span>
+    </div>
+  </Fragment>
 
-    <section class="agency-cases-section">
-      <div class="container">
-        <div class="agency-cases-table-wrap">
-          <table class="agency-cases-table">
-            <thead>
+  <section class="agency-cases-section">
+    <div class="container">
+      <div class="agency-cases-table-wrap">
+        <table class="agency-cases-table">
+          <thead>
+            <tr>
+              <th scope="col">Case</th>
+              <th scope="col">Type</th>
+              <th scope="col">Filed</th>
+              <th scope="col">Court</th>
+              <th scope="col">Outcome</th>
+              <th scope="col">Cause</th>
+              <th scope="col">Personnel</th>
+            </tr>
+          </thead>
+          <tbody>
+            {page.data.map((caseItem: CivilCaseRow) => (
               <tr>
-                <th scope="col">Case</th>
-                <th scope="col">Type</th>
-                <th scope="col">Filed</th>
-                <th scope="col">Court</th>
-                <th scope="col">Cause</th>
-                <th scope="col">Personnel</th>
+                <td>
+                  <a href={caseItem.caseUrl}>
+                    {caseItem.title || "Civil case"}
+                  </a>
+                </td>
+                <td>{caseItem.type}</td>
+                <td>{formatDate(caseItem.filed_date)}</td>
+                <td>{caseItem.court || ""}</td>
+                <td>{caseItem.outcome}</td>
+                <td>{caseItem.cause_number || ""}</td>
+                <td>
+                  {caseItem.personnel.map((person, index) => (
+                    <>
+                      {index > 0 ? ", " : null}
+                      <a href={person.href}>{person.name}</a>
+                    </>
+                  ))}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {
-                page.data.map((caseItem: CivilCaseRow) => (
-                  <tr>
-                    <td>
-                      <a href={caseItem.caseUrl}>
-                        {caseItem.title || "Civil case"}
-                      </a>
-                    </td>
-                    <td>{caseItem.type}</td>
-                    <td>{formatDate(caseItem.filed_date)}</td>
-                    <td>{caseItem.court || ""}</td>
-                    <td>{caseItem.cause_number || ""}</td>
-                    <td>
-                      {caseItem.personnel.map((person, index) => (
-                        <>
-                          {index > 0 ? ", " : null}
-                          <a href={person.href}>{person.name}</a>
-                        </>
-                      ))}
-                    </td>
-                  </tr>
-                ))
-              }
-            </tbody>
-          </table>
-        </div>
-
-        <Pagination
-          basePath={civilCasesIndexPath}
-          currentPage={page.currentPage}
-          lastPage={page.lastPage}
-        />
-        <CivilCaseScopeNote />
+            ))}
+          </tbody>
+        </table>
       </div>
-    </section>
-  </main>
-</SiteLayout>
+
+      <Pagination
+        basePath={civilCasesIndexPath}
+        currentPage={page.currentPage}
+        lastPage={page.lastPage}
+      />
+      <CivilCaseScopeNote />
+    </div>
+  </section>
+</PageShell>
 
 <style>
-  .agency-cases-hero {
-    background: #f7f9fc;
-    border-bottom: 1px solid #d7dde8;
-    padding: 2rem 0 1.75rem;
-  }
-
-  .agency-cases-heading {
-    align-items: end;
-    display: flex;
-    gap: 1rem;
-    justify-content: space-between;
-  }
-
   .agency-cases-kicker {
     color: #315f63;
     font-size: 0.75rem;
@@ -191,16 +167,6 @@ const formatDate = (value?: string | null) =>
     letter-spacing: 0.08em;
     margin: 0 0 0.25rem;
     text-transform: uppercase;
-  }
-
-  .agency-cases-heading h1 {
-    color: #071942;
-    margin: 0;
-  }
-
-  .agency-cases-heading p {
-    color: #33446b;
-    margin: 0.5rem 0 0;
   }
 
   .agency-cases-count {
@@ -272,11 +238,6 @@ const formatDate = (value?: string | null) =>
   }
 
   @media (max-width: 720px) {
-    .agency-cases-heading {
-      align-items: stretch;
-      flex-direction: column;
-    }
-
     .agency-cases-count {
       text-align: left;
     }

@@ -42,17 +42,15 @@ const mapData = JSON.stringify({ bounds, points });
     <h2 class="ipc-section-title mb-1">{title}</h2>
     <p class="text-muted small mb-0">{description}</p>
   </div>
-  {
-    points.length && bounds ? (
-      <div
-        class="location-map"
-        data-location-map
-        data-location-map-payload={mapData}
-      />
-    ) : (
-      <p class="text-muted mb-0">{emptyLabel}</p>
-    )
-  }
+  {points.length && bounds ? (
+    <div
+      class="location-map"
+      data-location-map
+      data-location-map-payload={mapData}
+    />
+  ) : (
+    <p class="text-muted mb-0">{emptyLabel}</p>
+  )}
 </section>
 
 <script>

@@ -67,13 +67,13 @@ test.describe("report new", () => {
     await installDraftMock(page);
   });
 
-  test("frames the page as police interaction documentation", async ({
+  test("frames the page as police experience documentation", async ({
     page,
   }) => {
     await page.goto("/report/new/");
 
     await expect(
-      page.getByRole("heading", { name: "Document a police interaction" }),
+      page.getByRole("heading", { name: "Document a police experience" }),
     ).toBeVisible();
     await expect(
       page.getByText("You do not need to prove misconduct"),
@@ -138,7 +138,7 @@ test.describe("report new", () => {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(
-      page.getByRole("heading", { name: "Document a police interaction" }),
+      page.getByRole("heading", { name: "Document a police experience" }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Submit my experience" }),

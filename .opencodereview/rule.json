@@ -1,0 +1,28 @@
+{
+  "rules": [
+    {
+      "path": "**/*.astro",
+      "rule": "Styling must use canonical --ipc-* design tokens only (no raw hex/oklch color literals except the documented SocialLink brand-hex exception). No inline style attributes and no inline <script> blocks (shared behavior lives in src/lib/client/site.js). Public copy must use 'experience', never 'interaction', and must never contain hedging strings like 'not yet collected', 'not yet available', or 'not on this site yet' — unavailable metrics render neutral '--'/'$--' with a subtle 'Help collect this' link. Headings follow DESIGN.md tokens (one h1 per page, no display-* sizing). Interactive elements need accessible names, visible focus styles (teal-ink token, never --ipc-color-rule*), and WCAG 2.1 AA contrast including de-emphasized and empty-state text. Experience reports and civil cases must never be mixed in a single list. Reporter identity (name/email/phone/contact preference/consent) must never render.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "**/*.css",
+      "rule": "All colors and sizes come from canonical --ipc-* tokens; no new raw color literals (tint neutrals, never pure black/white). Focus indicators must not use --ipc-color-rule or --ipc-color-rule-strong (below 3:1 non-text contrast). Text tokens must keep >=4.5:1 contrast on paper and teal-wash backgrounds.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "src/lib/**/*.ts",
+      "rule": "Repo data rules: database entity IDs come from explicit database or seed values; no silent fallbacks for required data — missing required tables/fields must fail builds; record counts must derive from live joins, not stale projections. URLs use database-backed slugs; never construct entity IDs or paths from string guesses.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "scripts/**/*.mjs",
+      "rule": "Build/validation scripts must fail loudly (nonzero exit) on violations rather than warning. Sitemap entries must be canonical, indexable, HTTP-200 pages — never redirects or noindex pages. Redirects belong in the CloudFront redirect map (dist/_redirect-map.json), never as generated stub files.",
+      "merge_system_rule": true
+    },
+    {
+      "path": "mockups/**",
+      "rule": "Mockups are design references: new iterations are saved as new versioned files (e.g. texas-v2.html), never overwriting prior versions, except settled site-wide decisions applied in place."
+    }
+  ]
+}

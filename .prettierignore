@@ -10,3 +10,8 @@ openspec/schemas/superpowers-bridge
 .gemini
 .github/prompts
 .github/skills
+
+# A verbatim column extract from a records production, written by a generator.
+# Pretty-printing 3,906 rows would triple the file for no readability gain, and
+# the file is checked against the source by its own test rather than by eye.
+src/lib/coverage/data/tcole-department-types.json
