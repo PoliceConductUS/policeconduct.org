@@ -253,7 +253,7 @@ export const buildPersonNode = ({
  * GovernmentOrganization graph node for a law-enforcement agency. Minimal by
  * default ({ name, url } with a `#organization` @id); optional fields cover the
  * full agency profile. Pass either an absolute `url` or a `path` to resolve.
- * @param {{ siteUrl: URL; path?: string; url?: string; name: string; mainEntityOfPageId?: string; address?: any; email?: string; contactPoint?: any[]; sameAs?: any[]; areaServed?: any }} params
+ * @param {{ siteUrl: URL; path?: string; url?: string; name: string; mainEntityOfPageId?: string; address?: any; email?: string | string[]; contactPoint?: any[]; sameAs?: any[]; areaServed?: any }} params
  * @returns {Record<string, any>}
  */
 export const buildGovernmentOrganizationNode = ({

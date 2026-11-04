@@ -132,7 +132,10 @@ export default defineConfig({
       entryLimit: 45000,
       filter: (page) => {
         const pathname = new URL(page).pathname;
-        return !SITEMAP_EXCLUDED_PATHS.has(pathname);
+        return (
+          !SITEMAP_EXCLUDED_PATHS.has(pathname) &&
+          !pathname.split("/").includes("data-annotations")
+        );
       },
       serialize: async (item) => {
         const lastmodMap = await getSitemapLastmodMap();

@@ -5,6 +5,7 @@ import { Client } from "pg";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
+const databaseUrl = process.env.DATABASE_URL;
 const envFiles = [".env", ".env-recaptcha", ".env-policeconduct"];
 
 for (const envFile of envFiles) {
@@ -14,7 +15,42 @@ for (const envFile of envFiles) {
   });
 }
 
+// Preserve an explicit isolated connection over layered local configuration.
+if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
+
 const requiredTables = {
+  data_annotation: {
+    columns: [
+      "id",
+      "subject_kind",
+      "subject_id",
+      "type",
+      "field",
+      "value",
+      "replacement_value",
+      "message",
+      "evidence",
+      "source_namespace",
+      "source_record_id",
+      "producer_namespace",
+      "producer_record_id",
+      "status",
+    ],
+    notNull: [
+      "id",
+      "subject_kind",
+      "subject_id",
+      "type",
+      "field",
+      "value",
+      "message",
+      "source_namespace",
+      "source_record_id",
+      "producer_namespace",
+      "producer_record_id",
+      "status",
+    ],
+  },
   personnel_photo: {
     columns: [
       "id",

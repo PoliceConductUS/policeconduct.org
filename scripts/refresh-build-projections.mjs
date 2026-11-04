@@ -1,3 +1,4 @@
+import { currentAssignmentSql } from "../src/lib/data/annotation-access.js";
 import crypto from "node:crypto";
 import { withDb } from "../src/lib/db.js";
 
@@ -570,7 +571,7 @@ await withDb(async (client) => {
               select 1
               from public.agency_personnel ap
               where ap.agency_id = a.id
-                and ap.end_date is null
+                and ${currentAssignmentSql("ap")}
             )
           ),
           personnel_counts as (
@@ -585,7 +586,7 @@ await withDb(async (client) => {
             from public.agency_personnel ao
             join eligible_agencies ea
               on ea.id = ao.agency_id
-            where ao.end_date is null
+            where ${currentAssignmentSql("ao")}
             group by ao.agency_id
           ),
           report_counts as (
@@ -816,9 +817,8 @@ await withDb(async (client) => {
     }
 
     const agenciesById = new Map(agencies.map((agency) => [agency.id, agency]));
-    const reportRows = (
-      await client.query(
-        `
+    const { rows: reportRows, fields: reportFields } = await client.query(
+      `
           select
             r.id,
             r.slug,
@@ -838,7 +838,7 @@ await withDb(async (client) => {
             report_location.path as location_path,
             ro.id as review_personnel_id,
             ao.agency_id,
-            ao.title,
+            ao.title as personnel_title,
             o.first_name,
             o.last_name,
             o.suffix,
@@ -860,8 +860,13 @@ await withDb(async (client) => {
             on o.id = ao.personnel_id
           order by r.incident_date desc, r.id, ro.id
         `,
-      )
-    ).rows;
+    );
+    const reportColumns = reportFields.map((field) => field.name);
+    if (new Set(reportColumns).size !== reportColumns.length) {
+      throw new Error(
+        "Report projection query returned duplicate column names.",
+      );
+    }
 
     const reportRowsById = new Map();
     for (const row of reportRows) {
@@ -896,7 +901,7 @@ await withDb(async (client) => {
         );
         if (!personnelBySlug.has(slug)) {
           personnelBySlug.set(slug, {
-            title: entry.title || null,
+            title: entry.personnel_title || null,
             name: `${entry.first_name || ""} ${entry.last_name || ""}${entry.suffix ? ` ${entry.suffix}` : ""}`.trim(),
             slug,
           });

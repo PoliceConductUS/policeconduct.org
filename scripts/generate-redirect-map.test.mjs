@@ -115,6 +115,7 @@ const createFixture = async (
   for (const directory of [
     "scripts",
     "src/lib/geo",
+    "src/lib/data",
     "dist/tx/reports",
     "dist/federal",
     "dist/personnel/multi-agency-officer",
@@ -132,6 +133,10 @@ const createFixture = async (
   await copyFile(
     new URL("../src/lib/video.ts", import.meta.url),
     path.join(cwd, "src/lib/video.ts"),
+  );
+  await copyFile(
+    new URL("../src/lib/data/annotation-access.js", import.meta.url),
+    path.join(cwd, "src/lib/data/annotation-access.js"),
   );
   await writeFile(path.join(cwd, "package.json"), '{"type":"module"}');
   await writeFile(

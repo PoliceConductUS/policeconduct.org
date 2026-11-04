@@ -50,6 +50,8 @@ test.describe("civil cases", () => {
 test("renders complaint summaries with a compact source link", async ({
   page,
 }) => {
+  // This test visits every retained summary; the combined corpus has 180 pages.
+  test.setTimeout(10 * 60_000);
   const { Client } = await import("pg");
   const client = new Client({ connectionString: process.env.DATABASE_URL });
   await client.connect();
