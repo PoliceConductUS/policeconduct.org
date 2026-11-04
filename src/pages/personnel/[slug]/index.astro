@@ -1,6 +1,5 @@
 ---
 import { annotationFromRecord } from "#src/lib/data/annotation-values.js";
-import { isReportedDate } from "#src/lib/data/annotation-values.js";
 import DataAnnotations from "#src/components/DataAnnotations.astro";
 import CoverageLinks from "#src/components/CoverageLinks.astro";
 import { loadCoverageLinksForOfficer } from "#src/lib/data/coverage.js";
@@ -13,6 +12,11 @@ import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
+import {
+  selectHeadlineAssignment,
+  getAssignmentStatus,
+  formatAssignmentDate,
+} from "#src/lib/data/assignment-status.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
@@ -182,15 +186,22 @@ const assignmentHistory = history
     agency: agenciesById[entry.agency_id],
   }))
   .filter((entry) => entry.agency);
-const activeAssignment =
-  [...history].reverse().find((entry) => entry.end_date == null) || null;
-const currentAssignment = activeAssignment || history[history.length - 1];
+// Which assignment this page headlines is decided by `end_date`, never by
+// array position. `history[history.length - 1]` used to win here, which
+// published present-tense employment for assignments our own source records as
+// ended (INS-63 / INS-75).
+const headline = selectHeadlineAssignment(history);
+const currentAssignment = headline.assignment;
 if (!currentAssignment) {
   throw new Error(
     `Personnel ${data.officer.slug} is missing required agency assignment history.`,
   );
 }
-const hasCurrentAssignment = Boolean(activeAssignment);
+const hasCurrentAssignment = headline.isCurrent;
+const headlineEndDateDisplay =
+  headline.isEnded && headline.endDate
+    ? formatAssignmentDate(headline.endDate)
+    : null;
 const currentBadge = currentAssignment?.badge_number || null;
 const currentTitle =
   typeof currentAssignment?.title === "string"
@@ -279,13 +290,21 @@ const deceasedPublicMessage =
     : "This individual is reported deceased.");
 const assignmentStatusLabel = hasCurrentAssignment
   ? "Current agency"
-  : "Most recent agency";
-const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${hasCurrentAssignment ? currentAgency!.name : `Most recent: ${currentAgency!.name}`} | PoliceConduct.org`;
+  : headline.hasUncertainHistory
+    ? "Recorded agency"
+    : "Most recent agency";
+const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${hasCurrentAssignment ? currentAgency!.name : `${headline.hasUncertainHistory ? "Recorded" : "Most recent"}: ${currentAgency!.name}`} | PoliceConduct.org`;
 const pageDescription = isDeceased
   ? `${officerName} personnel profile with agency assignments, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
-  : `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}, agency assignments, public reports, coverage, and civil litigation records.`;
+  : // The snippet is the claim most readers see, so the qualifier and the end
+    // date have to survive into it rather than only appearing on the page.
+    `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}${
+      !hasCurrentAssignment && headlineEndDateDisplay
+        ? ` (assignment ended ${headlineEndDateDisplay})`
+        : ""
+    }, agency assignments, public reports, coverage, and civil litigation records.`;
 const pastEmployerSummary = assignmentHistory
-  .filter((entry) => entry.id !== activeAssignment?.id)
+  .filter((entry) => getAssignmentStatus(entry).isEnded)
   .map((entry) => ({
     ...entry,
   }))
@@ -293,7 +312,7 @@ const pastEmployerSummary = assignmentHistory
     const segments = [entry.agency?.name];
     const dateRange = [
       entry.start_date ? formatAssignmentDate(entry.start_date) : null,
-      entry.end_date != null ? formatAssignmentDate(entry.end_date) : "Current",
+      entry.end_date != null ? formatAssignmentDate(entry.end_date) : null,
     ]
       .filter(Boolean)
       .join(" to ");
@@ -330,7 +349,7 @@ const addCivilCasePrefillPayload = JSON.stringify({
   defendants: [officerName, currentAgencyPrefillName]
     .filter(Boolean)
     .join("\n"),
-  summary: `${officerName} profile: ${officerPath}\nCurrent agency: ${currentAgencyPrefillName}`,
+  summary: `${officerName} profile: ${officerPath}\n${assignmentStatusLabel}: ${currentAgencyPrefillName}`,
   links: [officerPath, ...reportItems.slice(0, 3).map((report) => report.url)]
     .filter(Boolean)
     .join("\n"),
@@ -341,9 +360,9 @@ const pastEmployerPrefillPayload = JSON.stringify({
   lastName: data.officer.last_name || "",
   suffix: data.officer.suffix || "",
   badgeNumber: currentBadge || "",
-  currentAgency: currentAgencyPrefillName,
-  currentAgencyCity: currentAgency?.city || "",
-  currentAgencyState: currentAgency?.state || "",
+  currentAgency: hasCurrentAssignment ? currentAgencyPrefillName : "",
+  currentAgencyCity: hasCurrentAssignment ? currentAgency?.city || "" : "",
+  currentAgencyState: hasCurrentAssignment ? currentAgency?.state || "" : "",
   pastEmployers: pastEmployerSummary,
   civilLitigation: civilLitigationSummary,
   reportLinks: reportLinksSummary,
@@ -353,7 +372,7 @@ const suggestEditPrefillPayload = JSON.stringify({
   officerPath,
   officerName,
   badgeNumber: currentBadge || "",
-  currentEmployer: currentAgencyPrefillName,
+  currentEmployer: hasCurrentAssignment ? currentAgencyPrefillName : "",
   pastEmployers: pastEmployerSummary,
   civilLitigation: civilLitigationSummary,
 });
@@ -381,13 +400,12 @@ const statusLabel = isDeceased
   ? "Deceased"
   : hasCurrentAssignment
     ? "Active"
-    : "Former";
+    : headline.isEnded && !headline.hasUncertainHistory
+      ? "Former"
+      : "Status uncertain";
 const formatCount = (value: number) =>
   new Intl.NumberFormat("en-US").format(value);
 const unavailableValue = "--";
-function formatAssignmentDate(value: string) {
-  return !isReportedDate(value) ? value : formatShortDate(value);
-}
 
 const personnelMetricCards: MetricCardItem[] = [
   {
@@ -485,7 +503,17 @@ const person = buildPersonNode({
     : undefined,
   mainEntityOfPageId: profilePageId,
   deathDate: isDeceased ? String(deceasedOnValue) : undefined,
-  worksForId: organization ? organization["@id"] : undefined,
+  // `worksFor` is a present-tense employment assertion, so it is emitted only
+  // for an assignment our source still records as open. For an ended
+  // association the organization node stays in the graph (the page links to
+  // the agency, and that association is real) but no employment edge is made
+  // to it — a crawler that flattens the graph must not be able to read
+  // "currently employed by" off a separation we already hold. Encoding it as
+  // `worksFor` → `OrganizationRole` with an `endDate` was considered and
+  // rejected: consumers routinely flatten the Role wrapper, which would
+  // reintroduce exactly the false claim this fixes.
+  worksForId:
+    organization && hasCurrentAssignment ? organization["@id"] : undefined,
 });
 const structuredData = {
   "@context": "https://schema.org",
@@ -535,6 +563,14 @@ const structuredData = {
           )}
           <span aria-hidden="true"> · </span>
           {currentAgencyLocation}
+          {!hasCurrentAssignment && headlineEndDateDisplay ? (
+            <Fragment>
+              <span aria-hidden="true"> · </span>
+              <span class="personnel-assignment-ended">
+                assignment ended {headlineEndDateDisplay}
+              </span>
+            </Fragment>
+          ) : null}
         </p>
         <p class="personnel-profile-note">
           Combined career data aggregated across all known agencies.
@@ -598,6 +634,12 @@ const structuredData = {
               )}
             </dd>
           </div>
+          {!hasCurrentAssignment && headlineEndDateDisplay ? (
+            <div>
+              <dt>Assignment ended</dt>
+              <dd>{headlineEndDateDisplay}</dd>
+            </div>
+          ) : null}
           <div>
             <dt>Updated</dt>
             <dd>{formatShortDate(data.officer.updated_at)}</dd>
@@ -808,7 +850,11 @@ const structuredData = {
                   </td>
                   <td>
                     <span class="personnel-status-pill">
-                      {entry.end_date != null ? "Completed" : "Active"}
+                      {getAssignmentStatus(entry).isEnded
+                        ? "Completed"
+                        : getAssignmentStatus(entry).isCurrent
+                          ? "Active"
+                          : "Status uncertain"}
                     </span>
                   </td>
                 </tr>
@@ -1090,6 +1136,12 @@ const structuredData = {
     font-weight: 750;
     line-height: 1.45;
     margin: 0.7rem 0 0;
+  }
+
+  /* The separation date is part of the employment claim, not a footnote to it,
+     so it keeps the headline's weight instead of being de-emphasised. */
+  .personnel-assignment-ended {
+    white-space: nowrap;
   }
 
   .personnel-profile-note {

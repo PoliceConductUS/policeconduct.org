@@ -7,17 +7,24 @@ test("current assignment SQL distinguishes open dates from unrepresentable sourc
     async (client) =>
       (
         await client.query(`
-    with assignments(id, end_date, data_source_values) as (values
-      ('open', null::date, '{}'::jsonb),
-      ('explicit-null', null::date, '{"end_date":{"effective_value":null}}'::jsonb),
-      ('invalid', null::date, '{"end_date":{"effective_value":"not a date"}}'::jsonb),
-      ('empty', null::date, '{"end_date":{"effective_value":""}}'::jsonb),
-      ('ended', '2024-01-01'::date, '{}'::jsonb)
+    with assignments(id, end_date, data_source_values, start_date) as (values
+      ('open', null::date, '{}'::jsonb, null::date),
+      ('explicit-null', null::date, '{"end_date":{"effective_value":null}}'::jsonb, null::date),
+      ('invalid', null::date, '{"end_date":{"effective_value":"not a date"}}'::jsonb, null::date),
+      ('empty', null::date, '{"end_date":{"effective_value":""}}'::jsonb, null::date),
+      ('ended', '2024-01-01'::date, '{}'::jsonb, '2023-01-01'::date),
+      ('known-start', null::date, '{}'::jsonb, (current_timestamp at time zone 'UTC')::date),
+      ('future-start', null::date, '{}'::jsonb, (current_timestamp at time zone 'UTC')::date + 1),
+      ('invalid-start', null::date, '{"start_date":{"effective_value":"not a date"}}'::jsonb, null::date)
     ) select id from assignments a where ${currentAssignmentSql("a")} order by id
   `)
       ).rows,
   );
-  expect(rows.map((row) => row.id)).toEqual(["explicit-null", "open"]);
+  expect(rows.map((row) => row.id)).toEqual([
+    "explicit-null",
+    "known-start",
+    "open",
+  ]);
 });
 
 test("personnel profiles show reported dates without calculated tenure", async ({
