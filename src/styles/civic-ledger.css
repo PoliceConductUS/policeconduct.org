@@ -296,6 +296,10 @@ a.stat-cell {
   padding: 2.1rem 0;
 }
 
+.civic-section--facts {
+  padding-top: 0;
+}
+
 .civic-section--last {
   border-bottom: none;
 }
@@ -977,6 +981,12 @@ a.stat-cell {
 
 .detail-body {
   max-width: 66ch;
+}
+
+.detail-body--sections {
+  display: grid;
+  gap: 1.6rem;
+  align-content: start;
 }
 
 .detail-body h3 {
