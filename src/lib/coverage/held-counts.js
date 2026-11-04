@@ -7,12 +7,13 @@
  *
  * Two design rules, both learned the hard way:
  *
- * 1. A count without the identity of the store it came from is not a fact. We
- *    have three stores that disagree about how many agencies we hold (the
- *    production site database, the local intake re-import, and the seed dump).
- *    Every measurement therefore carries the database it was taken from, the
- *    time it was taken, and a corpus fingerprint, so a stale number cannot be
- *    quoted as a current one.
+ * 1. A count without the identity of the store it came from is not a fact. Three
+ *    stores reported three different agency counts; INS-80 designated the intake
+ *    agency corpus authoritative and reconciled the other two against it. Every
+ *    measurement therefore carries the database it was taken from, the time it
+ *    was taken, a corpus fingerprint, and whether the schema is compatible with intake
+ *    (not proof of provenance) — so neither a stale number nor a non-authoritative one can be quoted
+ *    as the corpus count.
  *
  * 2. Query only what the schema contract guarantees. `agency.state` is in
  *    `scripts/validate-schema-contract.mjs` and is NOT NULL, so it is safe
@@ -21,6 +22,8 @@
  *    rather than a crash or, worse, a silently wrong number.
  * ---------------------------------------------------------------------------
  */
+
+import { verifyAuthoritativeStore } from "./authoritative-store.js";
 
 /** Columns and tables we use when present but will not fail without. */
 const OPTIONAL = Object.freeze({
@@ -116,7 +119,7 @@ export const measureHeldAgencies = async (
     limitations.push({
       missing: OPTIONAL.PAGE_PAYLOAD,
       consequence:
-        "Cannot distinguish agencies held in the database from agencies that actually render as public pages. Held is not the same as published and this run cannot report the difference.",
+        "Cannot count agency rows in the database page projection. Held is not the same as projected; neither count establishes live publication.",
     });
   }
 
@@ -129,6 +132,8 @@ export const measureHeldAgencies = async (
     connectedTo: connectionTarget,
   });
   const fingerprint = await fingerprintCorpus(client);
+  // Schema compatibility does not distinguish the current corpus from a copy.
+  const storeAuthority = await verifyAuthoritativeStore(client);
 
   // `state` is NOT NULL under the schema contract, but trim and upper-case
   // anyway: a state code that differs only by case or whitespace would split
@@ -167,9 +172,10 @@ export const measureHeldAgencies = async (
     measuredAt: now.toISOString(),
     database,
     fingerprint,
+    storeAuthority,
     totalHeld,
     federalHeld: federal,
-    publishedAsPages: published,
+    projectedAgencyPages: published,
     byState: Object.freeze(
       stateRows.map((row) => Object.freeze({ code: row.code, held: row.held })),
     ),

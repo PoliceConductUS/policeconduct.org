@@ -89,10 +89,18 @@ export const GAP_KIND = Object.freeze({
    */
   NUMERATOR_UNIVERSE_UNVERIFIED: "numerator_universe_unverified",
   /**
-   * Two stores we control disagree about how many agencies we hold. Until they
-   * agree there is no single held count to report, and we say so.
+   * Two stores we control disagree about how many agencies we hold, and the
+   * difference is not recorded in the reconciliation registry. A disagreement
+   * that *is* recorded there is not this gap — it is an explained difference and
+   * is reported as one.
    */
   CORPUS_COUNT_DISPUTED: "corpus_count_disputed",
+  /**
+   * The store this report measured is not the one designated authoritative for
+   * coverage reporting. Every number still describes the store it came from, but
+   * none of them may be quoted as the corpus count.
+   */
+  MEASURED_STORE_NOT_AUTHORITATIVE: "measured_store_not_authoritative",
 });
 
 export class CoverageProvenanceError extends Error {
