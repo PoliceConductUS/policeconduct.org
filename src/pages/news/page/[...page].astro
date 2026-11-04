@@ -1,4 +1,5 @@
 ---
+import type { GetStaticPathsOptions } from "astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import {
   formatNewsDate,
@@ -18,11 +19,11 @@ type PaginatedNewsPage = {
   };
 };
 
-export async function getStaticPaths({ paginate }: { paginate: any }) {
+export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
   const articles = loadNewsArticles();
   return paginate(articles, {
     pageSize: PAGE_SIZE,
-  }).filter((page: any) => {
+  }).filter((page) => {
     const pageParam = page.params?.page;
     if (Array.isArray(pageParam)) {
       return pageParam.length > 0 && pageParam[0] !== "1";

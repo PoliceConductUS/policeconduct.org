@@ -265,7 +265,14 @@ The system MUST keep Civic Index landing pages focused on visitor-intent preview
 - **WHEN** a personnel record is associated with exactly one distinct agency
 - **THEN** the personnel page does not link the Agencies metric card to `/personnel/{slug}/agencies/`
 - **AND** the build does not generate `/personnel/{slug}/agencies/`
-- **AND** personnel records associated with more than one distinct agency may still link to and generate `/personnel/{slug}/agencies/`
+
+#### Scenario: Personnel agency assignments are rendered
+
+- **WHEN** a personnel profile page is rendered
+- **THEN** the page renders the full agency assignment table for that person
+- **AND** the Agencies metric card links to that on-page table
+- **AND** the build does not generate `/personnel/{slug}/agencies/` for any personnel record
+- **AND** a previously published `/personnel/{slug}/agencies/` URL redirects to `/personnel/{slug}/`
 
 ### Requirement: Derived civic indicators
 

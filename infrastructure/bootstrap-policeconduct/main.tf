@@ -139,6 +139,12 @@ locals {
         S3_BUCKET          = aws_s3_bucket.preview.id
         CLOUDFRONT_DIST_ID = aws_cloudfront_distribution.preview.id
         FORMS_API_URL      = "/api"
+        # Consumed by the cleanup-preview workflow to prune a closed PR's
+        # r:pr-<N>: redirect namespace. The workflow skips that step while this
+        # is unset, which is why no preview namespace had ever been pruned
+        # (INS-106). Applied together with CloudFrontKeyValueStorePreviewAccess
+        # so the variable never exists without the permission it needs.
+        KVS_ARN_PREVIEW = aws_cloudfront_key_value_store.preview_redirects.arn
       },
       local.ga_measurement_id_preview == null ? {} : {
         GA_MEASUREMENT_ID = local.ga_measurement_id_preview
@@ -321,6 +327,44 @@ resource "aws_s3_bucket_versioning" "preview" {
   versioning_configuration {
     status = "Enabled"
   }
+}
+
+# Versioning above means `aws s3 rm` -- what cleanup-preview.yml runs when a PR
+# closes -- only writes a delete marker. The object becomes noncurrent and keeps
+# billing, so tearing down a preview reclaimed nothing and the object count only
+# ever grew. Measured on 2026-11-01, before this rule existed: 5,589,610 objects
+# and 95.7 GB billed, against 17.7 GB of current versions (INS-106).
+#
+# 7 days, per the board's decision on INS-106. A preview is disposable build
+# output reproducible from its commit, so a week is ample room to notice a
+# mistaken delete. Current versions are untouched, so live previews for open
+# PRs keep serving normally.
+resource "aws_s3_bucket_lifecycle_configuration" "preview" {
+  bucket = aws_s3_bucket.preview.id
+
+  rule {
+    id     = "expire-noncurrent-preview-versions"
+    status = "Enabled"
+
+    # Everything in this bucket is preview build output under pr-<N>/.
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = 7
+    }
+
+    # Sweep the delete marker once every version beneath it has expired;
+    # otherwise the markers accumulate as billable objects forever.
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.preview]
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "preview" {
@@ -1110,7 +1154,6 @@ resource "aws_lambda_function" "forms_api_prod" {
       SENTRY_ENVIRONMENT                   = "production"
       SUBMISSION_NOTIFICATIONS_TOPIC_ARN   = trimspace(var.submission_notifications_topic_arn)
       SUBMISSION_NOTIFICATION_RECIPIENTS   = join(",", local.normalized_submission_notification_emails)
-      NOTIFICATION_RECEIPTS_SINCE          = var.notification_receipts_since
     }
   }
 }
@@ -1155,7 +1198,6 @@ resource "aws_lambda_function" "forms_api_preview" {
       # mistaken for a real request with a real clock on it.
       NOTIFICATION_ENV_LABEL             = "preview"
       SUBMISSION_NOTIFICATION_RECIPIENTS = join(",", local.normalized_submission_notification_emails)
-      NOTIFICATION_RECEIPTS_SINCE        = var.notification_receipts_since
     }
   }
 }
@@ -1645,6 +1687,26 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     resources = ["*"]
   }
 
+  # The KeyValueStore data plane is a separate service prefix from cloudfront:*,
+  # so CloudFrontAccess above does not reach it. Without this statement the
+  # preview cleanup workflow's redirect-pruning step fails with AccessDenied
+  # (INS-106). These three actions are exactly what scripts/load-redirects.mjs
+  # invokes: list-keys, describe-key-value-store (for the ETag), and update-keys.
+  #
+  # Preview store only. No CI workflow deploys production, and the site store
+  # controls live-site routing, so CI has no reason to hold write access to it.
+  statement {
+    sid    = "CloudFrontKeyValueStorePreviewAccess"
+    effect = "Allow"
+
+    actions = [
+      "cloudfront-keyvaluestore:ListKeys",
+      "cloudfront-keyvaluestore:DescribeKeyValueStore",
+      "cloudfront-keyvaluestore:UpdateKeys",
+    ]
+    resources = [aws_cloudfront_key_value_store.preview_redirects.arn]
+  }
+
   statement {
     sid    = "AcmAccess"
     effect = "Allow"
@@ -1982,7 +2044,8 @@ locals {
 }
 
 resource "aws_cloudfront_key_value_store" "site_redirects" {
-  name = "${var.project_name}-site-redirects"
+  name    = "${var.project_name}-site-redirects"
+  comment = "Production site redirects managed by bootstrap-policeconduct Terraform"
 }
 
 resource "aws_cloudfront_function" "index_rewrite" {
@@ -2141,7 +2204,8 @@ resource "aws_cloudfront_distribution" "site" {
 # Preview uses the same router as production with a separate redirect store.
 # Keys are r:<label>:<path> = <target>, loaded from the build's _redirect-map.json.
 resource "aws_cloudfront_key_value_store" "preview_redirects" {
-  name = "${var.project_name}-preview-redirects"
+  name    = "${var.project_name}-preview-redirects"
+  comment = "Redirect maps for preview builds using the shared site router."
 }
 
 resource "aws_cloudfront_function" "preview_router" {
@@ -2477,7 +2541,7 @@ resource "github_actions_environment_secret" "sentry_auth_token" {
 }
 
 # ---------------------------------------------------------------------------
-# INS-35 — submission notifications and their liveness canary
+# INS-35 — submission notifications
 #
 # Those resources are NOT here. They live in
 # infrastructure/submission-notifications, which has its own Terraform state.

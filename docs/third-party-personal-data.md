@@ -33,7 +33,9 @@ first place.
 
 ### If the gate fires on something legitimate
 
-Add an entry to `ALLOWLIST` in `scripts/scan-personal-data.mjs`. Every entry is
+First obtain an explicit human decision recording the reason, affected check,
+scope, and duration, as required by the [merge checklist](../README.md#pr-merge-checklist).
+Only then add the approved entry to `ALLOWLIST` in `scripts/scan-personal-data.mjs`. Every entry is
 a deliberate, reviewed hole, so each one names the exact path, the exact rule,
 and what has to happen for the entry to go away. Allowlist entries are scoped
 to a single rule — exempting a file from the filename rule does not exempt its

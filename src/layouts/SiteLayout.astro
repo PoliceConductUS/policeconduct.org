@@ -123,7 +123,8 @@ const serializeStructuredData = (value: unknown) =>
   </head>
   <body>
     <a class="skip-link" href="#main">
-      Skip to main content
+      {" "}
+      Skip to main content{" "}
     </a>
 
     <header class="masthead" data-pagefind-ignore>
@@ -134,10 +135,12 @@ const serializeStructuredData = (value: unknown) =>
         <MastheadSearch />
         <nav class="masthead-nav" aria-label="Primary">
           <a class="masthead-nav-link" href="/news/">
-            News
+            {" "}
+            News{" "}
           </a>
           <a class="masthead-nav-link" href="/donate/">
-            Donate
+            {" "}
+            Donate{" "}
           </a>
           <a class="nav-action nav-action-share" href="/report/new/">
             Share an experience
@@ -454,6 +457,14 @@ const serializeStructuredData = (value: unknown) =>
             </ul>
           </div>
         </div>
+        <p class="text-center mb-4">
+          <a
+            class="fw-semibold text-decoration-underline"
+            href="/legal-notice/data-subject-access-request/"
+          >
+            Request removal of my information
+          </a>
+        </p>
         <div class="text-center text-muted small">
           <p class="mb-1">
             All information on this site is compiled from public records and

@@ -1,4 +1,5 @@
 ---
+import type { GetStaticPathsOptions, GetStaticPathsResult } from "astro";
 import CivicChildIndexPage from "#src/components/CivicChildIndexPage.astro";
 import { buildStateCivicIndex } from "#src/lib/data/civic-index.js";
 import {
@@ -7,9 +8,9 @@ import {
 } from "#src/lib/data/civic-scoped-routes.js";
 import { PAGE_SIZE } from "#src/lib/pagination.js";
 
-export async function getStaticPaths({ paginate }: { paginate: any }) {
+export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
   const paths = await loadStateScopedPaths();
-  const pages: any[] = [];
+  const pages: GetStaticPathsResult = [];
 
   for (const path of paths) {
     const model = await buildStateCivicIndex(
@@ -24,7 +25,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
         pagePath: `${model.pagePath}counties/`,
       },
     })
-      .filter((page: any) => {
+      .filter((page) => {
         const pageParam = page.params?.page;
         if (Array.isArray(pageParam)) {
           return pageParam.length > 0 && pageParam[0] !== "1";
@@ -35,7 +36,7 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
           pageParam !== "1"
         );
       })
-      .forEach((page: any) => pages.push(page));
+      .forEach((page) => pages.push(page));
   }
 
   return pages;

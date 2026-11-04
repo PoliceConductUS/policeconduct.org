@@ -17,7 +17,9 @@ export type CoverageLink = {
   officers: CoverageOfficerRef[];
 };
 
-const hydrateCoverageLinks = async (rows: any[]): Promise<CoverageLink[]> => {
+const hydrateCoverageLinks = async (
+  rows: Omit<CoverageLink, "officers">[],
+): Promise<CoverageLink[]> => {
   if (!rows.length) {
     return [];
   }

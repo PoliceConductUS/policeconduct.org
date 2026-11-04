@@ -1,4 +1,5 @@
 ---
+import type { GetStaticPathsOptions } from "astro";
 import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import Pagination from "#src/components/Pagination.astro";
@@ -16,11 +17,11 @@ type PaginatedCivilCasesPage = {
   lastPage: number;
 };
 
-export async function getStaticPaths({ paginate }: { paginate: any }) {
+export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
   const civilCases = await loadCivilCaseList();
   return paginate(civilCases, {
     pageSize: CIVIL_CASES_PAGE_SIZE,
-  }).filter((page: any) => {
+  }).filter((page) => {
     const pageParam = page.params?.page;
     if (Array.isArray(pageParam)) {
       return pageParam.length > 0 && pageParam[0] !== "1";

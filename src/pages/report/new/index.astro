@@ -1033,7 +1033,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
       await saveDraftInFlight;
     }
 
-    let result = false;
+    let result;
     do {
       const nextSnapshot = getDraftSnapshot();
       if (nextSnapshot === lastSavedDraftSnapshot) {
@@ -1107,7 +1107,9 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
       }
 
       clearReportDraftCookie();
-    } catch (_error) {}
+    } catch (_error) {
+      // Keep the locally restored draft when the optional server draft is unavailable.
+    }
   };
 
   let reportStarted = false;

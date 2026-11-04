@@ -9,7 +9,7 @@ import {
   rmSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { test } from "node:test";
 
 for (const [name, script, args, builds] of [
@@ -25,7 +25,9 @@ for (const [name, script, args, builds] of [
 ]) {
   for (const fails of [true, false]) {
     test(`${name}: ${fails ? "failed coverage stops publishing" : "coverage precedes publishing"}`, () => {
-      const root = mkdtempSync(join(tmpdir(), "deploy-release-guard-"));
+      const root = mkdtempSync(
+        join(resolve(tmpdir()), "deploy-release-guard-"),
+      );
       try {
         mkdirSync(join(root, "scripts"));
         mkdirSync(join(root, "bin"));

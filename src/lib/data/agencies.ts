@@ -1,6 +1,37 @@
 import { withDb } from "#src/lib/db.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
 import type { AgencyFinderResult, AgencySummary } from "./types.js";
+type AgencySummaryRow = {
+  id: string;
+  name: string;
+  state: string;
+  slug: string;
+  administrative_area: string;
+  location_administrative_area_slug: string;
+  location_place_slug: string;
+  canonical_path: string;
+  city: string | null;
+  address: string | null;
+  zip_code: string | null;
+  phone_number: string | null;
+  active_personnel_count: string | number;
+  report_count: string | number;
+  civil_case_count: string | number;
+};
+type AgencyFinderRow = {
+  entity_id: string;
+  payload: {
+    agency?: {
+      id: string;
+      name: string;
+      state: string;
+      administrativeArea: string;
+      city: string | null;
+      postalCode: string | null;
+      path: string;
+    };
+  };
+};
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
 
 const compareNullable = (left?: string | null, right?: string | null) =>
@@ -15,7 +46,7 @@ const requireText = (value: unknown, fieldName: string, agencyId: string) => {
 };
 
 export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
-  const agencies = await withDb(async (client): Promise<any[]> => {
+  const agencies = await withDb(async (client): Promise<AgencySummaryRow[]> => {
     return (
       await client.query(
         `with first_phone as (
@@ -100,7 +131,7 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
     ).rows;
   });
 
-  const summaries: AgencySummary[] = agencies.map((agency: any) => {
+  const summaries: AgencySummary[] = agencies.map((agency) => {
     const id = requireText(agency.id, "id", "unknown");
 
     return {
@@ -151,7 +182,7 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
 export const loadAgencyFinderResults = async (): Promise<
   AgencyFinderResult[]
 > => {
-  const agencies = await withDb(async (client): Promise<any[]> => {
+  const agencies = await withDb(async (client): Promise<AgencyFinderRow[]> => {
     return (
       await client.query(
         `select
@@ -163,7 +194,7 @@ export const loadAgencyFinderResults = async (): Promise<
     ).rows;
   });
 
-  const results: AgencyFinderResult[] = agencies.map((agency: any) => {
+  const results: AgencyFinderResult[] = agencies.map((agency) => {
     const payload = agency.payload?.agency;
     const id = requireText(agency.entity_id || payload?.id, "id", "unknown");
 

@@ -406,16 +406,26 @@ export const loadFederalAgencySummaries = async () => {
   });
 
   return rows
-    .map((row: any): FederalAgencySummary => ({
-      branchCount: Number(row.branch_count || 0),
-      civilCaseCount: Number(row.civil_case_count || 0),
-      id: String(row.id),
-      name: String(row.name),
-      path: federalAgencyPath(String(row.slug)),
-      personnelCount: Number(row.personnel_count || 0),
-      reportCount: Number(row.report_count || 0),
-      slug: String(row.slug),
-    }))
+    .map(
+      (row: {
+        id: string;
+        name: string;
+        slug: string;
+        branch_count: string | number;
+        civil_case_count: string | number;
+        personnel_count: string | number;
+        report_count: string | number;
+      }): FederalAgencySummary => ({
+        branchCount: Number(row.branch_count || 0),
+        civilCaseCount: Number(row.civil_case_count || 0),
+        id: String(row.id),
+        name: String(row.name),
+        path: federalAgencyPath(String(row.slug)),
+        personnelCount: Number(row.personnel_count || 0),
+        reportCount: Number(row.report_count || 0),
+        slug: String(row.slug),
+      }),
+    )
     .sort((left, right) => nameCollator.compare(left.name, right.name));
 };
 
@@ -503,7 +513,7 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
   if (!row) return null;
 
   const branches: FederalAgencyBranch[] = (row.branches || []).map(
-    (branch: any): FederalAgencyBranch => {
+    (branch: FederalAgencyBranch): FederalAgencyBranch => {
       if (!branch.path) {
         throw new Error(
           `Federal agency ${row.slug} has linked agency ${branch.id || "unknown"} without a required canonical path.`,

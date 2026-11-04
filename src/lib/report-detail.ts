@@ -21,11 +21,20 @@ type ReportOfficerEntry = {
 
 type ReportDetailQuery = {
   report: Record<string, unknown> | null;
-  reportOfficers: any[];
-  reportLinks: any[];
-  officers: any[];
-  agencies: any[];
-  agencyOfficers: any[];
+  reportOfficers: {
+    id: string;
+    agency_personnel_id: string;
+    rating_overall: number | null;
+  }[];
+  reportLinks: EvidenceLinkSource[];
+  officers: { id: string; slug: string }[];
+  agencies: { id: string; canonical_path: string }[];
+  agencyOfficers: {
+    id: string;
+    agency_id: string;
+    personnel_id: string;
+    badge_number: string | null;
+  }[];
 };
 
 // Parity fields collected by /report/new that the mockup displays
@@ -106,7 +115,7 @@ const buildOfficerEntries = (
     );
   }
 
-  return reportOfficerEntries.map((entry: any) => {
+  return reportOfficerEntries.map((entry) => {
     const agencyOfficer = assertValue(
       agencyOfficersById[entry.agency_personnel_id],
       `Missing agency_officer ${entry.agency_personnel_id} for review officer ${entry.id}`,

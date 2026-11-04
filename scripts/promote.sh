@@ -56,9 +56,9 @@ if [ -s "${redirects_file}.puts" ]; then
       [ -z "${batch}" ] && continue
       etag="$(aws cloudfront-keyvaluestore describe-key-value-store \
         --kvs-arn "${KVS_ARN}" --query ETag --output text)"
-      # shellcheck disable=SC2086
+      read -r -a batch_args <<< "${batch}"
       aws cloudfront-keyvaluestore update-keys \
-        --kvs-arn "${KVS_ARN}" --if-match "${etag}" --puts ${batch}
+        --kvs-arn "${KVS_ARN}" --if-match "${etag}" --puts "${batch_args[@]}"
     done
 fi
 

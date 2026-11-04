@@ -46,7 +46,7 @@ async function mappedTarget(namespace, uri) {
   return null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- CloudFront invokes this entry point.
+// CloudFront requires a global handler and invokes it outside this module.
 async function handler(event) {
   const request = event.request;
   const host = request.headers.host
@@ -89,3 +89,6 @@ async function handler(event) {
   request.uri = prefix + path;
   return request;
 }
+
+// Register the entry point on the runtime global rather than exporting a module.
+globalThis.handler = handler;

@@ -23,7 +23,7 @@ This Repository Is Public
 - Personal information that a third party gave us — volunteers, tipsters, applicants, correspondents, donors, members of the public — must never be committed to this repository, in any file, in any form, including comments, fixtures, tests, and commit messages. It goes in the database behind the personnel publication gate. A scanner cannot enforce this, because a volunteer's name and email are textually identical to the public-official contacts that legitimately belong in our corpus. You have to not do it.
 - Public-official contact data is different. Agency contact names, work emails, and published phone numbers for officials acting in their official capacity are sourced corpus data and belong in the database and on the site.
 - Never commit absolute home directory paths (`/Users/<name>/`, `/home/<name>/`, or the Windows user-profile equivalent), cloud-storage account folders, machine-local files (`*.local.*`), environment files, or credential material. Use repo-relative paths. Agent temp-directory slugs encode the home path too — strip them.
-- `npm run scan:personal-data` runs the gate locally. `.github/workflows/personal-data-scan.yml` runs it on every pull request and is the enforcing gate. Do not bypass it with `git commit --no-verify`, and do not loosen a rule to get a change through; add a reviewed, dated `ALLOWLIST` entry in `scripts/scan-personal-data.mjs` instead.
+- `npm run scan:personal-data` runs the gate locally. `.github/workflows/personal-data-scan.yml` runs it on every pull request and is the enforcing gate. Do not bypass it with `git commit --no-verify`, and do not loosen a rule to get a change through; any legitimate scanner exception requires the explicit, scoped human decision described below before adding a reviewed, dated `ALLOWLIST` entry in `scripts/scan-personal-data.mjs`.
 - If you believe something personal has already been pushed, stop and escalate. Do not delete, amend, or rewrite it first — the remediation path depends on what is already mirrored.
 
 Workflow Standards
@@ -118,9 +118,15 @@ General Code Standards
 
 Validation Expectations
 
-- `npm run validate` is the aggregate validation gate for baseline-clean checks.
-- Run narrower checks during development when faster feedback is useful, but do not claim completion until relevant validation has actually run.
-- If validation cannot run because of missing local services, credentials, or external state, report that limitation explicitly.
+- Follow the complete [merge checklist in README.md](README.md#pr-merge-checklist); `package.json` is the source of truth for the gate chain. Run the entire `npm run validate` on the final PR head, even for documentation changes. Scoped checks are development feedback only. Rerun after fixes or head changes.
+- Use the repository runtime from `mise.toml` (currently Node 24), run `npm ci`, and verify installed package versions against the lockfile. Never substitute stale shared `node_modules`.
+- Fix every error and warning, including pre-existing findings. Exit zero is not merge readiness. Calling a finding harmless, advisory, baseline, or out of scope does not waive it. Inspect diagnostic hints and resolve or explicitly justify each one; tool labels alone are not justification.
+- Do not disable rules, add ignores, weaken assertions, hide diagnostics, skip tests, or alter fixtures merely to get green output. Fix underlying causes. Fixture corrections must preserve the behavior and assertions being tested, including required form fields and qualifying record relationships.
+- Missing configuration, services, data, browsers, or generated assets block verification. Set up the intended environment safely; do not modify production data or publish personnel to satisfy checks. Never commit credentials, absolute home paths, or private data.
+- Account for every skipped test. Required coverage must run in the correct environment, including built and served Pagefind search. A skipped behavior did not pass. Any warning or coverage exception needs a linked, explicit human decision stating reason, affected check, scope, and duration. Silence or acknowledgment of a limitation is not permission.
+- Record final commit SHA, runtime and dependency verification, command, exit code, each stage outcome, test counts, warning/hint dispositions, skip accounting, task-specific checks, and actual CI status for that head. Inspect the final diff and preserve unrelated changes. PR descriptions and completion reports must reflect final scope and evidence.
+- Full final-build and sitemap verification are required before production release, not before PR merge. Keep task-relevant rendering/no-inline-CSS checks and required browser assets in merge verification without treating them as a full-build prerequisite.
+- Merge readiness, human-reviewed merge, deployment, and public release are separate states. Use feature branches and PRs only. Retain production-release and personnel-publication approval gates. Never claim deployment without deployed evidence.
 
 Legal Notices
 

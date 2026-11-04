@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change personnel-post-records. Update Purpose after archive.
+Present directly attributed personnel discipline and licensing records with their stored authority, dates, relationships, and source facts without fabricating agency attribution.
 
 ## Requirements
 
