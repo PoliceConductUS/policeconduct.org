@@ -93,7 +93,7 @@
     "minimatch": "11.0.1"
   },
   "allowScripts": {
-    "@alibaba-group/open-code-review@1.13.2": true,
+    "@alibaba-group/open-code-review@1.13.3": true,
     "fsevents@2.3.3": true
   }
 }
