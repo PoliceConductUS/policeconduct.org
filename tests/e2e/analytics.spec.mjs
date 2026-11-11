@@ -39,11 +39,13 @@ async function visitSite(page, baseURL, url, options = {}) {
       await route.fulfill({ json: [] });
       return;
     }
-    if (requested.hostname.endsWith("googletagmanager.com")) {
+    if (requested.hostname === "www.googletagmanager.com") {
       tagLoads.push(
         await page.evaluate(() => ({
-          async: [...document.scripts].find((script) =>
-            script.src.includes("googletagmanager.com"),
+          async: [...document.scripts].find(
+            (script) =>
+              script.src !== "" &&
+              new URL(script.src).hostname === "www.googletagmanager.com",
           )?.async,
           queue: Array.from(window.dataLayer || [], (entry) =>
             Array.from(entry),
@@ -333,12 +335,21 @@ for (const [destination, category] of [
       baseURL,
       "https://policeconduct.org/about/contact/",
     );
-    await page.route("**/pagefind/**", (route) =>
-      route.fulfill({
+    await page.route("**/pagefind/**", async (route) => {
+      if (
+        new URL(route.request().url()).pathname ===
+        "/pagefind/fixture-result.json"
+      ) {
+        await route.fulfill({
+          json: { url: destination, meta: { title: "Fixture result" } },
+        });
+        return;
+      }
+      await route.fulfill({
         contentType: "text/javascript",
-        body: `export const search = async () => ({ results: [{ data: async () => ({ url: ${JSON.stringify(destination)}, meta: { title: "Fixture result" } }) }] });`,
-      }),
-    );
+        body: 'export const search = async () => ({ results: [{ data: async () => (await fetch("/pagefind/fixture-result.json")).json() }] });',
+      });
+    });
     await page.route(`https://policeconduct.org${destination}`, (route) =>
       route.fulfill({ contentType: "text/html", body: "Selected fixture" }),
     );

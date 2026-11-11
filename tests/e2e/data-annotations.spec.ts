@@ -260,7 +260,15 @@ const renderAnnotationFixture = async (
               .href
           : id,
     );
-    const loader = `data:text/javascript,${encodeURIComponent(rejectAnnotationLoad ? 'export const loadDataAnnotations = async () => []; throw new Error("Shared chrome must not depend on record annotations");' : `export const loadDataAnnotations = async () => ${JSON.stringify(entries)};`)}`;
+    await writeFile(join(directory, "entries.json"), JSON.stringify(entries));
+    const loaderPath = join(directory, "loader.mjs");
+    await writeFile(
+      loaderPath,
+      rejectAnnotationLoad
+        ? 'export const loadDataAnnotations = async () => []; throw new Error("Shared chrome must not depend on record annotations");'
+        : 'import entries from "./entries.json" with { type: "json" }; export const loadDataAnnotations = async () => entries;',
+    );
+    const loader = pathToFileURL(loaderPath).href;
     const shell = await compile(
       "shell",
       await readFile(
