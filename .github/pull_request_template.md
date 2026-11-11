@@ -11,7 +11,7 @@ Follow [the complete merge checklist](../README.md#pr-merge-checklist).
 - Full `npm run validate` command, exit code, and complete log:
 - Stage outcomes: Prettier; JavaScript/SQL lint; Astro/types; shell; schema;
   OpenSpec; personal-data scan:
-- Suite passed/failed/skipped counts: redirects; media; Lambda; CSS;
+- Suite passed/failed/skipped counts: Analytics config; redirects; media; Lambda; CSS;
   personal-data; coverage; browsers (including built-index Pagefind):
 - Errors/warnings fixed; individual hint dispositions:
 - Skips and explicit human exception links (reason, check, scope, duration):

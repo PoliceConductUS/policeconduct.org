@@ -46,3 +46,34 @@ Analytics SHALL redact sensitive URL parameters, avoid automatic raw-search, his
 
 - **WHEN** the approved settings are saved
 - **THEN** donation key events remain enabled, form dimensions are registered, and the configured event retention is fourteen months
+- **AND** the generic submission-receipt event remains unmarked as a key event
+
+### Requirement: Managed Analytics settings are versioned and repeatable
+
+The repository SHALL version the existing property and web stream's managed settings. `analytics:compare` SHALL report Admin API differences without writes; `analytics:apply` SHALL apply and verify them. Credentials SHALL remain outside the repository. Unlisted resources and fields SHALL remain unchanged.
+
+#### Scenario: Managed settings already match
+
+- **WHEN** the comparison or apply command finds that all managed settings match
+- **THEN** it reports the match without sending a mutation request
+
+#### Scenario: Managed settings differ
+
+- **WHEN** a managed setting is missing or has changed
+- **THEN** comparison reports the managed differences without writing
+- **AND** explicit apply creates or updates only the managed resource or fields and verifies the resulting settings
+
+#### Scenario: Credentials or Google access are unavailable
+
+- **WHEN** the access token is missing or a Google API request fails
+- **THEN** the command fails clearly without exposing credentials or treating unavailable settings as an empty property
+
+#### Scenario: Google omits defaults or paginates resources
+
+- **WHEN** Google omits a default false value, returns equivalent unordered settings, or returns a continuation token
+- **THEN** comparison uses the documented defaults and complete resource collection rather than reporting false differences or creating duplicate resources
+
+#### Scenario: Production visits from the team
+
+- **WHEN** the managed configuration is compared or applied
+- **THEN** the manual internal-traffic settings remain unchanged and production visits from the team remain included
