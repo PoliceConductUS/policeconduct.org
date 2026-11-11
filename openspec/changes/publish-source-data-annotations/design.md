@@ -37,3 +37,11 @@ Tests intercept Google requests and form APIs; they must never submit real repor
 Apply the existing personnel-publication switch to explicitly typed personnel exclusions regardless of their owner. Record-page notes must preserve supplied warning/error evidence. Authority annotation indexes render their findings only in the paginated listing, including records whose fallback destination is that index. The user approved these three corrections during the analytics follow-up.
 
 Record routes explicitly compose a dedicated annotation-notes component using their resolved canonical record path. `PageShell` and generic civic wrappers only provide shared structure and slots; they must not import, load, filter, or render annotations, or inspect annotation-route shapes.
+
+## Versioned Analytics administration
+
+`config/analytics.json` records the managed settings for the existing property and web stream. A Node administration script compares these settings with Google's Admin API and prints the proposed changes without writing. The explicit apply command reads current settings, applies only the planned changes, and checks the result. Identify custom dimensions by scope and parameter name, creation rules by destination event, and key events by event name. Use returned Google resource names when updating existing resources. Preserve unlisted resources and fields. The generic submission receipt stays unmarked as a key event.
+
+Use Google's documented beta resources for dimensions, key events and retention, and alpha resources for enhanced measurement, redaction and event creation rules. Normalize omitted protobuf defaults and semantically unordered values during comparison. Supply patch masks for managed fields. Keep credentials in the process environment; never write or display the token. Missing credentials and API failures must fail clearly. No dependencies, new Google property, automatic CI synchronization, or website runtime calls are introduced.
+
+Internal-traffic rules and data filters remain documented manual settings. The existing internal filter remains in testing with no IP rules because the user chose to include the team's production visits. Automated tests use mocked Google responses and do not change the production property.
