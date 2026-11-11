@@ -16,41 +16,55 @@ type FederalParent = { name: string; slug: string };
 let offices: FederalOffice[];
 let parents: FederalParent[];
 
-test.beforeAll(async () => {
+const fixtureEnv: Record<string, string> = {};
+for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
+  dotenv.config({ path, processEnv: fixtureEnv, override: true, quiet: true });
+}
+const databaseUrl = process.env.DATABASE_URL ?? fixtureEnv.DATABASE_URL;
+
+const client = new Client({ connectionString: databaseUrl });
+await client.connect();
+try {
+  parents = (
+    await client.query<FederalParent>(
+      "select name, slug from public.federal_agency order by name",
+    )
+  ).rows;
+  offices = (
+    await client.query<FederalOffice>(`
+      select
+        a.id as agency_id,
+        a.name as agency_name,
+        lp.path || a.slug || '/' as canonical_path,
+        fa.name as federal_name,
+        fa.slug as federal_slug,
+        exists (
+          select 1 from public.agency_personnel ap where ap.agency_id = a.id and ap.end_date is null
+        ) as has_assignments
+      from public.agency a
+      join public.federal_agency fa on fa.id = a.parent_federal_agency_id
+      join public.location_path lp on lp.location_path_id = a.location_path_id
+      order by fa.slug, a.id
+    `)
+  ).rows;
+} finally {
+  await client.end();
+}
+
+const emptyParents = parents.filter(
+  (parent) =>
+    !offices.some(
+      (office) => office.federal_slug === parent.slug && office.has_assignments,
+    ),
+);
+
+test.beforeAll(() => {
   for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
     dotenv.config({ path, override: true, quiet: true });
   }
-
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
-  await client.connect();
-  try {
-    parents = (
-      await client.query<FederalParent>(
-        "select name, slug from public.federal_agency order by name",
-      )
-    ).rows;
-    offices = (
-      await client.query<FederalOffice>(`
-        select
-          a.id as agency_id,
-          a.name as agency_name,
-          lp.path || a.slug || '/' as canonical_path,
-          fa.name as federal_name,
-          fa.slug as federal_slug,
-          exists (
-            select 1 from public.agency_personnel ap where ap.agency_id = a.id and ap.end_date is null
-          ) as has_assignments
-        from public.agency a
-        join public.federal_agency fa on fa.id = a.parent_federal_agency_id
-        join public.location_path lp on lp.location_path_id = a.location_path_id
-        order by fa.slug, a.id
-      `)
-    ).rows;
-  } finally {
-    await client.end();
-  }
-
+  process.env.DATABASE_URL = databaseUrl;
   expect(offices.length).toBeGreaterThan(0);
+  expect(emptyParents.length).toBeGreaterThan(0);
 });
 
 test("federal listing includes every root federal agency", async ({ page }) => {
@@ -103,20 +117,12 @@ test("federal parents show their linked office counts and canonical office URLs"
   }
 });
 
-test("root federal pages remain available without eligible offices", async ({
-  page,
-}) => {
-  const { loadFederalAgencyDetailBySlug } =
-    await import("../../src/lib/data/federal-agencies");
-  const emptyParents = parents.filter(
-    (parent) =>
-      !offices.some(
-        (office) =>
-          office.federal_slug === parent.slug && office.has_assignments,
-      ),
-  );
-  expect(emptyParents.length).toBeGreaterThan(0);
-  for (const parent of emptyParents) {
+for (const parent of emptyParents) {
+  test(`root federal page remains available without eligible offices: ${parent.slug}`, async ({
+    page,
+  }) => {
+    const { loadFederalAgencyDetailBySlug } =
+      await import("../../src/lib/data/federal-agencies");
     const detail = await loadFederalAgencyDetailBySlug(parent.slug);
     expect(detail).not.toBeNull();
     expect(detail!.branches).toEqual([]);
@@ -125,8 +131,8 @@ test("root federal pages remain available without eligible offices", async ({
       parent.name,
     );
     await expect(page.locator(".record-table tbody tr")).toHaveCount(0);
-  }
-});
+  });
+}
 
 test("federal offices without current personnel are excluded from agency pages", async () => {
   const noPersonnelOffices = offices.filter(

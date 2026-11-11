@@ -1,4 +1,5 @@
 ---
+import RecordDataNotes from "#src/components/RecordDataNotes.astro";
 import "#src/styles/civic-ledger.css";
 import { contactEmailsForDisplay } from "#src/lib/contact-emails.js";
 import { agencyStatusPresentation } from "#src/lib/agency-status";
@@ -570,6 +571,7 @@ const structuredData = {
       Counts show items available on this site. They are not a rating.
     </p>
   </section>
+  <RecordDataNotes recordPath={agencyPath} />
 </PageShell>
 
 <script>

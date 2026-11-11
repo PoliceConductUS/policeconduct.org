@@ -139,6 +139,12 @@ locals {
         S3_BUCKET          = aws_s3_bucket.preview.id
         CLOUDFRONT_DIST_ID = aws_cloudfront_distribution.preview.id
         FORMS_API_URL      = "/api"
+        # Consumed by the cleanup-preview workflow to prune a closed PR's
+        # r:pr-<N>: redirect namespace. The workflow skips that step while this
+        # is unset, which is why no preview namespace had ever been pruned
+        # (INS-106). Applied together with CloudFrontKeyValueStorePreviewAccess
+        # so the variable never exists without the permission it needs.
+        KVS_ARN_PREVIEW = aws_cloudfront_key_value_store.preview_redirects.arn
       },
       local.ga_measurement_id_preview == null ? {} : {
         GA_MEASUREMENT_ID = local.ga_measurement_id_preview
@@ -321,6 +327,44 @@ resource "aws_s3_bucket_versioning" "preview" {
   versioning_configuration {
     status = "Enabled"
   }
+}
+
+# Versioning above means `aws s3 rm` -- what cleanup-preview.yml runs when a PR
+# closes -- only writes a delete marker. The object becomes noncurrent and keeps
+# billing, so tearing down a preview reclaimed nothing and the object count only
+# ever grew. Measured on 2026-11-01, before this rule existed: 5,589,610 objects
+# and 95.7 GB billed, against 17.7 GB of current versions (INS-106).
+#
+# 7 days, per the board's decision on INS-106. A preview is disposable build
+# output reproducible from its commit, so a week is ample room to notice a
+# mistaken delete. Current versions are untouched, so live previews for open
+# PRs keep serving normally.
+resource "aws_s3_bucket_lifecycle_configuration" "preview" {
+  bucket = aws_s3_bucket.preview.id
+
+  rule {
+    id     = "expire-noncurrent-preview-versions"
+    status = "Enabled"
+
+    # Everything in this bucket is preview build output under pr-<N>/.
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = 7
+    }
+
+    # Sweep the delete marker once every version beneath it has expired;
+    # otherwise the markers accumulate as billable objects forever.
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.preview]
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "preview" {
@@ -1641,6 +1685,26 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "cloudfront:ListTagsForResource",
     ]
     resources = ["*"]
+  }
+
+  # The KeyValueStore data plane is a separate service prefix from cloudfront:*,
+  # so CloudFrontAccess above does not reach it. Without this statement the
+  # preview cleanup workflow's redirect-pruning step fails with AccessDenied
+  # (INS-106). These three actions are exactly what scripts/load-redirects.mjs
+  # invokes: list-keys, describe-key-value-store (for the ETag), and update-keys.
+  #
+  # Preview store only. No CI workflow deploys production, and the site store
+  # controls live-site routing, so CI has no reason to hold write access to it.
+  statement {
+    sid    = "CloudFrontKeyValueStorePreviewAccess"
+    effect = "Allow"
+
+    actions = [
+      "cloudfront-keyvaluestore:ListKeys",
+      "cloudfront-keyvaluestore:DescribeKeyValueStore",
+      "cloudfront-keyvaluestore:UpdateKeys",
+    ]
+    resources = [aws_cloudfront_key_value_store.preview_redirects.arn]
   }
 
   statement {

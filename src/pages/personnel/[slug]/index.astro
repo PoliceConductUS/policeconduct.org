@@ -1,4 +1,5 @@
 ---
+import RecordDataNotes from "#src/components/RecordDataNotes.astro";
 import { annotationFromRecord } from "#src/lib/data/annotation-values.js";
 import DataAnnotations from "#src/components/DataAnnotations.astro";
 import CoverageLinks from "#src/components/CoverageLinks.astro";
@@ -901,6 +902,7 @@ const structuredData = {
       Claim Profile
     </PrefillNavButton>
   </div>
+  <RecordDataNotes recordPath={`/personnel/${data.officer.slug}/`} />
 </PageShell>
 
 <style>
