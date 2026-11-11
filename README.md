@@ -94,6 +94,45 @@ loading anything yourself; writing into an in-flight rebuild corrupts it.
 `docker logs supabase_db_police-conduct-intake` shows whether the data directory
 was re-initialized, and `$INTAKE_WORKSPACE/command/` records which command did
 it.
+## Google Analytics settings
+
+`config/analytics.json` records the managed settings for the existing property
+and web stream: custom dimensions, key events and their counting methods, event
+creation rules, data retention, enhanced measurement, and data redaction.
+
+Supply an authorized OAuth access token through `GOOGLE_ANALYTICS_ACCESS_TOKEN`
+in your shell. The Analytics Admin API must be enabled for the token's project,
+and the account must have access to this property. Comparison accepts the
+`https://www.googleapis.com/auth/analytics.readonly` or
+`https://www.googleapis.com/auth/analytics.edit` scope. Applying changes requires
+`analytics.edit` and permission to edit the property. These commands do not log
+in, read stored credentials, or change your Cloud CLI account. Keep the token
+out of files, commits, and command history.
+
+```bash
+npm run analytics:compare
+npm run analytics:apply
+```
+
+Compare reads all pages of live settings and reports managed differences without
+changing Google Analytics. Its exit code is `0` for a match, `1` for differences,
+and `2` for an error. Apply reads and plans changes first, then creates or patches
+managed resources and reads them back to verify the result. Apply exits `0` only
+for a verified result or a match, and `2` for an error. A matching apply does not
+write anything. Apply is explicit; it does not run during builds or deployment.
+
+Only listed resources and fields are managed. Dimensions are matched by scope
+and parameter name, key events by event name, and creation rules by destination
+event name. Ambiguous matches fail. Unlisted resources and fields stay in place;
+dimensions and creation rules are never archived or deleted. The only event that
+may be unmarked as a key event is `form_submit_success`. Other key events,
+including Google's default events, stay in place. Rule conditions and redaction
+query keys compare without regard to order; parameter mutations keep their order.
+
+Traffic filters and internal-traffic definitions remain manual Google Analytics
+Admin settings. The internal-traffic filter stays in **Testing**, with no IP
+rules; team visits to production remain included. These commands do not manage
+tags, website events, users, access, consent, or other property settings.
 
 ## PR merge checklist
 
@@ -121,6 +160,7 @@ the final PR head, including documentation-only PRs.
 | Database schema contract | `validate:schema`: configured local database and table outcome             |
 | OpenSpec                 | `validate:openspec`: all changes/specs, including warning output           |
 | Personal-data scan       | `scan:personal-data`: tracked tree, finding count                          |
+| Analytics config tests   | `test:analytics-config`: mocked Admin API comparison and apply behavior    |
 | Redirect tests           | `test:redirects`: coverage, router, loading, map generation, release guard |
 | Media tests              | `test:media`: video and personnel photos                                   |
 | Forms API tests          | `test:lambda`: nested locked dependencies and Lambda suite                 |
@@ -147,6 +187,8 @@ the final PR head, including documentation-only PRs.
       does not verify search. Explain every skip. Any warning or coverage
       exception requires a linked, explicit human decision with reason, affected
       check, scope, and duration. Silence and acknowledgment are not permission.
+      All past and future dependency exceptions expire thirty days after
+      approval. At expiry, update the dependencies or obtain a new exception.
 - [ ] Add task-relevant checks beyond the aggregate: form validation,
       payload/reset behavior, accessible labels and keyboard focus, and mobile
       and desktop placement for form/UI changes. For generated HTML changes run
