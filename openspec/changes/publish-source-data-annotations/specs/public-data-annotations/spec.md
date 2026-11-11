@@ -143,3 +143,12 @@ When `NO_PERSONNEL` is set, public annotation collections and CSV exports SHALL 
 - **WHEN** personnel publication is disabled and an authority owns agency and personnel exclusions
 - **THEN** its public findings SHALL include the agency exclusions and omit the personnel exclusions
 - **AND** annotation listing routes are excluded from search indexes and the sitemap
+
+### Requirement: Preserve findings for locations without public pages
+
+Location findings SHALL link to the exact database path only when that path is in the existing location build inventory. Findings for locations without pages SHALL remain in the complete data-note index and CSV, retaining their label, source identity and explanation, and SHALL link to `/data-annotations/`. Annotation presence SHALL NOT change location-page eligibility.
+
+#### Scenario: Location without a generated page
+
+- **WHEN** an annotated location has no location build payload
+- **THEN** its findings remain in the index and export with a link to the complete data-note index instead of a missing location page
