@@ -193,6 +193,18 @@ export async function collectDataAnnotations(
     const target = await owner(kind, id);
     if (!target) continue;
     let recordUrl = target.url;
+    if (
+      ["LocationPath", "LocationPathGeometry", "LocationPathAlias"].includes(
+        kind,
+      )
+    ) {
+      const { rows } = await client.query<{ eligible: boolean }>(
+        "select exists(select 1 from public.build_page_payload where page_type='location' and path=$1) as eligible",
+        [recordUrl],
+      );
+      // Keep findings discoverable without creating pages for thin locations.
+      if (!rows[0].eligible) recordUrl = "/data-annotations/";
+    }
     if (recordUrl === null) {
       const provider = providers.get(annotation.source_namespace);
       if (!provider)

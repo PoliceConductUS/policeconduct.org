@@ -94,6 +94,7 @@ loading anything yourself; writing into an in-flight rebuild corrupts it.
 `docker logs supabase_db_police-conduct-intake` shows whether the data directory
 was re-initialized, and `$INTAKE_WORKSPACE/command/` records which command did
 it.
+
 ## Google Analytics settings
 
 `config/analytics.json` records the managed settings for the existing property
