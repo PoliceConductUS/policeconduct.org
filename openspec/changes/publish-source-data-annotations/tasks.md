@@ -24,3 +24,4 @@
 - [x] Preserve the personnel-publication switch for authority-owned personnel exclusions, paginate authority findings once, and retain warning/error evidence in record notes.
 - [x] Exclude failed dataset loads from search-outcome counts and classify existing search destinations accurately.
 - [x] Remove annotation knowledge from `PageShell`; compose record notes explicitly on the owning record routes and verify retained evidence and index pagination.
+- [x] Update every repository GitHub Action that used Node 20 to a verified Node 24 action runtime, preserving workflow permissions and commands.
