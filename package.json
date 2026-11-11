@@ -33,7 +33,7 @@
     "review:workspace": "ocr review --audience agent",
     "scan:personal-data": "node scripts/scan-personal-data.mjs --tracked",
     "setup": "bash scripts/bootstrap-dev.sh",
-    "test:client": "node --test scripts/copy-link.test.mjs scripts/ai-complaint-summary.test.mjs scripts/ai-complaint-render.test.mjs",
+    "test:client": "node --test scripts/copy-link.test.mjs scripts/google-analytics.test.mjs scripts/ai-complaint-summary.test.mjs scripts/ai-complaint-render.test.mjs",
     "test": "npm run test:contacts && npm run test:annotations && npm run test:analytics-config && npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:data && npm run test:coverage && npm run test:e2e",
     "test:coverage": "node --test \"src/lib/coverage/*.test.mjs\"",
     "test:css": "node --test scripts/purge-built-css.test.mjs",
