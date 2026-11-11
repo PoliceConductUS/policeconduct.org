@@ -1,21 +1,8 @@
 ---
 ---
 
-<script
-  type="text/javascript"
-  is:inline
-  src="https://www.googletagmanager.com/gtag/js?id=G-40S6M70XP7"
-></script>
-<script type="text/javascript" is:inline>
-  window.dataLayer = window.dataLayer || [];
-  window.gtag = function gtag(...args) {
-    dataLayer.push(args);
-  };
+<script>
+  import { initializeAnalytics } from "../lib/client/analytics.js";
 
-  gtag("js", new Date());
-  gtag("config", "G-40S6M70XP7", {
-    page_title: document.title,
-    page_location: window.location.href,
-    page_path: window.location.pathname + window.location.search,
-  });
+  initializeAnalytics();
 </script>

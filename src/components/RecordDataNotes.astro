@@ -1,0 +1,40 @@
+---
+import { loadDataAnnotations } from "#src/lib/data/data-annotations.js";
+import DataAnnotations from "#src/components/DataAnnotations.astro";
+interface Props {
+  recordPath: string;
+}
+const { recordPath } = Astro.props;
+const recordAnnotations = (await loadDataAnnotations()).filter(
+  (entry) => entry.record_url === recordPath,
+);
+---
+
+{recordAnnotations.length > 0 && (
+  <section aria-label="Source data annotations" class="mt-4">
+    <h2>Data notes</h2>
+    <DataAnnotations
+      annotations={recordAnnotations.map(
+        ({
+          field,
+          value,
+          type,
+          message,
+          source_namespace,
+          source_record_id,
+          replacement_value,
+          evidence,
+        }) => ({
+          field,
+          value,
+          type,
+          message,
+          source_namespace,
+          source_record_id,
+          ...(type === "correction" ? { replacement_value } : {}),
+          ...(evidence === undefined ? {} : { evidence }),
+        }),
+      )}
+    />
+  </section>
+)}

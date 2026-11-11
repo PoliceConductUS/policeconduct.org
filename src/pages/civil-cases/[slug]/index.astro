@@ -1,4 +1,5 @@
 ---
+import RecordDataNotes from "#src/components/RecordDataNotes.astro";
 import { getVideoEmbedUrl } from "#src/lib/video.js";
 import PageShell from "#src/layouts/PageShell.astro";
 import "#src/styles/civic-ledger.css";
@@ -324,4 +325,5 @@ const structuredData = {
       </ul>
     </aside>
   </div>
+  <RecordDataNotes recordPath={casePath} />
 </PageShell>
