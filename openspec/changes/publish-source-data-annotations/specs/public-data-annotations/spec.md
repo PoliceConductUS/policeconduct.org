@@ -4,6 +4,8 @@
 
 The site SHALL show source-reported values and their annotations together on the affected public record display. It SHALL identify the source provider and source record ID and distinguish our warning/error/correction from the provider's reported data. The site SHALL display reported dates without calculated tenure totals or assignment durations. An unparseable annotated date SHALL display its original literal value without treating an empty typed end date as current employment.
 
+Record routes SHALL explicitly compose their annotation notes. Shared page structure, including `PageShell` and generic civic wrappers, SHALL remain independent of annotation loading, rendering, and annotation-route checks.
+
 #### Scenario: Negative tenure
 
 - **WHEN** the supplied dates produce a duration of minus 12 days
@@ -13,6 +15,11 @@ The site SHALL show source-reported values and their annotations together on the
 
 - **WHEN** the supplied dates produce 125 years
 - **THEN** the page SHALL show the supplied dates with source attribution and the unusual-duration warning, without a calculated duration
+
+#### Scenario: Warning or error includes evidence
+
+- **WHEN** a warning or error supplies evidence
+- **THEN** its record-page note SHALL preserve that evidence, independently of correction replacement values
 
 ### Requirement: One public annotation index
 
@@ -68,6 +75,11 @@ Profiles, central and authority listings, type filters and CSV downloads SHALL i
 
 Annotations SHALL NOT change agency-page eligibility. When an agency has no current personnel assignment and therefore no public page, its stored findings SHALL remain in the central and source-authority annotation listings and CSV exports. Each finding SHALL retain the affected agency label, source ID, public value and explanation, and link to the explicitly mapped source authority's annotation page.
 
+#### Scenario: Fallback destination is an authority annotation index
+
+- **WHEN** an excluded agency finding links to the authority annotation index
+- **THEN** that index SHALL show the finding through its paginated listing without appending an unpaginated record-note block
+
 #### Scenario: Required annotation destination is missing
 
 - **WHEN** source authority ownership is missing or ambiguous, or an eligible agency lacks its required page
@@ -114,4 +126,13 @@ The footer SHALL link to Data notes under Data & Methods. Global and licensing-a
 
 - **WHEN** a visitor follows the Data notes footer link
 - **THEN** the global annotation listing remains browsable with pagination and filters
+
+### Requirement: Annotations preserve the personnel publication switch
+
+When `NO_PERSONNEL` is set, public annotation collections and CSV exports SHALL omit explicitly typed personnel exclusions even when a licensing authority owns the finding. Agency exclusions SHALL remain visible.
+
+#### Scenario: Authority owns mixed exclusion findings
+
+- **WHEN** personnel publication is disabled and an authority owns agency and personnel exclusions
+- **THEN** its public findings SHALL include the agency exclusions and omit the personnel exclusions
 - **AND** annotation listing routes are excluded from search indexes and the sitemap

@@ -1,0 +1,48 @@
+## ADDED Requirements
+
+### Requirement: Analytics collection protects private visitor data
+
+The site SHALL collect production analytics only on its HTTPS production hosts, SHALL load the Google tag asynchronously after initializing its queue, and SHALL exclude verification tokens, raw search text, and other non-attribution query values from page, referrer, and link payloads.
+
+#### Scenario: A visitor opens a verification link
+
+- **WHEN** the visitor opens a token-bearing verification URL
+- **THEN** every analytics URL excludes the token, including before verification completes
+
+#### Scenario: A developer uses a preview or local site
+
+- **WHEN** the site runs outside its HTTPS production hosts
+- **THEN** it does not load or send events to the production Google tag
+
+### Requirement: Measurements describe actual actions
+
+The site SHALL track current masthead links, completed search outcomes and selected search results without visitor query text. Submission receipt SHALL remain distinct from verification-email failure. Donation clicks SHALL retain their selected amount and payment frequency.
+
+#### Scenario: Search result selection
+
+- **WHEN** a visitor selects a search result by keyboard or mouse
+- **THEN** one selection event records a bounded destination category without the raw query or record label
+
+#### Scenario: Search dataset cannot load
+
+- **WHEN** a search dataset request or JSON decoding fails
+- **THEN** analytics SHALL NOT count that failure as a completed search or a successful search with no matches
+
+#### Scenario: Selected result is a listing
+
+- **WHEN** a visitor selects an agency or civil-case listing in the masthead search
+- **THEN** its bounded selection category SHALL NOT identify it as an agency profile or place
+
+#### Scenario: Verification email cannot be sent
+
+- **WHEN** the submission API acknowledges receipt but reports verification-email failure
+- **THEN** analytics records receipt and the failed email outcome without claiming email delivery or verification
+
+### Requirement: Analytics settings support the measurement contract
+
+Analytics SHALL redact sensitive URL parameters, avoid automatic raw-search, history-update, outbound-link and download collection that bypasses the URL allowlist, expose bounded form reporting fields, exclude verified test traffic, and retain event data for fourteen months.
+
+#### Scenario: Administrator reviews reporting settings
+
+- **WHEN** the approved settings are saved
+- **THEN** donation key events remain enabled, form dimensions are registered, and the configured event retention is fourteen months

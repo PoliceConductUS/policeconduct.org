@@ -121,6 +121,7 @@ const finderGroups = [
     // inlined, so the page HTML stays small. Load it on first interaction; if a
     // search happens before it arrives, show a loading note and run once ready.
     let finderGroups = null;
+    let finderDataLoaded = false;
     let loadPromise = null;
     const loadFinderData = () => {
       if (!loadPromise) {
@@ -131,6 +132,7 @@ const finderGroups = [
           })
           .then((groups) => {
             finderGroups = groups;
+            finderDataLoaded = true;
           })
           .catch(() => {
             finderGroups = [];
@@ -141,6 +143,8 @@ const finderGroups = [
     const maxVisiblePerGroup = 12;
     const reportedNoResultQueries = new Set();
     let noResultTimer = 0;
+    let lastReportedQuery = "";
+    let completedSearch = null;
 
     const normalize = (value) =>
       String(value || "")
@@ -155,10 +159,21 @@ const finderGroups = [
       reportedNoResultQueries.add(query);
       window.__IPC_ANALYTICS__?.track?.("coverage_search_no_results", {
         page_path: window.location.pathname,
-        query,
         query_length: query.length,
         result_count: 0,
       });
+    };
+
+    const reportSearchResults = () => {
+      if (!completedSearch || lastReportedQuery === completedSearch.query)
+        return;
+      lastReportedQuery = completedSearch.query;
+      window.__IPC_ANALYTICS__?.track?.("search_results", {
+        search_source: "record_finder",
+        result_count: completedSearch.resultCount,
+      });
+      if (completedSearch.resultCount === 0)
+        reportNoResults(completedSearch.query);
     };
 
     const setHidden = (element, hidden) => {
@@ -180,10 +195,17 @@ const finderGroups = [
       });
     };
 
-    const renderResult = (result) => {
+    const renderResult = (result, category) => {
       const link = document.createElement("a");
       link.className = "finder-result";
       link.href = result.href;
+      link.addEventListener("click", () => {
+        reportSearchResults();
+        window.__IPC_ANALYTICS__?.track?.("search_result_selected", {
+          search_source: "record_finder",
+          result_category: category,
+        });
+      });
 
       const label = document.createElement("span");
       label.textContent = result.label;
@@ -204,6 +226,8 @@ const finderGroups = [
       clearResults();
 
       if (!query) {
+        completedSearch = null;
+        lastReportedQuery = "";
         setHidden(startState, false);
         setHidden(noResultsState, true);
         setHidden(resultsRoot, true);
@@ -239,7 +263,9 @@ const finderGroups = [
           return;
         }
 
-        list.replaceChildren(...visibleResults.map(renderResult));
+        list.replaceChildren(
+          ...visibleResults.map((result) => renderResult(result, group.type)),
+        );
         groupElement.hidden = false;
         visibleTotal += visibleResults.length;
       });
@@ -253,9 +279,11 @@ const finderGroups = [
           : `Showing ${visibleTotal} of ${matchTotal} matching records.`,
       );
 
-      if (visibleTotal === 0) {
-        noResultTimer = window.setTimeout(() => reportNoResults(query), 750);
-      }
+      completedSearch = finderDataLoaded
+        ? { query, resultCount: matchTotal }
+        : null;
+      if (completedSearch)
+        noResultTimer = window.setTimeout(reportSearchResults, 750);
     };
 
     // Seed from the masthead search form's GET submission (?q=…), the
