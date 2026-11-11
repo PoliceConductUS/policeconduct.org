@@ -1,0 +1,4 @@
+{
+  "reporter": ["text", "cobertura"],
+  "report-dir": "infrastructure/bootstrap-policeconduct/lambdas/forms-api/coverage"
+}

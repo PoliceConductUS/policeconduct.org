@@ -1238,6 +1238,34 @@ resource "aws_wafv2_web_acl" "forms_api_cloudfront" {
     allow {}
   }
 
+  # A rate-limited client must be told "slow down", not "this page does not exist".
+  # This distribution maps 403 -> /404.html with ResponseCode 404, and /404.html
+  # carries <meta name="robots" content="noindex,follow">. So a plain `block {}`
+  # (HTTP 403) can mislabel a throttled request as a missing page. Returning 429
+  # keeps the response out of that mapping, because custom_error_response only
+  # rewrites the status codes it explicitly names (403 and 404 here).
+  custom_response_body {
+    key          = "site_rate_limited"
+    content_type = "TEXT_HTML"
+    content      = <<-EOT
+      <!doctype html>
+      <html lang="en"><head><meta charset="utf-8"><title>Rate limited</title></head>
+      <body>
+      <h1>Too many requests</h1>
+      <p>Too many requests have been sent in a short time.
+      Please slow down and retry after the interval given in the <code>Retry-After</code> header.</p>
+      <p>If you are crawling or bulk-downloading the corpus, that is welcome &mdash; see
+      <a href="https://www.policeconduct.org/data-and-methods/">Data and Methods</a>.</p>
+      </body></html>
+    EOT
+  }
+
+  custom_response_body {
+    key          = "api_rate_limited"
+    content_type = "APPLICATION_JSON"
+    content      = "{\"error\":\"rate_limited\",\"message\":\"Too many requests. Retry after the interval given in the Retry-After header.\"}"
+  }
+
   rule {
     name     = "RateLimitSitePerIp"
     priority = 1
@@ -1250,7 +1278,17 @@ resource "aws_wafv2_web_acl" "forms_api_cloudfront" {
     }
 
     action {
-      block {}
+      block {
+        custom_response {
+          response_code            = 429
+          custom_response_body_key = "site_rate_limited"
+
+          response_header {
+            name  = "Retry-After"
+            value = tostring(var.rate_limit_retry_after_seconds)
+          }
+        }
+      }
     }
 
     visibility_config {
@@ -1288,7 +1326,17 @@ resource "aws_wafv2_web_acl" "forms_api_cloudfront" {
     }
 
     action {
-      block {}
+      block {
+        custom_response {
+          response_code            = 429
+          custom_response_body_key = "api_rate_limited"
+
+          response_header {
+            name  = "Retry-After"
+            value = tostring(var.rate_limit_retry_after_seconds)
+          }
+        }
+      }
     }
 
     visibility_config {

@@ -526,3 +526,33 @@ test("canonical record pages explicitly render their collected source notes", as
     await expect(notes).toContainText(entry.source_record_id);
   }
 });
+
+test("location findings link only to built location pages or the complete data-note index", async () => {
+  const { collectDataAnnotations } =
+    await import("../../src/lib/data/data-annotations");
+  await withDb(async (client) => {
+    const entries = await collectDataAnnotations(client);
+    const locations = entries.filter((entry) =>
+      ["LocationPath", "LocationPathGeometry", "LocationPathAlias"].includes(
+        entry.entity_kind,
+      ),
+    );
+    expect(locations.length).toBeGreaterThan(0);
+    const paths = new Set(
+      (
+        await client.query(
+          "select path from public.build_page_payload where page_type='location'",
+        )
+      ).rows.map((row) => row.path),
+    );
+    for (const entry of locations) {
+      expect(
+        entry.record_url === "/data-annotations/" ||
+          paths.has(entry.record_url),
+      ).toBe(true);
+    }
+    expect(
+      locations.some((entry) => entry.record_url === "/data-annotations/"),
+    ).toBe(true);
+  });
+});
