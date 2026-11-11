@@ -67,3 +67,7 @@ rollback.json
 
 # Personnel portraits staged from intake database associations.
 /public/img/personnel-photos/
+
+# code coverage
+coverage/
+*.lcov

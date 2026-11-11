@@ -80,6 +80,11 @@ export const initializeAnalytics = () => {
     // eslint-disable-next-line prefer-rest-params -- Google's command dispatcher requires an Arguments object, not a rest Array.
     if (isProduction()) window.dataLayer.push(arguments);
   };
+  window.gtag("consent", "default", {
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+  });
   const context = pageContext();
   window.gtag("js", new Date());
   window.gtag("set", context);
@@ -87,6 +92,8 @@ export const initializeAnalytics = () => {
     ...context,
     page_title: document.title,
     send_page_view: false,
+    allow_ad_personalization_signals: false,
+    allow_google_signals: false,
   });
   trackAnalytics("page_view");
   const script = document.createElement("script");
