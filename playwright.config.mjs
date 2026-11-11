@@ -25,6 +25,8 @@ const webServer =
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  // Full-corpus pages share local browser and database resources.
+  workers: 2,
   timeout: 60_000,
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:4321",

@@ -1,0 +1,129 @@
+{
+  "propertyId": "520368202",
+  "webStreamId": "13320057477",
+  "customDimensions": [
+    {
+      "parameterName": "amount_label",
+      "scope": "EVENT",
+      "displayName": "Donation amount selected",
+      "description": "Amount label selected on a donation button; records click intent."
+    },
+    {
+      "parameterName": "frequency",
+      "scope": "EVENT",
+      "displayName": "Donation frequency selected",
+      "description": "Monthly or one-time option selected for a donation amount click."
+    },
+    {
+      "parameterName": "club_name",
+      "scope": "EVENT",
+      "displayName": "Giving club selected",
+      "description": "Giving club name selected on a donation payment link."
+    },
+    {
+      "parameterName": "club_frequency",
+      "scope": "EVENT",
+      "displayName": "Giving club frequency selected",
+      "description": "Monthly or annual payment option selected for a giving-club click."
+    },
+    {
+      "parameterName": "form_name",
+      "scope": "EVENT",
+      "displayName": "Form name",
+      "description": "Form type associated with a submission receipt or failure."
+    },
+    {
+      "parameterName": "failure_stage",
+      "scope": "EVENT",
+      "displayName": "Form failure stage",
+      "description": "Stage at which a form submission or verification email failed."
+    },
+    {
+      "parameterName": "response_status",
+      "scope": "EVENT",
+      "displayName": "HTTP response status",
+      "description": "HTTP response code returned for a form submission or verification email failure."
+    },
+    {
+      "parameterName": "verification_email_status",
+      "scope": "EVENT",
+      "displayName": "Verification email outcome",
+      "description": "Pending, failed, or unknown verification email status returned after a form receipt."
+    }
+  ],
+  "unmarkedKeyEvents": ["form_submit_success"],
+  "eventCreateRules": [
+    {
+      "destinationEvent": "report_submitted",
+      "eventConditions": [
+        {
+          "field": "event_name",
+          "comparisonType": "EQUALS",
+          "value": "form_submit_success"
+        },
+        {
+          "field": "form_name",
+          "comparisonType": "EQUALS",
+          "value": "reportNew"
+        }
+      ],
+      "sourceCopyParameters": true,
+      "parameterMutations": []
+    },
+    {
+      "destinationEvent": "volunteer_submitted",
+      "eventConditions": [
+        {
+          "field": "event_name",
+          "comparisonType": "EQUALS",
+          "value": "form_submit_success"
+        },
+        {
+          "field": "form_name",
+          "comparisonType": "EQUALS",
+          "value": "volunteer"
+        }
+      ],
+      "sourceCopyParameters": true,
+      "parameterMutations": []
+    }
+  ],
+  "dataRetentionSettings": {
+    "eventDataRetention": "FOURTEEN_MONTHS",
+    "userDataRetention": "FOURTEEN_MONTHS",
+    "resetUserDataOnNewActivity": true
+  },
+  "enhancedMeasurementSettings": {
+    "streamEnabled": true,
+    "pageChangesEnabled": false,
+    "scrollsEnabled": true,
+    "outboundClicksEnabled": false,
+    "siteSearchEnabled": false,
+    "videoEngagementEnabled": true,
+    "fileDownloadsEnabled": false,
+    "formInteractionsEnabled": true
+  },
+  "dataRedactionSettings": {
+    "emailRedactionEnabled": true,
+    "queryParameterRedactionEnabled": true,
+    "queryParameterKeys": ["token", "q", "s", "search", "query", "keyword"]
+  },
+  "keyEvents": [
+    {
+      "eventName": "donation_amount_clicked",
+      "countingMethod": "ONCE_PER_EVENT"
+    },
+    {
+      "eventName": "donation_club_clicked",
+      "countingMethod": "ONCE_PER_EVENT"
+    },
+    {
+      "eventName": "report_submitted",
+      "countingMethod": "ONCE_PER_EVENT"
+    },
+    {
+      "eventName": "volunteer_submitted",
+      "countingMethod": "ONCE_PER_EVENT"
+    }
+  ]
+}

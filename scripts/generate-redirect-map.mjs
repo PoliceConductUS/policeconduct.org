@@ -1,3 +1,5 @@
+import { mergeWorkspaceRedirects } from "./workspace-redirects.mjs";
+import { currentAssignmentSql } from "../src/lib/data/annotation-access.js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { statSync } from "node:fs";
 import path from "node:path";
@@ -147,7 +149,7 @@ const buildReportPath = (report) => {
   );
 };
 
-const redirects = await withDb(async (client) => {
+const generatedRedirects = await withDb(async (client) => {
   const agencyRows = (
     await client.query(
       `
@@ -183,7 +185,7 @@ const redirects = await withDb(async (client) => {
   const civilCaseRows = (
     await client.query(
       `
-        select split_part(lp.path, '/', 2) as state, c.slug,
+        select c.id, split_part(lp.path, '/', 2) as state, c.slug,
           (select coalesce(json_agg(json_build_object('id', l.id, 'url', l.url)), '[]'::json)
            from public.civil_case_links l where l.civil_case_id = c.id) as videos
         from public.civil_cases c
@@ -240,7 +242,7 @@ const redirects = await withDb(async (client) => {
             lower(a.state) as category
           from public.agency_personnel ao
           join public.agency a on a.id = ao.agency_id
-          where ao.end_date is null
+          where ${currentAssignmentSql("ao")}
             and a.state is not null
           order by ao.personnel_id, ao.start_date desc
         )
@@ -275,7 +277,7 @@ const redirects = await withDb(async (client) => {
       `
         select a.id, a.slug, lp.path as location_path,
           (select count(*) from public.agency_personnel ap
-           where ap.agency_id = a.id and ap.end_date is null) as assignment_count
+           where ap.agency_id = a.id and ${currentAssignmentSql("ap")} ) as assignment_count
         from public.agency a
         join public.location_path lp
           on lp.location_path_id = a.location_path_id
@@ -643,6 +645,11 @@ const redirects = await withDb(async (client) => {
       source: "top-level videos retired",
     },
   ];
+});
+
+const redirects = await mergeWorkspaceRedirects(generatedRedirects, {
+  workspace: process.env.INTAKE_WORKSPACE,
+  hasBuiltDestination,
 });
 
 await mkdir(distDir, { recursive: true });

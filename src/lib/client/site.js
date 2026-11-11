@@ -1,37 +1,7 @@
 import "bootstrap/js/dist/collapse";
 import "bootstrap/js/dist/scrollspy";
 import "bootstrap/js/dist/tab";
-
-window.__IPC_ANALYTICS__ = window.__IPC_ANALYTICS__ || {
-  track(eventName, params = {}) {
-    if (!eventName || typeof window.gtag !== "function") {
-      return;
-    }
-
-    const payload = {
-      page_path: window.location.pathname,
-      ...params,
-    };
-
-    Object.keys(payload).forEach((key) => {
-      const value = payload[key];
-      if (
-        value === undefined ||
-        value === null ||
-        value === "" ||
-        Number.isNaN(value)
-      ) {
-        delete payload[key];
-      }
-    });
-
-    window.gtag("event", eventName, payload);
-  },
-};
-
-const trackAnalytics = (eventName, params = {}) => {
-  window.__IPC_ANALYTICS__?.track?.(eventName, params);
-};
+import { trackAnalytics } from "./analytics.js";
 
 const normalizeText = (value) => value?.replace(/\s+/g, " ").trim() || "";
 
@@ -123,6 +93,9 @@ const initAnalyticsClicks = () => {
     if (!(anchor instanceof HTMLAnchorElement)) {
       return;
     }
+    if (anchor.closest("[data-site-search], [data-record-finder]")) {
+      return;
+    }
 
     const hrefDetails = getHrefDetails(anchor);
     if (!hrefDetails || !hrefDetails.href || hrefDetails.href.startsWith("#")) {
@@ -136,9 +109,11 @@ const initAnalyticsClicks = () => {
       section_id: getSectionId(anchor),
     };
 
-    if (anchor.closest(".navbar")) {
+    if (anchor.closest(".masthead")) {
       trackAnalytics(
-        anchor.closest(".nav-cta") ? "nav_cta_click" : "nav_link_click",
+        anchor.classList.contains("nav-action")
+          ? "nav_cta_click"
+          : "nav_link_click",
         basePayload,
       );
       return;
@@ -308,7 +283,50 @@ const initJumpForms = () => {
 // every one of the site's ~100k pages renders this same masthead.
 const PAGEFIND_MODULE_URL = "/pagefind/pagefind.js";
 const SEARCH_DEBOUNCE_MS = 150;
+const SEARCH_MEASUREMENT_DELAY_MS = 600;
 const MAX_SEARCH_RESULTS = 8;
+
+const getSearchResultCategory = (path) => {
+  const pathname = new URL(path, window.location.origin).pathname;
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length === 2 && !["new", "suggest-edit"].includes(parts[1])) {
+    if (parts[0] === "personnel") return "personnel";
+    if (parts[0] === "civil-cases") return "civil_case";
+    if (parts[0] === "report") return "report";
+  }
+  if (
+    /^\/[a-z]{2}\/[^/]+\/[^/]+\/reports\/\d{4}\/\d{2}\/\d{2}\/[^/]+\/$/.test(
+      pathname,
+    )
+  )
+    return "report";
+  if (
+    parts
+      .slice(1)
+      .some((part) =>
+        [
+          "agencies",
+          "budget",
+          "civil-cases",
+          "counties",
+          "fatal-force-incidents",
+          "liability-costs",
+          "licensing-authority",
+          "outcomes-by-income",
+          "personnel",
+          "places",
+          "reports",
+        ].includes(part),
+      )
+  )
+    return "other";
+  if (parts[0] === "federal" && parts.length === 2) return "federal-agency";
+  if (/^[a-z]{2}$/.test(parts[0] || "")) {
+    if (parts.length === 4) return "agency";
+    if (parts.length <= 3) return "place";
+  }
+  return "other";
+};
 
 const initSiteSearch = () => {
   const form = document.querySelector("[data-site-search]");
@@ -335,6 +353,18 @@ const initSiteSearch = () => {
   let activeIndex = -1;
   let requestId = 0;
   let debounceTimer = null;
+  let measurementTimer = null;
+  let completedSearch = null;
+  let lastReportedTerm = "";
+
+  const reportSearchResults = () => {
+    if (!completedSearch || lastReportedTerm === completedSearch.term) return;
+    lastReportedTerm = completedSearch.term;
+    trackAnalytics("search_results", {
+      search_source: "masthead",
+      result_count: completedSearch.resultCount,
+    });
+  };
 
   const loadPagefind = () => {
     if (!pagefindLoadPromise) {
@@ -376,6 +406,11 @@ const initSiteSearch = () => {
     if (!result?.path) {
       return;
     }
+    reportSearchResults();
+    trackAnalytics("search_result_selected", {
+      search_source: "masthead",
+      result_category: getSearchResultCategory(result.path),
+    });
     window.location.href = result.path;
   };
 
@@ -439,8 +474,11 @@ const initSiteSearch = () => {
 
   const runSearch = async (term) => {
     const currentRequestId = ++requestId;
+    window.clearTimeout(measurementTimer);
 
     if (!term) {
+      completedSearch = null;
+      lastReportedTerm = "";
       results = [];
       activeIndex = -1;
       renderResults();
@@ -467,6 +505,11 @@ const initSiteSearch = () => {
       if (currentRequestId !== requestId) {
         return;
       }
+
+      completedSearch = { term, resultCount: search.results.length };
+      measurementTimer = window.setTimeout(() => {
+        if (input.value.trim() === term) reportSearchResults();
+      }, SEARCH_MEASUREMENT_DELAY_MS);
 
       results = entries.map((entry) => ({
         title: entry.meta?.title || entry.url,
@@ -499,6 +542,7 @@ const initSiteSearch = () => {
 
   input.addEventListener("focus", loadPagefind, { once: true });
   input.addEventListener("input", () => {
+    window.clearTimeout(measurementTimer);
     debouncedSearch(input.value.trim());
   });
 

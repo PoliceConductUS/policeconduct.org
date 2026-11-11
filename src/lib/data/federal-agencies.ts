@@ -1,3 +1,4 @@
+import { currentAssignmentSql } from "./annotation-access.js";
 import {
   buildPendingTopics,
   civicIndexCollator,
@@ -373,12 +374,12 @@ export const loadFederalAgencySummaries = async () => {
            and exists (
              select 1 from public.agency_personnel assignment
              where assignment.agency_id = a.id
-               and assignment.end_date is null
+               and ${currentAssignmentSql("assignment")}
            )
            and a.parent_federal_agency_id is not null
           left join public.agency_personnel active_assignment
             on active_assignment.agency_id = a.id
-           and active_assignment.end_date is null
+           and ${currentAssignmentSql("active_assignment")}
           left join public.agency_personnel report_assignment
             on report_assignment.agency_id = a.id
           left join public.review_personnel report_officer
@@ -462,7 +463,7 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
            and exists (
              select 1 from public.agency_personnel assignment
              where assignment.agency_id = a.id
-               and assignment.end_date is null
+               and ${currentAssignmentSql("assignment")}
            )
           left join public.location_path lp
             on lp.location_path_id = a.location_path_id
@@ -480,7 +481,7 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
             from public.agency child_agency
             left join public.agency_personnel active_assignment
               on active_assignment.agency_id = child_agency.id
-             and active_assignment.end_date is null
+             and ${currentAssignmentSql("active_assignment")}
             left join public.agency_personnel report_assignment
               on report_assignment.agency_id = child_agency.id
             left join public.review_personnel report_officer
