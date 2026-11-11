@@ -64,7 +64,7 @@ const numeratorUniverseGap = ({ unclassifiedHeld, unclassifiedStates }) => {
     scope: "national",
     detail:
       `${unclassifiedHeld.toLocaleString("en-US")} held agencies, in ${where}, carry no sourced agency type, so they cannot be placed in the BJS universes the denominators are drawn from. ` +
-      "These states' sources enumerate entities that employ licensed peace officers without saying what kind of entity each one is: MN POST's productions key agencies by name only and publish no type column, and the Oregon records have no registered intake source at all. " +
+      "These states' sources enumerate entities that employ licensed peace officers without saying what kind of entity each one is: MN POST's productions key agencies by name only and publish no type column, and Oregon's DPSST loader emits an agency's name, address, contact and status but no type field. " +
       "No percentage is reported for these jurisdictions or for the national total; ceilings are reported instead. States whose agencies all carry a sourced type are not affected and do report achieved coverage.",
     unblockedBy:
       "Obtain a per-agency type for these states — a state roster that publishes one, or an authoritative national roster with types (INS-31). Name matching is not a substitute: it was tested on INS-79 and, beyond leaving most records unclassified, an unconstrained name join silently gave 22 Minnesota and Oregon agencies a Texas classification.",
@@ -91,9 +91,9 @@ const disputedCountGap = (crossChecks, measuredTotal) => {
   return Object.freeze({
     kind: GAP_KIND.CORPUS_COUNT_DISPUTED,
     scope: "national",
-    detail: `The measured store reports ${measuredTotal.toLocaleString("en-US")} agencies, but ${detail}. These are stores we control and they do not agree, so there is no single authoritative held count today. The numbers in this report are the measured store's, identified above, and are not claimed to be the production corpus.`,
+    detail: `The measured store reports ${measuredTotal.toLocaleString("en-US")} agencies, but ${detail}. These supplied counts differ. The numbers in this report describe the measured database at the recorded time.`,
     unblockedBy:
-      "Establish which store is authoritative for coverage reporting and reconcile the others against it, or record why they legitimately differ.",
+      "Check whether the supplied counts measure the same records at the same time; remove retired artifacts from the comparison inputs.",
   });
 };
 
@@ -463,11 +463,7 @@ export const renderCoverageReportMarkdown = (report) => {
       ` (server reports itself as ${report.measurement.database.host}:${report.measurement.database.port}).`,
   );
   push();
-  push(
-    "Which store this is matters as much as the counts. Read the address above before" +
-      " quoting any number here: a local re-import and the production corpus do not agree," +
-      " and this report asserts only what the store it measured contains.",
-  );
+  push("Counts describe the database and measurement time recorded above.");
   push();
   const achieved = report.summary.achievedPercentagesReported;
   if (achieved === 0) {
@@ -493,9 +489,9 @@ export const renderCoverageReportMarkdown = (report) => {
   push(
     `- Agency records in the measured store: **${num(report.national.held)}**`,
   );
-  if (Number.isInteger(report.measurement.publishedAsPages)) {
+  if (Number.isInteger(report.measurement.projectedAgencyPages)) {
     push(
-      `- Of those, rendering as public agency pages: **${num(report.measurement.publishedAsPages)}** (held is not the same as published)`,
+      `- Of those, present in the database agency page projection: **${num(report.measurement.projectedAgencyPages)}** (projection rows do not establish live publication)`,
     );
   }
   if (Number.isInteger(report.measurement.federalHeld)) {
