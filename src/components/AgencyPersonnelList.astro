@@ -1,5 +1,6 @@
 ---
 import "#src/styles/civic-ledger.css";
+import { getAssignmentStatus } from "#src/lib/data/assignment-status.js";
 
 // The full agency roster on one page — a scannable research surface, not a bare
 // phone book. Every officer shows a quiet context line (status · rank · tenure ·
@@ -29,6 +30,7 @@ type RosterRow = {
   label: string;
   href: string | null;
   isFormer: boolean;
+  isCurrent: boolean;
   meta: string;
   search: string;
   letter: string;
@@ -48,7 +50,11 @@ const rows: RosterRow[] = employees.map((employee) => {
   const label = lastName
     ? [lastName, firstName].filter(Boolean).join(", ")
     : firstName || "Unnamed record";
-  const isFormer = Boolean(employee.entry?.end_date);
+  // Shared with the personnel profile so a roster and a profile cannot
+  // disagree about whether the same assignment has ended (INS-75).
+  const status = getAssignmentStatus(employee.entry);
+  const isFormer = status.isEnded;
+  const isCurrent = status.isCurrent;
   const startYear = year(employee.entry?.start_date);
   const endYear = year(employee.entry?.end_date);
   const tenure = isFormer
@@ -59,7 +65,7 @@ const rows: RosterRow[] = employees.map((employee) => {
         : startYear
           ? `from ${startYear}`
           : null
-    : startYear
+    : startYear && isCurrent
       ? `${startYear}–present`
       : null;
   const rank = (employee.entry?.title || "").trim() || null;
@@ -75,7 +81,13 @@ const rows: RosterRow[] = employees.map((employee) => {
       ? `${licenseType} (${licenseStatus})`
       : licenseType
     : null;
-  const meta = [isFormer ? "Former" : "Current", rank, license, tenure, reports]
+  const meta = [
+    isFormer ? "Former" : isCurrent ? "Current" : "Status uncertain",
+    rank,
+    license,
+    tenure,
+    reports,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -85,6 +97,7 @@ const rows: RosterRow[] = employees.map((employee) => {
       ? `/personnel/${employee.officer.slug}/`
       : null,
     isFormer,
+    isCurrent,
     meta,
     disciplineCount: employee.disciplineCount,
     personnelDisciplineCount: employee.personnelDisciplineCount,
@@ -103,7 +116,8 @@ rows.sort(
 
 const total = rows.length;
 const formerCount = rows.filter((row) => row.isFormer).length;
-const currentCount = total - formerCount;
+const currentCount = rows.filter((row) => row.isCurrent).length;
+const uncertainCount = total - currentCount - formerCount;
 const formatCount = (value: number) => value.toLocaleString("en-US");
 
 const alphaGroups = new Map<string, RosterRow[]>();
@@ -127,7 +141,7 @@ const showTools = total >= 15;
 <div class="roster" data-roster>
   <div class="roster-summary" data-roster-summary aria-live="polite">
     <strong>{formatCount(total)}</strong>
-    {` personnel · ${formatCount(currentCount)} current · ${formatCount(formerCount)} former`}
+    {` personnel · ${formatCount(currentCount)} current · ${formatCount(formerCount)} former${uncertainCount ? ` · ${formatCount(uncertainCount)} uncertain` : ""}`}
   </div>
 
   <div class="roster-controls">
@@ -198,7 +212,13 @@ const showTools = total >= 15;
             <li
               data-roster-item
               data-name={row.search}
-              data-status={row.isFormer ? "former" : "current"}
+              data-status={
+                row.isFormer
+                  ? "former"
+                  : row.isCurrent
+                    ? "current"
+                    : "uncertain"
+              }
               data-discipline-count={row.personnelDisciplineCount}
             >
               {row.href ? (

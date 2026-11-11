@@ -46,3 +46,59 @@ test.describe("civil cases", () => {
     await expect(breadcrumb).not.toContainText("Location");
   });
 });
+
+test("renders complaint summaries with a compact source link", async ({
+  page,
+}) => {
+  // This test visits every retained summary; the combined corpus has 180 pages.
+  test.setTimeout(10 * 60_000);
+  const { Client } = await import("pg");
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    const { rows } = await client.query(
+      "select slug, ai_complaint_summary from public.civil_cases where ai_complaint_summary is not null order by id",
+    );
+    // An empty corpus still exercises omission on an ordinary case page.
+    const { rows: absent } = await client.query(
+      "select slug from public.civil_cases where ai_complaint_summary is null order by id limit 1",
+    );
+    for (const row of rows) {
+      await page.goto(`/civil-cases/${row.slug}/`);
+      const section = page.getByRole("region", {
+        name: "AI-generated summary of the complaint",
+        exact: true,
+      });
+      await expect(section).toBeVisible();
+      await expect(
+        section.getByRole("link", {
+          name: "Read the complaint",
+        }),
+      ).toHaveAttribute("href", row.ai_complaint_summary.source.sourcePage);
+      await expect(section).toContainText(
+        row.ai_complaint_summary.summary.split(/\n\s*\n/)[0],
+      );
+      const context = page.getByRole("region", {
+        name: "Separate procedural context",
+        exact: true,
+      });
+      await expect(context).toHaveCount(0);
+    }
+    for (const row of absent) {
+      await page.goto(`/civil-cases/${row.slug}/`);
+      await expect(
+        page.getByRole("heading", {
+          name: "AI-generated summary of the complaint",
+        }),
+      ).toHaveCount(0);
+      const donation = page
+        .locator("section[aria-labelledby=complaint-summary-unavailable]")
+        .getByRole("link", { name: "Donate", exact: true });
+      await expect(donation).toHaveAttribute("href", "/donate/");
+      await donation.click();
+      await expect(page).toHaveURL(/\/donate\/$/);
+    }
+  } finally {
+    await client.end();
+  }
+});

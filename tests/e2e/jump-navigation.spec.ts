@@ -37,9 +37,10 @@ for (const surface of ["site", "mockup"]) {
       select.add(new Option("Home", "/"));
       select.selectedIndex = select.options.length - 1;
     });
-    await form.evaluate((element) =>
-      (element as HTMLFormElement).requestSubmit(),
-    );
+    await Promise.all([
+      page.waitForURL("/", { waitUntil: "domcontentloaded" }),
+      form.evaluate((element) => (element as HTMLFormElement).requestSubmit()),
+    ]);
     await expect(page).toHaveURL("/");
   });
 }

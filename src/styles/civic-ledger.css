@@ -296,6 +296,10 @@ a.stat-cell {
   padding: 2.1rem 0;
 }
 
+.civic-section--facts {
+  padding-top: 0;
+}
+
 .civic-section--last {
   border-bottom: none;
 }
@@ -604,30 +608,29 @@ a.stat-cell {
   text-decoration: underline;
 }
 
-.entity-contact-person {
+.entity-contact-person,
+.entity-contact-email {
   color: var(--ipc-color-ink-muted);
   font-size: var(--ipc-type-small);
   margin: 0;
 }
 
-/* Contact name + email are linked in the data model — render as one visual
-   group (the email travels with the person, not the agency links row). */
-.entity-contact-person a {
+.entity-contact-email a {
   color: var(--ipc-color-teal-ink);
   font-weight: 700;
   text-decoration: none;
 }
 
-.entity-contact-person a:hover {
+.entity-contact-email a:hover {
   text-decoration: underline;
 }
 
-.entity-contact-person a:focus-visible {
+.entity-contact-email a:focus-visible {
   outline: 2px solid var(--ipc-color-teal-ink);
   outline-offset: 2px;
 }
 
-.entity-contact-person .sep {
+.entity-contact-email .sep {
   color: var(--ipc-color-rule-strong);
   margin: 0 0.3rem;
 }
@@ -978,6 +981,12 @@ a.stat-cell {
 
 .detail-body {
   max-width: 66ch;
+}
+
+.detail-body--sections {
+  display: grid;
+  gap: 1.6rem;
+  align-content: start;
 }
 
 .detail-body h3 {

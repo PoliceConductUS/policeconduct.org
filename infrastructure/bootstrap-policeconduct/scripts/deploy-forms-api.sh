@@ -146,7 +146,7 @@ log "building deployment package from $SRC_DIR"
 # lockfile; npm install is the working recipe. No devDependencies exist, so
 # --omit=dev leaves a prod-only tree.
 ( cd "$SRC_DIR" && TMPDIR=/tmp npm install --omit=dev --no-audit --no-fund >/dev/null )
-( cd "$SRC_DIR" && zip -r -X -q "$ZIP" index.mjs package.json node_modules )
+( cd "$SRC_DIR" && zip -r -X -q "$ZIP" index.mjs package.json native-domexception node_modules )
 log "package: $(du -h "$ZIP" | cut -f1)"
 
 # CodeSha256 is NOT comparable across builds — zip metadata varies, so two zips
