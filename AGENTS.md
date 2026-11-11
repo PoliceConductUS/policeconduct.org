@@ -88,7 +88,8 @@ Database Expectations
 - Agencies must have a required `location_path_id`.
 - seed.sql must be fully deterministic: every row must include explicit ids and slugs, with no triggers, generated slugs, or runtime ID generators (e.g., generate_cuid). Rerunning seed.sql must yield identical data and identifiers.
 - When adding federal agencies, keep the hash in the slug for consistency and safety.
-- If a migration adds a required DB field, update seed.sql in the Supabase repo.
+- If a migration adds a required DB field, supply that field through the intake source or data-mutation chain that produces the affected rows. `seed.sql` is retired and is no longer loaded on `db reset`, so updating it does not populate the local database. See "Local Database" in `README.md` for the current load and rebuild path. The `seed.sql` rules above and in "Data + Routing Conventions" still govern that file while it exists as the legacy-data record, but it is not the way to get data into a local database.
+- The local database on `127.0.0.1:54322` is a single shared instance used by every policeconduct.org and intake worktree. Do not run `data reset`, `supabase db reset`, or `supabase stop` without confirming no other worktree is mid-verification, and do not load data into a database that already has a rebuild in progress.
 - Missing expected database tables or fields must fail the build. Do not add silent fallbacks, empty results, or missing-schema guards for required data.
 
 Templates (Critical Fields)
