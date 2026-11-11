@@ -564,9 +564,12 @@ await withDb(async (client) => {
               a.longitude,
               a.created_at,
               a.updated_at,
-              a.state,
-              a.city
+              lp.path as location_path,
+              lp.parent_location_path_id,
+              lp.display_name as city
             from public.agency a
+            join public.location_path lp
+              on lp.location_path_id = a.location_path_id
             where exists (
               select 1
               from public.agency_personnel ap
@@ -632,9 +635,9 @@ await withDb(async (client) => {
             a.id,
             a.name,
             a.slug,
-            lp.location_path_id,
-            lp.path as location_path,
-            split_part(lp.path, '/', 2) as state,
+            a.location_path_id,
+            a.location_path,
+            split_part(a.location_path, '/', 2) as state,
             state_lp.location_path_id as state_location_path_id,
             state_lp.path as state_path,
             state_lp.display_name as state_name,
@@ -642,8 +645,8 @@ await withDb(async (client) => {
             area_lp.path as administrative_area_path,
             area_lp.display_name as administrative_area,
             split_part(area_lp.path, '/', 3) as location_administrative_area_slug,
-            lp.display_name as city,
-            split_part(lp.path, '/', 4) as location_place_slug,
+            a.city,
+            split_part(a.location_path, '/', 4) as location_place_slug,
             a.address,
             a.zip_code,
             a.latitude,
@@ -654,10 +657,8 @@ await withDb(async (client) => {
             coalesce(report_counts.report_count, 0) as report_count,
             coalesce(civil_case_counts.civil_case_count, 0) as civil_case_count
           from eligible_agencies a
-          join public.location_path lp
-            on lp.location_path_id = a.location_path_id
           join public.location_path area_lp
-            on area_lp.location_path_id = lp.parent_location_path_id
+            on area_lp.location_path_id = a.parent_location_path_id
            and area_lp.level = 'administrative_area'
           join public.location_path state_lp
             on state_lp.location_path_id = area_lp.parent_location_path_id
@@ -668,8 +669,8 @@ await withDb(async (client) => {
             on report_counts.agency_id = a.id
           left join civil_case_counts
             on civil_case_counts.agency_id = a.id
-          order by lower(split_part(lp.path, '/', 2)),
-            lower(area_lp.display_name), lower(lp.display_name),
+          order by lower(split_part(a.location_path, '/', 2)),
+            lower(area_lp.display_name), lower(a.city),
             lower(a.name), a.id
         `,
       )
@@ -817,9 +818,8 @@ await withDb(async (client) => {
     }
 
     const agenciesById = new Map(agencies.map((agency) => [agency.id, agency]));
-    const reportRows = (
-      await client.query(
-        `
+    const { rows: reportRows, fields: reportFields } = await client.query(
+      `
           select
             r.id,
             r.slug,
@@ -839,7 +839,7 @@ await withDb(async (client) => {
             report_location.path as location_path,
             ro.id as review_personnel_id,
             ao.agency_id,
-            ao.title,
+            ao.title as personnel_title,
             o.first_name,
             o.last_name,
             o.suffix,
@@ -861,8 +861,13 @@ await withDb(async (client) => {
             on o.id = ao.personnel_id
           order by r.incident_date desc, r.id, ro.id
         `,
-      )
-    ).rows;
+    );
+    const reportColumns = reportFields.map((field) => field.name);
+    if (new Set(reportColumns).size !== reportColumns.length) {
+      throw new Error(
+        "Report projection query returned duplicate column names.",
+      );
+    }
 
     const reportRowsById = new Map();
     for (const row of reportRows) {
@@ -897,7 +902,7 @@ await withDb(async (client) => {
         );
         if (!personnelBySlug.has(slug)) {
           personnelBySlug.set(slug, {
-            title: entry.title || null,
+            title: entry.personnel_title || null,
             name: `${entry.first_name || ""} ${entry.last_name || ""}${entry.suffix ? ` ${entry.suffix}` : ""}`.trim(),
             slug,
           });
