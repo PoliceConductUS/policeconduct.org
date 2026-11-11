@@ -1,5 +1,14 @@
 import { expect, test } from "@playwright/test";
 import { withDb } from "../../src/lib/db.js";
+import { readFile, mkdtemp, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { transform } from "@astrojs/compiler-rs";
+import ts from "typescript";
+import { experimental_AstroContainer } from "astro/container";
+import type { PoolClient } from "pg";
+import { annotationsCsv } from "../../src/lib/data/annotation-values.js";
 import { currentAssignmentSql } from "../../src/lib/data/annotation-access.js";
 
 test("current assignment SQL distinguishes open dates from unrepresentable source dates", async () => {
@@ -200,4 +209,313 @@ test("active native annotations render in the public index and CSV", async ({
     expect(exported).not.toContain(String(entry.replacement_value));
   }
   await expect(page.locator("main")).not.toContainText("location_path_id");
+});
+
+const renderAnnotationFixture = async (
+  componentPath: string,
+  pagePath: string,
+  entries: unknown[],
+  rejectAnnotationLoad = false,
+) => {
+  const directory = await mkdtemp(join(tmpdir(), "annotation-shell-"));
+  try {
+    const compile = async (
+      name: string,
+      source: string,
+      resolvePath: (specifier: string) => string,
+    ) => {
+      const compiled = transform(
+        source.replace(
+          /(["'])(#src\/[^"']+)\1/g,
+          (_match, quote, id) => `${quote}${resolvePath(id)}${quote}`,
+        ),
+        {
+          internalURL: import.meta.resolve("astro/compiler-runtime"),
+          resultScopedSlot: true,
+          resolvePath,
+        },
+      );
+      const path = join(directory, `${name}.mjs`);
+      await writeFile(
+        path,
+        ts.transpile(compiled.code, {
+          target: ts.ScriptTarget.ESNext,
+          module: ts.ModuleKind.ESNext,
+        }),
+      );
+      return pathToFileURL(path).href;
+    };
+    // Render actual components; substitute unrelated chrome and database I/O
+    // so synthetic evidence never enters a database.
+    const chrome = await compile("chrome", "<slot />", (id) => id);
+    const notes = await compile(
+      "notes",
+      await readFile(
+        new URL("../../src/components/DataAnnotations.astro", import.meta.url),
+        "utf8",
+      ),
+      (id) =>
+        id === "#src/lib/data/annotation-values.js"
+          ? new URL("../../src/lib/data/annotation-values.js", import.meta.url)
+              .href
+          : id,
+    );
+    await writeFile(join(directory, "entries.json"), JSON.stringify(entries));
+    const loaderPath = join(directory, "loader.mjs");
+    await writeFile(
+      loaderPath,
+      rejectAnnotationLoad
+        ? 'export const loadDataAnnotations = async () => []; throw new Error("Shared chrome must not depend on record annotations");'
+        : 'import entries from "./entries.json" with { type: "json" }; export const loadDataAnnotations = async () => entries;',
+    );
+    const loader = pathToFileURL(loaderPath).href;
+    const shell = await compile(
+      "shell",
+      await readFile(
+        new URL(`../../${componentPath}`, import.meta.url),
+        "utf8",
+      ),
+      (id) =>
+        id === "#src/lib/data/data-annotations.js"
+          ? loader
+          : id === "#src/components/DataAnnotations.astro"
+            ? notes
+            : id.startsWith("#src/")
+              ? chrome
+              : id,
+    );
+    const { default: component } = await import(shell);
+    const container = await experimental_AstroContainer.create();
+    return await container.renderToString(component, {
+      props: {
+        title: "Fixture",
+        pagePath,
+        recordPath: pagePath,
+        breadcrumbs: [],
+        heading: "Fixture",
+      },
+      slots: { default: "<p>Listing content</p>" },
+    });
+  } finally {
+    await rm(directory, { recursive: true });
+  }
+};
+
+test("shared chrome renders without any record-annotation dependency", async () => {
+  const html = await renderAnnotationFixture(
+    "src/layouts/PageShell.astro",
+    "/tx/licensing-authority/data-annotations/",
+    [],
+    true,
+  );
+  expect(html).toContain("Listing content");
+  expect(html).not.toContain("Source data annotations");
+});
+
+for (const noPersonnel of ["", "1"]) {
+  test(`authority exclusions respect NO_PERSONNEL=${JSON.stringify(noPersonnel)} in the common HTML and CSV collector`, async () => {
+    const { collectDataAnnotations } =
+      await import("../../src/lib/data/data-annotations");
+    const records = ["Personnel", "Agency"].map((kind) => ({
+      id: `synthetic-${kind}`,
+      subject_kind: "LicensingAuthority",
+      subject_id: "synthetic-board",
+      type: "warning",
+      field: "excluded_records",
+      value: { kind, key: `synthetic-${kind}-source` },
+      message: "Excluded source record",
+      source_namespace: "synthetic.provider",
+      source_record_id: `synthetic-${kind}-source`,
+      producer_namespace: "manual",
+      producer_record_id: `synthetic-${kind}-source`,
+      status: "active",
+      replacement_value: null,
+      evidence: null,
+    }));
+    const client = {
+      query: async (sql: string, values?: string[]) => {
+        if (
+          sql ===
+          "select id, name, source_namespaces from public.licensing_authority"
+        )
+          return {
+            rows: [
+              {
+                id: "synthetic-board",
+                name: "Synthetic board",
+                source_namespaces: ["synthetic.provider"],
+              },
+            ],
+          };
+        if (sql.startsWith("select * from public.data_annotation"))
+          return { rows: records };
+        if (
+          sql.startsWith("select * from public.licensing_authority") &&
+          values?.[0] === "synthetic-board"
+        )
+          return {
+            rows: [
+              {
+                id: "synthetic-board",
+                name: "Synthetic board",
+                location_path_id: "synthetic-state",
+              },
+            ],
+          };
+        if (
+          sql.startsWith("select * from public.location_path") &&
+          values?.[0] === "synthetic-state"
+        )
+          return {
+            rows: [
+              {
+                location_path_id: "synthetic-state",
+                path: "/tx/",
+                display_name: "Texas",
+              },
+            ],
+          };
+        throw new Error(`Unexpected fixture query: ${sql}`);
+      },
+    } as unknown as PoolClient;
+    const previous = process.env.NO_PERSONNEL;
+    try {
+      process.env.NO_PERSONNEL = noPersonnel;
+      const entries = await collectDataAnnotations(client);
+      expect(entries.map((entry) => entry.source_record_id).sort()).toEqual(
+        noPersonnel
+          ? ["synthetic-Agency-source"]
+          : ["synthetic-Agency-source", "synthetic-Personnel-source"],
+      );
+      const csv = annotationsCsv(entries);
+      expect(csv).toContain("synthetic-Agency-source");
+      if (noPersonnel) expect(csv).not.toContain("synthetic-Personnel-source");
+      else expect(csv).toContain("synthetic-Personnel-source");
+    } finally {
+      if (previous === undefined) delete process.env.NO_PERSONNEL;
+      else process.env.NO_PERSONNEL = previous;
+    }
+  });
+}
+
+for (const type of ["warning", "error"]) {
+  test(`record-page ${type} notes retain escaped supporting evidence`, async ({
+    page,
+  }) => {
+    await page.setContent(
+      await renderAnnotationFixture(
+        "src/components/RecordDataNotes.astro",
+        "/personnel/synthetic/",
+        [
+          {
+            field: "end_date",
+            value: "invalid",
+            type,
+            message: "Synthetic finding",
+            source_namespace: "synthetic.provider",
+            source_record_id: "synthetic-source",
+            record_url: "/personnel/synthetic/",
+            evidence: [
+              {
+                note: '<img src=x onerror="window.fixtureExecuted=true">',
+                url: "https://example.invalid/evidence",
+              },
+            ],
+          },
+        ],
+      ),
+    );
+    const notes = page.getByRole("region", { name: "Source data annotations" });
+    await expect(notes).toContainText("Synthetic finding");
+    await expect(
+      notes.getByText("Supporting evidence", { exact: true }),
+    ).toBeVisible();
+    await notes.getByText("Supporting evidence", { exact: true }).click();
+    expect(JSON.parse(await notes.locator("pre").innerText())).toEqual([
+      {
+        note: '<img src=x onerror="window.fixtureExecuted=true">',
+        url: "https://example.invalid/evidence",
+      },
+    ]);
+    await expect(notes.locator("img")).toHaveCount(0);
+    await expect(notes).not.toContainText("Replacement:");
+  });
+}
+
+test("authority data-note index has only its paginated table and exports all matching notes", async ({
+  page,
+  request,
+}) => {
+  const { collectDataAnnotations } =
+    await import("../../src/lib/data/data-annotations");
+  const entries = await withDb(collectDataAnnotations);
+  const fallback = entries.find((entry) =>
+    entry.record_url.endsWith("/licensing-authority/data-annotations/"),
+  );
+  expect(fallback).toBeDefined();
+  await page.goto(fallback!.record_url);
+  await expect(page.locator("main table tbody tr")).toHaveCount(50);
+  await expect(
+    page.getByRole("region", { name: "Source data annotations" }),
+  ).toHaveCount(0);
+  const csv = await request.get(`${fallback!.record_url}data.csv`);
+  expect(csv.ok()).toBe(true);
+  const exported = await csv.text();
+  expect(exported).toContain(fallback!.source_record_id);
+  expect(exported.split("\r\n").length).toBeGreaterThan(52);
+});
+
+test("record notes select only their exact canonical path and omit an empty section", async () => {
+  const entry = {
+    field: "end_date",
+    value: "invalid",
+    type: "warning",
+    message: "Matching record finding",
+    source_namespace: "synthetic.provider",
+    source_record_id: "synthetic-source",
+    record_url: "/tx/licensing-authority/",
+  };
+  const html = await renderAnnotationFixture(
+    "src/components/RecordDataNotes.astro",
+    "/tx/licensing-authority/",
+    [
+      entry,
+      {
+        ...entry,
+        message: "Other record finding",
+        record_url: "/or/licensing-authority/",
+      },
+    ],
+  );
+  expect(html).toContain("Matching record finding");
+  expect(html).not.toContain("Other record finding");
+  const empty = await renderAnnotationFixture(
+    "src/components/RecordDataNotes.astro",
+    "/tx/licensing-authority/",
+    [{ ...entry, record_url: "/tx/licensing-authority/data-annotations/" }],
+  );
+  expect(empty).not.toContain("Source data annotations");
+});
+
+test("canonical record pages explicitly render their collected source notes", async ({
+  page,
+}) => {
+  const { collectDataAnnotations } =
+    await import("../../src/lib/data/data-annotations");
+  const entries = await withDb(collectDataAnnotations);
+  const recordEntries = new Map<string, (typeof entries)[number]>();
+  for (const entry of entries) {
+    if (
+      !entry.record_url.endsWith("/data-annotations/") &&
+      !recordEntries.has(entry.entity_kind)
+    )
+      recordEntries.set(entry.entity_kind, entry);
+  }
+  expect(recordEntries.size).toBeGreaterThan(0);
+  for (const entry of recordEntries.values()) {
+    await page.goto(entry.record_url);
+    const notes = page.getByRole("region", { name: "Source data annotations" });
+    await expect(notes).toHaveCount(1);
+    await expect(notes).toContainText(entry.source_record_id);
+  }
 });

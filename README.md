@@ -85,6 +85,8 @@ the final PR head, including documentation-only PRs.
       does not verify search. Explain every skip. Any warning or coverage
       exception requires a linked, explicit human decision with reason, affected
       check, scope, and duration. Silence and acknowledgment are not permission.
+      All past and future dependency exceptions expire thirty days after
+      approval. At expiry, update the dependencies or obtain a new exception.
 - [ ] Add task-relevant checks beyond the aggregate: form validation,
       payload/reset behavior, accessible labels and keyboard focus, and mobile
       and desktop placement for form/UI changes. For generated HTML changes run

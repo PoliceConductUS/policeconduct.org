@@ -1,4 +1,5 @@
 ---
+import RecordDataNotes from "#src/components/RecordDataNotes.astro";
 import { getVideoEmbedUrl } from "#src/lib/video.js";
 import ComplaintSummaryUnavailable from "#src/components/ComplaintSummaryUnavailable.astro";
 import AiComplaintSummary from "#src/components/AiComplaintSummary.astro";
@@ -323,4 +324,5 @@ const structuredData = {
       </ul>
     </aside>
   </div>
+  <RecordDataNotes recordPath={casePath} />
 </PageShell>
