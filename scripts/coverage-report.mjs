@@ -2,29 +2,16 @@
 /**
  * Generates the agency coverage report (INS-7) from live data.
  *
- * Reads the corpus through the same database door the site build uses, so the
- * report describes that configured database at the measurement time. It does
- * not verify rendering, deployment, or live publication.
- *
- * Point DATABASE_URL at the single source of record — the intake agency corpus
- * (ADR 0007). Intake is the only path that populates the database, so there is
- * nothing to reconcile against and the normal invocation takes no cross-checks:
+ * Reads the configured database and records its identity and measurement time.
+ * Projection rows do not establish live publication. Intake populates the
+ * database; retired seed dumps are not comparison inputs.
  *
  *   DATABASE_URL=postgres://... node scripts/coverage-report.mjs \
  *     --out docs/coverage-report.md \
  *     --json docs/coverage-report.json
  *
- * The schema signature checks compatibility, not provenance or freshness. A
- * copied database can pass the same check, so counts must retain their measured
- * database and timestamp rather than being treated as current corpus totals.
- *
- * `--cross-check "label=count"` remains for the case where someone arrives
- * holding a number and wants to know what it is. The legacy seed.sql dump is
- * reported as abandoned rather than as a disagreement; a count derived from the
- * source of record (the `build_page_payload` projection) is checked live against
- * what this run measured; and a store we cannot identify is a reported gap. So
- * passing a cross-check cannot clear a finding, and cannot manufacture one out
- * of a retired artifact.
+ * Use repeatable --cross-check "label=count" inputs to compare other measured
+ * counts directly. Differences are reported without inferring store authority.
  */
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";

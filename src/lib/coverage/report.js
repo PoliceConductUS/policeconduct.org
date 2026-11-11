@@ -49,11 +49,6 @@ import {
   nationalCoverage,
 } from "./denominators.js";
 import { BJS_CATEGORY } from "./agency-types.js";
-import {
-  SOURCE_OF_RECORD,
-  STORE_STATUS,
-  classifyCrossCheck,
-} from "./authoritative-store.js";
 
 /**
  * Why we cannot turn a held count into a coverage percentage. Attached to the
@@ -77,76 +72,28 @@ const numeratorUniverseGap = ({ unclassifiedHeld, unclassifiedStates }) => {
 };
 
 /**
- * Classify every cross-checked count against the single source of record.
- *
- * There is only one source (board ruling, 2026-10-25), so this is not an
- * arbitration between rival stores. An abandoned artifact's count is simply not
- * a count of record; what still deserves a finding is a *derived* count that
- * disagrees with the store it is derived from, or a store nobody can identify.
+ * Two stores we control disagree about how many agencies we hold. That is a
+ * reportable finding about our own data, not a footnote.
  */
-const classifyCrossChecks = (crossChecks, measurement) =>
-  crossChecks
-    .filter((check) => Number.isInteger(check.count))
-    .map((check) =>
-      Object.freeze({ ...check, ...classifyCrossCheck(check, measurement) }),
-    );
-
-/** Statuses that are findings rather than explanations. */
-const IS_FINDING = Object.freeze([
-  STORE_STATUS.UNRECORDED,
-  STORE_STATUS.DERIVED_DRIFTED,
-]);
-
-/**
- * A count we cannot account for against the source of record. Either a store we
- * cannot identify, or a projection that has drifted from the store it projects.
- */
-const disputedCountGap = (classified, measuredTotal) => {
-  const findings = classified.filter((check) =>
-    IS_FINDING.includes(check.status),
+const disputedCountGap = (crossChecks, measuredTotal) => {
+  const disagreeing = crossChecks.filter(
+    (check) => Number.isInteger(check.count) && check.count !== measuredTotal,
   );
-  if (findings.length === 0) {
+  if (disagreeing.length === 0) {
     return null;
   }
-  const detail = findings
-    .map((check) => {
-      const head = `${check.store} reports ${check.count.toLocaleString("en-US")}`;
-      return check.detail
-        ? check.detail
-        : `${head}, and we cannot say what store that is.`;
-    })
-    .join(" ");
+  const detail = disagreeing
+    .map(
+      (check) =>
+        `${check.store} reports ${check.count.toLocaleString("en-US")}`,
+    )
+    .join("; ");
   return Object.freeze({
     kind: GAP_KIND.CORPUS_COUNT_DISPUTED,
     scope: "national",
-    detail: `${SOURCE_OF_RECORD.label} holds ${measuredTotal.toLocaleString("en-US")} agencies and is the single source of record, so that count stands. ${detail}`,
-    unblockedBy: `Identify the store and either record it in NON_SOURCE_STORES with what it is, or correct the cross-checked figure. If a projection has drifted, re-run scripts/refresh-build-projections.mjs against ${SOURCE_OF_RECORD.label}.`,
-  });
-};
-
-/**
- * The measured schema does not match the expected intake schema. Its counts are
- * still true of that store, which is why this is a named gap rather than a
- * thrown error — but none of them may be quoted as the corpus count.
- */
-const storeAuthorityGap = (authority) => {
-  if (!authority || authority.schemaCompatible) {
-    return null;
-  }
-  const reasons = [];
-  if (authority.missing.length > 0) {
-    reasons.push(`it is missing ${authority.missing.join(", ")}`);
-  }
-  if (authority.unexpected.length > 0) {
-    reasons.push(
-      `it carries the pre-rename ${authority.unexpected.join(", ")}, which is incompatible with the expected current schema`,
-    );
-  }
-  return Object.freeze({
-    kind: GAP_KIND.MEASURED_STORE_NOT_AUTHORITATIVE,
-    scope: "national",
-    detail: `The measured schema does not match the expected schema for ${SOURCE_OF_RECORD.label}: ${reasons.join("; ")}. Every count below is true of the store identified above and of no other, and none of them is verified as the current corpus count.`,
-    unblockedBy: `Point DATABASE_URL at ${SOURCE_OF_RECORD.label} and re-run. The designation and the evidence for it are in docs/0007-authoritative-agency-store.md.`,
+    detail: `The measured store reports ${measuredTotal.toLocaleString("en-US")} agencies, but ${detail}. These supplied counts differ. The numbers in this report describe the measured database at the recorded time.`,
+    unblockedBy:
+      "Check whether the supplied counts measure the same records at the same time; remove retired artifacts from the comparison inputs.",
   });
 };
 
@@ -403,20 +350,7 @@ export const buildCoverageReport = ({
   if (universeGap) {
     reportGaps.push(universeGap);
   }
-  // Whether the right store was measured comes before any finding about how a
-  // count presented to the report relates to it.
-  const notAuthoritative = storeAuthorityGap(measurement.storeAuthority);
-  if (notAuthoritative) {
-    reportGaps.push(notAuthoritative);
-  }
-  const classifiedCrossChecks = classifyCrossChecks(
-    corpusCrossChecks,
-    measurement,
-  );
-  const disputed = disputedCountGap(
-    classifiedCrossChecks,
-    measurement.totalHeld,
-  );
+  const disputed = disputedCountGap(corpusCrossChecks, measurement.totalHeld);
   if (disputed) {
     reportGaps.push(disputed);
   }
@@ -430,8 +364,7 @@ export const buildCoverageReport = ({
     asOf: asOf.toISOString(),
     asOfYear,
     measurement,
-    sourceOfRecord: SOURCE_OF_RECORD,
-    corpusCrossChecks: Object.freeze(classifiedCrossChecks),
+    corpusCrossChecks: Object.freeze(corpusCrossChecks),
     national: Object.freeze({
       held: measurement.totalHeld,
       primary: Object.freeze({
@@ -488,8 +421,6 @@ const GAP_LABEL = Object.freeze({
   [GAP_KIND.NO_RECORDS_HELD]: "nothing held",
   [GAP_KIND.NUMERATOR_UNIVERSE_UNVERIFIED]: "numerator universe unverified",
   [GAP_KIND.CORPUS_COUNT_DISPUTED]: "corpus count disputed",
-  [GAP_KIND.MEASURED_STORE_NOT_AUTHORITATIVE]:
-    "schema compatibility not established",
 });
 
 const num = (value) =>
@@ -532,23 +463,7 @@ export const renderCoverageReportMarkdown = (report) => {
       ` (server reports itself as ${report.measurement.database.host}:${report.measurement.database.port}).`,
   );
   push();
-  const authority = report.measurement.storeAuthority;
-  if (authority?.schemaCompatible) {
-    push(
-      `The measured database has a schema compatible with **${report.sourceOfRecord.label}**.` +
-        " Intake remains the single source of record for agency counts; there is no second store to" +
-        " reconcile against. Schema compatibility does not establish this database's provenance," +
-        " freshness, or identity as the current intake corpus: a copied database can pass the same check." +
-        " Counts describe only the database and measurement time recorded above." +
-        " See `docs/0007-authoritative-agency-store.md`.",
-    );
-  } else {
-    push(
-      "**Schema compatibility with the intake agency corpus is not established.**" +
-        " Counts describe only the measured database. They do not establish its provenance" +
-        " or identity as the current intake corpus. See the schema compatibility finding below.",
-    );
-  }
+  push("Counts describe the database and measurement time recorded above.");
   push();
   const achieved = report.summary.achievedPercentagesReported;
   if (achieved === 0) {
@@ -576,7 +491,7 @@ export const renderCoverageReportMarkdown = (report) => {
   );
   if (Number.isInteger(report.measurement.projectedAgencyPages)) {
     push(
-      `- Of those, present in the database agency page projection: **${num(report.measurement.projectedAgencyPages)}** (projection rows do not establish rendering, deployment, or live publication)`,
+      `- Of those, present in the database agency page projection: **${num(report.measurement.projectedAgencyPages)}** (projection rows do not establish live publication)`,
     );
   }
   if (Number.isInteger(report.measurement.federalHeld)) {
@@ -595,7 +510,7 @@ export const renderCoverageReportMarkdown = (report) => {
   );
   push();
   push(
-    `Corpus fingerprint: ${num(report.measurement.fingerprint.rows)} rows, newest \`updated_at\` ${report.measurement.fingerprint.newest_updated_at ?? "unknown"}. Quote these counts only with this fingerprint attached — a database can be copied or reset, and this fingerprint does not prove provenance.`,
+    `Corpus fingerprint: ${num(report.measurement.fingerprint.rows)} rows, newest \`updated_at\` ${report.measurement.fingerprint.newest_updated_at ?? "unknown"}. Quote these counts only with this fingerprint attached — the development database is shared and is reset without notice.`,
   );
   push();
 
@@ -817,21 +732,12 @@ export const renderCoverageReportMarkdown = (report) => {
   }
 
   if (report.corpusCrossChecks.length > 0) {
-    push("## Other counts presented to this report");
-    push();
-    push(
-      `${report.sourceOfRecord.label} is the single source of record, so nothing below is a rival count. Each is labelled with what it actually is. A count marked _derived drifted_ or _unrecorded_ is a gap above, not a footnote.`,
-    );
+    push("## Cross-checks against other stores");
     push();
     for (const check of report.corpusCrossChecks) {
       push(
-        `- **${check.store}**: ${num(check.count)} — ${check.status.replace(/_/g, " ")}${check.note ? ` (${check.note})` : ""}`,
+        `- ${check.store}: ${num(check.count)}${check.note ? ` — ${check.note}` : ""}`,
       );
-      if (check.detail) {
-        push(`  - ${check.detail}`);
-      } else if (check.storeRecord) {
-        push(`  - ${check.storeRecord.note}`);
-      }
     }
     push();
   }
