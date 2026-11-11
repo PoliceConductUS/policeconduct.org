@@ -34,8 +34,8 @@
 
 ## Task 3: Delivery and final evidence
 
-- [ ] Verify Node/npm and every installed package against its lockfile; run required gates, task-specific browser checks, built Pagefind checks and no-inline-CSS checks.
-- [ ] Resolve diagnostics, inspect the final diff, and obtain an independent review. Record evidence and any real blockers in `verify.md`.
+- [x] Verify Node/npm and every installed package against its lockfile; run required gates, task-specific browser checks, built Pagefind checks and no-inline-CSS checks.
+- [x] Resolve diagnostics, inspect the final diff, and obtain an independent review. Record evidence and any real blockers in `verify.md`.
 - [ ] Commit with a Conventional Commit message and push the existing feature branch. Inspect actual CI for the final head and update the existing PR description to match the scope and evidence.
 
 ## Review focus
@@ -59,7 +59,7 @@
 - [x] Remove all annotation imports, loading, filtering, and rendering from `PageShell`.
 - [x] Compose dedicated record notes on the canonical record routes for the collector's seven owner kinds; generic civic wrappers only forward slots.
 - [x] Preserve evidence, exact canonical-path matching, publication exclusions, and paginated index behavior; verify shared chrome does not import the annotation loader.
-- [ ] Review the correction and repeat final rendering and complete validation before the GitHub update.
+- [x] Review the correction and repeat final rendering and complete validation before the GitHub update.
 
 ## Task 4: Versioned Analytics configuration and commands
 

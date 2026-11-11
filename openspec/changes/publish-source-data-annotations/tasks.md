@@ -8,7 +8,7 @@
 ## Verification
 
 - [x] Test JSON validation, provider isolation, pagination, CSV round trips and complete exports.
-- [ ] Run required site validation against the final head and inspect a generated local preview.
+- [x] Run required site validation against the final head and inspect a generated local preview.
 - [ ] Obtain release approval before any publication.
 
 ## Approved analytics follow-up
@@ -30,3 +30,7 @@
 
 - [x] Add the managed Analytics configuration and npm comparison/application commands, preserving unrelated resources and external credentials.
 - [ ] Cover the commands with mocked API tests, verify available live settings, and complete final-head validation and stack synchronization.
+
+## Delivery evidence boundary
+
+This checklist records the implementation snapshot verified in `verify.md`. Final documentation-head validation, stack synchronization and hosted checks are recorded in the PR descriptions after this snapshot; they remain unchecked here until that delivery evidence exists. Release approval remains separate.
