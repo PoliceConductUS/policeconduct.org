@@ -153,9 +153,11 @@ const simpleSenderCases: SenderCase[] = [
 ];
 
 test.beforeAll(async () => {
+  const databaseUrl = process.env.DATABASE_URL;
   for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
     dotenv.config({ path, override: true, quiet: true });
   }
+  if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
   const client = new Client({ connectionString: process.env.DATABASE_URL });
   await client.connect();
   try {

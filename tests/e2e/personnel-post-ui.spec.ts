@@ -13,9 +13,11 @@ let client: Client;
 const previousTimezone = process.env.TZ;
 test.beforeAll(async () => {
   process.env.TZ = "America/Los_Angeles";
+  const databaseUrl = process.env.DATABASE_URL;
   for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
     dotenv.config({ path, override: true, quiet: true });
   }
+  if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
   client = new Client({ connectionString: process.env.DATABASE_URL });
   await client.connect();
 });

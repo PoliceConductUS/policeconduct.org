@@ -25,8 +25,11 @@ let reportFixture: ReportFixture | null = null;
 let personnelFixture: PersonnelFixture | null = null;
 
 test.beforeAll(async () => {
+  const configuredDatabaseUrl = process.env.DATABASE_URL;
   for (const path of [".env", ".env-recaptcha", ".env-policeconduct"])
     dotenv.config({ path, override: true, quiet: true });
+  if (configuredDatabaseUrl !== undefined)
+    process.env.DATABASE_URL = configuredDatabaseUrl;
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
     throw new Error("DATABASE_URL is required for report-pages fixtures.");
