@@ -179,6 +179,15 @@ export async function collectDataAnnotations(
   ).rows;
   for (const row of rows) {
     const annotation = annotationFromRecord(row);
+    if (
+      (process.env.NO_PERSONNEL || "").trim() &&
+      annotation.field === "excluded_records" &&
+      annotation.value !== null &&
+      typeof annotation.value === "object" &&
+      "kind" in annotation.value &&
+      annotation.value.kind === "Personnel"
+    )
+      continue;
     const kind = required(row.subject_kind, "subject_kind");
     const id = required(row.subject_id, "subject_id");
     const target = await owner(kind, id);

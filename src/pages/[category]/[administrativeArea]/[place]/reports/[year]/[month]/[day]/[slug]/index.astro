@@ -1,4 +1,5 @@
 ---
+import RecordDataNotes from "#src/components/RecordDataNotes.astro";
 import "#src/styles/civic-ledger.css";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
@@ -430,4 +431,5 @@ const structuredData = {
   <section class="civic-section civic-section--last">
     <ReportDisclaimer />
   </section>
+  <RecordDataNotes recordPath={pagePath} />
 </PageShell>

@@ -4,7 +4,7 @@ import sitemap from "@astrojs/sitemap";
 import { stagePersonnelPhotos } from "./src/lib/personnel-photos.js";
 import { loadEnv } from "vite";
 
-import sentry from "@sentry/astro";
+import { sentryAstro } from "@sentry/astro/integration";
 import { buildSitemapLastmodMap } from "./src/lib/sitemap-lastmod.js";
 
 /**
@@ -150,7 +150,7 @@ export default defineConfig({
         };
       },
     }),
-    sentry({
+    sentryAstro({
       telemetry: false,
       enabled: {
         client: true,

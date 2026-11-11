@@ -21,3 +21,19 @@ Authority HTML views and CSV exports include annotations directly attached to th
 Agencies without current assignments have no public agency page. Keep their findings visible through the explicitly mapped source authority's annotation page, preserving the affected record label and identifiers. Apply the same current-assignment predicate as projection generation; do not treat an unexpectedly absent eligible page as an excluded agency. Resolve eligible agency URLs through their authoritative location path and slug.
 
 Verification uses an explicitly supplied disposable DATABASE_URL and INTAKE_WORKSPACE. Dev startup preserves those inputs after loading local environment files so the browser server and test queries use the same isolated data.
+
+## Analytics follow-up
+
+Collect only on the HTTPS production hosts `policeconduct.org` and `www.policeconduct.org`. Initialize the queue before loading the Google tag asynchronously. Centralize URL sanitization for page locations, referrers, and custom link destinations; retain only explicit marketing-attribution parameters, never tokens or search text. Disable automatic site-search collection, history page views, outbound clicks, and file downloads so automatic events cannot bypass the explicit measurement contract. Keep the site's sanitized outbound events.
+
+Use the current masthead markup for header events. Measure completed search responses and selections without query text, deduplicating repeated responses for the same search and avoiding per-keystroke counts. Record result count and a bounded destination category rather than record labels or visitor-entered text.
+
+Keep `form_submit_success` as receipt of a submission. Add a bounded verification-email outcome and a separate failure event when the API reports `verificationPending: false`; do not change whether the submission was received or automatically label it verified. Expose form name, failure stage, HTTP response status, and verification-email outcome in Analytics reports.
+
+Tests intercept Google requests and form APIs; they must never submit real reports, activate personnel publication, or send synthetic events to the production property. Preserve existing annotation work and publication gates.
+
+## Approved review corrections
+
+Apply the existing personnel-publication switch to explicitly typed personnel exclusions regardless of their owner. Record-page notes must preserve supplied warning/error evidence. Authority annotation indexes render their findings only in the paginated listing, including records whose fallback destination is that index. The user approved these three corrections during the analytics follow-up.
+
+Record routes explicitly compose a dedicated annotation-notes component using their resolved canonical record path. `PageShell` and generic civic wrappers only provide shared structure and slots; they must not import, load, filter, or render annotations, or inspect annotation-route shapes.
