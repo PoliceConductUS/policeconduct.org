@@ -2,6 +2,7 @@ import { currentAssignmentSql } from "./annotation-access.js";
 import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { withDb } from "#src/lib/db.js";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
+import { isEndedAssignment, isCurrentAssignment } from "./assignment-status.js";
 import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
 import { normalizeLicenseStatus, normalizeLicenseType } from "./licensing.js";
@@ -32,6 +33,10 @@ type PersonnelLinkedCivilCaseRow = {
   target_start_date: string | null;
   target_end_date: string | null;
   target_is_current: boolean;
+  target_source_values: {
+    start_date?: { effective_value: unknown };
+    end_date?: { effective_value: unknown };
+  };
 };
 
 export type AgencyScopedTopicKind =
@@ -505,6 +510,7 @@ const loadAgencyRows = async (agencyId: string) =>
                 target_ao.title as target_title,
                 target_ao.start_date as target_start_date,
                 target_ao.end_date as target_end_date,
+                target_ao.data_source_values as target_source_values,
                 ${currentAssignmentSql("target_ao")} as target_is_current
               from public.civil_case_personnel cco
               join public.civil_cases c
@@ -724,11 +730,11 @@ const buildAgencyDetail = async (agencyId: string) => {
       },
     )
     .sort(comparePersonnelEntry);
-  const currentEmployees = employees.filter(
-    (employee) => employee.entry.end_date == null,
+  const currentEmployees = employees.filter((employee) =>
+    isCurrentAssignment(employee.entry),
   );
-  const formerEmployees = employees.filter(
-    (employee) => employee.entry.end_date != null,
+  const formerEmployees = employees.filter((employee) =>
+    isEndedAssignment(employee.entry),
   );
 
   const civilCases = data.civilCases.map(
@@ -803,7 +809,15 @@ const buildAgencyDetail = async (agencyId: string) => {
           title: entry.target_title || null,
           startDate: entry.target_start_date || null,
           endDate: entry.target_end_date || null,
-          relationship: entry.target_is_current ? "current" : "former",
+          relationship: entry.target_is_current
+            ? "current"
+            : isEndedAssignment({
+                  start_date: entry.target_start_date,
+                  end_date: entry.target_end_date,
+                  data_source_values: entry.target_source_values,
+                })
+              ? "former"
+              : "uncertain",
         },
       })),
     };

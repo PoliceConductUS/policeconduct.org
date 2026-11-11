@@ -19,3 +19,5 @@ Requires intake's forward annotation migration and regenerated imports. No runti
 ## Approved analytics follow-up
 
 Fix the audited analytics issues on this same branch: prevent sensitive URL/search collection, isolate production traffic, load the tag asynchronously, restore header tracking, measure search outcomes, distinguish verification-email failures, and cover these behaviors with regression tests. Register the form reporting fields, protect URL parameters in Analytics, verify traffic exclusions, and extend event retention to fourteen months. Donation clicks remain key events; payment completion tracking is not included.
+
+The approved follow-up also versions the managed Google Analytics settings in `config/analytics.json` and provides `analytics:compare` and `analytics:apply` npm commands. These manual commands use the Admin API and an external access token. They do not run during a website build, change the existing Cloud login, or manage unrelated resources or internal-traffic IP rules.

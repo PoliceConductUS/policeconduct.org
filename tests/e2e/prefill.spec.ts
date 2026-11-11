@@ -174,9 +174,13 @@ test.beforeAll(async () => {
       join public.personnel p on p.id = ap.personnel_id
       join public.agency a on a.id = ap.agency_id
       join public.location_path lp on lp.location_path_id = a.location_path_id
-      where p.slug = $1 and a.slug = $2
+      where c.id = $1 and p.slug = $2 and a.slug = $3
     `,
-      ["james-markham-v-7635c7", "irving-police-department-049f9a"],
+      [
+        "ogecfxi5p67286qbmvkfjoa4",
+        "james-markham-v-7635c7",
+        "irving-police-department-049f9a",
+      ],
     );
     expect(rows).toHaveLength(1);
     const record = rows[0];

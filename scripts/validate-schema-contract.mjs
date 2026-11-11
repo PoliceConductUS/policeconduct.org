@@ -190,6 +190,8 @@ const requiredTables = {
       "filed_date",
       "date_terminated",
       "claims_summary",
+      "ai_complaint_summary",
+      "complaint_summary_unavailability",
       "outcome",
       "primary_source_url",
       "created_at",

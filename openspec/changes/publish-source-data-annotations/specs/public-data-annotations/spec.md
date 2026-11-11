@@ -4,8 +4,6 @@
 
 The site SHALL show source-reported values and their annotations together on the affected public record display. It SHALL identify the source provider and source record ID and distinguish our warning/error/correction from the provider's reported data. The site SHALL display reported dates without calculated tenure totals or assignment durations. An unparseable annotated date SHALL display its original literal value without treating an empty typed end date as current employment.
 
-Record routes SHALL explicitly compose their annotation notes. Shared page structure, including `PageShell` and generic civic wrappers, SHALL remain independent of annotation loading, rendering, and annotation-route checks.
-
 #### Scenario: Negative tenure
 
 - **WHEN** the supplied dates produce a duration of minus 12 days
@@ -20,6 +18,15 @@ Record routes SHALL explicitly compose their annotation notes. Shared page struc
 
 - **WHEN** a warning or error supplies evidence
 - **THEN** its record-page note SHALL preserve that evidence, independently of correction replacement values
+
+### Requirement: Record routes own their annotation composition
+
+Record routes SHALL explicitly compose their annotation notes. Shared page structure, including `PageShell` and generic civic wrappers, SHALL remain independent of annotation loading, rendering, and annotation-route checks.
+
+#### Scenario: A route renders record findings
+
+- **WHEN** a record page displays its source findings
+- **THEN** the owning route composes the notes without annotation knowledge in its shared page structure
 
 ### Requirement: One public annotation index
 

@@ -33,14 +33,16 @@
     "review:workspace": "ocr review --audience agent",
     "scan:personal-data": "node scripts/scan-personal-data.mjs --tracked",
     "setup": "bash scripts/bootstrap-dev.sh",
-    "test:client": "node --test scripts/copy-link.test.mjs",
-    "test": "npm run test:contacts && npm run test:annotations && npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:coverage && npm run test:e2e",
+    "test:client": "node --test scripts/copy-link.test.mjs scripts/ai-complaint-summary.test.mjs scripts/ai-complaint-render.test.mjs",
+    "test": "npm run test:contacts && npm run test:annotations && npm run test:analytics-config && npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:data && npm run test:coverage && npm run test:e2e",
     "test:coverage": "node --test \"src/lib/coverage/*.test.mjs\"",
     "test:css": "node --test scripts/purge-built-css.test.mjs",
+    "test:data": "node --test src/lib/data/assignment-status.test.mjs scripts/verify-employment-claims.test.mjs",
+    "verify:employment-claims": "node scripts/verify-employment-claims.mjs",
     "test:media": "node --test scripts/video.test.mjs scripts/personnel-photos.test.mjs",
     "test:e2e": "node scripts/run-e2e.mjs",
     "test:personal-data": "node --test scripts/scan-personal-data.test.mjs",
-    "test:redirects": "node --test scripts/verify-redirect-coverage.test.mjs scripts/cloudfront-router.test.mjs scripts/load-redirects.test.mjs scripts/generate-redirect-map.test.mjs scripts/deploy-release-guard.test.mjs",
+    "test:redirects": "node --test scripts/verify-redirect-coverage.test.mjs scripts/cloudfront-router.test.mjs scripts/load-redirects.test.mjs scripts/generate-redirect-map.test.mjs scripts/workspace-redirects.test.mjs scripts/deploy-release-guard.test.mjs",
     "update:deps": "node scripts/update-dependencies.mjs --root .",
     "update:deps:all": "node scripts/update-dependencies.mjs --all",
     "validate": "npm run format:check && npm run lint && npm run validate:types && npm run validate:shell && npm run validate:schema && npm run validate:openspec && npm run scan:personal-data && npm run test",
@@ -52,9 +54,13 @@
     "validate:shell": "bash -n .githooks/* scripts/*.sh infrastructure/bootstrap-*/*.sh infrastructure/bootstrap-*/scripts/*.sh",
     "validate:types": "astro check",
     "deploy:preview:sync": "bash scripts/deploy-preview-sync.sh",
-    "test:lambda": "npm --prefix infrastructure/bootstrap-policeconduct/lambdas/forms-api ci --omit=dev --no-audit --no-fund && node --test infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs",
+    "test:lambda": "npm --prefix infrastructure/bootstrap-policeconduct/lambdas/forms-api ci --omit=dev --no-audit --no-fund && node --test infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs infrastructure/bootstrap-policeconduct/lambdas/forms-api/dependency-runtime.test.mjs",
+    "verify:report-titles": "node scripts/verify-report-titles.mjs",
     "test:contacts": "node --test tests/unit/contact-emails.test.mjs",
-    "test:annotations": "node --test tests/unit/data-annotations.test.mjs"
+    "test:annotations": "node --test tests/unit/data-annotations.test.mjs",
+    "analytics:compare": "node scripts/analytics-config.mjs compare",
+    "analytics:apply": "node scripts/analytics-config.mjs apply",
+    "test:analytics-config": "node --test scripts/analytics-config.test.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
@@ -90,10 +96,12 @@
   "overrides": {
     "purgecss": {
       "postcss-selector-parser": "7.1.7"
-    }
+    },
+    "glob": "14.0.4",
+    "minimatch": "11.0.7"
   },
   "allowScripts": {
-    "@alibaba-group/open-code-review@1.13.3": true,
-    "fsevents@2.3.3": true
+    "fsevents@2.3.3": true,
+    "@alibaba-group/open-code-review@1.13.3": true
   }
 }
