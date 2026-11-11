@@ -1,3 +1,4 @@
+import { mergeWorkspaceRedirects } from "./workspace-redirects.mjs";
 import { currentAssignmentSql } from "../src/lib/data/annotation-access.js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { statSync } from "node:fs";
@@ -148,7 +149,7 @@ const buildReportPath = (report) => {
   );
 };
 
-const redirects = await withDb(async (client) => {
+const generatedRedirects = await withDb(async (client) => {
   const agencyRows = (
     await client.query(
       `
@@ -184,7 +185,7 @@ const redirects = await withDb(async (client) => {
   const civilCaseRows = (
     await client.query(
       `
-        select split_part(lp.path, '/', 2) as state, c.slug,
+        select c.id, split_part(lp.path, '/', 2) as state, c.slug,
           (select coalesce(json_agg(json_build_object('id', l.id, 'url', l.url)), '[]'::json)
            from public.civil_case_links l where l.civil_case_id = c.id) as videos
         from public.civil_cases c
@@ -644,6 +645,11 @@ const redirects = await withDb(async (client) => {
       source: "top-level videos retired",
     },
   ];
+});
+
+const redirects = await mergeWorkspaceRedirects(generatedRedirects, {
+  workspace: process.env.INTAKE_WORKSPACE,
+  hasBuiltDestination,
 });
 
 await mkdir(distDir, { recursive: true });

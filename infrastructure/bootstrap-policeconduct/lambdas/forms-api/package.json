@@ -8,12 +8,16 @@
     "@google-cloud/recaptcha-enterprise": "^7.3.0",
     "@paralleldrive/cuid2": "^3.3.0",
     "@sentry/node": "^11.8.0",
-    "google-auth-library": "^11.3.1"
+    "google-auth-library": "^11.3.1",
+    "node-domexception": "file:./native-domexception"
   },
   "overrides": {
     "protobufjs": "7.6.6",
     "@protobufjs/utf8": "1.1.2",
-    "brace-expansion": "5.0.12"
+    "brace-expansion": "5.0.12",
+    "node-domexception": "$node-domexception",
+    "glob": "14.0.4",
+    "minimatch": "11.0.7"
   },
   "allowScripts": {
     "protobufjs@7.6.6": true
