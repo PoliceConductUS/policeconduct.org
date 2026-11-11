@@ -1,4 +1,5 @@
 ---
+import RecordDataNotes from "#src/components/RecordDataNotes.astro";
 import CivicAgencyHierarchyPage from "#src/components/CivicAgencyHierarchyPage.astro";
 import {
   buildFederalAgencyDetailIndexModel,
@@ -28,4 +29,6 @@ if (!federalAgency) {
 const model = buildFederalAgencyDetailIndexModel(federalAgency);
 ---
 
-<CivicAgencyHierarchyPage model={model} site={Astro.site} />
+<CivicAgencyHierarchyPage model={model} site={Astro.site}>
+  <RecordDataNotes recordPath={model.pagePath} />
+</CivicAgencyHierarchyPage>
