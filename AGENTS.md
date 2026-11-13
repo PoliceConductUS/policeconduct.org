@@ -11,11 +11,18 @@ Project Goal
 - Agents should look for what is working unusually well, not only failures, misconduct, lawsuits, or weak policies. Positive findings must be evidence-backed, clearly scoped, and never presented as unsupported praise or overall endorsement.
 - Positive-deviance analysis should follow an asset-based, community-informed workflow: define the problem and desired outcome, determine whether positive deviants exist, discover uncommon successful practices, develop ways to share or test those practices, and discern results through monitoring and revision.
 
-Prime Directive
+Scope Of A Change
 
-- Build the smallest correct thing that produces the intended outcome.
-- Start outside-in: define the observable user, community, data, or system outcome before choosing an implementation.
+- Most bad changes in this repo are unrequested ones or designs nobody approved. Hold this line first.
+- Do exactly what was asked, with the narrowest change that fully produces the intended outcome. Start outside-in: define the observable user, community, data, or system outcome before choosing an implementation.
+- A direct request for a fix or implementation is approval for the scoped edits it needs. Do not stop for a second approval round, and do not stop before the outcome is verified.
+- Do not refactor, rename, reformat, re-order, delete, or "improve" code, tests, data, or docs the request does not require. When you notice something worth changing outside the request, report it after the work and wait. For optional work or broad cleanup, summarize the exact files and changes you intend to make and wait for explicit user approval before editing.
+- When a change needs a design decision (a new component, loader, table, route, or contract, or more than one reasonable approach), state the approach in a few lines and wait for approval before writing code. A small fix with one obvious implementation needs no design step.
+- Stop and get approval before coding when the change introduces an architectural compromise, weakens an invariant, changes data semantics, touches unrelated behavior, or has materially risky or ambiguous scope. An architectural compromise is anything that weakens, bypasses, or temporarily works around a stated data model, routing invariant, source-of-truth rule, or project convention.
+- Do not ask for approval to inspect code, search the repo, or read files.
 - Avoid hidden product decisions. If a requirement is unclear, either inspect existing repo context or ask before encoding a new policy.
+- Build only what the current, known requirement needs. Do not add speculative complexity, optional abstractions, future-proofing, configurability, or extensibility unless the current task requires it or the user explicitly requests it.
+- Do not preserve backward compatibility unless the user explicitly requests it.
 
 This Repository Is Public
 
@@ -51,14 +58,6 @@ OpenSpec Usage
 - Brainstorm the outcome before implementation, then turn the result into an OpenSpec change.
 - Use `/opsx:continue <change-name>`, `/opsx:apply <change-name>`, `/opsx:verify <change-name>`, and `/opsx:archive <change-name>` for the normal bridge lifecycle.
 - Review generated `proposal.md`, `design.md`, `tasks.md`, `plan.md`, `verify.md`, and retrospective artifacts before relying on them.
-
-Change Approval Workflow
-
-- When the user directly requests a fix or implementation, that request is approval to make the necessary scoped edits. Do not stop for a second approval round unless the change introduces an architectural compromise, weakens an invariant, changes data semantics, touches unrelated behavior, or has materially risky/ambiguous scope.
-- When proposing optional work, broad cleanup, or a change the user has not directly requested, summarize the exact files and changes you intend to make and wait for explicit user approval before editing.
-- Do not ask for approval to inspect code, search the repo, or read files. Inspect first, then ask for approval only before making edits.
-- Do not preserve backward compatibility unless the user explicitly requests it.
-- All architectural compromises must be explicitly explained and approved before implementation. If an implementation weakens, bypasses, or temporarily works around a stated data model, routing invariant, source-of-truth rule, or project convention, stop and get user approval before coding it.
 
 Data + Routing Conventions
 
@@ -112,16 +111,13 @@ General Code Standards
 - TypeScript types should be minimal, stable, and shared.
 - Keep functions small and testable; avoid duplication by sharing utilities.
 - Avoid new dependencies unless already present.
-- Never add speculative complexity. Implement only the simplest solution that satisfies the current known requirements, and nothing more.
-- Do not add optional abstractions, future-proofing, configurability, or extensibility unless they are required by the current task or explicitly requested by the user.
-- Prefer the simplest implementation that could possibly work.
 - Do not add boolean behavior flags to components or data models. Prefer explicit component composition, discriminated unions, or separate named components for distinct behavior.
 
 Validation Expectations
 
 - Follow the complete [merge checklist in README.md](README.md#pr-merge-checklist); `package.json` is the source of truth for the gate chain. Run the entire `npm run validate` on the final PR head, even for documentation changes. Scoped checks are development feedback only. Rerun after fixes or head changes.
 - Use the repository runtime from `mise.toml` (currently Node 24), run `npm ci`, and verify installed package versions against the lockfile. Never substitute stale shared `node_modules`.
-- Fix every error and warning, including pre-existing findings. Exit zero is not merge readiness. Calling a finding harmless, advisory, baseline, or out of scope does not waive it. Inspect diagnostic hints and resolve or explicitly justify each one; tool labels alone are not justification.
+- Every error and warning on the final PR head must be resolved before merge. Fix the ones your change causes. When a finding predates your change, stop and report it; fix it in the same change only after the user approves. Exit zero is not merge readiness. Calling a finding harmless, advisory, baseline, or out of scope does not waive it. Inspect diagnostic hints and resolve or explicitly justify each one; tool labels alone are not justification.
 - Do not disable rules, add ignores, weaken assertions, hide diagnostics, skip tests, or alter fixtures merely to get green output. Fix underlying causes. Fixture corrections must preserve the behavior and assertions being tested, including required form fields and qualifying record relationships.
 - Missing configuration, services, data, browsers, or generated assets block verification. Set up the intended environment safely; do not modify production data or publish personnel to satisfy checks. Never commit credentials, absolute home paths, or private data.
 - Account for every skipped test. Required coverage must run in the correct environment, including built and served Pagefind search. A skipped behavior did not pass. Any warning or coverage exception needs a linked, explicit human decision stating reason, affected check, scope, and duration. Silence or acknowledgment of a limitation is not permission.
