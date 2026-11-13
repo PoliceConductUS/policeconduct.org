@@ -72,8 +72,8 @@ export const GAP_KIND = Object.freeze({
   /** Denominator's citation is not yet confirmed, so it cannot go public. */
   CITATION_UNCONFIRMED: "citation_unconfirmed",
   /**
-   * We hold more agencies than the denominator counts. That is never coverage
-   * above 100% — it is a universe mismatch, and it is reported as one.
+   * We hold more agencies than the denominator counts. Report the excess
+   * without assuming its cause or calling it coverage above 100%.
    */
   HELD_EXCEEDS_DENOMINATOR: "held_exceeds_denominator",
   /**
@@ -262,12 +262,12 @@ export const DEFINITIONAL_CONFLICTS = Object.freeze([
   Object.freeze({
     id: "local_police_count_lear_vs_csllea",
     detail:
-      "LEAR 2016 counts 12,695 local and county police departments; CSLLEA 2018 counts 11,824. The gap of 871 is larger than two years of consolidation plausibly explains. CSLLEA excludes any agency without at least one full-time-equivalent sworn officer and LEAR does not, which accounts for an unknown share of it. We have not reconciled the two and do not claim to have.",
+      "LEAR 2016 counts 12,695 local and county police departments; CSLLEA 2018 counts 11,824, a difference of 871. CSLLEA excludes any agency without at least one full-time-equivalent sworn officer and LEAR does not. The effect of that eligibility difference and the different reference dates has not been measured.",
   }),
   Object.freeze({
     id: "tribal_police_universe",
     detail:
-      "BJS classifies the 217 tribal police departments as their own type, outside 'general purpose'. A reader would call a tribal police department general-purpose. Our general-purpose denominator follows the BJS definition so it stays comparable to the published tables; tribal agencies are inside the all-agency denominator. If we ever report tribal coverage it needs its own denominator, not a share of this one.",
+      "Tribal law enforcement agencies count in the agency total and the all-agency comparison. BJS lists 217 as a source category in its 2018 total. The general-purpose subtotal follows the published local-police, sheriff, and primary-state categories; it is not the total number of law enforcement agencies.",
   }),
   Object.freeze({
     id: "state_counts_are_estimates",
@@ -554,9 +554,8 @@ export const formatCoverage = ({
  * coverage — our coverage is at most that, because some unknown share of the
  * numerator belongs to a different universe.
  *
- * Reporting the bound is honest in the direction the anti-goal demands: it can
- * only ever overstate the ceiling, never overstate what we have achieved. The
- * phrasing is deliberately "no more than" so a reader cannot lift the number out
+ * The bound can exceed achieved coverage. The phrasing is deliberately
+ * "no more than" so a reader cannot lift the number out
  * as a coverage figure, and the universe caveat is inside the returned sentence
  * for the same reason the staleness note is.
  */
@@ -599,7 +598,7 @@ const exceedsGap = (denominator, scope, held) => ({
   kind: GAP_KIND.HELD_EXCEEDS_DENOMINATOR,
   scope,
   denominatorId: denominator.id,
-  detail: `${held.toLocaleString("en-US")} agencies held against a denominator of ${denominator.value.toLocaleString("en-US")} (${denominator.source}, ${denominator.year}). Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage is reported.`,
+  detail: `${held.toLocaleString("en-US")} agencies held against a denominator of ${denominator.value.toLocaleString("en-US")} (${denominator.source}, ${denominator.year}). The held count exceeds the dated estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage is reported.`,
   unblockedBy:
     "Reconcile the held agencies against the denominator's universe — CSLLEA excludes agencies with less than one full-time-equivalent sworn officer, and counts tribal and special-jurisdiction agencies as separate types.",
 });

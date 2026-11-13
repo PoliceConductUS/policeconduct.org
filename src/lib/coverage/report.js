@@ -14,7 +14,7 @@
  *     records, which enumerate employers of licensed officers rather than
  *     agencies of a given type, so for most of the corpus we still do not know.
  *     Where a count fits inside a denominator but its universe is unverified we
- *     report a ceiling ("no more than N%"), which cannot overstate what we have.
+ *     report a ceiling ("no more than N%"), which may exceed achieved coverage.
  *
  *     INS-79 changed this for part of the corpus: a state whose every agency
  *     carries a type taken from a source (`agency-types.js`) gets a numerator
@@ -23,9 +23,9 @@
  *     threshold is strict — one unclassified agency in a state and the whole
  *     state goes back to a ceiling.
  *
- *   - Where we hold more agencies than the denominator counts, that is a
- *     universe mismatch and it is reported as one. It is never coverage of more
- *     than 100%, and it is never quietly clamped.
+ *   - Where we hold more agencies than the denominator counts, report the
+ *     excess without assuming its cause. It is never coverage of more than
+ *     100%, and it is never quietly clamped.
  *
  *   - A state we hold nothing in is a finding with a name, not a 0% row to be
  *     averaged into a national figure.
@@ -65,7 +65,7 @@ const numeratorUniverseGap = ({ unclassifiedHeld, unclassifiedStates }) => {
     detail:
       `${unclassifiedHeld.toLocaleString("en-US")} held agencies, in ${where}, carry no sourced agency type, so they cannot be placed in the BJS universes the denominators are drawn from. ` +
       "These states' sources enumerate entities that employ licensed peace officers without saying what kind of entity each one is: MN POST's productions key agencies by name only and publish no type column, and Oregon's DPSST loader emits an agency's name, address, contact and status but no type field. " +
-      "No percentage is reported for these jurisdictions or for the national total; ceilings are reported instead. States whose agencies all carry a sourced type are not affected and do report achieved coverage.",
+      "No percentage is reported for these jurisdictions or for the national total; ceilings are reported instead. Sourced types support classification, but distinct-agency matching and denominator eligibility still require verification before a comparison can be treated as achieved coverage.",
     unblockedBy:
       "Obtain a per-agency type for these states — a state roster that publishes one, or an authoritative national roster with types (INS-31). Name matching is not a substitute: it was tested on INS-79 and, beyond leaving most records unclassified, an unconstrained name join silently gave 22 Minnesota and Oregon agencies a Texas classification.",
   });
@@ -176,10 +176,10 @@ const readState = ({ code, held, universe, asOfYear, classified = null }) => {
         scope: code,
         denominatorId: denominator.id,
         detail: isClassified
-          ? `${numerator.toLocaleString("en-US")} of the ${held.toLocaleString("en-US")} agencies held in ${code} carry a sourced type placing them in this universe, against ${formatDenominator(denominator, { audience: AUDIENCE.INTERNAL })}. The numerator is now the right population and still exceeds the denominator, so this is no longer an unexplained universe mismatch — it is a residual difference between our count and a 2018 enumeration, and no percentage is reported.`
-          : `${held.toLocaleString("en-US")} agencies held in ${code} against ${formatDenominator(denominator, { audience: AUDIENCE.INTERNAL })}. Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage and no ceiling is reported.`,
+          ? `${numerator.toLocaleString("en-US")} of the ${held.toLocaleString("en-US")} agencies held in ${code} carry a sourced type used for this comparison, against ${formatDenominator(denominator, { audience: AUDIENCE.INTERNAL })}. The classified count still exceeds the 2018 estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage is reported.`
+          : `${held.toLocaleString("en-US")} agencies held in ${code} against ${formatDenominator(denominator, { audience: AUDIENCE.INTERNAL })}. The held count exceeds the dated estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage or ceiling is reported.`,
         unblockedBy: isClassified
-          ? "Two untested causes remain, both on the denominator's side: BJS excludes agencies employing less than one full-time-equivalent sworn officer, and the enumeration is from 2018. Neither can be applied to our numerator without a sworn-headcount field BJS would recognise."
+          ? "Reconcile agency identities and eligibility against the 2018 BJS universe, including its full-time-equivalent sworn-officer requirement. Sourced types alone do not establish eligibility, and the required sworn-headcount data is missing."
           : "Reconcile the held records against the denominator's universe. Candidate explanations, none yet tested: duplicate agency rows, sub-units such as constable precincts counted as separate agencies, entities that employ licensed officers but are not law enforcement agencies, and the BJS exclusion of agencies with less than one full-time-equivalent sworn officer.",
       }),
     };
@@ -417,7 +417,7 @@ const GAP_LABEL = Object.freeze({
   [GAP_KIND.NO_USABLE_SOURCE]: "no usable source",
   [GAP_KIND.DENOMINATOR_STALE]: "denominator stale",
   [GAP_KIND.CITATION_UNCONFIRMED]: "citation unconfirmed",
-  [GAP_KIND.HELD_EXCEEDS_DENOMINATOR]: "universe mismatch",
+  [GAP_KIND.HELD_EXCEEDS_DENOMINATOR]: "held count exceeds estimate",
   [GAP_KIND.NO_RECORDS_HELD]: "nothing held",
   [GAP_KIND.NUMERATOR_UNIVERSE_UNVERIFIED]: "numerator universe unverified",
   [GAP_KIND.CORPUS_COUNT_DISPUTED]: "corpus count disputed",
@@ -533,7 +533,7 @@ export const renderCoverageReportMarkdown = (report) => {
   }
   if (!report.national.primary.ceiling) {
     push(
-      "- National ceiling against the primary denominator: **not reportable** — see the universe mismatch gaps.",
+      "- National ceiling against the primary denominator: **not reportable** — see the held-count excess gaps.",
     );
   }
   push();
@@ -541,10 +541,8 @@ export const renderCoverageReportMarkdown = (report) => {
     push(
       `Read the national ceilings with this in mind: in ${report.summary.universeMismatches} of the` +
         ` ${report.summary.jurisdictionsWithRecords} jurisdictions we hold records in, we hold more` +
-        " agencies than that state's own denominator counts. Those records are inside the national" +
-        " numerator, so the ceilings above are inflated by an unknown number of rows that are not in" +
-        " the denominator's universe at all. The ceilings are still ceilings — they cannot overstate" +
-        " what we have achieved — but they are looser than they look.",
+        " agencies than the dated state estimate. The reason for each excess is unresolved." +
+        " The national ceilings may exceed achieved coverage; they are upper bounds, not measured coverage.",
     );
     push();
   }
@@ -576,7 +574,7 @@ export const renderCoverageReportMarkdown = (report) => {
     push();
     push(
       "The three leftmost count columns sum to the general-purpose numerator. `constable /" +
-        " marshal` and `special jurisdiction` are law enforcement agencies that BJS counts in" +
+        " marshal`, `special jurisdiction`, and `tribal` are law enforcement agencies that BJS counts in" +
         " the all-agency total but not in general-purpose. `outside the census` are entities" +
         " that employ licensed peace officers — prosecutors' investigators, probation and" +
         " parole, courts, jails, 911 centres — which the BJS census does not enumerate at all," +
@@ -625,8 +623,9 @@ export const renderCoverageReportMarkdown = (report) => {
   push(
     "`held` is agency records in the measured store. The two denominator columns are that" +
       " state's own published counts — never a share of the national figure. A reading of" +
-      " **`= N%`** is achieved coverage: every agency held in that state carries a sourced type," +
-      " so the numerator counts only agencies in that denominator's universe. A reading of" +
+      " **`= N%`** is a sourced-type comparison. Classification alone does not establish" +
+      " distinct-agency identity or denominator eligibility; those checks are needed before" +
+      " interpreting the comparison as achieved coverage. A reading of" +
       " `≤ N%` is a ceiling, not a measurement. Anything else is the name of a gap.",
   );
   push();
@@ -634,8 +633,8 @@ export const renderCoverageReportMarkdown = (report) => {
     "A high ceiling is not near-complete coverage. `≤ 94%` means only that we hold enough" +
       " records that coverage *could* be as high as 94% if every one of them were in that" +
       " universe and matched a distinct agency in it — neither of which is established. Where" +
-      " the same state reads `universe mismatch` in the other column, we already know the count" +
-      " includes records outside at least one of these universes.",
+      " the same state reads `held count exceeds estimate` in the other column, the reason" +
+      " for that excess still needs to be established.",
   );
   push();
   push(
@@ -667,14 +666,15 @@ export const renderCoverageReportMarkdown = (report) => {
   push();
   push(
     "Each of these is a complete gap and a direct input to acquisition work. Whether a" +
-      " lawfully ingestible source exists for each is not yet known; that is INS-12.",
+      " lawfully ingestible source exists for each is not yet known; that is INS-12." +
+      ` The counts below are ${report.national.secondary.denominator.year} BJS all-agency estimates.`,
   );
   push();
   push(
     nothingHeld
       .map(
         (state) =>
-          `${state.code} (${num(state.allAgency.denominator?.value)} agencies exist)`,
+          `${state.code} (${num(state.allAgency.denominator?.value)})`,
       )
       .join(", ") || "None.",
   );

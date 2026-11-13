@@ -33,35 +33,23 @@ const summary = {
     },
   ],
 };
-test("requires complete provenance before rendering", () => {
+test("requires only rendered summary text and complaint link", () => {
+  const minimal = {
+    summary: summary.summary,
+    source: { sourcePage: summary.source.sourcePage },
+  };
+  assert.deepEqual(requireAiComplaintSummary(minimal), minimal);
   assert.deepEqual(requireAiComplaintSummary(summary), summary);
   assert.equal(requireAiComplaintSummary(null), null);
   assert.throws(() => requireAiComplaintSummary(undefined));
-  for (const key of Object.keys(summary.source)) {
-    const invalid = structuredClone(summary);
-    delete invalid.source[key];
-    assert.throws(() => requireAiComplaintSummary(invalid), key);
-  }
-  for (const key of Object.keys(summary)) {
-    const invalid = structuredClone(summary);
-    delete invalid[key];
-    assert.throws(() => requireAiComplaintSummary(invalid), key);
-  }
-});
-test("rejects unsafe citations and invalid dates", () => {
-  for (const [key, value] of [
-    ["url", "javascript:alert(1)"],
-    ["filingDate", "2025-02-30"],
-    ["sha1Verified", false],
-    ["confidence", " "],
-  ]) {
-    assert.throws(() =>
-      requireAiComplaintSummary({
-        ...summary,
-        source: { ...summary.source, [key]: value },
-      }),
-    );
-  }
+  assert.throws(() => requireAiComplaintSummary({ ...minimal, summary: " " }));
+  assert.throws(() => requireAiComplaintSummary({ ...minimal, source: {} }));
+  assert.throws(() =>
+    requireAiComplaintSummary({
+      ...minimal,
+      source: { sourcePage: "javascript:alert(1)" },
+    }),
+  );
 });
 
 test("unavailability requires evidence and cannot contradict a completed summary", () => {

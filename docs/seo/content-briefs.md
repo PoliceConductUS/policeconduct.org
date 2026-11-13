@@ -2,9 +2,7 @@
 
 **Created:** 2026-08-08
 **Context:** Output of the SEO audit (`docs/seo/audit-2026-08.md`). These briefs target the
-biggest content gap identified: informational / "how-do-I" demand that competitors
-(NACDL, MuckRock, WNYC) currently own, plus the state-level and civil-settlement angles
-where PoliceConduct.org's nationwide data is a structural advantage.
+informational / "how-do-I" queries, plus state-level records and civil-settlement topics supported by the site's linked records. Rankings and comparative geographic completeness were not measured.
 
 **How to use:** Each brief is self-contained — hand one to a writer. Difficulty and
 volume are directional (no keyword tool connected). Every article should emit
@@ -17,8 +15,7 @@ is the public record of **police conduct — all of it: good, bad, and everywher
 between** (harm and concern _and_ professionalism, help, trust, and commendations). That
 mission must govern our own titles, H1s, meta descriptions, and body voice: never brand
 the site or a page as misconduct-only. The word "misconduct" still appears below in
-**keyword** fields — that's demand-side (it is how the public searches, and we legitimately
-rank because misconduct records are _part of_ the full conduct record). Keep the search
+**keyword** fields as a search target because misconduct records are _part of_ the full conduct record. Keep the search
 term in targeting; keep it out of our self-description.
 
 ---
@@ -32,11 +29,11 @@ term in targeting; keep it out of our self-description.
 > page that's already there.
 
 - **Type:** Editorial + schema enrichment of the existing state index template (`CivicIndexPage`), one lede per state/territory + DC
-- **Primary keyword:** `police records [state]`, `[state] police disciplinary records` — plus the search-demand term `police misconduct records [state]` (we rank because those records are part of the full conduct record)
+- **Primary keyword:** `police records [state]`, `[state] police disciplinary records` — plus the search-demand term `police misconduct records [state]` (those records are part of the full conduct record)
 - **Secondary:** `[state] POST decertification`, `is police misconduct public in [state]`, `[state] police officer license lookup`, `[state] police complaints`
 - **Intent:** Commercial + informational
 - **Priority:** High · **Effort:** Moderate — the page, route, and schema already exist; this is an editorial lede + optional FAQ block, **not** a new build
-- **Why it matters:** The state index already ranks structurally; a short state-specific editorial lede (disclosure law, how to read the record, the all-conduct scope) captures the informational queries WNYC/MuckRock own — with no new URL and no cannibalization.
+- **Why it matters:** The existing state index provides a landing page for a short state-specific editorial lede about disclosure law, how to read the record, and the all-conduct scope. This targets informational queries without adding a competing URL.
 - **Target page:** existing state index `/[state]/` (e.g. `/tx/`). Keep the URL as-is.
 - **Title tag (≤60):** keep the existing conduct-neutral pattern — `[State] Civic Index | PoliceConduct.org` (optionally broaden to `[State] Police Records: Agencies, Personnel & Cases | PoliceConduct.org`). **Do not** retitle to "misconduct."
 - **Meta description (≤160):** refine the existing neutral one, e.g. `The public record of police conduct in [State] — agencies, personnel, experience reports, and civil cases. Good, bad, and everywhere in between.`
@@ -74,7 +71,7 @@ term in targeting; keep it out of our self-description.
 - **Internal links:** `/personnel/`, `/find-records/`, civil-cases index, `/data-and-methods/`
 - **Schema:** `Article` (+ consider `HowTo` for the step list) + `BreadcrumbList`
 - **CTA:** "Search personnel records" → `/personnel/`
-- **GEO note:** Structure the steps as a clean ordered list; AI engines extract these into answers verbatim.
+- **GEO note:** Use an ordered list so the steps are easy to read and quote.
 
 ---
 
@@ -123,7 +120,7 @@ term in targeting; keep it out of our self-description.
 - **Secondary:** `[agency] civil lawsuits`, `how much [city] pays police lawsuits`
 - **Intent:** Commercial / news
 - **Priority:** High · **Effort:** Moderate
-- **Why it matters:** The **single strongest differentiator** — no competitor links civil litigation → agency → officer the way you can. High-newsworthiness, link-attracting, and underserved.
+- **Why it matters:** Links between civil cases, agencies, and personnel are a potential differentiator and provide a source-backed basis for an editorial summary.
 - **Recommended URL:** existing agency `.../liability-costs/` or `.../civil-cases/` pages, enriched with an editorial summary block
 - **Title tag (≤60):** `[Agency] Lawsuit Settlements & Civil Cases | PoliceConduct.org`
 - **Meta description (≤160):** `Civil lawsuits and settlements involving [Agency] — cause numbers, courts, filing dates, and outcomes, linked to the officers and reports on record.`

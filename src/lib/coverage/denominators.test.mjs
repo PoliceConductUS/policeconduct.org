@@ -292,7 +292,8 @@ test("holding more agencies than the denominator counts is a named gap, not 100%
 
   assert.equal(wyoming.coverage, null);
   assert.equal(wyoming.gap.kind, GAP_KIND.HELD_EXCEEDS_DENOMINATOR);
-  assert.match(wyoming.gap.detail, /universe mismatch/);
+  assert.match(wyoming.gap.detail, /exceeds the dated estimate/);
+  assert.match(wyoming.gap.detail, /remain unresolved/);
   // The gap says "not coverage above 100%" in prose; what must not exist is a
   // computed percentage.
   assert.equal(Object.hasOwn(wyoming, "percent"), false);

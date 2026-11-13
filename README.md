@@ -170,9 +170,10 @@ the final PR head, including documentation-only PRs.
 | Coverage tests           | `test:coverage`: coverage calculations                                     |
 | Browser tests            | `test:e2e`: all Playwright suites, including built-index search            |
 
-- [ ] Resolve every error and warning on the final PR head. Fix the ones the
-      change causes. When a finding predates the change, stop and report it;
-      fix it in the same change only after the user approves. An exit-zero
+- [ ] Resolve every error and warning on the final PR head immediately,
+      including pre-existing findings. Preserve unrelated work in progress;
+      ask for decisions on ambiguous requirements, architectural compromises,
+      and risky data changes. An exit-zero
       run with unresolved warnings is not merge-ready. Inspect each diagnostic
       hint and fix it or document a specific technical justification. Labels
       such as advisory, harmless, baseline, and out of scope do not waive review.

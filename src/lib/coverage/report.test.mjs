@@ -91,7 +91,7 @@ test("reports no achieved coverage percentage anywhere", async () => {
   }
 });
 
-test("holding more than the denominator is a universe mismatch, not 100%+ coverage", async () => {
+test("holding more than the denominator reports an unexplained excess without coverage", async () => {
   const report = await build({ stateRows: [{ code: "TX", held: 2883 }] });
   const texas = stateIn(report, "TX");
 
@@ -103,9 +103,10 @@ test("holding more than the denominator is a universe mismatch, not 100%+ covera
     texas.generalPurpose.gap.kind,
     GAP_KIND.HELD_EXCEEDS_DENOMINATOR,
   );
-  assert.match(texas.allAgency.gap.detail, /universe mismatch/);
+  assert.match(texas.allAgency.gap.detail, /exceeds the dated estimate/);
+  assert.match(texas.allAgency.gap.detail, /remain unresolved/);
   // 2,883 / 1,935 is 149%. No computed ratio may appear — the only percentage
-  // allowed in this string is the literal "above 100%" that denies one.
+  // is reported for an unresolved excess.
   assert.doesNotMatch(texas.allAgency.gap.detail, /\b(?!100\b)\d+(\.\d+)?%/);
   assert.doesNotMatch(texas.allAgency.gap.detail, /149/);
 });
@@ -405,7 +406,7 @@ test("the rendered report names the store, the fingerprint and both denominators
   // Gaps are rendered with their remedy, so the report directs work.
   assert.match(markdown, /Unblocked by:/);
   assert.match(markdown, /Nothing held — \d+ jurisdictions/);
-  assert.match(markdown, /universe mismatch/);
+  assert.match(markdown, /held count exceeds estimate/);
   // Conflicts are carried, not smoothed over.
   assert.match(markdown, /local_police_count_lear_vs_csllea/);
   assert.match(

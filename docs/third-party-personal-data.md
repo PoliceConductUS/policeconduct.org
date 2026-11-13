@@ -26,10 +26,12 @@ by construction.
   diff against its merge base. **This is the real gate.** It is required to
   pass before merge and cannot be skipped from a developer's machine.
 
-The scan covers the **whole content of every file the change touches**, not
-just the added lines. A pre-existing finding in a file you are already editing
-is yours to clean. "It was already there" is how the tree drifted dirty in the
-first place.
+The scan applies its path, filename, and content-pattern checks to every file
+the change touches, not just added lines. Content is decoded as UTF-8 without
+size or NUL-byte exclusions; compressed or encoded content is not unpacked.
+Fix detected problems immediately, including pre-existing findings. If private
+information may already have been pushed, stop and escalate before deleting or
+rewriting it, as required by [AGENTS.md](../AGENTS.md#this-repository-is-public).
 
 ### If the gate fires on something legitimate
 
@@ -78,11 +80,12 @@ catchable, which is why this document exists and why it is linked from
 
 ### Where third-party personal information goes instead
 
-- **Volunteer, tipster, and correspondent details:** the intake database,
-  behind the personnel publication gate. Not the repo.
-- **Public submissions through the site:** the existing forms API
-  (`infrastructure/bootstrap-policeconduct/lambdas/forms-api`), which writes to
-  the submissions account. Not the repo.
+- **Volunteer, tipster, and correspondent details:** keep them in the private
+  system where they were collected. Not the repo.
+- **Website submissions, including contact and volunteer forms:** the existing
+  [forms API](../infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.mjs)
+  stores them in private S3 submissions. Not the public personnel database or
+  the repo.
 - **Records-request correspondence with a named private individual:** the
   records workspace outside this checkout. Reference it by request identifier,
   not by pasting the correspondence.
@@ -92,8 +95,7 @@ catchable, which is why this document exists and why it is linked from
   which is deliberately public — that is a publication decision, reviewed as
   one, not a convenient place to park a file.
 
-When you are unsure whether something counts as third-party personal
-information, it does. Route it to the database and ask.
+Keep third-party personal information in the existing private collection system and out of this repository.
 
 ## Public-official contact data is different
 

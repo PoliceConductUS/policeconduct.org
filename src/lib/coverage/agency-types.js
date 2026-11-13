@@ -46,9 +46,9 @@
  * arithmetic in the report can be checked against table 1 of the publication
  * rather than against our prose.
  *
- * CSLLEA 2008's published breakdown (carried in denominators.js) is the
- * clearest statement of the structure: local police + sheriffs' offices +
- * primary state + special jurisdiction + constable/marshal = all agencies.
+ * CSLLEA 2018's published breakdown (carried in denominators.js) is:
+ * local police + sheriffs' offices + primary state + special jurisdiction +
+ * constable/marshal + tribal = all agencies.
  * "General-purpose" is the first three. Constable/marshal is NOT general
  * purpose, which matters enormously in Texas, where constables outnumber
  * sheriffs almost three to one.
@@ -100,6 +100,7 @@ export const ALL_AGENCY_CATEGORIES = Object.freeze([
   ...GENERAL_PURPOSE_CATEGORIES,
   BJS_CATEGORY.CONSTABLE_MARSHAL,
   BJS_CATEGORY.SPECIAL_JURISDICTION,
+  BJS_CATEGORY.TRIBAL,
 ]);
 
 export class AgencyTypeProvenanceError extends Error {
