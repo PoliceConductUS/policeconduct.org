@@ -1,0 +1,9 @@
+{
+  "regionalAdsPersonalization": {
+    "allowedRegions": 307,
+    "totalRegions": 307,
+    "observedAt": "2026-11-14T04:35:36.448Z",
+    "evidence": "Property owner report on INS-121; not independently read through the API",
+    "management": "Manual Google Analytics Admin setting; excluded from CLI push"
+  }
+}

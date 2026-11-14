@@ -537,3 +537,7 @@ https://www.minneapolismn.gov/government/government-data/datasource/officer-payo
 https://www.policefilesny.com
 https://www.themarshallproject.org/records/1712-police-settlements
 https://www.thepolicetransparencyproject.com
+
+## Analytics configuration sync
+
+Use `npm run analytics:pull`, `npm run analytics:compare`, and `npm run analytics:push` to sync this site’s versioned GA settings. See [configuration and authentication](docs/analytics-config.md).

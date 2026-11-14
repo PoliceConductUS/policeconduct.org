@@ -464,6 +464,10 @@ test("CLI compare returns 0 for match, 1 for drift, apply 0 only after verificat
       name: `${kind === "dataRetentionSettings" ? parent : streamParent}/${kind}`,
       searchQueryParameter: "q",
     };
+  state.googleSignalsSettings = {
+    ...config.googleSignalsSettings,
+    name: `${parent}/googleSignalsSettings`,
+  };
   const mock = provider(state);
   const output = [];
   const options = {
@@ -473,11 +477,11 @@ test("CLI compare returns 0 for match, 1 for drift, apply 0 only after verificat
     stderr: (s) => output.push(s),
   };
   assert.equal(await runCli(["compare"], options), 0);
-  state.customDimensions[0].displayName = "Drift";
+  state.googleSignalsSettings.state = "GOOGLE_SIGNALS_ENABLED";
   assert.equal(await runCli(["compare"], options), 1);
   assert.equal(await runCli(["apply"], options), 0);
   assert.equal(await runCli(["compare"], options), 0);
-  state.customDimensions[0].displayName = "Drift again";
+  state.googleSignalsSettings.state = "GOOGLE_SIGNALS_ENABLED";
   options.fetchImpl = provider(state, { ignoreWrites: true }).fetchImpl;
   assert.equal(await runCli(["apply"], options), 2);
   options.fetchImpl = async () => {
@@ -547,4 +551,80 @@ test("retention updates carry required current fields without managing unlisted 
     eventDataRetention: "FOURTEEN_MONTHS",
     userDataRetention: "FOURTEEN_MONTHS",
   });
+});
+
+test("pull imports paginated resources, strips output fields and round trips without writes", async () => {
+  const mock = provider(undefined, { paginate: true });
+  const config = configuration();
+  config.googleSignalsSettings = { state: "GOOGLE_SIGNALS_DISABLED" };
+  mock.state.googleSignalsSettings = {
+    name: `${property}/googleSignalsSettings`,
+    state: "GOOGLE_SIGNALS_ENABLED",
+    consent: "GOOGLE_SIGNALS_CONSENT_CONSENTED",
+  };
+  const result = await reconcileAnalytics({
+    config,
+    token,
+    fetchImpl: mock.fetchImpl,
+    pull: true,
+  });
+  assert.equal(result.config.keyEvents.length, 2);
+  assert.equal(
+    result.config.googleSignalsSettings.state,
+    "GOOGLE_SIGNALS_ENABLED",
+  );
+  assert.equal(result.config.googleSignalsSettings.consent, undefined);
+  assert.equal(result.config.customDimensions[0].name, undefined);
+  assert.deepEqual((await reconcile(result.config, mock, true)).changes, []);
+  assert.ok(mock.calls.every((call) => call.method === "GET"));
+});
+
+test("Google signals push changes only state and verifies readback", async () => {
+  const mock = provider();
+  const config = configuration();
+  config.googleSignalsSettings = { state: "GOOGLE_SIGNALS_DISABLED" };
+  mock.state.googleSignalsSettings = {
+    name: `${property}/googleSignalsSettings`,
+    state: "GOOGLE_SIGNALS_ENABLED",
+    consent: "GOOGLE_SIGNALS_CONSENT_CONSENTED",
+  };
+  await reconcile(config, mock, true);
+  const writes = mock.calls.filter((call) => call.method !== "GET");
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].mask, "state");
+  assert.equal(
+    mock.state.googleSignalsSettings.consent,
+    "GOOGLE_SIGNALS_CONSENT_CONSENTED",
+  );
+  assert.deepEqual((await reconcile(config, mock, true)).changes, []);
+});
+
+test("CLI pull saves only complete validated reads and preserves local file on failure", async () => {
+  const { mkdtemp, writeFile, readFile, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const directory = await mkdtemp(join(tmpdir(), "analytics-sync-"));
+  const configPath = join(directory, "analytics.json");
+  try {
+    await writeFile(configPath, JSON.stringify(configuration()));
+    const mock = provider();
+    const options = {
+      configPath,
+      env: { GOOGLE_ANALYTICS_ACCESS_TOKEN: token },
+      fetchImpl: mock.fetchImpl,
+      stdout: () => {},
+      stderr: () => {},
+    };
+    assert.equal(await runCli(["pull"], options), 0);
+    assert.equal(await runCli(["compare"], options), 0);
+    assert.equal(await runCli(["push"], options), 0);
+    const saved = await readFile(configPath, "utf8");
+    options.fetchImpl = async () =>
+      Response.json({ error: "Denied" }, { status: 403 });
+    assert.equal(await runCli(["pull"], options), 2);
+    assert.equal(await readFile(configPath, "utf8"), saved);
+    assert.ok(mock.calls.every((call) => call.method === "GET"));
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });

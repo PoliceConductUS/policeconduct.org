@@ -60,7 +60,9 @@
     "test:annotations": "node --test tests/unit/data-annotations.test.mjs",
     "analytics:compare": "node scripts/analytics-config.mjs compare",
     "analytics:apply": "node scripts/analytics-config.mjs apply",
-    "test:analytics-config": "node --test scripts/analytics-config.test.mjs"
+    "test:analytics-config": "node --test scripts/analytics-config.test.mjs",
+    "analytics:pull": "node scripts/analytics-config.mjs pull",
+    "analytics:push": "node scripts/analytics-config.mjs push"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
