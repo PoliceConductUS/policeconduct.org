@@ -1,5 +1,7 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
+import CoverageLinks from "#src/components/CoverageLinks.astro";
+import { loadHomepageNews } from "#src/lib/data/coverage.js";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import { loadLocationBuildPayloads } from "#src/lib/data/build-payloads.js";
@@ -18,9 +20,10 @@ const pageDescription =
   "A civic record for documenting how policing is experienced in real life, from harm and concern to professionalism, help, trust, and accountability.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const [federalAgencies, locationPayloads] = await Promise.all([
+const [federalAgencies, locationPayloads, homepageNews] = await Promise.all([
   loadFederalAgencySummaries(),
   loadLocationBuildPayloads(),
+  loadHomepageNews(),
 ]);
 const stateLocationPayloadsByCategory = new Map(
   locationPayloads
@@ -147,6 +150,9 @@ const structuredData = [
           </div>
         </div>
       </div>
+    </div>
+    <div class="container">
+      <CoverageLinks links={homepageNews} />
     </div>
     <section class="py-vh-3 border-top border-dark" id="introduction">
       <div class="container">

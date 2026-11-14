@@ -347,6 +347,7 @@ warn_if_sentry_tf_var_missing
 preflight_resend_requirements
 preflight_account_check
 prepare_forms_lambda_package
+npm --prefix "${ROOT_DIR}/lambdas/release-api" ci --omit=dev --no-audit --no-fund
 case "${PHASE}" in
   foundation)
     echo "Running bootstrap apply phase: foundation"

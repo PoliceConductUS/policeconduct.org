@@ -58,24 +58,38 @@ async function handler(event) {
     return redirect("https://" + canonicalHost + uri, request.querystring);
   }
 
-  let namespace;
-  let prefix = "";
-  if (host === apexHost || host === canonicalHost) {
-    namespace = "prod";
-  } else {
-    const labels = host.split(".");
-    if (
-      labels.slice(2).join(".") !== apexHost ||
-      (labels[1] !== "preview" && labels[1] !== "builds") ||
-      !/^[a-z0-9-]+$/.test(labels[0])
-    ) {
-      return request;
-    }
-    namespace = labels[0];
-    prefix = "/" + namespace;
+  const missing = { statusCode: 404, statusDescription: "Not Found" };
+  let pathForValidation;
+  try {
+    pathForValidation = decodeURIComponent(uri);
+  } catch {
+    return missing;
+  }
+  if (
+    /^\/(builds|data|evidence|news-discovery)(\/|$)/.test(pathForValidation) ||
+    /(?:^|\/)\.{1,2}(?:\/|$)|[\\%]/.test(pathForValidation)
+  ) {
+    return missing;
   }
 
-  const target = await mappedTarget(namespace, uri);
+  let releaseId;
+  if (host === apexHost || host === canonicalHost) {
+    releaseId = await kvs.get("current");
+  } else {
+    const labels = host.split(".");
+    if (labels.slice(2).join(".") !== apexHost) return missing;
+    if (labels[1] === "preview" && /^pr-[1-9]\d*$/.test(labels[0])) {
+      const pointer = "current:" + labels[0];
+      if (!(await kvs.exists(pointer))) return missing;
+      releaseId = await kvs.get(pointer);
+    } else if (labels[1] === "builds" && /^[a-z0-9-]+$/.test(labels[0])) {
+      releaseId = labels[0];
+    } else {
+      return missing;
+    }
+  }
+
+  const target = await mappedTarget(releaseId, uri);
   if (target !== null) {
     return redirect(target, request.querystring);
   }
@@ -86,7 +100,10 @@ async function handler(event) {
   } else if (path.substring(path.lastIndexOf("/") + 1).indexOf(".") === -1) {
     path += "/index.html";
   }
-  request.uri = prefix + path;
+  const hasOverride =
+    path.endsWith(".html") && (await kvs.exists("o:" + releaseId + ":" + path));
+  request.uri =
+    "/builds/" + releaseId + (hasOverride ? "/override" : "/static") + path;
   return request;
 }
 

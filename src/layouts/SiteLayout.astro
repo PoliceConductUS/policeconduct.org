@@ -1,4 +1,5 @@
 ---
+import { releaseId } from "#src/lib/release-id.js";
 import "#src/styles/theme.css";
 import { execFileSync } from "node:child_process";
 import AnalyticsConsent from "#src/components/AnalyticsConsent.astro";
@@ -70,7 +71,7 @@ const serializeStructuredData = (value: unknown) =>
 ---
 
 <!doctype html>
-<html class="h-100" lang="en">
+<html class="h-100" lang="en" data-release-id={releaseId}>
   <head>
     <meta charset="utf-8" />
     <meta

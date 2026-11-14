@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { RecaptchaEnterpriseServiceClient } from "@google-cloud/recaptcha-enterprise";
 import { S3Client } from "@aws-sdk/client-s3";
 import { SNSClient } from "@aws-sdk/client-sns";
 
@@ -306,6 +307,110 @@ test("personnel suggestions and edits reach normal reCAPTCHA validation", async 
     assert.equal(response.statusCode, 400);
     assert.match(JSON.parse(response.body).error, /recaptcha/i);
   }
+});
+
+test("submissions retain the known release of the open form in its own environment", async (t) => {
+  const oldProduction = "prod-11111111-1111-4111-8111-111111111111";
+  const newProduction = "prod-22222222-2222-4222-8222-222222222222";
+  const sameCommitPreview = "pr-42-33333333-3333-4333-8333-333333333333";
+  const releases = new Map([
+    ["prod-roster", [oldProduction, newProduction]],
+    ["preview-roster", [sameCommitPreview]],
+  ]);
+  const writes = [];
+  t.mock.method(S3Client.prototype, "send", async (command) => {
+    const { Bucket, Key, Body } = command.input;
+    if (command.constructor.name === "PutObjectCommand") {
+      writes.push(JSON.parse(Body));
+      return {};
+    }
+    assert.equal(command.constructor.name, "HeadObjectCommand");
+    if (
+      !releases
+        .get(Bucket)
+        ?.some((id) => Key === `builds/${id}/data/dynamic.json`)
+    ) {
+      throw Object.assign(new Error("Not found"), {
+        $metadata: { httpStatusCode: 404 },
+      });
+    }
+    return {};
+  });
+  t.mock.method(
+    RecaptchaEnterpriseServiceClient.prototype,
+    "createAssessment",
+    async () => [
+      {
+        tokenProperties: { valid: true, action: "contactSubmit" },
+        riskAnalysis: { score: 0.9 },
+      },
+    ],
+  );
+  const previous = {};
+  const config = {
+    RECAPTCHA_SITE_KEY: "fixture",
+    RECAPTCHA_PROJECT_ID: "test",
+    RECAPTCHA_SERVICE_ACCOUNT_EMAIL: "test@example.org",
+    RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME:
+      "projects/1/locations/global/workloadIdentityPools/test/providers/test",
+    RECAPTCHA_WIF_AUDIENCE:
+      "//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/test/providers/test",
+    RELEASE_DATA_BUCKET: "prod-roster",
+  };
+  for (const [key, value] of Object.entries(config)) {
+    previous[key] = process.env[key];
+    process.env[key] = value;
+  }
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  for (const [bucket, origin, releaseId, expected] of [
+    ["prod-roster", "https://www.policeconduct.org", oldProduction, 200],
+    [
+      "preview-roster",
+      "https://pr-42.preview.policeconduct.org",
+      sameCommitPreview,
+      200,
+    ],
+    ["prod-roster", "https://www.policeconduct.org", sameCommitPreview, 400],
+    [
+      "preview-roster",
+      "https://pr-42.preview.policeconduct.org",
+      oldProduction,
+      400,
+    ],
+    ["prod-roster", "https://www.policeconduct.org", undefined, 400],
+    ["prod-roster", "https://www.policeconduct.org", "../bad", 400],
+    [
+      "prod-roster",
+      "https://www.policeconduct.org",
+      "prod-33333333-3333-4333-8333-333333333333",
+      400,
+    ],
+  ]) {
+    process.env.RELEASE_DATA_BUCKET = bucket;
+    const response = await handler(
+      apiEvent({
+        method: "POST",
+        path: "/api/forms/submit",
+        origin,
+        body: {
+          formName: "contact",
+          releaseId,
+          recaptchaToken: "test-token",
+          data: {},
+        },
+      }),
+    );
+    assert.equal(response.statusCode, expected, response.body);
+  }
+  assert.deepEqual(
+    writes.map(({ payload }) => payload.releaseId),
+    [oldProduction, sameCommitPreview],
+  );
 });
 
 // --- INS-35: submission notification ----------------------------------------

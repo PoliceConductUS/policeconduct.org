@@ -346,7 +346,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "preview" {
     id     = "expire-noncurrent-preview-versions"
     status = "Enabled"
 
-    # Everything in this bucket is preview build output under pr-<N>/.
+    # Apply to every preview release.
     filter {}
 
     noncurrent_version_expiration {
@@ -873,6 +873,17 @@ resource "random_password" "forms_email_verification_hmac_secret" {
 
 data "aws_iam_policy_document" "forms_lambda_permissions" {
   statement {
+    sid       = "IdentifyKnownFormReleases"
+    actions   = ["s3:GetObject"]
+    resources = [for bucket in aws_s3_bucket.release_data : "${bucket.arn}/builds/*/data/dynamic.json"]
+  }
+  statement {
+    sid       = "DistinguishMissingFormReleases"
+    actions   = ["s3:ListBucket"]
+    resources = [for bucket in aws_s3_bucket.release_data : bucket.arn]
+  }
+
+  statement {
     sid    = "CloudWatchLogsWrite"
     effect = "Allow"
     actions = [
@@ -1131,6 +1142,7 @@ resource "aws_lambda_function" "forms_api_prod" {
 
   environment {
     variables = {
+      RELEASE_DATA_BUCKET                  = aws_s3_bucket.release_data["prod"].id
       DRAFTS_BUCKET                        = aws_s3_bucket.forms_drafts.id
       DRAFTS_KMS_KEY_ID                    = aws_kms_key.forms_drafts.arn
       DRAFTS_PREFIX                        = "drafts/"
@@ -1170,6 +1182,7 @@ resource "aws_lambda_function" "forms_api_preview" {
 
   environment {
     variables = {
+      RELEASE_DATA_BUCKET                  = aws_s3_bucket.release_data["preview"].id
       DRAFTS_BUCKET                        = aws_s3_bucket.forms_drafts_preview.id
       DRAFTS_KMS_KEY_ID                    = aws_kms_key.forms_drafts_preview.arn
       DRAFTS_PREFIX                        = "drafts/"
@@ -2386,7 +2399,7 @@ data "aws_iam_policy_document" "site_bucket_policy" {
     }
 
     actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.site.arn}/*"]
+    resources = ["${aws_s3_bucket.site.arn}/builds/*/static/*", "${aws_s3_bucket.site.arn}/builds/*/override/*", "${aws_s3_bucket.site.arn}/404.html"]
 
     condition {
       test     = "StringEquals"
@@ -2417,7 +2430,7 @@ data "aws_iam_policy_document" "preview_bucket_policy" {
     }
 
     actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.preview.arn}/*"]
+    resources = ["${aws_s3_bucket.preview.arn}/builds/*/static/*", "${aws_s3_bucket.preview.arn}/builds/*/override/*", "${aws_s3_bucket.preview.arn}/404.html"]
 
     condition {
       test     = "StringEquals"

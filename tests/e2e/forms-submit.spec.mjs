@@ -228,11 +228,16 @@ test.describe("form submissions", () => {
           response.request().method() === "POST"
         );
       });
-      await Promise.all([
+      const [submitted] = await Promise.all([
         submitResponsePromise,
         formLocator.locator('button[type="submit"]').press("Enter"),
       ]);
 
+      const releaseId = await page
+        .locator("html")
+        .getAttribute("data-release-id");
+      expect(releaseId).toBeTruthy();
+      expect(submitted.request().postDataJSON().releaseId).toBe(releaseId);
       await expect(page).toHaveURL(new RegExp(`${originalPathname}$`));
       const success = formLocator.locator("[data-form-submit-success]");
       await expect(success).toBeVisible();
