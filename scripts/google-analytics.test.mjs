@@ -8,10 +8,15 @@ const analytics = readFileSync(
   "utf8",
 );
 
-function loadTag() {
+const consentModule = readFileSync(
+  new URL("../src/lib/client/analytics-consent.js", import.meta.url),
+  "utf8",
+);
+function loadTag(choice) {
   const atExternalLoad = [];
   const browser = {
     URL,
+    localStorage: { getItem: () => choice },
     document: {
       title: "Public records",
       referrer: "",
@@ -29,8 +34,10 @@ function loadTag() {
   };
   browser.window = browser;
   runInNewContext(
-    analytics.replaceAll("export const ", "const ") +
-      "\ninitializeAnalytics();",
+    (consentModule + analytics.replace(/^import .*;\n/m, "")).replaceAll(
+      "export const ",
+      "const ",
+    ) + "\ninitializeAnalytics();",
     browser,
   );
   return { browser, atExternalLoad };
@@ -62,3 +69,23 @@ test("every page view opts out while retaining ordinary analytics", () => {
   browser.gtag("event", "search", { search_term: "agency" });
   assert.equal(browser.dataLayer.at(-1)[0], "event");
 });
+
+for (const [choice, expected] of [
+  [undefined, "denied"],
+  ["denied", "denied"],
+  ["granted", "granted"],
+  ["invalid", "denied"],
+]) {
+  test(`analytics storage defaults to ${expected} for saved choice ${choice}`, () => {
+    const { atExternalLoad } = loadTag(choice);
+    assert.equal(
+      atExternalLoad.length,
+      1,
+      "advanced mode loads Google even when denied",
+    );
+    const state = atExternalLoad[0].find((entry) => entry[0] === "consent")[2];
+    assert.equal(state.analytics_storage, expected);
+    for (const key of ["ad_storage", "ad_user_data", "ad_personalization"])
+      assert.equal(state[key], "denied");
+  });
+}
