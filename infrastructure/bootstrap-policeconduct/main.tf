@@ -8,7 +8,7 @@ data "external" "resend_domain" {
   program = [
     "node",
     "${path.module}/../../scripts/bootstrap-resend-domain.mjs",
-    "--apply",
+    "--read",
   ]
 
   query = {}

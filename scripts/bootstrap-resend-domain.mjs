@@ -202,18 +202,19 @@ async function ensureDomain(config) {
   };
 }
 
-async function verifyExistingDomain(config) {
+async function readExistingDomain(config) {
   const existing = await findDomainByName(config.apiKey, config.domainName);
   if (!existing?.id) {
     throw new Error(`Resend domain not found: ${config.domainName}`);
   }
   const domain = await getDomain(config.apiKey, existing.id);
-  await verifyDomain(config.apiKey, existing.id);
-  return {
-    created: false,
-    domain,
-    verificationTriggered: true,
-  };
+  return { created: false, domain, verificationTriggered: false };
+}
+
+async function verifyExistingDomain(config) {
+  const result = await readExistingDomain(config);
+  await verifyDomain(config.apiKey, result.domain.id);
+  return { ...result, verificationTriggered: true };
 }
 
 async function readJsonStdin() {
@@ -238,7 +239,7 @@ function loadConfig() {
     domainName: DOMAIN_NAME,
     openTracking: false,
     region: REGION,
-    trackingSubdomain: null,
+    trackingSubdomain: "links",
   };
 }
 
@@ -262,12 +263,13 @@ function formatTerraformResult(result) {
 }
 
 function parseMode(argv) {
-  const apply = argv.includes("--apply");
-  const verify = argv.includes("--verify");
-  if (apply === verify) {
-    throw new Error("Specify exactly one of --apply or --verify");
+  const modes = ["read", "apply", "verify"].filter((mode) =>
+    argv.includes(`--${mode}`),
+  );
+  if (modes.length !== 1) {
+    throw new Error("Specify exactly one of --read, --apply or --verify");
   }
-  return apply ? "apply" : "verify";
+  return modes[0];
 }
 
 async function main() {
@@ -278,7 +280,9 @@ async function main() {
   const result =
     mode === "apply"
       ? await ensureDomain(config)
-      : await verifyExistingDomain(config);
+      : mode === "verify"
+        ? await verifyExistingDomain(config)
+        : await readExistingDomain(config);
 
   if (stdin) {
     process.stdout.write(`${JSON.stringify(formatTerraformResult(result))}\n`);
@@ -309,6 +313,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 export const __testables = {
   buildRoute53Records,
+  ensureDomain,
+  readExistingDomain,
   findDomainByName,
   formatTerraformResult,
   loadConfig,

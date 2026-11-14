@@ -222,7 +222,19 @@ export PATH=/opt/homebrew/bin:$PATH
 bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
 ```
 
-To inspect or verify the domain manually, you can also run:
+Terraform uses `--read`: it only looks up the existing domain and DNS records.
+A missing domain fails the plan without creating anything. Planning never creates,
+updates, or triggers verification of the Resend domain.
+
+To inspect the domain manually:
+
+```bash
+source .env-policeconduct
+node scripts/bootstrap-resend-domain.mjs --read
+```
+
+Creating the domain or reconciling tracking settings is a separate, explicit
+production change. After obtaining the applicable production approval, run:
 
 ```bash
 source .env-policeconduct

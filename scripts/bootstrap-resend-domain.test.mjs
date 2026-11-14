@@ -60,7 +60,7 @@ test("loadConfig reads the api key from environment and uses fixed values", () =
     assert.equal(config.domainName, "mail.policeconduct.org");
     assert.equal(config.clickTracking, false);
     assert.equal(config.openTracking, false);
-    assert.equal(config.trackingSubdomain, null);
+    assert.equal(config.trackingSubdomain, "links");
   } finally {
     if (previousFullAccessKey === undefined) {
       delete process.env.RESEND_API_KEY_FULL_ACCESS;
@@ -120,15 +120,7 @@ test("updateDomain sends an explicit tracking-disabled payload", async () => {
   };
 
   try {
-    await __testables.updateDomain(
-      "re_test_full_access",
-      {
-        clickTracking: false,
-        openTracking: false,
-        trackingSubdomain: null,
-      },
-      "domain_123",
-    );
+    await __testables.updateDomain("re_test_full_access", "domain_123");
 
     assert.deepEqual(capturedBody, {
       clickTracking: false,
@@ -141,15 +133,22 @@ test("updateDomain sends an explicit tracking-disabled payload", async () => {
 });
 
 test("parseMode requires exactly one explicit mode", () => {
+  assert.equal(__testables.parseMode(["node", "script", "--read"]), "read");
   assert.equal(__testables.parseMode(["node", "script", "--apply"]), "apply");
   assert.equal(__testables.parseMode(["node", "script", "--verify"]), "verify");
+  for (const mode of ["--apply", "--verify"]) {
+    assert.throws(
+      () => __testables.parseMode(["node", "script", "--read", mode]),
+      /Specify exactly one/,
+    );
+  }
   assert.throws(
     () => __testables.parseMode(["node", "script"]),
-    /Specify exactly one of --apply or --verify/,
+    /Specify exactly one of --read, --apply or --verify/,
   );
   assert.throws(
     () => __testables.parseMode(["node", "script", "--apply", "--verify"]),
-    /Specify exactly one of --apply or --verify/,
+    /Specify exactly one of --read, --apply or --verify/,
   );
 });
 
@@ -214,6 +213,120 @@ test("verifyExistingDomain does not patch domain settings", async () => {
         "POST /domains/domain_123/verify",
       ],
     );
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+// Exercise the exact Terraform program through its CLI and JSON stdin contract.
+// The child has a fake key and a fetch replacement: no provider access is needed.
+test("Terraform lookup is GET-only, including missing domains and tracking drift", async () => {
+  const { readFile, mkdtemp, writeFile, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { spawnSync } = await import("node:child_process");
+  const root = new URL("../", import.meta.url);
+  const terraform = await readFile(
+    new URL("infrastructure/bootstrap-policeconduct/main.tf", root),
+    "utf8",
+  );
+  const program = terraform.match(
+    /data "external" "resend_domain"\s*\{\s*program\s*=\s*\[([\s\S]*?)\]/,
+  )?.[1];
+  assert.ok(program);
+  const args = [...program.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(args, [
+    "node",
+    "${path.module}/../../scripts/bootstrap-resend-domain.mjs",
+    "--read",
+  ]);
+  const directory = await mkdtemp(join(tmpdir(), "resend-read-test-"));
+  try {
+    const mock = join(directory, "fetch.mjs");
+    await writeFile(
+      mock,
+      `
+      import assert from 'node:assert/strict';
+      let calls = 0;
+      globalThis.fetch = async (url, init) => {
+        assert.equal(init.method, 'GET', 'Terraform must never write to Resend');
+        calls++;
+        const domain = {id: 'test-domain', name: 'mail.policeconduct.org',
+          click_tracking: true, open_tracking: true, tracking_subdomain: 'different',
+          records: [{record: 'DKIM', type: 'TXT', name: 'resend._domainkey.mail', value: 'test-value'}]};
+        const data = url.endsWith('/domains')
+          ? {data: process.env.TEST_MISSING === 'yes' ? [] : [domain]} : domain;
+        return new Response(JSON.stringify(data), {headers: {'content-type': 'application/json'}});
+      };
+      process.on('exit', () => assert.equal(calls, process.env.TEST_MISSING === 'yes' ? 1 : 2));
+    `,
+    );
+    for (const missing of [false, true]) {
+      const result = spawnSync(
+        process.execPath,
+        [
+          "--import",
+          mock,
+          new URL("scripts/bootstrap-resend-domain.mjs", root).pathname,
+          args[2],
+        ],
+        {
+          input: "{}",
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            RESEND_API_KEY_FULL_ACCESS: "test-only",
+            TEST_MISSING: missing ? "yes" : "no",
+          },
+        },
+      );
+      assert.equal(result.status, missing ? 1 : 0, result.stderr);
+      if (missing) {
+        assert.match(result.stderr, /Resend domain not found/);
+        assert.equal(result.stdout, "");
+      } else {
+        const output = JSON.parse(result.stdout);
+        assert.equal(output.created, "false");
+        assert.equal(output.click_tracking, "true");
+        assert.equal(output.tracking_subdomain, "different");
+        assert.equal(
+          JSON.parse(output.records_json)[0].values[0],
+          "test-value",
+        );
+        assert.ok(
+          Object.values(output).every((value) => typeof value === "string"),
+        );
+      }
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("apply does not repeatedly patch a domain already matching its update payload", async () => {
+  const originalFetch = global.fetch;
+  const calls = [];
+  const domain = {
+    id: "domain_123",
+    name: "mail.policeconduct.org",
+    open_tracking: false,
+    click_tracking: false,
+    tracking_subdomain: "links",
+  };
+  global.fetch = async (url, init) => {
+    calls.push(init.method);
+    assert.equal(init.method, "GET");
+    return new Response(
+      JSON.stringify(url.endsWith("/domains") ? { data: [domain] } : domain),
+      { headers: { "content-type": "application/json" } },
+    );
+  };
+  try {
+    await __testables.ensureDomain({
+      ...__testables.loadConfig(),
+      apiKey: "test-only",
+    });
+    assert.deepEqual(calls, ["GET", "GET"]);
   } finally {
     global.fetch = originalFetch;
   }
