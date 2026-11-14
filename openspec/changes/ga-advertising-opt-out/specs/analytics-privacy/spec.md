@@ -32,3 +32,10 @@ both advertising-related configuration flags SHALL remain false.
 
 - **WHEN** a saved choice changes or is cleared in another tab
 - **THEN** this tab applies the new choice, defaulting to denied when cleared
+
+#### Scenario: Save category choices
+
+- **WHEN** a visitor changes the analytics checkbox and saves preferences
+- **THEN** the corresponding analytics consent is applied and remembered
+- **AND** advertising remains denied
+- **AND** the dialog closes and focus returns to Privacy settings

@@ -20,3 +20,12 @@ deployed network verification remains required after an authorized release.
 https://developers.google.com/tag-platform/security/guides/consent
 https://developers.google.com/tag-platform/security/concepts/consent-mode
 Retrieved 2026-11-14. These describe technical behavior, not legal approval.
+
+## TrailViewr alignment
+
+Use the reference flow: an initially open settings dialog, category checkboxes,
+Allow, Save preferences, Decline, and a persistent settings control. Necessary
+settings are always on; analytics is optional; advertising remains disabled.
+Use native dialog focus handling and Escape dismissal. Preserve the existing
+consent-state implementation, local storage and cross-tab updates; apply consent
+without a full page reload. This adapts the reference to Astro without adding React.

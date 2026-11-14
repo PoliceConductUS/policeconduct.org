@@ -18,3 +18,19 @@
 - GitHub CLI reports missing capability; remote PR and CI state are unverified.
 - No merge into default branch or deployment. Real deployed cookie/network
   checks and existing release gates remain required.
+
+## TrailViewr dialog continuation
+
+- Inspected the reference consent component and utility before adapting the UI.
+- Three targeted Chromium tests pass, including checkbox Save, consent ordering,
+  cookie deletion, focus restoration and unavailable storage.
+- Both integrated sites pass intercepted-host browser checks for Save, returning
+  choice, withdrawal, cross-tab propagation and saved rejection.
+- Reviewed the desktop dialog screenshot: readable category labels and all three
+  actions visible; native dialog supplies focus containment.
+- section1983 lint and production build pass (594 pages).
+- Aggregate validation passes format, lint, types and shell, then fails the
+  existing review_links title/url NOT NULL schema contract. No checks weakened.
+- GitHub connection can read PRs even though local CLI credentials are missing.
+  No open consent PR exists in either repository at this check.
+- No merge or deployment. Local URLs remain ports 4329 and 4330.

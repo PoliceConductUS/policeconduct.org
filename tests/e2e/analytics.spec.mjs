@@ -82,6 +82,11 @@ async function visitSite(page, baseURL, url, options = {}) {
   await expect
     .poll(() => page.evaluate(() => typeof window.__IPC_ANALYTICS__?.track))
     .toBe("function");
+  if (!options.keepConsentOpen) {
+    await page
+      .getByRole("button", { name: "Decline analytics cookies", exact: true })
+      .click();
+  }
   return {
     commands,
     commandTypes,
@@ -633,12 +638,9 @@ test("advanced consent remembers choices and withdrawal keeps advertising denied
     page,
     baseURL,
     "https://policeconduct.org/about/contact/",
+    { keepConsentOpen: true },
   );
-  const panel = page.getByRole("region", { name: "Analytics cookie choices" });
-  const allow = page.getByRole("button", {
-    name: "Allow analytics cookies",
-    exact: true,
-  });
+  const panel = page.getByRole("dialog", { name: "Manage cookie settings" });
   const decline = page.getByRole("button", {
     name: "Decline analytics cookies",
     exact: true,
@@ -669,7 +671,12 @@ test("advanced consent remembers choices and withdrawal keeps advertising denied
     ),
   ).toBe("denied");
   await settings.click();
-  await allow.click();
+  await page
+    .getByRole("checkbox", { name: "Analytics cookies", exact: true })
+    .check();
+  await page
+    .getByRole("button", { name: "Save preferences", exact: true })
+    .click();
   await page.reload();
   await expect(panel).toBeHidden();
   expect(
@@ -734,9 +741,10 @@ test("unavailable choice storage defaults to denied and reports unsaved acceptan
     page,
     baseURL,
     "https://policeconduct.org/about/contact/",
+    { keepConsentOpen: true },
   );
   await expect(
-    page.getByRole("region", { name: "Analytics cookie choices" }),
+    page.getByRole("dialog", { name: "Manage cookie settings" }),
   ).toBeVisible();
   expect(
     analytics.commands.find((entry) => entry[0] === "consent")[2]

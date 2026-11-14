@@ -33,8 +33,18 @@ export const initializeConsentControls = () => {
   const settings = document.querySelector("[data-privacy-settings]");
   if (!panel || !settings) return;
   const status = panel.querySelector("[data-consent-status]");
+  const analytics = panel.querySelector("[data-analytics-enabled]");
+  const show = () => {
+    panel.hidden = false;
+    if (!panel.open) panel.showModal();
+  };
+  const hide = () => {
+    panel.close();
+    panel.hidden = true;
+  };
   const render = () => {
     const choice = readAnalyticsChoice();
+    analytics.checked = choice === "granted";
     status.textContent =
       choice === "granted"
         ? "Analytics cookies are allowed."
@@ -47,31 +57,40 @@ export const initializeConsentControls = () => {
     if (choice !== "granted") clearAnalyticsCookies();
   };
   settings.hidden = false;
-  panel.hidden = readAnalyticsChoice() !== null;
   render();
-  settings.addEventListener("click", () => {
-    panel.hidden = false;
-    render();
-    panel.querySelector("button").focus();
+  if (readAnalyticsChoice() === null) show();
+  panel.addEventListener("cancel", () => {
+    panel.hidden = true;
   });
+  settings.addEventListener("click", () => {
+    render();
+    show();
+  });
+  const save = (choice) => {
+    apply(choice);
+    analytics.checked = choice === "granted";
+    try {
+      window.localStorage.setItem(CHOICE_KEY, choice);
+      hide();
+      settings.focus();
+    } catch {
+      status.textContent =
+        "Your choice applies to this page. Your browser could not save it for your next visit.";
+    }
+  };
   panel.querySelectorAll("[data-analytics-choice]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const choice = button.dataset.analyticsChoice;
-      apply(choice);
-      try {
-        window.localStorage.setItem(CHOICE_KEY, choice);
-        panel.hidden = true;
-        settings.focus();
-      } catch {
-        status.textContent =
-          "Your choice applies to this page. Your browser could not save it for your next visit.";
-      }
-    });
+    button.addEventListener("click", () =>
+      save(button.dataset.analyticsChoice),
+    );
+  });
+  panel.querySelector("[data-analytics-save]").addEventListener("click", () => {
+    save(analytics.checked ? "granted" : "denied");
   });
   window.addEventListener("storage", (event) => {
     if (event.key !== CHOICE_KEY && event.key !== null) return;
     apply(readAnalyticsChoice());
-    panel.hidden = readAnalyticsChoice() !== null;
+    if (readAnalyticsChoice() === null) show();
+    else hide();
     render();
   });
   if (readAnalyticsChoice() !== "granted") clearAnalyticsCookies();
