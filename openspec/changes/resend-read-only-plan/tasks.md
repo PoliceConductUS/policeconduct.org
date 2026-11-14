@@ -11,10 +11,17 @@
 - [x] Preserve enabled tracking/custom host on explicit bootstrap reruns.
 - [x] Verify authoritative DNS across all four nameservers.
 - [x] Read live Resend domain requirements and capture exact tracking record.
-- [ ] Restore authorized AWS profile access and verify identity.
-- [ ] Prepare exact DNS/Resend forward and rollback payloads, preserving inbound routing.
-- [ ] Execute authorized scoped changes and verify provider status.
+- [x] Restore authorized AWS profile access and verify identity.
+- [x] Prepare exact DNS/Resend forward and rollback payloads, preserving inbound routing.
+- [x] Execute authorized scoped changes and verify provider status.
 - [ ] Complete full repository validation before merge.
 
 - [x] Include tracking DNS in the Terraform-managed provider record map.
-- [ ] Verify authenticated Terraform state/plan against live DNS before applying.
+- [x] Verify authenticated Terraform state/plan against live DNS before applying.
+
+## Approved distribution access restriction
+
+- [x] Declare US allowlists for PoliceConduct production/preview and Iceconduct.
+- [x] Declare US allowlists for section1983 production/preview.
+- [ ] Inspect bounded plans, apply only approved changes, and verify all five live distributions.
+- [ ] Complete verification and archive the active change before PR #45 can merge.

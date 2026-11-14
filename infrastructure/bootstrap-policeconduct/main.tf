@@ -2231,7 +2231,8 @@ resource "aws_cloudfront_distribution" "site" {
 
   restrictions {
     geo_restriction {
-      restriction_type = "none"
+      restriction_type = "whitelist"
+      locations        = ["US"]
     }
   }
 
@@ -2352,7 +2353,8 @@ resource "aws_cloudfront_distribution" "preview" {
 
   restrictions {
     geo_restriction {
-      restriction_type = "none"
+      restriction_type = "whitelist"
+      locations        = ["US"]
     }
   }
 

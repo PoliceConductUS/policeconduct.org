@@ -82,3 +82,17 @@ Iceconduct SHALL return HTTP 301 to the corresponding PoliceConduct hostname, re
 
 - **WHEN** the hostname is neither iceconduct.org nor a subdomain of it
 - **THEN** the function returns HTTP 400 without a redirect
+
+### Requirement: Website distributions allow US viewers
+
+All five website CloudFront distributions SHALL declare a country whitelist containing only US. Deployment SHALL use inspected Terraform plans limited to approved changes.
+
+#### Scenario: Country restriction is planned
+
+- **WHEN** PoliceConduct, section1983, or Iceconduct distribution configuration is evaluated
+- **THEN** its geographic restriction is whitelist with US as the sole location
+
+#### Scenario: Unrelated repairs remain pending
+
+- **WHEN** the access restriction is deployed before other audit repairs
+- **THEN** the saved plan preserves deployed dependencies and changes only distribution geographic restrictions

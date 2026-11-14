@@ -5,3 +5,5 @@ Use the existing list/get requests to return the same Terraform string map. Miss
 The repository bridge skills are unavailable in this runtime, so use the spec-driven schema with recorded plan and verification. No delegation.
 
 Include provider-returned Tracking DNS in the existing Route 53 resource map. Keep existing record key construction; review the saved plan for index changes before applying. All DNS remediation and rollback must pass through Terraform state and reviewed plans.
+
+The board approved built-in CloudFront US allowlists on all five distributions. Use `whitelist` with `US` in each Terraform distribution. Inspect saved plans for unrelated changes before applying. PR #45 must remain unmerged until this active OpenSpec change is verified and archived.
