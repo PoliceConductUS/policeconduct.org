@@ -17,3 +17,9 @@ Partial managed state still passes. Operators must reconcile every resource and 
 ## Migration Plan
 
 Deploy no infrastructure. Restore authorized AWS access, inspect existing backend and resources, then determine the backend key and locking configuration before importing anything.
+
+## Audit iteration: failed AWS reads
+
+The recovered state and AWS credentials now permit live read verification. Account preflight uses managed AWS ARNs, including regional ARNs, and rejects missing, mixed or mismatched account evidence. This bootstrap is a single-account root; multi-account adoption requires an explicit provider-account mapping before applying.
+
+CloudFront discovery uses successful list responses to distinguish absence from failed reads. Both DEVELOPMENT and LIVE function stages are checked. Errors propagate without an empty JSON result. No provider writes are introduced.

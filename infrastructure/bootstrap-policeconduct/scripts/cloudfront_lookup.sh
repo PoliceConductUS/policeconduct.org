@@ -24,8 +24,8 @@ lookup_oac_id() {
   result="$(
     aws cloudfront list-origin-access-controls \
       --query "OriginAccessControlList.Items[?Name=='${name}'].Id | [0]" \
-      --output text 2>/dev/null || true
-  )"
+      --output text
+  )" || return $?
 
   normalize_none "$result"
 }
@@ -35,21 +35,18 @@ lookup_function_arn() {
   local result
 
   result="$(
-    aws cloudfront describe-function \
-      --name "$name" \
-      --query "FunctionSummary.FunctionMetadata.FunctionARN" \
-      --output text 2>/dev/null || true
-  )"
+    aws cloudfront list-functions --stage DEVELOPMENT \
+      --query "FunctionList.Items[?Name=='${name}'].FunctionMetadata.FunctionARN | [0]" \
+      --output text
+  )" || return $?
   result="$(normalize_none "$result")"
 
   if [[ -z "$result" ]]; then
     result="$(
-      aws cloudfront describe-function \
-        --name "$name" \
-        --stage LIVE \
-        --query "FunctionSummary.FunctionMetadata.FunctionARN" \
-        --output text 2>/dev/null || true
-    )"
+      aws cloudfront list-functions --stage LIVE \
+        --query "FunctionList.Items[?Name=='${name}'].FunctionMetadata.FunctionARN | [0]" \
+        --output text
+    )" || return $?
     result="$(normalize_none "$result")"
   fi
 
@@ -63,8 +60,8 @@ lookup_distribution_id_by_alias() {
   result="$(
     aws cloudfront list-distributions \
       --query "DistributionList.Items[?Aliases.Quantity > \`0\` && contains(Aliases.Items, '${alias}')].Id | [0]" \
-      --output text 2>/dev/null || true
-  )"
+      --output text
+  )" || return $?
 
   normalize_none "$result"
 }

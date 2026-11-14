@@ -61,7 +61,7 @@
     "analytics:compare": "node scripts/analytics-config.mjs compare",
     "analytics:apply": "node scripts/analytics-config.mjs apply",
     "test:analytics-config": "node --test scripts/analytics-config.test.mjs",
-    "test:infra": "node --test scripts/require-terraform-state.test.mjs"
+    "test:infra": "node --test scripts/require-terraform-state.test.mjs scripts/terraform-read-failures.test.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

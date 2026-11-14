@@ -11,3 +11,11 @@
 - [ ] Audit policeconduct, iceconduct, and section1983 state locations.
 - [ ] Configure verified remote backend and locking.
 - [ ] Import and reconcile existing resources; review a plan without unexpected creates, replacements, or destroys.
+
+## Fail-closed audit iteration
+
+- [x] Reject unavailable AWS tools, STS failure, malformed identity, failed state reads and missing/mismatched account evidence.
+- [x] Propagate CloudFront discovery failures; retain valid absent-resource results.
+- [x] Add failure-injection tests to the required infrastructure suite (30 combined focused tests pass).
+- [x] Verify the guard and discovery against authorized live AWS read access.
+- [ ] Run full validation after the shared database rebuild completes; publish the exact branch commits.
