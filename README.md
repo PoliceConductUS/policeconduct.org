@@ -142,7 +142,7 @@ template synchronized whenever those scripts change. All items below apply to
 the final PR head, including documentation-only PRs.
 
 - [ ] Use `mise exec -- node --version` and `mise exec -- npm --version` to record
-      the configured runtime (`mise.toml`, currently Node 24). Install with
+      the configured runtime (`mise.toml`, currently Node 26.13.1). Install with
       `mise exec -- npm ci`; use the nested lockfile for any nested package.
       Compare every installed package version to its `package-lock.json` entry
       (including transitive packages); do not borrow shared `node_modules`.
@@ -329,83 +329,45 @@ independent from external services.
 
 ### Preview Deploy
 
-Preview deploy builds the site with a PR-specific `SITE_URL`, syncs `dist/` to
-the preview S3 prefix, and invalidates the preview CloudFront path for that PR.
-
-```bash
-export PR_NUMBER=<pr-number>
-export S3_BUCKET_PREVIEW=<preview-bucket>
-export CLOUDFRONT_DIST_PREVIEW=<preview-distribution-id>
-npm run deploy:preview
-```
+Set `PR_NUMBER`, `S3_BUCKET_PREVIEW`, `RELEASE_DATA_BUCKET_PREVIEW`, and
+`KVS_ARN_PREVIEW`, then run `npm run deploy:preview`. The build uses the
+PR's preview URL and generates a unique release ID. To retry an upload,
+use `npm run deploy:preview:sync` with the same completed build.
 
 ### Production Deploy
 
 Before production release, require an error-free full final build and sitemap
 verification for the release artifact. Record these separately from PR merge
-evidence; merging a PR does not satisfy or waive either release check.
-
-Production deploy uses the incremental deploy script. It runs a fresh build by
-default, uploads only changed files from `dist/`, deletes removed objects, and
-invalidates only the affected CloudFront paths.
+evidence. Set `S3_BUCKET`, `RELEASE_DATA_BUCKET`, and `KVS_ARN` in the
+deployment environment. The bootstrap environment sync supplies these values.
 
 ```bash
-export S3_BUCKET=<prod-bucket>
-export CLOUDFRONT_DIST_ID=<prod-distribution-id>
 npm run deploy:prod
 ```
 
-To deploy an existing `dist/` without rebuilding:
+A release keeps all public originals under `builds/<release-id>/static/`.
+The separate private bucket holds the roster and page records under
+`builds/<release-id>/data/`. Uploads can resume. Promotion checks for the
+completed release, loads its redirects, then selects it in CloudFront.
+To promote a completed local build without rebuilding, run
+`npm run deploy:prod -- --skip-build`. To see the upload destinations before
+publishing, add `--dry-run`. To switch back to a previously uploaded release,
+run `bash scripts/promote.sh <production-release-id>` with the same environment.
 
-```bash
-export S3_BUCKET=<prod-bucket>
-export CLOUDFRONT_DIST_ID=<prod-distribution-id>
-npm run deploy:prod -- --skip-build
-```
+### Intake news publication
 
-### Incremental Deploy Baseline
+Use the bootstrap output `intake_news_configuration` to configure the Intake
+workflow. The IAM role trusts the Intake repository's main branch using GitHub
+OIDC. Invoke `NEWS_RELEASE_FUNCTION` with `{"operation":"release-snapshot"}`
+and read the returned roster bucket and key for that release ID. The importer
+can use the `release_read_policy_arn` policy and the read-only
+`release_snapshot_function` output to read a selected release.
 
-If `.deploy-cache/d` is empty and you already synced the current production site
-locally, seed the incremental baseline manifest before the first run:
-
-```bash
-bash scripts/seed-deploy-manifest.sh /path/to/synced-site
-```
-
-Then compare your current `dist/` against that baseline:
-
-```bash
-export S3_BUCKET=<prod-bucket>
-export CLOUDFRONT_DIST_ID=<prod-distribution-id>
-bash scripts/deploy-incremental.sh --skip-build --dry-run
-```
-
-After the baseline exists, `npm run deploy:prod` and
-`bash scripts/deploy-incremental.sh` use the same production deploy flow.
-
-### Deploy Environment Variables
-
-Required for production:
-
-| Variable             | Description                        |
-| -------------------- | ---------------------------------- |
-| `S3_BUCKET`          | Production S3 bucket               |
-| `CLOUDFRONT_DIST_ID` | Production CloudFront distribution |
-
-Required for preview:
-
-| Variable                  | Description                                               |
-| ------------------------- | --------------------------------------------------------- |
-| `PR_NUMBER`               | Pull request number used in the preview URL and S3 prefix |
-| `S3_BUCKET_PREVIEW`       | Preview S3 bucket                                         |
-| `CLOUDFRONT_DIST_PREVIEW` | Preview CloudFront distribution                           |
-
-Optional:
-
-| Variable           | Description                                            |
-| ------------------ | ------------------------------------------------------ |
-| `GIT_COMMIT_SHA`   | Override commit hash (default: auto-detected from git) |
-| `GIT_COMMIT_DIRTY` | Override dirty flag (default: auto-detected from git)  |
+For an updated canonical path, Intake saves the full HTML under
+`builds/<release-id>/override/` in the site bucket. It invokes the same
+function with `operation` set to `publish-page`, the pinned `releaseId`,
+and the canonical `path`. It waits for the returned `invalidationId` on
+`NEWS_DISTRIBUTION_ID` before recording visibility.
 
 ## Infrastructure
 
@@ -537,3 +499,7 @@ https://www.minneapolismn.gov/government/government-data/datasource/officer-payo
 https://www.policefilesny.com
 https://www.themarshallproject.org/records/1712-police-settlements
 https://www.thepolicetransparencyproject.com
+
+## Analytics configuration sync
+
+Use `npm run analytics:pull`, `npm run analytics:compare`, and `npm run analytics:push` to sync this site’s versioned GA settings. See [configuration and authentication](docs/analytics-config.md).

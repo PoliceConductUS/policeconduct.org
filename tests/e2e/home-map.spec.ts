@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./page-fixture";
 
 test.describe("home map", () => {
   test("makes every colored state clickable", async ({ page }) => {

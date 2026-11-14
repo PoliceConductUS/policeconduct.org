@@ -1,0 +1,9 @@
+{
+  "regionalAdsPersonalization": {
+    "allowedRegions": 0,
+    "totalRegions": 307,
+    "observedAt": "2026-11-14T07:44:32.109Z",
+    "evidence": "Property owner reported disabling all ads personalization on both sites in INS-121; independently reading the regional setting through the API is unavailable",
+    "management": "Manual Google Analytics Admin setting; excluded from CLI push"
+  }
+}

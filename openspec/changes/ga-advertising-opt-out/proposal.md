@@ -1,21 +1,14 @@
 ## Why
 
-The deployed GA4 configuration does not explicitly disable advertising signals.
-Four requesters have asked for an advertising opt-out (INS-121).
+Visitors need working analytics cookie choices with independent advertising opt-in.
 
 ## What Changes
 
-- Deny advertising storage, advertising user data and personalization before loading gtag.js.
-- Disable ad-personalization signals and Google signals for the existing stream.
-- Apply this to all visitors through the shared component, with no requester identity matching.
-
-## Capabilities
-
-### New Capabilities
-
-- `analytics-privacy`: site-wide advertising opt-out.
+The board selected advanced consent mode on 2026-11-14. Deny analytics storage
+until acceptance, load Google for cookieless measurement even when declined,
+remember choices, and provide Cookie settings to withdraw. Advertising permissions follow an independent explicit opt-in. Apply to both sites.
 
 ## Impact
 
-Ordinary analytics remains enabled. No data, routing, publication, or layout changes.
-GA Admin values and deployed verification are separate outstanding requirements.
+Adds a consent panel to the shared layout. No data or routing changes.
+Merge, deployment, GA Admin evidence and legal disclosure requirements remain.

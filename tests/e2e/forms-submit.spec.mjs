@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./page-fixture";
 
 const verificationInstructions =
   "We received your submission. Check your email and open the link within 15 minutes to confirm your email address. Please contact hello@policeconduct.org if you need help.";
@@ -228,11 +228,16 @@ test.describe("form submissions", () => {
           response.request().method() === "POST"
         );
       });
-      await Promise.all([
+      const [submitted] = await Promise.all([
         submitResponsePromise,
         formLocator.locator('button[type="submit"]').press("Enter"),
       ]);
 
+      const releaseId = await page
+        .locator("html")
+        .getAttribute("data-release-id");
+      expect(releaseId).toBeTruthy();
+      expect(submitted.request().postDataJSON().releaseId).toBe(releaseId);
       await expect(page).toHaveURL(new RegExp(`${originalPathname}$`));
       const success = formLocator.locator("[data-form-submit-success]");
       await expect(success).toBeVisible();

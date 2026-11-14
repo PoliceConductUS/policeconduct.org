@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./page-fixture";
 
 test.describe("submission status", () => {
   const verifiedMessage = "Your email address has been confirmed.";

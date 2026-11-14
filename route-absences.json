@@ -20,6 +20,82 @@
     "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
   },
   {
+    "path": "/civil-cases/amaro-v-marinosci-lawgroup-pc-txsd-4-25-cv-02388/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/michael-edwards-iii-7d22eb/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/calton-v-texas-department-of-criminal-justice-txwd-5-23-cv-00231/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/patrick-daniel-994c0b/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/de-la-cruz-carreon-v-harris-county-txsd-4-23-cv-04294/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/jose-cruz-3d7b7c/, /personnel/jose-cruz-ii-e1b342/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/dixon-v-harris-county-texas-txsd-4-26-cv-04418/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/tiffany-dixon-5b2f86/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/mayfield-v-city-of-college-station-txsd-4-23-cv-00795/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/charles-smith-36a230/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/morris-v-gallagher-txnd-4-26-cv-00796/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/michael-smith-166b5d/, /personnel/morris-terry-19c0e6/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/ramirez-martinez-v-bexar-county-texas-txwd-5-25-cv-00997/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/martin-martinez-33f893/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/randles-v-blacklock-txnd-4-25-cv-01422/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/william-harris-98a7f8/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/saddleback-exploration-llc-v-brunelle-txsd-4-23-cv-03091/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/martin-o-brien-iii-382de4/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/state-of-texas-v-becerra-ca5-23-10246/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/david-wright-51392e/, /personnel/david-wright-77caa9/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/united-states-v-1-558-acres-of-land-more-or-less-txsd-7-25-cv-00162/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/david-garza-1ff12d/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/united-states-v-3-819-acres-of-land-more-or-less-txsd-7-25-cv-00439/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/john-guerra-d67d3f/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/united-states-v-6-298-acres-of-land-more-or-less-txsd-7-25-cv-00232/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/john-guerra-d67d3f/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/united-states-v-lopez-txsd-4-24-cr-00448/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/jose-lopez-eec74e/, /personnel/jose-lopez-jr-bddd72/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/united-states-v-lopez-txsd-7-25-cv-00065/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/michael-montalvo-7da820/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/united-states-v-martin-txsd-4-22-cv-03953/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/john-martin-dd13af/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/valadez-v-city-of-jacinto-city-tx-txsd-4-24-cv-02950/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/jose-aguilera-f0f9fc/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/verastique-v-city-of-dallas-ca5-23-10395/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/david-baker-e22966/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/civil-cases/wilson-v-harris-county-txsd-4-22-cv-03241/",
+    "reason": "Current intake no longer produces a qualifying case-personnel link for this docket from the retained CourtListener parties. The previous links (/personnel/wayne-wilson-ii-0fed06/) do not satisfy current complete-name and agency matching, so intake does not emit this case. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
     "path": "/civil-litigation/ak/",
     "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
   },
@@ -1684,6 +1760,10 @@
     "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
   },
   {
+    "path": "/personnel/albert-johnson-iii-837164/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/albert-johnson-iii-837164/. Previously listed cases: /civil-cases/johnson-v-ferguson-txsd-4-26-cv-05638/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
     "path": "/personnel/alicia-white-6nsj/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
   },
@@ -1698,6 +1778,10 @@
   {
     "path": "/personnel/andrea-rodriguez-4ncy7/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
+  },
+  {
+    "path": "/personnel/andrew-harris-a146b5/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/andrew-harris-a146b5/. Previously listed cases: /civil-cases/gilberti-v-rogan-txwd-1-25-cv-00490/. User approved this documented intake-correction 404 on 2026-11-14."
   },
   {
     "path": "/personnel/anthony-messineo-pierce-wa-cmx/",
@@ -1768,8 +1852,20 @@
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
   },
   {
+    "path": "/personnel/carlos-gonzales-jr-698506/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/carlos-gonzales-jr-698506/. Previously listed cases: /civil-cases/state-of-texas-v-united-states-ca5-23-40653/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/carlos-martinez-021396/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/carlos-martinez-021396/. Previously listed cases: /civil-cases/united-states-v-martinez-txsd-4-22-cr-00560/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
     "path": "/personnel/ceasar-diaz-1025b7/",
     "reason": "Explicitly approved for 404 by the user on 2026-10-15 for the production release. Legacy record is absent from the current imported dataset; no verified replacement URL. Source/address/identity reconciliation remains pending. No scheduled return."
+  },
+  {
+    "path": "/personnel/charles-smith-36a230/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/charles-smith-36a230/. Previously listed cases: /civil-cases/mayfield-v-city-of-college-station-txsd-4-23-cv-00795/. User approved this documented intake-correction 404 on 2026-11-14."
   },
   {
     "path": "/personnel/christopher-burbank-tacoma-wa-cmx/",
@@ -1810,6 +1906,22 @@
   {
     "path": "/personnel/daniel-pantaleo-f2vs/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
+  },
+  {
+    "path": "/personnel/david-baker-e22966/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/david-baker-e22966/. Previously listed cases: /civil-cases/verastique-v-city-of-dallas-ca5-23-10395/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/david-garza-1ff12d/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/david-garza-1ff12d/. Previously listed cases: /civil-cases/united-states-v-1-558-acres-of-land-more-or-less-txsd-7-25-cv-00162/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/david-wright-51392e/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/david-wright-51392e/. Previously listed cases: /civil-cases/state-of-texas-v-becerra-ca5-23-10246/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/david-wright-77caa9/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/david-wright-77caa9/. Previously listed cases: /civil-cases/state-of-texas-v-becerra-ca5-23-10246/. User approved this documented intake-correction 404 on 2026-11-14."
   },
   {
     "path": "/personnel/dc/",
@@ -1928,6 +2040,10 @@
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
   },
   {
+    "path": "/personnel/james-vance-ab5696/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/james-vance-ab5696/. Previously listed cases: /civil-cases/gilberti-v-rogan-txwd-1-25-cv-00490/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
     "path": "/personnel/jared-robinet-cxl9/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
   },
@@ -1948,6 +2064,10 @@
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
   },
   {
+    "path": "/personnel/jesus-perez-f2fe28/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/jesus-perez-f2fe28/. Previously listed cases: /civil-cases/contreras-v-wilson-txsd-4-22-cv-04015/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
     "path": "/personnel/jocelyn-lavandier-v0ar/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
   },
@@ -1964,8 +2084,20 @@
     "reason": "Explicitly approved for 404 by the user on 2026-10-15 for the production release. Legacy record is absent from the current imported dataset; no verified replacement URL. Source/address/identity reconciliation remains pending. No scheduled return."
   },
   {
+    "path": "/personnel/john-guerra-d67d3f/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/john-guerra-d67d3f/. Previously listed cases: /civil-cases/united-states-v-1-972-acres-of-land-more-or-less-txsd-7-25-cv-00120/, /civil-cases/united-states-v-3-819-acres-of-land-more-or-less-txsd-7-25-cv-00439/, /civil-cases/united-states-v-6-298-acres-of-land-more-or-less-txsd-7-25-cv-00232/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/john-martin-dd13af/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/john-martin-dd13af/. Previously listed cases: /civil-cases/united-states-v-martin-txsd-4-22-cv-03953/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
     "path": "/personnel/john-ramirez-4ncy7/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return. Same-name records were reviewed and have different agency/state assignments."
+  },
+  {
+    "path": "/personnel/john-turner-jr-c6d970/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/john-turner-jr-c6d970/. Previously listed cases: /civil-cases/westbrook-v-linebarger-goggan-blair-sampson-llp-txnd-3-24-cv-01739/. User approved this documented intake-correction 404 on 2026-11-14."
   },
   {
     "path": "/personnel/jon-mcconnell-8f45cc/",
@@ -1984,8 +2116,44 @@
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return. Same-name records were reviewed and have different agency/state assignments."
   },
   {
+    "path": "/personnel/jose-aguilera-f0f9fc/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/jose-aguilera-f0f9fc/. Previously listed cases: /civil-cases/valadez-v-city-of-jacinto-city-ca5-25-20309/, /civil-cases/valadez-v-city-of-jacinto-city-tx-txsd-4-24-cv-02950/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/jose-cruz-3d7b7c/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/jose-cruz-3d7b7c/. Previously listed cases: /civil-cases/de-la-cruz-carreon-v-harris-county-txsd-4-23-cv-04294/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/jose-cruz-ii-e1b342/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/jose-cruz-ii-e1b342/. Previously listed cases: /civil-cases/de-la-cruz-carreon-v-harris-county-txsd-4-23-cv-04294/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/jose-diaz-2245b0/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/jose-diaz-2245b0/. Previously listed cases: /civil-cases/diaz-v-mcmanus-txwd-5-24-cv-01139/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/jose-lopez-eec74e/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/jose-lopez-eec74e/. Previously listed cases: /civil-cases/united-states-v-lopez-txsd-4-24-cr-00448/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/jose-lopez-jr-bddd72/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/jose-lopez-jr-bddd72/. Previously listed cases: /civil-cases/united-states-v-lopez-txsd-4-24-cr-00448/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/jose-martinez-c80a2d/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/jose-martinez-c80a2d/. Previously listed cases: /civil-cases/gilberti-v-rogan-txwd-1-25-cv-00490/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
     "path": "/personnel/joshua-evans-4ncy7/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return. Same-name records were reviewed and have different agency/state assignments."
+  },
+  {
+    "path": "/personnel/juan-avila-79daa7/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/juan-avila-79daa7/. Previously listed cases: /civil-cases/united-states-v-martinez-txsd-4-22-cr-00560/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/jung-kim-195a6f/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/jung-kim-195a6f/. Previously listed cases: /civil-cases/state-of-texas-v-united-states-ca5-23-40653/. User approved this documented intake-correction 404 on 2026-11-14."
   },
   {
     "path": "/personnel/justin-cooley-55bvj/",
@@ -2002,6 +2170,10 @@
   {
     "path": "/personnel/kenneth-boss-c0lo/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
+  },
+  {
+    "path": "/personnel/kenneth-davis-524dc3/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/kenneth-davis-524dc3/. Previously listed cases: /civil-cases/davis-v-texas-department-of-family-and-protective-services-txnd-3-25-cv-03048/. User approved this documented intake-correction 404 on 2026-11-14."
   },
   {
     "path": "/personnel/kimberly-potter-idx5/",
@@ -2064,6 +2236,14 @@
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return. Same-name records were reviewed and have different agency/state assignments."
   },
   {
+    "path": "/personnel/martin-martinez-33f893/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/martin-martinez-33f893/. Previously listed cases: /civil-cases/ramirez-martinez-v-bexar-county-texas-txwd-5-25-cv-00997/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/martin-o-brien-iii-382de4/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/martin-o-brien-iii-382de4/. Previously listed cases: /civil-cases/saddleback-exploration-llc-v-brunelle-txsd-4-23-cv-03091/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
     "path": "/personnel/masyih-ford-tacoma-wa-cmx/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
   },
@@ -2092,8 +2272,16 @@
     "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
   },
   {
+    "path": "/personnel/michael-edwards-iii-7d22eb/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/michael-edwards-iii-7d22eb/. Previously listed cases: /civil-cases/amaro-v-marinosci-lawgroup-pc-txsd-4-25-cv-02388/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
     "path": "/personnel/michael-estep-36rm75/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return. Same-name records were reviewed and have different agency/state assignments."
+  },
+  {
+    "path": "/personnel/michael-montalvo-7da820/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/michael-montalvo-7da820/. Previously listed cases: /civil-cases/united-states-v-lopez-txsd-7-25-cv-00065/. User approved this documented intake-correction 404 on 2026-11-14."
   },
   {
     "path": "/personnel/michael-oliver-23z4/",
@@ -2104,12 +2292,20 @@
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
   },
   {
+    "path": "/personnel/michael-smith-166b5d/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/michael-smith-166b5d/. Previously listed cases: /civil-cases/morris-v-gallagher-txnd-4-26-cv-00796/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
     "path": "/personnel/misty-tyler-475139/",
     "reason": "Explicitly approved for 404 by the user on 2026-10-15 for the production release. Legacy record is absent from the current imported dataset; no verified replacement URL. Source/address/identity reconciliation remains pending. No scheduled return."
   },
   {
     "path": "/personnel/mo/",
     "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/morris-terry-19c0e6/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/morris-terry-19c0e6/. Previously listed cases: /civil-cases/morris-v-gallagher-txnd-4-26-cv-00796/. User approved this documented intake-correction 404 on 2026-11-14."
   },
   {
     "path": "/personnel/morteza-amiri-4ncy7/",
@@ -2188,6 +2384,14 @@
     "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
   },
   {
+    "path": "/personnel/patrick-daniel-994c0b/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/patrick-daniel-994c0b/. Previously listed cases: /civil-cases/baughman-v-state-of-texas-txsd-4-25-cv-03974/, /civil-cases/calton-v-texas-department-of-criminal-justice-txwd-5-23-cv-00231/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/paul-cormier-7409d8/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/paul-cormier-7409d8/. Previously listed cases: /civil-cases/mcgregor-v-harris-county-txsd-4-26-cv-00685/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
     "path": "/personnel/randolph-walters-yeeek/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
   },
@@ -2218,6 +2422,10 @@
   {
     "path": "/personnel/ronald-pressley-bc0f/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
+  },
+  {
+    "path": "/personnel/ryan-barnett-1f4993/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/ryan-barnett-1f4993/. Previously listed cases: /civil-cases/barnett-v-city-of-dallas-txnd-3-24-cv-02425/. User approved this documented intake-correction 404 on 2026-11-14."
   },
   {
     "path": "/personnel/sc/",
@@ -2280,6 +2488,10 @@
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return. Same-name records were reviewed and have different agency/state assignments."
   },
   {
+    "path": "/personnel/tiffany-dixon-5b2f86/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/tiffany-dixon-5b2f86/. Previously listed cases: /civil-cases/dixon-v-harris-county-texas-txsd-4-26-cv-04418/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
     "path": "/personnel/tim-manly-4ncy7/",
     "reason": "Legacy profile is not populated in the current intake database; no verified replacement identified. No scheduled return."
   },
@@ -2324,8 +2536,20 @@
     "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
   },
   {
+    "path": "/personnel/wayne-wilson-ii-0fed06/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/wayne-wilson-ii-0fed06/. Previously listed cases: /civil-cases/wilson-v-harris-county-txsd-4-22-cv-03241/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/personnel/wesley-crowder-62fd3d/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/wesley-crowder-62fd3d/. Previously listed cases: /civil-cases/lukose-v-city-of-carrollton-texas-txnd-3-25-cv-03137/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
     "path": "/personnel/wi/",
     "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/personnel/william-harris-98a7f8/civil-cases/",
+    "reason": "Current intake has no civil-case links for this person after corrected name and agency matching. This empty case-list page is omitted; the personnel profile remains at /personnel/william-harris-98a7f8/. Previously listed cases: /civil-cases/randles-v-blacklock-txnd-4-25-cv-01422/. User approved this documented intake-correction 404 on 2026-11-14."
   },
   {
     "path": "/personnel/william-porter-ffwu/",
@@ -2562,6 +2786,30 @@
   {
     "path": "/tn/",
     "reason": "Empty state page excluded: the state has no agencies with a current personnel assignment, reports, or civil cases. The user approved excluding empty state pages."
+  },
+  {
+    "path": "/tx/denton-county/savannah/civil-cases/",
+    "reason": "Corrected intake matching leaves no civil cases for this exact agency or location scope, so this empty case-list page is omitted. Previously listed cases: /civil-cases/davis-v-texas-department-of-family-and-protective-services-txnd-3-25-cv-03048/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/tx/denton-county/savannah/elm-ridge-police-department-2ae0d3/civil-cases/",
+    "reason": "Corrected intake matching leaves no civil cases for this exact agency or location scope, so this empty case-list page is omitted. Previously listed cases: /civil-cases/davis-v-texas-department-of-family-and-protective-services-txnd-3-25-cv-03048/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/tx/harris-county/houston/harris-co-sheriff-s-office-0a08ad/civil-cases/page/2/",
+    "reason": "Corrected intake matching leaves 44 distinct linked cases for this agency, which fit on one 50-row page at /tx/harris-county/houston/harris-co-sheriff-s-office-0a08ad/civil-cases/. There is no second page. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/tx/hidalgo-county/edinburg/hidalgo-co-const-pct-4-936c7f/civil-cases/",
+    "reason": "Corrected intake matching leaves no civil cases for this exact agency or location scope, so this empty case-list page is omitted. Previously listed cases: /civil-cases/united-states-v-martinez-txsd-4-22-cr-00560/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/tx/starr-county/rio-grande-city/rio-grande-city-police-dept-25085c/civil-cases/",
+    "reason": "Corrected intake matching leaves no civil cases for this exact agency or location scope, so this empty case-list page is omitted. Previously listed cases: /civil-cases/united-states-v-1-558-acres-of-land-more-or-less-txsd-7-25-cv-00162/. User approved this documented intake-correction 404 on 2026-11-14."
+  },
+  {
+    "path": "/tx/travis-county/austin/texas-railroad-association-465529/civil-cases/",
+    "reason": "Corrected intake matching leaves no civil cases for this exact agency or location scope, so this empty case-list page is omitted. Previously listed cases: /civil-cases/davis-v-texas-department-of-family-and-protective-services-txnd-3-25-cv-03048/. User approved this documented intake-correction 404 on 2026-11-14."
   },
   {
     "path": "/ut/",

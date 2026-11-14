@@ -1,13 +1,19 @@
 // Publish a build's { redirects: [{ from, to, status: 301 }] } map to one
 // namespace in a CloudFront KeyValueStore, preserving all other namespaces.
-// Usage: node scripts/load-redirects.mjs <kvs-arn> <r:prod:|r:pr-N:> <map.json>
+// Usage: node scripts/load-redirects.mjs <kvs-arn> <r:<release-id>:> <map.json>
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 const [kvsArn, namespace, mapPath] = process.argv.slice(2);
-if (!kvsArn || !/^r:(?:prod|pr-[1-9]\d*):$/.test(namespace || "") || !mapPath) {
+if (
+  !kvsArn ||
+  !/^r:(?:prod|pr-[1-9]\d*)(?:-[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})?:$/.test(
+    namespace || "",
+  ) ||
+  !mapPath
+) {
   throw new Error(
-    "usage: load-redirects.mjs <kvs-arn> <r:prod:|r:pr-N:> <map.json>",
+    "usage: load-redirects.mjs <kvs-arn> <r:<release-id>:> <map.json>",
   );
 }
 

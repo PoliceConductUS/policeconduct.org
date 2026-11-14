@@ -72,6 +72,9 @@ process.stdout.write(JSON.stringify(result));
         encoding: "utf8",
         env: {
           ...process.env,
+          // Shell startup files must not replace the fixture command PATH.
+          BASH_ENV: "/dev/null",
+          ENV: "/dev/null",
           PATH: `${dir}:${process.env.PATH}`,
           TEST_STATE: join(dir, "state.json"),
         },
@@ -260,13 +263,38 @@ function deploy(
 ) {
   const dir = mkdtempSync(join(resolve(tmpdir()), "redirect-deploy-"));
   try {
-    for (const name of ["scripts", "dist", "bin", ".deploy-cache"])
+    for (const name of [
+      "scripts",
+      "dist",
+      "bin",
+      ".deploy-cache",
+      ".release",
+      ".release/data",
+    ])
       mkdirSync(join(dir, name));
+    for (const name of [
+      scriptName,
+      "upload-release.sh",
+      "promote.sh",
+      "release-files.mjs",
+    ]) {
+      writeFileSync(
+        join(dir, "scripts", name),
+        readFileSync(resolve("scripts", name)),
+      );
+    }
+    const releaseId =
+      (scriptName === "deploy-preview-sync.sh" ? "pr-12" : "prod") +
+      "-b2749557-33a6-4ce7-9362-dd16e49eb807";
+    writeFileSync(join(dir, ".release/id"), releaseId);
+    writeFileSync(join(dir, ".release/data/index.json"), "{}");
     writeFileSync(
-      join(dir, "scripts", scriptName),
-      readFileSync(resolve("scripts", scriptName)),
+      join(dir, ".release/data/alias.json"),
+      JSON.stringify({ CoverageLink: {} }),
     );
+    writeFileSync(join(dir, ".release/data/dynamic.json"), "{}");
     writeFileSync(join(dir, "dist/index.html"), "content");
+    writeFileSync(join(dir, "dist/robots.txt"), "User-agent: *\nDisallow: /\n");
     writeFileSync(
       join(dir, "dist/_redirect-map.json"),
       JSON.stringify({ redirects: [] }),
@@ -283,6 +311,12 @@ function deploy(
       assert.equal(manifest.status, 0, manifest.stderr);
       writeFileSync(join(dir, ".deploy-cache/d"), manifest.stdout);
     }
+    const seal = spawnSync(
+      process.execPath,
+      ["scripts/release-files.mjs", "--record", releaseId],
+      { cwd: dir },
+    );
+    assert.equal(seal.status, 0, seal.stderr.toString());
     const log = join(dir, "calls");
     writeFileSync(log, "");
     // Coverage failures and ordering are exercised in deploy-release-guard.test.mjs.
@@ -293,7 +327,9 @@ function deploy(
     for (const tool of ["aws", "node"])
       writeFileSync(
         join(dir, "bin", tool),
-        `#!/usr/bin/env bash\nprintf '%s\\n' '${tool} '"$*" >> "$TEST_LOG"\n${tool === "aws" && failSync ? 'if [[ "$1 $2" == "s3 sync" ]]; then exit 23; fi' : ""}\n`,
+        `#!/usr/bin/env bash\n
+${tool === "node" ? 'if [[ "$1" == scripts/release-files.mjs ]]; then exec "$TEST_NODE" "$@"; fi' : ""}
+printf '%s\\n' '${tool} '"$*" >> "$TEST_LOG"\n${tool === "aws" && failSync ? 'if [[ "$1 $2" == "s3 sync" ]]; then exit 23; fi' : ""}\n`,
         { mode: 0o755 },
       );
     const result = spawnSync(
@@ -303,8 +339,17 @@ function deploy(
         encoding: "utf8",
         env: {
           ...process.env,
+          // Shell startup files must not replace the fixture command PATH.
+          BASH_ENV: "/dev/null",
+          ENV: "/dev/null",
           PATH: `${dir}/bin:${process.env.PATH}`,
+          TEST_NODE: process.execPath,
           TEST_LOG: log,
+          TMPDIR: dir,
+          GIT_COMMIT_SHA: "fixture",
+          GIT_COMMIT_DIRTY: "0",
+          RELEASE_DATA_BUCKET: "private-prod",
+          RELEASE_DATA_BUCKET_PREVIEW: "private-preview",
           S3_BUCKET: "prod",
           CLOUDFRONT_DIST_ID: "prod-dist",
           KVS_ARN: "prod-kvs",
@@ -318,6 +363,7 @@ function deploy(
     );
     return {
       ...result,
+      releaseId,
       calls: readFileSync(log, "utf8").trim().split("\n").filter(Boolean),
     };
   } finally {
@@ -325,16 +371,51 @@ function deploy(
   }
 }
 
-test("preview publishes redirects after S3 sync and before invalidation", () => {
-  const result = deploy("deploy-preview-sync.sh");
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.calls[0], /^aws s3 sync /);
-  assert.equal(
-    result.calls[1],
-    "node scripts/load-redirects.mjs preview-kvs r:pr-12: dist/_redirect-map.json",
+for (const [script, args, namespace, bucket, pointer] of [
+  ["deploy-preview-sync.sh", [], "pr-12", "preview", "current:pr-12"],
+  ["deploy-incremental.sh", ["--skip-build"], "prod", "prod", "current"],
+]) {
+  test(
+    namespace +
+      " uploads a complete release and private roster before selecting it",
+    () => {
+      const { releaseId, status, stderr, calls } = deploy(script, args);
+      assert.equal(status, 0, stderr);
+      const prefix = "builds/" + releaseId;
+      assert.ok(
+        calls[0].startsWith(
+          "aws s3 sync dist/ s3://" + bucket + "/" + prefix + "/static/",
+        ),
+      );
+      assert.ok(
+        calls[1].includes(
+          "s3://private-" +
+            bucket +
+            "/" +
+            prefix +
+            "/data/ --exclude dynamic.json",
+        ),
+      );
+      assert.ok(
+        calls[2].includes(
+          "s3://private-" +
+            bucket +
+            "/" +
+            prefix +
+            "/data/ --exclude * --include dynamic.json",
+        ),
+      );
+      assert.ok(calls[1].includes("--no-overwrite"));
+      const loader = calls.findIndex((call) =>
+        call.includes("r:" + releaseId + ":"),
+      );
+      assert.ok(loader > 2);
+      assert.ok(
+        calls.at(-1).endsWith("--puts Key=" + pointer + ",Value=" + releaseId),
+      );
+    },
   );
-  assert.match(result.calls[2], /^aws cloudfront create-invalidation /);
-});
+}
 
 test("failed preview sync does not publish redirects", () => {
   const result = deploy("deploy-preview-sync.sh", [], { failSync: true });
@@ -348,8 +429,11 @@ test("production publishes redirects even without content changes", () => {
   });
   assert.equal(result.status, 0, result.stderr);
   assert.ok(
-    result.calls.includes(
-      "node scripts/load-redirects.mjs prod-kvs r:prod: dist/_redirect-map.json",
+    result.calls.some((call) => call.includes("r:" + result.releaseId + ":")),
+  );
+  assert.ok(
+    result.calls[0].includes(
+      "s3://prod/builds/" + result.releaseId + "/static/",
     ),
   );
 });
@@ -364,22 +448,6 @@ test("production dry-run never mutates AWS or invokes loader", () => {
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(result.calls, []);
   }
-});
-
-test("production publishes redirects after content sync and before invalidation", () => {
-  const result = deploy("deploy-incremental.sh", ["--skip-build"]);
-  assert.equal(result.status, 0, result.stderr);
-  const sync = result.calls.findIndex((x) => x.startsWith("aws s3 sync "));
-  const loader = result.calls.indexOf(
-    "node scripts/load-redirects.mjs prod-kvs r:prod: dist/_redirect-map.json",
-  );
-  const invalidation = result.calls.findIndex((x) =>
-    x.startsWith("aws cloudfront create-invalidation "),
-  );
-  assert.ok(
-    sync >= 0 && loader > sync && invalidation > loader,
-    result.calls.join("\n"),
-  );
 });
 
 test("failed production sync does not publish redirects", () => {

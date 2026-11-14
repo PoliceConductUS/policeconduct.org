@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import type { Page } from "@playwright/test";
+import { expect, test } from "./page-fixture";
+import type { Page } from "./page-fixture";
 import { createIndex, close } from "pagefind";
 
 // Known fixture agency also used by tests/e2e/prefill.spec.ts.

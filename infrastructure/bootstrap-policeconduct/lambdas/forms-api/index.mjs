@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/node";
 import {
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -1850,6 +1851,31 @@ async function resendVerificationLink(event, requestId) {
   });
 }
 
+async function isKnownFormRelease(releaseId) {
+  if (
+    typeof releaseId !== "string" ||
+    !/^(?:prod|pr-[0-9]+)-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+      releaseId,
+    )
+  ) {
+    return false;
+  }
+  const bucket = process.env.RELEASE_DATA_BUCKET;
+  if (!bucket) throw new Error("Missing RELEASE_DATA_BUCKET");
+  try {
+    await s3.send(
+      new HeadObjectCommand({
+        Bucket: bucket,
+        Key: `builds/${releaseId}/data/dynamic.json`,
+      }),
+    );
+    return true;
+  } catch (error) {
+    if (error.$metadata?.httpStatusCode === 404) return false;
+    throw error;
+  }
+}
+
 async function submitForm(event, requestId) {
   const bucket = process.env.SUBMISSIONS_BUCKET;
   const kmsKeyId = process.env.SUBMISSIONS_KMS_KEY_ID;
@@ -1943,6 +1969,13 @@ async function submitForm(event, requestId) {
     }),
   );
 
+  const releaseId = payload.releaseId;
+  if (!(await isKnownFormRelease(releaseId))) {
+    return json(400, {
+      error: "This form has an unrecognized website release.",
+    });
+  }
+
   const submissionId = createId();
   const receivedAt = new Date().toISOString();
   const receivedDate = receivedAt.slice(0, 10);
@@ -1965,6 +1998,7 @@ async function submitForm(event, requestId) {
     userAgent,
     payload: {
       formName,
+      releaseId,
       data,
     },
   };

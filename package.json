@@ -7,7 +7,8 @@
     "audit": "npm run audit:seo && npm run audit:a11y",
     "audit:a11y": "node scripts/audit-a11y.mjs",
     "audit:seo": "node scripts/audit-seo.mjs",
-    "build": "node scripts/validate-build-env.mjs && node scripts/validate-schema-contract.mjs && node scripts/generate-icon-sprite.mjs && node scripts/refresh-build-projections.mjs && GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-$(git rev-parse --short=12 HEAD)} GIT_COMMIT_DIRTY=${GIT_COMMIT_DIRTY:-$(if git diff --quiet HEAD -- && [ -z \"$(git ls-files --others --exclude-standard)\" ]; then echo 0; else echo 1; fi)} astro build && npm run build:search-index && npm run validate:no-inline-css && node scripts/generate-redirect-map.mjs && npm run purge:css && npm run validate:css",
+    "build": "node scripts/build-release.mjs",
+    "build:site": "node scripts/validate-build-env.mjs && node scripts/validate-schema-contract.mjs && node scripts/generate-icon-sprite.mjs && node scripts/refresh-build-projections.mjs && GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-$(git rev-parse --short=12 HEAD)} GIT_COMMIT_DIRTY=${GIT_COMMIT_DIRTY:-$(if git diff --quiet HEAD -- && [ -z \"$(git ls-files --others --exclude-standard)\" ]; then echo 0; else echo 1; fi)} astro build && npm run build:search-index && npm run validate:no-inline-css && node scripts/generate-redirect-map.mjs && npm run purge:css && npm run validate:css",
     "build:search-index": "npx pagefind --site dist",
     "purge:css": "node --max-old-space-size=12288 scripts/purge-built-css.mjs",
     "deploy:preview": "bash scripts/deploy-preview.sh",
@@ -37,7 +38,7 @@
     "test": "npm run test:contacts && npm run test:annotations && npm run test:analytics-config && npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:data && npm run test:coverage && npm run test:e2e",
     "test:coverage": "node --test \"src/lib/coverage/*.test.mjs\"",
     "test:css": "node --test scripts/purge-built-css.test.mjs",
-    "test:data": "node --test src/lib/data/assignment-status.test.mjs scripts/verify-employment-claims.test.mjs scripts/report-detail.test.mjs",
+    "test:data": "node --test src/lib/data/assignment-status.test.mjs scripts/verify-employment-claims.test.mjs scripts/report-detail.test.mjs scripts/release-news.test.mjs",
     "verify:employment-claims": "node scripts/verify-employment-claims.mjs",
     "test:media": "node --test scripts/video.test.mjs scripts/personnel-photos.test.mjs",
     "test:e2e": "node scripts/run-e2e.mjs",
@@ -60,7 +61,9 @@
     "test:annotations": "node --test tests/unit/data-annotations.test.mjs",
     "analytics:compare": "node scripts/analytics-config.mjs compare",
     "analytics:apply": "node scripts/analytics-config.mjs apply",
-    "test:analytics-config": "node --test scripts/analytics-config.test.mjs"
+    "test:analytics-config": "node --test scripts/analytics-config.test.mjs",
+    "analytics:pull": "node scripts/analytics-config.mjs pull",
+    "analytics:push": "node scripts/analytics-config.mjs push"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
@@ -104,5 +107,8 @@
   "allowScripts": {
     "fsevents@2.3.3": true,
     "@alibaba-group/open-code-review@1.13.3": true
+  },
+  "engines": {
+    "node": "26.13.1"
   }
 }

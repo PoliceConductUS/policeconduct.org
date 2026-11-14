@@ -1,6 +1,7 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "./page-fixture";
 
 type ReportRequestBody = {
+  releaseId: string;
   data: Record<string, unknown>;
 };
 
@@ -216,6 +217,11 @@ test.describe("report new", () => {
     await submitResponse;
 
     expect(submitRequestBody).not.toBeNull();
+    const releaseId = await page
+      .locator("html")
+      .getAttribute("data-release-id");
+    expect(releaseId).toBeTruthy();
+    expect(submitRequestBody!.releaseId).toBe(releaseId);
     expect(submitRequestBody!.data).toMatchObject({
       submitterRelationship: "Directly involved",
       interactionType: "Mixed",

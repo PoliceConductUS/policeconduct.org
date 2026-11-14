@@ -125,5 +125,8 @@
       "eventName": "volunteer_submitted",
       "countingMethod": "ONCE_PER_EVENT"
     }
-  ]
+  ],
+  "googleSignalsSettings": {
+    "state": "GOOGLE_SIGNALS_DISABLED"
+  }
 }
