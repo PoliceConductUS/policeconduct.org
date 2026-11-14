@@ -22,3 +22,12 @@ An explicit apply SHALL create a missing domain only and SHALL NOT patch existin
 
 - **WHEN** apply reads an existing domain with enabled tracking and a custom tracking subdomain
 - **THEN** it returns the current domain without PATCH or verification requests
+
+### Requirement: Tracking DNS belongs to Terraform
+
+The lookup SHALL include provider-returned Tracking records in the existing Route 53 record map.
+
+#### Scenario: Provider requires a tracking CNAME
+
+- **WHEN** Resend returns a Tracking CNAME
+- **THEN** Terraform receives its qualified name, exact target, and TTL 600 alongside sending and receiving records

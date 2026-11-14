@@ -10,8 +10,11 @@
 
 - [x] Preserve enabled tracking/custom host on explicit bootstrap reruns.
 - [x] Verify authoritative DNS across all four nameservers.
-- [ ] Read live Resend domain requirements and capture exact tracking record.
+- [x] Read live Resend domain requirements and capture exact tracking record.
 - [ ] Restore authorized AWS profile access and verify identity.
 - [ ] Prepare exact DNS/Resend forward and rollback payloads, preserving inbound routing.
 - [ ] Execute authorized scoped changes and verify provider status.
 - [ ] Complete full repository validation before merge.
+
+- [x] Include tracking DNS in the Terraform-managed provider record map.
+- [ ] Verify authenticated Terraform state/plan against live DNS before applying.
