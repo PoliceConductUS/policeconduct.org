@@ -23,5 +23,5 @@
 
 - [x] Declare US allowlists for PoliceConduct production/preview and Iceconduct.
 - [x] Declare US allowlists for section1983 production/preview.
-- [ ] Inspect bounded plans, apply only approved changes, and verify all five live distributions.
+- [x] Inspect bounded plans, apply only approved changes, and verify all five live distributions.
 - [ ] Complete verification and archive the active change before PR #45 can merge.
