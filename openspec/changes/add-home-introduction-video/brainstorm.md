@@ -26,7 +26,13 @@ The direct implementation request approves this narrowly scoped addition.
   PoliceConduct.org.”
 - Use `getVideoEmbedUrl`, Bootstrap ratio utilities, and shared section spacing.
 - Include an accessible iframe title, fullscreen support, and no autoplay.
-- No dependencies, database changes, watch page, transcript, or video schema.
+- The original scope excluded video schema and a transcript. The user later
+  explicitly approved reviewed captions, a readable summary, accurate video
+  metadata, a stable thumbnail, and Search Console monitoring.
+- Extend the same home section with a concise summary, existing action links,
+  and a VideoObject. Reuse shared styles and store the approved thumbnail locally.
+- Captions and Search Console account work are handled separately from this repo.
+- No dependencies, database changes, watch page, or unrelated SEO/AI files.
 
 ## Open Questions
 

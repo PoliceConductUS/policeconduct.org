@@ -38,3 +38,32 @@ and generated HTML without inline CSS in one desktop/mobile inspection pass.
       against lockfiles, and run required built/served Pagefind coverage.
 - [x] **Step 5:** Record exact validation outcomes and return the diff for
       independent review. Leave commit and push to the coordinating agent.
+
+## Task 2: Readable summary and accurate video metadata
+
+The user explicitly approved this extension after the original embed was completed.
+
+**Files:** Modify `src/pages/index.astro`; add
+`public/img/policeconduct-introduction-thumbnail.jpg`; update this change's artifacts.
+
+**Interfaces:** Keep a page-local VideoObject as the single source for the iframe
+title/embed URL and visible summary description. Consume the existing organization
+ID and site URL helpers. No new module, component, style, dependency, or route.
+
+- [x] **Step 1:** Review current implementation, design system, crawl rules, and
+      published video evidence; update the approved outcome in these artifacts.
+- [x] **Step 2:** Run direct generated-page assertions before implementation;
+      expect failure because VideoObject and the summary are absent. This
+      reversible markup change uses temporary rendered-page checks rather than
+      adding an implementation-mirroring source test.
+- [x] **Step 3:** Add the concise summary, three existing links, VideoObject with
+      accurate publication date and duration, and approved stable thumbnail.
+- [x] **Step 4:** Render the home page using an explicitly named temporary config
+      outside `astro.config.*`, excluding only full-corpus sitemap work. Check
+      actual JSON-LD, local image dimensions, visible text/links, shared headings,
+      desktop/mobile width and 16:9 player, no autoplay, and no inline CSS.
+- [ ] **Step 5:** Remove temporary config before running `npm run validate` in full;
+      record runtime, lockfile comparison, stages, tests, skips, diagnostics, and
+      actual CI state. No shared database reset/stop/rebuild.
+- [ ] **Step 6:** Return the scoped diff for independent review; leave commit/push
+      and final-commit validation to the coordinating agent.

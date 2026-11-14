@@ -9,6 +9,9 @@ content makes the explanation available before visitors explore the national map
 - Add an introduction section between the home hero and National overview.
 - Present a short sentence and a responsive, accessible YouTube embed.
 - Preserve existing home-page content and shared styles.
+- Following the user’s explicit follow-up approval, add a readable video summary
+  with existing record, reporting, and data-and-methods links.
+- Add accurate VideoObject metadata and a stable local copy of the approved thumbnail.
 
 ## Capabilities
 
@@ -22,6 +25,6 @@ None.
 
 ## Impact
 
-Changes `src/pages/index.astro` and this change's artifacts. No database, routing,
+Changes `src/pages/index.astro`, a thumbnail under `public/img/`, and this change's artifacts. No database, routing,
 dependency, data contract, or downstream consumer changes. No backward
 compatibility break or public-trust finding is introduced.

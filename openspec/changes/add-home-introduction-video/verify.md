@@ -4,131 +4,86 @@
 
 **Date:** 2026-11-13
 
-**Base SHA:** `dcf4ddd2f5956019746eb466bfdeadc398d422f7`
+**Current HEAD:** `7f8d6780c0ef6a4edef64687aaa61c44a0b3383f`
 
-**Current HEAD:** `e5048b5f131a22071adf326da1918e05f1a66f82`
-
-The branch synchronized with `origin/main` during the working-tree check. The
-base and synchronized HEAD trees are identical; the scoped implementation
-remains uncommitted. The coordinating agent will rerun the aggregate on its
-final committed head.
-
-**State:** Implementation is uncommitted on `feat/publish-source-data-annotations`
-in `.worktrees/publish-source-data-annotations`. No commit, push, merge, or
-website deployment is part of this verification report.
+**State:** Follow-up summary, VideoObject, and stable thumbnail are uncommitted on
+`feat/publish-source-data-annotations` in `.worktrees/publish-source-data-annotations`.
+No commit, push, merge, or deployment is part of this verification.
 
 ## Completeness, Correctness, and Coherence
 
-Both requirements and both scenarios map to `src/pages/index.astro`. Targeted
-HTML, layout, and accessibility checks passed; in-page playback remains unverified.
-The new section follows `#top` and precedes
-`#overview`. The actual YouTube ID is `xA6z1L-MG_k`. Existing sections are intact.
-Independent source/spec review found no issues.
+The original embed was extended after the user explicitly approved a readable
+summary, accurate video metadata, stable thumbnail, reviewed captions, and Search
+Console monitoring. Repo implementation covers summary, existing internal links,
+metadata, and thumbnail. Captions and Search Console account work are coordinated
+separately. This active change has not been archived.
 
-The delta spec remains in this active change; it has not been archived into
-`openspec/specs`. All planning artifacts are in the change directory, with no
-new files under `docs/superpowers`. There are no deferred dogfood tasks.
+All four requirements map to `src/pages/index.astro` and the approved thumbnail.
+The player remains after `#top` and before `#overview`; other home sections and
+shared styles are unchanged. One page-local object supplies iframe title and
+embed URL, visible summary, and VideoObject metadata. No new dependency, CSS,
+component, route, database change, crawl rule, or unrelated AI/SEO file was added.
 
 ## Runtime and Dependencies
 
 - Node `v24.21.0`; npm `11.19.0`, selected through mise.
-- Root `npm ci`: 511 installed packages. Nested Lambda `npm ci --omit=dev`:
-  123 installed packages, as required by the aggregate.
-- Installed version comparison against both lockfiles: 635 package entries
-  matched; zero mismatches. 126 optional platform package entries were absent.
-- `MISE_CACHE_DIR=.cache/mise` resolves the initial restricted cache-write
-  warning. No dependency exception is needed for this change.
-- Final doctor exit 0. Its Superpowers availability reminder is resolved by
-  the available and applied skills. Local Docker and schema checks passed.
+- Fresh root `npm ci --no-audit --no-fund`: exit 0; 511 installed packages.
+- Installed package versions match both lockfiles: 511 root and 123 Lambda
+  package entries, zero mismatches. 108 root and 18 Lambda optional platform
+  package entries are absent on this machine.
+- Doctor with required local/network access: exit 0; Docker, schema, and OpenSpec
+  checks passed. Standard agent-skill reminder is resolved by the applied skills.
+- Preflight schemas, change status, and apply instructions were reviewed.
+  `npm run validate:openspec`: 39 items passed, zero failures.
 
 ## Targeted Checks
 
-- Production Astro rendering of the home page only: exit 0, one page generated.
-  The corrected-video render completed in 1.98 seconds.
-  Temporary verification configuration omitted full-corpus sitemap generation,
-  which remains a separate production-release gate. Committed configuration is
-  unchanged.
-- `npm run validate:no-inline-css -- .cache/home-intro/dist`: exit 0; zero inline
-  CSS violations in two generated HTML files, including the home page.
-- Browser assertions at 1440×1000 and 390×844: correct order, exact embed URL and
-  title, lazy loading, fullscreen, focusable iframe, and no autoplay request.
-- Player dimensions: 1196.8×673.2 desktop and 366×205.9 mobile, both 16:9.
-  No horizontal overflow. The single H1 remains intact; the added H2 uses the
-  shared 24px token and copy uses 16px body text.
-- Existing shared text/background colors remain in use. No new color pair or
-  stylesheet was introduced. Desktop/mobile screenshots show the published
-  custom thumbnail and native player controls.
-- Mechanical design detector: exit 0, no findings.
+- A direct generated-HTML assertion first failed because VideoObject was absent.
+- Home-only production Astro rendering passed with the actual home source and
+  external CSS. Temporary configuration omitted full-corpus sitemap work only;
+  committed Astro configuration is unchanged. Full build/sitemap validation
+  remains a production-release gate.
+- Actual rendered JSON-LD parses and includes the exact title, matching visible
+  summary, `https://www.youtube.com/embed/xA6z1L-MG_k`, `PT1M41.68S`, `en`, and
+  the existing organization publisher reference. No false `contentUrl` is emitted.
+- `uploadDate` is `2026-11-13T20:20:02-08:00`, observed in the public YouTube
+  page's `datePublished` and `uploadDate` metadata by the coordinating agent.
+  The measured source duration is 101.680181 seconds; public YouTube rounds it
+  to 1 minute 42 seconds.
+- Thumbnail is the approved JPEG, copied unchanged to
+  `public/img/policeconduct-introduction-thumbnail.jpg`: 1280×720, 344400 bytes.
+  Rendered URL is absolute under the site's canonical origin.
+- The home canonical URL remains `https://www.policeconduct.org/` without noindex.
+  Existing robots rules permit the home page and image. Form crawl restrictions
+  remain intact; no crawler settings changed.
+- Rendered visible summary and links to `/find-records/`, `/report/new/`, and
+  `/data-and-methods/` passed. A rendered-text assertion reproduced missing spaces
+  at Astro link boundaries, then passed after explicit whitespace was added.
+- Desktop 1440×1000 and mobile 390×844 browser checks passed: section order,
+  correct embed/title, lazy/fullscreen/focus support, no autoplay, 16:9 player,
+  and no horizontal overflow. Player dimensions are 1196.8×673.2 and 366×205.9.
+  One H1 remains; the section H2 is the shared 24px token and body text is 16px.
+- Desktop/mobile screenshots were visually reviewed. Shared foreground and
+  background colors remain; no new color pair or stylesheet was introduced.
+- `npm run validate:no-inline-css -- .cache/home-intro/dist`: exit 0, two HTML
+  files checked with zero violations. Mechanical design check found no findings.
+- Temporary rendering configuration and server are removed before aggregate
+  browser tests, preventing changes to their running environment.
 
 ## Aggregate Validation
 
-`MISE_CACHE_DIR=.cache/mise mise exec -- npm run validate`: final corrected-video
-working-tree run exited 0. All 552 tests passed: 339 unit tests and 213 browser
-tests. There were zero failures and zero skips. Browser tests took 2.9 minutes.
+Final working-tree `npm run validate` is pending. The coordinating agent will
+review the diff, commit, and rerun aggregate validation on the final commit.
+CI for these uncommitted changes has not run. This is not merge or release evidence.
 
-| Stage                                                          | Final outcome                           |
-| -------------------------------------------------------------- | --------------------------------------- |
-| Repository formatting                                          | Passed                                  |
-| ESLint and pinned SQLFluff                                     | Passed                                  |
-| Astro/type diagnostics                                         | 340 files; zero errors, warnings, hints |
-| Shell syntax                                                   | Passed                                  |
-| Local database schema                                          | 29 public tables passed                 |
-| OpenSpec                                                       | 39 items passed; zero failures          |
-| Tracked personal-data scan                                     | Passed; zero findings                   |
-| Contact tests                                                  | 2 passed                                |
-| Annotation tests                                               | 15 passed                               |
-| Analytics configuration                                        | 15 passed                               |
-| Client tests                                                   | 30 passed                               |
-| Redirect tests                                                 | 131 passed                              |
-| Media tests                                                    | 3 passed                                |
-| Lambda tests                                                   | 36 passed                               |
-| CSS tests                                                      | 1 passed                                |
-| Personal-data scanner tests                                    | 12 passed                               |
-| Data tests                                                     | 39 passed                               |
-| Coverage tests                                                 | 55 passed                               |
-| Browser tests, including real generated/served Pagefind assets | 213 passed                              |
+## Release and Search Console Follow-up
 
-The separate explicit personal-data scan includes the untracked change artifacts
-and changed source: ten files checked, zero findings.
-
-The initial run exited 1 after temporary verification configuration was added
-while browser tests were running. That restarted the development server; two
-orphaned read-only sitemap queries also blocked later database reads. Only those
-two temporary sitemap queries were cancelled. The temporary build configuration
-was removed and the temporary development server stopped before the final run.
-No shared database reset, stop, or rebuild was performed.
-
-Initial non-browser stages passed: formatting, ESLint, SQLFluff, shell syntax,
-29-table schema contract, 39 OpenSpec items, and personal-data scan. Astro checked
-340 files with zero errors, warnings, or hints. Unit suites passed with zero
-skips: contacts 2, annotations 15, analytics configuration 15, client 30,
-redirects 131, media 3, Lambda 36, CSS 1, personal-data scanner 12, data 39,
-coverage 55. Initial browser result: 203 passed, 4 failed, 6 did not run due to
-the interrupted server/database access; that run does not establish readiness.
-
-Expected error-path diagnostics in mocked form tests assert the intended failure
-behavior and are not unresolved runtime defects. Required Pagefind coverage
-generates a real index from rendered agency HTML and serves its assets to the
-browser in `tests/e2e/site-search.spec.ts`.
-
-A subsequent obsolete aggregate attempt passed all non-browser stages and unit suites,
-then was intentionally stopped when the user supplied a corrected video source.
-The replacement embed is `xA6z1L-MG_k` (about 1 minute 42 seconds). Final rendering,
-screenshots, and the passing aggregate use that corrected video.
-
-## Playback Check
-
-The published corrected player's native controls and custom thumbnail render at
-both target widths. A headless click on its “Play video” button did not advance
-the video element from time zero. A browser-only comparison adding autoplay
-permission and removing web-share produced the same result; committed source
-was not changed. Actual-browser embedded playback confirmation is pending with
-the coordinating agent. The headless result is not counted as successful playback.
-
-## Overall Decision
-
-The corrected working-tree aggregate and targeted HTML/layout checks pass.
-Actual-browser embedded playback confirmation remains pending. CI for a new
-commit has not run because the change is uncommitted. Commit, final-commit
-validation, push, CI, merge, and website release remain separate steps for the
-coordinating agent.
+- After an approved deployment, inspect the public home page and its thumbnail
+  URL, confirm summary/player/JSON-LD rendering, and inspect the home URL in
+  Search Console against the deployed version.
+- Review Search Console's Videos report after Google recrawls. The coordinating
+  agent observed 8 indexed videos and 0 not indexed, with no active issues, in
+  a report last updated November 11, 2026. This predates the new home video;
+  it is a monitoring baseline, not proof that the new video is indexed.
+- Reviewed captions are account work still pending with the coordinating agent.
+- No recurring automation or index/rich-result guarantee is introduced.
