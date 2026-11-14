@@ -87,6 +87,7 @@ Data Interpretation Standards
 - Do not present causal claims, intent, motive, targeting, discrimination, safety, accountability, or other interpretive conclusions from descriptive records.
 - Prefer descriptive labels, counts, rates, comparisons, cohorts, and methodology notes.
 - Any inference must be explicitly labeled as an inference and must identify the direct supporting data and limitations.
+- The site never claims accuracy or verification. No page, label, heading, or copy may say or imply that we verified, confirmed, checked, or vouch for a record. Do not hedge in the other direction either: no per-page or per-record disclaimers that we do not verify. State that limit once, in the footer or the FAQ.
 
 Database Expectations
 
