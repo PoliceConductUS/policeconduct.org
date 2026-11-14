@@ -63,6 +63,8 @@ for (const [name, script, args, builds] of [
             encoding: "utf8",
             env: {
               ...process.env,
+              // Preserve the fixture command PATH across nested shell scripts.
+              BASH_ENV: "",
               PATH: `${join(root, "bin")}:${process.env.PATH}`,
               CALL_LOG: log,
               COVERAGE_EXIT: fails ? "42" : "0",
