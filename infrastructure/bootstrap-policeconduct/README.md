@@ -190,7 +190,7 @@ Custom MAIL FROM can remain in `Pending` for a while after apply while SES check
 ## Resend Domain Bootstrap
 
 - create or look up the Resend sending domain for `forms_email_verification_domain`
-- keep open/click tracking disabled
+- preserve existing provider tracking and capability settings
 - fetch the required DNS records from Resend
 - create those DNS records in Route 53 automatically
 
@@ -198,13 +198,11 @@ The values are fixed in this repo:
 
 - sending domain: `mail.policeconduct.org`
 - SES custom MAIL FROM: `bounce.mail.policeconduct.org`
-- tracking host, if you ever enable it later in code: `links.mail.policeconduct.org`
+- tracking DNS: included in `aws_route53_record.resend_domain_record` from the exact Resend response, alongside sending and receiving records
 
 If a previous bootstrap wrote incorrect doubled-`mail` Route 53 records such as
-`send.mail.mail.policeconduct.org`, rerunning
-`bash infrastructure/bootstrap-policeconduct/scripts/apply.sh` will replace the
-managed records with the corrected names and delete the old managed records as
-part of the same apply.
+`send.mail.mail.policeconduct.org`, inspect the exact DNS diff and prepare a scoped
+change with rollback. Do not run an untargeted Terraform apply for email repairs.
 
 `infrastructure/bootstrap-policeconduct/scripts/apply.sh` now loads `.env-policeconduct` and maps `RESEND_API_KEY` into the Terraform input used by the forms Lambda. The same shell environment is used by the Resend bootstrap script, so keeping `RESEND_API_KEY` in `.env-policeconduct` is enough for the normal apply flow.
 
@@ -222,7 +220,21 @@ export PATH=/opt/homebrew/bin:$PATH
 bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
 ```
 
-To inspect or verify the domain manually, you can also run:
+Terraform uses `--read`: it only looks up the existing domain and DNS records.
+A missing domain fails the plan without creating anything. Planning never creates,
+updates, or triggers verification of the Resend domain.
+
+To inspect the domain manually:
+
+```bash
+source .env-policeconduct
+node scripts/bootstrap-resend-domain.mjs --read
+```
+
+Creating a missing domain is a separate, explicit production change.
+`--apply` preserves all settings on existing domains; it never configures tracking
+or triggers verification. Configure tracking separately through the Resend
+Domains API or dashboard after inspecting the current settings. After obtaining the applicable production approval, run:
 
 ```bash
 source .env-policeconduct
@@ -326,3 +338,32 @@ Useful message keys for this flow:
 - `forms.submit.origin_rejected`
 - `forms.verify.success`
 - `forms.request.error`
+
+### Tracking DNS reconciliation (INS-153)
+
+Resend readback on November 14, 2026 requests the CNAME
+`links.mail.policeconduct.org` → `links1.resend-dns.com`.
+Click tracking is enabled, open tracking is disabled, and the tracking subdomain
+is `links`. Terraform reads these settings without modifying them. The lookup
+includes Tracking records in `records_json`; do not create DNS separately using
+the AWS CLI or console.
+
+Before applying, use the existing backend and approved AWS profile. Inspect state
+and a saved targeted plan for `aws_route53_record.resend_domain_record`.
+Reconcile existing records with state through imports when missing; do not assume
+this bootstrap stack already owns live records. The expected DNS change is one
+tracking CNAME, TTL 600. Reject changes to existing DKIM, SPF, sending MX, receiving
+MX, root Google MX, or unrelated infrastructure. Record keys contain the provider
+response index: inspect exact addresses in the plan rather than assuming an index.
+Apply only the reviewed saved plan under the production authorization gate.
+
+After applying, compare all authoritative nameservers with the provider response
+and run the separate verification command. A receiving record can match DNS while
+Resend still reports pending; do not change inbound routing to resolve that status.
+Rollback must use Terraform: revert the tracking inclusion, review a targeted
+plan removing only the newly managed CNAME, and apply that saved plan. Never remove
+pre-existing records or disable provider tracking as an implicit rollback.
+
+Provider settings are preserved and observed, not Terraform-managed resources.
+A matching DNS configuration does not prove the entire AWS account is free of drift;
+that requires authenticated state refresh and plan review.
