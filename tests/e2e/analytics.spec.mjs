@@ -624,3 +624,136 @@ test("verification failure reasons never copy free text from the API", async ({
   });
   expect(JSON.stringify(analytics.commands)).not.toContain("private-");
 });
+
+test("advanced consent remembers choices and withdrawal keeps advertising denied", async ({
+  page,
+  baseURL,
+}) => {
+  const analytics = await visitSite(
+    page,
+    baseURL,
+    "https://policeconduct.org/about/contact/",
+  );
+  const panel = page.getByRole("region", { name: "Analytics cookie choices" });
+  const allow = page.getByRole("button", {
+    name: "Allow analytics cookies",
+    exact: true,
+  });
+  const decline = page.getByRole("button", {
+    name: "Decline analytics cookies",
+    exact: true,
+  });
+  const settings = page.getByRole("button", {
+    name: "Privacy settings",
+    exact: true,
+  });
+  await expect(panel).toBeVisible();
+  await expect.poll(() => analytics.tagLoads.length).toBe(1);
+  expect(
+    analytics.tagLoads[0].queue.find((entry) => entry[0] === "consent")[2],
+  ).toEqual({
+    analytics_storage: "denied",
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+  });
+  await decline.click();
+  await expect(panel).toBeHidden();
+  await page.reload();
+  await expect(panel).toBeHidden();
+  expect(
+    await page.evaluate(
+      () =>
+        Array.from(window.dataLayer).find((entry) => entry[0] === "consent")[2]
+          .analytics_storage,
+    ),
+  ).toBe("denied");
+  await settings.click();
+  await allow.click();
+  await page.reload();
+  await expect(panel).toBeHidden();
+  expect(
+    await page.evaluate(
+      () =>
+        Array.from(window.dataLayer).find((entry) => entry[0] === "consent")[2]
+          .analytics_storage,
+    ),
+  ).toBe("granted");
+  await page.context().addCookies([
+    { name: "_ga", value: "fixture", domain: ".policeconduct.org", path: "/" },
+    {
+      name: "_ga_FIXTURE",
+      value: "fixture",
+      domain: "policeconduct.org",
+      path: "/",
+    },
+  ]);
+  await settings.click();
+  await decline.click();
+  const lastConsent = await page.evaluate(
+    () =>
+      Array.from(window.dataLayer)
+        .filter((entry) => entry[0] === "consent")
+        .at(-1)[2],
+  );
+  expect(lastConsent).toEqual({
+    analytics_storage: "denied",
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+  });
+  expect(
+    (await page.context().cookies()).filter((cookie) =>
+      cookie.name.startsWith("_ga"),
+    ),
+  ).toEqual([]);
+  expect(
+    await settings.evaluate((element) => element === document.activeElement),
+  ).toBe(true);
+  await page.evaluate(() =>
+    window.__IPC_ANALYTICS__.track("fixture_after_decline"),
+  );
+  await expect
+    .poll(() => analytics.events("fixture_after_decline").length)
+    .toBe(1);
+});
+
+test("unavailable choice storage defaults to denied and reports unsaved acceptance", async ({
+  page,
+  baseURL,
+}) => {
+  await page.addInitScript(() => {
+    Storage.prototype.getItem = () => {
+      throw new Error("Storage unavailable");
+    };
+    Storage.prototype.setItem = () => {
+      throw new Error("Storage unavailable");
+    };
+  });
+  const analytics = await visitSite(
+    page,
+    baseURL,
+    "https://policeconduct.org/about/contact/",
+  );
+  await expect(
+    page.getByRole("region", { name: "Analytics cookie choices" }),
+  ).toBeVisible();
+  expect(
+    analytics.commands.find((entry) => entry[0] === "consent")[2]
+      .analytics_storage,
+  ).toBe("denied");
+  await page
+    .getByRole("button", { name: "Allow analytics cookies", exact: true })
+    .click();
+  await expect(page.locator("[data-consent-status]")).toContainText(
+    "could not save",
+  );
+  await page.reload();
+  expect(
+    await page.evaluate(
+      () =>
+        Array.from(window.dataLayer).find((entry) => entry[0] === "consent")[2]
+          .analytics_storage,
+    ),
+  ).toBe("denied");
+});

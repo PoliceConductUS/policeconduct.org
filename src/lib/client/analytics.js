@@ -1,3 +1,5 @@
+import { readAnalyticsChoice, consentState } from "./analytics-consent.js";
+
 const MEASUREMENT_ID = "G-40S6M70XP7";
 const ATTRIBUTION_PARAMETERS = new Set([
   "utm_source",
@@ -80,11 +82,7 @@ export const initializeAnalytics = () => {
     // eslint-disable-next-line prefer-rest-params -- Google's command dispatcher requires an Arguments object, not a rest Array.
     if (isProduction()) window.dataLayer.push(arguments);
   };
-  window.gtag("consent", "default", {
-    ad_storage: "denied",
-    ad_user_data: "denied",
-    ad_personalization: "denied",
-  });
+  window.gtag("consent", "default", consentState(readAnalyticsChoice()));
   const context = pageContext();
   window.gtag("js", new Date());
   window.gtag("set", context);

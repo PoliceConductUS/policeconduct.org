@@ -1,5 +1,6 @@
 ---
 import "#src/styles/theme.css";
+import AnalyticsConsent from "#src/components/AnalyticsConsent.astro";
 import GoogleAnalytics from "#src/components/GoogleAnalytics.astro";
 import MastheadSearch from "#src/components/MastheadSearch.astro";
 import {
@@ -152,6 +153,7 @@ const serializeStructuredData = (value: unknown) =>
       </div>
     </header>
 
+    <AnalyticsConsent />
     <slot />
 
     <footer class="border-top mt-auto d-print-none" data-pagefind-ignore>

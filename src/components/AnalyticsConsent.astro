@@ -1,0 +1,68 @@
+---
+---
+
+<div class="analytics-privacy" data-pagefind-ignore>
+  <button type="button" data-privacy-settings hidden>
+    Privacy settings
+  </button>
+  <section data-analytics-consent aria-label="Analytics cookie choices" hidden>
+    <p>
+      <strong>Choose your analytics cookies</strong>
+    </p>
+    <p>
+      We use Google Analytics to learn how this site is used. You can allow
+      analytics cookies or decline them. If you decline, Google still receives
+      limited measurements without analytics cookies. Advertising features stay
+      off with either choice. Change your choice here at any time.
+    </p>
+    <p data-consent-status role="status"></p>
+    <div class="analytics-choices">
+      <button type="button" data-analytics-choice="granted">
+        Allow analytics cookies
+      </button>
+      <button type="button" data-analytics-choice="denied">
+        Decline analytics cookies
+      </button>
+    </div>
+  </section>
+</div>
+
+<script>
+  import { initializeConsentControls } from "../lib/client/analytics-consent.js";
+  initializeConsentControls();
+</script>
+
+<style>
+  .analytics-privacy {
+    padding: 1rem;
+    color: #172b4d;
+    background: #fff;
+    border-top: 1px solid #172b4d;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  .analytics-privacy section {
+    max-width: 60rem;
+    margin: 1rem auto;
+  }
+  .analytics-privacy p {
+    margin: 0 0 1rem;
+  }
+  .analytics-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .analytics-privacy button {
+    font: inherit;
+    color: #172b4d;
+    background: #fff;
+    border: 1px solid #172b4d;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+  }
+  .analytics-privacy button:focus-visible {
+    outline: 3px solid #172b4d;
+    outline-offset: 3px;
+  }
+</style>
