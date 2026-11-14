@@ -1,5 +1,7 @@
 ## Implementation
 
+- [x] Display the build commit at the bottom of the shared footer, matching section1983 (12-character SHA and dirty marker).
+
 - [x] Implement advanced consent defaults and cookie choice panel as requested.
 - [x] Remember valid choices; handle unavailable storage safely.
 - [x] Allow withdrawal, remove GA cookies, and sync changes across tabs.

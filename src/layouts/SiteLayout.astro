@@ -57,6 +57,18 @@ const structuredDataEntries = structuredData
     ? structuredData
     : [structuredData]
   : [];
+const fullCommitSha = (
+  process.env.GIT_COMMIT_SHA ||
+  process.env.GITHUB_SHA ||
+  "unknown"
+).trim();
+const isDirtyBuild = ["1", "true", "yes"].includes(
+  (process.env.GIT_COMMIT_DIRTY || "").trim().toLowerCase(),
+);
+const commitDisplay =
+  fullCommitSha === "unknown"
+    ? "unknown"
+    : `${fullCommitSha.slice(0, 12)}${isDirtyBuild ? "-dirty" : ""}`;
 const serializeStructuredData = (value: unknown) =>
   JSON.stringify(value).replace(/</g, "\\u003c");
 ---
@@ -534,6 +546,9 @@ const serializeStructuredData = (value: unknown) =>
             </a>
           </p>
           <p class="mb-0">© 2026 {ORG_LEGAL_NAME} All rights reserved.</p>
+          <p class="mt-2 mb-0">
+            Build commit: <code class="text-reset">{commitDisplay}</code>
+          </p>
         </div>
       </div>
       <AnalyticsConsent />
