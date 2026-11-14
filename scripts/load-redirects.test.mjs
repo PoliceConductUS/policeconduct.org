@@ -303,8 +303,12 @@ function deploy(
         encoding: "utf8",
         env: {
           ...process.env,
+          // Keep shell startup files from replacing the fixture command PATH.
+          BASH_ENV: "",
           PATH: `${dir}/bin:${process.env.PATH}`,
           TEST_LOG: log,
+          GIT_COMMIT_SHA: "0123456789ab",
+          GIT_COMMIT_DIRTY: "false",
           S3_BUCKET: "prod",
           CLOUDFRONT_DIST_ID: "prod-dist",
           KVS_ARN: "prod-kvs",
