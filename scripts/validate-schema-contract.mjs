@@ -328,8 +328,8 @@ const requiredTables = {
     notNull: ["id", "personnel_id", "name"],
   },
   review_links: {
-    columns: ["id", "review_id", "title", "url"],
-    notNull: ["id", "title", "url"],
+    columns: ["id", "review_id", "title", "url", "civil_case_id"],
+    notNull: ["id", "review_id"],
   },
   review_personnel: {
     columns: ["id", "review_id", "agency_personnel_id", "rating_overall"],

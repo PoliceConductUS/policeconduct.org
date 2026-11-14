@@ -1,7 +1,6 @@
 ---
 import RecordDataNotes from "#src/components/RecordDataNotes.astro";
-import { annotationFromRecord } from "#src/lib/data/annotation-values.js";
-import DataAnnotations from "#src/components/DataAnnotations.astro";
+import PersonnelAssignments from "#src/components/PersonnelAssignments.astro";
 import CoverageLinks from "#src/components/CoverageLinks.astro";
 import { loadCoverageLinksForOfficer } from "#src/lib/data/coverage.js";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
@@ -83,12 +82,6 @@ const data = await withDb(async (client) => {
       [officerId],
     )
   ).rows;
-  const assignmentAnnotations = (
-    await client.query(
-      "select * from public.data_annotation where status = 'active' and subject_kind = 'AgencyPersonnel' and subject_id = any($1) order by id",
-      [agencyOfficers.map((entry: { id: string }) => entry.id)],
-    )
-  ).rows;
   const agencyIds = agencyOfficers.map(
     (entry: { agency_id: string }) => entry.agency_id,
   );
@@ -160,7 +153,6 @@ const data = await withDb(async (client) => {
   return {
     officer,
     agencyOfficers,
-    assignmentAnnotations,
     agencies,
     reports,
     civilCases,
@@ -772,99 +764,11 @@ const structuredData = {
       ) : null}
     </section>
 
-    <section
-      id="agency-assignments"
-      class="personnel-panel personnel-panel-wide"
-    >
-      <div class="personnel-panel-heading">
-        <h2>{metricLabels.agencies}</h2>
-        <p>Known agency assignments linked to this profile.</p>
-      </div>
-      {assignmentHistory.length ? (
-        <div class="personnel-table-wrap">
-          <table class="personnel-mini-table">
-            <thead>
-              <tr>
-                <th scope="col">Agency</th>
-                <th scope="col">Role</th>
-                <th scope="col">License</th>
-                <th scope="col">Start Date</th>
-                <th scope="col">End Date</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {assignmentHistory.map((entry) => (
-                <tr data-agency-assignment-id={entry.id}>
-                  <th scope="row">
-                    {entry.agency.page_type === "agency" ? (
-                      <a href={requireAgencyCanonicalPath(entry.agency)}>
-                        {entry.agency.name}
-                      </a>
-                    ) : (
-                      entry.agency.name
-                    )}
-                  </th>
-                  <td>{entry.title || currentTitle}</td>
-                  <td>
-                    {entry.license_id &&
-                      (() => {
-                        const license = licensing.licenses.find(
-                          (license) => license.id === entry.license_id,
-                        );
-                        if (!license)
-                          throw new Error(
-                            `Assignment ${entry.id} references missing license ${entry.license_id}`,
-                          );
-                        return (
-                          <a href={`#license-${license.id}`}>
-                            {license.licenseType}
-                          </a>
-                        );
-                      })()}
-                  </td>
-                  <td>
-                    {entry.start_date
-                      ? formatAssignmentDate(entry.start_date)
-                      : ""}
-                    <DataAnnotations
-                      annotations={data.assignmentAnnotations
-                        .filter(
-                          (annotation) => annotation.subject_id === entry.id,
-                        )
-                        .map(annotationFromRecord)}
-                      field="start_date"
-                    />
-                  </td>
-                  <td>
-                    {entry.end_date != null
-                      ? formatAssignmentDate(entry.end_date)
-                      : "Present"}
-                    <DataAnnotations
-                      annotations={data.assignmentAnnotations
-                        .filter(
-                          (annotation) => annotation.subject_id === entry.id,
-                        )
-                        .map(annotationFromRecord)}
-                      field="end_date"
-                    />
-                  </td>
-                  <td>
-                    <span class="personnel-status-pill">
-                      {getAssignmentStatus(entry).isEnded
-                        ? "Completed"
-                        : getAssignmentStatus(entry).isCurrent
-                          ? "Active"
-                          : "Status uncertain"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-    </section>
+    <PersonnelAssignments
+      assignmentHistory={assignmentHistory}
+      currentTitle={currentTitle}
+      licensing={licensing}
+    />
   </div>
 
   <div class="personnel-footer-actions">

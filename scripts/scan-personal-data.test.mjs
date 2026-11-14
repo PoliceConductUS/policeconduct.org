@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
@@ -51,6 +52,42 @@ const readHistoricalBlob = (sha) => {
 const homePath = ["", "Users", "alice", "dev", "notes.md"].join("/");
 const linuxHomePath = ["", "home", "bob", "dev", "notes.md"].join("/");
 const linuxbrewLine = `  elif [[ -x ${["", "home", "linuxbrew", ".linuxbrew", "bin", "brew"].join("/")} ]]; then`;
+
+for (const [name, content] of [
+  ["large.txt", `${" ".repeat(2 * 1024 * 1024)}${homePath}`],
+  ["binary.dat", Buffer.concat([Buffer.from([0]), Buffer.from(homePath)])],
+]) {
+  test(`the CLI detects a home path in ${name}`, () => {
+    const directory = mkdtempSync(join(tmpdir(), "personal-data-scan-"));
+    try {
+      writeFileSync(join(directory, name), content);
+      const result = spawnSync(
+        process.execPath,
+        [join(ROOT, "scripts/scan-personal-data.mjs"), "--files", name],
+        { cwd: directory, encoding: "utf8" },
+      );
+      assert.equal(result.status, 1, result.stdout);
+      assert.match(result.stderr, /Control A\/home-path/);
+      assert.ok(!result.stderr.includes(homePath), "findings stay redacted");
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+}
+
+test("the CLI fails when a requested file cannot be read", () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      join(ROOT, "scripts/scan-personal-data.mjs"),
+      "--files",
+      "missing-scan-fixture.txt",
+    ],
+    { cwd: tmpdir(), encoding: "utf8" },
+  );
+  assert.equal(result.status, 1, result.stdout);
+  assert.doesNotMatch(result.stdout, /0 findings/);
+});
 
 test("Control A catches File 1, the machine-artifact blob from INS-29", () => {
   const { path, sha } = INS29_BLOBS.machineArtifact;

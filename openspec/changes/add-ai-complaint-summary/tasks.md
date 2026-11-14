@@ -7,3 +7,8 @@
 - [ ] Run full repository validation, verify loopback page and redirects, and record exact combined commits.
 
 - [x] Distinguish sourced missing-copy states from pending and failed processing; render an honest message and donation link.
+
+## Remove unrequested provenance requirements
+
+- [x] Require only summary text and complaint link across intake, SQL, and website.
+- [x] Verify minimal summaries, retained metadata, and invalid rendered fields.

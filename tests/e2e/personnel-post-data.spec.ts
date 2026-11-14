@@ -8,9 +8,11 @@ const previousPoolMax = process.env.DATABASE_POOL_MAX;
 let client: Client;
 
 test.beforeAll(async () => {
+  const databaseUrl = process.env.DATABASE_URL;
   for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
     dotenv.config({ path, override: true, quiet: true });
   }
+  if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
   // One connection keeps fixture setup and the real loader in the same
   // rollback-only transaction. These tests run sequentially in the worker.
   process.env.DATABASE_POOL_MAX = "1";

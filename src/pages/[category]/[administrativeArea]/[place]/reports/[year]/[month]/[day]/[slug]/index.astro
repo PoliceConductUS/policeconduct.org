@@ -403,6 +403,17 @@ const structuredData = {
         </>
       ) : null}
 
+      {data.relatedCases.length ? (
+        <>
+          <h3>Related cases</h3>
+          {data.relatedCases.map((civilCase) => (
+            <p>
+              <a href={civilCase.path}>{civilCase.title}</a>
+            </p>
+          ))}
+        </>
+      ) : null}
+
       {evidenceLinks.length ? (
         <>
           <h3>Records and evidence</h3>

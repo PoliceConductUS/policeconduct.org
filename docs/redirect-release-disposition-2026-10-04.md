@@ -39,13 +39,13 @@ The four remaining federal aliases now resolve to existing headquarters Agency r
 
 The nested watch routes were deleted in `c0d17dd` on May 22, 2026. The located design forbids a top-level video section; explicit approval to remove nested watch pages has not been established. The user expects those pages to remain. Both legacy watch pages still serve on production and embed YouTube video `TKh6X74AEc0`. The current report links to that video under a different link ID; the current case has only a CourtListener link. Restore watch behavior and resolve backing-link identity/relationship loss through intake; do not replace the watch page with a redirect to an ordinary parent page. Full diagnostic: `/tmp/pc-watch-route-findings-20261004.md`.
 
-## Current seven-case trace
+## Seven-case trace before the October 5 import
 
 Follow-up: the shared intake whitespace, `office` substring, and Officer/Chief title-scoring bugs are now fixed locally. Read-only replay matches Savell to Bryan T Pham. The subsequent user-authorized initials update also matches Eldreth to Houston PD personnel Blake M. Bullin and Christian C. Flores; it additionally matches Claudia Flores in the separately acquired Houston Emergency Center scope, whose roster lacks a middle name. Clark remains unresolved: its acquired name is Chief Mike Gudgel, and the Denison roster contains Michael A. Gudgel, but Clark is absent from Denison acquisition results and nickname handling is unchanged. No records have been imported. Current verification and zero-docket provenance: `../intake/openspec/changes/fix-civil-party-name-resolution/verify.md` (relative to the repository roots). The table below records the original pre-fix trace.
 
-The retained `dev-copy` September 28 acquisition contains six exact dockets. Its latest September 30 CivilCases artifact contains 465 cases and none of these six. All seven requested cases are absent from the current database. The configured `dev` workspace has no CourtListener acquired files; it must not be confused with the retained acquisition in `dev-copy`.
+The retained `dev-copy` September 28 acquisition contains six exact dockets. Its latest September 30 CivilCases artifact contains 465 cases and none of these six. All seven requested cases were absent from the database at the time of this trace. The configured `dev` workspace has no CourtListener acquired files; it must not be confused with the retained acquisition in `dev-copy`.
 
-Current read-only replay against the actual personnel resolver establishes the exclusion gate: every acquired case passes title/date validation, but resolves zero personnel, so `sources/courtlistener/transform.ts:100` skips it before import.
+Read-only replay at this stage against the actual personnel resolver established the exclusion gate: every acquired case passes title/date validation, but resolves zero personnel, so `sources/courtlistener/transform.ts:100` skips it before import.
 
 | Case     | Exact docket acquired in dev-copy? | Current exclusion evidence                                                                                                                                                                                                              |
 | -------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -57,7 +57,7 @@ Current read-only replay against the actual personnel resolver establishes the e
 | Savell   | Yes                                | The same `office` filter rejects `Officer  Bryan Pham` before resolution, although Galveston's roster contains Bryan T Pham; the remaining candidate fails resolution.                                                                  |
 | Van Kirk | No                                 | Requested 4:26-cv-02517 is absent in both inspected acquisition runs. Same title appears as CourtListener 73112445 / 4:26-cv-00000; title equality does not prove identical case identity. That alternate also resolves zero personnel. |
 
-These are current verified transform results, not a reconstruction of the historical roster on September 30. No intake data or resolver code was changed. Detailed source paths, canonical IO, every agency occurrence, and reproduction limits: `/tmp/pc-seven-cases-current-trace.md`; machine-readable resolver evidence: `/tmp/pc-seven-resolver-trace.json`.
+These were verified transform results at that stage, not a reconstruction of the historical roster on September 30. The trace itself did not change intake data or resolver code; subsequent fixes and imports are recorded above. Detailed source paths, canonical IO, every agency occurrence, and reproduction limits: `/tmp/pc-seven-cases-current-trace.md`; machine-readable resolver evidence: `/tmp/pc-seven-resolver-trace.json`.
 
 ## Decision groups
 
@@ -92,7 +92,7 @@ These are current verified transform results, not a reconstruction of the histor
 - Current record absence and unchanged-slug comparisons were queried on October 4; retained production reference: `intake-workspace/dev-copy/audits/rebuild-20260927/production-reference-text-tables.sql` and `intake-workspace/dev/backups/reference-20260814/`.
 - Historical intake dispositions: `intake-workspace/dev-copy/audits/rebuild-20260926/published-absent-slugs.csv`. They explain prior decisions/input coverage; current source eligibility has not been re-audited for all records.
 - Approved retained federal/Texas identities: `intake-workspace/dev-copy/audits/production-local-roots-20260927/agency-survivor-selection.json`. Minnesota duplicate omissions are recorded in the historical intake disposition audit; the user approved redirecting the seven listed MN/TX duplicate records in this session.
-- No production build, publication, new absence entry, or intake mutation is part of this change. The final production build still needs its own coverage run.
+- The trace and preserved build are historical evidence. Subsequent intake mutations and absence decisions are recorded in the dated updates above. The final production build still needs its own coverage run.
 
 ## Pre-merge and deployment order
 
@@ -505,7 +505,7 @@ Recommend exact absence records; do not restore excluded records.
 
 ### Cases outside selected input (50)
 
-Fresh trace above corrects this historical group: six exact acquired dockets and one absent exact docket. Preserve original IDs/slugs in any restoration; no substitute case redirect.
+These 50 cases retain their historical classification below; they were not rechecked in the seven-case trace above.
 
 | Legacy URL                                                                                | Record / identity                                                                     | Evidence                                                                                           |
 | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |

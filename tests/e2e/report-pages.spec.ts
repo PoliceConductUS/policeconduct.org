@@ -25,8 +25,11 @@ let reportFixture: ReportFixture | null = null;
 let personnelFixture: PersonnelFixture | null = null;
 
 test.beforeAll(async () => {
+  const configuredDatabaseUrl = process.env.DATABASE_URL;
   for (const path of [".env", ".env-recaptcha", ".env-policeconduct"])
     dotenv.config({ path, override: true, quiet: true });
+  if (configuredDatabaseUrl !== undefined)
+    process.env.DATABASE_URL = configuredDatabaseUrl;
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
     throw new Error("DATABASE_URL is required for report-pages fixtures.");
@@ -209,4 +212,42 @@ test.describe("agency personnel report counts", () => {
       `${personnelFixture!.reportCount} report${personnelFixture!.reportCount === 1 ? "" : "s"}`,
     );
   });
+});
+
+test("report case relationships render current case titles and internal links", async ({
+  page,
+}) => {
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    const { rows } = await client.query(`
+      select c.title, c.slug, lp.path,
+        r.slug as report_slug, to_char(r.incident_date, 'YYYY/MM/DD') as incident_path
+      from public.review_links l
+      join public.civil_cases c on c.id = l.civil_case_id
+      join public.reviews r on r.id = l.review_id
+      join public.location_path lp on lp.location_path_id = r.location_path_id
+      order by l.id
+    `);
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      await page.goto(
+        `${row.path}reports/${row.incident_path}/${row.report_slug}/`,
+      );
+      const link = page.locator(`article a[href="/civil-cases/${row.slug}/"]`);
+      await expect(link).toHaveText(row.title);
+      await expect(link).not.toHaveAttribute("target", "_blank");
+      await expect(link).not.toHaveAttribute("rel", /noopener|noreferrer/);
+      expect(
+        await link.evaluate(
+          (element) => getComputedStyle(element, "::after").content,
+        ),
+      ).toMatch(/^(none|normal|"")$/);
+      await link.click();
+      await expect(page).toHaveURL(new RegExp(`/civil-cases/${row.slug}/$`));
+      await expect(page.locator("h1")).toContainText(row.title);
+    }
+  } finally {
+    await client.end();
+  }
 });

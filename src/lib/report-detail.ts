@@ -26,7 +26,7 @@ type ReportDetailQuery = {
     agency_personnel_id: string;
     rating_overall: number | null;
   }[];
-  reportLinks: EvidenceLinkSource[];
+  reportLinks: ReportLinkSource[];
   officers: { id: string; slug: string }[];
   agencies: { id: string; canonical_path: string }[];
   agencyOfficers: {
@@ -91,14 +91,8 @@ export type ReportDetailModel = {
     reports: { label: string; href: string };
   };
   officers: ReportOfficerEntry[];
-  evidenceLinks: {
-    id: string;
-    title: string;
-    url: string;
-    source_name?: string | null;
-    published_at?: string | null;
-    notes?: string | null;
-  }[];
+  evidenceLinks: EvidenceLink[];
+  relatedCases: { id: string; title: string; path: string }[];
 };
 
 const buildOfficerEntries = (
@@ -158,17 +152,51 @@ type EvidenceLink = {
   published_at?: string | null;
   notes?: string | null;
 };
-type EvidenceLinkSource = { id: string; title: string; url: string };
+type ReportLinkSource = {
+  id: string;
+  title: string | null;
+  url: string | null;
+  civil_case_id: string | null;
+  case_id: string | null;
+  case_title: string | null;
+  case_slug: string | null;
+};
 
-const buildEvidenceLinks = (links: EvidenceLinkSource[]): EvidenceLink[] =>
-  links.map((link) => {
-    const id = assertValue(link.id, "Missing id for review_links row");
-    return {
-      id,
-      title: link.title,
-      url: link.url,
-    };
-  });
+const buildReportLinks = (links: ReportLinkSource[]) => {
+  const evidenceLinks: EvidenceLink[] = [];
+  const relatedCases: ReportDetailModel["relatedCases"] = [];
+  for (const link of links) {
+    const id = assertValue(
+      nullableText(link.id),
+      "Missing id for review_links row",
+    );
+    if (link.civil_case_id !== null) {
+      const caseId = assertValue(
+        nullableText(link.case_id),
+        `Missing civil case ${link.civil_case_id} for review_links row ${id}`,
+      );
+      const title = assertValue(
+        nullableText(link.case_title),
+        `Missing title for civil case ${caseId} on review_links row ${id}`,
+      );
+      const slug = assertValue(
+        nullableText(link.case_slug),
+        `Missing slug for civil case ${caseId} on review_links row ${id}`,
+      );
+      relatedCases.push({ id, title, path: `/civil-cases/${slug}/` });
+    } else {
+      evidenceLinks.push({
+        id,
+        title: assertValue(
+          link.title,
+          `Missing title for review_links row ${id}`,
+        ),
+        url: assertValue(link.url, `Missing url for review_links row ${id}`),
+      });
+    }
+  }
+  return { evidenceLinks, relatedCases };
+};
 
 export const loadReportDetail = async (
   slug: string,
@@ -218,7 +246,12 @@ export const loadReportDetail = async (
     ).rows;
     const reportLinks = (
       await client.query(
-        "select * from public.review_links where review_id = $1",
+        `
+          select l.*, c.id as case_id, c.title as case_title, c.slug as case_slug
+          from public.review_links l
+          left join public.civil_cases c on c.id = l.civil_case_id
+          where l.review_id = $1
+        `,
         [report.id],
       )
     ).rows;
@@ -279,7 +312,7 @@ export const loadReportDetail = async (
     `Report ${reportId} is missing place_name.`,
   );
 
-  const evidenceLinks = buildEvidenceLinks(data.reportLinks ?? []);
+  const { evidenceLinks, relatedCases } = buildReportLinks(data.reportLinks);
 
   return {
     report: data.report,
@@ -312,5 +345,6 @@ export const loadReportDetail = async (
       data as ReportDetailQuery & { report: Record<string, unknown> },
     ),
     evidenceLinks,
+    relatedCases,
   };
 };

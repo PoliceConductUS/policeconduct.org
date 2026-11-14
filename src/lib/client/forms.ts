@@ -758,7 +758,7 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
       let detailMessage =
         getSuccessDetail?.({ result }) ||
         message ||
-        "We received your submission. Check your email and open the verification link within 15 minutes. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+        "We received your submission. Check your email and open the link within 15 minutes to confirm your email address. Please contact hello@policeconduct.org if you need help.";
       if (verificationPending === false) {
         console.error("Form verification email failed", result);
         if (requestId) {

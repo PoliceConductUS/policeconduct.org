@@ -756,7 +756,7 @@
           "kind": "held_exceeds_denominator",
           "scope": "DC",
           "denominatorId": "csllea_2018_general_purpose_DC",
-          "detail": "17 agencies held in DC against 1 general-purpose agencies in DC (BJS Census of State and Local Law Enforcement Agencies, 2018). Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage and no ceiling is reported.",
+          "detail": "17 agencies held in DC against 1 general-purpose agencies in DC (BJS Census of State and Local Law Enforcement Agencies, 2018). The held count exceeds the dated estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage or ceiling is reported.",
           "unblockedBy": "Reconcile the held records against the denominator's universe. Candidate explanations, none yet tested: duplicate agency rows, sub-units such as constable precincts counted as separate agencies, entities that employ licensed officers but are not law enforcement agencies, and the BJS exclusion of agencies with less than one full-time-equivalent sworn officer."
         }
       },
@@ -788,7 +788,7 @@
           "kind": "held_exceeds_denominator",
           "scope": "DC",
           "denominatorId": "csllea_2018_all_agency_DC",
-          "detail": "17 agencies held in DC against 3 law enforcement agencies of all types in DC (BJS Census of State and Local Law Enforcement Agencies, 2018). Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage and no ceiling is reported.",
+          "detail": "17 agencies held in DC against 3 law enforcement agencies of all types in DC (BJS Census of State and Local Law Enforcement Agencies, 2018). The held count exceeds the dated estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage or ceiling is reported.",
           "unblockedBy": "Reconcile the held records against the denominator's universe. Candidate explanations, none yet tested: duplicate agency rows, sub-units such as constable precincts counted as separate agencies, entities that employ licensed officers but are not law enforcement agencies, and the BJS exclusion of agencies with less than one full-time-equivalent sworn officer."
         }
       },
@@ -797,14 +797,14 @@
           "kind": "held_exceeds_denominator",
           "scope": "DC",
           "denominatorId": "csllea_2018_general_purpose_DC",
-          "detail": "17 agencies held in DC against 1 general-purpose agencies in DC (BJS Census of State and Local Law Enforcement Agencies, 2018). Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage and no ceiling is reported.",
+          "detail": "17 agencies held in DC against 1 general-purpose agencies in DC (BJS Census of State and Local Law Enforcement Agencies, 2018). The held count exceeds the dated estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage or ceiling is reported.",
           "unblockedBy": "Reconcile the held records against the denominator's universe. Candidate explanations, none yet tested: duplicate agency rows, sub-units such as constable precincts counted as separate agencies, entities that employ licensed officers but are not law enforcement agencies, and the BJS exclusion of agencies with less than one full-time-equivalent sworn officer."
         },
         {
           "kind": "held_exceeds_denominator",
           "scope": "DC",
           "denominatorId": "csllea_2018_all_agency_DC",
-          "detail": "17 agencies held in DC against 3 law enforcement agencies of all types in DC (BJS Census of State and Local Law Enforcement Agencies, 2018). Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage and no ceiling is reported.",
+          "detail": "17 agencies held in DC against 3 law enforcement agencies of all types in DC (BJS Census of State and Local Law Enforcement Agencies, 2018). The held count exceeds the dated estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage or ceiling is reported.",
           "unblockedBy": "Reconcile the held records against the denominator's universe. Candidate explanations, none yet tested: duplicate agency rows, sub-units such as constable precincts counted as separate agencies, entities that employ licensed officers but are not law enforcement agencies, and the BJS exclusion of agencies with less than one full-time-equivalent sworn officer."
         }
       ]
@@ -2101,7 +2101,7 @@
           "kind": "held_exceeds_denominator",
           "scope": "MN",
           "denominatorId": "csllea_2018_general_purpose_MN",
-          "detail": "394 agencies held in MN against 392 general-purpose agencies in MN (BJS Census of State and Local Law Enforcement Agencies, 2018). Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage and no ceiling is reported.",
+          "detail": "394 agencies held in MN against 392 general-purpose agencies in MN (BJS Census of State and Local Law Enforcement Agencies, 2018). The held count exceeds the dated estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage or ceiling is reported.",
           "unblockedBy": "Reconcile the held records against the denominator's universe. Candidate explanations, none yet tested: duplicate agency rows, sub-units such as constable precincts counted as separate agencies, entities that employ licensed officers but are not law enforcement agencies, and the BJS exclusion of agencies with less than one full-time-equivalent sworn officer."
         }
       },
@@ -2148,7 +2148,7 @@
           "kind": "held_exceeds_denominator",
           "scope": "MN",
           "denominatorId": "csllea_2018_general_purpose_MN",
-          "detail": "394 agencies held in MN against 392 general-purpose agencies in MN (BJS Census of State and Local Law Enforcement Agencies, 2018). Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage and no ceiling is reported.",
+          "detail": "394 agencies held in MN against 392 general-purpose agencies in MN (BJS Census of State and Local Law Enforcement Agencies, 2018). The held count exceeds the dated estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage or ceiling is reported.",
           "unblockedBy": "Reconcile the held records against the denominator's universe. Candidate explanations, none yet tested: duplicate agency rows, sub-units such as constable precincts counted as separate agencies, entities that employ licensed officers but are not law enforcement agencies, and the BJS exclusion of agencies with less than one full-time-equivalent sworn officer."
         }
       ]
@@ -3272,7 +3272,7 @@
           "kind": "held_exceeds_denominator",
           "scope": "OR",
           "denominatorId": "csllea_2018_general_purpose_OR",
-          "detail": "237 agencies held in OR against 152 general-purpose agencies in OR (BJS Census of State and Local Law Enforcement Agencies, 2018). Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage and no ceiling is reported.",
+          "detail": "237 agencies held in OR against 152 general-purpose agencies in OR (BJS Census of State and Local Law Enforcement Agencies, 2018). The held count exceeds the dated estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage or ceiling is reported.",
           "unblockedBy": "Reconcile the held records against the denominator's universe. Candidate explanations, none yet tested: duplicate agency rows, sub-units such as constable precincts counted as separate agencies, entities that employ licensed officers but are not law enforcement agencies, and the BJS exclusion of agencies with less than one full-time-equivalent sworn officer."
         }
       },
@@ -3304,7 +3304,7 @@
           "kind": "held_exceeds_denominator",
           "scope": "OR",
           "denominatorId": "csllea_2018_all_agency_OR",
-          "detail": "237 agencies held in OR against 167 law enforcement agencies of all types in OR (BJS Census of State and Local Law Enforcement Agencies, 2018). Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage and no ceiling is reported.",
+          "detail": "237 agencies held in OR against 167 law enforcement agencies of all types in OR (BJS Census of State and Local Law Enforcement Agencies, 2018). The held count exceeds the dated estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage or ceiling is reported.",
           "unblockedBy": "Reconcile the held records against the denominator's universe. Candidate explanations, none yet tested: duplicate agency rows, sub-units such as constable precincts counted as separate agencies, entities that employ licensed officers but are not law enforcement agencies, and the BJS exclusion of agencies with less than one full-time-equivalent sworn officer."
         }
       },
@@ -3313,14 +3313,14 @@
           "kind": "held_exceeds_denominator",
           "scope": "OR",
           "denominatorId": "csllea_2018_general_purpose_OR",
-          "detail": "237 agencies held in OR against 152 general-purpose agencies in OR (BJS Census of State and Local Law Enforcement Agencies, 2018). Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage and no ceiling is reported.",
+          "detail": "237 agencies held in OR against 152 general-purpose agencies in OR (BJS Census of State and Local Law Enforcement Agencies, 2018). The held count exceeds the dated estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage or ceiling is reported.",
           "unblockedBy": "Reconcile the held records against the denominator's universe. Candidate explanations, none yet tested: duplicate agency rows, sub-units such as constable precincts counted as separate agencies, entities that employ licensed officers but are not law enforcement agencies, and the BJS exclusion of agencies with less than one full-time-equivalent sworn officer."
         },
         {
           "kind": "held_exceeds_denominator",
           "scope": "OR",
           "denominatorId": "csllea_2018_all_agency_OR",
-          "detail": "237 agencies held in OR against 167 law enforcement agencies of all types in OR (BJS Census of State and Local Law Enforcement Agencies, 2018). Holding more agencies than the denominator counts is a universe mismatch, not coverage above 100%, so no percentage and no ceiling is reported.",
+          "detail": "237 agencies held in OR against 167 law enforcement agencies of all types in OR (BJS Census of State and Local Law Enforcement Agencies, 2018). The held count exceeds the dated estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage or ceiling is reported.",
           "unblockedBy": "Reconcile the held records against the denominator's universe. Candidate explanations, none yet tested: duplicate agency rows, sub-units such as constable precincts counted as separate agencies, entities that employ licensed officers but are not law enforcement agencies, and the BJS exclusion of agencies with less than one full-time-equivalent sworn officer."
         }
       ]
@@ -3780,8 +3780,8 @@
           "kind": "held_exceeds_denominator",
           "scope": "TX",
           "denominatorId": "csllea_2018_general_purpose_TX",
-          "detail": "1,064 of the 2,883 agencies held in TX carry a sourced type placing them in this universe, against 1,041 general-purpose agencies in TX (BJS Census of State and Local Law Enforcement Agencies, 2018). The numerator is now the right population and still exceeds the denominator, so this is no longer an unexplained universe mismatch — it is a residual difference between our count and a 2018 enumeration, and no percentage is reported.",
-          "unblockedBy": "Two untested causes remain, both on the denominator's side: BJS excludes agencies employing less than one full-time-equivalent sworn officer, and the enumeration is from 2018. Neither can be applied to our numerator without a sworn-headcount field BJS would recognise."
+          "detail": "1,064 of the 2,883 agencies held in TX carry a sourced type used for this comparison, against 1,041 general-purpose agencies in TX (BJS Census of State and Local Law Enforcement Agencies, 2018). The classified count still exceeds the 2018 estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage is reported.",
+          "unblockedBy": "Reconcile agency identities and eligibility against the 2018 BJS universe, including its full-time-equivalent sworn-officer requirement. Sourced types alone do not establish eligibility, and the required sworn-headcount data is missing."
         }
       },
       "allAgency": {
@@ -3812,8 +3812,8 @@
           "kind": "held_exceeds_denominator",
           "scope": "TX",
           "denominatorId": "csllea_2018_all_agency_TX",
-          "detail": "2,559 of the 2,883 agencies held in TX carry a sourced type placing them in this universe, against 1,935 law enforcement agencies of all types in TX (BJS Census of State and Local Law Enforcement Agencies, 2018). The numerator is now the right population and still exceeds the denominator, so this is no longer an unexplained universe mismatch — it is a residual difference between our count and a 2018 enumeration, and no percentage is reported.",
-          "unblockedBy": "Two untested causes remain, both on the denominator's side: BJS excludes agencies employing less than one full-time-equivalent sworn officer, and the enumeration is from 2018. Neither can be applied to our numerator without a sworn-headcount field BJS would recognise."
+          "detail": "2,561 of the 2,883 agencies held in TX carry a sourced type used for this comparison, against 1,935 law enforcement agencies of all types in TX (BJS Census of State and Local Law Enforcement Agencies, 2018). The classified count still exceeds the 2018 estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage is reported.",
+          "unblockedBy": "Reconcile agency identities and eligibility against the 2018 BJS universe, including its full-time-equivalent sworn-officer requirement. Sourced types alone do not establish eligibility, and the required sworn-headcount data is missing."
         }
       },
       "gaps": [
@@ -3821,15 +3821,15 @@
           "kind": "held_exceeds_denominator",
           "scope": "TX",
           "denominatorId": "csllea_2018_general_purpose_TX",
-          "detail": "1,064 of the 2,883 agencies held in TX carry a sourced type placing them in this universe, against 1,041 general-purpose agencies in TX (BJS Census of State and Local Law Enforcement Agencies, 2018). The numerator is now the right population and still exceeds the denominator, so this is no longer an unexplained universe mismatch — it is a residual difference between our count and a 2018 enumeration, and no percentage is reported.",
-          "unblockedBy": "Two untested causes remain, both on the denominator's side: BJS excludes agencies employing less than one full-time-equivalent sworn officer, and the enumeration is from 2018. Neither can be applied to our numerator without a sworn-headcount field BJS would recognise."
+          "detail": "1,064 of the 2,883 agencies held in TX carry a sourced type used for this comparison, against 1,041 general-purpose agencies in TX (BJS Census of State and Local Law Enforcement Agencies, 2018). The classified count still exceeds the 2018 estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage is reported.",
+          "unblockedBy": "Reconcile agency identities and eligibility against the 2018 BJS universe, including its full-time-equivalent sworn-officer requirement. Sourced types alone do not establish eligibility, and the required sworn-headcount data is missing."
         },
         {
           "kind": "held_exceeds_denominator",
           "scope": "TX",
           "denominatorId": "csllea_2018_all_agency_TX",
-          "detail": "2,559 of the 2,883 agencies held in TX carry a sourced type placing them in this universe, against 1,935 law enforcement agencies of all types in TX (BJS Census of State and Local Law Enforcement Agencies, 2018). The numerator is now the right population and still exceeds the denominator, so this is no longer an unexplained universe mismatch — it is a residual difference between our count and a 2018 enumeration, and no percentage is reported.",
-          "unblockedBy": "Two untested causes remain, both on the denominator's side: BJS excludes agencies employing less than one full-time-equivalent sworn officer, and the enumeration is from 2018. Neither can be applied to our numerator without a sworn-headcount field BJS would recognise."
+          "detail": "2,561 of the 2,883 agencies held in TX carry a sourced type used for this comparison, against 1,935 law enforcement agencies of all types in TX (BJS Census of State and Local Law Enforcement Agencies, 2018). The classified count still exceeds the 2018 estimate. Agency identity, census eligibility, and differences in reference dates remain unresolved, so no percentage is reported.",
+          "unblockedBy": "Reconcile agency identities and eligibility against the 2018 BJS universe, including its full-time-equivalent sworn-officer requirement. Sourced types alone do not establish eligibility, and the required sworn-headcount data is missing."
         }
       ]
     },
@@ -4446,7 +4446,7 @@
         "unclassified": 0
       },
       "generalPurposeHeld": 1064,
-      "allAgencyHeld": 2559,
+      "allAgencyHeld": 2561,
       "unclassifiedHeld": 0,
       "numeratorComplete": true
     },
@@ -4584,7 +4584,7 @@
     {
       "kind": "numerator_universe_unverified",
       "scope": "national",
-      "detail": "655 held agencies, in DC, IL, MN, OR, VA, WA, carry no sourced agency type, so they cannot be placed in the BJS universes the denominators are drawn from. These states' sources enumerate entities that employ licensed peace officers without saying what kind of entity each one is: MN POST's productions key agencies by name only and publish no type column, and Oregon's DPSST loader emits an agency's name, address, contact and status but no type field. No percentage is reported for these jurisdictions or for the national total; ceilings are reported instead. States whose agencies all carry a sourced type are not affected and do report achieved coverage.",
+      "detail": "655 held agencies, in DC, IL, MN, OR, VA, WA, carry no sourced agency type, so they cannot be placed in the BJS universes the denominators are drawn from. These states' sources enumerate entities that employ licensed peace officers without saying what kind of entity each one is: MN POST's productions key agencies by name only and publish no type column, and Oregon's DPSST loader emits an agency's name, address, contact and status but no type field. No percentage is reported for these jurisdictions or for the national total; ceilings are reported instead. Sourced types support classification, but distinct-agency matching and denominator eligibility still require verification before a comparison can be treated as achieved coverage.",
       "unblockedBy": "Obtain a per-agency type for these states — a state roster that publishes one, or an authoritative national roster with types (INS-31). Name matching is not a substitute: it was tested on INS-79 and, beyond leaving most records unclassified, an unconstrained name join silently gave 22 Minnesota and Oregon agencies a Texas classification."
     }
   ],
@@ -4609,11 +4609,11 @@
   "conflicts": [
     {
       "id": "local_police_count_lear_vs_csllea",
-      "detail": "LEAR 2016 counts 12,695 local and county police departments; CSLLEA 2018 counts 11,824. The gap of 871 is larger than two years of consolidation plausibly explains. CSLLEA excludes any agency without at least one full-time-equivalent sworn officer and LEAR does not, which accounts for an unknown share of it. We have not reconciled the two and do not claim to have."
+      "detail": "LEAR 2016 counts 12,695 local and county police departments; CSLLEA 2018 counts 11,824, a difference of 871. CSLLEA excludes any agency without at least one full-time-equivalent sworn officer and LEAR does not. The effect of that eligibility difference and the different reference dates has not been measured."
     },
     {
       "id": "tribal_police_universe",
-      "detail": "BJS classifies the 217 tribal police departments as their own type, outside 'general purpose'. A reader would call a tribal police department general-purpose. Our general-purpose denominator follows the BJS definition so it stays comparable to the published tables; tribal agencies are inside the all-agency denominator. If we ever report tribal coverage it needs its own denominator, not a share of this one."
+      "detail": "Tribal law enforcement agencies count in the agency total and the all-agency comparison. BJS lists 217 as a source category in its 2018 total. The general-purpose subtotal follows the published local-police, sheriff, and primary-state categories; it is not the total number of law enforcement agencies."
     },
     {
       "id": "state_counts_are_estimates",

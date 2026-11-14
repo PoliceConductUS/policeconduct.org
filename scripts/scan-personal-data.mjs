@@ -24,8 +24,6 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-const MAX_SCAN_BYTES = 2 * 1024 * 1024;
-
 // Slashes are written escaped so this rule file never matches its own source.
 // Verified by a meta-test in scan-personal-data.test.mjs.
 export const CONTENT_RULES = [
@@ -264,19 +262,10 @@ const gitPaths = (args) =>
     .split("\0")
     .filter(Boolean);
 
-// null content means "present, but not text we can scan" — the path rules
-// still apply, the content rules cannot.
-const asScannableText = (buffer) => {
-  if (buffer.length > MAX_SCAN_BYTES || buffer.includes(0)) {
-    return null;
-  }
-  return buffer.toString("utf8");
-};
-
 const readBlob = (revPath) =>
-  asScannableText(git(["cat-file", "blob", revPath]));
+  git(["cat-file", "blob", revPath]).toString("utf8");
 
-const readWorkingTree = (filePath) => asScannableText(readFileSync(filePath));
+const readWorkingTree = (filePath) => readFileSync(filePath, "utf8");
 
 const collectStaged = () =>
   gitPaths(["diff", "--cached", "--name-only", "--diff-filter=ACMR"]);
@@ -330,16 +319,9 @@ const main = () => {
       throw new Error(`Unknown mode: ${mode}`);
   }
 
-  const findings = files.flatMap((filePath) => {
-    let content;
-    try {
-      content = read(filePath);
-    } catch {
-      // Deleted or renamed away; nothing to read.
-      return [];
-    }
-    return scanFile({ content, path: filePath });
-  });
+  const findings = files.flatMap((filePath) =>
+    scanFile({ content: read(filePath), path: filePath }),
+  );
 
   if (findings.length === 0) {
     console.log(
