@@ -2174,9 +2174,6 @@ resource "aws_cloudfront_distribution" "site" {
     origin_id                = local.origin_id
     origin_access_control_id = aws_cloudfront_origin_access_control.site.id
 
-    s3_origin_config {
-      origin_access_identity = ""
-    }
   }
 
   origin {
@@ -2244,9 +2241,6 @@ resource "aws_cloudfront_distribution" "site" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  lifecycle {
-    ignore_changes = [origin]
-  }
 }
 
 # Preview uses the same router as production with a separate redirect store.
@@ -2296,9 +2290,6 @@ resource "aws_cloudfront_distribution" "preview" {
     origin_id                = local.preview_origin_id
     origin_access_control_id = aws_cloudfront_origin_access_control.site.id
 
-    s3_origin_config {
-      origin_access_identity = ""
-    }
   }
 
   origin {
@@ -2371,9 +2362,6 @@ resource "aws_cloudfront_distribution" "preview" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  lifecycle {
-    ignore_changes = [origin]
-  }
 }
 
 data "aws_iam_policy_document" "site_bucket_policy" {
