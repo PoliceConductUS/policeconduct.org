@@ -11,6 +11,7 @@ import {
   getSiteUrl,
 } from "#src/lib/structured-data.js";
 import { ORG_LEGAL_NAME } from "#src/lib/org.js";
+import { getVideoEmbedUrl } from "#src/lib/video.js";
 
 const pagePath = "/";
 const pageDescription =
@@ -130,6 +131,27 @@ const structuredData = [
         </div>
       </div>
     </div>
+    <section class="py-vh-3 border-top border-dark" id="introduction">
+      <div class="container">
+        <h2 class="ipc-section-title mb-2">What is PoliceConduct.org?</h2>
+        <p class="mb-4">
+          Watch this introduction to finding records and sharing experiences on
+          PoliceConduct.org.
+        </p>
+        <div class="ratio ratio-16x9">
+          <iframe
+            src={getVideoEmbedUrl(
+              "https://www.youtube.com/watch?v=xA6z1L-MG_k",
+            )!}
+            title="What Is PoliceConduct.org? A Civic Record for Everyone"
+            loading="lazy"
+            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+    </section>
     <section class="py-vh-3 bg-light border-top border-dark" id="overview">
       <div class="container">
         <div class="row justify-content-end mb-4">
