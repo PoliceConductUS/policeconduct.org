@@ -1,12 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("submission status", () => {
-  const verifiedMessage =
-    "Your submission has been verified and is now pending review. Please contact hello@policeconduct.org if you need help.";
+  const verifiedMessage = "Your email address has been confirmed.";
   const verificationFailedMessage =
-    "We could not verify your submission. Verification link expired. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+    "We could not confirm your email address. Confirmation link expired. Confirm your email address to continue. Please contact hello@policeconduct.org if you need help.";
   const verificationExpiredMessage =
-    "This verification link has expired. Links stay valid for 15 minutes. We still have your submission and you do not need to fill the form in again — ask us for a new link below and we will email one to the same address.";
+    "This confirmation link has expired. Links stay valid for 15 minutes. We still have your submission and you do not need to fill the form in again — ask us for a new link below and we will email one to the same address.";
 
   test("verification link success shows submission ID and passes it to status lookup", async ({
     page,
@@ -39,7 +38,7 @@ test.describe("submission status", () => {
 
     const result = page.locator("#verificationResult");
     await expect(result).toBeVisible();
-    await expect(result).toContainText("Submission Verified");
+    await expect(result).toContainText("Email Confirmed");
     await expect(result).toContainText(verifiedMessage);
     await expect(result).toContainText("Submission ID: sub_e2e_verified.");
     await expect(result).toContainText(
@@ -65,7 +64,8 @@ test.describe("submission status", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          message: verifiedMessage,
+          message:
+            "Your submission has been verified and is now pending review.",
           submissionId: "sub_e2e_verified_reload",
         }),
       });
@@ -78,6 +78,9 @@ test.describe("submission status", () => {
     await expect(page.locator("#verificationResult")).toContainText(
       "Submission ID: sub_e2e_verified_reload.",
     );
+    await expect(
+      page.locator("#verificationResult p").first(),
+    ).not.toContainText(/verif(?:y|ied|ication)/i);
 
     await page.reload();
 
@@ -88,6 +91,9 @@ test.describe("submission status", () => {
     await expect(page.locator("#verificationResult")).toContainText(
       "Submission ID: sub_e2e_verified_reload.",
     );
+    await expect(
+      page.locator("#verificationResult p").first(),
+    ).not.toContainText(/verif(?:y|ied|ication)/i);
     await page.getByRole("button", { name: "Check status" }).click();
     await expect(page).toHaveURL(/\/status\/$/);
     await expect(page.locator("#submissionId")).toHaveValue(
@@ -113,7 +119,7 @@ test.describe("submission status", () => {
     // to do rather than name a missing query parameter.
     await expect(result).toContainText("Open the Link From Your Email");
     await expect(result).toContainText(
-      "This page verifies a submission when you arrive from the link in our email.",
+      "This page confirms your email address when you arrive from the link in our email.",
     );
     await expect(page.locator("#verificationActions")).toHaveClass(/d-none/);
     await expect(page.locator("#resendActions")).toHaveClass(/d-none/);
@@ -143,9 +149,9 @@ test.describe("submission status", () => {
 
     const result = page.locator("#verificationResult");
     await expect(result).toBeVisible();
-    await expect(result).toContainText("Submission Verified");
+    await expect(result).toContainText("Email Confirmed");
     await expect(result).toContainText(
-      "Your submission has been verified and is now pending review.",
+      "Your email address has been confirmed.",
     );
     await expect(result).toContainText(
       "Submission ID: sub_e2e_fallback_message.",
@@ -183,9 +189,9 @@ test.describe("submission status", () => {
 
     const result = page.locator("#verificationResult");
     await expect(result).toBeVisible();
-    await expect(result).toContainText("Submission Verification Failed");
+    await expect(result).toContainText("Email Confirmation Failed");
     await expect(result).toContainText(
-      "The verification response did not include a submission ID.",
+      "The confirmation response did not include a submission ID.",
     );
     await expect(page.locator("#verificationActions")).toHaveClass(/d-none/);
   });
@@ -221,7 +227,7 @@ test.describe("submission status", () => {
 
     const result = page.locator("#verificationResult");
     await expect(result).toBeVisible();
-    await expect(result).toContainText("Submission Verification Failed");
+    await expect(result).toContainText("Email Confirmation Failed");
     await expect(result).toContainText(verificationFailedMessage);
     // A failure a resend cannot fix must not advertise one.
     await expect(page.locator("#resendActions")).toHaveClass(/d-none/);
@@ -262,7 +268,7 @@ test.describe("submission status", () => {
         contentType: "application/json",
         body: JSON.stringify({
           message:
-            "We have emailed a new verification link to the address on this submission. It is valid for 15 minutes. If it does not arrive, please check your spam folder.",
+            "We have emailed a new confirmation link to the address on this submission. It is valid for 15 minutes. If it does not arrive, please check your spam folder.",
         }),
       });
     });
@@ -270,7 +276,7 @@ test.describe("submission status", () => {
     await page.goto("/verify/?token=test-verification-id.test-secret");
 
     const result = page.locator("#verificationResult");
-    await expect(result).toContainText("Verification Link Expired");
+    await expect(result).toContainText("Confirmation Link Expired");
     await expect(result).toContainText(
       "you do not need to fill the form in again",
     );
@@ -284,7 +290,7 @@ test.describe("submission status", () => {
 
     await expect(result).toContainText("New Link Sent");
     await expect(result).toContainText(
-      "We have emailed a new verification link",
+      "We have emailed a new confirmation link",
     );
     // The expired token is what buys the new link; there is no address input.
     expect(resendBody).toEqual({
@@ -316,7 +322,7 @@ test.describe("submission status", () => {
           reason: "expired",
           canResend: false,
           message:
-            "We could not verify your submission. This verification link has expired and we have already sent as many replacements as we can. We still have what you sent us. Please contact hello@policeconduct.org if you need help.",
+            "We could not confirm your email address. This confirmation link has expired and we have already sent as many replacements as we can. We still have what you sent us. Please contact hello@policeconduct.org if you need help.",
         }),
       });
     });
@@ -324,7 +330,7 @@ test.describe("submission status", () => {
     await page.goto("/verify/?token=test-verification-id.test-secret");
 
     await expect(page.locator("#verificationResult")).toContainText(
-      "Verification Link Expired",
+      "Confirmation Link Expired",
     );
     await expect(page.locator("#resendActions")).toHaveClass(/d-none/);
     expect(resendRequestCount).toBe(0);

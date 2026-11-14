@@ -19,7 +19,7 @@ const faqEntries = [
   {
     question: "What's the launch status?",
     answer:
-      "This is a quiet opening. The site is live, but growth is intentionally slow while reporting, verification, privacy safeguards, and corrections workflows mature.",
+      "This is a quiet opening. The site is live, but growth is intentionally slow while reporting, privacy safeguards, and corrections workflows mature.",
   },
   {
     question: "What's on the site today?",
@@ -34,7 +34,7 @@ const faqEntries = [
   {
     question: "Do you accept anonymous reports?",
     answer:
-      "Yes, sort of. We accept anonymous submissions, but during the quiet opening we manually verify reports before publishing. If a report is fully anonymous with no verifiable details, it may not be published. Include dates, locations, agencies, incident numbers, witnesses, or evidence links whenever possible.",
+      "Yes. We accept anonymous submissions. Include dates, locations, agencies, incident numbers, witnesses, or evidence links whenever possible.",
   },
   {
     question: "How can I check the status of my report or request changes?",
@@ -44,7 +44,7 @@ const faqEntries = [
   {
     question: "How long does it take for my report to appear on the site?",
     answer:
-      "Reports are reviewed manually for accuracy and safety. We are currently working through a backlog, so please allow at least one week for review and publication.",
+      "We are currently working through a backlog, so please allow at least one week for publication.",
   },
   {
     question: "Which role should I select for my report?",
@@ -79,7 +79,7 @@ const faqEntries = [
   {
     question: "How do you handle privacy?",
     answer:
-      "We avoid unnecessary personally identifying information, especially about private individuals. Reports focus on conduct, context, and verifiable details, not doxxing. If you have specific privacy concerns, add a note in your submission and our team will follow up.",
+      "We avoid unnecessary personally identifying information, especially about private individuals. Reports focus on conduct, context, and specific details, not doxxing. If you have specific privacy concerns, add a note in your submission and our team will follow up.",
   },
   {
     question: "Will my name be visible to the public?",
@@ -110,12 +110,11 @@ const faqEntries = [
     question:
       "Can I report federal officers or agencies like the FBI, CIA, or ICE?",
     answer:
-      "Yes. Federal officers and agencies are included. Submit the report with as much detail as you can and we will review it like any other submission.",
+      "Yes. Federal officers and agencies are included. Submit the report with as much detail as you can.",
   },
   {
     question: "How far back can I go when submitting a report?",
-    answer:
-      "You can submit reports for experiences from any time. Keep in mind that reports older than two years are less likely to be helpful for verification or follow-up.",
+    answer: "You can submit reports for experiences from any time.",
   },
   {
     question: "What if I do not know the officer's name?",
@@ -130,23 +129,22 @@ const faqEntries = [
   },
   {
     question: "Can I submit a report for an incident that happened years ago?",
-    answer:
-      "Yes. Historical reports are valuable for long-term patterns, though reports older than two years are less likely to be useful for immediate verification.",
+    answer: "Yes. You can submit reports for experiences from any time.",
   },
   {
     question: "I have multiple videos. Should I submit multiple reports?",
     answer:
-      "Please submit a single report for the full experience and include all relevant files or links. This keeps review consistent and easier to process.",
+      "Please submit a single report for the full experience and include all relevant files or links. This keeps the materials for one experience together.",
   },
   {
     question: "I have a video of the incident. How should I include it?",
     answer:
-      'Add a hosted link in the Evidence Links section (Google Drive, Dropbox, YouTube, iCloud, etc.). Make sure sharing is set to "Anyone with the link can view" so reviewers can access it.',
+      'Add a hosted link in the Evidence Links section (Google Drive, Dropbox, YouTube, iCloud, etc.). Make sure sharing is set to "Anyone with the link can view" so the linked material is accessible.',
   },
   {
     question: "Should I include witness contact information?",
     answer:
-      "If a witness agrees to be contacted, include their name and contact details in the Witnesses section. We use this information for verification and do not publish it.",
+      "If a witness agrees to be contacted, include their name and contact details in the Witnesses section. We do not publish witness contact information.",
   },
   {
     question: "Can I report on behalf of someone else?",
@@ -194,7 +192,7 @@ const faqEntries = [
       "Yes. PoliceConduct.org supports responses, clarifications, and additional documentation. If new credible information changes a report, we aim to update it prominently.",
   },
   {
-    question: "Why would a report be rejected during manual review?",
+    question: "Why might a report not be published?",
     answer:
       "We aim to publish every report, but submissions may be rejected or heavily redacted if they include hate speech, spam, or private information about uninvolved third parties.",
   },
@@ -206,7 +204,7 @@ const faqEntries = [
   {
     question: "Does my donation go to a specific state or city?",
     answer:
-      "Donations go into our general fund to support the national platform. This helps us scale manual review and clear backlogs across jurisdictions so every report gets timely review regardless of location.",
+      "Donations go into our general fund to support the national platform.",
   },
   {
     question: "Are donations tax-deductible?",
@@ -221,12 +219,7 @@ const faqEntries = [
   {
     question: "How is my donation processed?",
     answer:
-      "We use Stripe for secure, encrypted donation processing and receive reduced nonprofit transaction fees through Stripe's Nonprofit Excellence Program. This keeps overhead low so more of your gift funds report review and database integrity. You will receive an automated tax receipt by email immediately after your donation is processed.",
-  },
-  {
-    question: "Why is my report being reviewed manually?",
-    answer:
-      "Manual review helps protect privacy, remove unintended personally identifying information, and maintain data integrity before publication.",
+      "We use Stripe for secure, encrypted donation processing and receive reduced nonprofit transaction fees through Stripe's Nonprofit Excellence Program. This keeps overhead low so more of your gift funds the national platform. You will receive an automated tax receipt by email immediately after your donation is processed.",
   },
   {
     question:
@@ -346,8 +339,8 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
       >
         <div class="accordion-body">
           This is a quiet opening. The site is live, but growth is intentionally
-          slow while reporting, verification, privacy safeguards, and
-          corrections workflows mature.
+          slow while reporting, privacy safeguards, and corrections workflows
+          mature.
         </div>
       </div>
     </div>
@@ -428,11 +421,9 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
         data-bs-parent="#faqAccordionTracking"
       >
         <div class="accordion-body">
-          Yes, sort of. We accept anonymous submissions, but during the quiet
-          opening we manually verify reports before publishing. If a report is
-          fully anonymous with no verifiable details, it may not be published.
-          Include dates, locations, agencies, incident numbers, witnesses, or
-          evidence links whenever possible.
+          Yes. We accept anonymous submissions. Include dates, locations,
+          agencies, incident numbers, witnesses, or evidence links whenever
+          possible.
         </div>
       </div>
     </div>
@@ -484,9 +475,8 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
         data-bs-parent="#faqAccordionTracking"
       >
         <div class="accordion-body">
-          Reports are reviewed manually for accuracy and safety. We are
-          currently working through a backlog, so please allow at least one week
-          for review and publication.
+          We are currently working through a backlog, so please allow at least
+          one week for publication.
         </div>
       </div>
     </div>
@@ -689,8 +679,8 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
         <div class="accordion-body">
           We avoid unnecessary personally identifying information, especially
           about private individuals. Reports focus on conduct, context, and
-          verifiable details, not doxxing. If you have specific privacy
-          concerns, add a note in your submission and our team will follow up.
+          specific details, not doxxing. If you have specific privacy concerns,
+          add a note in your submission and our team will follow up.
         </div>
       </div>
     </div>
@@ -852,8 +842,7 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
       >
         <div class="accordion-body">
           Yes. Federal officers and agencies are included. Submit the report
-          with as much detail as you can and we will review it like any other
-          submission.
+          with as much detail as you can.
         </div>
       </div>
     </div>
@@ -878,9 +867,7 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
         data-bs-parent="#faqAccordionScope"
       >
         <div class="accordion-body">
-          You can submit reports for experiences from any time. Keep in mind
-          that reports older than two years are less likely to be helpful for
-          verification or follow-up.
+          You can submit reports for experiences from any time.
         </div>
       </div>
     </div>
@@ -963,9 +950,7 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
         data-bs-parent="#faqAccordionEvidence"
       >
         <div class="accordion-body">
-          Yes. Historical reports are valuable for long-term patterns, though
-          reports older than two years are less likely to be useful for
-          immediate verification.
+          Yes. You can submit reports for experiences from any time.
         </div>
       </div>
     </div>
@@ -991,8 +976,8 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
       >
         <div class="accordion-body">
           Please submit a single report for the full experience and include all
-          relevant files or links. This keeps review consistent and easier to
-          process.
+          relevant files or links. This keeps the materials for one experience
+          together.
         </div>
       </div>
     </div>
@@ -1019,7 +1004,7 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
         <div class="accordion-body">
           Add a hosted link in the Evidence Links section (Google Drive,
           Dropbox, YouTube, iCloud, etc.). Make sure sharing is set to “Anyone
-          with the link can view” so reviewers can access it.
+          with the link can view” so the linked material is accessible.
         </div>
       </div>
     </div>
@@ -1045,8 +1030,8 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
       >
         <div class="accordion-body">
           If a witness agrees to be contacted, include their name and contact
-          details in the Witnesses section. We use this information for
-          verification and do not publish it.
+          details in the Witnesses section. We do not publish witness contact
+          information.
         </div>
       </div>
     </div>
@@ -1318,7 +1303,7 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
           aria-expanded="false"
           aria-controls="faqRejectedPanel"
         >
-          Why would a report be rejected during manual review?
+          Why might a report not be published?
         </button>
       </h2>
       <div
@@ -1389,9 +1374,6 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
       >
         <div class="accordion-body">
           Donations go into our general fund to support the national platform.
-          This helps us scale manual review and clear backlogs across
-          jurisdictions so every report gets timely review regardless of
-          location.
         </div>
       </div>
     </div>
@@ -1472,8 +1454,8 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
           We use Stripe for secure, encrypted donation processing and receive
           reduced nonprofit transaction fees through Stripe’s Nonprofit
           Excellence Program. This keeps overhead low so more of your gift funds
-          report review and database integrity. You will receive an automated
-          tax receipt by email immediately after your donation is processed.
+          the national platform. You will receive an automated tax receipt by
+          email immediately after your donation is processed.
         </div>
       </div>
     </div>
@@ -1481,33 +1463,6 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
 
   <h2 class="ipc-section-title text-uppercase text-muted mb-3">Process</h2>
   <div class="accordion" id="faqAccordionProcess">
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="faqReview">
-        <button
-          class="accordion-button"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#faqReviewPanel"
-          aria-expanded="true"
-          aria-controls="faqReviewPanel"
-        >
-          Why is my report being reviewed manually?
-        </button>
-      </h2>
-      <div
-        id="faqReviewPanel"
-        class="accordion-collapse collapse show"
-        aria-labelledby="faqReview"
-        data-bs-parent="#faqAccordionProcess"
-      >
-        <div class="accordion-body">
-          Manual review helps protect privacy, remove unintended personally
-          identifiable information, and maintain data integrity before
-          publication.
-        </div>
-      </div>
-    </div>
-
     <div class="accordion-item">
       <h2 class="accordion-header" id="faqTen">
         <button

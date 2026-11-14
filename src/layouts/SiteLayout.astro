@@ -21,14 +21,6 @@ const {
 const resolvedPath = pagePath || Astro.url?.pathname || "/";
 const issueMessage = `Issue reported from: ${resolvedPath}`;
 const siteOrigin = (() => {
-  const envSite = (process.env.SITE_URL || "").trim();
-  if (envSite) {
-    try {
-      return new URL(envSite).toString();
-    } catch (_error) {
-      // Fall back to configured site URL.
-    }
-  }
   if (Astro.site) {
     return Astro.site.toString();
   }
@@ -476,15 +468,14 @@ const serializeStructuredData = (value: unknown) =>
         <div class="text-center text-muted small">
           <p class="mb-1">
             All information on this site is compiled from public records and
-            community submitted information. Information is deemed reliable but
-            is not guaranteed.
+            community submitted information. Information may be incorrect.
           </p>
           <p class="mb-1">
             Connections between records &mdash; the personnel, agencies, civil
             cases, and news coverage shown as linked to one another &mdash; are
-            computer-generated, not human-verified, and may be incorrect. Verify
-            these connections independently before relying on them; do not treat
-            them as established fact. See our{" "}
+            computer-generated and may be incorrect. Verify these connections
+            independently before relying on them; do not treat them as
+            established fact. See our{" "}
             <a
               class="text-muted text-decoration-underline"
               href="/legal-notice/terms-of-service"

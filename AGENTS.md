@@ -18,11 +18,17 @@ Scope Of A Change
 - A direct request for a fix or implementation is approval for the scoped edits it needs. Do not stop for a second approval round, and do not stop before the outcome is verified.
 - Fix concrete problems found during the work immediately, including pre-existing errors, warnings, and formatting problems. Preserve unrelated work in progress. Optional features, redesigns, speculative improvements, and broad refactors still require explicit user approval.
 - When a change needs a design decision (a new component, loader, table, route, or contract, or more than one reasonable approach), state the approach in a few lines and wait for approval before writing code. A small fix with one obvious implementation needs no design step.
+- When finishing the request would need behavior nobody asked for (a new rule, policy, restriction, flag, field, or special case, usually because the data does not fit), stop there. Report what blocks you and the options, and add nothing. Everything else, keep going until it is done.
 - Stop and get approval before coding when the change introduces an architectural compromise, weakens an invariant, changes data semantics beyond the requested correction, adds unrequested product behavior, or has materially risky or ambiguous scope. An architectural compromise is anything that weakens, bypasses, or temporarily works around a stated data model, routing invariant, source-of-truth rule, or project convention.
 - Do not ask for approval to inspect code, search the repo, or read files.
 - Avoid hidden product decisions. If a requirement is unclear, either inspect existing repo context or ask before encoding a new policy.
 - Build only what the current, known requirement needs. Do not add speculative complexity, optional abstractions, future-proofing, configurability, or extensibility unless the current task requires it or the user explicitly requests it.
 - Do not preserve backward compatibility unless the user explicitly requests it.
+
+Reporting
+
+- Use this project's words: its tables, routes, components, and commands. Do not coin a term. If something new must be named, define it in the same sentence.
+- End a work report with the state: worktree and branch, what is committed, what is pushed, what is merged, and what is left to do.
 
 This Repository Is Public
 
@@ -47,6 +53,7 @@ Design Standards
 - Before frontend, visual, layout, typography, component, or copy changes, read `.impeccable.md` and `DESIGN.md`.
 - `DESIGN.md` is the canonical design system standard. Do not invent page-local typography, heading, spacing, color, or component rules when a shared rule exists.
 - Public-facing copy must target an 8th-grade reading level. A 10th-grade reading level is acceptable only when precision requires it.
+- Never state or imply that reports, facts, sources, records, or site information are manually or automatically verified or fact checked. Email confirmation must describe confirming the email address, not verifying submission contents.
 - Replace technical, legal, and data-analysis terms in public labels with familiar wording. A tooltip, definition, or detail-page explanation may show the original source/legal term when needed, but the visible label must remain familiar.
 - H1/H2/H3 styling must come from shared typography tokens/classes. Do not use Bootstrap `display-*` classes or page-local heading CSS to change semantic heading size or font family.
 - One heading level means one visual role across pages. If a compact panel cannot visually support an H2, use a non-heading label or the correct lower heading level rather than styling H2 differently.

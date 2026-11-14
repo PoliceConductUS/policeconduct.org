@@ -4,16 +4,16 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 ---
 
 <PageShell
-  title="Verify Submission | PoliceConduct.org"
+  title="Confirm Email | PoliceConduct.org"
   pagePath="/verify/"
   canonicalUrl="/verify/"
   robots="noindex,follow"
   breadcrumbs={[
     { label: "Home", href: "/" },
-    { label: "Verify Submission", href: "/verify/", current: true },
+    { label: "Confirm Email", href: "/verify/", current: true },
   ]}
-  heading="Verify Submission"
-  lede="Use the verification link from your email to verify your submission."
+  heading="Confirm Email"
+  lede="Open the link in your email to confirm your email address."
 >
   <PrefillBootstrap />
   <div class="row justify-content-center">
@@ -126,19 +126,16 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
         result.appendChild(body);
       };
 
-      const renderVerified = (submissionId, messageText) => {
+      const renderVerified = (submissionId) => {
         result.innerHTML = "";
 
         const heading = document.createElement("h2");
         heading.className = "h5 mb-3";
-        heading.textContent = "Submission Verified";
+        heading.textContent = "Email Confirmed";
 
         const body = document.createElement("p");
         body.className = "mb-3";
-        body.textContent =
-          typeof messageText === "string" && messageText.trim()
-            ? messageText.trim()
-            : "Your submission has been verified and is now pending review.";
+        body.textContent = "Your email address has been confirmed.";
 
         const details = document.createElement("p");
         details.className = "mb-0";
@@ -196,7 +193,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
             payload.message.trim()
               ? payload.message.trim()
               : response.ok
-                ? "We have emailed a new verification link to the address on this submission."
+                ? "We have emailed a new confirmation link to the address on this submission."
                 : "We could not send a new link right now.";
           resendActions.classList.add("d-none");
           if (response.ok) {
@@ -230,12 +227,6 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
         storedVerificationResult.submissionId.trim()
           ? storedVerificationResult.submissionId.trim()
           : "";
-      const storedMessage =
-        storedVerificationResult &&
-        typeof storedVerificationResult.message === "string" &&
-        storedVerificationResult.message.trim()
-          ? storedVerificationResult.message.trim()
-          : "";
       const storedToken =
         storedVerificationResult &&
         typeof storedVerificationResult.token === "string" &&
@@ -248,7 +239,7 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
         if (token) {
           window.history.replaceState({}, "", "/verify/");
         }
-        renderVerified(storedSubmissionId, storedMessage);
+        renderVerified(storedSubmissionId);
         return;
       }
 
@@ -258,12 +249,12 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
         // should say what to do rather than name the missing parameter.
         renderMessage(
           "Open the Link From Your Email",
-          "This page verifies a submission when you arrive from the link in our email. Open that link to continue. If the link has expired, open it anyway and we will offer to send you a new one.",
+          "This page confirms your email address when you arrive from the link in our email. Open that link to continue. If the link has expired, open it anyway and we will offer to send you a new one.",
         );
         return;
       }
 
-      renderMessage("Verification", "Verifying your submission...");
+      renderMessage("Email Confirmation", "Confirming your email address...");
 
       void (async function () {
         try {
@@ -287,12 +278,12 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
               typeof payload.message === "string" &&
               payload.message.trim()
                 ? payload.message.trim()
-                : "We could not verify that link.";
+                : "We could not confirm your email address with that link.";
             const expired = payload && payload.reason === "expired";
             renderMessage(
               expired
-                ? "Verification Link Expired"
-                : "Submission Verification Failed",
+                ? "Confirmation Link Expired"
+                : "Email Confirmation Failed",
               message,
             );
             // Only the expired-but-authentic case gets a way forward. Every
@@ -321,8 +312,8 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 
           if (!submissionId) {
             renderMessage(
-              "Submission Verification Failed",
-              "The verification response did not include a submission ID.",
+              "Email Confirmation Failed",
+              "The confirmation response did not include a submission ID.",
             );
             return;
           }
@@ -334,11 +325,11 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
             token,
           });
           window.history.replaceState({}, "", "/verify/");
-          renderVerified(submissionId, message);
+          renderVerified(submissionId);
         } catch (_error) {
           renderMessage(
-            "Submission Verification Failed",
-            "We could not verify that link right now.",
+            "Email Confirmation Failed",
+            "We could not confirm your email address with that link right now.",
           );
         }
       })();

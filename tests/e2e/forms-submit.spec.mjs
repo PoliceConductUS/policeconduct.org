@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
 
 const verificationInstructions =
-  "We received your submission. Check your email and open the verification link within 15 minutes. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+  "We received your submission. Check your email and open the link within 15 minutes to confirm your email address. Please contact hello@policeconduct.org if you need help.";
 const verificationEmailFailedMessage =
-  "We received your submission, but sending the verification email failed in this environment. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+  "We received your submission, but sending the email confirmation link failed in this environment. Confirm your email address to continue. Please contact hello@policeconduct.org if you need help.";
 
 const forms = [
   { path: "/about/contact/", formName: "contact" },
@@ -181,7 +181,9 @@ test.describe("form submissions", () => {
           status: 200,
           contentType: "application/json",
           body: JSON.stringify({
-            message: verificationInstructions,
+            ...(form.formName === "contact"
+              ? {}
+              : { message: verificationInstructions }),
             verificationPending: true,
           }),
         });

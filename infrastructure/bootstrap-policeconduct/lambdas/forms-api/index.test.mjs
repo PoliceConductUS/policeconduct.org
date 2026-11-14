@@ -76,7 +76,15 @@ test("sendVerificationEmail sends the expected Resend request", async () => {
     const requestBody = JSON.parse(capturedInit.body);
     assert.equal(
       requestBody.subject,
-      "Verify your PoliceConduct.org submission",
+      "Confirm your email address for PoliceConduct.org",
+    );
+    assert.match(
+      requestBody.text,
+      /Please confirm your email address by opening this link:/,
+    );
+    assert.doesNotMatch(
+      requestBody.text.replace(/https?:\/\/\S+/g, ""),
+      /verif(?:y|ied|ication)/i,
     );
     assert.equal(requestBody.from, "noreply@mail.policeconduct.org");
     assert.deepEqual(requestBody.to, ["person@example.org"]);
@@ -784,6 +792,8 @@ test("an expired link is no longer a dead end: it offers a resend", async () => 
     const body = JSON.parse(response.body);
     assert.equal(body.reason, "expired");
     assert.equal(body.canResend, true);
+    assert.match(body.message, /confirmation link/);
+    assert.doesNotMatch(body.message, /verif(?:y|ied|ication)/i);
     assert.match(body.message, /do not need to fill the form in again/);
     assert.doesNotMatch(body.message, /will not be accepted for review/);
   });
@@ -802,6 +812,11 @@ test("a resend rotates the secret, extends the window, and mails the stored addr
       verifyEvent("/forms/resend-verification", `verif_abc.${secret}`),
     );
     assert.equal(response.statusCode, 200);
+    assert.match(JSON.parse(response.body).message, /confirmation link/);
+    assert.doesNotMatch(
+      JSON.parse(response.body).message,
+      /verif(?:y|ied|ication)/i,
+    );
 
     const stored = store.get("submissions/verify/verif_abc.json");
     assert.equal(stored.resendCount, 1);
@@ -823,7 +838,10 @@ test("a resend rotates the secret, extends the window, and mails the stored addr
     // The address is not an input. It can only ever be the one on the record.
     assert.equal(sent.length, 1);
     assert.deepEqual(sent[0].to, ["person@example.org"]);
-    assert.match(sent[0].subject, /new PoliceConduct\.org verification link/);
+    assert.match(
+      sent[0].subject,
+      /new PoliceConduct\.org email confirmation link/,
+    );
     assert.match(sent[0].text, /still held; you do not need to/);
     assert.deepEqual(
       sent[0].tags.find((tag) => tag.name === "replacement"),
@@ -864,7 +882,7 @@ test("the replacement link actually verifies, and the old one does not", async (
     assert.equal(JSON.parse(fresh.body).submissionId, "sub_abc");
     assert.equal(
       JSON.parse(fresh.body).message,
-      "Your submission has been verified and is now pending review. Please contact hello@policeconduct.org if you need help.",
+      "Your email address has been confirmed. Please contact hello@policeconduct.org if you need help.",
     );
   });
 });
