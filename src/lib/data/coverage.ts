@@ -117,7 +117,7 @@ async function loadCoverage() {
         }),
       };
     }
-    return { agencies, personnel, officers, home, ranking };
+    return { articles, agencies, personnel, officers, home, ranking };
   });
 }
 let cached: ReturnType<typeof loadCoverage> | undefined;

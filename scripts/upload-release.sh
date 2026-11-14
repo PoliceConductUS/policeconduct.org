@@ -10,7 +10,7 @@ if [[ ! "${release_id}" =~ ^${namespace}-[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{1
   echo "The built release does not belong to ${namespace}." >&2
   exit 1
 fi
-[[ -f .release/data/index.json && -f .release/data/dynamic.json && -f dist/index.html ]] || {
+[[ -f .release/data/index.json && -f .release/data/dynamic.json && -f .release/data/alias.json && -f dist/index.html ]] || {
   echo "Incomplete release. Run npm run build first." >&2
   exit 1
 }

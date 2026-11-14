@@ -4,6 +4,8 @@ export type SourceReference = {
   canonicalId?: string;
 };
 export type Occurrence = {
+  namespace?: string;
+  sourceId?: string;
   url: string;
   title: string;
   publishedAt: string | null;
@@ -86,8 +88,8 @@ export function selectCoverageLink(
     throw new Error(`No preferred occurrence for ${article.preferredUrl}`);
   return {
     id: article.canonicalId,
-    namespace: article.namespace,
-    sourceId: article.sourceId,
+    namespace: occurrence.namespace ?? article.namespace,
+    sourceId: occurrence.sourceId ?? article.sourceId,
     url: occurrence.url,
     title: occurrence.title,
     source_name: occurrence.sourceName,
@@ -115,6 +117,36 @@ export function selectCoverageLink(
   };
 }
 export type CoverageLink = ReturnType<typeof selectCoverageLink>;
+
+// Build the initial private alias file from occurrences imported on the same row.
+export function releaseAliases(articles: Iterable<ReleaseArticle>) {
+  const aliases: Record<string, string> = {};
+  const owners = new Map<string, ReleaseArticle>();
+  for (const article of articles) {
+    const keys = new Set<string>();
+    for (const occurrence of Object.values(article.occurrences)) {
+      if (occurrence.namespace !== "google.news") continue;
+      if (!occurrence.sourceId)
+        throw new Error("Missing publisher URL source ID");
+      keys.add(occurrence.sourceId);
+    }
+    if (!keys.size) continue;
+    const target =
+      article.namespace === "google.news" &&
+      article.sourceId &&
+      keys.has(article.sourceId)
+        ? article.sourceId
+        : [...keys].sort()[0]!;
+    for (const key of keys) {
+      const owner = owners.get(key);
+      if (owner && owner !== article)
+        throw new Error("Publisher URL belongs to multiple articles: " + key);
+      owners.set(key, article);
+      if (key !== target) aliases[key] = target;
+    }
+  }
+  return { CoverageLink: aliases };
+}
 
 export function pageNews(articles: ReleaseArticle[], ranking?: Ranking) {
   return {

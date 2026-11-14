@@ -39,6 +39,10 @@ for (const [name, script, args, builds] of [
         );
         mkdirSync(join(root, ".release/data"), { recursive: true });
         writeFileSync(join(root, ".release/data/index.json"), "{}");
+        writeFileSync(
+          join(root, ".release/data/alias.json"),
+          JSON.stringify({ CoverageLink: {} }),
+        );
         writeFileSync(join(root, ".release/data/dynamic.json"), "{}");
         const preview = name.startsWith("preview");
         const releaseId =

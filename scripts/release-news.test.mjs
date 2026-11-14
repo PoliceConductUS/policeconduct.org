@@ -1,18 +1,23 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { selectCoverageLink } from "../src/lib/data/release-news.ts";
+import {
+  releaseAliases,
+  selectCoverageLink,
+} from "../src/lib/data/release-news.ts";
 
 const preferred = "https://original.example/story";
 const alternate = "https://local.example/story";
 const article = {
   namespace: "google.news",
-  sourceId: "story",
+  sourceId: preferred,
   canonicalId: "article-db",
   preferredUrl: preferred,
   normalizedUrl: preferred,
   notes: null,
   occurrences: {
     [preferred]: {
+      namespace: "google.news",
+      sourceId: preferred,
       url: preferred,
       title: "Original",
       publishedAt: "2026-11-11",
@@ -20,6 +25,8 @@ const article = {
       summary: "Original summary",
     },
     [alternate]: {
+      namespace: "google.news",
+      sourceId: alternate,
       url: alternate,
       title: "Local copy",
       publishedAt: "2026-11-13",
@@ -52,11 +59,41 @@ test("an ordinary build preserves each assignment's source and uses the preferre
   assert.equal(link.title, "Local copy");
   assert.equal(link.summary, "Local summary");
   assert.equal(link.officers[0].sourceId, "beta");
-  assert.equal(link.sourceId, "story");
+  assert.equal(link.sourceId, alternate);
+  assert.equal(selectCoverageLink(article, [], officers).sourceId, preferred);
   assert.ok(!JSON.stringify(link).includes("private note"));
   assert.equal(
     selectCoverageLink(article, article.relationships, officers).url,
     preferred,
   );
   assert.equal(selectCoverageLink(article, [], officers).url, preferred);
+});
+
+test("release aliases contain only confirmed Daily source IDs with one target per story", () => {
+  const copy = "https://another.example/story";
+  const other = "https://other.example/independent";
+  const articleWithCopies = {
+    ...article,
+    occurrences: {
+      ...article.occurrences,
+      [copy]: { ...article.occurrences[alternate], url: copy, sourceId: copy },
+      [other]: {
+        ...article.occurrences[preferred],
+        namespace: "a-different-source",
+        sourceId: other,
+      },
+    },
+  };
+  assert.deepEqual(releaseAliases([articleWithCopies]), {
+    CoverageLink: { [alternate]: preferred, [copy]: preferred },
+  });
+  assert.deepEqual(releaseAliases([]), { CoverageLink: {} });
+  assert.throws(
+    () =>
+      releaseAliases([
+        articleWithCopies,
+        { ...article, canonicalId: "different" },
+      ]),
+    /multiple articles/,
+  );
 });

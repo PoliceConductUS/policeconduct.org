@@ -4,7 +4,7 @@ import {
   loadReleaseCoverage,
   loadReleaseRoster,
 } from "../src/lib/data/coverage.ts";
-import { pageNews } from "../src/lib/data/release-news.ts";
+import { pageNews, releaseAliases } from "../src/lib/data/release-news.ts";
 
 const staticRoot = resolve("dist");
 const dataRoot = resolve(".release/data");
@@ -33,6 +33,10 @@ async function writePage(path, data) {
 if (!paths.has("/"))
   throw new Error("Missing original homepage in website build");
 await writePage("/", pageNews(coverage.home, coverage.ranking));
+await writeFile(
+  join(dataRoot, "alias.json"),
+  JSON.stringify(releaseAliases(coverage.articles.values())),
+);
 const coveragePaths = [];
 for (const [entities, index] of [
   [agencies, coverage.agencies],

@@ -40,3 +40,16 @@ A clean install on Node 24.21.0 matched all 394 installed dependency versions to
 Task 4.2 remains open. At the authorized website rollout, verify the full release and sitemap, check the snapshot against the selected production release, test both public hosts for private-data denial, and confirm that CloudFront refreshes previously cached pages. Enable the Intake schedule after these checks. Local tests do not exercise actual publisher access, production credentials, IAM or CloudFront propagation.
 
 The release-page-updates delta remains in the active change pending rollout. The implementation has local validation evidence. No remote CI run or production deployment was requested or performed.
+
+## Publisher URL aliases
+
+The local import rehearsal used a private release with three chained publisher URL keys, one unrelated record-kind mapping, two officer assignments and a 50-click homepage placement. All three Google source keys resolved to one canonical article. Importing a single-copy release and importing the original again produced zero new mutations. An ordinary four-page Astro build matched Daily’s renderer for each displayed URL, source identity, title, date, summary and assignment. The homepage showed the preferred original, the agency showed the story once and the two profiles showed their respective supporting copies. The alias file was present in private release data.
+
+The website's complete local validation passed with 359 Node tests, 216 browser tests and zero skips. Astro checked 352 files with zero errors, warnings or hints. The database contract passed for 31 tables. The news change also passed strict OpenSpec validation. A clean install on Node 26.13.1 matched all 511 installed versions to the lockfile. The deployment fixtures include the private alias file for preview and production. The production rollout remains a separate step.
+
+### Files changed for publisher URL aliases
+
+- `design.md`, `proposal.md`, `specs/release-page-updates/spec.md`, `plan.md`, `tasks.md` and this `verify.md` in the change directory describe the type-scoped handoff, its implementation and verification.
+- `src/lib/data/coverage.ts` and `src/lib/data/release-news.ts` expose the imported occurrences to the release writer, select the displayed source ID and group the confirmed URL aliases.
+- `scripts/write-release-news.mjs` and `scripts/upload-release.sh` produce the initial private alias file and require it when publishing a release.
+- `scripts/release-news.test.mjs`, `scripts/deploy-release-guard.test.mjs` and `scripts/load-redirects.test.mjs` verify alias grouping, rendered source identities and complete release fixtures.

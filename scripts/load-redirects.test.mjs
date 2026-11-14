@@ -288,6 +288,10 @@ function deploy(
       "-b2749557-33a6-4ce7-9362-dd16e49eb807";
     writeFileSync(join(dir, ".release/id"), releaseId);
     writeFileSync(join(dir, ".release/data/index.json"), "{}");
+    writeFileSync(
+      join(dir, ".release/data/alias.json"),
+      JSON.stringify({ CoverageLink: {} }),
+    );
     writeFileSync(join(dir, ".release/data/dynamic.json"), "{}");
     writeFileSync(join(dir, "dist/index.html"), "content");
     writeFileSync(join(dir, "dist/robots.txt"), "User-agent: *\nDisallow: /\n");
