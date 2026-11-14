@@ -10,7 +10,8 @@ Written 2026-11-13 after corrected working-tree aggregate verification.
 - Worktree: `.worktrees/publish-source-data-annotations`.
 - Product diff: 22 added lines in `src/pages/index.astro`.
 - New external dependencies: none.
-- Both spec requirements and scenarios passed targeted browser/rendering checks.
+- Targeted HTML, layout, and accessibility checks passed. The in-page playback
+  scenario remains unverified.
 - Independent source/spec review found no issues.
 - Full corrected working-tree aggregate: exit 0; 552 tests passed; no failures or
   skips. Astro: zero errors, warnings, or hints. OpenSpec: 39 items passed.

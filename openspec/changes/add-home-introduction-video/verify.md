@@ -19,8 +19,9 @@ website deployment is part of this verification report.
 
 ## Completeness, Correctness, and Coherence
 
-Both requirements and both scenarios map to `src/pages/index.astro` and passed
-targeted rendering/browser checks. The new section follows `#top` and precedes
+Both requirements and both scenarios map to `src/pages/index.astro`. Targeted
+HTML, layout, and accessibility checks passed; in-page playback remains unverified.
+The new section follows `#top` and precedes
 `#overview`. The actual YouTube ID is `xA6z1L-MG_k`. Existing sections are intact.
 Independent source/spec review found no issues.
 
