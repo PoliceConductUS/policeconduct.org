@@ -63,3 +63,12 @@ The redirect distribution SHALL declare its existing example.com placeholder ori
 
 - **WHEN** the recovered Iceconduct state is refreshed and planned
 - **THEN** its origin requires no remote change
+
+### Requirement: Iceconduct redirects to the existing ICE page
+
+The Iceconduct redirect SHALL send all requests to https://www.policeconduct.org/federal/u-s-immigration-and-customs-enforcement/ with HTTP 301.
+
+#### Scenario: A visitor uses either Iceconduct host
+
+- **WHEN** a visitor requests the apex or www host with any path or query
+- **THEN** the response redirects to the existing ICE agency page without appending the incoming path or query
