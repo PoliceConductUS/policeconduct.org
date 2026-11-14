@@ -1,3 +1,8 @@
+> **Update 2026-11-14:** This original write-time record is preserved. Its pending
+> validation, caption, playback, and workflow-completion statements are superseded
+> by [the dated closeout retrospective](retrospective-closeout.md) and the refreshed
+> [verification report](verify.md).
+
 # Retrospective: add-home-introduction-video
 
 Updated 2026-11-13 for the user-approved summary and video metadata extension.

@@ -11,5 +11,5 @@
 - [x] 2.1 Review the approved scope and update the existing bridge artifacts.
 - [x] 2.2 Add the visible summary, existing links, accurate VideoObject, and local thumbnail.
 - [x] 2.3 Verify rendered metadata, thumbnail dimensions, text/links, desktop/mobile layout, and no inline CSS.
-- [ ] 2.4 Run full validation with locked dependencies and record actual outcomes.
-- [ ] 2.5 Return the final scoped diff and evidence for independent review.
+- [x] 2.4 Run full validation with locked dependencies and record actual outcomes.
+- [x] 2.5 Return the final scoped diff and evidence for independent review.

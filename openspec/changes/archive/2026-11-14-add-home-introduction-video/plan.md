@@ -17,7 +17,7 @@ video URL helper and Bootstrap layout without introducing a new component.
 - Reuse the current worktree and branch.
 - Do not change existing sections or introduce new CSS, dependencies, or routes.
 - Use the actual published YouTube URL; do not fabricate a video ID.
-- Required validation must use the configured Node 24 runtime and locked packages.
+- Required validation must use the runtime configured in `mise.toml` and locked packages.
 
 ## Review Focus
 
@@ -62,8 +62,8 @@ ID and site URL helpers. No new module, component, style, dependency, or route.
       outside `astro.config.*`, excluding only full-corpus sitemap work. Check
       actual JSON-LD, local image dimensions, visible text/links, shared headings,
       desktop/mobile width and 16:9 player, no autoplay, and no inline CSS.
-- [ ] **Step 5:** Remove temporary config before running `npm run validate` in full;
+- [x] **Step 5:** Remove temporary config before running `npm run validate` in full;
       record runtime, lockfile comparison, stages, tests, skips, diagnostics, and
       actual CI state. No shared database reset/stop/rebuild.
-- [ ] **Step 6:** Return the scoped diff for independent review; leave commit/push
+- [x] **Step 6:** Return the scoped diff for independent review; leave commit/push
       and final-commit validation to the coordinating agent.
