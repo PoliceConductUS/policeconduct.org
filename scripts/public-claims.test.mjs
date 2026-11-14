@@ -31,7 +31,7 @@ const unsupportedClaims =
 
 function assertNoUnsupportedClaims(text, label) {
   const copy = text
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script\b[^>]*>/gi, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ");
   assert.equal(copy.match(unsupportedClaims)?.[0], undefined, label);
