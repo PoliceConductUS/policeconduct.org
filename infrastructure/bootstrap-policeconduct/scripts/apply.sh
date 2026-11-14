@@ -3,6 +3,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Fail before environment loading, package installation, or any apply phase.
+bash "${ROOT_DIR}/../../scripts/require-terraform-state.sh" "${ROOT_DIR}"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 DOTENV_FILE="${REPO_ROOT}/.env"
 POLICECONDUCT_DOTENV_FILE="${REPO_ROOT}/.env-policeconduct"

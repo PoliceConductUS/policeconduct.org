@@ -34,7 +34,7 @@
     "scan:personal-data": "node scripts/scan-personal-data.mjs --tracked",
     "setup": "bash scripts/bootstrap-dev.sh",
     "test:client": "node --test scripts/copy-link.test.mjs scripts/google-analytics.test.mjs scripts/ai-complaint-summary.test.mjs scripts/ai-complaint-render.test.mjs scripts/canonical-metadata.test.mjs scripts/public-claims.test.mjs",
-    "test": "npm run test:contacts && npm run test:annotations && npm run test:analytics-config && npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:data && npm run test:coverage && npm run test:e2e",
+    "test": "npm run test:contacts && npm run test:annotations && npm run test:analytics-config && npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:data && npm run test:coverage && npm run test:e2e && npm run test:infra",
     "test:coverage": "node --test \"src/lib/coverage/*.test.mjs\"",
     "test:css": "node --test scripts/purge-built-css.test.mjs",
     "test:data": "node --test src/lib/data/assignment-status.test.mjs scripts/verify-employment-claims.test.mjs scripts/report-detail.test.mjs",
@@ -60,7 +60,8 @@
     "test:annotations": "node --test tests/unit/data-annotations.test.mjs",
     "analytics:compare": "node scripts/analytics-config.mjs compare",
     "analytics:apply": "node scripts/analytics-config.mjs apply",
-    "test:analytics-config": "node --test scripts/analytics-config.test.mjs"
+    "test:analytics-config": "node --test scripts/analytics-config.test.mjs",
+    "test:infra": "node --test scripts/require-terraform-state.test.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
