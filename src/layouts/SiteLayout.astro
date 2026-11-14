@@ -448,6 +448,16 @@ const serializeStructuredData = (value: unknown) =>
                 </a>
               </li>
               <li class="mb-2">
+                <button
+                  type="button"
+                  class="footer-privacy-settings text-muted text-decoration-none"
+                  data-privacy-settings
+                  hidden
+                >
+                  Privacy settings
+                </button>
+              </li>
+              <li class="mb-2">
                 <a
                   class="text-muted text-decoration-none"
                   href="/legal-notice/refund"
@@ -516,6 +526,19 @@ const serializeStructuredData = (value: unknown) =>
     </footer>
 
     <style>
+      .footer-privacy-settings {
+        background: transparent;
+        border: 0;
+        padding: 0;
+        font: inherit;
+        text-align: inherit;
+        cursor: pointer;
+      }
+      .footer-privacy-settings:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: 3px;
+      }
+
       /* Port of mockups/civic-index-redesign/shared-v5.css
          (.skip-link / .masthead*) onto the canonical --ipc-* tokens. */
       .skip-link {
