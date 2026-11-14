@@ -7,6 +7,7 @@ import { test } from "node:test";
 import { build } from "astro";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
+const sitewideLimit = "We do not verify information on this site.";
 const pages = [
   "agency/new",
   "agency/suggest-edit",
@@ -23,17 +24,16 @@ const pages = [
   "legal-notice/disclaimer",
   "legal-notice/privacy",
   "legal-notice/comment-policy",
+  "legal-notice/terms-of-service",
 ];
 const unsupportedClaims =
-  /\b(?:verified|verification|fact[- ]check(?:ed|ing)?|(?:manually |automatically )?verify (?:reports|submissions|information|the claim|the submission)|we can verify|reviewed before publication|review every submission|reviewed manually|manual review|keeps the national record accurate|ensure that every piece of data we host is accurate)\b/i;
+  /\b(?:verified|verification|fact[- ]check(?:ed|ing)?|(?:manually |automatically )?verify (?:reports|submissions|information|claims|records|the claim|the submission)|(?:do not|does not|never) verify|not investigated, monitored, or checked|not (?:independently )?(?:checked|confirmed)|we can verify|reviewed before publication|review every submission|reviewed manually|manual review|keeps the national record accurate|ensure that every piece of data we host is accurate)\b/i;
 
 function assertNoUnsupportedClaims(text, label) {
   const copy = text
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
     .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .replace(/Claims are not independently verified before publication\./g, "")
-    .replace(/\bdo not verify (?:submissions|claims)\b/g, "");
+    .replace(/\s+/g, " ");
   assert.equal(copy.match(unsupportedClaims)?.[0], undefined, label);
 }
 
@@ -107,7 +107,20 @@ import ReportDisclaimer from "#src/components/ReportDisclaimer.astro";
           "utf8",
         );
         assert.match(html, /<h1\b/);
-        assertNoUnsupportedClaims(html, `${page} visible copy`);
+        const normalizedHtml = html.replace(/\s+/g, " ");
+        const footer = normalizedHtml.match(
+          /<footer\b[^>]*>[\s\S]*?<\/footer>/,
+        )?.[0];
+        assert.equal(
+          normalizedHtml.split(sitewideLimit).length - 1,
+          1,
+          `${page} must disclose the sitewide limit exactly once`,
+        );
+        assert.ok(footer?.includes(sitewideLimit), `${page} footer disclosure`);
+        assertNoUnsupportedClaims(
+          normalizedHtml.replace(sitewideLimit, ""),
+          `${page} visible copy`,
+        );
         for (const metadata of html.matchAll(
           /<meta\b[^>]+content="([^"]*)"/g,
         )) {

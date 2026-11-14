@@ -23,3 +23,12 @@ The existing email-confirmation flow SHALL retain its security and submission be
 
 - **WHEN** the existing confirmation operation succeeds
 - **THEN** the public result identifies email confirmation without claiming report accuracy or verification
+
+### Requirement: State the verification limit once
+
+Public pages SHALL state the absence of verification once in the shared footer. Page bodies, individual reports and records SHALL NOT repeat verification-limit disclaimers.
+
+#### Scenario: A visitor reads a report or legal page
+
+- **WHEN** the page is rendered
+- **THEN** its footer contains the single sitewide limit and its body does not repeat that limit

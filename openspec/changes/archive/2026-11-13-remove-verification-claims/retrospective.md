@@ -25,3 +25,7 @@ Existing worktree and PR reused; outcome and plan recorded before edits. Focused
 ## Follow-through
 
 Run full validation on the final committed PR head, check CI, then complete the authorized merge and coordinated static/forms API release. Inspect the full generated sitemap and live pages. No new long-term memory or unrelated workflow change is requested.
+
+## Follow-up before merge
+
+Updated project guidance requires the absence-of-verification statement once, in the footer, rather than repeated page or report caveats. The follow-up removes those clauses, adds terms-of-service rendering, and asserts exactly one footer statement on each of 18 routes. Focused regression: 19 passed, zero skipped. One already-public report is corrected through its manual intake source and a single generated ReviewUpdate. An initial direct generator launch used Node's lower default memory limit and exhausted it; rerunning with intake's existing 12 GB allowance produced the one-record delta. Final aggregate and CI evidence is recorded on the final PR head.
