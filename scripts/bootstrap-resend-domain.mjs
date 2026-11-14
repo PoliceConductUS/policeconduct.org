@@ -146,18 +146,6 @@ async function createDomain(apiKey, config) {
   });
 }
 
-async function updateDomain(apiKey, domainId) {
-  const body = {
-    clickTracking: false,
-    openTracking: false,
-    trackingSubdomain: "links",
-  };
-  return resendRequest(apiKey, `/domains/${encodeURIComponent(domainId)}`, {
-    method: "PATCH",
-    body,
-  });
-}
-
 async function verifyDomain(apiKey, domainId) {
   return resendRequest(
     apiKey,
@@ -180,20 +168,7 @@ async function ensureDomain(config) {
     created = true;
   }
 
-  let domain = await getDomain(config.apiKey, existing.id);
-  const needsUpdate =
-    Boolean(domain?.open_tracking) !== config.openTracking ||
-    Boolean(domain?.click_tracking) !== config.clickTracking ||
-    trimToNull(domain?.tracking_subdomain) !== config.trackingSubdomain;
-
-  if (needsUpdate) {
-    await updateDomain(config.apiKey, domain.id);
-    domain = await getDomain(config.apiKey, domain.id);
-  }
-
-  if (config.verify) {
-    await verifyDomain(config.apiKey, domain.id);
-  }
+  const domain = await getDomain(config.apiKey, existing.id);
 
   return {
     created,
@@ -235,11 +210,8 @@ async function readJsonStdin() {
 function loadConfig() {
   return {
     apiKey: trimToNull(process.env.RESEND_API_KEY_FULL_ACCESS),
-    clickTracking: false,
     domainName: DOMAIN_NAME,
-    openTracking: false,
     region: REGION,
-    trackingSubdomain: "links",
   };
 }
 
@@ -323,5 +295,4 @@ export const __testables = {
   resendRequest,
   route53ValueForRecord,
   verifyExistingDomain,
-  updateDomain,
 };

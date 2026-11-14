@@ -14,11 +14,11 @@ Terraform domain evaluation SHALL only issue GET requests to Resend and preserve
 - **WHEN** Terraform cannot find the configured domain
 - **THEN** it fails without creating or verifying any domain
 
-### Requirement: Manual apply is idempotent for matching tracking settings
+### Requirement: Manual apply preserves existing domain configuration
 
-An explicit apply SHALL NOT patch a domain already matching the existing update payload.
+An explicit apply SHALL create a missing domain only and SHALL NOT patch existing tracking settings, capabilities, or trigger verification.
 
-#### Scenario: Tracking settings already match
+#### Scenario: Tracking is enabled with a custom host
 
-- **WHEN** apply reads disabled click/open tracking and tracking subdomain links
-- **THEN** it performs no PATCH request
+- **WHEN** apply reads an existing domain with enabled tracking and a custom tracking subdomain
+- **THEN** it returns the current domain without PATCH or verification requests
