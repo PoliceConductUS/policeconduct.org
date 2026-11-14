@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "./page-fixture";
 
 type ReportRequestBody = {
   data: Record<string, unknown>;
