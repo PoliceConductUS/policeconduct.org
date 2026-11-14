@@ -1,5 +1,6 @@
 ---
 import "#src/styles/theme.css";
+import { execFileSync } from "node:child_process";
 import AnalyticsConsent from "#src/components/AnalyticsConsent.astro";
 import GoogleAnalytics from "#src/components/GoogleAnalytics.astro";
 import MastheadSearch from "#src/components/MastheadSearch.astro";
@@ -50,13 +51,16 @@ const structuredDataEntries = structuredData
     : [structuredData]
   : [];
 const fullCommitSha = (
-  process.env.GIT_COMMIT_SHA ||
-  process.env.GITHUB_SHA ||
-  "unknown"
+  (import.meta.env.DEV
+    ? execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" })
+    : process.env.GIT_COMMIT_SHA || process.env.GITHUB_SHA) || "unknown"
 ).trim();
-const isDirtyBuild = ["1", "true", "yes"].includes(
-  (process.env.GIT_COMMIT_DIRTY || "").trim().toLowerCase(),
-);
+const isDirtyBuild = import.meta.env.DEV
+  ? execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim()
+      .length > 0
+  : ["1", "true", "yes"].includes(
+      (process.env.GIT_COMMIT_DIRTY || "").trim().toLowerCase(),
+    );
 const commitDisplay =
   fullCommitSha === "unknown"
     ? "unknown"
