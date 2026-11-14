@@ -190,7 +190,7 @@ Custom MAIL FROM can remain in `Pending` for a while after apply while SES check
 ## Resend Domain Bootstrap
 
 - create or look up the Resend sending domain for `forms_email_verification_domain`
-- keep open/click tracking disabled
+- preserve existing provider tracking and capability settings
 - fetch the required DNS records from Resend
 - create those DNS records in Route 53 automatically
 
@@ -198,13 +198,11 @@ The values are fixed in this repo:
 
 - sending domain: `mail.policeconduct.org`
 - SES custom MAIL FROM: `bounce.mail.policeconduct.org`
-- tracking host, if you ever enable it later in code: `links.mail.policeconduct.org`
+- proposed tracking host: `links.mail.policeconduct.org`; use the exact name and target returned by Resend before configuring DNS
 
 If a previous bootstrap wrote incorrect doubled-`mail` Route 53 records such as
-`send.mail.mail.policeconduct.org`, rerunning
-`bash infrastructure/bootstrap-policeconduct/scripts/apply.sh` will replace the
-managed records with the corrected names and delete the old managed records as
-part of the same apply.
+`send.mail.mail.policeconduct.org`, inspect the exact DNS diff and prepare a scoped
+change with rollback. Do not run an untargeted Terraform apply for email repairs.
 
 `infrastructure/bootstrap-policeconduct/scripts/apply.sh` now loads `.env-policeconduct` and maps `RESEND_API_KEY` into the Terraform input used by the forms Lambda. The same shell environment is used by the Resend bootstrap script, so keeping `RESEND_API_KEY` in `.env-policeconduct` is enough for the normal apply flow.
 
@@ -233,8 +231,10 @@ source .env-policeconduct
 node scripts/bootstrap-resend-domain.mjs --read
 ```
 
-Creating the domain or reconciling tracking settings is a separate, explicit
-production change. After obtaining the applicable production approval, run:
+Creating a missing domain is a separate, explicit production change.
+`--apply` preserves all settings on existing domains; it never configures tracking
+or triggers verification. Configure tracking separately through the Resend
+Domains API or dashboard after inspecting the current settings. After obtaining the applicable production approval, run:
 
 ```bash
 source .env-policeconduct
