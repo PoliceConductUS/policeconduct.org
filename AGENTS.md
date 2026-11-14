@@ -28,6 +28,7 @@ Scope Of A Change
 Reporting
 
 - Use this project's words: its tables, routes, components, and commands. Do not coin a term. If something new must be named, define it in the same sentence.
+- Before reporting work as done, list each changed file with the part of the request that required it. Revert any change you cannot tie to the request.
 - End a work report with the state: worktree and branch, what is committed, what is pushed, what is merged, and what is left to do.
 
 This Repository Is Public
@@ -43,6 +44,7 @@ Workflow Standards
 
 - This repo uses Codex App, OpenSpec, Superpowers, and the OpenSpec Superpowers bridge for behavior-changing work.
 - OpenSpec governs what behavior should exist. Superpowers governs how agents execute the work. The bridge keeps brainstorming, plans, verification, and retrospectives under `openspec/changes/<change-name>/`.
+- Approval before implementation. When a change needs an OpenSpec change, write the proposal and the other artifacts first, then ask the user to approve. The user either says "approve now" or holds approval to read the documents. Do not implement until the user approves. Never merge a pull request unless the user names it and tells you to merge it.
 - Only one worktree and branch may be active for this repo at a time. Reuse the current worktree and branch for new work. Never create another worktree or branch without the user's explicit permission, even when isolation would otherwise be preferred.
 - Behavior changes, data-shape changes, seed/migration changes, validation changes, and downstream contract changes should use the active repo-local worktree under `.worktrees/<change-name>`; do not create a new one without the user's explicit permission.
 - Documentation-only edits, formatting, tooling tweaks, and internal refactors that preserve specified behavior may stay lightweight.
