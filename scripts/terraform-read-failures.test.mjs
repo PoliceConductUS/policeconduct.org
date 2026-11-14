@@ -15,6 +15,7 @@ function run(t, script, overrides = {}) {
     `#!/usr/bin/env bash
 if [[ "$1" == "sts" ]]; then
   printf '%s' "$CALLER"
+  if [[ "$IDENTITY_EXIT" != 0 ]]; then echo "identity read failed" >&2; fi
   exit "$IDENTITY_EXIT"
 fi
 if [[ "$2" == "$FAIL_OPERATION" ]]; then
@@ -27,7 +28,7 @@ printf '%s' 'None'
   );
   writeFileSync(
     join(bin, "terraform"),
-    '#!/usr/bin/env bash\nprintf "%s" "$STATE"\nexit "$STATE_EXIT"\n',
+    '#!/usr/bin/env bash\nif [[ "$3" == list ]]; then echo aws_cloudfront_distribution.redirect; exit 0; fi\nif [[ "$2" == apply ]]; then echo APPLY_REACHED; exit 42; fi\nprintf "%s" "$STATE"\nexit "$STATE_EXIT"\n',
     { mode: 0o755 },
   );
   return spawnSync("bash", [resolve(script), dir], {
@@ -48,6 +49,7 @@ printf '%s' 'None'
       STATE_EXIT: "0",
       FAIL_OPERATION: "",
       STATE: JSON.stringify({
+        version: 4,
         resources: [
           {
             mode: "managed",
@@ -110,4 +112,26 @@ test("CloudFront successful absence remains empty", (t) => {
     "",
     "",
   ]);
+});
+
+for (const [name, overrides] of [
+  ["identity read failure", { IDENTITY_EXIT: "1" }],
+  ["account mismatch", { CALLER: "999999999999" }],
+  ["state read failure", { STATE_EXIT: "1" }],
+]) {
+  test(`Iceconduct wrapper stops before apply: ${name}`, (t) => {
+    const result = run(
+      t,
+      "infrastructure/bootstrap-iceconduct/scripts/apply.sh",
+      overrides,
+    );
+    assert.notEqual(result.status, 0);
+    assert.doesNotMatch(result.stdout, /APPLY_REACHED/);
+    assert.match(result.stderr, /account|identity|state|Terraform/i);
+  });
+}
+
+test("Iceconduct wrapper reaches apply after matching account verification", (t) => {
+  const result = run(t, "infrastructure/bootstrap-iceconduct/scripts/apply.sh");
+  assert.match(result.stdout, /APPLY_REACHED/);
 });

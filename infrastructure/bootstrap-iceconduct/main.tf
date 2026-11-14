@@ -77,9 +77,9 @@ resource "aws_cloudfront_distribution" "redirect" {
   http_version        = "http2and3"
   price_class         = var.price_class
 
-  # Non-routable placeholder origin. Viewer-request function returns a redirect before origin is used.
+  # Preserve the existing placeholder origin. The viewer-request function returns before origin access.
   origin {
-    domain_name = "placeholder.invalid"
+    domain_name = "example.com"
     origin_id   = "placeholder-origin"
 
     custom_origin_config {
