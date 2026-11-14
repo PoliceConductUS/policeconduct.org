@@ -64,11 +64,21 @@ The redirect distribution SHALL declare its existing example.com placeholder ori
 - **WHEN** the recovered Iceconduct state is refreshed and planned
 - **THEN** its origin requires no remote change
 
-### Requirement: Iceconduct redirects to the existing ICE page
+### Requirement: Iceconduct redirects corresponding hostnames
 
-The Iceconduct redirect SHALL send all requests to https://www.policeconduct.org/federal/u-s-immigration-and-customs-enforcement/ with HTTP 301.
+Iceconduct SHALL return HTTP 301 to the corresponding PoliceConduct hostname, replacing only the terminal iceconduct.org domain. Non-root paths and query values SHALL be preserved. Root requests SHALL use /federal/u-s-immigration-and-customs-enforcement/ on the corresponding host.
 
-#### Scenario: A visitor uses either Iceconduct host
+#### Scenario: A preview request contains repeated domain text
 
-- **WHEN** a visitor requests the apex or www host with any path or query
-- **THEN** the response redirects to the existing ICE agency page without appending the incoming path or query
+- **WHEN** pr-13.preview.iceconduct.org requests a path or query containing iceconduct.org
+- **THEN** only the hostname domain changes to policeconduct.org and the path and query values remain unchanged
+
+#### Scenario: Preview hosts reach CloudFront
+
+- **WHEN** a visitor uses preview.iceconduct.org or a single-label PR subdomain beneath it
+- **THEN** Terraform declares matching certificate coverage, CloudFront aliases, and IPv4/IPv6 DNS aliases
+
+#### Scenario: An unrelated hostname reaches the function
+
+- **WHEN** the hostname is neither iceconduct.org nor a subdomain of it
+- **THEN** the function returns HTTP 400 without a redirect
