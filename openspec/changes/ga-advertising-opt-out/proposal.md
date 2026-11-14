@@ -1,13 +1,12 @@
 ## Why
 
-Visitors need working analytics cookie choices while advertising stays disabled.
+Visitors need working analytics cookie choices with independent advertising opt-in.
 
 ## What Changes
 
 The board selected advanced consent mode on 2026-11-14. Deny analytics storage
 until acceptance, load Google for cookieless measurement even when declined,
-remember choices, and provide Privacy settings to withdraw. All advertising
-permissions remain denied regardless of analytics choice. Apply to both sites.
+remember choices, and provide Cookie settings to withdraw. Advertising permissions follow an independent explicit opt-in. Apply to both sites.
 
 ## Impact
 

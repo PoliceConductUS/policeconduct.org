@@ -34,7 +34,7 @@ function loadTag(choice) {
   };
   browser.window = browser;
   runInNewContext(
-    (consentModule + analytics.replace(/^import .*;\n/m, "")).replaceAll(
+    (consentModule + analytics.replace(/^import [\s\S]*?;\n/m, "")).replaceAll(
       "export const ",
       "const ",
     ) + "\ninitializeAnalytics();",
@@ -55,14 +55,17 @@ test("advertising is denied before the external tag can load", () => {
   }
 });
 
-test("every page view opts out while retaining ordinary analytics", () => {
+test("page views default to advertising opt-out while retaining ordinary analytics", () => {
   const { browser } = loadTag();
   const configs = browser.dataLayer.filter((entry) => entry[0] === "config");
   assert.equal(configs.length, 1);
   const [, id, config] = configs[0];
   assert.equal(id, "G-40S6M70XP7");
-  assert.equal(config.allow_ad_personalization_signals, false);
-  assert.equal(config.allow_google_signals, false);
+  const flags = browser.dataLayer.find(
+    (entry) => entry[0] === "set" && "allow_google_signals" in entry[1],
+  )[1];
+  assert.equal(flags.allow_ad_personalization_signals, false);
+  assert.equal(flags.allow_google_signals, false);
   assert.equal(config.page_title, browser.document.title);
   assert.equal(config.page_location, "https://policeconduct.org/");
   assert.equal(config.page_path, "/");
@@ -88,4 +91,27 @@ for (const [choice, expected] of [
     for (const key of ["ad_storage", "ad_user_data", "ad_personalization"])
       assert.equal(state[key], "denied");
   });
+}
+
+for (const analytics of ["granted", "denied"]) {
+  for (const advertising of ["granted", "denied"]) {
+    test(`saved independent choices: analytics=${analytics}, advertising=${advertising}`, () => {
+      const { atExternalLoad } = loadTag(
+        JSON.stringify({ analytics, advertising }),
+      );
+      const queue = atExternalLoad[0];
+      const state = queue.find((entry) => entry[0] === "consent")[2];
+      assert.equal(state.analytics_storage, analytics);
+      for (const key of ["ad_storage", "ad_user_data", "ad_personalization"])
+        assert.equal(state[key], advertising);
+      const flags = queue.find(
+        (entry) => entry[0] === "set" && "allow_google_signals" in entry[1],
+      )[1];
+      assert.equal(flags.allow_google_signals, advertising === "granted");
+      assert.equal(
+        flags.allow_ad_personalization_signals,
+        advertising === "granted",
+      );
+    });
+  }
 }

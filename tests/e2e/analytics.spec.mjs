@@ -84,7 +84,7 @@ async function visitSite(page, baseURL, url, options = {}) {
     .toBe("function");
   if (!options.keepConsentOpen) {
     await page
-      .getByRole("button", { name: "Decline analytics cookies", exact: true })
+      .getByRole("button", { name: "Decline all", exact: true })
       .click();
   }
   return {
@@ -642,11 +642,11 @@ test("advanced consent remembers choices and withdrawal keeps advertising denied
   );
   const panel = page.getByRole("dialog", { name: "Manage cookie settings" });
   const decline = page.getByRole("button", {
-    name: "Decline analytics cookies",
+    name: "Decline all",
     exact: true,
   });
   const settings = page.getByRole("button", {
-    name: "Privacy settings",
+    name: "Cookie settings",
     exact: true,
   });
   await expect(panel).toBeVisible();
@@ -750,9 +750,7 @@ test("unavailable choice storage defaults to denied and reports unsaved acceptan
     analytics.commands.find((entry) => entry[0] === "consent")[2]
       .analytics_storage,
   ).toBe("denied");
-  await page
-    .getByRole("button", { name: "Allow analytics cookies", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Allow all", exact: true }).click();
   await expect(page.locator("[data-consent-status]")).toContainText(
     "could not save",
   );
@@ -764,4 +762,54 @@ test("unavailable choice storage defaults to denied and reports unsaved acceptan
           .analytics_storage,
     ),
   ).toBe("denied");
+});
+
+test("advertising opt-in is independent, persists and can be withdrawn", async ({
+  page,
+  baseURL,
+}) => {
+  await visitSite(page, baseURL, "https://policeconduct.org/about/contact/", {
+    keepConsentOpen: true,
+  });
+  await page.locator("[data-advertising-enabled]").check();
+  await page.locator("[data-analytics-save]").click();
+  await page.reload();
+  await expect(page.locator("[data-privacy-settings]")).toBeVisible();
+  const state = await page.evaluate(
+    () =>
+      Array.from(window.dataLayer).find((entry) => entry[0] === "consent")[2],
+  );
+  expect(state).toEqual({
+    analytics_storage: "denied",
+    ad_storage: "granted",
+    ad_user_data: "granted",
+    ad_personalization: "granted",
+  });
+  await page.locator("[data-privacy-settings]").click();
+  await expect(page.locator("[data-advertising-enabled]")).toBeChecked();
+  await page.locator('[data-analytics-choice="denied"]').click();
+  const latest = await page.evaluate(
+    () =>
+      Array.from(window.dataLayer)
+        .filter((entry) => entry[0] === "consent")
+        .at(-1)[2],
+  );
+  expect(Object.values(latest)).toEqual([
+    "denied",
+    "denied",
+    "denied",
+    "denied",
+  ]);
+  const flags = await page.evaluate(
+    () =>
+      Array.from(window.dataLayer)
+        .filter(
+          (entry) => entry[0] === "set" && "allow_google_signals" in entry[1],
+        )
+        .at(-1)[1],
+  );
+  expect(flags).toEqual({
+    allow_ad_personalization_signals: false,
+    allow_google_signals: false,
+  });
 });
