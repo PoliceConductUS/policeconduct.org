@@ -72,6 +72,9 @@ process.stdout.write(JSON.stringify(result));
         encoding: "utf8",
         env: {
           ...process.env,
+          // Shell startup files must not replace the fixture command PATH.
+          BASH_ENV: "/dev/null",
+          ENV: "/dev/null",
           PATH: `${dir}:${process.env.PATH}`,
           TEST_STATE: join(dir, "state.json"),
         },
@@ -303,8 +306,13 @@ function deploy(
         encoding: "utf8",
         env: {
           ...process.env,
+          // Shell startup files must not replace the fixture command PATH.
+          BASH_ENV: "/dev/null",
+          ENV: "/dev/null",
           PATH: `${dir}/bin:${process.env.PATH}`,
           TEST_LOG: log,
+          GIT_COMMIT_SHA: "fixture",
+          GIT_COMMIT_DIRTY: "0",
           S3_BUCKET: "prod",
           CLOUDFRONT_DIST_ID: "prod-dist",
           KVS_ARN: "prod-kvs",

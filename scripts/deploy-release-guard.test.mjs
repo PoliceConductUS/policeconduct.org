@@ -63,6 +63,9 @@ for (const [name, script, args, builds] of [
             encoding: "utf8",
             env: {
               ...process.env,
+              // Shell startup files must not replace the fixture command PATH.
+              BASH_ENV: "/dev/null",
+              ENV: "/dev/null",
               PATH: `${join(root, "bin")}:${process.env.PATH}`,
               CALL_LOG: log,
               COVERAGE_EXIT: fails ? "42" : "0",

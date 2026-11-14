@@ -142,7 +142,7 @@ template synchronized whenever those scripts change. All items below apply to
 the final PR head, including documentation-only PRs.
 
 - [ ] Use `mise exec -- node --version` and `mise exec -- npm --version` to record
-      the configured runtime (`mise.toml`, currently Node 24). Install with
+      the configured runtime (`mise.toml`, currently Node 26.13.1). Install with
       `mise exec -- npm ci`; use the nested lockfile for any nested package.
       Compare every installed package version to its `package-lock.json` entry
       (including transitive packages); do not borrow shared `node_modules`.

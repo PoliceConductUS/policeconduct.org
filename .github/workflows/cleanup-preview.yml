@@ -37,7 +37,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: "24"
+          node-version: "26.13.1"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
