@@ -31,3 +31,17 @@ The lookup SHALL include provider-returned Tracking records in the existing Rout
 
 - **WHEN** Resend returns a Tracking CNAME
 - **THEN** Terraform receives its qualified name, exact target, and TTL 600 alongside sending and receiving records
+
+### Requirement: DNS creation preserves existing ownership
+
+The PoliceConduct bootstrap SHALL reject creation over an existing DNS record that is absent from its state. Existing records SHALL be imported before management. Managed updates remain supported.
+
+#### Scenario: A DNS record exists outside the selected state
+
+- **WHEN** Terraform tries to create a record whose name and type already exist
+- **THEN** creation fails instead of overwriting the existing record
+
+#### Scenario: Existing managed records retain their values
+
+- **WHEN** creation overwrite permission is disabled on adopted records
+- **THEN** DNS names, types, values, aliases, routing settings, and TTLs remain unchanged

@@ -1873,7 +1873,7 @@ resource "aws_ses_domain_identity" "site" {
 resource "aws_route53_record" "resend_domain_record" {
   for_each = local.resend_domain_records_map
 
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = each.value.name
   type            = each.value.type
@@ -2069,7 +2069,7 @@ resource "aws_route53_record" "acm_validation" {
     if contains(local.acm_validation_domains, dvo.domain_name)
   }
 
-  allow_overwrite = true
+  allow_overwrite = false
   name            = each.value.name
   records         = [each.value.record]
   ttl             = 60
@@ -2490,7 +2490,7 @@ resource "aws_route53_record" "www_cname" {
 
 
 resource "aws_route53_record" "preview_wildcard_a" {
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = local.preview_wildcard_domain
   type            = "A"
@@ -2503,7 +2503,7 @@ resource "aws_route53_record" "preview_wildcard_a" {
 }
 
 resource "aws_route53_record" "preview_wildcard_aaaa" {
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = local.preview_wildcard_domain
   type            = "AAAA"
@@ -2521,7 +2521,7 @@ resource "aws_route53_record" "extra_standard" {
     if try(record.alias, null) == null
   }
 
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = each.value.name
   type            = each.value.type
@@ -2535,7 +2535,7 @@ resource "aws_route53_record" "extra_alias" {
     if try(record.alias, null) != null
   }
 
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = each.value.name
   type            = each.value.type
