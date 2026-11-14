@@ -60,9 +60,6 @@ function buildRoute53Records(domain) {
       if (!type) {
         return false;
       }
-      if (record?.record === "Tracking") {
-        return false;
-      }
       return true;
     })
     .map((record, index) => ({

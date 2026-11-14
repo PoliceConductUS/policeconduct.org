@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { __testables } from "./bootstrap-resend-domain.mjs";
 
-test("buildRoute53Records qualifies names and formats MX priorities", () => {
+test("buildRoute53Records includes tracking DNS and formats MX priorities", () => {
   const records = __testables.buildRoute53Records({
     name: "mail.policeconduct.org",
     open_tracking: false,
@@ -23,7 +23,7 @@ test("buildRoute53Records qualifies names and formats MX priorities", () => {
         value: "p=abc123",
       },
       {
-        name: "links.mail.policeconduct.org",
+        name: "links.mail",
         record: "Tracking",
         type: "CNAME",
         value: "links1.resend-dns.com",
@@ -45,6 +45,13 @@ test("buildRoute53Records qualifies names and formats MX priorities", () => {
       ttl: 600,
       type: "TXT",
       values: ["p=abc123"],
+    },
+    {
+      id: "tracking-2",
+      name: "links.mail.policeconduct.org",
+      ttl: 600,
+      type: "CNAME",
+      values: ["links1.resend-dns.com"],
     },
   ]);
 });

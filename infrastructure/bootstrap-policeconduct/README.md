@@ -198,7 +198,7 @@ The values are fixed in this repo:
 
 - sending domain: `mail.policeconduct.org`
 - SES custom MAIL FROM: `bounce.mail.policeconduct.org`
-- proposed tracking host: `links.mail.policeconduct.org`; use the exact name and target returned by Resend before configuring DNS
+- tracking DNS: included in `aws_route53_record.resend_domain_record` from the exact Resend response, alongside sending and receiving records
 
 If a previous bootstrap wrote incorrect doubled-`mail` Route 53 records such as
 `send.mail.mail.policeconduct.org`, inspect the exact DNS diff and prepare a scoped
@@ -338,3 +338,32 @@ Useful message keys for this flow:
 - `forms.submit.origin_rejected`
 - `forms.verify.success`
 - `forms.request.error`
+
+### Tracking DNS reconciliation (INS-153)
+
+Resend readback on November 14, 2026 requests the CNAME
+`links.mail.policeconduct.org` → `links1.resend-dns.com`.
+Click tracking is enabled, open tracking is disabled, and the tracking subdomain
+is `links`. Terraform reads these settings without modifying them. The lookup
+includes Tracking records in `records_json`; do not create DNS separately using
+the AWS CLI or console.
+
+Before applying, use the existing backend and approved AWS profile. Inspect state
+and a saved targeted plan for `aws_route53_record.resend_domain_record`.
+Reconcile existing records with state through imports when missing; do not assume
+this bootstrap stack already owns live records. The expected DNS change is one
+tracking CNAME, TTL 600. Reject changes to existing DKIM, SPF, sending MX, receiving
+MX, root Google MX, or unrelated infrastructure. Record keys contain the provider
+response index: inspect exact addresses in the plan rather than assuming an index.
+Apply only the reviewed saved plan under the production authorization gate.
+
+After applying, compare all authoritative nameservers with the provider response
+and run the separate verification command. A receiving record can match DNS while
+Resend still reports pending; do not change inbound routing to resolve that status.
+Rollback must use Terraform: revert the tracking inclusion, review a targeted
+plan removing only the newly managed CNAME, and apply that saved plan. Never remove
+pre-existing records or disable provider tracking as an implicit rollback.
+
+Provider settings are preserved and observed, not Terraform-managed resources.
+A matching DNS configuration does not prove the entire AWS account is free of drift;
+that requires authenticated state refresh and plan review.
