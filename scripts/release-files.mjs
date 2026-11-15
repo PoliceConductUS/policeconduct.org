@@ -38,6 +38,12 @@ function visit(dir) {
     inventory.update(JSON.stringify([path, hash.digest("hex")]) + "\n");
   }
 }
+const source = JSON.parse(readFileSync(".release/source.json", "utf8"));
+if (!source.commit || typeof source.branch !== "string")
+  throw new Error("Missing build source");
+if (process.argv[4] === "prod" && (source.branch !== "main" || source.pr))
+  throw new Error("Only builds from main may be uploaded to the site bucket");
+inventory.update(JSON.stringify(source) + "\n");
 visit("dist");
 visit(".release/data");
 const digest = inventory.digest("hex");

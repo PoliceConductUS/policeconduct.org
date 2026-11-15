@@ -287,9 +287,16 @@ function deploy(
       );
     }
     const releaseId =
-      (scriptName.startsWith("deploy-preview") ? "pr-12" : "prod") +
-      "-b2749557-33a6-4ce7-9362-dd16e49eb807";
+      (scriptName.startsWith("deploy-preview") ? "pr-12" : "prod") + "-temp";
     writeFileSync(join(dir, ".release/id"), releaseId);
+    writeFileSync(
+      join(dir, ".release/source.json"),
+      JSON.stringify({
+        commit: "fixture",
+        branch: scriptName.startsWith("deploy-preview") ? "feature" : "main",
+        pr: null,
+      }),
+    );
     writeFileSync(join(dir, ".release/data/index.json"), "{}");
     writeFileSync(
       join(dir, ".release/data/alias.json"),
@@ -331,7 +338,7 @@ function deploy(
       writeFileSync(
         join(dir, "bin", tool),
         `#!/usr/bin/env bash\n
-${tool === "node" ? 'if [[ "$1" == scripts/release-files.mjs ]]; then exec "$TEST_NODE" "$@"; fi' : ""}
+${tool === "node" ? 'if [[ "$1" == scripts/release-files.mjs || "$1" == -e ]]; then exec "$TEST_NODE" "$@"; fi' : ""}
 printf '%s\\n' '${tool} '"$*" >> "$TEST_LOG"\n${tool === "aws" && failSync ? 'if [[ "$1 $2" == "s3 sync" ]]; then exit 23; fi' : ""}\n`,
         { mode: 0o755 },
       );
@@ -390,7 +397,7 @@ for (const [script, args, namespace, bucket, pointer] of [
       const prefix = "builds/" + releaseId;
       assert.ok(
         calls[0].startsWith(
-          "aws s3 sync dist/ s3://" + bucket + "/" + prefix + "/static/",
+          "aws s3 sync dist/ s3://" + bucket + "/" + releaseId + "/build/",
         ),
       );
       assert.ok(
@@ -417,7 +424,9 @@ for (const [script, args, namespace, bucket, pointer] of [
       );
       assert.ok(loader > 2);
       assert.ok(
-        calls.at(-1).endsWith("--puts Key=" + pointer + ",Value=" + releaseId),
+        calls.some((call) =>
+          call.includes('"Key":"' + pointer + '","Value":"' + releaseId + '"'),
+        ),
       );
     },
   );
@@ -438,9 +447,7 @@ test("production publishes redirects even without content changes", () => {
     result.calls.some((call) => call.includes("r:" + result.releaseId + ":")),
   );
   assert.ok(
-    result.calls[0].includes(
-      "s3://prod/builds/" + result.releaseId + "/static/",
-    ),
+    result.calls[0].includes("s3://prod/" + result.releaseId + "/build/"),
   );
 });
 

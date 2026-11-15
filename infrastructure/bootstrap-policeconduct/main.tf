@@ -2391,7 +2391,7 @@ data "aws_iam_policy_document" "site_bucket_policy" {
     }
 
     actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.site.arn}/builds/*/static/*", "${aws_s3_bucket.site.arn}/builds/*/override/*", "${aws_s3_bucket.site.arn}/404.html"]
+    resources = ["${aws_s3_bucket.site.arn}/*/build/*", "${aws_s3_bucket.site.arn}/*/override/*", "${aws_s3_bucket.site.arn}/404.html"]
 
     condition {
       test     = "StringEquals"
@@ -2422,7 +2422,7 @@ data "aws_iam_policy_document" "preview_bucket_policy" {
     }
 
     actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.preview.arn}/builds/*/static/*", "${aws_s3_bucket.preview.arn}/builds/*/override/*", "${aws_s3_bucket.preview.arn}/404.html"]
+    resources = ["${aws_s3_bucket.preview.arn}/*/build/*", "${aws_s3_bucket.preview.arn}/*/override/*", "${aws_s3_bucket.preview.arn}/404.html"]
 
     condition {
       test     = "StringEquals"

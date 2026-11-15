@@ -30,8 +30,12 @@ fi
 : "${KVS_ARN:?KVS_ARN is required (production redirect store)}"
 : "${RELEASE_DATA_BUCKET:?RELEASE_DATA_BUCKET is required}"
 
+if [[ "$SKIP_BUILD" == false && "$(git branch --show-current)" != main ]]; then
+  echo "Only main builds may be deployed to the site bucket." >&2
+  exit 1
+fi
 if [[ "$SKIP_BUILD" == false ]]; then
-  PR_NUMBER="" npm run build
+  PR_NUMBER="" PREVIEW_NAME="" npm run build
 fi
 npm run validate:redirects
 args=()

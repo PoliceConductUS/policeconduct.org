@@ -27,3 +27,10 @@
 
 - [x] 5.1 Use normalized URL source IDs in Daily discovery and publication.
 - [x] 5.3 Verify ordinary build and hosted source identities against the updated contract.
+
+## Approved deployment folder correction
+
+- [x] 6.1 Replace generated deployment IDs with supplied folder names, defaulting to full Git commit; coordinate build, upload, router and form validation.
+- [x] 6.2 Enforce main-only site uploads, preview main selection, promotion invalidation and active-production retirement protection.
+- [ ] 6.3 Validate the coordinated Intake publisher, Terraform policies and final integrated heads; publish the follow-up PRs.
+- [ ] 6.4 Copy current production, verify the copy, deploy coordinated routing, build and promote main, verify live routes, then remove obsolete hosting roots.

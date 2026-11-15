@@ -1,66 +1,34 @@
 import { execFileSync } from "node:child_process";
 
-const { PR_NUMBER, S3_BUCKET_PREVIEW, KVS_ARN_PREVIEW } = process.env;
-if (
-  !/^[1-9]\d*$/.test(PR_NUMBER ?? "") ||
-  !S3_BUCKET_PREVIEW ||
-  !KVS_ARN_PREVIEW
-) {
-  throw new Error("Missing preview configuration or invalid PR number");
-}
+const { PR_NUMBER, KVS_ARN_PREVIEW } = process.env;
+if (!/^[1-9]\d*$/.test(PR_NUMBER ?? "") || !KVS_ARN_PREVIEW)
+  throw new Error("Missing preview store or invalid PR number");
 const aws = (args) =>
-  execFileSync("aws", [...args, "--output", "json"], { encoding: "utf8" });
-const namespace = "pr-" + PR_NUMBER;
-const releases = new Set();
+  JSON.parse(
+    execFileSync("aws", [...args, "--output", "json"], { encoding: "utf8" }),
+  );
+const pointer = "current:pr-" + PR_NUMBER;
+let found = false;
 let token;
 do {
-  const args = [
-    "s3api",
-    "list-objects-v2",
-    "--bucket",
-    S3_BUCKET_PREVIEW,
-    "--prefix",
-    "builds/" + namespace + "-",
-    "--delimiter",
-    "/",
-    "--no-paginate",
-  ];
-  if (token) args.push("--continuation-token", token);
-  const page = JSON.parse(aws(args));
-  for (const { Prefix } of page.CommonPrefixes ?? []) releases.add(Prefix);
-  token = page.NextContinuationToken;
-} while (token);
-
-const deletes = [];
-do {
-  const args = [
+  const page = aws([
     "cloudfront-keyvaluestore",
     "list-keys",
     "--kvs-arn",
     KVS_ARN_PREVIEW,
     "--no-paginate",
-  ];
-  if (token) args.push("--next-token", token);
-  const page = JSON.parse(aws(args));
-  for (const { Key } of page.Items ?? []) {
-    if (
-      Key === "current:" + namespace ||
-      Key.startsWith("r:" + namespace + "-") ||
-      Key.startsWith("o:" + namespace + "-")
-    )
-      deletes.push({ Key });
-  }
+    ...(token ? ["--next-token", token] : []),
+  ]);
+  found ||= (page.Items ?? []).some(({ Key }) => Key === pointer);
   token = page.NextToken;
 } while (token);
-for (let offset = 0; offset < deletes.length; offset += 50) {
-  const { ETag } = JSON.parse(
-    aws([
-      "cloudfront-keyvaluestore",
-      "describe-key-value-store",
-      "--kvs-arn",
-      KVS_ARN_PREVIEW,
-    ]),
-  );
+if (found) {
+  const { ETag } = aws([
+    "cloudfront-keyvaluestore",
+    "describe-key-value-store",
+    "--kvs-arn",
+    KVS_ARN_PREVIEW,
+  ]);
   aws([
     "cloudfront-keyvaluestore",
     "update-keys",
@@ -68,16 +36,9 @@ for (let offset = 0; offset < deletes.length; offset += 50) {
     JSON.stringify({
       KvsARN: KVS_ARN_PREVIEW,
       IfMatch: ETag,
-      Deletes: deletes.slice(offset, offset + 50),
+      Deletes: [{ Key: pointer }],
     }),
   ]);
 }
-for (const prefix of releases) {
-  execFileSync("aws", [
-    "s3",
-    "rm",
-    "s3://" + S3_BUCKET_PREVIEW + "/" + prefix,
-    "--recursive",
-    "--only-show-errors",
-  ]);
-}
+// A commit folder may also serve another PR or latest-main preview.
+// Closing one PR removes its host selection; folder retirement is separate.

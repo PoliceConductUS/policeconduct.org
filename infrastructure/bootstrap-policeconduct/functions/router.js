@@ -69,6 +69,7 @@ async function handler(event) {
     /^\/(builds|data|evidence|news-discovery|com\/serpapi\/landing-page-search)(\/|$)/.test(
       pathForValidation,
     ) ||
+    /^\/[^/]+\/(build|override)(\/|$)/.test(pathForValidation) ||
     /(?:^|\/)\.{1,2}(?:\/|$)|[\\%]/.test(pathForValidation)
   ) {
     return missing;
@@ -77,10 +78,13 @@ async function handler(event) {
   let releaseId;
   if (host === apexHost || host === canonicalHost) {
     releaseId = await kvs.get("current");
+  } else if (host === "preview." + apexHost) {
+    if (!(await kvs.exists("current:main"))) return missing;
+    releaseId = await kvs.get("current:main");
   } else {
     const labels = host.split(".");
     if (labels.slice(2).join(".") !== apexHost) return missing;
-    if (labels[1] === "preview" && /^pr-[1-9]\d*$/.test(labels[0])) {
+    if (labels[1] === "preview" && /^[a-z0-9-]+$/.test(labels[0])) {
       const pointer = "current:" + labels[0];
       if (!(await kvs.exists(pointer))) return missing;
       releaseId = await kvs.get(pointer);
@@ -91,6 +95,18 @@ async function handler(event) {
     }
   }
 
+  if (
+    typeof releaseId !== "string" ||
+    !releaseId ||
+    releaseId === "." ||
+    releaseId === ".." ||
+    /[\\/]/.test(releaseId) ||
+    Array.from(releaseId).some(
+      (character) =>
+        character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
+    )
+  )
+    return missing;
   const target = await mappedTarget(releaseId, uri);
   if (target !== null) {
     return redirect(target, request.querystring);
@@ -104,8 +120,7 @@ async function handler(event) {
   }
   const hasOverride =
     path.endsWith(".html") && (await kvs.exists("o:" + releaseId + ":" + path));
-  request.uri =
-    "/builds/" + releaseId + (hasOverride ? "/override" : "/static") + path;
+  request.uri = "/" + releaseId + (hasOverride ? "/override" : "/build") + path;
   return request;
 }
 

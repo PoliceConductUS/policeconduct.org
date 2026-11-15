@@ -35,7 +35,7 @@ data "aws_iam_policy_document" "release_api" {
   }
   statement {
     actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.site.arn}/builds/prod-*/override/*"]
+    resources = ["${aws_s3_bucket.site.arn}/*/override/*"]
   }
   statement {
     actions   = ["cloudfront:CreateInvalidation"]
@@ -101,7 +101,7 @@ data "aws_iam_policy_document" "intake_news" {
   statement {
     actions = ["s3:GetObject"]
     resources = [
-      "${aws_s3_bucket.release_data["prod"].arn}/builds/prod-*/data/*",
+      "${aws_s3_bucket.release_data["prod"].arn}/builds/*/data/*",
       "${aws_s3_bucket.release_data["prod"].arn}/com/serpapi/landing-page-search/*",
     ]
   }
@@ -116,15 +116,15 @@ data "aws_iam_policy_document" "intake_news" {
   statement {
     actions = ["s3:GetObject"]
     resources = [
-      "${aws_s3_bucket.site.arn}/builds/prod-*/static/*",
-      "${aws_s3_bucket.site.arn}/builds/prod-*/override/*",
+      "${aws_s3_bucket.site.arn}/*/build/*",
+      "${aws_s3_bucket.site.arn}/*/override/*",
     ]
   }
   statement {
     actions = ["s3:PutObject"]
     resources = [
-      "${aws_s3_bucket.site.arn}/builds/prod-*/override/*",
-      "${aws_s3_bucket.release_data["prod"].arn}/builds/prod-*/data/*",
+      "${aws_s3_bucket.site.arn}/*/override/*",
+      "${aws_s3_bucket.release_data["prod"].arn}/builds/*/data/*",
       "${aws_s3_bucket.release_data["prod"].arn}/com/serpapi/landing-page-search/*",
     ]
   }

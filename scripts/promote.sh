@@ -7,20 +7,25 @@ namespace="${2:-prod}"
 : "${S3_BUCKET:?S3_BUCKET is required}"
 : "${RELEASE_DATA_BUCKET:?RELEASE_DATA_BUCKET is required}"
 : "${KVS_ARN:?KVS_ARN is required}"
-[[ "${namespace}" == prod || "${namespace}" =~ ^pr-[1-9][0-9]*$ ]] || exit 1
-[[ "${release_id}" =~ ^${namespace}-[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$ ]] || exit 1
-prefix="builds/${release_id}"
-aws s3api head-object --bucket "${RELEASE_DATA_BUCKET}" --key "${prefix}/data/dynamic.json" >/dev/null
-aws s3api head-object --bucket "${S3_BUCKET}" --key "${prefix}/static/index.html" >/dev/null
+: "${CLOUDFRONT_DIST_ID:?CLOUDFRONT_DIST_ID is required}"
+[[ "${namespace}" == prod || "${namespace}" =~ ^[a-z0-9-]+$ ]] || exit 1
+case "${release_id}" in
+  ""|.|..|*/*|*\\*) echo "Expected a single deployment folder name." >&2; exit 1 ;;
+esac
+[[ "${release_id}" != *[[:cntrl:]]* ]] || exit 1
+prefix="${release_id}"
+aws s3api head-object --bucket "${RELEASE_DATA_BUCKET}" --key "builds/${prefix}/data/dynamic.json" >/dev/null
+aws s3api head-object --bucket "${S3_BUCKET}" --key "${prefix}/build/index.html" >/dev/null
 redirects="$(mktemp)"
 trap 'rm -f "${redirects}"' EXIT
-aws s3 cp "s3://${S3_BUCKET}/${prefix}/static/_redirect-map.json" "${redirects}" --only-show-errors
+aws s3 cp "s3://${S3_BUCKET}/${prefix}/build/_redirect-map.json" "${redirects}" --only-show-errors
 node scripts/load-redirects.mjs "${KVS_ARN}" "r:${release_id}:" "${redirects}"
 
 # CloudFront fetches its configured error document directly from the origin.
-aws s3 cp "s3://${S3_BUCKET}/${prefix}/static/404.html" "s3://${S3_BUCKET}/404.html" --only-show-errors
+aws s3 cp "s3://${S3_BUCKET}/${prefix}/build/404.html" "s3://${S3_BUCKET}/404.html" --only-show-errors
 pointer=current
 if [[ "${namespace}" != prod ]]; then pointer="current:${namespace}"; fi
 etag="$(aws cloudfront-keyvaluestore describe-key-value-store --kvs-arn "${KVS_ARN}" --query ETag --output text)"
-aws cloudfront-keyvaluestore update-keys --kvs-arn "${KVS_ARN}" --if-match "${etag}" --puts "Key=${pointer},Value=${release_id}"
+aws cloudfront-keyvaluestore update-keys --kvs-arn "${KVS_ARN}" --if-match "${etag}" --puts "$(node -e 'console.log(JSON.stringify([{Key:process.argv[1],Value:process.argv[2]}]))' "${pointer}" "${release_id}")"
+aws cloudfront create-invalidation --distribution-id "${CLOUDFRONT_DIST_ID}" --paths '/*' >/dev/null
 echo "Selected ${release_id} for ${namespace}."

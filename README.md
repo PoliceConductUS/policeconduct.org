@@ -501,3 +501,14 @@ https://www.thepolicetransparencyproject.com
 ## Analytics configuration sync
 
 Use `npm run analytics:pull`, `npm run analytics:compare`, and `npm run analytics:push` to sync this site’s versioned GA settings. See [configuration and authentication](docs/analytics-config.md).
+
+## Deployment folders
+
+Run `npm run deploy:preview` with `PR_NUMBER` or `PREVIEW_NAME` to build and upload to the preview bucket. Run `npm run deploy:prod` from main to upload to the site bucket and mirror the completed main build to bare preview. Both use the full Git commit as the folder by default; set `RELEASE_ID=prod-temp` to supply a folder name.
+
+Hosting stores originals at `<folder>/build/` and published replacements at `<folder>/override/`. Uploading a build leaves its overrides intact. Private records remain in the private release-data bucket.
+
+- `npm run deploy:promote -- <folder>` selects a completed site-bucket folder and invalidates CloudFront.
+- `npm run deploy:delete -- <folder>` removes a retired site-bucket folder and its private records/markers. It refuses the live production folder and stops if the production pointer cannot be read.
+
+The commands load the existing local deployment environment. A branch build cannot become a production upload by changing its folder name: the completed build inventory includes its source branch. Main uploads also select `current:main` in the preview store; PR/branch hosts keep their own selections.

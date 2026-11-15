@@ -45,10 +45,16 @@ for (const [name, script, args, builds] of [
         );
         writeFileSync(join(root, ".release/data/dynamic.json"), "{}");
         const preview = name.startsWith("preview");
-        const releaseId =
-          (preview ? "pr-123" : "prod") +
-          "-d4a88441-6cef-49c8-a679-791cb5ae4e64";
+        const releaseId = (preview ? "pr-123" : "prod") + "-temp";
         writeFileSync(join(root, ".release/id"), releaseId);
+        writeFileSync(
+          join(root, ".release/source.json"),
+          JSON.stringify({
+            commit: "fixture",
+            branch: preview ? "feature" : "main",
+            pr: preview ? "123" : null,
+          }),
+        );
         for (const file of [
           "deploy-preview.sh",
           "upload-release.sh",
@@ -71,6 +77,7 @@ for (const [name, script, args, builds] of [
         const log = join(root, "calls");
         writeFileSync(log, "");
         for (const [command, body] of Object.entries({
+          git: "echo main",
           npm: 'echo "npm $*" >> "$CALL_LOG"\nif [[ "$*" == "run validate:redirects" ]]; then exit "$COVERAGE_EXIT"; fi',
           aws: 'echo "aws $*" >> "$CALL_LOG"\nexit 71',
           node: 'if [[ "$1" == scripts/release-files.mjs ]]; then exec "$TEST_NODE" "$@"; fi\necho "node $*" >> "$CALL_LOG"\nexit 72',
@@ -133,9 +140,9 @@ for (const [name, script, args, builds] of [
           assert.match(
             calls[expected.length],
             new RegExp(
-              "aws s3 sync dist/ s3://fixture-(preview|production)/builds/" +
+              "aws s3 sync dist/ s3://fixture-(preview|production)/" +
                 releaseId +
-                "/static/",
+                "/build/",
             ),
           );
         }
@@ -146,7 +153,7 @@ for (const [name, script, args, builds] of [
   }
 }
 
-test("successful builds bind matching distinct IDs to the site and private roster; failed builds cannot deploy", () => {
+test("successful builds bind matching folder IDs to the site and private roster; failed builds cannot deploy", () => {
   const dir = mkdtempSync(join(resolve(tmpdir()), "build-release-"));
   try {
     mkdirSync(join(dir, "scripts"));
@@ -168,6 +175,22 @@ test("successful builds bind matching distinct IDs to the site and private roste
       new URL("release-files.mjs", import.meta.url),
       join(dir, "scripts/release-files.mjs"),
     );
+    spawnSync("/usr/bin/git", ["init", "-b", "main", dir]);
+    spawnSync("/usr/bin/git", [
+      "-C",
+      dir,
+      "-c",
+      "user.name=Fixture",
+      "-c",
+      "user.email=fixture@example.invalid",
+      "commit",
+      "--allow-empty",
+      "-m",
+      "fixture",
+    ]);
+    const commit = spawnSync("/usr/bin/git", ["-C", dir, "rev-parse", "HEAD"], {
+      encoding: "utf8",
+    }).stdout.trim();
     const ids = new Set();
     for (const [pr, exit] of [
       ["", "0"],
@@ -201,7 +224,7 @@ test("successful builds bind matching distinct IDs to the site and private roste
       }
       assert.equal(result.status, 0, result.stderr.toString());
       const id = readFileSync(join(dir, ".release/id"), "utf8").trim();
-      assert.match(id, pr ? /^pr-42-/ : /^prod-/);
+      assert.equal(id, commit);
       assert.equal(
         readFileSync(join(dir, "dist/index.html"), "utf8").trim(),
         id,
@@ -224,15 +247,33 @@ test("successful builds bind matching distinct IDs to the site and private roste
       assert.equal(check().status, 0);
       writeFileSync(join(dir, "dist/index.html"), "different build");
       assert.notEqual(check().status, 0);
+      const productionCheck = spawnSync(
+        process.execPath,
+        ["scripts/release-files.mjs", "--verify", id, "prod"],
+        { cwd: dir },
+      );
+      // Restore the modified page so this assertion checks source identity, not the inventory.
+      writeFileSync(join(dir, "dist/index.html"), id + "\n");
+      const sourceCheck = spawnSync(
+        process.execPath,
+        ["scripts/release-files.mjs", "--verify", id, "prod"],
+        { cwd: dir },
+      );
+      assert.notEqual(productionCheck.status, 0);
+      assert.equal(
+        sourceCheck.status === 0,
+        !pr,
+        sourceCheck.stderr.toString(),
+      );
       ids.add(id);
     }
-    assert.equal(ids.size, 3);
+    assert.equal(ids.size, 1);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
-test("closing a preview removes all of that PR's public releases and routes", () => {
+test("closing a preview removes its host pointer without deleting a shared commit folder", () => {
   const dir = mkdtempSync(join(resolve(tmpdir()), "preview-cleanup-"));
   try {
     writeFileSync(
@@ -272,19 +313,14 @@ process.stdout.write(JSON.stringify(data));`,
       .trim()
       .split("\n")
       .map((line) => JSON.parse(line));
-    assert.equal(calls[0][calls[0].indexOf("--prefix") + 1], "builds/pr-12-");
     const update = calls.find((args) => args[1] === "update-keys");
     assert.deepEqual(
       JSON.parse(update[update.indexOf("--cli-input-json") + 1]).Deletes,
-      [
-        { Key: "current:pr-12" },
-        { Key: "r:pr-12-a:/old/" },
-        { Key: "o:pr-12-b:/index.html" },
-      ],
+      [{ Key: "current:pr-12" }],
     );
     assert.deepEqual(
       calls.filter((args) => args[1] === "rm").map((args) => args[2]),
-      ["s3://preview/builds/pr-12-a/", "s3://preview/builds/pr-12-b/"],
+      [],
     );
   } finally {
     rmSync(dir, { recursive: true, force: true });

@@ -1854,8 +1854,13 @@ async function resendVerificationLink(event, requestId) {
 async function isKnownFormRelease(releaseId) {
   if (
     typeof releaseId !== "string" ||
-    !/^(?:prod|pr-[0-9]+)-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
-      releaseId,
+    !releaseId ||
+    releaseId === "." ||
+    releaseId === ".." ||
+    /[\\/]/.test(releaseId) ||
+    Array.from(releaseId).some(
+      (character) =>
+        character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
     )
   ) {
     return false;

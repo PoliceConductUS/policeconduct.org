@@ -16,13 +16,14 @@ fi
 
 bash scripts/workspace-sync.sh preflight preview
 
-: "${PR_NUMBER:?PR_NUMBER is required (example: PR_NUMBER=3)}"
+target="${PREVIEW_NAME:-${PR_NUMBER:+pr-${PR_NUMBER}}}"
+: "${target:?Set PR_NUMBER or PREVIEW_NAME for this preview host}"
 : "${S3_BUCKET_PREVIEW:?S3_BUCKET_PREVIEW is required (preview bucket)}"
 : "${KVS_ARN_PREVIEW:?KVS_ARN_PREVIEW is required (preview redirect store)}"
 : "${RELEASE_DATA_BUCKET_PREVIEW:?RELEASE_DATA_BUCKET_PREVIEW is required}"
-[[ "${PR_NUMBER}" =~ ^[1-9][0-9]*$ ]] || { echo "Invalid PR number" >&2; exit 1; }
+[[ "${target}" =~ ^[a-z0-9-]+$ ]] || { echo "Invalid preview host label" >&2; exit 1; }
 npm run validate:redirects
 cmp -s dist/robots.txt <(printf 'User-agent: *\nDisallow: /\n') || { echo 'Expected a completed deny-all preview build.' >&2; exit 1; }
-bash scripts/upload-release.sh "pr-${PR_NUMBER}" "${S3_BUCKET_PREVIEW}" "${RELEASE_DATA_BUCKET_PREVIEW}" "${KVS_ARN_PREVIEW}"
+CLOUDFRONT_DIST_ID="${CLOUDFRONT_DIST_PREVIEW:?}" bash scripts/upload-release.sh "${target}" "${S3_BUCKET_PREVIEW}" "${RELEASE_DATA_BUCKET_PREVIEW}" "${KVS_ARN_PREVIEW}"
 bash scripts/workspace-sync.sh after preview
-echo "Published https://pr-${PR_NUMBER}.preview.policeconduct.org"
+echo "Published https://${target}.preview.policeconduct.org"
