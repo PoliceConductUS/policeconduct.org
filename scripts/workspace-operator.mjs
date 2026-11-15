@@ -22,7 +22,7 @@ export async function operator(args, dependencies = {}) {
     env.INTAKE_WORKSPACE_BUCKET?.trim() ||
     (
       await run("terraform", [
-        "-chdir=infrastructure/bootstrap-policeconduct",
+        "-chdir=infrastructure/intake-workspace",
         "output",
         "-raw",
         "intake_workspace_bucket_name",

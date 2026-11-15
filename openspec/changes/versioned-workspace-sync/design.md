@@ -13,3 +13,7 @@ The board authorized initial upload after bucket creation; sync the configured w
 Operator commands are one-way push and pull with no environment argument. There is no standalone workspace infrastructure command or npm workspace:sync alias. Infrastructure uses the existing project Terraform workflow. Safety validation runs automatically before transfers.
 
 Every transfer copies the entire configured INTAKE_WORKSPACE to/from the S3 prefix matching the configured directory leaf name. It does not infer a parent directory. INTAKE_WORKSPACE already identifies the full workspace; no environment folder is appended or selected. Existing environment roles remain prefix-scoped; other workspace names require credentials authorized for that prefix.
+
+## Standalone workspace infrastructure
+
+The board authorized deleting and rebuilding the workspace infrastructure on 2026-11-15. Move its resources directly into infrastructure/intake-workspace, with independent state and no website module caller. Push/pull resolve the bucket output from that root. Delete only the former workspace resources and versions; local intake data and other website infrastructure remain intact. Restore deletion protection in the rebuilt stack. Cloud execution remains pending authenticated plan inspection.

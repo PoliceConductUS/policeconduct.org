@@ -49,6 +49,15 @@ test("npm dry-run resolves bucket and preserves direction and dry-run", async ()
   const f = fixture();
   const result = await operator(["push", "--dry-run"], f.dependencies);
   assert.equal(result.exitCode, 0);
+  assert.deepEqual(f.calls[0], [
+    "terraform",
+    [
+      "-chdir=infrastructure/intake-workspace",
+      "output",
+      "-raw",
+      "intake_workspace_bucket_name",
+    ],
+  ]);
   assert.deepEqual(f.calls.at(-1), [
     "transfer",
     {

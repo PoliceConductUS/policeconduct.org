@@ -1,8 +1,7 @@
 # Private intake workspace storage
 
-All infrastructure and commands live in policeconduct.org. The existing
-`infrastructure/bootstrap-policeconduct` stack owns the private bucket through
-`infrastructure/modules/intake-workspace`. It creates three dedicated operator
+All infrastructure and commands live in policeconduct.org. The standalone
+`infrastructure/intake-workspace` stack owns the private bucket directly. It creates three dedicated operator
 roles, one for each of `dev/`, `preview/`, and `production/`. Account principals
 need explicit `sts:AssumeRole` permission to use those roles. Hosting deploy roles
 and CloudFront receive no workspace access. Outputs identify the bucket, prefixes
@@ -114,9 +113,9 @@ cleanup do not upload build files and do not invoke workspace sync.
 node scripts/workspace-demo.mjs
 # Open http://127.0.0.1:8154 and run the fixture recovery.
 node --test scripts/intake-workspace-sync.test.mjs scripts/workspace-sync.test.mjs
-TMPDIR=/tmp terraform -chdir=infrastructure/modules/intake-workspace init -backend=false
-TMPDIR=/tmp terraform -chdir=infrastructure/modules/intake-workspace validate
-TMPDIR=/tmp terraform -chdir=infrastructure/modules/intake-workspace test -verbose
+TMPDIR=/tmp terraform -chdir=infrastructure/intake-workspace init -backend=false
+TMPDIR=/tmp terraform -chdir=infrastructure/intake-workspace validate
+TMPDIR=/tmp terraform -chdir=infrastructure/intake-workspace test -verbose
 ```
 
 The demo uses synthetic evidence and an in-memory S3 adapter with the real sync

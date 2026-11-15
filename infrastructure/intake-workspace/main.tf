@@ -8,23 +8,37 @@ terraform {
   }
 }
 variable "bucket_name" {
-  type = string
+  type    = string
+  default = null
   validation {
-    condition     = can(regex("^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$", var.bucket_name))
+    condition     = var.bucket_name == null || can(regex("^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$", var.bucket_name))
     error_message = "Use a plain lowercase bucket name without dots or paths."
   }
 }
-variable "role_prefix" { type = string }
+variable "role_prefix" {
+  type    = string
+  default = "policeconduct-intake-workspace"
+}
 variable "operator_principals" {
-  type = list(string)
+  type    = list(string)
+  default = null
   validation {
-    condition     = length(var.operator_principals) > 0 && alltrue([for p in var.operator_principals : can(regex("^arn:aws:iam::[0-9]{12}:(root|role/.+|user/.+)$", p))])
+    condition     = var.operator_principals == null ? true : length(var.operator_principals) > 0 && alltrue([for p in var.operator_principals : can(regex("^arn:aws:iam::[0-9]{12}:(root|role/.+|user/.+)$", p))])
     error_message = "Supply explicit IAM principal ARNs for workspace operators."
   }
 }
+data "aws_caller_identity" "current" {}
+provider "aws" {
+  region = "us-east-1"
+  default_tags {
+    tags = { ManagedBy = "Terraform", Project = "policeconduct.org", Stack = "intake-workspace" }
+  }
+}
 locals {
-  operator_roles = { for env in ["dev", "preview", "production"] : env => "${var.role_prefix}-${env}" }
-  bucket_arn     = "arn:aws:s3:::${var.bucket_name}"
+  bucket_name         = coalesce(var.bucket_name, "policeconduct-intake-workspace-${data.aws_caller_identity.current.account_id}")
+  operator_principals = coalesce(var.operator_principals, ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"])
+  operator_roles      = { for env in ["dev", "preview", "production"] : env => "${var.role_prefix}-${env}" }
+  bucket_arn          = "arn:aws:s3:::${local.bucket_name}"
   policies = { for environment, role in local.operator_roles : environment => {
     Version = "2012-10-17"
     Statement = [
@@ -37,7 +51,7 @@ locals {
   } }
 }
 resource "aws_s3_bucket" "workspace" {
-  bucket        = var.bucket_name
+  bucket        = local.bucket_name
   force_destroy = false
   tags          = { Purpose = "intake-workspace" }
   lifecycle { prevent_destroy = true }
@@ -83,12 +97,14 @@ resource "aws_iam_role_policy" "workspace" {
 }
 output "bucket_name" { value = aws_s3_bucket.workspace.id }
 output "bucket_arn" { value = local.bucket_arn }
-output "workspace_prefixes" { value = { for environment in keys(local.operator_roles) : environment => "s3://${var.bucket_name}/${environment}/" } }
+output "workspace_prefixes" { value = { for environment in keys(local.operator_roles) : environment => "s3://${local.bucket_name}/${environment}/" } }
 output "operator_policies" { value = local.policies }
 
 resource "aws_iam_role" "workspace" {
   for_each           = local.operator_roles
   name               = each.value
-  assume_role_policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Principal = { AWS = var.operator_principals }, Action = "sts:AssumeRole" }] })
+  assume_role_policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Principal = { AWS = local.operator_principals }, Action = "sts:AssumeRole" }] })
 }
 output "operator_role_arns" { value = { for env, role in aws_iam_role.workspace : env => role.arn } }
+
+output "intake_workspace_bucket_name" { value = aws_s3_bucket.workspace.id }
