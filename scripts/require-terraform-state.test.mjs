@@ -83,7 +83,7 @@ for (const [name, state, exitCode, allowed] of cases) {
   });
 }
 
-for (const stack of ["policeconduct", "iceconduct"]) {
+for (const stack of ["policeconduct", "iceconduct", "recaptcha"]) {
   for (const phase of ["full", "foundation"]) {
     test(`${stack} ${phase} refuses empty state before any other command`, (t) => {
       const { dir, env } = fixture(t, '{"version":4,"resources":[]}', 0);

@@ -38,7 +38,7 @@ locals {
   create_www_cname_record              = var.www_record_mode == "cname"
   preview_wildcard_domain              = "*.preview.${var.domain_name}"
   distribution_aliases                 = local.include_www ? [var.domain_name, local.www_domain] : [var.domain_name]
-  preview_distribution_aliases         = [local.preview_wildcard_domain]
+  preview_distribution_aliases         = ["preview.${var.domain_name}", local.preview_wildcard_domain]
   certificate_san_names                = local.include_www ? [local.www_domain, local.preview_wildcard_domain] : [local.preview_wildcard_domain]
   origin_id                            = "s3-${local.site_bucket_name}"
   preview_origin_id                    = "s3-${local.preview_bucket_name}"
@@ -139,12 +139,6 @@ locals {
         S3_BUCKET          = aws_s3_bucket.preview.id
         CLOUDFRONT_DIST_ID = aws_cloudfront_distribution.preview.id
         FORMS_API_URL      = "/api"
-        # Consumed by the cleanup-preview workflow to prune a closed PR's
-        # r:pr-<N>: redirect namespace. The workflow skips that step while this
-        # is unset, which is why no preview namespace had ever been pruned
-        # (INS-106). Applied together with CloudFrontKeyValueStorePreviewAccess
-        # so the variable never exists without the permission it needs.
-        KVS_ARN_PREVIEW = aws_cloudfront_key_value_store.preview_redirects.arn
       },
       local.ga_measurement_id_preview == null ? {} : {
         GA_MEASUREMENT_ID = local.ga_measurement_id_preview
@@ -227,7 +221,15 @@ data "archive_file" "forms_api_lambda" {
   type        = "zip"
   source_dir  = "${path.module}/lambdas/forms-api"
   output_path = "${path.module}/lambdas/forms-api.zip"
-  excludes    = ["*.zip"]
+  # Match deploy-forms-api.sh: runtime files only, never local tests/coverage.
+  excludes = setsubtract(
+    fileset("${path.module}/lambdas/forms-api", "**"),
+    setunion(
+      toset(["index.mjs", "package.json"]),
+      fileset("${path.module}/lambdas/forms-api", "native-domexception/**"),
+      fileset("${path.module}/lambdas/forms-api", "node_modules/**")
+    )
+  )
 }
 
 resource "aws_s3_bucket" "terraform_state" {
@@ -346,7 +348,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "preview" {
     id     = "expire-noncurrent-preview-versions"
     status = "Enabled"
 
-    # Everything in this bucket is preview build output under pr-<N>/.
+    # Applies to named previews, PR builds, and root diagnostic pages.
     filter {}
 
     noncurrent_version_expiration {
@@ -2359,7 +2361,7 @@ resource "aws_cloudfront_distribution" "preview" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate_validation.site.certificate_arn
+    acm_certificate_arn      = aws_acm_certificate_validation.preview.certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
@@ -2565,6 +2567,22 @@ resource "github_actions_environment_variable" "environment_variables" {
   value         = each.value.value
 
   depends_on = [github_repository_environment.environments]
+}
+
+# Keep cleanup configuration independent of distribution and Lambda releases.
+# The variable is usable only after the preview store permissions exist.
+moved {
+  from = github_actions_environment_variable.environment_variables["preview:KVS_ARN_PREVIEW"]
+  to   = github_actions_environment_variable.preview_kvs_arn
+}
+
+resource "github_actions_environment_variable" "preview_kvs_arn" {
+  repository    = var.github_repo
+  environment   = github_repository_environment.environments["preview"].environment
+  variable_name = "KVS_ARN_PREVIEW"
+  value         = aws_cloudfront_key_value_store.preview_redirects.arn
+
+  depends_on = [aws_iam_role_policy.github_actions_permissions]
 }
 
 resource "github_actions_environment_secret" "sentry_auth_token" {
