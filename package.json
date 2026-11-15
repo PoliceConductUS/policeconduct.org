@@ -7,7 +7,8 @@
     "audit": "npm run audit:seo && npm run audit:a11y",
     "audit:a11y": "node scripts/audit-a11y.mjs",
     "audit:seo": "node scripts/audit-seo.mjs",
-    "build": "node scripts/validate-build-env.mjs && node scripts/validate-schema-contract.mjs && node scripts/generate-icon-sprite.mjs && node scripts/refresh-build-projections.mjs && GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-$(git rev-parse --short=12 HEAD)} GIT_COMMIT_DIRTY=${GIT_COMMIT_DIRTY:-$(if git diff --quiet HEAD -- && [ -z \"$(git ls-files --others --exclude-standard)\" ]; then echo 0; else echo 1; fi)} astro build && npm run build:search-index && npm run validate:no-inline-css && node scripts/generate-redirect-map.mjs && npm run purge:css && npm run validate:css",
+    "build": "NODE_OPTIONS=--max-old-space-size=12288 node scripts/build-release.mjs",
+    "build:site": "node scripts/validate-build-env.mjs && node scripts/validate-schema-contract.mjs && node scripts/generate-icon-sprite.mjs && node scripts/refresh-build-projections.mjs && GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-$(git rev-parse --short=12 HEAD)} GIT_COMMIT_DIRTY=${GIT_COMMIT_DIRTY:-$(if git diff --quiet HEAD -- && [ -z \"$(git ls-files --others --exclude-standard)\" ]; then echo 0; else echo 1; fi)} astro build && npm run build:search-index && npm run validate:no-inline-css && node scripts/generate-redirect-map.mjs && npm run purge:css && npm run validate:css",
     "build:search-index": "npx pagefind --site dist",
     "purge:css": "node --max-old-space-size=12288 scripts/purge-built-css.mjs",
     "deploy:preview": "bash scripts/deploy-preview.sh",
@@ -37,7 +38,7 @@
     "test": "npm run test:contacts && npm run test:annotations && npm run test:analytics-config && npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:data && npm run test:coverage && npm run test:e2e && npm run test:infra",
     "test:coverage": "node --test \"src/lib/coverage/*.test.mjs\"",
     "test:css": "node --test scripts/purge-built-css.test.mjs",
-    "test:data": "node --test src/lib/data/assignment-status.test.mjs scripts/verify-employment-claims.test.mjs scripts/report-detail.test.mjs",
+    "test:data": "node --test src/lib/data/assignment-status.test.mjs scripts/verify-employment-claims.test.mjs scripts/report-detail.test.mjs scripts/release-news.test.mjs",
     "verify:employment-claims": "node scripts/verify-employment-claims.mjs",
     "test:media": "node --test scripts/video.test.mjs scripts/personnel-photos.test.mjs",
     "test:e2e": "node scripts/run-e2e.mjs",
@@ -61,6 +62,8 @@
     "analytics:compare": "node scripts/analytics-config.mjs compare",
     "analytics:apply": "node scripts/analytics-config.mjs apply",
     "test:analytics-config": "node --test scripts/analytics-config.test.mjs",
+    "analytics:pull": "node scripts/analytics-config.mjs pull",
+    "analytics:push": "node scripts/analytics-config.mjs push",
     "test:infra": "node --test scripts/deploy-forms-api.test.mjs scripts/require-terraform-state.test.mjs scripts/terraform-read-failures.test.mjs scripts/intake-workspace-sync.test.mjs scripts/workspace-operator.test.mjs scripts/workspace-demo.test.mjs",
     "workspace:push": "node --env-file-if-exists=.env --env-file-if-exists=.env-policeconduct scripts/workspace-operator.mjs push",
     "workspace:pull": "node --env-file-if-exists=.env --env-file-if-exists=.env-policeconduct scripts/workspace-operator.mjs pull",
@@ -68,46 +71,49 @@
     "workspace:restore": "node --env-file-if-exists=.env --env-file-if-exists=.env-policeconduct scripts/intake-workspace-sync.mjs restore"
   },
   "dependencies": {
-    "@astrojs/sitemap": "^3.7.4",
+    "@astrojs/sitemap": "^3.7.5",
     "@fontsource/public-sans": "^5.3.0",
-    "@sentry/astro": "^11.9.0",
+    "@sentry/astro": "^11.12.0",
     "aos": "^2.3.4",
-    "astro": "^7.4.2",
-    "bootstrap": "^5.3.8",
-    "dotenv": "^18.0.9",
+    "astro": "^7.4.12",
+    "bootstrap": "^5.3.9",
+    "dotenv": "^18.0.10",
     "leaflet": "^1.9.4",
     "pg": "^8.23.1"
   },
   "devDependencies": {
-    "@alibaba-group/open-code-review": "^1.13.3",
+    "@alibaba-group/open-code-review": "^1.13.10",
     "@astrojs/check": "^0.9.12",
     "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^10.0.1",
-    "@fission-ai/openspec": "1.15.0",
-    "@fullhuman/postcss-purgecss": "^8.0.0",
-    "@playwright/test": "^1.64.1",
+    "@fission-ai/openspec": "2.0.0",
+    "@fullhuman/postcss-purgecss": "^9.1.0",
+    "@playwright/test": "^1.65.1",
     "@types/leaflet": "^1.9.22",
     "@types/pg": "^8.23.1",
     "c8": "^12.0.0",
-    "eslint": "^10.13.0",
+    "eslint": "^10.15.0",
     "eslint-plugin-astro": "^3.2.1",
-    "globals": "^17.13.0",
-    "pagefind": "^1.5.2",
-    "postcss": "^8.5.32",
-    "prettier": "^3.9.10",
+    "globals": "^17.14.0",
+    "pagefind": "^1.6.0",
+    "postcss": "^8.5.33",
+    "prettier": "^3.10.1",
     "prettier-plugin-astro": "^1.1.2",
-    "supabase": "2.122.0",
-    "typescript-eslint": "^8.72.1"
+    "supabase": "3.1.0",
+    "typescript-eslint": "^8.72.2"
   },
   "overrides": {
     "purgecss": {
-      "postcss-selector-parser": "7.1.7"
+      "postcss-selector-parser": "7.2.1"
     },
-    "glob": "14.0.4",
-    "minimatch": "11.0.7"
+    "glob": "14.0.6",
+    "minimatch": "11.0.8"
   },
   "allowScripts": {
     "fsevents@2.3.3": true,
-    "@alibaba-group/open-code-review@1.13.3": true
+    "@alibaba-group/open-code-review@1.13.10": true
+  },
+  "engines": {
+    "node": "26.13.1"
   }
 }

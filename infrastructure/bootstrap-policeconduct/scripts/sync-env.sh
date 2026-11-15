@@ -96,6 +96,8 @@ to_env_key() {
 }
 
 TF_STATE_BUCKET="$(tf_output state_bucket_name)"
+RELEASE_DATA_BUCKET="$(tf_output release_data_bucket_name)"
+RELEASE_DATA_BUCKET_PREVIEW="$(tf_output preview_release_data_bucket_name)"
 S3_BUCKET="$(tf_output site_bucket_name)"
 S3_BUCKET_PREVIEW="$(tf_output preview_bucket_name)"
 CLOUDFRONT_DIST_ID="$(tf_output cloudfront_distribution_id)"
@@ -161,6 +163,8 @@ if [[ -n "${AWS_ROLE_ARN}" ]]; then
 fi
 
 # Local convenience values for either environment.
+if [[ -n "${RELEASE_DATA_BUCKET}" ]]; then upsert_key RELEASE_DATA_BUCKET "${RELEASE_DATA_BUCKET}"; fi
+if [[ -n "${RELEASE_DATA_BUCKET_PREVIEW}" ]]; then upsert_key RELEASE_DATA_BUCKET_PREVIEW "${RELEASE_DATA_BUCKET_PREVIEW}"; fi
 if [[ -n "${S3_BUCKET}" ]]; then
   upsert_key "S3_BUCKET" "${S3_BUCKET}"
 fi

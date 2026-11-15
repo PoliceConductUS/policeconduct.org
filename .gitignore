@@ -1,5 +1,6 @@
 # build output
 dist/
+/.release/
 
 # generated types
 .astro/
@@ -44,6 +45,7 @@ crash.log
 !infrastructure/bootstrap/terraform.tfvars.example
 infrastructure/bootstrap/lambdas/*.zip
 forms-api.zip
+release-api.zip
 notification-canary.zip
 upgrade.log
 test-results/

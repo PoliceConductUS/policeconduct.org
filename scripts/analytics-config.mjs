@@ -1,4 +1,5 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile, rename, unlink } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -95,7 +96,15 @@ function validateConfig(config) {
     "enhancedMeasurementSettings",
     "dataRedactionSettings",
   ];
-  fields(config, top, top);
+  fields(config, [...top, "googleSignalsSettings"], top);
+  if (config.googleSignalsSettings) {
+    fields(config.googleSignalsSettings, ["state"], ["state"]);
+    check(
+      ["GOOGLE_SIGNALS_ENABLED", "GOOGLE_SIGNALS_DISABLED"].includes(
+        config.googleSignalsSettings.state,
+      ),
+    );
+  }
   check(
     typeof config.propertyId === "string" && /^\d+$/.test(config.propertyId),
   );
@@ -284,6 +293,7 @@ export async function reconcileAnalytics({
   token,
   fetchImpl = fetch,
   apply = false,
+  pull = false,
 }) {
   validateConfig(config);
   if (typeof token !== "string" || !token.trim())
@@ -301,6 +311,7 @@ export async function reconcileAnalytics({
     try {
       response = await fetchImpl(url, {
         method,
+        signal: AbortSignal.timeout(30000),
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -367,6 +378,13 @@ export async function reconcileAnalytics({
       fields: redactionFields,
     },
   ];
+  if (config.googleSignalsSettings)
+    singletons.push({
+      kind: "googleSignalsSettings",
+      version: "v1alpha",
+      parent: property,
+      fields: ["state"],
+    });
   async function readAll() {
     const state = {};
     for (const spec of collections) {
@@ -507,7 +525,46 @@ export async function reconcileAnalytics({
     return operations;
   }
   // Finish every read and every identity check before the first write.
-  const operations = plan(await readAll());
+  const state = await readAll();
+  if (pull) {
+    const snapshot = structuredClone(config);
+    const pick = (row, names) =>
+      Object.fromEntries(
+        names.filter((key) => own(row, key)).map((key) => [key, row[key]]),
+      );
+    for (const spec of collections) {
+      const names =
+        spec.kind === "customDimensions"
+          ? dimensionFields
+          : spec.kind === "keyEvents"
+            ? ["eventName", "countingMethod"]
+            : ruleFields;
+      snapshot[spec.kind] = state[spec.kind]
+        .map((row) => {
+          const selected = pick(row, names);
+          if (spec.kind === "customDimensions" && row.scope !== "USER")
+            delete selected.disallowAdsPersonalization;
+          if (spec.kind === "eventCreateRules")
+            selected.sourceCopyParameters ??= false;
+          return selected;
+        })
+        .sort((a, b) => spec.identity(a).localeCompare(spec.identity(b)));
+    }
+    snapshot.unmarkedKeyEvents = config.unmarkedKeyEvents.filter(
+      (name) => !state.keyEvents.some((row) => row.eventName === name),
+    );
+    for (const spec of singletons) {
+      snapshot[spec.kind] = pick(state[spec.kind], spec.fields);
+      for (const key of spec.fields) {
+        if (typeof config[spec.kind][key] === "boolean")
+          snapshot[spec.kind][key] ??= false;
+      }
+    }
+    validateConfig(snapshot);
+    // A pull must produce a configuration that compares cleanly to this read.
+    return { changes: [], config: snapshot };
+  }
+  const operations = plan(state);
   const changes = operations.map(
     ({ method, resource, mask, body }) =>
       `${method} ${resource}${mask ? ` (${mask.join(", ")})` : method === "POST" ? ` (${body.parameterName ?? body.eventName ?? body.destinationEvent})` : ""}`,
@@ -533,24 +590,25 @@ export async function runCli(
     env = process.env,
     fetchImpl = fetch,
     stdout = (line) => process.stdout.write(`${line}\n`),
+    configPath = new URL("../config/analytics.json", import.meta.url),
     stderr = (line) => process.stderr.write(`${line}\n`),
   } = {},
 ) {
   try {
-    if (args.length !== 1 || !["compare", "apply"].includes(args[0]))
-      fail("Usage: npm run analytics:compare or npm run analytics:apply");
+    if (
+      args.length !== 1 ||
+      !["compare", "apply", "pull", "push"].includes(args[0])
+    )
+      fail(
+        "Usage: npm run analytics:compare, analytics:pull, or analytics:push",
+      );
     if (!env.GOOGLE_ANALYTICS_ACCESS_TOKEN?.trim())
       fail(
         "Set GOOGLE_ANALYTICS_ACCESS_TOKEN to an authorized OAuth access token.",
       );
     let config;
     try {
-      config = JSON.parse(
-        await readFile(
-          new URL("../config/analytics.json", import.meta.url),
-          "utf8",
-        ),
-      );
+      config = JSON.parse(await readFile(configPath, "utf8"));
     } catch {
       fail("Cannot read valid JSON from config/analytics.json.");
     }
@@ -558,12 +616,32 @@ export async function runCli(
       config,
       token: env.GOOGLE_ANALYTICS_ACCESS_TOKEN,
       fetchImpl,
-      apply: args[0] === "apply",
+      apply: ["apply", "push"].includes(args[0]),
+      pull: args[0] === "pull",
     });
+    if (args[0] === "pull") {
+      const destination =
+        configPath instanceof URL ? fileURLToPath(configPath) : configPath;
+      const temporary = `${destination}.${randomUUID()}.tmp`;
+      try {
+        await writeFile(
+          temporary,
+          `${JSON.stringify(result.config, null, 2)}\n`,
+          { flag: "wx" },
+        );
+        await rename(temporary, destination);
+      } finally {
+        await unlink(temporary).catch(() => {});
+      }
+      stdout(
+        "Remote analytics settings saved to config/analytics.json; review the Git diff before committing.",
+      );
+      return 0;
+    }
     for (const change of result.changes) stdout(change);
     stdout(
       result.changes.length
-        ? args[0] === "apply"
+        ? ["apply", "push"].includes(args[0])
           ? "Analytics changes applied and verified."
           : "Managed analytics settings differ."
         : "Managed analytics settings match.",

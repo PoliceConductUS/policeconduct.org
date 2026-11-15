@@ -84,7 +84,9 @@ type SubmitJsonFormOptions = {
   validate?: () => boolean | Promise<boolean>;
   onInvalid?: () => void | Promise<void>;
   onBeforeSubmit?: () => unknown | Promise<unknown>;
-  buildPayload?: (args: SubmitPayloadArgs) => unknown | Promise<unknown>;
+  buildPayload?: (
+    args: SubmitPayloadArgs,
+  ) => Record<string, unknown> | Promise<Record<string, unknown>>;
   onSuccess?: (args: SubmitSuccessArgs) => void | Promise<void>;
   successKind?: "verification_pending";
   getSuccessDetail?: (args: { result: unknown }) => string;
@@ -704,12 +706,14 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
     };
 
     failureStage = "request";
+    const releaseId = form.ownerDocument.documentElement.dataset.releaseId;
+    if (!releaseId) throw new Error("The form is missing its website release.");
     const response = await fetch("/api/forms/submit", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, releaseId }),
     });
     responseStatus = response.status;
 

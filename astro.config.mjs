@@ -107,6 +107,9 @@ export default defineConfig({
       sourcemap: "hidden",
     },
     server: {
+      watch: {
+        ignored: ["**/.worktrees/**"],
+      },
       proxy: {
         "/api": {
           target: formsApiProxyTarget,

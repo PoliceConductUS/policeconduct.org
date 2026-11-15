@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./page-fixture";
 import dotenv from "dotenv";
 import { Client } from "pg";
 

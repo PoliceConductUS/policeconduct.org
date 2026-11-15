@@ -1,0 +1,112 @@
+---
+---
+
+<div class="analytics-privacy" data-pagefind-ignore>
+  <dialog
+    data-analytics-consent
+    aria-labelledby="analytics-consent-title"
+    aria-describedby="analytics-consent-description"
+    hidden
+  >
+    <p>
+      <strong id="analytics-consent-title">Manage cookie settings</strong>
+    </p>
+    <p id="analytics-consent-description">
+      We use Google Analytics to learn how this site is used. You can allow
+      analytics cookies or decline them. If you decline, Google still receives
+      limited measurements without analytics cookies. Choose separately whether
+      to allow advertising cookies and data use. Change your choices here at any
+      time.
+    </p>
+    <div class="analytics-categories">
+      <label>
+        <input type="checkbox" checked disabled /> Necessary settings — always
+        on
+      </label>
+      <p>We remember the cookie choice you save in this browser.</p>
+      <label>
+        <input type="checkbox" data-analytics-enabled /> Analytics cookies
+      </label>
+      <p>Allow Google Analytics to use cookies to measure visits.</p>
+      <label>
+        <input type="checkbox" data-advertising-enabled /> Advertising
+      </label>
+      <p>
+        Allow Google to use cookies and visit data for ad measurement and
+        personalized ads.
+      </p>
+    </div>
+    <p data-consent-status role="status"></p>
+    <div class="analytics-choices">
+      <button type="button" data-analytics-choice="granted">
+        Allow all
+      </button>
+      <button type="button" data-analytics-save>
+        Save preferences
+      </button>
+      <button type="button" data-analytics-choice="denied">
+        Decline all
+      </button>
+    </div>
+  </dialog>
+</div>
+
+<script>
+  import { initializeConsentControls } from "../lib/client/analytics-consent.js";
+  initializeConsentControls();
+</script>
+
+<style>
+  .analytics-privacy dialog {
+    width: min(32rem, calc(100vw - 2rem));
+    max-height: 80vh;
+    overflow-y: auto;
+    margin: auto;
+    padding: 1.5rem;
+    color: #172b4d;
+    background: #fff;
+    border: 1px solid #172b4d;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  .analytics-privacy dialog::backdrop {
+    background: rgb(23 43 77 / 45%);
+  }
+  .analytics-categories label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 650;
+  }
+  .analytics-categories input {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  .analytics-categories p {
+    margin-top: 0.25rem;
+  }
+  .analytics-privacy input:focus-visible {
+    outline: 3px solid #172b4d;
+    outline-offset: 3px;
+  }
+  .analytics-privacy p {
+    margin: 0 0 1rem;
+  }
+  .analytics-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .analytics-privacy button {
+    font: inherit;
+    color: #172b4d;
+    background: #fff;
+    border: 1px solid #172b4d;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+  }
+  .analytics-privacy button:focus-visible {
+    outline: 3px solid #172b4d;
+    outline-offset: 3px;
+  }
+</style>

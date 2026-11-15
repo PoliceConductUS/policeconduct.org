@@ -28,6 +28,7 @@ Scope Of A Change
 Reporting
 
 - Use this project's words: its tables, routes, components, and commands. Do not coin a term. If something new must be named, define it in the same sentence.
+- Before reporting work as done, list each changed file with the part of the request that required it. Revert any change you cannot tie to the request.
 - End a work report with the state: worktree and branch, what is committed, what is pushed, what is merged, and what is left to do.
 
 This Repository Is Public
@@ -43,6 +44,7 @@ Workflow Standards
 
 - This repo uses Codex App, OpenSpec, Superpowers, and the OpenSpec Superpowers bridge for behavior-changing work.
 - OpenSpec governs what behavior should exist. Superpowers governs how agents execute the work. The bridge keeps brainstorming, plans, verification, and retrospectives under `openspec/changes/<change-name>/`.
+- Approval before implementation. When a change needs an OpenSpec change, write the proposal and the other artifacts first, then ask the user to approve. The user either says "approve now" or holds approval to read the documents. Do not implement until the user approves. Never merge a pull request unless the user names it and tells you to merge it.
 - Only one worktree and branch may be active for this repo at a time. Reuse the current worktree and branch for new work. Never create another worktree or branch without the user's explicit permission, even when isolation would otherwise be preferred.
 - Behavior changes, data-shape changes, seed/migration changes, validation changes, and downstream contract changes should use the active repo-local worktree under `.worktrees/<change-name>`; do not create a new one without the user's explicit permission.
 - Documentation-only edits, formatting, tooling tweaks, and internal refactors that preserve specified behavior may stay lightweight.
@@ -124,7 +126,7 @@ General Code Standards
 Validation Expectations
 
 - Follow the complete [merge checklist in README.md](README.md#pr-merge-checklist); `package.json` is the source of truth for the gate chain. Run the entire `npm run validate` on the final PR head, even for documentation changes. Scoped checks are development feedback only. Rerun after fixes or head changes.
-- Use the repository runtime from `mise.toml` (currently Node 24), run `npm ci`, and verify installed package versions against the lockfile. Never substitute stale shared `node_modules`.
+- Use the repository runtime from `mise.toml` (currently Node 26.13.1), run `npm ci`, and verify installed package versions against the lockfile. Never substitute stale shared `node_modules`.
 - Every error and warning on the final PR head must be resolved before merge. Fix findings immediately, including pre-existing ones; do not defer them because they predate the change. Architectural compromises, ambiguous requirements, and risky data changes still need a specific user decision. Exit zero is not merge readiness. Calling a finding harmless, advisory, baseline, or out of scope does not waive it. Inspect diagnostic hints and resolve or explicitly justify each one; tool labels alone are not justification.
 - Do not disable rules, add ignores, weaken assertions, hide diagnostics, skip tests, or alter fixtures merely to get green output. Fix underlying causes. Fixture corrections must preserve the behavior and assertions being tested, including required form fields and qualifying record relationships.
 - Missing configuration, services, data, browsers, or generated assets block verification. Set up the intended environment safely; do not modify production data or publish personnel to satisfy checks. Never commit credentials, absolute home paths, or private data.

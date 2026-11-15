@@ -1,5 +1,7 @@
 ---
 import SiteLayout from "#src/layouts/SiteLayout.astro";
+import CoverageLinks from "#src/components/CoverageLinks.astro";
+import { loadHomepageNews } from "#src/lib/data/coverage.js";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import { loadLocationBuildPayloads } from "#src/lib/data/build-payloads.js";
@@ -11,15 +13,17 @@ import {
   getSiteUrl,
 } from "#src/lib/structured-data.js";
 import { ORG_LEGAL_NAME } from "#src/lib/org.js";
+import { getVideoEmbedUrl } from "#src/lib/video.js";
 
 const pagePath = "/";
 const pageDescription =
   "A civic record for documenting how policing is experienced in real life, from harm and concern to professionalism, help, trust, and accountability.";
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(pagePath, siteUrl).toString();
-const [federalAgencies, locationPayloads] = await Promise.all([
+const [federalAgencies, locationPayloads, homepageNews] = await Promise.all([
   loadFederalAgencySummaries(),
   loadLocationBuildPayloads(),
+  loadHomepageNews(),
 ]);
 const stateLocationPayloadsByCategory = new Map(
   locationPayloads
@@ -71,8 +75,25 @@ const webPage = buildWebPage({
 });
 webPage.mainEntity = { "@id": organization["@id"] };
 const schemaContext = "https://schema.org";
+const introductionVideo = {
+  "@context": schemaContext,
+  "@type": "VideoObject",
+  name: "What Is PoliceConduct.org? A Civic Record for Everyone",
+  description:
+    "PoliceConduct.org brings together public police records and experiences shared by the public. This video shows how to choose a state, find an agency, and explore personnel, public reports, and civil cases. It also explains how to share an experience, volunteer, or donate.",
+  embedUrl: getVideoEmbedUrl("https://www.youtube.com/watch?v=xA6z1L-MG_k")!,
+  thumbnailUrl: new URL(
+    "/img/policeconduct-introduction-thumbnail.jpg",
+    siteUrl,
+  ).toString(),
+  uploadDate: "2026-11-13T20:20:02-08:00",
+  duration: "PT1M41.68S",
+  inLanguage: "en",
+  publisher: { "@id": organization["@id"] },
+};
 const structuredData = [
   webPage,
+  introductionVideo,
   { "@context": schemaContext, ...organization },
   { "@context": schemaContext, ...buildDataset(siteUrl, { pageUrl }) },
 ];
@@ -130,6 +151,34 @@ const structuredData = [
         </div>
       </div>
     </div>
+    <div class="container">
+      <CoverageLinks links={homepageNews} />
+    </div>
+    <section class="py-vh-3 border-top border-dark" id="introduction">
+      <div class="container">
+        <h2 class="ipc-section-title mb-2">What is PoliceConduct.org?</h2>
+        <p class="mb-4">
+          Watch this introduction to finding records and sharing experiences on
+          PoliceConduct.org.
+        </p>
+        <div class="ratio ratio-16x9">
+          <iframe
+            src={introductionVideo.embedUrl}
+            title={introductionVideo.name}
+            loading="lazy"
+            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen
+          ></iframe>
+        </div>
+        <p class="mt-4">{introductionVideo.description}</p>
+        <p class="mb-0">
+          <a href="/find-records/">Find records</a>,{" "}
+          <a href="/report/new/">share your experience</a>, or learn about our{" "}
+          <a href="/data-and-methods/">data and methods</a>.
+        </p>
+      </div>
+    </section>
     <section class="py-vh-3 bg-light border-top border-dark" id="overview">
       <div class="container">
         <div class="row justify-content-end mb-4">

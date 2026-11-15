@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change versioned-workspace-sync. Update Purpose after archive.
+Preserve private intake workspace files and their revisions in environment-specific storage, with explicit upload and download commands, recoverable versions, and a workspace-sync choice after hosting deployments.
 
 ## Requirements
 

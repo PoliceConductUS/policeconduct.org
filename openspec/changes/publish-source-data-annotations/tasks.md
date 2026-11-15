@@ -34,3 +34,10 @@
 ## Delivery evidence boundary
 
 This checklist records the implementation snapshot verified in `verify.md`. Final documentation-head validation, stack synchronization and hosted checks are recorded in the PR descriptions after this snapshot; they remain unchecked here until that delivery evidence exists. Release approval remains separate.
+
+## INS-121 Analytics synchronization
+
+- [x] Extend the existing Analytics CLI with atomic remote-to-local pull and explicit local-to-remote push tasks on both sites.
+- [x] Manage Google signals state and record unsupported regional settings as dated manual evidence.
+- [x] Verify pagination, failed-pull preservation, readback, idempotency and signals update masks with API transport tests.
+- [ ] Complete aggregate validation and authorized release verification.

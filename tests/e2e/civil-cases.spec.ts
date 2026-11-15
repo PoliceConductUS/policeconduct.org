@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./page-fixture";
 
 test.describe("civil cases", () => {
   test("lists civil cases sorted by filing date", async ({ page }) => {

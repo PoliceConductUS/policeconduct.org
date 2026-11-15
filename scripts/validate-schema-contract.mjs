@@ -201,14 +201,36 @@ const requiredTables = {
     uniqueColumnSets: [["slug"]],
   },
   coverage_link_agency_personnel: {
-    columns: ["coverage_link_id", "agency_personnel_id"],
+    columns: [
+      "id",
+      "coverage_link_id",
+      "agency_personnel_id",
+      "occurrence_url",
+      "correction_reason",
+      "source_namespace",
+      "source_id",
+      "confidence",
+      "notes",
+    ],
     notNull: ["coverage_link_id", "agency_personnel_id"],
+  },
+  coverage_homepage_windows: {
+    columns: ["id", "window_end", "placement_count"],
+    notNull: ["id", "window_end", "placement_count"],
+  },
+  coverage_homepage_placements: {
+    columns: ["id", "window_id", "coverage_link_id", "position", "clicks"],
+    notNull: ["id", "window_id", "coverage_link_id", "position", "clicks"],
   },
   coverage_links: {
     columns: [
       "id",
       "url",
       "normalized_url",
+      "source_namespace",
+      "source_id",
+      "summary",
+      "occurrences",
       "title",
       "source_name",
       "published_at",

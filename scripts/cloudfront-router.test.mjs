@@ -12,15 +12,20 @@ const source = await readFile(
 );
 
 function router(entries = {}, options = {}) {
+  const releaseKeys = {
+    current: "prod-one",
+    "current:pr-42": "pr-42-one",
+    ...entries,
+  };
   const kvs = {
     async exists(key) {
       if (options.existsError) throw options.existsError;
-      return Object.hasOwn(entries, key);
+      return Object.hasOwn(releaseKeys, key);
     },
     async get(key) {
       if (options.getError) throw options.getError;
-      if (!Object.hasOwn(entries, key)) throw new Error("Key not found");
-      return entries[key];
+      if (!Object.hasOwn(releaseKeys, key)) throw new Error("Key not found");
+      return releaseKeys[key];
     },
   };
   const rendered = source
@@ -39,9 +44,9 @@ function router(entries = {}, options = {}) {
 }
 
 for (const [host, namespace, prefix] of [
-  ["www.example.org", "prod", ""],
-  ["pr-42.preview.example.org", "pr-42", "/pr-42"],
-  ["sha-123.builds.example.org", "sha-123", "/sha-123"],
+  ["www.example.org", "prod-one", "/builds/prod-one/static"],
+  ["pr-42.preview.example.org", "pr-42-one", "/builds/pr-42-one/static"],
+  ["sha-123.builds.example.org", "sha-123", "/builds/sha-123/static"],
 ]) {
   test(`${host}: exact redirects win over wildcard entries and keep repeated query values`, async () => {
     const run = router({
@@ -126,7 +131,7 @@ test("apex canonicalization preserves the original path and repeated query value
 
 test("apex uses production redirects when it is the canonical host", async () => {
   const run = router(
-    { "r:prod:/old/": "/new/" },
+    { "r:prod-one:/old/": "/new/" },
     { canonicalHost: "example.org" },
   );
   assert.equal(
@@ -135,7 +140,7 @@ test("apex uses production redirects when it is the canonical host", async () =>
   );
 });
 
-test("unrelated domains and malformed preview hosts pass through", async () => {
+test("unrelated domains and malformed preview hosts cannot read the origin", async () => {
   const run = router();
   for (const host of [
     "pr-42.preview.other.org",
@@ -144,14 +149,109 @@ test("unrelated domains and malformed preview hosts pass through", async () => {
     "preview.example.org",
     "unrelated.example.org",
   ]) {
-    assert.equal((await run(host, "/current/")).uri, "/current/");
+    assert.equal((await run(host, "/current/")).statusCode, 404);
   }
 });
 
 test("host selection is case-insensitive", async () => {
-  const run = router({ "r:pr-42:/old/": "/new/" });
+  const run = router({ "r:pr-42-one:/old/": "/new/" });
   assert.equal(
     (await run("PR-42.PREVIEW.EXAMPLE.ORG", "/old/")).headers.location.value,
     "/new/",
   );
+});
+
+for (const [host, releaseId] of [
+  ["www.example.org", "prod-one"],
+  ["pr-42.preview.example.org", "pr-42-one"],
+]) {
+  test(
+    host + " selects overrides without exposing release data or bodies",
+    async () => {
+      const run = router({ ["o:" + releaseId + ":/profile/index.html"]: "1" });
+      for (const path of ["/profile/", "/profile", "/profile/index.html"]) {
+        assert.equal(
+          (await run(host, path)).uri,
+          "/builds/" + releaseId + "/override/profile/index.html",
+        );
+      }
+      for (const path of [
+        "/builds/" + releaseId + "/data/profile/index.json",
+        "/data/dynamic.json",
+        "/evidence/body.txt",
+        "/builds/" + releaseId + "/override/profile/index.html",
+        "/../data/dynamic.json",
+        "/%2e%2e/data/dynamic.json",
+      ]) {
+        assert.equal((await run(host, path)).statusCode, 404, path);
+      }
+    },
+  );
+}
+test("promotion changes the served cache key without leaking prior overrides", async () => {
+  const entries = { "o:prod-one:/index.html": "1" };
+  assert.equal(
+    (await router(entries)("www.example.org", "/")).uri,
+    "/builds/prod-one/override/index.html",
+  );
+  assert.equal(
+    (await router({ ...entries, current: "prod-two" })("www.example.org", "/"))
+      .uri,
+    "/builds/prod-two/static/index.html",
+  );
+});
+
+test("the private snapshot pins the served release, and a publication clears cached versions", async () => {
+  const releaseId = "prod-2bb8ca63-58aa-4854-b472-866609c1e02f";
+  let current = releaseId;
+  const entries = { current };
+  const savedPaths = new Set();
+  const cache = new Map();
+  const origin = new Map([
+    ["/builds/" + releaseId + "/static/profile/index.html", "original"],
+  ]);
+  const override = "/builds/" + releaseId + "/override/profile/index.html";
+  const service =
+    await import("../infrastructure/bootstrap-policeconduct/lambdas/release-api/service.mjs");
+  const invoke = service.createHandler({
+    privateBucket: "private-production",
+    readCurrent: async () => current,
+    verifyOverride: async (key) => assert.ok(origin.has("/" + key)),
+    releasePage: async (key) => {
+      savedPaths.add(key);
+      entries[key] = "1";
+    },
+    invalidate: async (paths) => {
+      for (const path of paths) cache.delete(path);
+      return "refresh-id";
+    },
+  });
+  const fetchPage = async () => {
+    const key = (await router(entries)("www.example.org", "/profile/")).uri;
+    if (!cache.has(key)) cache.set(key, origin.get(key));
+    return cache.get(key);
+  };
+  const snapshot = await invoke({ operation: "release-snapshot" });
+  assert.deepEqual(snapshot, {
+    releaseId,
+    roster: {
+      bucket: "private-production",
+      key: "builds/" + releaseId + "/data/dynamic.json",
+    },
+  });
+  assert.equal(await fetchPage(), "original");
+  for (const body of ["first update", "second update"]) {
+    origin.set(override, body);
+    assert.deepEqual(
+      await invoke({ operation: "publish-page", releaseId, path: "/profile/" }),
+      { invalidationId: "refresh-id" },
+    );
+    assert.equal(await fetchPage(), body);
+  }
+  current = "prod-56f31b84-78a1-4a33-8102-05810a2acbbe";
+  await assert.rejects(
+    invoke({ operation: "publish-page", releaseId, path: "/profile/" }),
+    /current production release/,
+  );
+  assert.equal(savedPaths.size, 1);
 });
