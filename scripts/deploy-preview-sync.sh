@@ -14,6 +14,8 @@ if [[ -f .env-policeconduct ]]; then
   set +a
 fi
 
+bash scripts/workspace-sync.sh preflight preview
+
 : "${PR_NUMBER:?PR_NUMBER is required (example: PR_NUMBER=3)}"
 : "${S3_BUCKET_PREVIEW:?S3_BUCKET_PREVIEW is required (preview bucket)}"
 : "${KVS_ARN_PREVIEW:?KVS_ARN_PREVIEW is required (preview redirect store)}"
@@ -22,4 +24,5 @@ fi
 npm run validate:redirects
 cmp -s dist/robots.txt <(printf 'User-agent: *\nDisallow: /\n') || { echo 'Expected a completed deny-all preview build.' >&2; exit 1; }
 bash scripts/upload-release.sh "pr-${PR_NUMBER}" "${S3_BUCKET_PREVIEW}" "${RELEASE_DATA_BUCKET_PREVIEW}" "${KVS_ARN_PREVIEW}"
+bash scripts/workspace-sync.sh after preview
 echo "Published https://pr-${PR_NUMBER}.preview.policeconduct.org"

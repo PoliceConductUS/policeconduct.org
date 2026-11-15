@@ -22,6 +22,10 @@ if [[ -f .env-policeconduct ]]; then
   set +a
 fi
 
+if [[ "$DRY_RUN" == false ]]; then
+  bash scripts/workspace-sync.sh preflight production
+fi
+
 : "${S3_BUCKET:?S3_BUCKET is required}"
 : "${KVS_ARN:?KVS_ARN is required (production redirect store)}"
 : "${RELEASE_DATA_BUCKET:?RELEASE_DATA_BUCKET is required}"
@@ -33,3 +37,6 @@ npm run validate:redirects
 args=()
 if [[ "$DRY_RUN" == true ]]; then args+=(--dry-run); fi
 bash scripts/upload-release.sh prod "${S3_BUCKET}" "${RELEASE_DATA_BUCKET}" "${KVS_ARN}" "${args[@]}"
+if [[ "$DRY_RUN" == false ]]; then
+  bash scripts/workspace-sync.sh after production
+fi

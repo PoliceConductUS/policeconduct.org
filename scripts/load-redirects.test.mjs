@@ -259,7 +259,7 @@ test("rejects a desired store exceeding 5 MB including other namespaces before w
 function deploy(
   scriptName,
   args = [],
-  { unchanged = false, failSync = false } = {},
+  { unchanged = false, failSync = false, workspaceChoice = "skip" } = {},
 ) {
   const dir = mkdtempSync(join(resolve(tmpdir()), "redirect-deploy-"));
   try {
@@ -273,7 +273,10 @@ function deploy(
     ])
       mkdirSync(join(dir, name));
     for (const name of [
-      scriptName,
+      "deploy-preview.sh",
+      "deploy-preview-sync.sh",
+      "deploy-incremental.sh",
+      "workspace-sync.sh",
       "upload-release.sh",
       "promote.sh",
       "release-files.mjs",
@@ -284,7 +287,7 @@ function deploy(
       );
     }
     const releaseId =
-      (scriptName === "deploy-preview-sync.sh" ? "pr-12" : "prod") +
+      (scriptName.startsWith("deploy-preview") ? "pr-12" : "prod") +
       "-b2749557-33a6-4ce7-9362-dd16e49eb807";
     writeFileSync(join(dir, ".release/id"), releaseId);
     writeFileSync(join(dir, ".release/data/index.json"), "{}");
@@ -342,12 +345,15 @@ printf '%s\\n' '${tool} '"$*" >> "$TEST_LOG"\n${tool === "aws" && failSync ? 'if
           // Shell startup files must not replace the fixture command PATH.
           BASH_ENV: "/dev/null",
           ENV: "/dev/null",
+          WORKSPACE_SYNC: workspaceChoice,
+          INTAKE_WORKSPACE: dir,
+          INTAKE_WORKSPACE_BUCKET: "fixture-workspaces",
           PATH: `${dir}/bin:${process.env.PATH}`,
           TEST_NODE: process.execPath,
           TEST_LOG: log,
           TMPDIR: dir,
-          GIT_COMMIT_SHA: "fixture",
-          GIT_COMMIT_DIRTY: "0",
+          GIT_COMMIT_SHA: "0123456789ab",
+          GIT_COMMIT_DIRTY: "false",
           RELEASE_DATA_BUCKET: "private-prod",
           RELEASE_DATA_BUCKET_PREVIEW: "private-preview",
           S3_BUCKET: "prod",
@@ -487,3 +493,33 @@ test("shrinks existing values before growing values to stay within capacity duri
   );
   assert.equal(result.status, 0, result.stderr);
 });
+
+for (const [script, args] of [
+  ["deploy-preview.sh", []],
+  ["deploy-preview-sync.sh", []],
+  ["deploy-incremental.sh", ["--skip-build"]],
+]) {
+  test(`${script} accepted workspace upload follows hosting exactly once`, () => {
+    const result = deploy(script, args, { workspaceChoice: "upload" });
+    assert.equal(result.status, 0, result.stderr);
+    const hosting = result.calls.findIndex((call) =>
+      call.startsWith("aws s3 sync "),
+    );
+    const syncs = result.calls.filter((call) =>
+      call.includes("intake-workspace-sync.mjs sync"),
+    );
+    assert.equal(syncs.length, 1);
+    assert.doesNotMatch(syncs[0], /--environment/);
+    assert.match(
+      syncs[0],
+      /sync --direction upload --bucket fixture-workspaces/,
+    );
+    assert.ok(result.calls.indexOf(syncs[0]) > hosting);
+  });
+  test(`${script} missing automated choice prevents hosting upload`, () => {
+    const result = deploy(script, args, { workspaceChoice: "" });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /WORKSPACE_SYNC/);
+    assert.deepEqual(result.calls, []);
+  });
+}

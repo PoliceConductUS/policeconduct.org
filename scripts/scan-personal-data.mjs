@@ -21,7 +21,7 @@
 //   node scripts/scan-personal-data.mjs --files a.md b.md # explicit paths
 
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { lstatSync, readFileSync, readlinkSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 // Slashes are written escaped so this rule file never matches its own source.
@@ -265,7 +265,11 @@ const gitPaths = (args) =>
 const readBlob = (revPath) =>
   git(["cat-file", "blob", revPath]).toString("utf8");
 
-const readWorkingTree = (filePath) => readFileSync(filePath, "utf8");
+// Git records the link target text, not the directory or file it points to.
+const readWorkingTree = (filePath) =>
+  lstatSync(filePath).isSymbolicLink()
+    ? readlinkSync(filePath, "utf8")
+    : readFileSync(filePath, "utf8");
 
 const collectStaged = () =>
   gitPaths(["diff", "--cached", "--name-only", "--diff-filter=ACMR"]);

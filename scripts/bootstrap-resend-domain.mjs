@@ -60,9 +60,6 @@ function buildRoute53Records(domain) {
       if (!type) {
         return false;
       }
-      if (record?.record === "Tracking") {
-        return false;
-      }
       return true;
     })
     .map((record, index) => ({
@@ -146,18 +143,6 @@ async function createDomain(apiKey, config) {
   });
 }
 
-async function updateDomain(apiKey, domainId) {
-  const body = {
-    clickTracking: false,
-    openTracking: false,
-    trackingSubdomain: "links",
-  };
-  return resendRequest(apiKey, `/domains/${encodeURIComponent(domainId)}`, {
-    method: "PATCH",
-    body,
-  });
-}
-
 async function verifyDomain(apiKey, domainId) {
   return resendRequest(
     apiKey,
@@ -180,20 +165,7 @@ async function ensureDomain(config) {
     created = true;
   }
 
-  let domain = await getDomain(config.apiKey, existing.id);
-  const needsUpdate =
-    Boolean(domain?.open_tracking) !== config.openTracking ||
-    Boolean(domain?.click_tracking) !== config.clickTracking ||
-    trimToNull(domain?.tracking_subdomain) !== config.trackingSubdomain;
-
-  if (needsUpdate) {
-    await updateDomain(config.apiKey, domain.id);
-    domain = await getDomain(config.apiKey, domain.id);
-  }
-
-  if (config.verify) {
-    await verifyDomain(config.apiKey, domain.id);
-  }
+  const domain = await getDomain(config.apiKey, existing.id);
 
   return {
     created,
@@ -202,18 +174,19 @@ async function ensureDomain(config) {
   };
 }
 
-async function verifyExistingDomain(config) {
+async function readExistingDomain(config) {
   const existing = await findDomainByName(config.apiKey, config.domainName);
   if (!existing?.id) {
     throw new Error(`Resend domain not found: ${config.domainName}`);
   }
   const domain = await getDomain(config.apiKey, existing.id);
-  await verifyDomain(config.apiKey, existing.id);
-  return {
-    created: false,
-    domain,
-    verificationTriggered: true,
-  };
+  return { created: false, domain, verificationTriggered: false };
+}
+
+async function verifyExistingDomain(config) {
+  const result = await readExistingDomain(config);
+  await verifyDomain(config.apiKey, result.domain.id);
+  return { ...result, verificationTriggered: true };
 }
 
 async function readJsonStdin() {
@@ -234,11 +207,8 @@ async function readJsonStdin() {
 function loadConfig() {
   return {
     apiKey: trimToNull(process.env.RESEND_API_KEY_FULL_ACCESS),
-    clickTracking: false,
     domainName: DOMAIN_NAME,
-    openTracking: false,
     region: REGION,
-    trackingSubdomain: null,
   };
 }
 
@@ -262,12 +232,13 @@ function formatTerraformResult(result) {
 }
 
 function parseMode(argv) {
-  const apply = argv.includes("--apply");
-  const verify = argv.includes("--verify");
-  if (apply === verify) {
-    throw new Error("Specify exactly one of --apply or --verify");
+  const modes = ["read", "apply", "verify"].filter((mode) =>
+    argv.includes(`--${mode}`),
+  );
+  if (modes.length !== 1) {
+    throw new Error("Specify exactly one of --read, --apply or --verify");
   }
-  return apply ? "apply" : "verify";
+  return modes[0];
 }
 
 async function main() {
@@ -278,7 +249,9 @@ async function main() {
   const result =
     mode === "apply"
       ? await ensureDomain(config)
-      : await verifyExistingDomain(config);
+      : mode === "verify"
+        ? await verifyExistingDomain(config)
+        : await readExistingDomain(config);
 
   if (stdin) {
     process.stdout.write(`${JSON.stringify(formatTerraformResult(result))}\n`);
@@ -309,6 +282,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 export const __testables = {
   buildRoute53Records,
+  ensureDomain,
+  readExistingDomain,
   findDomainByName,
   formatTerraformResult,
   loadConfig,
@@ -317,5 +292,4 @@ export const __testables = {
   resendRequest,
   route53ValueForRecord,
   verifyExistingDomain,
-  updateDomain,
 };

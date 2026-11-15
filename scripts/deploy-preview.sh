@@ -13,6 +13,8 @@ if [[ -f .env-policeconduct ]]; then
   set +a
 fi
 
+bash scripts/workspace-sync.sh preflight preview
+
 : "${PR_NUMBER:?PR_NUMBER is required (example: PR_NUMBER=123)}"
 : "${S3_BUCKET_PREVIEW:?S3_BUCKET_PREVIEW is required (preview bucket)}"
 : "${RELEASE_DATA_BUCKET_PREVIEW:?RELEASE_DATA_BUCKET_PREVIEW is required}"
