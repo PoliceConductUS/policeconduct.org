@@ -41,3 +41,10 @@
 - [ ] Commit and run full repository validation.
 - [ ] Adopt through an inspected import-only plan and verify no security drift.
 - [ ] Resolve remaining GuardDuty feature support and Security Hub control settings.
+
+## reCAPTCHA checkout safeguard
+
+- [x] Use the shared state guard before reCAPTCHA apply and output synchronization.
+- [x] Extend wrapper failure tests to reCAPTCHA.
+- [ ] Complete full validation on the committed repair.
+- [ ] Reconcile the reCAPTCHA authoritative backend and verify recovery.

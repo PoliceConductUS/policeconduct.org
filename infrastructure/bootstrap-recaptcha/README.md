@@ -10,6 +10,14 @@ It manages Google Cloud reCAPTCHA Enterprise resources only:
 - Creates a Google Workload Identity Pool + AWS provider for keyless auth
 - Grants the AWS forms Lambda role `roles/iam.workloadIdentityUser` on the service account
 
+## Existing state is required
+
+The apply wrapper refuses missing, unreadable, empty, or data-only state before
+applying or syncing environment outputs. Bind this checkout to the authoritative
+state before using the wrapper. Do not initialize a fresh local state for an
+existing deployment. This guard does not prove state completeness or identity;
+inspect the plan against the known project and resources before applying.
+
 ## Usage
 
 ```bash
