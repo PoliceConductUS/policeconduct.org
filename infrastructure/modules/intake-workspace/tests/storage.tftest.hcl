@@ -7,7 +7,7 @@ variables {
 run "private_versioned_storage" {
   command = plan
   assert {
-    condition = alltrue([for env, policy in local.policies : alltrue([for action in ["s3:GetBucketVersioning", "s3:GetBucketTagging", "s3:GetBucketPublicAccessBlock", "s3:GetEncryptionConfiguration"] : contains(policy.Statement[0].Action, action)])])
+    condition     = alltrue([for env, policy in local.policies : alltrue([for action in ["s3:GetBucketVersioning", "s3:GetBucketTagging", "s3:GetBucketPublicAccessBlock", "s3:GetEncryptionConfiguration"] : contains(policy.Statement[0].Action, action)])])
     error_message = "Operators must be able to perform the automatic pre-transfer storage validation."
   }
   assert {
