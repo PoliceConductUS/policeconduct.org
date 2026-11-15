@@ -139,12 +139,6 @@ locals {
         S3_BUCKET          = aws_s3_bucket.preview.id
         CLOUDFRONT_DIST_ID = aws_cloudfront_distribution.preview.id
         FORMS_API_URL      = "/api"
-        # Consumed by the cleanup-preview workflow to prune a closed PR's
-        # r:pr-<N>: redirect namespace. The workflow skips that step while this
-        # is unset, which is why no preview namespace had ever been pruned
-        # (INS-106). Applied together with CloudFrontKeyValueStorePreviewAccess
-        # so the variable never exists without the permission it needs.
-        KVS_ARN_PREVIEW = aws_cloudfront_key_value_store.preview_redirects.arn
       },
       local.ga_measurement_id_preview == null ? {} : {
         GA_MEASUREMENT_ID = local.ga_measurement_id_preview
@@ -2573,6 +2567,22 @@ resource "github_actions_environment_variable" "environment_variables" {
   value         = each.value.value
 
   depends_on = [github_repository_environment.environments]
+}
+
+# Keep cleanup configuration independent of distribution and Lambda releases.
+# The variable is usable only after the preview store permissions exist.
+moved {
+  from = github_actions_environment_variable.environment_variables["preview:KVS_ARN_PREVIEW"]
+  to   = github_actions_environment_variable.preview_kvs_arn
+}
+
+resource "github_actions_environment_variable" "preview_kvs_arn" {
+  repository    = var.github_repo
+  environment   = github_repository_environment.environments["preview"].environment
+  variable_name = "KVS_ARN_PREVIEW"
+  value         = aws_cloudfront_key_value_store.preview_redirects.arn
+
+  depends_on = [aws_iam_role_policy.github_actions_permissions]
 }
 
 resource "github_actions_environment_secret" "sentry_auth_token" {
