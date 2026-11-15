@@ -227,7 +227,15 @@ data "archive_file" "forms_api_lambda" {
   type        = "zip"
   source_dir  = "${path.module}/lambdas/forms-api"
   output_path = "${path.module}/lambdas/forms-api.zip"
-  excludes    = ["*.zip"]
+  # Match deploy-forms-api.sh: runtime files only, never local tests/coverage.
+  excludes = setsubtract(
+    fileset("${path.module}/lambdas/forms-api", "**"),
+    setunion(
+      toset(["index.mjs", "package.json"]),
+      fileset("${path.module}/lambdas/forms-api", "native-domexception/**"),
+      fileset("${path.module}/lambdas/forms-api", "node_modules/**")
+    )
+  )
 }
 
 resource "aws_s3_bucket" "terraform_state" {
