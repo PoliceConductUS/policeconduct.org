@@ -10,7 +10,7 @@ output "route53_name_servers" {
 
 output "acm_certificate_arn" {
   description = "ACM certificate ARN used by CloudFront."
-  value       = aws_acm_certificate_validation.site.certificate_arn
+  value       = aws_cloudfront_distribution.redirect.viewer_certificate[0].acm_certificate_arn
 }
 
 output "cloudfront_distribution_id" {

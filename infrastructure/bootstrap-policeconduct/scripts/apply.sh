@@ -223,7 +223,7 @@ prepare_forms_lambda_package() {
     exit 1
   fi
   echo "Preparing forms-api Lambda dependencies..."
-  npm --prefix "${lambda_dir}" install --omit=dev --no-audit --no-fund
+  ( cd "${lambda_dir}" && npm ci --omit=dev --no-audit --no-fund )
 }
 
 run_foundation_apply() {
