@@ -18,7 +18,7 @@ resource "aws_acm_certificate" "site" {
   provider = aws.us_east_1
 
   domain_name               = var.domain_name
-  subject_alternative_names = concat([local.www_domain], local.preview_domains)
+  subject_alternative_names = [local.www_domain]
   validation_method         = "DNS"
 
   lifecycle {
@@ -133,7 +133,7 @@ resource "aws_cloudfront_distribution" "redirect" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate_validation.site.certificate_arn
+    acm_certificate_arn      = aws_acm_certificate_validation.preview_rollout.certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
@@ -212,4 +212,27 @@ resource "aws_route53_record" "preview_aaaa" {
     zone_id                = local.cloudfront_hosted_zone_id
     evaluate_target_health = false
   }
+}
+
+# Staged replacement: retain the serving certificate until cutover is verified.
+resource "aws_acm_certificate" "preview_rollout" {
+  provider                  = aws.us_east_1
+  domain_name               = var.domain_name
+  subject_alternative_names = concat([local.www_domain], local.preview_domains)
+  validation_method         = "DNS"
+  lifecycle { create_before_destroy = true }
+}
+
+resource "aws_route53_record" "preview_rollout_validation" {
+  allow_overwrite = false
+  zone_id         = aws_route53_zone.site.zone_id
+  name            = one([for dvo in aws_acm_certificate.preview_rollout.domain_validation_options : dvo.resource_record_name if dvo.domain_name == "preview.${var.domain_name}"])
+  type            = "CNAME"
+  ttl             = 60
+  records         = [one([for dvo in aws_acm_certificate.preview_rollout.domain_validation_options : dvo.resource_record_value if dvo.domain_name == "preview.${var.domain_name}"])]
+}
+resource "aws_acm_certificate_validation" "preview_rollout" {
+  provider                = aws.us_east_1
+  certificate_arn         = aws_acm_certificate.preview_rollout.arn
+  validation_record_fqdns = concat([for record in aws_route53_record.acm_validation : record.fqdn], [aws_route53_record.preview_rollout_validation.fqdn])
 }
