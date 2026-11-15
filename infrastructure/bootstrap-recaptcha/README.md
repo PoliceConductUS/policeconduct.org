@@ -18,6 +18,21 @@ state before using the wrapper. Do not initialize a fresh local state for an
 existing deployment. This guard does not prove state completeness or identity;
 inspect the plan against the known project and resources before applying.
 
+## Remote state
+
+The authoritative state uses the existing protected S3 bucket
+`policeconduct-tfstate-942370948729`, key
+`bootstrap-recaptcha/terraform.tfstate`, with encryption and native S3 locking.
+Terraform 1.11 or later is required. The existing state has been migrated.
+Other checkouts must run `terraform init -reconfigure` with this configuration
+and verify the remote resources before planning or applying. Do not migrate a
+stale local copy over the remote state or initialize an empty replacement.
+
+For recovery, retrieve a specific S3 object version into a private file and
+compare lineage, resources and outputs before any restoration. Keep state and
+backup files out of Git. Stop concurrent Terraform operations before migration
+or recovery; never replay a plan created before either operation.
+
 ## Account binding
 
 The AWS provider accepts only account `942370948729`, which supplies the
