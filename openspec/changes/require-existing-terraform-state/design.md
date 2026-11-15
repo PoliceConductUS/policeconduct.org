@@ -23,3 +23,13 @@ Deploy no infrastructure. Restore authorized AWS access, inspect existing backen
 The recovered state and AWS credentials now permit live read verification. Account preflight uses managed AWS ARNs, including regional ARNs, and rejects missing, mixed or mismatched account evidence. This bootstrap is a single-account root; multi-account adoption requires an explicit provider-account mapping before applying.
 
 CloudFront discovery uses successful list responses to distinguish absence from failed reads. Both DEVELOPMENT and LIVE function stages are checked. Errors propagate without an empty JSON result. No provider writes are introduced.
+
+## Regional security adoption
+
+Adopt the existing 85 regional security resources into the recovered PoliceConduct
+bootstrap state. Reuse this root and branch; do not create a second state owner.
+Explicit account-restricted `security_` provider aliases avoid the site's default
+tags and existing alias names. Imports preserve enabled services and standards;
+`prevent_destroy` rejects their removal. The saved plan must show no security
+resource mutations before adoption. Unsupported GuardDuty feature settings stay
+unchanged and explicitly unresolved. Backend durability is still separate work.

@@ -1,0 +1,1336 @@
+{
+  "provider": {
+    "aws": [
+      {
+        "alias": "security_ap_northeast_1",
+        "region": "ap-northeast-1",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_ap_northeast_2",
+        "region": "ap-northeast-2",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_ap_northeast_3",
+        "region": "ap-northeast-3",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_ap_south_1",
+        "region": "ap-south-1",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_ap_southeast_1",
+        "region": "ap-southeast-1",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_ap_southeast_2",
+        "region": "ap-southeast-2",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_ca_central_1",
+        "region": "ca-central-1",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_eu_central_1",
+        "region": "eu-central-1",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_eu_north_1",
+        "region": "eu-north-1",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_eu_west_1",
+        "region": "eu-west-1",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_eu_west_2",
+        "region": "eu-west-2",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_eu_west_3",
+        "region": "eu-west-3",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_sa_east_1",
+        "region": "sa-east-1",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_us_east_1",
+        "region": "us-east-1",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_us_east_2",
+        "region": "us-east-2",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_us_west_1",
+        "region": "us-west-1",
+        "allowed_account_ids": ["942370948729"]
+      },
+      {
+        "alias": "security_us_west_2",
+        "region": "us-west-2",
+        "allowed_account_ids": ["942370948729"]
+      }
+    ]
+  },
+  "resource": {
+    "aws_guardduty_detector": {
+      "ap_south_1": {
+        "region": "ap-south-1",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_south_1"
+      },
+      "eu_north_1": {
+        "region": "eu-north-1",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_north_1"
+      },
+      "eu_west_3": {
+        "region": "eu-west-3",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_3"
+      },
+      "eu_west_2": {
+        "region": "eu-west-2",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_2"
+      },
+      "eu_west_1": {
+        "region": "eu-west-1",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_1"
+      },
+      "ap_northeast_3": {
+        "region": "ap-northeast-3",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_3"
+      },
+      "ap_northeast_2": {
+        "region": "ap-northeast-2",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_2"
+      },
+      "ap_northeast_1": {
+        "region": "ap-northeast-1",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_1"
+      },
+      "ca_central_1": {
+        "region": "ca-central-1",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ca_central_1"
+      },
+      "sa_east_1": {
+        "region": "sa-east-1",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_sa_east_1"
+      },
+      "ap_southeast_1": {
+        "region": "ap-southeast-1",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_southeast_1"
+      },
+      "ap_southeast_2": {
+        "region": "ap-southeast-2",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_southeast_2"
+      },
+      "eu_central_1": {
+        "region": "eu-central-1",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_central_1"
+      },
+      "us_east_1": {
+        "region": "us-east-1",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_east_1"
+      },
+      "us_east_2": {
+        "region": "us-east-2",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_east_2"
+      },
+      "us_west_1": {
+        "region": "us-west-1",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_west_1"
+      },
+      "us_west_2": {
+        "region": "us-west-2",
+        "enable": true,
+        "finding_publishing_frequency": "SIX_HOURS",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_west_2"
+      }
+    },
+    "aws_securityhub_account": {
+      "ap_south_1": {
+        "region": "ap-south-1",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_south_1",
+        "enable_default_standards": false
+      },
+      "eu_north_1": {
+        "region": "eu-north-1",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_north_1",
+        "enable_default_standards": false
+      },
+      "eu_west_3": {
+        "region": "eu-west-3",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_3",
+        "enable_default_standards": false
+      },
+      "eu_west_2": {
+        "region": "eu-west-2",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_2",
+        "enable_default_standards": false
+      },
+      "eu_west_1": {
+        "region": "eu-west-1",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_1",
+        "enable_default_standards": false
+      },
+      "ap_northeast_3": {
+        "region": "ap-northeast-3",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_3",
+        "enable_default_standards": false
+      },
+      "ap_northeast_2": {
+        "region": "ap-northeast-2",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_2",
+        "enable_default_standards": false
+      },
+      "ap_northeast_1": {
+        "region": "ap-northeast-1",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_1",
+        "enable_default_standards": false
+      },
+      "ca_central_1": {
+        "region": "ca-central-1",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ca_central_1",
+        "enable_default_standards": false
+      },
+      "sa_east_1": {
+        "region": "sa-east-1",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_sa_east_1",
+        "enable_default_standards": false
+      },
+      "ap_southeast_1": {
+        "region": "ap-southeast-1",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_southeast_1",
+        "enable_default_standards": false
+      },
+      "ap_southeast_2": {
+        "region": "ap-southeast-2",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_southeast_2",
+        "enable_default_standards": false
+      },
+      "eu_central_1": {
+        "region": "eu-central-1",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_central_1",
+        "enable_default_standards": false
+      },
+      "us_east_1": {
+        "region": "us-east-1",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_east_1",
+        "enable_default_standards": false
+      },
+      "us_east_2": {
+        "region": "us-east-2",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_east_2",
+        "enable_default_standards": false
+      },
+      "us_west_1": {
+        "region": "us-west-1",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_west_1",
+        "enable_default_standards": false
+      },
+      "us_west_2": {
+        "region": "us-west-2",
+        "auto_enable_controls": true,
+        "control_finding_generator": "SECURITY_CONTROL",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_west_2",
+        "enable_default_standards": false
+      }
+    },
+    "aws_securityhub_standards_subscription": {
+      "ap_south_1_0": {
+        "region": "ap-south-1",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_south_1"
+      },
+      "ap_south_1_1": {
+        "region": "ap-south-1",
+        "standards_arn": "arn:aws:securityhub:ap-south-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_south_1"
+      },
+      "eu_north_1_0": {
+        "region": "eu-north-1",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_north_1"
+      },
+      "eu_north_1_1": {
+        "region": "eu-north-1",
+        "standards_arn": "arn:aws:securityhub:eu-north-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_north_1"
+      },
+      "eu_west_3_0": {
+        "region": "eu-west-3",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_3"
+      },
+      "eu_west_3_1": {
+        "region": "eu-west-3",
+        "standards_arn": "arn:aws:securityhub:eu-west-3::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_3"
+      },
+      "eu_west_2_0": {
+        "region": "eu-west-2",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_2"
+      },
+      "eu_west_2_1": {
+        "region": "eu-west-2",
+        "standards_arn": "arn:aws:securityhub:eu-west-2::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_2"
+      },
+      "eu_west_1_0": {
+        "region": "eu-west-1",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_1"
+      },
+      "eu_west_1_1": {
+        "region": "eu-west-1",
+        "standards_arn": "arn:aws:securityhub:eu-west-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_1"
+      },
+      "ap_northeast_3_0": {
+        "region": "ap-northeast-3",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_3"
+      },
+      "ap_northeast_3_1": {
+        "region": "ap-northeast-3",
+        "standards_arn": "arn:aws:securityhub:ap-northeast-3::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_3"
+      },
+      "ap_northeast_2_0": {
+        "region": "ap-northeast-2",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_2"
+      },
+      "ap_northeast_2_1": {
+        "region": "ap-northeast-2",
+        "standards_arn": "arn:aws:securityhub:ap-northeast-2::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_2"
+      },
+      "ap_northeast_1_0": {
+        "region": "ap-northeast-1",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_1"
+      },
+      "ap_northeast_1_1": {
+        "region": "ap-northeast-1",
+        "standards_arn": "arn:aws:securityhub:ap-northeast-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_1"
+      },
+      "ca_central_1_0": {
+        "region": "ca-central-1",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ca_central_1"
+      },
+      "ca_central_1_1": {
+        "region": "ca-central-1",
+        "standards_arn": "arn:aws:securityhub:ca-central-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ca_central_1"
+      },
+      "sa_east_1_0": {
+        "region": "sa-east-1",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_sa_east_1"
+      },
+      "sa_east_1_1": {
+        "region": "sa-east-1",
+        "standards_arn": "arn:aws:securityhub:sa-east-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_sa_east_1"
+      },
+      "ap_southeast_1_0": {
+        "region": "ap-southeast-1",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_southeast_1"
+      },
+      "ap_southeast_1_1": {
+        "region": "ap-southeast-1",
+        "standards_arn": "arn:aws:securityhub:ap-southeast-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_southeast_1"
+      },
+      "ap_southeast_2_0": {
+        "region": "ap-southeast-2",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_southeast_2"
+      },
+      "ap_southeast_2_1": {
+        "region": "ap-southeast-2",
+        "standards_arn": "arn:aws:securityhub:ap-southeast-2::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_southeast_2"
+      },
+      "eu_central_1_0": {
+        "region": "eu-central-1",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_central_1"
+      },
+      "eu_central_1_1": {
+        "region": "eu-central-1",
+        "standards_arn": "arn:aws:securityhub:eu-central-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_central_1"
+      },
+      "us_east_1_0": {
+        "region": "us-east-1",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_east_1"
+      },
+      "us_east_1_1": {
+        "region": "us-east-1",
+        "standards_arn": "arn:aws:securityhub:us-east-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_east_1"
+      },
+      "us_east_2_0": {
+        "region": "us-east-2",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_east_2"
+      },
+      "us_east_2_1": {
+        "region": "us-east-2",
+        "standards_arn": "arn:aws:securityhub:us-east-2::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_east_2"
+      },
+      "us_west_1_0": {
+        "region": "us-west-1",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_west_1"
+      },
+      "us_west_1_1": {
+        "region": "us-west-1",
+        "standards_arn": "arn:aws:securityhub:us-west-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_west_1"
+      },
+      "us_west_2_0": {
+        "region": "us-west-2",
+        "standards_arn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_west_2"
+      },
+      "us_west_2_1": {
+        "region": "us-west-2",
+        "standards_arn": "arn:aws:securityhub:us-west-2::standards/aws-foundational-security-best-practices/v/1.0.0",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_west_2"
+      }
+    },
+    "aws_inspector2_enabler": {
+      "ap_south_1": {
+        "region": "ap-south-1",
+        "account_ids": ["942370948729"],
+        "resource_types": ["EC2", "ECR", "LAMBDA"],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_south_1"
+      },
+      "eu_north_1": {
+        "region": "eu-north-1",
+        "account_ids": ["942370948729"],
+        "resource_types": [
+          "CODE_REPOSITORY",
+          "EC2",
+          "ECR",
+          "LAMBDA",
+          "LAMBDA_CODE"
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_north_1"
+      },
+      "eu_west_3": {
+        "region": "eu-west-3",
+        "account_ids": ["942370948729"],
+        "resource_types": ["EC2", "ECR", "LAMBDA"],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_3"
+      },
+      "eu_west_2": {
+        "region": "eu-west-2",
+        "account_ids": ["942370948729"],
+        "resource_types": [
+          "CODE_REPOSITORY",
+          "EC2",
+          "ECR",
+          "LAMBDA",
+          "LAMBDA_CODE"
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_2"
+      },
+      "eu_west_1": {
+        "region": "eu-west-1",
+        "account_ids": ["942370948729"],
+        "resource_types": [
+          "CODE_REPOSITORY",
+          "EC2",
+          "ECR",
+          "LAMBDA",
+          "LAMBDA_CODE"
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_west_1"
+      },
+      "ap_northeast_3": {
+        "region": "ap-northeast-3",
+        "account_ids": ["942370948729"],
+        "resource_types": ["EC2", "ECR", "LAMBDA"],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_3"
+      },
+      "ap_northeast_2": {
+        "region": "ap-northeast-2",
+        "account_ids": ["942370948729"],
+        "resource_types": ["EC2", "ECR", "LAMBDA"],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_2"
+      },
+      "ap_northeast_1": {
+        "region": "ap-northeast-1",
+        "account_ids": ["942370948729"],
+        "resource_types": [
+          "CODE_REPOSITORY",
+          "EC2",
+          "ECR",
+          "LAMBDA",
+          "LAMBDA_CODE"
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_northeast_1"
+      },
+      "ca_central_1": {
+        "region": "ca-central-1",
+        "account_ids": ["942370948729"],
+        "resource_types": ["EC2", "ECR", "LAMBDA"],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ca_central_1"
+      },
+      "sa_east_1": {
+        "region": "sa-east-1",
+        "account_ids": ["942370948729"],
+        "resource_types": ["EC2", "ECR", "LAMBDA"],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_sa_east_1"
+      },
+      "ap_southeast_1": {
+        "region": "ap-southeast-1",
+        "account_ids": ["942370948729"],
+        "resource_types": [
+          "CODE_REPOSITORY",
+          "EC2",
+          "ECR",
+          "LAMBDA",
+          "LAMBDA_CODE"
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_southeast_1"
+      },
+      "ap_southeast_2": {
+        "region": "ap-southeast-2",
+        "account_ids": ["942370948729"],
+        "resource_types": [
+          "CODE_REPOSITORY",
+          "EC2",
+          "ECR",
+          "LAMBDA",
+          "LAMBDA_CODE"
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_ap_southeast_2"
+      },
+      "eu_central_1": {
+        "region": "eu-central-1",
+        "account_ids": ["942370948729"],
+        "resource_types": [
+          "CODE_REPOSITORY",
+          "EC2",
+          "ECR",
+          "LAMBDA",
+          "LAMBDA_CODE"
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_eu_central_1"
+      },
+      "us_east_1": {
+        "region": "us-east-1",
+        "account_ids": ["942370948729"],
+        "resource_types": [
+          "CODE_REPOSITORY",
+          "EC2",
+          "ECR",
+          "LAMBDA",
+          "LAMBDA_CODE"
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_east_1"
+      },
+      "us_east_2": {
+        "region": "us-east-2",
+        "account_ids": ["942370948729"],
+        "resource_types": [
+          "CODE_REPOSITORY",
+          "EC2",
+          "ECR",
+          "LAMBDA",
+          "LAMBDA_CODE"
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_east_2"
+      },
+      "us_west_1": {
+        "region": "us-west-1",
+        "account_ids": ["942370948729"],
+        "resource_types": ["EC2", "ECR", "LAMBDA"],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_west_1"
+      },
+      "us_west_2": {
+        "region": "us-west-2",
+        "account_ids": ["942370948729"],
+        "resource_types": [
+          "CODE_REPOSITORY",
+          "EC2",
+          "ECR",
+          "LAMBDA",
+          "LAMBDA_CODE"
+        ],
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "provider": "aws.security_us_west_2"
+      }
+    }
+  },
+  "import": [
+    {
+      "to": "aws_guardduty_detector.ap_south_1",
+      "id": "58ce5e67fa90ab4e905baeaf7c1448a1",
+      "provider": "aws.security_ap_south_1"
+    },
+    {
+      "to": "aws_securityhub_account.ap_south_1",
+      "id": "942370948729",
+      "provider": "aws.security_ap_south_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ap_south_1_0",
+      "id": "arn:aws:securityhub:ap-south-1:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_ap_south_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ap_south_1_1",
+      "id": "arn:aws:securityhub:ap-south-1:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_ap_south_1"
+    },
+    {
+      "to": "aws_inspector2_enabler.ap_south_1",
+      "id": "942370948729-EC2:ECR:LAMBDA",
+      "provider": "aws.security_ap_south_1"
+    },
+    {
+      "to": "aws_guardduty_detector.eu_north_1",
+      "id": "a4ce5e67f9c6b79af01a432a9183f8df",
+      "provider": "aws.security_eu_north_1"
+    },
+    {
+      "to": "aws_securityhub_account.eu_north_1",
+      "id": "942370948729",
+      "provider": "aws.security_eu_north_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.eu_north_1_0",
+      "id": "arn:aws:securityhub:eu-north-1:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_eu_north_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.eu_north_1_1",
+      "id": "arn:aws:securityhub:eu-north-1:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_eu_north_1"
+    },
+    {
+      "to": "aws_inspector2_enabler.eu_north_1",
+      "id": "942370948729-CODE_REPOSITORY:EC2:ECR:LAMBDA:LAMBDA_CODE",
+      "provider": "aws.security_eu_north_1"
+    },
+    {
+      "to": "aws_guardduty_detector.eu_west_3",
+      "id": "7ace5e67f99434a0fb054e8a02ea4dae",
+      "provider": "aws.security_eu_west_3"
+    },
+    {
+      "to": "aws_securityhub_account.eu_west_3",
+      "id": "942370948729",
+      "provider": "aws.security_eu_west_3"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.eu_west_3_0",
+      "id": "arn:aws:securityhub:eu-west-3:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_eu_west_3"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.eu_west_3_1",
+      "id": "arn:aws:securityhub:eu-west-3:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_eu_west_3"
+    },
+    {
+      "to": "aws_inspector2_enabler.eu_west_3",
+      "id": "942370948729-EC2:ECR:LAMBDA",
+      "provider": "aws.security_eu_west_3"
+    },
+    {
+      "to": "aws_guardduty_detector.eu_west_2",
+      "id": "34ce5e67f9dd44ca5e278ca7813a19f1",
+      "provider": "aws.security_eu_west_2"
+    },
+    {
+      "to": "aws_securityhub_account.eu_west_2",
+      "id": "942370948729",
+      "provider": "aws.security_eu_west_2"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.eu_west_2_0",
+      "id": "arn:aws:securityhub:eu-west-2:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_eu_west_2"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.eu_west_2_1",
+      "id": "arn:aws:securityhub:eu-west-2:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_eu_west_2"
+    },
+    {
+      "to": "aws_inspector2_enabler.eu_west_2",
+      "id": "942370948729-CODE_REPOSITORY:EC2:ECR:LAMBDA:LAMBDA_CODE",
+      "provider": "aws.security_eu_west_2"
+    },
+    {
+      "to": "aws_guardduty_detector.eu_west_1",
+      "id": "82ce5e67f9adc771a274c4ce2e1abfc5",
+      "provider": "aws.security_eu_west_1"
+    },
+    {
+      "to": "aws_securityhub_account.eu_west_1",
+      "id": "942370948729",
+      "provider": "aws.security_eu_west_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.eu_west_1_0",
+      "id": "arn:aws:securityhub:eu-west-1:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_eu_west_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.eu_west_1_1",
+      "id": "arn:aws:securityhub:eu-west-1:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_eu_west_1"
+    },
+    {
+      "to": "aws_inspector2_enabler.eu_west_1",
+      "id": "942370948729-CODE_REPOSITORY:EC2:ECR:LAMBDA:LAMBDA_CODE",
+      "provider": "aws.security_eu_west_1"
+    },
+    {
+      "to": "aws_guardduty_detector.ap_northeast_3",
+      "id": "e0ce5e67f97ea10ff4d9f8bdb3f77662",
+      "provider": "aws.security_ap_northeast_3"
+    },
+    {
+      "to": "aws_securityhub_account.ap_northeast_3",
+      "id": "942370948729",
+      "provider": "aws.security_ap_northeast_3"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ap_northeast_3_0",
+      "id": "arn:aws:securityhub:ap-northeast-3:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_ap_northeast_3"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ap_northeast_3_1",
+      "id": "arn:aws:securityhub:ap-northeast-3:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_ap_northeast_3"
+    },
+    {
+      "to": "aws_inspector2_enabler.ap_northeast_3",
+      "id": "942370948729-EC2:ECR:LAMBDA",
+      "provider": "aws.security_ap_northeast_3"
+    },
+    {
+      "to": "aws_guardduty_detector.ap_northeast_2",
+      "id": "20ce5e67f9ac3e032305a1425dfa3343",
+      "provider": "aws.security_ap_northeast_2"
+    },
+    {
+      "to": "aws_securityhub_account.ap_northeast_2",
+      "id": "942370948729",
+      "provider": "aws.security_ap_northeast_2"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ap_northeast_2_0",
+      "id": "arn:aws:securityhub:ap-northeast-2:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_ap_northeast_2"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ap_northeast_2_1",
+      "id": "arn:aws:securityhub:ap-northeast-2:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_ap_northeast_2"
+    },
+    {
+      "to": "aws_inspector2_enabler.ap_northeast_2",
+      "id": "942370948729-EC2:ECR:LAMBDA",
+      "provider": "aws.security_ap_northeast_2"
+    },
+    {
+      "to": "aws_guardduty_detector.ap_northeast_1",
+      "id": "d2ce5e67f9657dd149cee75610870170",
+      "provider": "aws.security_ap_northeast_1"
+    },
+    {
+      "to": "aws_securityhub_account.ap_northeast_1",
+      "id": "942370948729",
+      "provider": "aws.security_ap_northeast_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ap_northeast_1_0",
+      "id": "arn:aws:securityhub:ap-northeast-1:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_ap_northeast_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ap_northeast_1_1",
+      "id": "arn:aws:securityhub:ap-northeast-1:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_ap_northeast_1"
+    },
+    {
+      "to": "aws_inspector2_enabler.ap_northeast_1",
+      "id": "942370948729-CODE_REPOSITORY:EC2:ECR:LAMBDA:LAMBDA_CODE",
+      "provider": "aws.security_ap_northeast_1"
+    },
+    {
+      "to": "aws_guardduty_detector.ca_central_1",
+      "id": "e0ce5e67f8fbadf8bae1b4a61e204f69",
+      "provider": "aws.security_ca_central_1"
+    },
+    {
+      "to": "aws_securityhub_account.ca_central_1",
+      "id": "942370948729",
+      "provider": "aws.security_ca_central_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ca_central_1_0",
+      "id": "arn:aws:securityhub:ca-central-1:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_ca_central_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ca_central_1_1",
+      "id": "arn:aws:securityhub:ca-central-1:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_ca_central_1"
+    },
+    {
+      "to": "aws_inspector2_enabler.ca_central_1",
+      "id": "942370948729-EC2:ECR:LAMBDA",
+      "provider": "aws.security_ca_central_1"
+    },
+    {
+      "to": "aws_guardduty_detector.sa_east_1",
+      "id": "d6ce5e67f9d489b9fad3c8f120a37f2f",
+      "provider": "aws.security_sa_east_1"
+    },
+    {
+      "to": "aws_securityhub_account.sa_east_1",
+      "id": "942370948729",
+      "provider": "aws.security_sa_east_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.sa_east_1_0",
+      "id": "arn:aws:securityhub:sa-east-1:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_sa_east_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.sa_east_1_1",
+      "id": "arn:aws:securityhub:sa-east-1:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_sa_east_1"
+    },
+    {
+      "to": "aws_inspector2_enabler.sa_east_1",
+      "id": "942370948729-EC2:ECR:LAMBDA",
+      "provider": "aws.security_sa_east_1"
+    },
+    {
+      "to": "aws_guardduty_detector.ap_southeast_1",
+      "id": "e8ce5e67fa360df7b9d0171a6d50ffeb",
+      "provider": "aws.security_ap_southeast_1"
+    },
+    {
+      "to": "aws_securityhub_account.ap_southeast_1",
+      "id": "942370948729",
+      "provider": "aws.security_ap_southeast_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ap_southeast_1_0",
+      "id": "arn:aws:securityhub:ap-southeast-1:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_ap_southeast_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ap_southeast_1_1",
+      "id": "arn:aws:securityhub:ap-southeast-1:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_ap_southeast_1"
+    },
+    {
+      "to": "aws_inspector2_enabler.ap_southeast_1",
+      "id": "942370948729-CODE_REPOSITORY:EC2:ECR:LAMBDA:LAMBDA_CODE",
+      "provider": "aws.security_ap_southeast_1"
+    },
+    {
+      "to": "aws_guardduty_detector.ap_southeast_2",
+      "id": "50ce5e67f9f996855c7b952fd55dbeb2",
+      "provider": "aws.security_ap_southeast_2"
+    },
+    {
+      "to": "aws_securityhub_account.ap_southeast_2",
+      "id": "942370948729",
+      "provider": "aws.security_ap_southeast_2"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ap_southeast_2_0",
+      "id": "arn:aws:securityhub:ap-southeast-2:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_ap_southeast_2"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.ap_southeast_2_1",
+      "id": "arn:aws:securityhub:ap-southeast-2:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_ap_southeast_2"
+    },
+    {
+      "to": "aws_inspector2_enabler.ap_southeast_2",
+      "id": "942370948729-CODE_REPOSITORY:EC2:ECR:LAMBDA:LAMBDA_CODE",
+      "provider": "aws.security_ap_southeast_2"
+    },
+    {
+      "to": "aws_guardduty_detector.eu_central_1",
+      "id": "32ce5e67f9a1896e2d1d0fecbbabd61c",
+      "provider": "aws.security_eu_central_1"
+    },
+    {
+      "to": "aws_securityhub_account.eu_central_1",
+      "id": "942370948729",
+      "provider": "aws.security_eu_central_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.eu_central_1_0",
+      "id": "arn:aws:securityhub:eu-central-1:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_eu_central_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.eu_central_1_1",
+      "id": "arn:aws:securityhub:eu-central-1:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_eu_central_1"
+    },
+    {
+      "to": "aws_inspector2_enabler.eu_central_1",
+      "id": "942370948729-CODE_REPOSITORY:EC2:ECR:LAMBDA:LAMBDA_CODE",
+      "provider": "aws.security_eu_central_1"
+    },
+    {
+      "to": "aws_guardduty_detector.us_east_1",
+      "id": "bcce5e666662633f830e82c927a11431",
+      "provider": "aws.security_us_east_1"
+    },
+    {
+      "to": "aws_securityhub_account.us_east_1",
+      "id": "942370948729",
+      "provider": "aws.security_us_east_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.us_east_1_0",
+      "id": "arn:aws:securityhub:us-east-1:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_us_east_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.us_east_1_1",
+      "id": "arn:aws:securityhub:us-east-1:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_us_east_1"
+    },
+    {
+      "to": "aws_inspector2_enabler.us_east_1",
+      "id": "942370948729-CODE_REPOSITORY:EC2:ECR:LAMBDA:LAMBDA_CODE",
+      "provider": "aws.security_us_east_1"
+    },
+    {
+      "to": "aws_guardduty_detector.us_east_2",
+      "id": "1cce5e67f8d32eb5d6dce3bb060097b4",
+      "provider": "aws.security_us_east_2"
+    },
+    {
+      "to": "aws_securityhub_account.us_east_2",
+      "id": "942370948729",
+      "provider": "aws.security_us_east_2"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.us_east_2_0",
+      "id": "arn:aws:securityhub:us-east-2:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_us_east_2"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.us_east_2_1",
+      "id": "arn:aws:securityhub:us-east-2:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_us_east_2"
+    },
+    {
+      "to": "aws_inspector2_enabler.us_east_2",
+      "id": "942370948729-CODE_REPOSITORY:EC2:ECR:LAMBDA:LAMBDA_CODE",
+      "provider": "aws.security_us_east_2"
+    },
+    {
+      "to": "aws_guardduty_detector.us_west_1",
+      "id": "8ece5e67f88c0f1f62ebaac1b20c9676",
+      "provider": "aws.security_us_west_1"
+    },
+    {
+      "to": "aws_securityhub_account.us_west_1",
+      "id": "942370948729",
+      "provider": "aws.security_us_west_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.us_west_1_0",
+      "id": "arn:aws:securityhub:us-west-1:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_us_west_1"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.us_west_1_1",
+      "id": "arn:aws:securityhub:us-west-1:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_us_west_1"
+    },
+    {
+      "to": "aws_inspector2_enabler.us_west_1",
+      "id": "942370948729-EC2:ECR:LAMBDA",
+      "provider": "aws.security_us_west_1"
+    },
+    {
+      "to": "aws_guardduty_detector.us_west_2",
+      "id": "eace5e67f8c49aa5c32fb81d704bb813",
+      "provider": "aws.security_us_west_2"
+    },
+    {
+      "to": "aws_securityhub_account.us_west_2",
+      "id": "942370948729",
+      "provider": "aws.security_us_west_2"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.us_west_2_0",
+      "id": "arn:aws:securityhub:us-west-2:942370948729:subscription/cis-aws-foundations-benchmark/v/1.2.0",
+      "provider": "aws.security_us_west_2"
+    },
+    {
+      "to": "aws_securityhub_standards_subscription.us_west_2_1",
+      "id": "arn:aws:securityhub:us-west-2:942370948729:subscription/aws-foundational-security-best-practices/v/1.0.0",
+      "provider": "aws.security_us_west_2"
+    },
+    {
+      "to": "aws_inspector2_enabler.us_west_2",
+      "id": "942370948729-CODE_REPOSITORY:EC2:ECR:LAMBDA:LAMBDA_CODE",
+      "provider": "aws.security_us_west_2"
+    }
+  ]
+}

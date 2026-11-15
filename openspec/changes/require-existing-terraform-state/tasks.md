@@ -32,3 +32,12 @@
 - [x] Verify a clean isolated install leaves the lockfile unchanged.
 - [x] Verify dependency-install failure prevents version publication and code updates (73 infrastructure tests pass, zero skips).
 - [ ] Complete full validation on the committed repair.
+
+## Regional security adoption
+
+- [x] Integrate the 85 existing security resource declarations and import IDs into the existing root with distinct account-restricted providers.
+- [x] Validate the combined Terraform configuration.
+- [x] Inspect the integrated live plan: 85 imports, all security actions no-op; existing 3 additions/18 updates unchanged.
+- [ ] Commit and run full repository validation.
+- [ ] Adopt through an inspected import-only plan and verify no security drift.
+- [ ] Resolve remaining GuardDuty feature support and Security Hub control settings.

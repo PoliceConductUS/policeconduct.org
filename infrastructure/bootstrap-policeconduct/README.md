@@ -380,3 +380,24 @@ pre-existing records or disable provider tracking as an implicit rollback.
 Provider settings are preserved and observed, not Terraform-managed resources.
 A matching DNS configuration does not prove the entire AWS account is free of drift;
 that requires authenticated state refresh and plan review.
+
+## Existing regional account security
+
+`account-security.tf.json` declares the existing GuardDuty detectors, Security Hub
+accounts and enabled standards, and Inspector scanning in 17 regions. Its 85
+import blocks adopt existing resources into this bootstrap root; they do not
+authorize enabling new services. The `security_` provider aliases restrict the
+account and preserve existing untagged resources without inheriting site tags.
+Every declared security resource has `prevent_destroy`.
+
+Before adoption, inspect a fresh saved plan against this root's authoritative
+state. All 85 security actions must be imports with no remote changes. Do not
+apply unrelated bootstrap drift. Keep state backups private and verify the
+post-import plan. State-backend migration remains a separate operation.
+
+GuardDuty detector features are deliberately not declared here: AWS provider
+6.41.0 cannot import them and cannot represent every observed feature. Creating
+feature resources calls UpdateDetector, so it is a security-setting change, not
+state-only adoption. Preserve current settings until that change is separately
+reviewed. Security Hub custom control parameters and external ownership checks
+remain part of the audit; importing these resources is not account-wide closure.
