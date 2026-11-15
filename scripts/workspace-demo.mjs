@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import { pathToFileURL } from "node:url";
 import { runWorkspace } from "./intake-workspace-sync.mjs";
 async function demonstrate() {
   const root = await mkdtemp(path.join(os.tmpdir(), "intake-sync-demo-"));
@@ -66,23 +67,36 @@ async function demonstrate() {
 }
 const html =
   '<!doctype html><html lang="en"><meta charset="utf-8"><title>Workspace recovery fixture</title><h1>Workspace recovery fixture</h1><p>Runs the real intake transfer code with synthetic evidence and in-memory S3 versions. No cloud or database writes.</p><button id="run">Run upload, overwrite and recovery</button><pre id="result"></pre><script>document.querySelector("#run").onclick=async()=>{document.querySelector("#result").textContent="Running…";const response=await fetch("/run",{method:"POST"});document.querySelector("#result").textContent=JSON.stringify(await response.json(),null,2);};</script></html>';
-createServer(async (req, res) => {
-  if (req.method === "GET" && req.url === "/") {
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(html);
-    return;
-  }
-  if (req.method === "POST" && req.url === "/run") {
-    try {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(await demonstrate()));
-    } catch (error) {
-      res.end(JSON.stringify({ error: String(error) }));
+export function createDemoServer(runDemo = demonstrate) {
+  return createServer(async (req, res) => {
+    if (req.method === "GET" && req.url === "/") {
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(html);
+      return;
     }
-    return;
-  }
-  res.writeHead(404);
-  res.end();
-}).listen(8154, "127.0.0.1", () =>
-  process.stdout.write("Fixture demo: http://127.0.0.1:8154\n"),
-);
+    if (req.method === "POST" && req.url === "/run") {
+      try {
+        const result = await runDemo();
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+      } catch {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({ error: "Workspace recovery demonstration failed." }),
+        );
+      }
+      return;
+    }
+    res.writeHead(404);
+    res.end();
+  });
+}
+
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  createDemoServer().listen(8154, "127.0.0.1", () =>
+    process.stdout.write("Fixture demo: http://127.0.0.1:8154\n"),
+  );
+}
