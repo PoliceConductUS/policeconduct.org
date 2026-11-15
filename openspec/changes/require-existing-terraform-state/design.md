@@ -57,3 +57,14 @@ identity supplies the Google federation trust. Validate the Google project input
 against `ipc-policeconduct`. Enforce both in Terraform configuration so direct
 plans retain the restrictions. Preserve keys and federation settings; backend
 migration and checkout binding remain separate verification steps.
+
+## Preview entrypoints and alert restoration
+
+The board requests the bare preview hostname serve the preview bucket root index,
+a small PR-13 index to exercise namespace routing, seven-day old-version cleanup,
+and infrastructure alerts to hello@policeconduct.org. Add a separate preview
+certificate using the existing wildcard validation record; preserve the production
+certificate. Manage the diagnostic HTML and bare-host A/AAAA aliases in Terraform.
+The existing router passes bare-preview paths through and CloudFront supplies the
+default index. Missing objects use the existing 404 mapping with a supplied page.
+Inspect scoped plans and verify HTTPS responses before declaring success.

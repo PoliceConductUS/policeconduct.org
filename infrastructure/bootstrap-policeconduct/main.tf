@@ -38,7 +38,7 @@ locals {
   create_www_cname_record              = var.www_record_mode == "cname"
   preview_wildcard_domain              = "*.preview.${var.domain_name}"
   distribution_aliases                 = local.include_www ? [var.domain_name, local.www_domain] : [var.domain_name]
-  preview_distribution_aliases         = [local.preview_wildcard_domain]
+  preview_distribution_aliases         = ["preview.${var.domain_name}", local.preview_wildcard_domain]
   certificate_san_names                = local.include_www ? [local.www_domain, local.preview_wildcard_domain] : [local.preview_wildcard_domain]
   origin_id                            = "s3-${local.site_bucket_name}"
   preview_origin_id                    = "s3-${local.preview_bucket_name}"
@@ -348,7 +348,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "preview" {
     id     = "expire-noncurrent-preview-versions"
     status = "Enabled"
 
-    # Everything in this bucket is preview build output under pr-<N>/.
+    # Applies to named previews, PR builds, and root diagnostic pages.
     filter {}
 
     noncurrent_version_expiration {
@@ -2361,7 +2361,7 @@ resource "aws_cloudfront_distribution" "preview" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate_validation.site.certificate_arn
+    acm_certificate_arn      = aws_acm_certificate_validation.preview.certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
