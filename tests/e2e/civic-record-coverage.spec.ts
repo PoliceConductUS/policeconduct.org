@@ -67,11 +67,14 @@ const renderComponent = async (
 
 test("agency projections include only agencies with current personnel", async () => {
   const { rows } = await client.query(`
-    with expected as (
-      select a.id, lp.path || a.slug || '/' as path
+    with agency_locations as materialized (
+      select a.id, lp.path || a.slug || '/' as path, lp.parent_location_path_id
       from public.agency a
       join public.location_path lp on lp.location_path_id = a.location_path_id
-      join public.location_path area on area.location_path_id = lp.parent_location_path_id and area.level = 'administrative_area'
+    ), expected as (
+      select a.id, a.path
+      from agency_locations a
+      join public.location_path area on area.location_path_id = a.parent_location_path_id and area.level = 'administrative_area'
       join public.location_path state on state.location_path_id = area.parent_location_path_id and state.level = 'state'
       where exists (select 1 from public.agency_personnel ap where ap.agency_id = a.id and ap.end_date is null)
     ), actual as (

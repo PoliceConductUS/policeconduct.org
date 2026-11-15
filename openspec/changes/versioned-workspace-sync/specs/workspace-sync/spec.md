@@ -75,7 +75,7 @@ Infrastructure SHALL remain in the existing project Terraform workflow with no s
 #### Scenario: Infrastructure changes
 
 - **WHEN** an operator provisions workspace storage
-- **THEN** the existing website Terraform stack owns its resources
+- **THEN** the standalone infrastructure/intake-workspace Terraform root in the website repository owns its resources and state
 
 ### Requirement: Automatic storage validation
 
