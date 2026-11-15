@@ -225,7 +225,7 @@ The website SHALL embed its release identity in each built form and submit it as
 
 ### Requirement: Named deployment folders
 
-Hosting SHALL store each release in `<folder>/build/` and `<folder>/override/`. The folder MAY be supplied by the operator and SHALL default to the full Git commit. Only builds recorded from main SHALL upload to the site bucket; branch and PR builds SHALL use the preview bucket. The bare preview host SHALL select the latest successfully uploaded main release in its own bucket. Promotion SHALL invalidate CloudFront after selecting a complete release. Retirement SHALL refuse the current production folder and SHALL fail closed if the current selection cannot be read.
+Hosting SHALL use `<folder>/build/` and `<folder>/override/`, accepting an operator's folder or defaulting to the full Git commit. Only main builds SHALL enter the site bucket; branch/PR builds SHALL use preview. Bare preview SHALL select its bucket's latest complete main build. Promotion SHALL select a complete release and invalidate CloudFront. Retirement SHALL reject the live production folder and fail closed if its pointer cannot be read.
 
 #### Scenario: Retiring a named release
 
