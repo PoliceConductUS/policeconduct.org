@@ -43,3 +43,9 @@ calls UpdateDetector. Inspect a scoped saved plan against fresh AWS reads before
 execution, then compare every reported feature, including unsupported types.
 Keep prevent_destroy and the existing account-restricted provider aliases. Do not
 enable services or change unsupported settings as part of adoption.
+
+Use AWS provider 6.70.0 for all 146 configurable reported feature entries. Its
+Optional+Computed nested settings allow disabled legacy EKS runtime entries to
+omit the AWS-rejected agent-management payload while retaining readback. Keep
+explicit nested values for other features and compare all 197 live settings after
+adoption. Inspect a full upgrade plan before any scoped feature application.
