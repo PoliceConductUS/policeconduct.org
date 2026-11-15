@@ -18,6 +18,14 @@ state before using the wrapper. Do not initialize a fresh local state for an
 existing deployment. This guard does not prove state completeness or identity;
 inspect the plan against the known project and resources before applying.
 
+## Account binding
+
+The AWS provider accepts only account `942370948729`, which supplies the
+workload-identity federation trust. The Google project input accepts only
+`ipc-policeconduct`. These checks also apply to direct Terraform plans; changing
+shell defaults cannot silently redirect this existing stack to another account
+or project. Google credentials still require access to the configured project.
+
 ## Usage
 
 ```bash

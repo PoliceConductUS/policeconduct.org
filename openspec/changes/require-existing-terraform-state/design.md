@@ -49,3 +49,11 @@ Optional+Computed nested settings allow disabled legacy EKS runtime entries to
 omit the AWS-rejected agent-management payload while retaining readback. Keep
 explicit nested values for other features and compare all 197 live settings after
 adoption. Inspect a full upgrade plan before any scoped feature application.
+
+## reCAPTCHA account binding
+
+Bind the AWS provider to the existing account `942370948729`, since caller
+identity supplies the Google federation trust. Validate the Google project input
+against `ipc-policeconduct`. Enforce both in Terraform configuration so direct
+plans retain the restrictions. Preserve keys and federation settings; backend
+migration and checkout binding remain separate verification steps.

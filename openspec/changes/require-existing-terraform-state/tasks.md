@@ -48,3 +48,9 @@
 - [x] Extend wrapper failure tests to reCAPTCHA.
 - [ ] Complete full validation on the committed repair.
 - [ ] Reconcile the reCAPTCHA authoritative backend and verify recovery.
+
+## reCAPTCHA account binding
+
+- [x] Restrict AWS provider identity and Google project to the existing deployment.
+- [x] Verify rejection of another project and a no-change authorized live plan (nine resource actions no-op).
+- [ ] Complete full validation on the committed repair.
