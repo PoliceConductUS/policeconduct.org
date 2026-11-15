@@ -12,7 +12,13 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
-for (const scenario of ["match", "mismatch", "read-failure", "unknown"]) {
+for (const scenario of [
+  "match",
+  "mismatch",
+  "read-failure",
+  "unknown",
+  "install-failure",
+]) {
   test(`forms release configuration ownership: ${scenario}`, async () => {
     const dir = await mkdtemp(join(resolve(tmpdir()), "forms-release-"));
     try {
@@ -54,9 +60,17 @@ esac
 `,
         { mode: 0o755 },
       );
-      await writeFile(join(bin, "npm"), "#!/bin/bash\nexit 0\n", {
-        mode: 0o755,
-      });
+      await writeFile(
+        join(bin, "npm"),
+        `#!/bin/bash
+printf 'npm %s\\n' "$*" >> "$CALL_LOG"
+[[ "$1" == ci ]] || exit 98
+[[ "$SCENARIO" != install-failure ]] || exit 1
+`,
+        {
+          mode: 0o755,
+        },
+      );
       await writeFile(join(bin, "zip"), '#!/bin/bash\ntouch "$4"\n', {
         mode: 0o755,
       });

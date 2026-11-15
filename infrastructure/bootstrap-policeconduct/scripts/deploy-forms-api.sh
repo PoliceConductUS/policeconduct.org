@@ -117,10 +117,8 @@ trap 'rm -rf "$BUILD_DIR"' EXIT
 ZIP="${BUILD_DIR}/forms-api.zip"
 
 log "building deployment package from $SRC_DIR"
-# npm ci fails here on a package-name mismatch between package.json and the
-# lockfile; npm install is the working recipe. No devDependencies exist, so
-# --omit=dev leaves a prod-only tree.
-( cd "$SRC_DIR" && TMPDIR=/tmp npm install --omit=dev --no-audit --no-fund >/dev/null )
+# Install exactly the reviewed lockfile; a mismatch must stop before code writes.
+( cd "$SRC_DIR" && TMPDIR=/tmp npm ci --omit=dev --no-audit --no-fund >/dev/null )
 ( cd "$SRC_DIR" && zip -r -X -q "$ZIP" index.mjs package.json native-domexception node_modules )
 log "package: $(du -h "$ZIP" | cut -f1)"
 

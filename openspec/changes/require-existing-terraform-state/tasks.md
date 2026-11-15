@@ -25,3 +25,10 @@
 - [x] Remove release-script environment writes now that bootstrap state is recovered.
 - [x] Check expected notification configuration for every selected function before release writes.
 - [ ] Complete focused and full validation; publish the existing branch.
+
+## Lambda dependency reproducibility
+
+- [x] Replace dependency-resolving installs with clean lockfile installs in both Lambda packaging entry points.
+- [x] Verify a clean isolated install leaves the lockfile unchanged.
+- [x] Verify dependency-install failure prevents version publication and code updates (73 infrastructure tests pass, zero skips).
+- [ ] Complete full validation on the committed repair.
