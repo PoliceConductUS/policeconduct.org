@@ -50,7 +50,7 @@ For an officer’s page, use a source occurrence that supports the officer’s a
 
 ## Release and page object
 
-The build writes original pages in `builds/{release-id}/static/`. The fixed agency and personnel snapshot lives at `builds/{release-id}/data/dynamic.json`. Saved homepage parts live at `data/index.json` and its full replacement at `override/index.html` within that release. Other canonical pages use their corresponding paths. Build-time data supplies agency, personnel and path identities.
+The build writes original pages in `{folder}/build/`. The fixed agency and personnel snapshot lives at `builds/{release-id}/data/dynamic.json`. Saved homepage parts live at `data/index.json` and its full replacement at `{folder}/override/index.html` in the hosting bucket. Other canonical pages use their corresponding paths. Build-time data supplies agency, personnel and path identities.
 
 Saved records, including page data and assignment notes, and extracted article bodies are private to the services that discover, render and import coverage. Production and preview serve the rendered pages with their source links, summaries and namespaced IDs. Visitors cannot retrieve the underlying records or extracted bodies through either host.
 
@@ -98,3 +98,11 @@ Exercise daily discovery and the ordinary build. For the website, test empty and
 ## Open design decisions
 
 Technical details still to select include the source of valid form-release IDs, release routing and cache refresh implementation, storage and coordination for evidence and page writes, the inference runtime, template representation, and rank ties. This design makes no change to civil-case joins or stale-case withdrawal.
+
+## Approved deployment folder correction
+
+The operator may choose any single folder name, including `prod-temp`. New builds default to the full Git commit hash. Hosting uses `<folder>/build/` and `<folder>/override/`; existing private records stay in private release storage. Build source metadata records the branch and commit and participates in the completion inventory. Only main builds can upload to the site bucket. Branch and PR builds upload to preview. Main deployment also uploads to preview and selects `current:main`, which serves the bare preview host with the preview API and noindex response headers.
+
+Promotion verifies complete content, selects the existing KVS pointer and invalidates CloudFront. Retirement reads the live production pointer and refuses its active folder or an unreadable pointer. Named folders must identify exactly one root folder. Closing a PR removes its host pointer without deleting a commit folder another host may use.
+
+Before routing cutover, copy current production into a named folder and verify it; retain the old serving objects until the new deployment succeeds. The Intake publisher must use the matching hosting paths before cutover. No additional infrastructure resources are needed.

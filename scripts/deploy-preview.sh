@@ -15,11 +15,12 @@ fi
 
 bash scripts/workspace-sync.sh preflight preview
 
-: "${PR_NUMBER:?PR_NUMBER is required (example: PR_NUMBER=123)}"
+export PREVIEW_NAME="${PREVIEW_NAME:-${PR_NUMBER:+pr-${PR_NUMBER}}}"
+: "${PREVIEW_NAME:?Set PR_NUMBER or PREVIEW_NAME for this preview host}"
 : "${S3_BUCKET_PREVIEW:?S3_BUCKET_PREVIEW is required (preview bucket)}"
 : "${RELEASE_DATA_BUCKET_PREVIEW:?RELEASE_DATA_BUCKET_PREVIEW is required}"
 
-SITE_URL="https://pr-${PR_NUMBER}.preview.policeconduct.org"
+SITE_URL="https://${PREVIEW_NAME}.preview.policeconduct.org"
 export SITE_URL
 npm run build
 

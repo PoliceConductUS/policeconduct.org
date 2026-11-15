@@ -44,9 +44,9 @@ function router(entries = {}, options = {}) {
 }
 
 for (const [host, namespace, prefix] of [
-  ["www.example.org", "prod-one", "/builds/prod-one/static"],
-  ["pr-42.preview.example.org", "pr-42-one", "/builds/pr-42-one/static"],
-  ["sha-123.builds.example.org", "sha-123", "/builds/sha-123/static"],
+  ["www.example.org", "prod-one", "/prod-one/build"],
+  ["pr-42.preview.example.org", "pr-42-one", "/pr-42-one/build"],
+  ["sha-123.builds.example.org", "sha-123", "/sha-123/build"],
 ]) {
   test(`${host}: exact redirects win over wildcard entries and keep repeated query values`, async () => {
     const run = router({
@@ -172,14 +172,14 @@ for (const [host, releaseId] of [
       for (const path of ["/profile/", "/profile", "/profile/index.html"]) {
         assert.equal(
           (await run(host, path)).uri,
-          "/builds/" + releaseId + "/override/profile/index.html",
+          "/" + releaseId + "/override/profile/index.html",
         );
       }
       for (const path of [
         "/builds/" + releaseId + "/data/profile/index.json",
         "/data/dynamic.json",
         "/evidence/body.txt",
-        "/builds/" + releaseId + "/override/profile/index.html",
+        "/" + releaseId + "/override/profile/index.html",
         "/../data/dynamic.json",
         "/%2e%2e/data/dynamic.json",
       ]) {
@@ -192,25 +192,25 @@ test("promotion changes the served cache key without leaking prior overrides", a
   const entries = { "o:prod-one:/index.html": "1" };
   assert.equal(
     (await router(entries)("www.example.org", "/")).uri,
-    "/builds/prod-one/override/index.html",
+    "/prod-one/override/index.html",
   );
   assert.equal(
     (await router({ ...entries, current: "prod-two" })("www.example.org", "/"))
       .uri,
-    "/builds/prod-two/static/index.html",
+    "/prod-two/build/index.html",
   );
 });
 
 test("the private snapshot pins the served release, and a publication clears cached versions", async () => {
-  const releaseId = "prod-2bb8ca63-58aa-4854-b472-866609c1e02f";
+  const releaseId = "prod temp#%2F";
   let current = releaseId;
   const entries = { current };
   const savedPaths = new Set();
   const cache = new Map();
   const origin = new Map([
-    ["/builds/" + releaseId + "/static/profile/index.html", "original"],
+    ["/" + releaseId + "/build/profile/index.html", "original"],
   ]);
-  const override = "/builds/" + releaseId + "/override/profile/index.html";
+  const override = "/" + releaseId + "/override/profile/index.html";
   const service =
     await import("../infrastructure/bootstrap-policeconduct/lambdas/release-api/service.mjs");
   const invoke = service.createHandler({
@@ -228,7 +228,7 @@ test("the private snapshot pins the served release, and a publication clears cac
   });
   const fetchPage = async () => {
     const key = (await router(entries)("www.example.org", "/profile/")).uri;
-    if (!cache.has(key)) cache.set(key, origin.get(key));
+    if (!cache.has(key)) cache.set(key, origin.get(decodeURIComponent(key)));
     return cache.get(key);
   };
   const snapshot = await invoke({ operation: "release-snapshot" });
@@ -248,10 +248,37 @@ test("the private snapshot pins the served release, and a publication clears cac
     );
     assert.equal(await fetchPage(), body);
   }
-  current = "prod-56f31b84-78a1-4a33-8102-05810a2acbbe";
+  current = "next-release";
   await assert.rejects(
     invoke({ operation: "publish-page", releaseId, path: "/profile/" }),
     /current production release/,
   );
   assert.equal(savedPaths.size, 1);
+});
+
+test("bare preview selects latest main and accepts a named folder", async () => {
+  const run = router({ "current:main": "prod-temp" });
+  assert.equal(
+    (await run("preview.example.org", "/")).uri,
+    "/prod-temp/build/index.html",
+  );
+});
+test("branch previews select their own named folder", async () => {
+  const run = router({ "current:feature": "branch-folder" });
+  assert.equal(
+    (await run("feature.preview.example.org", "/")).uri,
+    "/branch-folder/build/index.html",
+  );
+});
+
+test("named folders remain one URL segment while override keys use the literal name", async () => {
+  const folder = "release 1#%2F";
+  const run = router({
+    current: folder,
+    ["o:" + folder + ":/index.html"]: "1",
+  });
+  assert.equal(
+    (await run("www.example.org", "/")).uri,
+    "/release%201%23%252F/override/index.html",
+  );
 });

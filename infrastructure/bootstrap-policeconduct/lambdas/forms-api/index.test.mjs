@@ -310,12 +310,12 @@ test("personnel suggestions and edits reach normal reCAPTCHA validation", async 
 });
 
 test("submissions retain the known release of the open form in its own environment", async (t) => {
-  const oldProduction = "prod-11111111-1111-4111-8111-111111111111";
-  const newProduction = "prod-22222222-2222-4222-8222-222222222222";
-  const sameCommitPreview = "pr-42-33333333-3333-4333-8333-333333333333";
+  const oldProduction = "prod-temp";
+  const newProduction = "next-release";
+  const previewOnlyFolder = "preview-folder";
   const releases = new Map([
     ["prod-roster", [oldProduction, newProduction]],
-    ["preview-roster", [sameCommitPreview]],
+    ["preview-roster", [previewOnlyFolder]],
   ]);
   const writes = [];
   t.mock.method(S3Client.prototype, "send", async (command) => {
@@ -372,10 +372,10 @@ test("submissions retain the known release of the open form in its own environme
     [
       "preview-roster",
       "https://pr-42.preview.policeconduct.org",
-      sameCommitPreview,
+      previewOnlyFolder,
       200,
     ],
-    ["prod-roster", "https://www.policeconduct.org", sameCommitPreview, 400],
+    ["prod-roster", "https://www.policeconduct.org", previewOnlyFolder, 400],
     [
       "preview-roster",
       "https://pr-42.preview.policeconduct.org",
@@ -384,12 +384,7 @@ test("submissions retain the known release of the open form in its own environme
     ],
     ["prod-roster", "https://www.policeconduct.org", undefined, 400],
     ["prod-roster", "https://www.policeconduct.org", "../bad", 400],
-    [
-      "prod-roster",
-      "https://www.policeconduct.org",
-      "prod-33333333-3333-4333-8333-333333333333",
-      400,
-    ],
+    ["prod-roster", "https://www.policeconduct.org", "missing-folder", 400],
   ]) {
     process.env.RELEASE_DATA_BUCKET = bucket;
     const response = await handler(
@@ -409,7 +404,7 @@ test("submissions retain the known release of the open form in its own environme
   }
   assert.deepEqual(
     writes.map(({ payload }) => payload.releaseId),
-    [oldProduction, sameCommitPreview],
+    [oldProduction, previewOnlyFolder],
   );
 });
 

@@ -5,15 +5,24 @@ import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 const [kvsArn, namespace, mapPath] = process.argv.slice(2);
+const folder =
+  namespace?.startsWith("r:") && namespace.endsWith(":")
+    ? namespace.slice(2, -1)
+    : "";
 if (
   !kvsArn ||
-  !/^r:(?:prod|pr-[1-9]\d*)(?:-[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})?:$/.test(
-    namespace || "",
-  ) ||
-  !mapPath
+  !mapPath ||
+  !folder ||
+  folder === "." ||
+  folder === ".." ||
+  /[\\/]/.test(folder) ||
+  Array.from(folder).some(
+    (character) =>
+      character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
+  )
 ) {
   throw new Error(
-    "usage: load-redirects.mjs <kvs-arn> <r:<release-id>:> <map.json>",
+    "usage: load-redirects.mjs <kvs-arn> <r:<folder>:> <map.json>",
   );
 }
 
@@ -95,7 +104,7 @@ do {
 const bytes = (key, value) => Buffer.byteLength(key) + Buffer.byteLength(value);
 let totalBytes = 0;
 for (const [key, value] of existing) {
-  if (!key.startsWith(namespace)) totalBytes += bytes(key, value);
+  if (!key.startsWith(namespace + "/")) totalBytes += bytes(key, value);
 }
 for (const [key, value] of desired) totalBytes += bytes(key, value);
 if (totalBytes > 5 * 1024 * 1024)
@@ -104,7 +113,7 @@ if (totalBytes > 5 * 1024 * 1024)
   );
 
 const deletes = [...existing.keys()]
-  .filter((key) => key.startsWith(namespace) && !desired.has(key))
+  .filter((key) => key.startsWith(namespace + "/") && !desired.has(key))
   .map((Key) => ({ Key }));
 const puts = [...desired]
   .filter(([key, value]) => existing.get(key) !== value)

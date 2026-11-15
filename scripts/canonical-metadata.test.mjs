@@ -11,9 +11,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 for (const siteUrl of ["https://pr-19.preview.policeconduct.org", undefined]) {
   test(`built canonical metadata uses production with SITE_URL=${siteUrl}`, async () => {
     const previousReleaseId = process.env.RELEASE_ID;
-    const releaseId = siteUrl
-      ? "pr-19-11111111-1111-4111-8111-111111111111"
-      : "prod-22222222-2222-4222-8222-222222222222";
+    const releaseId = siteUrl ? "prod-temp" : "next-release";
     process.env.RELEASE_ID = releaseId;
     const previousSiteUrl = process.env.SITE_URL;
     if (siteUrl === undefined) delete process.env.SITE_URL;
