@@ -33,3 +33,13 @@ tags and existing alias names. Imports preserve enabled services and standards;
 `prevent_destroy` rejects their removal. The saved plan must show no security
 resource mutations before adoption. Unsupported GuardDuty feature settings stay
 unchanged and explicitly unresolved. Backend durability is still separate work.
+
+## GuardDuty feature ownership
+
+Declare the six provider-supported feature types for each existing detector in the
+same bootstrap root, preserving enabled/disabled and nested agent-management
+settings. These resources cannot be imported by the pinned provider; creation
+calls UpdateDetector. Inspect a scoped saved plan against fresh AWS reads before
+execution, then compare every reported feature, including unsupported types.
+Keep prevent_destroy and the existing account-restricted provider aliases. Do not
+enable services or change unsupported settings as part of adoption.

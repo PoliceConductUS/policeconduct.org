@@ -1,0 +1,1264 @@
+{
+  "resource": {
+    "aws_guardduty_detector_feature": {
+      "ap_south_1_s3_data_events": {
+        "provider": "aws.security_ap_south_1",
+        "detector_id": "${aws_guardduty_detector.ap_south_1.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_south_1_eks_audit_logs": {
+        "provider": "aws.security_ap_south_1",
+        "detector_id": "${aws_guardduty_detector.ap_south_1.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_south_1_ebs_malware_protection": {
+        "provider": "aws.security_ap_south_1",
+        "detector_id": "${aws_guardduty_detector.ap_south_1.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_south_1_eks_runtime_monitoring": {
+        "provider": "aws.security_ap_south_1",
+        "detector_id": "${aws_guardduty_detector.ap_south_1.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "ap_south_1_lambda_network_logs": {
+        "provider": "aws.security_ap_south_1",
+        "detector_id": "${aws_guardduty_detector.ap_south_1.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_south_1_runtime_monitoring": {
+        "provider": "aws.security_ap_south_1",
+        "detector_id": "${aws_guardduty_detector.ap_south_1.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "eu_north_1_s3_data_events": {
+        "provider": "aws.security_eu_north_1",
+        "detector_id": "${aws_guardduty_detector.eu_north_1.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_north_1_eks_audit_logs": {
+        "provider": "aws.security_eu_north_1",
+        "detector_id": "${aws_guardduty_detector.eu_north_1.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_north_1_ebs_malware_protection": {
+        "provider": "aws.security_eu_north_1",
+        "detector_id": "${aws_guardduty_detector.eu_north_1.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_north_1_eks_runtime_monitoring": {
+        "provider": "aws.security_eu_north_1",
+        "detector_id": "${aws_guardduty_detector.eu_north_1.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "eu_north_1_lambda_network_logs": {
+        "provider": "aws.security_eu_north_1",
+        "detector_id": "${aws_guardduty_detector.eu_north_1.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_north_1_runtime_monitoring": {
+        "provider": "aws.security_eu_north_1",
+        "detector_id": "${aws_guardduty_detector.eu_north_1.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "eu_west_3_s3_data_events": {
+        "provider": "aws.security_eu_west_3",
+        "detector_id": "${aws_guardduty_detector.eu_west_3.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_west_3_eks_audit_logs": {
+        "provider": "aws.security_eu_west_3",
+        "detector_id": "${aws_guardduty_detector.eu_west_3.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_west_3_ebs_malware_protection": {
+        "provider": "aws.security_eu_west_3",
+        "detector_id": "${aws_guardduty_detector.eu_west_3.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_west_3_eks_runtime_monitoring": {
+        "provider": "aws.security_eu_west_3",
+        "detector_id": "${aws_guardduty_detector.eu_west_3.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "eu_west_3_lambda_network_logs": {
+        "provider": "aws.security_eu_west_3",
+        "detector_id": "${aws_guardduty_detector.eu_west_3.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_west_3_runtime_monitoring": {
+        "provider": "aws.security_eu_west_3",
+        "detector_id": "${aws_guardduty_detector.eu_west_3.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "eu_west_2_s3_data_events": {
+        "provider": "aws.security_eu_west_2",
+        "detector_id": "${aws_guardduty_detector.eu_west_2.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_west_2_eks_audit_logs": {
+        "provider": "aws.security_eu_west_2",
+        "detector_id": "${aws_guardduty_detector.eu_west_2.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_west_2_ebs_malware_protection": {
+        "provider": "aws.security_eu_west_2",
+        "detector_id": "${aws_guardduty_detector.eu_west_2.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_west_2_eks_runtime_monitoring": {
+        "provider": "aws.security_eu_west_2",
+        "detector_id": "${aws_guardduty_detector.eu_west_2.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "eu_west_2_lambda_network_logs": {
+        "provider": "aws.security_eu_west_2",
+        "detector_id": "${aws_guardduty_detector.eu_west_2.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_west_2_runtime_monitoring": {
+        "provider": "aws.security_eu_west_2",
+        "detector_id": "${aws_guardduty_detector.eu_west_2.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "eu_west_1_s3_data_events": {
+        "provider": "aws.security_eu_west_1",
+        "detector_id": "${aws_guardduty_detector.eu_west_1.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_west_1_eks_audit_logs": {
+        "provider": "aws.security_eu_west_1",
+        "detector_id": "${aws_guardduty_detector.eu_west_1.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_west_1_ebs_malware_protection": {
+        "provider": "aws.security_eu_west_1",
+        "detector_id": "${aws_guardduty_detector.eu_west_1.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_west_1_eks_runtime_monitoring": {
+        "provider": "aws.security_eu_west_1",
+        "detector_id": "${aws_guardduty_detector.eu_west_1.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "eu_west_1_lambda_network_logs": {
+        "provider": "aws.security_eu_west_1",
+        "detector_id": "${aws_guardduty_detector.eu_west_1.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_west_1_runtime_monitoring": {
+        "provider": "aws.security_eu_west_1",
+        "detector_id": "${aws_guardduty_detector.eu_west_1.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "ap_northeast_3_s3_data_events": {
+        "provider": "aws.security_ap_northeast_3",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_3.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_northeast_3_eks_audit_logs": {
+        "provider": "aws.security_ap_northeast_3",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_3.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_northeast_3_ebs_malware_protection": {
+        "provider": "aws.security_ap_northeast_3",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_3.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_northeast_3_eks_runtime_monitoring": {
+        "provider": "aws.security_ap_northeast_3",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_3.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "ap_northeast_3_lambda_network_logs": {
+        "provider": "aws.security_ap_northeast_3",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_3.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_northeast_3_runtime_monitoring": {
+        "provider": "aws.security_ap_northeast_3",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_3.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "ap_northeast_2_s3_data_events": {
+        "provider": "aws.security_ap_northeast_2",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_2.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_northeast_2_eks_audit_logs": {
+        "provider": "aws.security_ap_northeast_2",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_2.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_northeast_2_ebs_malware_protection": {
+        "provider": "aws.security_ap_northeast_2",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_2.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_northeast_2_eks_runtime_monitoring": {
+        "provider": "aws.security_ap_northeast_2",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_2.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "ap_northeast_2_lambda_network_logs": {
+        "provider": "aws.security_ap_northeast_2",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_2.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_northeast_2_runtime_monitoring": {
+        "provider": "aws.security_ap_northeast_2",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_2.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "ap_northeast_1_s3_data_events": {
+        "provider": "aws.security_ap_northeast_1",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_1.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_northeast_1_eks_audit_logs": {
+        "provider": "aws.security_ap_northeast_1",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_1.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_northeast_1_ebs_malware_protection": {
+        "provider": "aws.security_ap_northeast_1",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_1.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_northeast_1_eks_runtime_monitoring": {
+        "provider": "aws.security_ap_northeast_1",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_1.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "ap_northeast_1_lambda_network_logs": {
+        "provider": "aws.security_ap_northeast_1",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_1.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_northeast_1_runtime_monitoring": {
+        "provider": "aws.security_ap_northeast_1",
+        "detector_id": "${aws_guardduty_detector.ap_northeast_1.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "ca_central_1_s3_data_events": {
+        "provider": "aws.security_ca_central_1",
+        "detector_id": "${aws_guardduty_detector.ca_central_1.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ca_central_1_eks_audit_logs": {
+        "provider": "aws.security_ca_central_1",
+        "detector_id": "${aws_guardduty_detector.ca_central_1.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ca_central_1_ebs_malware_protection": {
+        "provider": "aws.security_ca_central_1",
+        "detector_id": "${aws_guardduty_detector.ca_central_1.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ca_central_1_eks_runtime_monitoring": {
+        "provider": "aws.security_ca_central_1",
+        "detector_id": "${aws_guardduty_detector.ca_central_1.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "ca_central_1_lambda_network_logs": {
+        "provider": "aws.security_ca_central_1",
+        "detector_id": "${aws_guardduty_detector.ca_central_1.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ca_central_1_runtime_monitoring": {
+        "provider": "aws.security_ca_central_1",
+        "detector_id": "${aws_guardduty_detector.ca_central_1.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "sa_east_1_s3_data_events": {
+        "provider": "aws.security_sa_east_1",
+        "detector_id": "${aws_guardduty_detector.sa_east_1.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "sa_east_1_eks_audit_logs": {
+        "provider": "aws.security_sa_east_1",
+        "detector_id": "${aws_guardduty_detector.sa_east_1.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "sa_east_1_ebs_malware_protection": {
+        "provider": "aws.security_sa_east_1",
+        "detector_id": "${aws_guardduty_detector.sa_east_1.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "sa_east_1_eks_runtime_monitoring": {
+        "provider": "aws.security_sa_east_1",
+        "detector_id": "${aws_guardduty_detector.sa_east_1.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "sa_east_1_lambda_network_logs": {
+        "provider": "aws.security_sa_east_1",
+        "detector_id": "${aws_guardduty_detector.sa_east_1.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "sa_east_1_runtime_monitoring": {
+        "provider": "aws.security_sa_east_1",
+        "detector_id": "${aws_guardduty_detector.sa_east_1.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "ap_southeast_1_s3_data_events": {
+        "provider": "aws.security_ap_southeast_1",
+        "detector_id": "${aws_guardduty_detector.ap_southeast_1.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_southeast_1_eks_audit_logs": {
+        "provider": "aws.security_ap_southeast_1",
+        "detector_id": "${aws_guardduty_detector.ap_southeast_1.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_southeast_1_ebs_malware_protection": {
+        "provider": "aws.security_ap_southeast_1",
+        "detector_id": "${aws_guardduty_detector.ap_southeast_1.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_southeast_1_eks_runtime_monitoring": {
+        "provider": "aws.security_ap_southeast_1",
+        "detector_id": "${aws_guardduty_detector.ap_southeast_1.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "ap_southeast_1_lambda_network_logs": {
+        "provider": "aws.security_ap_southeast_1",
+        "detector_id": "${aws_guardduty_detector.ap_southeast_1.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_southeast_1_runtime_monitoring": {
+        "provider": "aws.security_ap_southeast_1",
+        "detector_id": "${aws_guardduty_detector.ap_southeast_1.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "ap_southeast_2_s3_data_events": {
+        "provider": "aws.security_ap_southeast_2",
+        "detector_id": "${aws_guardduty_detector.ap_southeast_2.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_southeast_2_eks_audit_logs": {
+        "provider": "aws.security_ap_southeast_2",
+        "detector_id": "${aws_guardduty_detector.ap_southeast_2.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_southeast_2_ebs_malware_protection": {
+        "provider": "aws.security_ap_southeast_2",
+        "detector_id": "${aws_guardduty_detector.ap_southeast_2.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_southeast_2_eks_runtime_monitoring": {
+        "provider": "aws.security_ap_southeast_2",
+        "detector_id": "${aws_guardduty_detector.ap_southeast_2.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "ap_southeast_2_lambda_network_logs": {
+        "provider": "aws.security_ap_southeast_2",
+        "detector_id": "${aws_guardduty_detector.ap_southeast_2.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "ap_southeast_2_runtime_monitoring": {
+        "provider": "aws.security_ap_southeast_2",
+        "detector_id": "${aws_guardduty_detector.ap_southeast_2.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "eu_central_1_s3_data_events": {
+        "provider": "aws.security_eu_central_1",
+        "detector_id": "${aws_guardduty_detector.eu_central_1.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_central_1_eks_audit_logs": {
+        "provider": "aws.security_eu_central_1",
+        "detector_id": "${aws_guardduty_detector.eu_central_1.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_central_1_ebs_malware_protection": {
+        "provider": "aws.security_eu_central_1",
+        "detector_id": "${aws_guardduty_detector.eu_central_1.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_central_1_eks_runtime_monitoring": {
+        "provider": "aws.security_eu_central_1",
+        "detector_id": "${aws_guardduty_detector.eu_central_1.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "eu_central_1_lambda_network_logs": {
+        "provider": "aws.security_eu_central_1",
+        "detector_id": "${aws_guardduty_detector.eu_central_1.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "eu_central_1_runtime_monitoring": {
+        "provider": "aws.security_eu_central_1",
+        "detector_id": "${aws_guardduty_detector.eu_central_1.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "us_east_1_s3_data_events": {
+        "provider": "aws.security_us_east_1",
+        "detector_id": "${aws_guardduty_detector.us_east_1.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_east_1_eks_audit_logs": {
+        "provider": "aws.security_us_east_1",
+        "detector_id": "${aws_guardduty_detector.us_east_1.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_east_1_ebs_malware_protection": {
+        "provider": "aws.security_us_east_1",
+        "detector_id": "${aws_guardduty_detector.us_east_1.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_east_1_eks_runtime_monitoring": {
+        "provider": "aws.security_us_east_1",
+        "detector_id": "${aws_guardduty_detector.us_east_1.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "us_east_1_lambda_network_logs": {
+        "provider": "aws.security_us_east_1",
+        "detector_id": "${aws_guardduty_detector.us_east_1.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_east_1_runtime_monitoring": {
+        "provider": "aws.security_us_east_1",
+        "detector_id": "${aws_guardduty_detector.us_east_1.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "us_east_2_s3_data_events": {
+        "provider": "aws.security_us_east_2",
+        "detector_id": "${aws_guardduty_detector.us_east_2.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_east_2_eks_audit_logs": {
+        "provider": "aws.security_us_east_2",
+        "detector_id": "${aws_guardduty_detector.us_east_2.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_east_2_ebs_malware_protection": {
+        "provider": "aws.security_us_east_2",
+        "detector_id": "${aws_guardduty_detector.us_east_2.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_east_2_eks_runtime_monitoring": {
+        "provider": "aws.security_us_east_2",
+        "detector_id": "${aws_guardduty_detector.us_east_2.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "us_east_2_lambda_network_logs": {
+        "provider": "aws.security_us_east_2",
+        "detector_id": "${aws_guardduty_detector.us_east_2.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_east_2_runtime_monitoring": {
+        "provider": "aws.security_us_east_2",
+        "detector_id": "${aws_guardduty_detector.us_east_2.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "us_west_1_s3_data_events": {
+        "provider": "aws.security_us_west_1",
+        "detector_id": "${aws_guardduty_detector.us_west_1.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_west_1_eks_audit_logs": {
+        "provider": "aws.security_us_west_1",
+        "detector_id": "${aws_guardduty_detector.us_west_1.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_west_1_ebs_malware_protection": {
+        "provider": "aws.security_us_west_1",
+        "detector_id": "${aws_guardduty_detector.us_west_1.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_west_1_eks_runtime_monitoring": {
+        "provider": "aws.security_us_west_1",
+        "detector_id": "${aws_guardduty_detector.us_west_1.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "us_west_1_lambda_network_logs": {
+        "provider": "aws.security_us_west_1",
+        "detector_id": "${aws_guardduty_detector.us_west_1.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_west_1_runtime_monitoring": {
+        "provider": "aws.security_us_west_1",
+        "detector_id": "${aws_guardduty_detector.us_west_1.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "us_west_2_s3_data_events": {
+        "provider": "aws.security_us_west_2",
+        "detector_id": "${aws_guardduty_detector.us_west_2.id}",
+        "name": "S3_DATA_EVENTS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_west_2_eks_audit_logs": {
+        "provider": "aws.security_us_west_2",
+        "detector_id": "${aws_guardduty_detector.us_west_2.id}",
+        "name": "EKS_AUDIT_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_west_2_ebs_malware_protection": {
+        "provider": "aws.security_us_west_2",
+        "detector_id": "${aws_guardduty_detector.us_west_2.id}",
+        "name": "EBS_MALWARE_PROTECTION",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_west_2_eks_runtime_monitoring": {
+        "provider": "aws.security_us_west_2",
+        "detector_id": "${aws_guardduty_detector.us_west_2.id}",
+        "name": "EKS_RUNTIME_MONITORING",
+        "status": "DISABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      },
+      "us_west_2_lambda_network_logs": {
+        "provider": "aws.security_us_west_2",
+        "detector_id": "${aws_guardduty_detector.us_west_2.id}",
+        "name": "LAMBDA_NETWORK_LOGS",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        }
+      },
+      "us_west_2_runtime_monitoring": {
+        "provider": "aws.security_us_west_2",
+        "detector_id": "${aws_guardduty_detector.us_west_2.id}",
+        "name": "RUNTIME_MONITORING",
+        "status": "ENABLED",
+        "lifecycle": {
+          "prevent_destroy": true
+        },
+        "additional_configuration": [
+          {
+            "name": "EKS_ADDON_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "ECS_FARGATE_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          },
+          {
+            "name": "EC2_AGENT_MANAGEMENT",
+            "status": "ENABLED"
+          }
+        ]
+      }
+    }
+  }
+}
