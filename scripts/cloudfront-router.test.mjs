@@ -202,7 +202,7 @@ test("promotion changes the served cache key without leaking prior overrides", a
 });
 
 test("the private snapshot pins the served release, and a publication clears cached versions", async () => {
-  const releaseId = "prod-2bb8ca63-58aa-4854-b472-866609c1e02f";
+  const releaseId = "prod-temp";
   let current = releaseId;
   const entries = { current };
   const savedPaths = new Set();
@@ -248,7 +248,7 @@ test("the private snapshot pins the served release, and a publication clears cac
     );
     assert.equal(await fetchPage(), body);
   }
-  current = "prod-56f31b84-78a1-4a33-8102-05810a2acbbe";
+  current = "next-release";
   await assert.rejects(
     invoke({ operation: "publish-page", releaseId, path: "/profile/" }),
     /current production release/,
