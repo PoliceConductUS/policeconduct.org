@@ -202,7 +202,7 @@ test("promotion changes the served cache key without leaking prior overrides", a
 });
 
 test("the private snapshot pins the served release, and a publication clears cached versions", async () => {
-  const releaseId = "prod-temp";
+  const releaseId = "prod temp#%2F";
   let current = releaseId;
   const entries = { current };
   const savedPaths = new Set();
@@ -228,7 +228,7 @@ test("the private snapshot pins the served release, and a publication clears cac
   });
   const fetchPage = async () => {
     const key = (await router(entries)("www.example.org", "/profile/")).uri;
-    if (!cache.has(key)) cache.set(key, origin.get(key));
+    if (!cache.has(key)) cache.set(key, origin.get(decodeURIComponent(key)));
     return cache.get(key);
   };
   const snapshot = await invoke({ operation: "release-snapshot" });
@@ -268,5 +268,17 @@ test("branch previews select their own named folder", async () => {
   assert.equal(
     (await run("feature.preview.example.org", "/")).uri,
     "/branch-folder/build/index.html",
+  );
+});
+
+test("named folders remain one URL segment while override keys use the literal name", async () => {
+  const folder = "release 1#%2F";
+  const run = router({
+    current: folder,
+    ["o:" + folder + ":/index.html"]: "1",
+  });
+  assert.equal(
+    (await run("www.example.org", "/")).uri,
+    "/release%201%23%252F/override/index.html",
   );
 });

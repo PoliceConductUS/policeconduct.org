@@ -29,9 +29,9 @@ export function createHandler({
       throw new Error("Expected a canonical page path");
     }
     const file = path + "index.html";
-    const prefix = "/" + current;
+    const prefix = "/" + encodeURIComponent(current);
     const override = prefix + "/override" + file;
-    await verifyOverride(override.slice(1));
+    await verifyOverride(current + "/override" + file);
     await releasePage("o:" + current + ":" + file);
     const paths = [path, file, override, prefix + "/build" + file];
     if (path !== "/") paths.push(path.slice(0, -1));

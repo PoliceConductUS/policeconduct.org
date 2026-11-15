@@ -120,7 +120,11 @@ async function handler(event) {
   }
   const hasOverride =
     path.endsWith(".html") && (await kvs.exists("o:" + releaseId + ":" + path));
-  request.uri = "/" + releaseId + (hasOverride ? "/override" : "/build") + path;
+  request.uri =
+    "/" +
+    encodeURIComponent(releaseId) +
+    (hasOverride ? "/override" : "/build") +
+    path;
   return request;
 }
 
