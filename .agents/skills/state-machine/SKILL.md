@@ -20,11 +20,11 @@ Restate it in one sentence: what the component shows, where it renders in produc
 
 The states are the branches the component already has. Read it and its data hooks for every one:
 
-| Kind | States |
-| --- | --- |
-| Data | Loading, empty, error, one item, a typical set, a set long enough to scroll or paginate, some requests resolved and others pending, stale data refetching |
-| Account | Plan tier, role and permission checks, an owner versus a member |
-| Feature | Flags, trials, limits reached, a disabled or locked feature |
+| Kind    | States                                                                                                                                                    |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Data    | Loading, empty, error, one item, a typical set, a set long enough to scroll or paginate, some requests resolved and others pending, stale data refetching |
+| Account | Plan tier, role and permission checks, an owner versus a member                                                                                           |
+| Feature | Flags, trials, limits reached, a disabled or locked feature                                                                                               |
 
 A state the code cannot reach is not a state. Do not add a branch to render one. Where the design shows a state the code lacks, list it as missing and leave it out.
 
@@ -73,18 +73,18 @@ Delete the page folder and any seam the user approved. Then search the codebase 
 
 ## Before you finish
 
-| Mistake | Fix |
-| --- | --- |
-| The component edited to accept fixtures | Feed data from the page through props or the app's data seam; ask before adding a seam |
-| A rebuilt lookalike component on the page | Import the real component from the project |
-| The page restyles or re-themes the component | The app's layout, fonts and tokens as they are |
-| Fixtures passed as props deep in the tree | Supply the data where the component receives it |
-| A branch added to the component to show a state | Leave out states the code cannot reach, and list missing ones |
-| "Item 1", "Test user", three rows | Product-shaped data in real quantities |
-| Loading resolves after a timeout | Hold it until the switcher moves |
-| Handed over without loading each state | Load every state; a blank or real-data state means broken plumbing |
-| Switcher styled with the project's tokens | Keep it visibly outside the design system |
-| One long row of tabs, one per state | A grouped list beside the component that scrolls on its own; a select above it where the list does not fit |
-| Visuals changed unasked | Hand over and wait |
-| Page deleted in the same turn it was built | Remove it only on the user's word |
-| Route or fixture names left behind | Search for both after removal |
+| Mistake                                         | Fix                                                                                                        |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| The component edited to accept fixtures         | Feed data from the page through props or the app's data seam; ask before adding a seam                     |
+| A rebuilt lookalike component on the page       | Import the real component from the project                                                                 |
+| The page restyles or re-themes the component    | The app's layout, fonts and tokens as they are                                                             |
+| Fixtures passed as props deep in the tree       | Supply the data where the component receives it                                                            |
+| A branch added to the component to show a state | Leave out states the code cannot reach, and list missing ones                                              |
+| "Item 1", "Test user", three rows               | Product-shaped data in real quantities                                                                     |
+| Loading resolves after a timeout                | Hold it until the switcher moves                                                                           |
+| Handed over without loading each state          | Load every state; a blank or real-data state means broken plumbing                                         |
+| Switcher styled with the project's tokens       | Keep it visibly outside the design system                                                                  |
+| One long row of tabs, one per state             | A grouped list beside the component that scrolls on its own; a select above it where the list does not fit |
+| Visuals changed unasked                         | Hand over and wait                                                                                         |
+| Page deleted in the same turn it was built      | Remove it only on the user's word                                                                          |
+| Route or fixture names left behind              | Search for both after removal                                                                              |
