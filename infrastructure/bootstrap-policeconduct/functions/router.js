@@ -62,7 +62,7 @@ async function handler(event) {
   let pathForValidation;
   try {
     pathForValidation = decodeURIComponent(uri);
-  } catch {
+  } catch (_error) {
     return missing;
   }
   if (
