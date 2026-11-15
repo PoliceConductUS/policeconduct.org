@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change resend-read-only-plan. Update Purpose after archive.
+Keep Terraform planning read-only while exposing the DNS records required by Resend. Domain creation and verification remain explicit operational actions.
 
 ## Requirements
 

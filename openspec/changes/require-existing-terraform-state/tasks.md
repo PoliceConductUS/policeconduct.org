@@ -19,3 +19,9 @@
 - [x] Add failure-injection tests to the required infrastructure suite (30 combined focused tests pass).
 - [x] Verify the guard and discovery against authorized live AWS read access.
 - [ ] Run full validation after the shared database rebuild completes; publish the exact branch commits.
+
+## Lambda configuration ownership
+
+- [x] Remove release-script environment writes now that bootstrap state is recovered.
+- [x] Check expected notification configuration for every selected function before release writes.
+- [ ] Complete focused and full validation; publish the existing branch.

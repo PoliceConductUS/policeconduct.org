@@ -61,7 +61,7 @@
     "analytics:compare": "node scripts/analytics-config.mjs compare",
     "analytics:apply": "node scripts/analytics-config.mjs apply",
     "test:analytics-config": "node --test scripts/analytics-config.test.mjs",
-    "test:infra": "node --test scripts/require-terraform-state.test.mjs scripts/terraform-read-failures.test.mjs scripts/intake-workspace-sync.test.mjs scripts/workspace-operator.test.mjs scripts/workspace-demo.test.mjs",
+    "test:infra": "node --test scripts/deploy-forms-api.test.mjs scripts/require-terraform-state.test.mjs scripts/terraform-read-failures.test.mjs scripts/intake-workspace-sync.test.mjs scripts/workspace-operator.test.mjs scripts/workspace-demo.test.mjs",
     "workspace:push": "node --env-file-if-exists=.env --env-file-if-exists=.env-policeconduct scripts/workspace-operator.mjs push",
     "workspace:pull": "node --env-file-if-exists=.env --env-file-if-exists=.env-policeconduct scripts/workspace-operator.mjs pull",
     "workspace:versions": "node --env-file-if-exists=.env --env-file-if-exists=.env-policeconduct scripts/intake-workspace-sync.mjs versions",
