@@ -19,6 +19,8 @@ if [[ -f .env-policeconduct ]]; then
   set +a
 fi
 
+bash scripts/workspace-sync.sh preflight preview
+
 : "${PR_NUMBER:?PR_NUMBER is required (example: PR_NUMBER=3)}"
 : "${S3_BUCKET_PREVIEW:?S3_BUCKET_PREVIEW is required (preview bucket)}"
 : "${KVS_ARN_PREVIEW:?KVS_ARN_PREVIEW is required (preview redirect store)}"
@@ -56,6 +58,8 @@ until aws s3 sync dist/ "s3://${S3_BUCKET_PREVIEW}/pr-${PR_NUMBER}/" --delete --
   sleep 10
   attempt=$((attempt + 1))
 done
+
+bash scripts/workspace-sync.sh after preview
 
 node scripts/load-redirects.mjs "${KVS_ARN_PREVIEW}" "r:pr-${PR_NUMBER}:" dist/_redirect-map.json
 
