@@ -13,3 +13,9 @@ Website-wide drift review completed with an authenticated, untargeted plan: 3 ad
 Full validation reproduced a 60-second agency-projection query timeout. Its planner repeatedly scanned agencies while walking location ancestry. Materializing agency/location pairs once preserves the joins and symmetric EXCEPT assertion; EXPLAIN ANALYZE returned zero mismatches in 2.6 seconds. No assertion, test timeout, or production schema changed. Final-head full validation remains required.
 
 All six GitHub checks passed on edf7d769442cf38eb10649bd11b2950a077c6188. Subsequent head changes require fresh validation and CI evidence. Active OpenSpec closure and board sync review remain merge gates. No merge or site deployment is authorized by this report.
+
+## Final integrated verification
+
+Full `npm run validate` passed on a97c9447b7a80f49535ad2bfc84bbab648b12f48 with Node 24.22.3: formatting, lint, types (zero warnings/hints), shell, schema, OpenSpec, personal-data scan and all tests. Browser coverage: 213 passed; all other stages passed with zero skips. All six GitHub checks passed on that published commit. The npm newer-version notice is informational; the repository-pinned Node runtime remains unchanged. Earlier incomplete/failing validation observations above are superseded by this complete run. Archive changes require another full validation on their final commit. Board sync review and explicit merge authorization remain separate; nothing merged or website-deployed.
+
+Archive emitted a suggestion to split changes containing more than ten deltas. The eleven workspace requirements form the single integrated storage/transfer/recovery/deployment-prompt capability requested by the board; retaining them together follows the explicit reconciliation direction. No validation rule or assertion was disabled.

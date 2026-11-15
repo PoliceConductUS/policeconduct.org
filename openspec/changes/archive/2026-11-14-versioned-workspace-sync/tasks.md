@@ -6,6 +6,6 @@
 
 ## 2. Verification and handoff
 
-- [ ] 2.1 Run fixture tests, repository checks and Terraform fmt/validate/plan inspection.
-- [ ] 2.2 Document commands, costs, integrated commits and local demonstration.
-- [ ] 2.3 Complete verification, retrospective, archive and feature PR handoff.
+- [x] 2.1 Run fixture tests, repository checks and Terraform fmt/validate/plan inspection.
+- [x] 2.2 Document commands, costs, integrated commits and local demonstration.
+- [x] 2.3 Complete verification, retrospective, archive and feature PR handoff.
