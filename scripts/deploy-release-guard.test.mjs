@@ -36,6 +36,7 @@ for (const [name, script, args, builds] of [
         for (const file of [
           "deploy-preview.sh",
           "deploy-preview-sync.sh",
+          "workspace-sync.sh",
           "deploy-incremental.sh",
         ]) {
           copyFileSync(
@@ -63,6 +64,9 @@ for (const [name, script, args, builds] of [
             encoding: "utf8",
             env: {
               ...process.env,
+              // Preserve the fixture command PATH across nested shell scripts.
+              BASH_ENV: "",
+              WORKSPACE_SYNC: "skip",
               PATH: `${join(root, "bin")}:${process.env.PATH}`,
               CALL_LOG: log,
               COVERAGE_EXIT: fails ? "42" : "0",

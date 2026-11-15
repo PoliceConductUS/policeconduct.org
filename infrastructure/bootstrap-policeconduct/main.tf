@@ -8,7 +8,7 @@ data "external" "resend_domain" {
   program = [
     "node",
     "${path.module}/../../scripts/bootstrap-resend-domain.mjs",
-    "--apply",
+    "--read",
   ]
 
   query = {}
@@ -1873,7 +1873,7 @@ resource "aws_ses_domain_identity" "site" {
 resource "aws_route53_record" "resend_domain_record" {
   for_each = local.resend_domain_records_map
 
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = each.value.name
   type            = each.value.type
@@ -2069,7 +2069,7 @@ resource "aws_route53_record" "acm_validation" {
     if contains(local.acm_validation_domains, dvo.domain_name)
   }
 
-  allow_overwrite = true
+  allow_overwrite = false
   name            = each.value.name
   records         = [each.value.record]
   ttl             = 60
@@ -2174,9 +2174,6 @@ resource "aws_cloudfront_distribution" "site" {
     origin_id                = local.origin_id
     origin_access_control_id = aws_cloudfront_origin_access_control.site.id
 
-    s3_origin_config {
-      origin_access_identity = ""
-    }
   }
 
   origin {
@@ -2234,7 +2231,8 @@ resource "aws_cloudfront_distribution" "site" {
 
   restrictions {
     geo_restriction {
-      restriction_type = "none"
+      restriction_type = "whitelist"
+      locations        = ["US"]
     }
   }
 
@@ -2244,9 +2242,6 @@ resource "aws_cloudfront_distribution" "site" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  lifecycle {
-    ignore_changes = [origin]
-  }
 }
 
 # Preview uses the same router as production with a separate redirect store.
@@ -2296,9 +2291,6 @@ resource "aws_cloudfront_distribution" "preview" {
     origin_id                = local.preview_origin_id
     origin_access_control_id = aws_cloudfront_origin_access_control.site.id
 
-    s3_origin_config {
-      origin_access_identity = ""
-    }
   }
 
   origin {
@@ -2361,7 +2353,8 @@ resource "aws_cloudfront_distribution" "preview" {
 
   restrictions {
     geo_restriction {
-      restriction_type = "none"
+      restriction_type = "whitelist"
+      locations        = ["US"]
     }
   }
 
@@ -2371,9 +2364,6 @@ resource "aws_cloudfront_distribution" "preview" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  lifecycle {
-    ignore_changes = [origin]
-  }
 }
 
 data "aws_iam_policy_document" "site_bucket_policy" {
@@ -2502,7 +2492,7 @@ resource "aws_route53_record" "www_cname" {
 
 
 resource "aws_route53_record" "preview_wildcard_a" {
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = local.preview_wildcard_domain
   type            = "A"
@@ -2515,7 +2505,7 @@ resource "aws_route53_record" "preview_wildcard_a" {
 }
 
 resource "aws_route53_record" "preview_wildcard_aaaa" {
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = local.preview_wildcard_domain
   type            = "AAAA"
@@ -2533,7 +2523,7 @@ resource "aws_route53_record" "extra_standard" {
     if try(record.alias, null) == null
   }
 
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = each.value.name
   type            = each.value.type
@@ -2547,7 +2537,7 @@ resource "aws_route53_record" "extra_alias" {
     if try(record.alias, null) != null
   }
 
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = each.value.name
   type            = each.value.type

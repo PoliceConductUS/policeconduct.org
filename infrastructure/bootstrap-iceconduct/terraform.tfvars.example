@@ -1,6 +1,6 @@
 aws_region           = "us-east-1"
 domain_name          = "iceconduct.org"
-redirect_target_url  = "https://policeconduct.org/law-enforcement-agency/federal/ice/"
+redirect_target_url  = "https://www.policeconduct.org/federal/u-s-immigration-and-customs-enforcement/"
 project_name         = "iceconduct-redirect"
 price_class          = "PriceClass_100"
 

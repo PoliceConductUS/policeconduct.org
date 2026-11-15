@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -69,6 +75,33 @@ for (const [name, content] of [
       assert.equal(result.status, 1, result.stdout);
       assert.match(result.stderr, /Control A\/home-path/);
       assert.ok(!result.stderr.includes(homePath), "findings stay redacted");
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+}
+
+for (const [target, expectedStatus] of [
+  [".", 0],
+  ["missing-relative-target", 0],
+  [homePath, 1],
+]) {
+  test(`the CLI scans symlink target text: ${expectedStatus === 0 ? target : "unsafe target"}`, () => {
+    const directory = mkdtempSync(join(tmpdir(), "personal-data-scan-"));
+    try {
+      symlinkSync(target, join(directory, "link"));
+      const result = spawnSync(
+        process.execPath,
+        [join(ROOT, "scripts/scan-personal-data.mjs"), "--files", "link"],
+        { cwd: directory, encoding: "utf8" },
+      );
+      assert.equal(result.status, expectedStatus, result.stderr);
+      if (expectedStatus === 1) {
+        assert.match(result.stderr, /Control A\/home-path/);
+        assert.ok(!result.stderr.includes(homePath), "findings stay redacted");
+      } else {
+        assert.match(result.stdout, /0 findings/);
+      }
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }

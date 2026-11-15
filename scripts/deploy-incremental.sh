@@ -31,6 +31,10 @@ if [[ -f .env-policeconduct ]]; then
   set +a
 fi
 
+if [[ "$DRY_RUN" == false ]]; then
+  bash scripts/workspace-sync.sh preflight production
+fi
+
 : "${S3_BUCKET:?S3_BUCKET is required}"
 : "${KVS_ARN:?KVS_ARN is required (production redirect store)}"
 : "${CLOUDFRONT_DIST_ID:?CLOUDFRONT_DIST_ID is required}"
@@ -166,6 +170,8 @@ done
 
 aws s3 sync "${STAGE_DIR}/" "s3://${S3_BUCKET}/" \
   --metadata "${UPLOAD_METADATA}"
+
+bash scripts/workspace-sync.sh after production
 
 # ── Step 5: Delete removed files ────────────────────────────────────────────
 if [[ ${#DELETED_FILES[@]} -gt 0 ]]; then
