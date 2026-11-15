@@ -125,14 +125,14 @@ export function releaseAliases(articles: Iterable<ReleaseArticle>) {
   for (const article of articles) {
     const keys = new Set<string>();
     for (const occurrence of Object.values(article.occurrences)) {
-      if (occurrence.namespace !== "google.news") continue;
+      if (occurrence.namespace !== "com/serpapi/landing-page-search") continue;
       if (!occurrence.sourceId)
         throw new Error("Missing publisher URL source ID");
       keys.add(occurrence.sourceId);
     }
     if (!keys.size) continue;
     const target =
-      article.namespace === "google.news" &&
+      article.namespace === "com/serpapi/landing-page-search" &&
       article.sourceId &&
       keys.has(article.sourceId)
         ? article.sourceId

@@ -8,7 +8,7 @@ import {
 const preferred = "https://original.example/story";
 const alternate = "https://local.example/story";
 const article = {
-  namespace: "google.news",
+  namespace: "com/serpapi/landing-page-search",
   sourceId: preferred,
   canonicalId: "article-db",
   preferredUrl: preferred,
@@ -16,7 +16,7 @@ const article = {
   notes: null,
   occurrences: {
     [preferred]: {
-      namespace: "google.news",
+      namespace: "com/serpapi/landing-page-search",
       sourceId: preferred,
       url: preferred,
       title: "Original",
@@ -25,7 +25,7 @@ const article = {
       summary: "Original summary",
     },
     [alternate]: {
-      namespace: "google.news",
+      namespace: "com/serpapi/landing-page-search",
       sourceId: alternate,
       url: alternate,
       title: "Local copy",
@@ -35,7 +35,7 @@ const article = {
     },
   },
   relationships: ["alpha", "beta"].map((id, index) => ({
-    namespace: "google.news",
+    namespace: "com/serpapi/landing-page-search",
     sourceId: id,
     agencyPersonnelId: id,
     occurrenceUrl: index ? alternate : preferred,

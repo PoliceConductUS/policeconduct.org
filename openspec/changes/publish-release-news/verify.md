@@ -53,3 +53,15 @@ The website's complete local validation passed with 359 Node tests, 216 browser 
 - `src/lib/data/coverage.ts` and `src/lib/data/release-news.ts` expose the imported occurrences to the release writer, select the displayed source ID and group the confirmed URL aliases.
 - `scripts/write-release-news.mjs` and `scripts/upload-release.sh` produce the initial private alias file and require it when publishing a release.
 - `scripts/release-news.test.mjs`, `scripts/deploy-release-guard.test.mjs` and `scripts/load-redirects.test.mjs` verify alias grouping, rendered source identities and complete release fixtures.
+
+## Five daily terms and the seven-day wait
+
+Intake’s daily worker selected five of six supplied query/profile rows in descending impression order in an isolated run using the live SerpApi News tab. All five searches returned zero past-week links. Repeating the run against its saved test state issued zero search requests. The pilot used local roster records and sample traffic. It did not exercise production Search Console, publication or the full roster sweep.
+
+The daily worker integration tests exercise the free allowance, resuming pagination, multiple profiles for one term, the Chicago day boundary, empty responses and eligibility exactly 168 hours after the first successful page across a release change. The homepage test verifies the original pair clicks still contribute during cooldown.
+
+## Daily Google All discovery
+
+The daily worker now sends the original traffic term and the release roster’s quoted agency name and state. Its HTTP integration test covers a profile with two agencies, a repeated assignment, grouped OR alternatives, a single organic query, pagination and term history. The article test skips a blocked URL and an empty body before linking the following readable story.
+
+A live isolated run with one supplied traffic row returned seven organic links on page one and zero on the next. None qualified. An immediate rerun issued zero provider searches. The run wrote no production pages.

@@ -148,7 +148,9 @@ export const buildSitemapLastmodMap = async () => {
               bpp.path as canonical_path,
               a.created_at,
               a.updated_at,
-              count(distinct ao_active.personnel_id) as active_personnel_count,
+              count(distinct ao.personnel_id) filter (
+                where ${currentAssignmentSql("ao")}
+              ) as active_personnel_count,
               count(distinct ro.review_id) as report_count,
               max(ao.updated_at) as max_assignment_updated_at,
               max(o.updated_at) as max_officer_updated_at,
@@ -167,9 +169,6 @@ export const buildSitemapLastmodMap = async () => {
               on bpp.page_type = 'agency'
              and bpp.entity_id = a.id
             left join public.agency_personnel ao on ao.agency_id = a.id
-            left join public.agency_personnel ao_active
-              on ao_active.agency_id = a.id
-             and ${currentAssignmentSql("ao_active")}
             left join public.personnel o on o.id = ao.personnel_id
             left join public.review_personnel ro on ro.agency_personnel_id = ao.id
             left join public.reviews r on r.id = ro.review_id

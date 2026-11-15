@@ -66,7 +66,9 @@ async function handler(event) {
     return missing;
   }
   if (
-    /^\/(builds|data|evidence|news-discovery)(\/|$)/.test(pathForValidation) ||
+    /^\/(builds|data|evidence|news-discovery|com\/serpapi\/landing-page-search)(\/|$)/.test(
+      pathForValidation,
+    ) ||
     /(?:^|\/)\.{1,2}(?:\/|$)|[\\%]/.test(pathForValidation)
   ) {
     return missing;

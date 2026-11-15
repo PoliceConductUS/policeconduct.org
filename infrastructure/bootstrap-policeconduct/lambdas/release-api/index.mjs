@@ -53,9 +53,3 @@ export const handler = createHandler({
     return result.Invalidation.Id;
   },
 });
-
-export async function snapshot(event) {
-  if (event.operation !== "release-snapshot")
-    throw new Error("Expected release-snapshot");
-  return handler(event);
-}

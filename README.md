@@ -354,14 +354,12 @@ To promote a completed local build without rebuilding, run
 publishing, add `--dry-run`. To switch back to a previously uploaded release,
 run `bash scripts/promote.sh <production-release-id>` with the same environment.
 
-### Intake news publication
+### Landing page search
 
 Use the bootstrap output `intake_news_configuration` to configure the Intake
 workflow. The IAM role trusts the Intake repository's main branch using GitHub
 OIDC. Invoke `NEWS_RELEASE_FUNCTION` with `{"operation":"release-snapshot"}`
-and read the returned roster bucket and key for that release ID. The importer
-can use the `release_read_policy_arn` policy and the read-only
-`release_snapshot_function` output to read a selected release.
+and read the returned roster bucket and key for that release ID.
 
 For an updated canonical path, Intake saves the full HTML under
 `builds/<release-id>/override/` in the site bucket. It invokes the same

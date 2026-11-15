@@ -153,16 +153,21 @@ export async function loadHomepageNews() {
 export async function loadReleaseRoster() {
   return withDb(async (client) => {
     const { rows: agencies } = await client.query(
-      `select a.id,a.name,lp.path || a.slug || '/' as path from public.agency a join public.location_path lp on lp.location_path_id=a.location_path_id order by a.id`,
+      `select a.id,a.name,a.state,lp.path || a.slug || '/' as path from public.agency a join public.location_path lp on lp.location_path_id=a.location_path_id order by a.id`,
     );
     const { rows: personnel } = await client.query(
-      `select p.id,concat_ws(' ',p.first_name,p.middle_name,p.last_name,p.suffix) as name,p.first_name as "firstName",p.last_name as "lastName",concat_ws(' ',p.first_name,p.last_name) as "displayName",'/personnel/'||p.slug||'/' as path from public.personnel p where exists (select 1 from public.agency_personnel a where a.personnel_id=p.id) order by p.id`,
+      `select p.id,concat_ws(' ',p.first_name,p.middle_name,p.last_name,p.suffix) as name,p.first_name as "firstName",p.middle_name as "middleName",p.suffix,p.last_name as "lastName",concat_ws(' ',p.first_name,p.last_name) as "displayName",'/personnel/'||p.slug||'/' as path from public.personnel p where exists (select 1 from public.agency_personnel a where a.personnel_id=p.id) order by p.id`,
     );
     const { rows: assignments } = await client.query<Assignment>(
       `select id,agency_id as "agencyId",personnel_id as "personnelId" from public.agency_personnel order by id`,
     );
     return {
-      agencies: agencies as { id: string; name: string; path: string | null }[],
+      agencies: agencies as {
+        id: string;
+        name: string;
+        state: string;
+        path: string | null;
+      }[],
       personnel: personnel as {
         id: string;
         name: string;
