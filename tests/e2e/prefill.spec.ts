@@ -346,7 +346,7 @@ const profileSenderCases: SenderCase[] = [
       "currentAgencyState",
       "reportLinks",
     ],
-    locator: { kind: "role", value: "Start: add personnel" },
+    locator: { kind: "role", value: "Start to add personnel" },
     targetPath: "/personnel/new/",
   },
   {
