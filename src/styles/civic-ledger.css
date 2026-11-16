@@ -776,6 +776,23 @@ a.stat-cell {
   display: none;
 }
 
+/* On a phone the toggle can sit anywhere in a wrapped row, so a menu hung
+   from it runs off the screen. Hang it from the row instead. */
+@media (max-width: 575.98px) {
+  .entity-actions {
+    position: relative;
+  }
+
+  .entity-menu {
+    position: static;
+  }
+
+  .entity-menu-list {
+    min-width: 0;
+    right: 0;
+  }
+}
+
 .entity-menu-item {
   color: var(--ipc-color-ink);
   display: block;
