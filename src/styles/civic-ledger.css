@@ -75,9 +75,9 @@
 
 /* ---- drill-down emphasis ----
    On geography pages the ideal next action is drilling into child entities
-   (counties -> places -> agencies). That cell leads the strip (via CSS
-   `order`) and carries a quiet teal wash + eyebrow so it reads as "start
-   here" without shouting. */
+   (counties -> places -> agencies). That cell leads the strip in the markup
+   and carries a quiet teal wash + eyebrow so it reads as "start here"
+   without shouting. */
 .stat-strip--drill-first {
   grid-template-columns: minmax(18rem, 1.4fr) repeat(4, minmax(0, 1fr));
 }
@@ -88,15 +88,15 @@
 
 .stat-cell--drill {
   background: var(--ipc-color-teal-wash);
-  border-left: none;
-  order: -1;
 }
 
-/* The DOM-first data cell is no longer the visual first once the drill
-   cell reorders itself — restore its divider. */
-.stat-strip--drill-first .stat-cell:first-child {
-  border-left: 1px solid var(--ipc-color-rule);
-  padding-left: clamp(1.1rem, 1rem + 1vw, 1.75rem);
+/* The leading cell normally sits flush with the container edge. In the
+   one-row desktop strip the drill cell has a wash behind it, so it keeps
+   its inset. */
+@media (min-width: 992px) {
+  .stat-strip .stat-cell--drill:first-child {
+    padding-left: clamp(1.1rem, 1rem + 1vw, 1.75rem);
+  }
 }
 
 .stat-drill-eyebrow {
@@ -170,8 +170,10 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.stat-cell--link:hover {
-  background: rgba(23, 75, 255, 0.05);
+@media (hover: hover) {
+  .stat-cell--link:hover {
+    background: rgba(23, 75, 255, 0.05);
+  }
 }
 
 .ledger-value {
@@ -218,9 +220,11 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.stat-cell--link:hover .stat-action,
-.stat-action a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .stat-cell--link:hover .stat-action,
+  .stat-action a:hover {
+    text-decoration: underline;
+  }
 }
 
 /* ---- jump cell ---- */
@@ -262,9 +266,11 @@ a.stat-cell {
   padding: 0 0.85rem;
 }
 
-.jump-go:hover {
-  background: var(--ipc-color-teal);
-  border-color: var(--ipc-color-teal);
+@media (hover: hover) {
+  .jump-go:hover {
+    background: var(--ipc-color-teal);
+    border-color: var(--ipc-color-teal);
+  }
 }
 
 .jump-status {
@@ -285,8 +291,10 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.jump-browse a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .jump-browse a:hover {
+    text-decoration: underline;
+  }
 }
 
 /* ---- section rhythm ---- */
@@ -382,8 +390,10 @@ a.stat-cell {
 
 /* Hover wash on interactive topic/stat tiles, suppressed while pending
    (an empty cell isn't clickable data, just a contribution prompt). */
-.ledger-interactive:hover:not(.is-pending) {
-  background: var(--ipc-color-teal-wash);
+@media (hover: hover) {
+  .ledger-interactive:hover:not(.is-pending) {
+    background: var(--ipc-color-teal-wash);
+  }
 }
 
 .ledger-interactive.is-pending {
@@ -434,8 +444,10 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.topic-foot a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .topic-foot a:hover {
+    text-decoration: underline;
+  }
 }
 
 /* ---- fact list ---- */
@@ -480,8 +492,9 @@ a.stat-cell {
 
 @media (max-width: 991.98px) {
   .stat-strip,
-  .stat-strip--three {
-    grid-template-columns: repeat(2, 1fr);
+  .stat-strip--three,
+  .stat-strip--drill-first.stat-strip--three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .stat-cell:nth-child(odd) {
@@ -497,10 +510,25 @@ a.stat-cell {
   }
 }
 
+/* The drill cell takes the first row on its own, so the data cells after it
+   start at the second child: even children are the leading column. */
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .stat-strip--drill-first .stat-cell:nth-child(even) {
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .stat-strip--drill-first .stat-cell:nth-child(odd):not(.stat-cell--drill) {
+    border-left: 1px solid var(--ipc-color-rule);
+    padding-left: clamp(1.1rem, 1rem + 1vw, 1.75rem);
+  }
+}
+
 @media (max-width: 575.98px) {
   .stat-strip,
-  .stat-strip--three {
-    grid-template-columns: 1fr;
+  .stat-strip--three,
+  .stat-strip--drill-first.stat-strip--three {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .stat-cell {
@@ -512,6 +540,13 @@ a.stat-cell {
   .stat-cell:first-child {
     border-top: none;
   }
+}
+
+/* The role bar sits on the cell's leading edge. Cells that carry one keep
+   the standard inset at every width so the bar never touches the text.
+   Keep this after the rules above that zero the leading inset. */
+.stat-strip .stat-cell[data-role] {
+  padding-left: clamp(1.1rem, 1rem + 1vw, 1.75rem);
 }
 
 /* ---- agency/entity additions ---- */
@@ -604,8 +639,10 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.entity-contact-links a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .entity-contact-links a:hover {
+    text-decoration: underline;
+  }
 }
 
 .entity-contact-person,
@@ -621,8 +658,10 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.entity-contact-email a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .entity-contact-email a:hover {
+    text-decoration: underline;
+  }
 }
 
 .entity-contact-email a:focus-visible {
@@ -661,9 +700,11 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.entity-action:hover {
-  background: var(--ipc-color-teal-wash);
-  border-color: var(--ipc-color-teal-ink);
+@media (hover: hover) {
+  .entity-action:hover {
+    background: var(--ipc-color-teal-wash);
+    border-color: var(--ipc-color-teal-ink);
+  }
 }
 
 .entity-action:focus-visible {
@@ -677,9 +718,11 @@ a.stat-cell {
   color: var(--ipc-color-paper);
 }
 
-.entity-action-primary:hover {
-  background: var(--ipc-color-ink);
-  border-color: var(--ipc-color-ink);
+@media (hover: hover) {
+  .entity-action-primary:hover {
+    background: var(--ipc-color-ink);
+    border-color: var(--ipc-color-ink);
+  }
 }
 
 .entity-menu {
@@ -742,9 +785,11 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.entity-menu-item:hover {
-  background: var(--ipc-color-teal-wash);
-  color: var(--ipc-color-teal-ink);
+@media (hover: hover) {
+  .entity-menu-item:hover {
+    background: var(--ipc-color-teal-wash);
+    color: var(--ipc-color-teal-ink);
+  }
 }
 
 /* Keyboard focus needs a real, high-contrast indicator (WCAG 2.4.11), not
@@ -811,8 +856,10 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.entity-side .entity-side-link:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .entity-side .entity-side-link:hover {
+    text-decoration: underline;
+  }
 }
 
 .agency-coming-soon {
@@ -843,8 +890,10 @@ a.stat-cell {
   font-weight: 700;
 }
 
-.recent-list a:hover .recent-list-title {
-  text-decoration: underline;
+@media (hover: hover) {
+  .recent-list a:hover .recent-list-title {
+    text-decoration: underline;
+  }
 }
 
 .recent-list-meta {
@@ -891,8 +940,10 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.alpha-group a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .alpha-group a:hover {
+    text-decoration: underline;
+  }
 }
 
 .alpha-group .alpha-item-meta {
@@ -952,8 +1003,10 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.record-table a.row-link:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .record-table a.row-link:hover {
+    text-decoration: underline;
+  }
 }
 
 .record-table .muted {

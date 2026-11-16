@@ -32,13 +32,16 @@ const labels = {
           {display.message}
           {display.showValues && (
             <div>
-              Reported value: <span>{annotationValue(display.value)}</span>
+              Reported value:{" "}
+              <span class="text-break">{annotationValue(display.value)}</span>
             </div>
           )}
           {entry.type === "correction" && display.showValues && (
             <div>
               Replacement:{" "}
-              <span>{annotationValue(display.replacement_value)}</span>
+              <span class="text-break">
+                {annotationValue(display.replacement_value)}
+              </span>
             </div>
           )}
           <div>

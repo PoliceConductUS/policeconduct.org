@@ -110,8 +110,10 @@ const serializedBreadcrumbData = breadcrumbData
     text-decoration: none;
   }
 
-  .crumbs a:hover {
-    color: var(--ipc-color-ink);
+  @media (hover: hover) {
+    .crumbs a:hover {
+      color: var(--ipc-color-ink);
+    }
   }
 
   .crumbs a:focus-visible {

@@ -14143,6 +14143,9 @@ h1.display-6,
   font-weight: var(--ipc-weight-heading) !important;
   letter-spacing: 0 !important;
   line-height: var(--ipc-leading-h1) !important;
+  /* A single word wider than the column (a long name at 320px) breaks
+     instead of pushing the page sideways. */
+  overflow-wrap: break-word;
   text-wrap: balance;
 }
 
@@ -14215,5 +14218,13 @@ h6.h6,
 @media (max-width: 560px) {
   :root {
     --ipc-type-h1: 2.25rem;
+  }
+}
+
+/* Below 360px (320px phones, 400% zoom) the site name no longer fits on one
+   H1 line at 2.25rem, so the H1 takes one more fixed step down. */
+@media (max-width: 359.98px) {
+  :root {
+    --ipc-type-h1: 2rem;
   }
 }

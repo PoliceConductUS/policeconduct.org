@@ -465,8 +465,10 @@ const showTools = total >= 15;
     color: var(--ipc-color-teal);
   }
 
-  .roster-jump a:hover {
-    text-decoration: underline;
+  @media (hover: hover) {
+    .roster-jump a:hover {
+      text-decoration: underline;
+    }
   }
 
   .roster-jump a.is-empty,
@@ -505,8 +507,10 @@ const showTools = total >= 15;
     text-decoration: none;
   }
 
-  .roster-name:hover {
-    text-decoration: underline;
+  @media (hover: hover) {
+    .roster-name:hover {
+      text-decoration: underline;
+    }
   }
 
   .roster-name--inert {

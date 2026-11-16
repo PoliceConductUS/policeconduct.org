@@ -810,7 +810,11 @@ const structuredData = {
 </PageShell>
 
 <style>
-  .personnel-panel a {
+  /* The panel, table and status-pill classes below are also used by
+     PersonnelAssignments.astro. Scoped selectors do not reach a child
+     component's markup, so those selectors are :global(). */
+  .personnel-panel a,
+  :global(.personnel-mini-table a) {
     color: var(--ipc-color-teal);
     font-weight: 750;
     text-decoration: none;
@@ -876,7 +880,7 @@ const structuredData = {
     margin-top: 0.45rem;
   }
 
-  .personnel-panel {
+  :global(.personnel-panel) {
     background: var(--ipc-color-paper);
     border: 1px solid var(--ipc-color-rule);
     border-radius: 0.45rem;
@@ -884,7 +888,7 @@ const structuredData = {
       color-mix(in oklch, var(--ipc-color-ink) 4%, transparent);
   }
 
-  .personnel-status-pill {
+  :global(.personnel-status-pill) {
     background: #dff5e7;
     border: 1px solid #b9e7c8;
     border-radius: 999px;
@@ -947,7 +951,7 @@ const structuredData = {
     margin-bottom: 1rem;
   }
 
-  .personnel-panel-heading p {
+  :global(.personnel-panel-heading p) {
     color: var(--ipc-color-ink-muted);
     font-size: 0.8125rem;
     font-weight: 500;
@@ -959,32 +963,32 @@ const structuredData = {
     align-items: stretch;
   }
 
-  .personnel-panel {
+  :global(.personnel-panel) {
     min-height: 15rem;
     padding: 1rem 1.1rem;
   }
 
-  .personnel-panel-heading {
+  :global(.personnel-panel-heading) {
     margin-bottom: 0.85rem;
   }
 
-  .personnel-panel h2 {
+  :global(.personnel-panel h2) {
     color: var(--ipc-color-ink);
     margin: 0 0 0.25rem;
   }
 
-  .personnel-table-wrap {
+  :global(.personnel-table-wrap) {
     overflow-x: auto;
   }
 
-  .personnel-mini-table {
+  :global(.personnel-mini-table) {
     border-collapse: collapse;
     min-width: 36rem;
     width: 100%;
   }
 
-  .personnel-mini-table th,
-  .personnel-mini-table td {
+  :global(.personnel-mini-table th),
+  :global(.personnel-mini-table td) {
     border-top: 1px solid var(--ipc-color-rule);
     color: var(--ipc-color-ink);
     font-size: 0.75rem;
@@ -994,7 +998,7 @@ const structuredData = {
     vertical-align: top;
   }
 
-  .personnel-mini-table thead th {
+  :global(.personnel-mini-table thead th) {
     color: var(--ipc-color-ink-muted);
     font-size: 0.68rem;
     letter-spacing: 0.04em;
@@ -1006,7 +1010,7 @@ const structuredData = {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .personnel-panel-wide {
+    :global(.personnel-panel-wide) {
       grid-column: span 2;
     }
   }
