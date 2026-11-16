@@ -18,7 +18,8 @@ resolveTerraformEnv([
   "S3_BUCKET",
   "RELEASE_DATA_BUCKET",
   "KVS_ARN",
-  "CLOUDFRONT_DIST_ID",
+  // scripts/promote.sh also invalidates the CloudFront distribution.
+  ...(operation === "promote" ? ["CLOUDFRONT_DIST_ID"] : []),
 ]);
 const { S3_BUCKET, RELEASE_DATA_BUCKET, KVS_ARN } = process.env;
 if (!S3_BUCKET || !RELEASE_DATA_BUCKET || !KVS_ARN)

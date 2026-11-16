@@ -1,11 +1,10 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import dotenv from "dotenv";
 import { resolveTerraformEnv } from "./terraform-outputs.mjs";
 
 // Machine settings come from the optional local .env; the site key comes from
 // Terraform outputs unless the caller (CI) already set it.
-dotenv.config({ path: ".env", quiet: true });
+if (existsSync(".env")) process.loadEnvFile(".env");
 resolveTerraformEnv(["RECAPTCHA_SITE_KEY"]);
 
 const pr = process.env.PR_NUMBER;

@@ -73,6 +73,7 @@ for (const [name, script, args, builds] of [
           "deploy-preview.sh",
           "upload-release.sh",
           "release-files.mjs",
+          "terraform-outputs.mjs",
           "deploy-preview-sync.sh",
           "workspace-sync.sh",
           "deploy-incremental.sh",
@@ -104,7 +105,7 @@ for (const [name, script, args, builds] of [
           git: 'exec /usr/bin/git "$@"',
           npm: 'echo "npm $*" >> "$CALL_LOG"\nif [[ "$*" == "run validate:redirects" ]]; then exit "$COVERAGE_EXIT"; fi',
           aws: 'echo "aws $*" >> "$CALL_LOG"\nexit 71',
-          node: 'if [[ "$1" == scripts/release-files.mjs ]]; then exec "$TEST_NODE" "$@"; fi\necho "node $*" >> "$CALL_LOG"\nexit 72',
+          node: 'if [[ "$1" == scripts/release-files.mjs || "$1" == scripts/terraform-outputs.mjs ]]; then exec "$TEST_NODE" "$@"; fi\necho "node $*" >> "$CALL_LOG"\nexit 72',
         })) {
           writeFileSync(
             join(root, "bin", command),
@@ -199,6 +200,10 @@ test("successful builds bind matching folder IDs to the site and private roster;
       new URL("release-files.mjs", import.meta.url),
       join(dir, "scripts/release-files.mjs"),
     );
+    copyFileSync(
+      new URL("terraform-outputs.mjs", import.meta.url),
+      join(dir, "scripts/terraform-outputs.mjs"),
+    );
     const commit = initializeRepository(dir);
     const build = (env = {}) =>
       spawnSync(process.execPath, ["scripts/build-release.mjs"], {
@@ -209,6 +214,7 @@ test("successful builds bind matching folder IDs to the site and private roster;
           PATH: join(dir, "bin") + ":" + process.env.PATH,
           BUILD_EXIT: "0",
           RELEASE_ID: "",
+          RECAPTCHA_SITE_KEY: "fixture-site-key",
           ...env,
         },
       });
@@ -249,6 +255,7 @@ test("successful builds bind matching folder IDs to the site and private roster;
             PATH: join(dir, "bin") + ":" + process.env.PATH,
             PR_NUMBER: pr,
             BUILD_EXIT: exit,
+            RECAPTCHA_SITE_KEY: "fixture-site-key",
           },
         },
       );

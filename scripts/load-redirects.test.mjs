@@ -280,6 +280,7 @@ function deploy(
       "upload-release.sh",
       "promote.sh",
       "release-files.mjs",
+      "terraform-outputs.mjs",
     ]) {
       writeFileSync(
         join(dir, "scripts", name),
@@ -363,7 +364,7 @@ function deploy(
       writeFileSync(
         join(dir, "bin", tool),
         `#!/usr/bin/env bash\n
-${tool === "node" ? 'if [[ "$1" == scripts/release-files.mjs || "$1" == -e ]]; then exec "$TEST_NODE" "$@"; fi' : ""}
+${tool === "node" ? 'if [[ "$1" == scripts/release-files.mjs || "$1" == scripts/terraform-outputs.mjs || "$1" == -e ]]; then exec "$TEST_NODE" "$@"; fi' : ""}
 printf '%s\\n' '${tool} '"$*" >> "$TEST_LOG"\n${tool === "aws" && failSync ? 'if [[ "$1 $2" == "s3 sync" ]]; then exit 23; fi' : ""}\n`,
         { mode: 0o755 },
       );
