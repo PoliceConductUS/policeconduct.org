@@ -108,16 +108,24 @@ const structuredData = [
 >
   <main id="main">
     <div class="w-100 overflow-hidden bg-gray-100 position-relative" id="top">
-      <img
-        src="/img/webp/usa-1778524_1280.webp"
-        alt=""
-        width="1280"
-        height="853"
-        class="home-hero-image position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
-        fetchpriority="high"
-        loading="eager"
-        decoding="async"
-      />
+      <picture>
+        <source
+          media="(max-width: 767.98px)"
+          srcset="/img/webp/usa-1778524_640.webp"
+          width="640"
+          height="427"
+        />
+        <img
+          src="/img/webp/usa-1778524_1280.webp"
+          alt=""
+          width="1280"
+          height="853"
+          class="home-hero-image position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
+          fetchpriority="high"
+          loading="eager"
+          decoding="async"
+        />
+      </picture>
       <div class="container position-relative py-5">
         <div class="row mx-0">
           <div class="home-hero-panel col-lg-7 p-4 p-md-5 position-relative">
