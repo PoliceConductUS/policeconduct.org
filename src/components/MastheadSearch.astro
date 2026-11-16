@@ -103,6 +103,14 @@
     width: 100%;
   }
 
+  @media (max-width: 767.98px) {
+    /* iOS Safari zooms the whole page when a focused input's text is under
+       16px. */
+    .masthead-search-input {
+      font-size: var(--ipc-type-body);
+    }
+  }
+
   .masthead-search-input::placeholder {
     color: var(--ipc-color-ink-faint);
   }
