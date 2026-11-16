@@ -214,7 +214,7 @@ const profileSenderCases: SenderCase[] = [
         name: "James Markham V",
       },
     },
-    locator: { kind: "role", value: "Share your experience" },
+    locator: { kind: "role", value: "Share an experience" },
     targetPath: "/report/new/",
   },
   {

@@ -14,7 +14,7 @@ const BLOCKED_SUBMIT_FALLBACK =
 const FORM_LOAD_ERROR_MESSAGE = `
   <p class="mb-2"><strong>An error occurred while loading this page, and we have already reported it.</strong></p>
   <p class="mb-2">If the form fields are visible, you can still fill them out, print the page, and email it to hello@policeconduct.org.</p>
-  <p class="mb-0">To report additional details, please click "Report issue" at the bottom of the page.</p>
+  <p class="mb-0">To report additional details, please click "Report a site issue" at the bottom of the page.</p>
 `;
 
 type RecaptchaEnterprise = {
