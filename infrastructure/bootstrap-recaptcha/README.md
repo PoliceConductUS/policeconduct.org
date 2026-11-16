@@ -59,6 +59,10 @@ bash scripts/bootstrap-all.sh
 That wrapper runs this stack first and then `infrastructure/bootstrap-policeconduct/scripts/apply.sh`.
 
 `scripts/apply.sh` also syncs Terraform outputs into `.env-recaptcha` at repo root by default.
+
+`scripts/apply.sh` refuses to run when `terraform.tfvars` is missing: the file is git-ignored, so a new checkout or worktree does not have it, and Terraform would plan against variable defaults.
+
+Before it changes anything, `scripts/apply.sh` writes one plan and refuses it when it destroys or replaces a resource whose address is not listed, one per line, in `TERRAFORM_APPROVED_DESTROYS`. It then asks for `yes` and applies exactly that plan. When live infrastructure already matches, it applies nothing.
 Use `ENV_FILE_NAME=.env` to write directly into your main env file.
 
 ## Authentication Prerequisites (GCP)

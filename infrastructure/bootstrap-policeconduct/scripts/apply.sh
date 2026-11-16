@@ -8,18 +8,7 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 bash "${ROOT_DIR}/../../scripts/require-terraform-state.sh" "${ROOT_DIR}"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
-# Without the operator's inputs Terraform plans against variable defaults, which
-# removes every resource those inputs define (DNS records, alert topic, recipients).
-if [[ ! -f "${ROOT_DIR}/terraform.tfvars" ]]; then
-  echo "Error: refusing apply: ${ROOT_DIR}/terraform.tfvars is missing." >&2
-  echo "It is git-ignored, so a new checkout or worktree does not have it." >&2
-  main_tfvars="$(cd "$(git -C "${REPO_ROOT}" rev-parse --git-common-dir 2>/dev/null)/.." 2>/dev/null && pwd)/infrastructure/bootstrap-policeconduct/terraform.tfvars"
-  if [[ -f "${main_tfvars}" && "${main_tfvars}" != "${ROOT_DIR}/terraform.tfvars" ]]; then
-    echo "Link the one from the main checkout, then run again:" >&2
-    echo "  ln -s \"${main_tfvars}\" \"${ROOT_DIR}/terraform.tfvars\"" >&2
-  fi
-  exit 1
-fi
+bash "${REPO_ROOT}/scripts/require-terraform-var-file.sh" "${ROOT_DIR}"
 DOTENV_FILE="${REPO_ROOT}/.env"
 POLICECONDUCT_DOTENV_FILE="${REPO_ROOT}/.env-policeconduct"
 RECAPTCHA_DOTENV_FILE="${REPO_ROOT}/.env-recaptcha"
@@ -305,54 +294,7 @@ run_foundation_apply() {
     target_args+=("-target=${target}")
   done
 
-  run_reviewed_apply "${target_args[@]}" "$@"
-}
-
-# Plan once, refuse destroys nobody approved, then apply exactly that plan.
-run_reviewed_apply() {
-  local -a plan_args=()
-  local auto_approve=0
-  local arg answer plan_status
-  for arg in "$@"; do
-    if [[ "${arg}" == "-auto-approve" || "${arg}" == "--auto-approve" ]]; then
-      auto_approve=1
-    else
-      plan_args+=("${arg}")
-    fi
-  done
-
-  # The plan file holds secrets: keep it outside the repository and remove it on exit.
-  PLAN_DIR="$(mktemp -d)"
-  trap 'rm -rf "${PLAN_DIR}"' EXIT
-
-  set +e
-  terraform -chdir="${ROOT_DIR}" plan -detailed-exitcode -out="${PLAN_DIR}/tfplan" ${plan_args[@]+"${plan_args[@]}"}
-  plan_status=$?
-  set -e
-  case "${plan_status}" in
-    0)
-      echo "Live infrastructure already matches the configuration. Nothing to apply."
-      return 0
-      ;;
-    2) ;;
-    *)
-      echo "Error: terraform plan failed. Nothing was changed." >&2
-      exit 1
-      ;;
-  esac
-
-  terraform -chdir="${ROOT_DIR}" show -json "${PLAN_DIR}/tfplan" \
-    | bash "${REPO_ROOT}/scripts/require-approved-terraform-destroys.sh"
-
-  if [[ ${auto_approve} -eq 0 ]]; then
-    read -r -p "Apply exactly this plan? Only 'yes' will be accepted: " answer
-    if [[ "${answer}" != "yes" ]]; then
-      echo "Apply cancelled. Nothing was changed." >&2
-      exit 1
-    fi
-  fi
-
-  terraform -chdir="${ROOT_DIR}" apply "${PLAN_DIR}/tfplan"
+  bash "${REPO_ROOT}/scripts/terraform-reviewed-apply.sh" "${ROOT_DIR}" "${target_args[@]}" "$@"
 }
 
 load_dotenv_if_present
@@ -373,7 +315,7 @@ case "${PHASE}" in
     ;;
   full)
     echo "Running bootstrap apply phase: full"
-    run_reviewed_apply "$@"
+    bash "${REPO_ROOT}/scripts/terraform-reviewed-apply.sh" "${ROOT_DIR}" "$@"
     ;;
   *)
     echo "Error: PHASE must be either 'foundation' or 'full'." >&2

@@ -5,7 +5,7 @@ import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 
-function run(t, script, overrides = {}) {
+function run(t, script, overrides = {}, extraArgs = []) {
   const dir = mkdtempSync(join(resolve(tmpdir()), "tf-reads-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const bin = join(dir, "bin");
@@ -28,10 +28,10 @@ printf '%s' 'None'
   );
   writeFileSync(
     join(bin, "terraform"),
-    '#!/usr/bin/env bash\nif [[ "$3" == list ]]; then echo aws_cloudfront_distribution.redirect; exit 0; fi\nif [[ "$2" == apply ]]; then echo APPLY_REACHED; exit 42; fi\nprintf "%s" "$STATE"\nexit "$STATE_EXIT"\n',
+    '#!/usr/bin/env bash\nif [[ "$3" == list ]]; then echo aws_cloudfront_distribution.redirect; exit 0; fi\nif [[ "$2" == plan ]]; then exit "$PLAN_EXIT"; fi\nif [[ "$2" == show ]]; then printf "%s" "$PLAN_JSON"; exit 0; fi\nif [[ "$2" == apply ]]; then echo APPLY_REACHED; exit 42; fi\nprintf "%s" "$STATE"\nexit "$STATE_EXIT"\n',
     { mode: 0o755 },
   );
-  return spawnSync("bash", [resolve(script), dir], {
+  return spawnSync("bash", [resolve(script), dir, ...extraArgs], {
     input: JSON.stringify({
       oac_name: "oac",
       index_function_name: "index",
@@ -48,6 +48,8 @@ printf '%s' 'None'
       IDENTITY_EXIT: "0",
       STATE_EXIT: "0",
       FAIL_OPERATION: "",
+      PLAN_EXIT: "2",
+      PLAN_JSON: '{"resource_changes":[]}',
       STATE: JSON.stringify({
         version: 4,
         resources: [
@@ -131,7 +133,61 @@ for (const [name, overrides] of [
   });
 }
 
+const iceconductWrapper =
+  "infrastructure/bootstrap-iceconduct/scripts/apply.sh";
+
 test("Iceconduct wrapper reaches apply after matching account verification", (t) => {
-  const result = run(t, "infrastructure/bootstrap-iceconduct/scripts/apply.sh");
+  const result = run(t, iceconductWrapper, {}, ["-auto-approve"]);
   assert.match(result.stdout, /APPLY_REACHED/);
+});
+
+test("Iceconduct wrapper does not apply a plan nobody confirmed", (t) => {
+  const result = run(t, iceconductWrapper);
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /Apply cancelled/);
+  assert.doesNotMatch(result.stdout, /APPLY_REACHED/);
+});
+
+test("Iceconduct wrapper refuses a plan that destroys a resource nobody approved", (t) => {
+  const plan = JSON.stringify({
+    resource_changes: [
+      {
+        address: "aws_route53_record.mx",
+        mode: "managed",
+        change: { actions: ["delete"] },
+      },
+    ],
+  });
+  const refused = run(t, iceconductWrapper, { PLAN_JSON: plan }, [
+    "-auto-approve",
+  ]);
+  assert.equal(refused.status, 1, refused.stderr);
+  assert.match(refused.stderr, /refusing apply/);
+  assert.ok(refused.stderr.includes("aws_route53_record.mx"));
+  assert.doesNotMatch(refused.stdout, /APPLY_REACHED/);
+
+  const approved = run(
+    t,
+    iceconductWrapper,
+    { PLAN_JSON: plan, TERRAFORM_APPROVED_DESTROYS: "aws_route53_record.mx" },
+    ["-auto-approve"],
+  );
+  assert.match(approved.stdout, /APPLY_REACHED/);
+});
+
+test("Iceconduct wrapper applies nothing when live already matches", (t) => {
+  const result = run(t, iceconductWrapper, { PLAN_EXIT: "0" }, [
+    "-auto-approve",
+  ]);
+  assert.match(result.stdout, /Nothing to apply/);
+  assert.doesNotMatch(result.stdout, /APPLY_REACHED/);
+});
+
+test("Iceconduct wrapper stops when the plan fails", (t) => {
+  const result = run(t, iceconductWrapper, { PLAN_EXIT: "1" }, [
+    "-auto-approve",
+  ]);
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /terraform plan failed/);
+  assert.doesNotMatch(result.stdout, /APPLY_REACHED/);
 });

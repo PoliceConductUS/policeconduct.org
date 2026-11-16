@@ -32,6 +32,8 @@ bash scripts/apply.sh
 
 `scripts/apply.sh` also syncs Terraform outputs into `.env-iceconduct` at repo root.
 
+Before it changes anything, `scripts/apply.sh` writes one plan and refuses it when it destroys or replaces a resource whose address is not listed, one per line, in `TERRAFORM_APPROVED_DESTROYS`. It then asks for `yes` and applies exactly that plan. When live infrastructure already matches, it applies nothing.
+
 ## Delegation
 
 After first apply, update your registrar nameservers for `iceconduct.org` using:

@@ -7,5 +7,7 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # Refuse an unbound checkout before apply or output synchronization.
 bash "${ROOT_DIR}/../../scripts/require-terraform-state.sh" "${ROOT_DIR}"
 
-terraform -chdir="${ROOT_DIR}" apply "$@"
+bash "${ROOT_DIR}/../../scripts/require-terraform-var-file.sh" "${ROOT_DIR}"
+
+bash "${ROOT_DIR}/../../scripts/terraform-reviewed-apply.sh" "${ROOT_DIR}" "$@"
 ENV_FILE_NAME="${ENV_FILE_NAME:-.env-recaptcha}" bash "${SCRIPT_DIR}/sync-env.sh"
