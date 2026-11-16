@@ -89,3 +89,24 @@ test.describe("masthead search no-JS fallback", () => {
     await expect(page).toHaveURL(/\/find-records\/\?q=/);
   });
 });
+
+test.describe("Find Records", () => {
+  test("a capped group can be shown in full", async ({ page }) => {
+    await page.goto("/find-records/");
+    await page.getByLabel("Place or agency").fill("dallas");
+
+    const agencies = page.locator('[data-result-list="agency"] a');
+    await expect(agencies).toHaveCount(12);
+
+    const showAll = page.getByRole("button", {
+      name: /^Show all \d+ agencies$/,
+    });
+    const total = Number((await showAll.innerText()).match(/\d+/)?.[0]);
+    expect(total).toBeGreaterThan(12);
+    await showAll.click();
+
+    await expect(agencies).toHaveCount(total);
+    await expect(showAll).toBeHidden();
+    await expect(agencies.nth(12)).toBeFocused();
+  });
+});
