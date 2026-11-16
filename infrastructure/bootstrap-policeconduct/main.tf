@@ -1138,6 +1138,9 @@ resource "aws_lambda_function" "forms_api_prod" {
   handler       = "index.handler"
   runtime       = var.lambda_nodejs_runtime
   timeout       = 10
+  # CPU scales with memory. At the 128 MB default a form submit took about 7
+  # seconds, most of it in the reCAPTCHA client, and used 123 MB.
+  memory_size = 1024
 
   filename         = data.archive_file.forms_api_lambda.output_path
   source_code_hash = data.archive_file.forms_api_lambda.output_base64sha256
@@ -1178,6 +1181,9 @@ resource "aws_lambda_function" "forms_api_preview" {
   handler       = "index.handler"
   runtime       = var.lambda_nodejs_runtime
   timeout       = 10
+  # CPU scales with memory. At the 128 MB default a form submit took about 7
+  # seconds, most of it in the reCAPTCHA client, and used 123 MB.
+  memory_size = 1024
 
   filename         = data.archive_file.forms_api_lambda.output_path
   source_code_hash = data.archive_file.forms_api_lambda.output_base64sha256
