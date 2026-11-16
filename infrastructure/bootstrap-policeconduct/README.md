@@ -41,7 +41,6 @@ It creates:
 
 ```bash
 cd infrastructure/bootstrap-policeconduct
-cp terraform.tfvars.example terraform.tfvars
 export GITHUB_TOKEN=<github-token-with-repo-admin-access>
 terraform init
 bash scripts/apply.sh
@@ -134,9 +133,10 @@ Example `.env` keys:
 
 `scripts/apply.sh` runs Terraform apply and then syncs `.env-policeconduct` after each phase.
 
+The inputs for this stack are tracked in `policeconduct.auto.tfvars`, which Terraform loads on every plan and apply, so every checkout and worktree plans against the same values. Secrets never go in that file: tokens and API keys come from the git-ignored `.env` files. A private `terraform.tfvars` is not needed; values in `policeconduct.auto.tfvars` take precedence over one.
+
 Before it changes anything, `scripts/apply.sh`:
 
-- refuses to run when `terraform.tfvars` is missing. The file is git-ignored, so a new checkout or worktree does not have it, and Terraform would plan against variable defaults and remove every resource those inputs define;
 - writes one plan, and refuses it when it destroys or replaces a resource whose address is not listed, one per line, in `TERRAFORM_APPROVED_DESTROYS`;
 - asks for `yes`, then applies exactly that plan. When live infrastructure already matches, it applies nothing.
 
@@ -192,13 +192,13 @@ CloudFront bootstrap is idempotent for names:
 
 ## DNS Records Included
 
-Bootstrap applies DNS records from `extra_dns_records` in `terraform.tfvars`.
+Bootstrap applies DNS records from `extra_dns_records` in `policeconduct.auto.tfvars`.
 
 Current default includes Google Workspace MX:
 
 - `@ MX 1 smtp.google.com.`
 
-Add your domain-specific TXT verification/DKIM records in local `terraform.tfvars` under `extra_dns_records` so they are applied with the zone.
+Add your domain-specific TXT verification/DKIM records in `policeconduct.auto.tfvars` under `extra_dns_records` so they are applied with the zone.
 
 Verification email is sent from `noreply@mail.policeconduct.org` by default.
 The forms Lambda currently sends verification email through Resend using `RESEND_API_KEY`.
@@ -281,7 +281,7 @@ And sets these environment variables automatically:
 - `production`: `AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`, `FORMS_API_URL`
 - `preview`: `AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`, `FORMS_API_URL`
 
-Optional GA inputs in `terraform.tfvars`:
+Optional GA inputs in `policeconduct.auto.tfvars`:
 
 - `ga_measurement_id_production`
 - `ga_measurement_id_preview`
@@ -289,7 +289,7 @@ Optional GA inputs in `terraform.tfvars`:
 If set, Terraform also creates `GA_MEASUREMENT_ID` in the matching GitHub environment.
 If unset/null, no GA variable is written and the GA component renders nothing.
 
-Optional Sentry inputs in `terraform.tfvars`:
+Optional Sentry inputs in `policeconduct.auto.tfvars`. Never put a real `sentry_auth_token` in that file; while it is `null` there, Terraform writes no Sentry secret, even when `.env` holds one:
 
 - `sentry_dsn_production`
 - `sentry_dsn_preview`

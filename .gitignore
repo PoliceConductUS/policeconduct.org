@@ -42,6 +42,7 @@ pnpm-debug.log*
 *.tfstate.*
 crash.log
 *.tfvars
+!infrastructure/bootstrap-*/*.auto.tfvars
 !infrastructure/bootstrap/terraform.tfvars.example
 infrastructure/bootstrap/lambdas/*.zip
 forms-api.zip

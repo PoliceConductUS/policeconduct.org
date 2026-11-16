@@ -8,7 +8,6 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 bash "${ROOT_DIR}/../../scripts/require-terraform-state.sh" "${ROOT_DIR}"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
-bash "${REPO_ROOT}/scripts/require-terraform-var-file.sh" "${ROOT_DIR}"
 DOTENV_FILE="${REPO_ROOT}/.env"
 POLICECONDUCT_DOTENV_FILE="${REPO_ROOT}/.env-policeconduct"
 RECAPTCHA_DOTENV_FILE="${REPO_ROOT}/.env-recaptcha"

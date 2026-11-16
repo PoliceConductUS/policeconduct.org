@@ -382,8 +382,6 @@ Provisions:
 Bootstrap usage:
 
 ```bash
-cp infrastructure/bootstrap-policeconduct/terraform.tfvars.example \
-   infrastructure/bootstrap-policeconduct/terraform.tfvars
 export GITHUB_TOKEN=<github-token-with-repo-admin-access>
 terraform -chdir=infrastructure/bootstrap-policeconduct init
 bash infrastructure/bootstrap-policeconduct/scripts/apply.sh

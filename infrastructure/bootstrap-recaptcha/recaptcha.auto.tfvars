@@ -1,5 +1,9 @@
-aws_region     = "us-east-1"
+# Desired inputs for this stack. Terraform loads this file on every plan and apply,
+# so every checkout and worktree plans against the same values.
+# Secrets never go here: tokens and API keys come from the git-ignored .env files.
+
 recaptcha_project_id = "ipc-policeconduct"
+aws_region           = "us-east-1"
 
 # Keep this list tight. Include local dev hosts only if you need local token generation.
 allowed_domains = [
@@ -12,6 +16,3 @@ allowed_domains = [
 service_account_account_id   = "ipc-recaptcha-assessor"
 service_account_display_name = "policeconduct reCAPTCHA assessor"
 recaptcha_key_display_name   = "policeconduct-site"
-aws_forms_lambda_role_name   = "policeconduct-forms-lambda"
-workload_identity_pool_id    = "policeconduct-aws-pool"
-workload_identity_provider_id = "policeconduct-aws-provider"

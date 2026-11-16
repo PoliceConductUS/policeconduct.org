@@ -71,12 +71,12 @@ terraform -chdir=infrastructure/bootstrap-policeconduct output route53_name_serv
 9. Bootstrap also creates GitHub environments and environment variables for workflows:
    `production` (`AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`) and
    `preview` (`AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`).
-   If GA IDs are set in bootstrap tfvars, it also writes `GA_MEASUREMENT_ID` per environment.
-   If Sentry DSNs are set in bootstrap tfvars, it also writes `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT` per environment.
+   If GA IDs are set in `policeconduct.auto.tfvars`, it also writes `GA_MEASUREMENT_ID` per environment.
+   If Sentry DSNs are set in `policeconduct.auto.tfvars`, it also writes `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT` per environment.
    If `sentry_org`/`sentry_project` are set, workflows can upload source maps to Sentry.
    If `sentry_auth_token` is set in bootstrap inputs, bootstrap also writes `SENTRY_AUTH_TOKEN` as a GitHub environment secret for both environments.
 
-If `bucket_name` is omitted in `infrastructure/bootstrap-policeconduct/terraform.tfvars`, bootstrap uses `<project_name>-site-<account_id>`.
+If `bucket_name` is omitted in `infrastructure/bootstrap-policeconduct/policeconduct.auto.tfvars`, bootstrap uses `<project_name>-site-<account_id>`.
 
 10. Optional hardening: remove `AdministratorAccess` from `policeconduct-setup-admin`, then disable or delete its access key.
 

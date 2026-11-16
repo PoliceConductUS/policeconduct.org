@@ -34,6 +34,6 @@ fi
 
 echo "Error: refusing apply: the plan destroys or replaces ${#unapproved[@]} resource(s) nobody approved:" >&2
 printf ' - %s\n' "${unapproved[@]}" >&2
-echo "Nothing was changed. A missing terraform.tfvars or a wrong input is the usual cause." >&2
+echo "Nothing was changed. A wrong or missing input is the usual cause." >&2
 echo "If every destroy above is intended, list the addresses, one per line, in TERRAFORM_APPROVED_DESTROYS and run again." >&2
 exit 1

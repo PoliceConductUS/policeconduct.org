@@ -133,30 +133,3 @@ test("an uninitialized stack directory is named as the cause", (t) => {
   assert.equal(initialized.status, 1, initialized.stderr);
   assert.equal(initialized.stderr.includes("has not been initialized"), false);
 });
-
-for (const stack of ["policeconduct", "recaptcha"]) {
-  test(`${stack} refuses to plan against variable defaults when terraform.tfvars is missing`, (t) => {
-    const { dir, env } = fixture(t, managedState, 0);
-    const stackDir = join(dir, "infrastructure", `bootstrap-${stack}`);
-    mkdirSync(join(stackDir, "scripts"), { recursive: true });
-    mkdirSync(join(dir, "scripts"));
-    cpSync(guard, join(dir, "scripts", "require-terraform-state.sh"));
-    cpSync(
-      "scripts/require-terraform-var-file.sh",
-      join(dir, "scripts", "require-terraform-var-file.sh"),
-    );
-    const wrapper = join(stackDir, "scripts", "apply.sh");
-    cpSync(`infrastructure/bootstrap-${stack}/scripts/apply.sh`, wrapper);
-    writeFileSync(join(dir, ".env"), "exit 99\n");
-    const result = spawnSync("bash", [wrapper, "-auto-approve"], {
-      env,
-      encoding: "utf8",
-    });
-    assert.equal(result.status, 1, result.stderr);
-    assert.match(result.stderr, /terraform\.tfvars is missing/);
-    assert.equal(
-      readFileSync(env.CALL_LOG, "utf8"),
-      `-chdir=${stackDir} state pull\n`,
-    );
-  });
-}
