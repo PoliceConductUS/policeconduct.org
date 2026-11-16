@@ -30,16 +30,7 @@ alarm_actions                                  = []
 alert_topic_name                               = "policeconduct-alerts"
 alert_email_endpoints                          = ["hello@policeconduct.org"]
 enable_site_bucket_versioning                  = true
-# These null values take precedence over GA and Sentry values in the .env files,
-# so Terraform writes no GA or Sentry settings to the GitHub environments.
-ga_measurement_id_production = null
-ga_measurement_id_preview    = null
-sentry_dsn_production        = null
-sentry_dsn_preview           = null
-sentry_org                   = null
-sentry_project               = null
-sentry_auth_token            = null
-recaptcha_min_score          = 0.5
+recaptcha_min_score                            = 0.5
 extra_dns_records = [
   {
     name = "@"

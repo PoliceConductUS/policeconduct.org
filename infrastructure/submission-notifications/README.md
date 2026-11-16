@@ -12,6 +12,7 @@ and forms API remain.
 
 ## Deploy
 
+The inputs for this stack are tracked in `submission-notifications.auto.tfvars`.
 Use the existing S3-backed state for this stack. Review `terraform plan` before
 applying. Manual merge and production deployment require approval.
 

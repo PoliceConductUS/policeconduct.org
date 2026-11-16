@@ -113,9 +113,6 @@ for (const stack of ["policeconduct", "iceconduct", "recaptcha"]) {
   }
 }
 
-const managedState =
-  '{"version":4,"resources":[{"mode":"managed","instances":[{}]}]}';
-
 test("an uninitialized stack directory is named as the cause", (t) => {
   const { dir, env } = fixture(t, "", 1);
   const result = spawnSync("bash", [guard, dir], { env, encoding: "utf8" });

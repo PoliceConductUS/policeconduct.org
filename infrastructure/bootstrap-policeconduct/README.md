@@ -289,7 +289,7 @@ Optional GA inputs in `policeconduct.auto.tfvars`:
 If set, Terraform also creates `GA_MEASUREMENT_ID` in the matching GitHub environment.
 If unset/null, no GA variable is written and the GA component renders nothing.
 
-Optional Sentry inputs in `policeconduct.auto.tfvars`. Never put a real `sentry_auth_token` in that file; while it is `null` there, Terraform writes no Sentry secret, even when `.env` holds one:
+Optional Sentry inputs in `policeconduct.auto.tfvars`, or `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_DSN_PRODUCTION` and `SENTRY_DSN_PREVIEW` in `.env`. The auth token is a secret: set `SENTRY_AUTH_TOKEN` in `.env` only.
 
 - `sentry_dsn_production`
 - `sentry_dsn_preview`
