@@ -19,7 +19,11 @@ import PageShell from "#src/layouts/PageShell.astro";
     <a class="btn btn-dark rounded-0" href="/">
       Go home
     </a>
-    <a class="btn btn-outline-dark rounded-0" href="/find-records/">
+    <a
+      class="btn btn-outline-dark rounded-0"
+      href="/find-records/"
+      id="find-records-link"
+    >
       Find records
     </a>
     <a
@@ -39,6 +43,62 @@ import PageShell from "#src/layouts/PageShell.astro";
       }
       const message = `Page not found: ${window.location.href}`;
       link.setAttribute("data-issue-message", message);
+    })();
+
+    // Offer a search for the words in the address that was not found, such as
+    // "irving police department" from /tx/.../irving-police-department-049f9a/.
+    (function () {
+      const findLink = document.getElementById("find-records-link");
+      // Path words that name a section of the site, not a place or agency.
+      // Two-letter state codes are skipped by length.
+      const sectionNames = [
+        "404",
+        "agencies",
+        "budget",
+        "civil-cases",
+        "counties",
+        "fatal-force-incidents",
+        "federal",
+        "liability-costs",
+        "licensing-authority",
+        "outcomes-by-income",
+        "page",
+        "personnel",
+        "places",
+        "reports",
+      ];
+      const segment = window.location.pathname
+        .split("/")
+        .filter(Boolean)
+        .reverse()
+        .find(
+          (part) =>
+            part.length > 2 &&
+            /[a-z]/i.test(part) &&
+            !sectionNames.includes(part),
+        );
+      if (!findLink || !segment) {
+        return;
+      }
+      let words;
+      try {
+        words = decodeURIComponent(segment);
+      } catch (_error) {
+        return;
+      }
+      words = words
+        .replace(/-[0-9a-f]{6}$/, "")
+        .replace(/[^\p{L}\p{N}]+/gu, " ")
+        .trim()
+        .slice(0, 60);
+      if (!words) {
+        return;
+      }
+      findLink.setAttribute(
+        "href",
+        `/find-records/?q=${encodeURIComponent(words)}`,
+      );
+      findLink.textContent = `Find records for \u201c${words}\u201d`;
     })();
   </script>
 </PageShell>
