@@ -67,6 +67,11 @@ const currentPath = Astro.url?.pathname || "/";
         <a class="entity-menu-item" href={currentPath} data-copy-link>
           Copy link
         </a>
+        <span
+          class="visually-hidden"
+          role="status"
+          data-copy-link-status
+        ></span>
       </li>
       <li>
         <a class="entity-menu-item" href="/data-and-methods/">

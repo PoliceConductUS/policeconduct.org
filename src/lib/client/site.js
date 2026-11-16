@@ -221,11 +221,40 @@ const initCopyLink = () => {
     const originalText = trigger.textContent;
     const url = window.location.href;
 
+    const status = trigger
+      .closest("li")
+      ?.querySelector("[data-copy-link-status]");
+
     copyTextToClipboard(url).then((succeeded) => {
-      trigger.textContent = succeeded ? "Copied!" : "Couldn't copy";
+      const message = succeeded ? "Copied!" : "Couldn't copy";
+      trigger.textContent = message;
+      // The link's own text changing is not announced; the status element is.
+      if (status) status.textContent = message;
       window.setTimeout(() => {
         trigger.textContent = originalText;
+        if (status) status.textContent = "";
       }, 1600);
+    });
+  });
+};
+
+// The "More actions" menu (EntityActionBar.astro) is a <details>. Close it on
+// Escape and on a click outside, so it does not stay over the page content.
+const initEntityMenu = () => {
+  const openMenus = () =>
+    document.querySelectorAll("details.entity-menu[open]");
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    openMenus().forEach((menu) => {
+      menu.open = false;
+      menu.querySelector("summary")?.focus();
+    });
+  });
+  document.addEventListener("click", (event) => {
+    openMenus().forEach((menu) => {
+      if (event.target instanceof Node && !menu.contains(event.target)) {
+        menu.open = false;
+      }
     });
   });
 };
@@ -625,5 +654,6 @@ initHeaderScroll();
 initAnalyticsClicks();
 initMapAnalyticsClicks();
 initCopyLink();
+initEntityMenu();
 initJumpForms();
 initSiteSearch();
