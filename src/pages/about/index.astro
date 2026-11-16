@@ -204,6 +204,8 @@ const structuredData = buildWebPage({
       AOS.init({
         duration: 800,
         once: true,
+        disable: () =>
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches,
       });
       document.documentElement.dataset.aosInit = "1";
     }
