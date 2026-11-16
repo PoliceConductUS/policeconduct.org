@@ -314,7 +314,12 @@ const finderGroups = [
 
     // Seed from the masthead search form's GET submission (?q=…), the
     // no-JS / no-Pagefind fallback path, so arriving here runs the search.
-    const initialQuery = new URLSearchParams(window.location.search).get("q");
+    // Prefer the search remembered in this history entry, so coming Back from
+    // a result shows the same results instead of an empty finder. The
+    // remembered search stays out of the URL.
+    const initialQuery =
+      window.history.state?.finderQuery ??
+      new URLSearchParams(window.location.search).get("q");
     if (input && initialQuery) {
       input.value = initialQuery;
     }
@@ -322,7 +327,13 @@ const finderGroups = [
     // Prefetch the dataset as soon as the field is focused, so it is usually
     // ready by the time the first character is typed.
     input?.addEventListener("focus", loadFinderData, { once: true });
-    input?.addEventListener("input", updateResults);
+    input?.addEventListener("input", () => {
+      window.history.replaceState(
+        { ...window.history.state, finderQuery: input.value },
+        "",
+      );
+      updateResults();
+    });
     updateResults();
   </script>
 </PageShell>
