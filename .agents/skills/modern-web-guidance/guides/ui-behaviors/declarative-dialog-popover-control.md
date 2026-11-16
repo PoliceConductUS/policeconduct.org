@@ -11,9 +11,7 @@ Popovers can be toggled open and closed using a single button.
 ```html
 <!-- MANDATORY: The commandfor attribute links the invoker to the ID of the target element so the browser knows what to control. -->
 <!-- MANDATORY: The command attribute specifies the action to perform. Use 'toggle-popover' to handle both open and close states automatically. -->
-<button commandfor="my-popover" command="toggle-popover">
-  Toggle Popover
-</button>
+<button commandfor="my-popover" command="toggle-popover">Toggle Popover</button>
 
 <!-- MANDATORY: The target element must have the popover attribute to be controlled as a popover. -->
 <div id="my-popover" popover>
@@ -58,9 +56,7 @@ Unlike popovers, modal dialogs typically use separate buttons for opening and cl
   <p>Are you sure you want to proceed?</p>
 
   <!-- MANDATORY: Use command="close" to dismiss the dialog safely. -->
-  <button commandfor="confirm-dialog" command="close">
-    Cancel
-  </button>
+  <button commandfor="confirm-dialog" command="close">Cancel</button>
 </dialog>
 ```
 
@@ -82,8 +78,8 @@ Install the polyfill via npm (`npm install invokers-polyfill`). This approach is
 ```javascript
 // MANDATORY: Feature detect 'commandForElement' on HTMLButtonElement.prototype.
 // Conditionally load the invokers-polyfill only in browsers lacking native support.
-if (!('commandForElement' in HTMLButtonElement.prototype)) {
-  import('invokers-polyfill');
+if (!("commandForElement" in HTMLButtonElement.prototype)) {
+  import("invokers-polyfill");
 }
 ```
 
@@ -94,8 +90,8 @@ For projects without a bundler, dynamically import the polyfill directly from a 
 <script type="module">
   // MANDATORY: Feature detect 'commandForElement' on HTMLButtonElement.prototype.
   // Conditionally load the invokers-polyfill from a CDN only in browsers lacking native support.
-  if (!('commandForElement' in HTMLButtonElement.prototype)) {
-    import('https://esm.run/invokers-polyfill');
+  if (!("commandForElement" in HTMLButtonElement.prototype)) {
+    import("https://esm.run/invokers-polyfill");
   }
 </script>
 ```
@@ -105,18 +101,20 @@ MANDATORY: This polyfill does not handle the ARIA states (e.g., `aria-expanded`)
 
 ```javascript
 // 2. Manually manage ARIA states in your listener
-document.getElementById('action-target').addEventListener('command', (event) => {
-  const command = event.command;
-  const target = event.target;
-  const source = event.source; // The button that triggered the command
+document
+  .getElementById("action-target")
+  .addEventListener("command", (event) => {
+    const command = event.command;
+    const target = event.target;
+    const source = event.source; // The button that triggered the command
 
-  if (command === '--spin') {
-    const isSpun = target.classList.toggle('is-spun');
-    
-    // Polyfill tip: Manually update ARIA to match the new state
-    source?.setAttribute('aria-pressed', isSpun);
-  }
-});
+    if (command === "--spin") {
+      const isSpun = target.classList.toggle("is-spun");
+
+      // Polyfill tip: Manually update ARIA to match the new state
+      source?.setAttribute("aria-pressed", isSpun);
+    }
+  });
 ```
 
 ### Fallbacks & browser support for Popover
@@ -140,6 +138,7 @@ if (!Object.hasOwn(HTMLElement.prototype, "popover")) {
 If not using a package manager, import from a CDN, e.g. `"https://unpkg.com/@oddbird/popover-polyfill@latest/dist/popover.min.js"`.
 
 Caveats when using the polyfill:
+
 - Do NOT use the `popover` IDL attribute for any code that may run before the polyfill is fully loaded. It will not be mirrored as an attribute, the popover will not be picked up by the polyfill, and the property will be shadowing the accessor the polyfill adds forever. Use `setAttribute()`/`removeAttribute()` instead.
 - **Styling caveat:** The polyfill cannot define the real `:popover-open` pseudo-class, so it applies a `.\:popover-open` class instead. **MANDATORY:** Combine the two with `:is()` or `:where()`, otherwise browsers that lack `:popover-open` discard the entire rule:
 

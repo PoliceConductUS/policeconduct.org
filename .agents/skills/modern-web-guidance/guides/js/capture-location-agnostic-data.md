@@ -4,13 +4,13 @@ Recording chronological data that should remain identical regardless of the view
 
 The `Temporal` API provides a family of location-agnostic **"Plain" types** that carry no time zone offset and represent calendar dates and wall-clock times exactly as read off a calendar or clock:
 
-| Type | What It Models | Typical Use Cases |
-|---|---|---|
-| `Temporal.PlainDate` | Full calendar date (`year`, `month`, `day`) | Birthdates, event dates, subscription billing dates |
-| `Temporal.PlainTime` | Wall-clock time (`hour`, `minute`, `second`, ...) | Daily alarms (9:00 AM wherever the user is), store hours |
-| `Temporal.PlainDateTime` | Calendar date + wall-clock time without a time zone | Floating local schedules, combining a `PlainDate` and `PlainTime` before attaching a zone |
-| `Temporal.PlainMonthDay` | Month and day without a year | Recurring annual birthdays, anniversaries, fixed holidays |
-| `Temporal.PlainYearMonth` | Year and month without a day | Credit card expirations (`2027-12`), monthly billing periods |
+| Type                      | What It Models                                      | Typical Use Cases                                                                         |
+| ------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `Temporal.PlainDate`      | Full calendar date (`year`, `month`, `day`)         | Birthdates, event dates, subscription billing dates                                       |
+| `Temporal.PlainTime`      | Wall-clock time (`hour`, `minute`, `second`, ...)   | Daily alarms (9:00 AM wherever the user is), store hours                                  |
+| `Temporal.PlainDateTime`  | Calendar date + wall-clock time without a time zone | Floating local schedules, combining a `PlainDate` and `PlainTime` before attaching a zone |
+| `Temporal.PlainMonthDay`  | Month and day without a year                        | Recurring annual birthdays, anniversaries, fixed holidays                                 |
+| `Temporal.PlainYearMonth` | Year and month without a day                        | Credit card expirations (`2027-12`), monthly billing periods                              |
 
 ## How to Implement
 
@@ -26,14 +26,14 @@ The `Temporal` API provides a family of location-agnostic **"Plain" types** that
 
 ```javascript
 // 1. Parse a calendar date and a wall-clock time from input strings
-const birthdate = Temporal.PlainDate.from('1990-01-01');
-const reminderTime = Temporal.PlainTime.from('09:00');
+const birthdate = Temporal.PlainDate.from("1990-01-01");
+const reminderTime = Temporal.PlainTime.from("09:00");
 
 // Combine into a location-agnostic PlainDateTime without string interpolation
 const localAppointment = birthdate.toPlainDateTime(reminderTime);
 
 // 2. Display without time zone conversion; outputs the same date in any time zone
-console.log(birthdate.toLocaleString('en-GB'));
+console.log(birthdate.toLocaleString("en-GB"));
 console.log(localAppointment.toString()); // "1990-01-01T09:00:00"
 
 // 3. Read calendar fields directly from the Plain type. A PlainDate already *is*
@@ -50,7 +50,7 @@ const { year, month, day } = birthdate;
 const annualHoliday = Temporal.PlainMonthDay.from({
   month: 10,
   day: 31,
-  calendar: 'iso8601',
+  calendar: "iso8601",
 });
 
 const today = Temporal.Now.plainDateISO();
@@ -64,7 +64,7 @@ const occurrenceThisYear = annualHoliday.toPlainDate({ year: today.year });
 const cardExpiry = Temporal.PlainYearMonth.from({
   year: 2027,
   month: 12,
-  calendar: 'iso8601',
+  calendar: "iso8601",
 });
 const currentMonth = today.toPlainYearMonth();
 const isExpired = Temporal.PlainYearMonth.compare(cardExpiry, currentMonth) < 0;
@@ -73,15 +73,15 @@ const isExpired = Temporal.PlainYearMonth.compare(cardExpiry, currentMonth) < 0;
 ### Example: Recurring Monthly Intervals (`overflow: 'constrain'` vs `'reject'`)
 
 ```javascript
-const billingStart = Temporal.PlainDate.from('2024-01-31');
+const billingStart = Temporal.PlainDate.from("2024-01-31");
 
 // Default overflow: 'constrain' clamps Jan 31 + 1 month to the last valid day of February
-const nextBilling = billingStart.add({ months: 1 }, { overflow: 'constrain' });
+const nextBilling = billingStart.add({ months: 1 }, { overflow: "constrain" });
 console.log(nextBilling.toString()); // "2024-02-29" (2024 is a leap year)
 
 // Use overflow: 'reject' to throw a RangeError when the target day does not exist
 try {
-  billingStart.add({ months: 1 }, { overflow: 'reject' });
+  billingStart.add({ months: 1 }, { overflow: "reject" });
 } catch (err) {
   // RangeError: day 31 does not exist in February
 }
@@ -89,21 +89,21 @@ try {
 
 ### Example: Interoperating with Legacy `Date`
 
-A legacy `Date` is a timestamp (an instant), not a calendar date. Storing `"1990-01-01"` as a `Date` forces you to pick *some* instant (typically midnight UTC), and reading it back in a time zone west of UTC yields `"31/12/1989"`. If a library or API still requires a `Date`, convert explicitly through `Temporal.Instant` rather than building ISO strings by hand:
+A legacy `Date` is a timestamp (an instant), not a calendar date. Storing `"1990-01-01"` as a `Date` forces you to pick _some_ instant (typically midnight UTC), and reading it back in a time zone west of UTC yields `"31/12/1989"`. If a library or API still requires a `Date`, convert explicitly through `Temporal.Instant` rather than building ISO strings by hand:
 
 ```javascript
 // PlainDate -> Date: attach a time zone (time of day defaults to the start of
 // that day) to get an Instant, then hand the epoch milliseconds to Date.
 // 'UTC' is a deliberate choice and must be documented; any zone would do,
 // but the stored instant depends on it.
-const instant = birthdate.toZonedDateTime('UTC').toInstant();
+const instant = birthdate.toZonedDateTime("UTC").toInstant();
 const legacyDate = new Date(instant.epochMilliseconds);
 
 // Date -> PlainDate: go back through Instant (legacyDate.toTemporalInstant()
 // is equivalent), then project into an explicit time zone. The result depends
 // on the zone, which is exactly the drift risk.
 const viewedDate = Temporal.Instant.fromEpochMilliseconds(legacyDate.getTime())
-  .toZonedDateTimeISO('America/New_York')
+  .toZonedDateTimeISO("America/New_York")
   .toPlainDate();
 
 // Compare Plain types with .equals() (or Temporal.PlainDate.compare), not strings.
@@ -137,9 +137,9 @@ Note that importing `temporal-polyfill` does not automatically assign the `Tempo
 ```javascript
 // Check if Temporal is supported natively
 (async () => {
-  if (typeof Temporal === 'undefined') {
+  if (typeof Temporal === "undefined") {
     // Load the polyfill conditionally
-    const module = await import('https://esm.sh/temporal-polyfill');
+    const module = await import("https://esm.sh/temporal-polyfill");
     globalThis.Temporal = module.Temporal;
     // Extend Date.prototype if needed
     Date.prototype.toTemporalInstant = module.toTemporalInstant;
