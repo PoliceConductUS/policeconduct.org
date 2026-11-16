@@ -12,6 +12,29 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 
+function initializeRepository(dir) {
+  writeFileSync(join(dir, ".gitignore"), "dist/\n.release/\ncalls\nbin/\n");
+  const git = (...args) => {
+    const result = spawnSync("/usr/bin/git", ["-C", dir, ...args], {
+      encoding: "utf8",
+    });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  };
+  git("init", "-b", "main");
+  git("add", ".");
+  git(
+    "-c",
+    "user.name=Fixture",
+    "-c",
+    "user.email=fixture@example.invalid",
+    "commit",
+    "-m",
+    "fixture",
+  );
+  return git("rev-parse", "HEAD");
+}
+
 for (const [name, script, args, builds] of [
   ["preview sync", "deploy-preview-sync.sh", [], false],
   ["preview build", "deploy-preview.sh", [], true],
@@ -45,16 +68,7 @@ for (const [name, script, args, builds] of [
         );
         writeFileSync(join(root, ".release/data/dynamic.json"), "{}");
         const preview = name.startsWith("preview");
-        const releaseId = (preview ? "pr-123" : "prod") + "-temp";
-        writeFileSync(join(root, ".release/id"), releaseId);
-        writeFileSync(
-          join(root, ".release/source.json"),
-          JSON.stringify({
-            commit: "fixture",
-            branch: preview ? "feature" : "main",
-            pr: preview ? "123" : null,
-          }),
-        );
+        let releaseId;
         for (const file of [
           "deploy-preview.sh",
           "upload-release.sh",
@@ -68,6 +82,16 @@ for (const [name, script, args, builds] of [
             join(root, "scripts", file),
           );
         }
+        releaseId = initializeRepository(root);
+        writeFileSync(join(root, ".release/id"), releaseId);
+        writeFileSync(
+          join(root, ".release/source.json"),
+          JSON.stringify({
+            commit: releaseId,
+            branch: preview ? "feature" : "main",
+            pr: preview ? "123" : null,
+          }),
+        );
         const seal = spawnSync(
           process.execPath,
           ["scripts/release-files.mjs", "--record", releaseId],
@@ -77,7 +101,7 @@ for (const [name, script, args, builds] of [
         const log = join(root, "calls");
         writeFileSync(log, "");
         for (const [command, body] of Object.entries({
-          git: "echo main",
+          git: 'exec /usr/bin/git "$@"',
           npm: 'echo "npm $*" >> "$CALL_LOG"\nif [[ "$*" == "run validate:redirects" ]]; then exit "$COVERAGE_EXIT"; fi',
           aws: 'echo "aws $*" >> "$CALL_LOG"\nexit 71',
           node: 'if [[ "$1" == scripts/release-files.mjs ]]; then exec "$TEST_NODE" "$@"; fi\necho "node $*" >> "$CALL_LOG"\nexit 72',
@@ -175,22 +199,39 @@ test("successful builds bind matching folder IDs to the site and private roster;
       new URL("release-files.mjs", import.meta.url),
       join(dir, "scripts/release-files.mjs"),
     );
-    spawnSync("/usr/bin/git", ["init", "-b", "main", dir]);
-    spawnSync("/usr/bin/git", [
-      "-C",
-      dir,
-      "-c",
-      "user.name=Fixture",
-      "-c",
-      "user.email=fixture@example.invalid",
-      "commit",
-      "--allow-empty",
-      "-m",
-      "fixture",
-    ]);
-    const commit = spawnSync("/usr/bin/git", ["-C", dir, "rev-parse", "HEAD"], {
-      encoding: "utf8",
-    }).stdout.trim();
+    const commit = initializeRepository(dir);
+    const build = (env = {}) =>
+      spawnSync(process.execPath, ["scripts/build-release.mjs"], {
+        cwd: dir,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          PATH: join(dir, "bin") + ":" + process.env.PATH,
+          BUILD_EXIT: "0",
+          RELEASE_ID: "",
+          ...env,
+        },
+      });
+    assert.match(
+      build({ RELEASE_ID: "prod-temp" }).stderr,
+      /current commit hash/,
+    );
+    for (const staged of [false, true]) {
+      writeFileSync(join(dir, "new-source.txt"), "uncommitted");
+      if (staged)
+        spawnSync("/usr/bin/git", ["-C", dir, "add", "new-source.txt"]);
+      assert.match(build().stderr, /clean repository/);
+      if (staged)
+        spawnSync("/usr/bin/git", ["-C", dir, "reset", "--", "new-source.txt"]);
+      rmSync(join(dir, "new-source.txt"));
+    }
+    const original = readFileSync(
+      join(dir, "scripts/write-release-news.mjs"),
+      "utf8",
+    );
+    writeFileSync(join(dir, "scripts/write-release-news.mjs"), original + "\n");
+    assert.match(build().stderr, /clean repository/);
+    writeFileSync(join(dir, "scripts/write-release-news.mjs"), original);
     const ids = new Set();
     for (const [pr, exit] of [
       ["", "0"],
@@ -245,6 +286,16 @@ test("successful builds bind matching folder IDs to the site and private roster;
           { cwd: dir },
         );
       assert.equal(check().status, 0);
+      writeFileSync(join(dir, "untracked.txt"), "dirty");
+      assert.match(check().stderr.toString(), /clean repository/);
+      rmSync(join(dir, "untracked.txt"));
+      const wrongCommit = spawnSync(
+        process.execPath,
+        ["scripts/release-files.mjs", "--verify", "prod-temp"],
+        { cwd: dir },
+      );
+      assert.match(wrongCommit.stderr.toString(), /current commit hash/);
+
       writeFileSync(join(dir, "dist/index.html"), "different build");
       assert.notEqual(check().status, 0);
       const productionCheck = spawnSync(

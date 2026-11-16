@@ -286,13 +286,38 @@ function deploy(
         readFileSync(resolve("scripts", name)),
       );
     }
-    const releaseId =
-      (scriptName.startsWith("deploy-preview") ? "pr-12" : "prod") + "-temp";
+    writeFileSync(
+      join(dir, ".gitignore"),
+      "dist/\n.release/\n.deploy-cache/\ncalls\nbin/\n",
+    );
+    for (const args of [
+      ["init", "-b", "main"],
+      ["add", "."],
+      [
+        "-c",
+        "user.name=Fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit",
+        "-m",
+        "fixture",
+      ],
+    ]) {
+      const result = spawnSync("/usr/bin/git", args, {
+        cwd: dir,
+        encoding: "utf8",
+      });
+      assert.equal(result.status, 0, result.stderr);
+    }
+    const releaseId = spawnSync("/usr/bin/git", ["rev-parse", "HEAD"], {
+      cwd: dir,
+      encoding: "utf8",
+    }).stdout.trim();
     writeFileSync(join(dir, ".release/id"), releaseId);
     writeFileSync(
       join(dir, ".release/source.json"),
       JSON.stringify({
-        commit: "fixture",
+        commit: releaseId,
         branch: scriptName.startsWith("deploy-preview") ? "feature" : "main",
         pr: null,
       }),

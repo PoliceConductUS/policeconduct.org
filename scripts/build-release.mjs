@@ -9,18 +9,15 @@ const commit = execFileSync("git", ["rev-parse", "HEAD"], {
 const branch = execFileSync("git", ["branch", "--show-current"], {
   encoding: "utf8",
 }).trim();
-const releaseId = process.env.RELEASE_ID || commit;
+const releaseId = commit;
+if (process.env.RELEASE_ID && process.env.RELEASE_ID !== commit)
+  throw new Error("Deployment folder must equal the current commit hash");
 if (
-  !releaseId ||
-  releaseId === "." ||
-  releaseId === ".." ||
-  /[\\/]/.test(releaseId) ||
-  Array.from(releaseId).some(
-    (character) =>
-      character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
-  )
+  execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], {
+    encoding: "utf8",
+  }).trim()
 )
-  throw new Error("Expected a single deployment folder name");
+  throw new Error("Deployment requires a clean repository");
 const options = {
   stdio: "inherit",
   env: { ...process.env, RELEASE_ID: releaseId },

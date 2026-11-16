@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   openSync,
@@ -43,6 +44,17 @@ if (!source.commit || typeof source.branch !== "string")
   throw new Error("Missing build source");
 if (process.argv[4] === "prod" && (source.branch !== "main" || source.pr))
   throw new Error("Only builds from main may be uploaded to the site bucket");
+if (mode === "--verify") {
+  const git = (...args) =>
+    execFileSync("git", args, { encoding: "utf8" }).trim();
+  if (git("status", "--porcelain", "--untracked-files=all"))
+    throw new Error("Deployment requires a clean repository");
+  const commit = git("rev-parse", "HEAD");
+  if (releaseId !== commit || source.commit !== commit)
+    throw new Error(
+      "Rebuild before upload: release must match the current commit hash",
+    );
+}
 inventory.update(JSON.stringify(source) + "\n");
 visit("dist");
 visit(".release/data");

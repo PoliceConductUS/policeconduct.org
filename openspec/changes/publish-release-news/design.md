@@ -101,7 +101,7 @@ Technical details still to select include the source of valid form-release IDs, 
 
 ## Approved deployment folder correction
 
-The operator may choose any single folder name, including `prod-temp`. New builds default to the full Git commit hash. Hosting uses `<folder>/build/` and `<folder>/override/`; existing private records stay in private release storage. Build source metadata records the branch and commit and participates in the completion inventory. Only main builds can upload to the site bucket. Branch and PR builds upload to preview. Main deployment also uploads to preview and selects `current:main`, which serves the bare preview host with the preview API and noindex response headers.
+Build and deploy scripts require a clean repository and use its full current Git commit hash. Upload rejects an artifact from another commit. Promotion and retirement require an explicit existing folder argument, including migration folders such as `prod-temp`. Hosting uses `<folder>/build/` and `<folder>/override/`; existing private records stay in private release storage. Build source metadata records the branch and commit and participates in the completion inventory. Only main builds can upload to the site bucket. Branch and PR builds upload to preview. Main deployment also uploads to preview and selects `current:main`, which serves the bare preview host with the preview API and noindex response headers.
 
 Promotion verifies complete content, selects the existing KVS pointer and invalidates CloudFront. Retirement reads the live production pointer and refuses its active folder or an unreadable pointer. Named folders must identify exactly one root folder. Closing a PR removes its host pointer without deleting a commit folder another host may use.
 
