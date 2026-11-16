@@ -843,28 +843,22 @@ a.stat-cell {
 }
 
 .entity-side-list li {
-  align-items: center;
   border-top: 1px solid var(--ipc-color-rule);
-  display: flex;
-  gap: 0.75rem;
-  justify-content: space-between;
-  padding: 0.6rem 0;
 }
 
-.entity-side-list li span {
-  color: var(--ipc-color-ink-soft);
-  font-size: var(--ipc-type-small);
-}
-
+/* The whole row is the control. */
 .entity-side .entity-side-link {
   background: none;
   border: none;
   color: var(--ipc-color-teal);
   cursor: pointer;
+  display: block;
   font-size: var(--ipc-type-small);
   font-weight: 700;
-  padding: 0;
+  padding: 0.6rem 0;
+  text-align: start;
   text-decoration: none;
+  width: 100%;
 }
 
 @media (hover: hover) {

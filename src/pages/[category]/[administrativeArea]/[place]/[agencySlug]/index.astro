@@ -427,35 +427,32 @@ const structuredData = {
     <h2>Add what is missing</h2>
     <ul class="entity-side-list">
       <li>
-        <span>Add personnel</span>
         <PrefillNavButton
           to="/personnel/new/"
           payload={suggestPersonnelPrefillPayload}
           class="entity-side-link"
         >
-          Start<span class="visually-hidden">to add personnel</span>
+          Add personnel →
         </PrefillNavButton>
       </li>
       <li>
-        <span>Get updates</span>
         <PrefillNavButton
           to="/about/contact/"
           payload={subscribePrefillPayload}
           data-testid="agency-subscribe-link"
           class="entity-side-link"
         >
-          Start<span class="visually-hidden">to get updates</span>
+          Get updates →
         </PrefillNavButton>
       </li>
       <li>
-        <span>Claim this profile</span>
         <PrefillNavButton
           to="/about/contact/"
           payload={claimProfilePrefillPayload}
           data-testid="agency-claim-profile-link"
           class="entity-side-link"
         >
-          Start<span class="visually-hidden">to claim this profile</span>
+          Claim this profile →
         </PrefillNavButton>
       </li>
     </ul>
