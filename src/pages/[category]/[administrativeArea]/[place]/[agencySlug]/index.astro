@@ -427,10 +427,9 @@ const structuredData = {
         <PrefillNavButton
           to="/personnel/new/"
           payload={suggestPersonnelPrefillPayload}
-          aria-label="Suggest new personnel"
           class="entity-side-link"
         >
-          Start
+          Start<span class="visually-hidden">: add personnel</span>
         </PrefillNavButton>
       </li>
       <li>
@@ -438,11 +437,10 @@ const structuredData = {
         <PrefillNavButton
           to="/about/contact/"
           payload={subscribePrefillPayload}
-          aria-label="Get updates"
           data-testid="agency-subscribe-link"
           class="entity-side-link"
         >
-          Start
+          Start<span class="visually-hidden">: get updates</span>
         </PrefillNavButton>
       </li>
       <li>
@@ -450,26 +448,13 @@ const structuredData = {
         <PrefillNavButton
           to="/about/contact/"
           payload={claimProfilePrefillPayload}
-          aria-label="Claim this profile"
           data-testid="agency-claim-profile-link"
           class="entity-side-link"
         >
-          Start
+          Start<span class="visually-hidden">: claim this profile</span>
         </PrefillNavButton>
       </li>
-      <li>
-        <span>Download report</span>
-        <button
-          type="button"
-          data-agency-download-report
-          aria-label="Download report"
-          class="entity-action entity-side-link"
-        >
-          Soon
-        </button>
-      </li>
     </ul>
-    <span class="agency-coming-soon" data-agency-coming-soon></span>
   </aside>
 
   <StatStrip ariaLabel={`${agencyDisplayName} record totals`} columns="five">
