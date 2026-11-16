@@ -8,6 +8,12 @@
       "computedHash": "ce5b7348ecd357db6c0c162375f1fe171dbd02f2cff35b49cd81e4390438859f",
       "installMode": "copy"
     },
+    "be-ambitious": {
+      "source": "robonuggets/be-ambitious",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "b707df0407cf64aa6908585003e51c4c9faf414b01412a264592231b835cf950"
+    },
     "better-accessibility": {
       "source": "jakubkrehel/skills",
       "sourceType": "github",
