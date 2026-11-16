@@ -136,6 +136,9 @@ const main = async () => {
       // `.navbar-collapse.show`, Astro scope classes, AOS/Leaflet).
       greedy: [
         /^astro-/,
+        // Masthead search result rows are created by src/lib/client/site.js,
+        // so their classes are in no built page.
+        /^masthead-search-option/,
         /aos/,
         /data-aos/,
         /leaflet/,

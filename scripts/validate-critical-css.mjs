@@ -21,7 +21,12 @@ const cssDir = path.join(repoRoot, "dist/_astro");
 // Component selectors that must survive in the built CSS. Add to this list when
 // a component's styling is load-bearing and easy to lose to over-aggressive
 // purging or refactors.
-const REQUIRED_SELECTORS = [".masthead", ".nav-action-share", ".masthead-nav"];
+const REQUIRED_SELECTORS = [
+  ".masthead",
+  ".nav-action-share",
+  ".masthead-nav",
+  ".masthead-search-option",
+];
 
 // Loose backstop for a catastrophic collapse (near-empty CSS), NOT a target.
 // The token + selector checks below are the precise correctness gates; this
