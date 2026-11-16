@@ -504,7 +504,7 @@ Use `npm run analytics:pull`, `npm run analytics:compare`, and `npm run analytic
 
 ## Deployment folders
 
-Run `npm run deploy:preview` with `PR_NUMBER` or `PREVIEW_NAME` to build and upload to the preview bucket. Run `npm run deploy:prod` from main to upload to the site bucket and mirror the completed main build to bare preview. Both use the full Git commit as the folder by default; set `RELEASE_ID=prod-temp` to supply a folder name.
+Run `npm run deploy:preview` with `PR_NUMBER` or `PREVIEW_NAME` to build and upload to the preview bucket. Run `npm run deploy:prod` from main to upload to the site bucket and mirror the completed main build to bare preview. Both require a clean repository (no staged, unstaged or untracked changes) and use the full current Git commit as the folder. Uploading an existing build also requires its recorded commit and folder to match the current commit.
 
 Hosting stores originals at `<folder>/build/` and published replacements at `<folder>/override/`. Uploading a build leaves its overrides intact. Private records remain in the private release-data bucket.
 

@@ -39,7 +39,7 @@ sync_files() {
   done
 }
 # The Astro server bundle is build input, not a public site asset.
-metadata="build-commit=${GIT_COMMIT_SHA:-$(git rev-parse --short=12 HEAD)},build-dirty=${GIT_COMMIT_DIRTY:-$(if git diff --quiet HEAD -- && [[ -z "$(git ls-files --others --exclude-standard)" ]]; then echo 0; else echo 1; fi)}"
+metadata="build-commit=${release_id},build-dirty=0"
 sync_files dist/ "s3://${bucket}/${prefix}/build/" --exclude '.prerender/*' --cache-control no-cache --metadata "${metadata}"
 sync_files .release/data/ "s3://${private_bucket}/builds/${prefix}/data/" --exclude dynamic.json
 # The roster is also the completed-release marker. Upload last.
