@@ -4,9 +4,23 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+
+# The state guard below needs the operator's AWS profile. Read only that key from
+# the env files, without sourcing them, when the shell has not set one.
+if [[ -z "${AWS_PROFILE:-}" ]]; then
+  for env_file in "${REPO_ROOT}/.env" "${REPO_ROOT}/.env-policeconduct"; do
+    if [[ -f "${env_file}" ]]; then
+      env_profile="$(sed -n 's/^AWS_PROFILE=//p' "${env_file}" | tail -n 1 | tr -d "\"'")"
+      if [[ -n "${env_profile}" ]]; then
+        export AWS_PROFILE="${env_profile}"
+      fi
+    fi
+  done
+fi
+
 # Fail before environment loading, package installation, or any apply phase.
 bash "${ROOT_DIR}/../../scripts/require-terraform-state.sh" "${ROOT_DIR}"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 DOTENV_FILE="${REPO_ROOT}/.env"
 POLICECONDUCT_DOTENV_FILE="${REPO_ROOT}/.env-policeconduct"
@@ -199,12 +213,12 @@ warn_if_sentry_tf_var_missing() {
 preflight_resend_requirements() {
   if [[ -z "${RESEND_API_KEY+x}" && -z "${TF_VAR_forms_email_resend_api_key+x}" ]]; then
     echo "Error: missing RESEND_API_KEY for the forms Lambda send path." >&2
-    echo "Set RESEND_API_KEY in .env-policeconduct/.env or export TF_VAR_forms_email_resend_api_key." >&2
+    echo "Store it in Parameter Store as /policeconduct/secrets/RESEND_API_KEY." >&2
     exit 1
   fi
   if [[ -z "${RESEND_API_KEY_FULL_ACCESS+x}" ]]; then
     echo "Error: missing RESEND_API_KEY_FULL_ACCESS for Resend domain bootstrap." >&2
-    echo "Set RESEND_API_KEY_FULL_ACCESS in .env-policeconduct/.env." >&2
+    echo "Store it in Parameter Store as /policeconduct/secrets/RESEND_API_KEY_FULL_ACCESS." >&2
     exit 1
   fi
 }
@@ -297,6 +311,12 @@ run_foundation_apply() {
 }
 
 load_dotenv_if_present
+# Secrets come only from Parameter Store. Drop any Terraform copy the .env files
+# set, so the stored values are the ones Terraform receives.
+# shellcheck source=scripts/parameter-store-secrets.sh
+source "${REPO_ROOT}/scripts/parameter-store-secrets.sh"
+load_parameter_store_secrets RESEND_API_KEY RESEND_API_KEY_FULL_ACCESS SENTRY_AUTH_TOKEN GITHUB_TOKEN
+unset TF_VAR_sentry_auth_token TF_VAR_forms_email_resend_api_key
 map_common_env_to_tf_vars
 preflight_recaptcha_requirements
 set_github_tf_vars_from_origin

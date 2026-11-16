@@ -225,14 +225,14 @@ If a previous bootstrap wrote incorrect doubled-`mail` Route 53 records such as
 `send.mail.mail.policeconduct.org`, inspect the exact DNS diff and prepare a scoped
 change with rollback. Do not run an untargeted Terraform apply for email repairs.
 
-`infrastructure/bootstrap-policeconduct/scripts/apply.sh` now loads `.env-policeconduct` and maps `RESEND_API_KEY` into the Terraform input used by the forms Lambda. The same shell environment is used by the Resend bootstrap script, so keeping `RESEND_API_KEY` in `.env-policeconduct` is enough for the normal apply flow.
-
-Key split:
+`infrastructure/bootstrap-policeconduct/scripts/apply.sh` reads its secrets from AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`. It does not use a secret from a `.env` file; the stored value always wins.
 
 - `RESEND_API_KEY`: send-only key used by the forms Lambda verification-email path
 - `RESEND_API_KEY_FULL_ACCESS`: full-access key used only by `scripts/bootstrap-resend-domain.mjs` for Resend Domains API calls
+- `SENTRY_AUTH_TOKEN`: written to the GitHub `production` and `preview` environments
+- `GITHUB_TOKEN`: used by the Terraform GitHub provider
 
-`apply.sh` expects both keys to be present in `.env-policeconduct` or the shell environment.
+To change one, run `aws ssm put-parameter --overwrite --type SecureString --name /policeconduct/secrets/<NAME> --value file://<file>`.
 
 Example:
 
