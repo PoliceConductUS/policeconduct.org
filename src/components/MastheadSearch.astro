@@ -132,7 +132,9 @@
     padding: 0.3rem;
   }
 
-  .masthead-search-option {
+  /* Options are created by src/lib/client/site.js, so they never carry this
+     component's scope class. Reach them through the scoped listbox. */
+  .masthead-search-listbox :global(.masthead-search-option) {
     border-radius: 0.2rem;
     cursor: pointer;
     display: flex;
@@ -141,17 +143,17 @@
     padding: 0.45rem 0.6rem;
   }
 
-  .masthead-search-option.is-active {
+  .masthead-search-listbox :global(.masthead-search-option.is-active) {
     background: var(--ipc-color-teal-wash);
   }
 
-  .masthead-search-option-title {
+  .masthead-search-listbox :global(.masthead-search-option-title) {
     color: var(--ipc-color-ink);
     font-size: var(--ipc-type-small);
     font-weight: 700;
   }
 
-  .masthead-search-option-path {
+  .masthead-search-listbox :global(.masthead-search-option-path) {
     color: var(--ipc-color-ink-faint);
     font-size: var(--ipc-type-caption);
   }
