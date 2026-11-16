@@ -2129,7 +2129,7 @@ progress {
   color: #212529;
   background-color: #fff;
   background-clip: padding-box;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--ipc-color-ink-faint);
   appearance: none;
   border-radius: 0px;
   transition:
@@ -2150,7 +2150,7 @@ progress {
 .form-control:focus {
   color: #212529;
   background-color: #fff;
-  border-color: #8a8a8a;
+  border-color: var(--ipc-color-ink);
   outline: 0;
   box-shadow: 0 0 0 0.25rem rgba(21, 21, 21, 0.25);
 }
@@ -2284,7 +2284,7 @@ textarea.form-control-lg {
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   background-size: 16px 12px;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--ipc-color-ink-faint);
   border-radius: 0px;
   transition:
     border-color 0.15s ease-in-out,
@@ -2297,7 +2297,7 @@ textarea.form-control-lg {
   }
 }
 .form-select:focus {
-  border-color: #8a8a8a;
+  border-color: var(--ipc-color-ink);
   outline: 0;
   box-shadow: 0 0 0 0.25rem rgba(21, 21, 21, 0.25);
 }
@@ -2361,7 +2361,7 @@ textarea.form-control-lg {
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  border: 1px solid rgba(21, 21, 21, 0.25);
+  border: 1px solid var(--ipc-color-ink-faint);
   appearance: none;
   print-color-adjust: exact;
 }
@@ -2375,7 +2375,7 @@ textarea.form-control-lg {
   filter: brightness(90%);
 }
 .form-check-input:focus {
-  border-color: #8a8a8a;
+  border-color: var(--ipc-color-ink);
   outline: 0;
   box-shadow: 0 0 0 0.25rem rgba(21, 21, 21, 0.25);
 }
@@ -2657,7 +2657,7 @@ textarea.form-control-lg {
   text-align: center;
   white-space: nowrap;
   background-color: #e9ecef;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--ipc-color-ink-faint);
   border-radius: 0px;
 }
 
