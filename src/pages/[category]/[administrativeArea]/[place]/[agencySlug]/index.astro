@@ -352,6 +352,10 @@ const structuredData = {
             (phone: { phone_number: string; description?: string | null }) => {
               const label = (phone.description || "").trim();
               const showLabel = label && label.toLowerCase() !== "phone";
+              // A fax number is not something to dial from a phone.
+              if (label.toLowerCase() === "fax") {
+                return <span>{`${label}: ${phone.phone_number}`}</span>;
+              }
               return (
                 <a
                   href={`tel:${phone.phone_number}`}
