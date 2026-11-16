@@ -879,15 +879,6 @@ a.stat-cell {
   }
 }
 
-.agency-coming-soon {
-  color: var(--ipc-color-ink-soft);
-  display: block;
-  font-size: var(--ipc-type-caption);
-  font-weight: 700;
-  margin-top: 0.5rem;
-  min-height: 1.15rem;
-}
-
 .recent-list {
   display: grid;
 }

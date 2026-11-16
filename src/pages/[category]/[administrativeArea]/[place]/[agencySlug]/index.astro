@@ -559,30 +559,6 @@ const structuredData = {
   <RecordDataNotes recordPath={agencyPath} />
 </PageShell>
 
-<script>
-  const setComingSoon = (button: Element, message: string) => {
-    const side = button.closest(".entity-side");
-    const output = side?.querySelector("[data-agency-coming-soon]");
-    if (output) output.textContent = message;
-  };
-
-  const trackAgencyInterest = (eventName: string) => {
-    window.__IPC_ANALYTICS__?.track?.(eventName, {
-      agency_path: window.location.pathname,
-      page_path: window.location.pathname,
-    });
-  };
-
-  document
-    .querySelectorAll("[data-agency-download-report]")
-    .forEach((button) => {
-      button.addEventListener("click", () => {
-        trackAgencyInterest("agency_report_download_interest");
-        setComingSoon(button, "Downloadable agency reports are coming soon.");
-      });
-    });
-</script>
-
 <style>
   .agency-status {
     margin-block: 1rem;
