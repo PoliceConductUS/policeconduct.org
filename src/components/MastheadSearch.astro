@@ -54,6 +54,12 @@
       aria-label="Search results"
       data-site-search-listbox
     ></ul>
+    <p class="masthead-search-empty" data-site-search-empty hidden>
+      No results.{" "}
+      <a href="/find-records/" data-site-search-empty-link>
+        Search places and agencies
+      </a>
+    </p>
   </div>
   <p
     class="visually-hidden"
@@ -145,6 +151,13 @@
 
   .masthead-search-listbox :global(.masthead-search-option.is-active) {
     background: var(--ipc-color-teal-wash);
+  }
+
+  .masthead-search-empty {
+    color: var(--ipc-color-ink-soft);
+    font-size: var(--ipc-type-small);
+    margin: 0;
+    padding: 0.75rem 0.9rem;
   }
 
   .masthead-search-listbox :global(.masthead-search-option-title) {

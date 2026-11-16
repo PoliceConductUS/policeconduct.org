@@ -338,11 +338,15 @@ const initSiteSearch = () => {
   const panel = form.querySelector("[data-site-search-panel]");
   const listbox = form.querySelector("[data-site-search-listbox]");
   const status = form.querySelector("[data-site-search-status]");
+  const empty = form.querySelector("[data-site-search-empty]");
+  const emptyLink = form.querySelector("[data-site-search-empty-link]");
   if (
     !(input instanceof HTMLInputElement) ||
     !(panel instanceof HTMLElement) ||
     !(listbox instanceof HTMLElement) ||
-    !(status instanceof HTMLElement)
+    !(status instanceof HTMLElement) ||
+    !(empty instanceof HTMLElement) ||
+    !(emptyLink instanceof HTMLAnchorElement)
   ) {
     return;
   }
@@ -390,6 +394,7 @@ const initSiteSearch = () => {
 
   const closePanel = () => {
     panel.hidden = true;
+    empty.hidden = true;
     input.setAttribute("aria-expanded", "false");
     input.removeAttribute("aria-activedescendant");
     activeIndex = -1;
@@ -465,11 +470,21 @@ const initSiteSearch = () => {
     });
 
     if (results.length > 0) {
+      empty.hidden = true;
       panel.hidden = false;
       input.setAttribute("aria-expanded", "true");
     } else {
       closePanel();
     }
+  };
+
+  // A search that matches nothing keeps the panel open with a visible note and
+  // a link that runs the same term on /find-records/. The listbox stays empty,
+  // so the combobox still reports aria-expanded="false".
+  const showNoResults = (term) => {
+    emptyLink.href = `/find-records/?q=${encodeURIComponent(term)}`;
+    empty.hidden = false;
+    panel.hidden = false;
   };
 
   const runSearch = async (term) => {
@@ -517,6 +532,9 @@ const initSiteSearch = () => {
       }));
       activeIndex = -1;
       renderResults();
+      if (results.length === 0) {
+        showNoResults(term);
+      }
       setStatus(
         results.length === 0
           ? "No results"
