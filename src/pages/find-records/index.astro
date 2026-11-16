@@ -284,7 +284,9 @@ const finderGroups = [
       setStatus(
         visibleTotal === 0
           ? `No matching records for "${input?.value.trim() || query}".`
-          : `Showing ${visibleTotal} of ${matchTotal} matching records.`,
+          : visibleTotal < matchTotal
+            ? `Showing ${visibleTotal} of ${matchTotal} matching records. Type more to narrow the list.`
+            : `Showing ${visibleTotal} of ${matchTotal} matching records.`,
       );
 
       completedSearch = finderDataLoaded
