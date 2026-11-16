@@ -26,7 +26,7 @@ let personnelFixture: PersonnelFixture | null = null;
 
 test.beforeAll(async () => {
   const configuredDatabaseUrl = process.env.DATABASE_URL;
-  for (const path of [".env", ".env-recaptcha", ".env-policeconduct"])
+  for (const path of [".env"])
     dotenv.config({ path, override: true, quiet: true });
   if (configuredDatabaseUrl !== undefined)
     process.env.DATABASE_URL = configuredDatabaseUrl;

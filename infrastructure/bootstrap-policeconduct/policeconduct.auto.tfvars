@@ -30,6 +30,8 @@ alarm_actions                                  = []
 alert_topic_name                               = "policeconduct-alerts"
 alert_email_endpoints                          = ["hello@policeconduct.org"]
 enable_site_bucket_versioning                  = true
+sentry_org                                     = "institute-for-police-conduct-i"
+sentry_project                                 = "policeconduct"
 recaptcha_min_score                            = 0.5
 extra_dns_records = [
   {

@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { resolveTerraformEnv } from "./terraform-outputs.mjs";
 
 const [operation, folder] = process.argv.slice(2);
 if (
@@ -13,6 +14,12 @@ if (
   )
 )
   throw new Error("Expected promote or delete and one folder name");
+resolveTerraformEnv([
+  "S3_BUCKET",
+  "RELEASE_DATA_BUCKET",
+  "KVS_ARN",
+  "CLOUDFRONT_DIST_ID",
+]);
 const { S3_BUCKET, RELEASE_DATA_BUCKET, KVS_ARN } = process.env;
 if (!S3_BUCKET || !RELEASE_DATA_BUCKET || !KVS_ARN)
   throw new Error("Missing production bucket/store configuration");

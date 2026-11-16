@@ -95,45 +95,16 @@ If reCAPTCHA apply fails with Google auth errors (`invalid_grant` /
 
 - `infrastructure/bootstrap-recaptcha/README.md`
 
-## Using .env
+## Where values come from
 
-This stack syncs Terraform outputs into `.env-policeconduct` (gitignored).
-You can keep local values there and load before Terraform:
+- **Inputs** for each stack are tracked in its `*.auto.tfvars` file.
+- **Secrets** live only in AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`.
+- **Deployed resource names** (buckets, CloudFront IDs, redirect stores, the preview forms API URL, the reCAPTCHA site key) are Terraform outputs. Scripts read them at run time through `scripts/terraform-outputs.mjs`; nothing copies them into a file. A value already set in the environment is kept, which is how CI passes them in.
+- **Machine settings** go in the git-ignored `.env` at the repo root: `AWS_PROFILE`, `DATABASE_URL`, `INTAKE_WORKSPACE`, and the public `PUBLIC_GA_MEASUREMENT_ID`, `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT`.
 
-```bash
-set -a
-source .env-policeconduct
-set +a
-bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
-```
+Reading a Terraform output needs AWS credentials for the account that holds the state. The first read in a new checkout runs `terraform init` for that stack.
 
-Example `.env` keys:
-
-- `GITHUB_TOKEN`
-- `GA_MEASUREMENT_ID_PRODUCTION`
-- `GA_MEASUREMENT_ID_PREVIEW`
-- `SENTRY_DSN_PRODUCTION`
-- `SENTRY_DSN_PREVIEW`
-- `SENTRY_ORG`
-- `SENTRY_PROJECT`
-- `SENTRY_AUTH_TOKEN`
-- `RECAPTCHA_PROJECT_ID`
-- `RECAPTCHA_SITE_KEY`
-- `RECAPTCHA_SERVICE_ACCOUNT_EMAIL`
-- `RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME`
-- `RECAPTCHA_WIF_AUDIENCE`
-- `DRAFTS_BUCKET`
-- `DRAFTS_KMS_KEY_ID`
-- `SUBMISSIONS_BUCKET`
-- `SUBMISSIONS_KMS_KEY_ID`
-- `TF_STATE_BUCKET`
-- `AWS_ROLE_ARN`
-- `S3_BUCKET`
-- `CLOUDFRONT_DIST_ID`
-
-`scripts/apply.sh` runs Terraform apply and then syncs `.env-policeconduct` after each phase.
-
-The inputs for this stack are tracked in `policeconduct.auto.tfvars`, which Terraform loads on every plan and apply, so every checkout and worktree plans against the same values. Secrets never go in that file: tokens and API keys come from the git-ignored `.env` files. A private `terraform.tfvars` is not needed; values in `policeconduct.auto.tfvars` take precedence over one.
+The inputs for this stack are tracked in `policeconduct.auto.tfvars`, which Terraform loads on every plan and apply, so every checkout and worktree plans against the same values. Secrets never go in that file. A private `terraform.tfvars` is not needed; values in `policeconduct.auto.tfvars` take precedence over one.
 
 Before it changes anything, `scripts/apply.sh`:
 
@@ -141,10 +112,6 @@ Before it changes anything, `scripts/apply.sh`:
 - asks for `yes`, then applies exactly that plan. When live infrastructure already matches, it applies nothing.
 
 `extra_dns_records` must not repeat a record that `existing-dns.tf` manages; the plan fails if it does.
-The sync step comments any existing matching `KEY=...` line in `.env-policeconduct` and appends the latest value from Terraform outputs.
-It also writes all outputs as `TF_OUT_<OUTPUT_NAME>` keys (uppercase, non-alphanumeric chars replaced with `_`).
-For reCAPTCHA values, sync falls back to `.env-recaptcha` and fails fast if any required key is still missing.
-Result: `.env-policeconduct` remains the complete runtime env for local site/forms work.
 
 ## Shared redirect rollout
 
@@ -248,7 +215,8 @@ updates, or triggers verification of the Resend domain.
 To inspect the domain manually:
 
 ```bash
-source .env-policeconduct
+source scripts/parameter-store-secrets.sh
+load_parameter_store_secrets RESEND_API_KEY_FULL_ACCESS
 node scripts/bootstrap-resend-domain.mjs --read
 ```
 
@@ -258,14 +226,16 @@ or triggers verification. Configure tracking separately through the Resend
 Domains API or dashboard after inspecting the current settings. After obtaining the applicable production approval, run:
 
 ```bash
-source .env-policeconduct
+source scripts/parameter-store-secrets.sh
+load_parameter_store_secrets RESEND_API_KEY_FULL_ACCESS
 node scripts/bootstrap-resend-domain.mjs --apply
 ```
 
 If you want to trigger a Resend verification pass manually after DNS changes:
 
 ```bash
-source .env-policeconduct
+source scripts/parameter-store-secrets.sh
+load_parameter_store_secrets RESEND_API_KEY_FULL_ACCESS
 node scripts/bootstrap-resend-domain.mjs --verify
 ```
 

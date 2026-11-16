@@ -17,7 +17,7 @@ let offices: FederalOffice[];
 let parents: FederalParent[];
 
 const fixtureEnv: Record<string, string> = {};
-for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
+for (const path of [".env"]) {
   dotenv.config({ path, processEnv: fixtureEnv, override: true, quiet: true });
 }
 const databaseUrl = process.env.DATABASE_URL ?? fixtureEnv.DATABASE_URL;
@@ -59,7 +59,7 @@ const emptyParents = parents.filter(
 );
 
 test.beforeAll(() => {
-  for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
+  for (const path of [".env"]) {
     dotenv.config({ path, override: true, quiet: true });
   }
   process.env.DATABASE_URL = databaseUrl;

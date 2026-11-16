@@ -57,7 +57,7 @@ bash scripts/bootstrap-all.sh
 
 That wrapper runs this stack first and then `infrastructure/bootstrap-policeconduct/scripts/apply.sh`.
 
-`scripts/apply.sh` also syncs Terraform outputs into `.env-recaptcha` at repo root by default.
+The policeconduct stack and the site scripts read this stack's outputs at run time through `scripts/terraform-outputs.mjs`.
 
 The inputs for this stack are tracked in `recaptcha.auto.tfvars`, which Terraform loads on every plan and apply. Secrets never go in that file.
 

@@ -13,14 +13,16 @@ for arg in "$@"; do
   esac
 done
 
-if [[ -f .env-policeconduct ]]; then
+# Machine settings such as AWS_PROFILE come from the optional local .env.
+if [[ -f .env ]]; then
   set -a
-  # This optional secret-bearing file is local-only and cannot be checked in
-  # or resolved by ShellCheck in a clean checkout. The existence check guards it.
   # shellcheck disable=SC1091
-  source .env-policeconduct
+  source .env
   set +a
 fi
+# Deployed resource names come from Terraform outputs, not from a local copy.
+tf_env="$(node scripts/terraform-outputs.mjs S3_BUCKET KVS_ARN RELEASE_DATA_BUCKET CLOUDFRONT_DIST_ID)"
+eval "${tf_env}"
 
 if [[ "$DRY_RUN" == false ]]; then
   bash scripts/workspace-sync.sh preflight production

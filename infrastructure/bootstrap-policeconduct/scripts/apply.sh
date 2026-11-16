@@ -7,24 +7,20 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 # The state guard below needs the operator's AWS profile. Read only that key from
-# the env files, without sourcing them, when the shell has not set one.
+# the local .env, without sourcing it, when the shell has not set one.
 if [[ -z "${AWS_PROFILE:-}" ]]; then
-  for env_file in "${REPO_ROOT}/.env" "${REPO_ROOT}/.env-policeconduct"; do
-    if [[ -f "${env_file}" ]]; then
-      env_profile="$(sed -n 's/^AWS_PROFILE=//p' "${env_file}" | tail -n 1 | tr -d "\"'")"
-      if [[ -n "${env_profile}" ]]; then
-        export AWS_PROFILE="${env_profile}"
-      fi
+  if [[ -f "${REPO_ROOT}/.env" ]]; then
+    env_profile="$(sed -n 's/^AWS_PROFILE=//p' "${REPO_ROOT}/.env" | tail -n 1 | tr -d "\"'")"
+    if [[ -n "${env_profile}" ]]; then
+      export AWS_PROFILE="${env_profile}"
     fi
-  done
+  fi
 fi
 
 # Fail before environment loading, package installation, or any apply phase.
 bash "${ROOT_DIR}/../../scripts/require-terraform-state.sh" "${ROOT_DIR}"
 
 DOTENV_FILE="${REPO_ROOT}/.env"
-POLICECONDUCT_DOTENV_FILE="${REPO_ROOT}/.env-policeconduct"
-RECAPTCHA_DOTENV_FILE="${REPO_ROOT}/.env-recaptcha"
 PHASE="${PHASE:-full}"
 
 parse_github_repo_path() {
@@ -66,20 +62,12 @@ load_env_file_if_present() {
 
 load_dotenv_if_present() {
   load_env_file_if_present "${DOTENV_FILE}"
-  load_env_file_if_present "${POLICECONDUCT_DOTENV_FILE}"
-  load_env_file_if_present "${RECAPTCHA_DOTENV_FILE}"
 }
 
 map_common_env_to_tf_vars() {
   # Support plain env names in .env and map them to Terraform inputs.
   if [[ -n "${SENTRY_AUTH_TOKEN+x}" ]] && [[ -z "${TF_VAR_sentry_auth_token+x}" ]]; then
     export TF_VAR_sentry_auth_token="${SENTRY_AUTH_TOKEN}"
-  fi
-  if [[ -n "${SENTRY_ORG+x}" ]] && [[ -z "${TF_VAR_sentry_org+x}" ]]; then
-    export TF_VAR_sentry_org="${SENTRY_ORG}"
-  fi
-  if [[ -n "${SENTRY_PROJECT+x}" ]] && [[ -z "${TF_VAR_sentry_project+x}" ]]; then
-    export TF_VAR_sentry_project="${SENTRY_PROJECT}"
   fi
   if [[ -n "${SENTRY_DSN_PRODUCTION+x}" ]] && [[ -z "${TF_VAR_sentry_dsn_production+x}" ]]; then
     export TF_VAR_sentry_dsn_production="${SENTRY_DSN_PRODUCTION}"
@@ -117,7 +105,7 @@ map_common_env_to_tf_vars() {
 }
 
 preflight_recaptcha_requirements() {
-  local source_hint=".env-recaptcha loaded by this script"
+  local source_hint="the bootstrap-recaptcha Terraform outputs"
   local -a missing=()
   if [[ -z "${TF_VAR_recaptcha_project_id+x}" || -z "${TF_VAR_recaptcha_project_id}" ]]; then
     missing+=("TF_VAR_recaptcha_project_id (or RECAPTCHA_PROJECT_ID via ${source_hint})")
@@ -176,28 +164,6 @@ preflight_explicit_tf_var_secrets() {
     && [[ -z "${TF_VAR_sentry_auth_token+x}" ]]; then
     echo "Error: SENTRY_AUTH_TOKEN is set, but Terraform reads TF_VAR_sentry_auth_token." >&2
     echo "Set TF_VAR_sentry_auth_token before apply." >&2
-    exit 1
-  fi
-}
-
-preflight_sentry_upload_requirements() {
-  # If upload is configured, fail before apply when required metadata is missing.
-  local has_token=0
-  local has_org=0
-  local has_project=0
-  if [[ -n "${TF_VAR_sentry_auth_token+x}" ]]; then
-    has_token=1
-  fi
-  if [[ -n "${TF_VAR_sentry_org+x}" ]]; then
-    has_org=1
-  fi
-  if [[ -n "${TF_VAR_sentry_project+x}" ]]; then
-    has_project=1
-  fi
-
-  if [[ ${has_token} -eq 1 ]] && ([[ ${has_org} -eq 0 ]] || [[ ${has_project} -eq 0 ]]); then
-    echo "Error: Sentry token is set, but sentry_org/sentry_project is missing." >&2
-    echo "Set SENTRY_ORG and SENTRY_PROJECT (or TF_VAR_sentry_org / TF_VAR_sentry_project)." >&2
     exit 1
   fi
 }
@@ -317,11 +283,15 @@ load_dotenv_if_present
 source "${REPO_ROOT}/scripts/parameter-store-secrets.sh"
 load_parameter_store_secrets RESEND_API_KEY RESEND_API_KEY_FULL_ACCESS SENTRY_AUTH_TOKEN GITHUB_TOKEN
 unset TF_VAR_sentry_auth_token TF_VAR_forms_email_resend_api_key
+# The reCAPTCHA stack's outputs are inputs to this stack.
+unset RECAPTCHA_PROJECT_ID RECAPTCHA_SITE_KEY RECAPTCHA_SERVICE_ACCOUNT_EMAIL RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME RECAPTCHA_WIF_AUDIENCE
+unset TF_VAR_recaptcha_project_id TF_VAR_recaptcha_site_key TF_VAR_recaptcha_service_account_email TF_VAR_recaptcha_wif_provider_resource_name TF_VAR_recaptcha_wif_audience
+recaptcha_env="$(cd "${REPO_ROOT}" && node scripts/terraform-outputs.mjs RECAPTCHA_PROJECT_ID RECAPTCHA_SITE_KEY RECAPTCHA_SERVICE_ACCOUNT_EMAIL RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME RECAPTCHA_WIF_AUDIENCE)"
+eval "${recaptcha_env}"
 map_common_env_to_tf_vars
 preflight_recaptcha_requirements
 set_github_tf_vars_from_origin
 preflight_explicit_tf_var_secrets
-preflight_sentry_upload_requirements
 warn_if_sentry_tf_var_missing
 preflight_resend_requirements
 preflight_account_check
@@ -341,6 +311,4 @@ case "${PHASE}" in
     exit 1
     ;;
 esac
-ENV_FILE_NAME="${ENV_FILE_NAME:-.env-policeconduct}" bash "${SCRIPT_DIR}/sync-env.sh"
-
-echo "Bootstrap apply (${PHASE}) complete and .env synced."
+echo "Bootstrap apply (${PHASE}) complete."
