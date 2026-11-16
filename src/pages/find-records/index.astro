@@ -96,6 +96,13 @@ const finderGroups = [
             >
               <h2 class="ipc-section-title">{group.label}</h2>
               <div class="finder-result-list" data-result-list={group.type} />
+              <button
+                type="button"
+                class="btn btn-outline-dark btn-sm rounded-0 mt-3"
+                data-show-all={group.type}
+                data-show-all-label={group.label.toLowerCase()}
+                hidden
+              />
             </section>
           ))}
         </div>
@@ -119,6 +126,12 @@ const finderGroups = [
       [...document.querySelectorAll("[data-result-list]")].map((list) => [
         list.getAttribute("data-result-list"),
         list,
+      ]),
+    );
+    const showAllButtons = new Map(
+      [...document.querySelectorAll("[data-show-all]")].map((button) => [
+        button.getAttribute("data-show-all"),
+        button,
       ]),
     );
     // The dataset is fetched lazily from a static JSON file instead of being
@@ -151,6 +164,9 @@ const finderGroups = [
     let noResultTimer = 0;
     let lastReportedQuery = "";
     let completedSearch = null;
+    // Groups the visitor asked to see in full, for the current search only.
+    const expandedGroups = new Set();
+    let expandedQuery = "";
 
     const normalize = (value) =>
       String(value || "")
@@ -203,6 +219,9 @@ const finderGroups = [
       });
       groupElements.forEach((group) => {
         group.hidden = true;
+      });
+      showAllButtons.forEach((button) => {
+        button.hidden = true;
       });
     };
 
@@ -264,6 +283,11 @@ const finderGroups = [
         clearResults();
       }
 
+      if (query !== expandedQuery) {
+        expandedGroups.clear();
+        expandedQuery = query;
+      }
+
       let visibleTotal = 0;
       let matchTotal = 0;
 
@@ -298,7 +322,9 @@ const finderGroups = [
 
         const list = resultLists.get(group.type);
         const groupElement = groupElements.get(group.type);
-        const visibleResults = matches.slice(0, maxVisiblePerGroup);
+        const visibleResults = expandedGroups.has(group.type)
+          ? matches
+          : matches.slice(0, maxVisiblePerGroup);
 
         if (!list || !groupElement || visibleResults.length === 0) {
           return;
@@ -309,6 +335,12 @@ const finderGroups = [
         );
         groupElement.hidden = false;
         visibleTotal += visibleResults.length;
+
+        const showAll = showAllButtons.get(group.type);
+        if (showAll && visibleResults.length < matches.length) {
+          showAll.textContent = `Show all ${matches.length} ${showAll.getAttribute("data-show-all-label")}`;
+          showAll.hidden = false;
+        }
       });
 
       setHidden(startState, true);
@@ -350,6 +382,14 @@ const finderGroups = [
         "",
       );
       updateResults();
+    });
+    showAllButtons.forEach((button, type) => {
+      button.addEventListener("click", async () => {
+        expandedGroups.add(type);
+        await updateResults();
+        // The button is gone now, so move focus to the first added result.
+        resultLists.get(type)?.children[maxVisiblePerGroup]?.focus();
+      });
     });
     updateResults();
   </script>
