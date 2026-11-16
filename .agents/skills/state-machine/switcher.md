@@ -32,34 +32,13 @@ States sit in a vertical list under the group headings from **Find the states in
   <div class="state-layout">
     <nav class="state-switcher" aria-label="States">
       <!-- one group per heading -->
-      <div
-        class="state-switcher-group"
-        role="group"
-        aria-labelledby="states-data"
-      >
+      <div class="state-switcher-group" role="group" aria-labelledby="states-data">
         <span class="state-switcher-heading" id="states-data">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 16 16"
-            width="12"
-            height="12"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M3 3v4a3 3 0 0 0 3 3h7" />
-            <path d="m10 7 3 3-3 3" />
-          </svg>
+          <svg aria-hidden="true" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v4a3 3 0 0 0 3 3h7" /><path d="m10 7 3 3-3 3" /></svg>
           Data
         </span>
-        <button type="button" data-state="loading" aria-pressed="false">
-          Loading
-        </button>
-        <button type="button" data-state="empty" aria-pressed="true">
-          Empty
-        </button>
+        <button type="button" data-state="loading" aria-pressed="false">Loading</button>
+        <button type="button" data-state="empty" aria-pressed="true">Empty</button>
       </div>
     </nav>
 
@@ -70,19 +49,7 @@ States sit in a vertical list under the group headings from **Find the states in
           <option value="empty" selected>Empty</option>
         </optgroup>
       </select>
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 16 16"
-        width="12"
-        height="12"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="m4 6 4 4 4-4" />
-      </svg>
+      <svg aria-hidden="true" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 4 4 4-4" /></svg>
     </div>
 
     <div class="state-stage">
@@ -130,12 +97,7 @@ The list's 6px padding keeps its own scrolling from clipping focus rings. The re
   border-radius: 14px;
   background: rgb(20 20 20 / 0.92);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
-  font:
-    13px/1 system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font: 13px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   user-select: none;
 }
 
@@ -198,12 +160,7 @@ The list's 6px padding keeps its own scrolling from clipping focus rings. The re
   border-radius: 999px;
   background: rgb(20 20 20 / 0.92);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
-  font:
-    500 13px/1 system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font: 500 13px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   cursor: pointer;
 }
 

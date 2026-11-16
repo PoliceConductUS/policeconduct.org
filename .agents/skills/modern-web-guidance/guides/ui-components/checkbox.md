@@ -90,12 +90,13 @@ Set explicit relative sizes for `--checkbox-size` and `--checkbox-icon-size` bec
 }
 ```
 
+
 ## The indeterminate state
 
 The indeterminate state cannot be set via an HTML attribute; set the `indeterminate` DOM property in JavaScript (`checkbox.indeterminate = true`) and ensure the `:indeterminate` pseudo-class is visually distinct from both `:checked` and unchecked states:
 
-- **Native (`accent-color`):** Automatically styled by the browser using the element's `accent-color` (no extra `:indeterminate` CSS rule needed).
-- **Custom (`appearance: none`):** Swap `--checkbox-icon` to `var(--icon-dash)` on `.checkbox-custom:indeterminate` as shown above.
+* **Native (`accent-color`):** Automatically styled by the browser using the element's `accent-color` (no extra `:indeterminate` CSS rule needed).
+* **Custom (`appearance: none`):** Swap `--checkbox-icon` to `var(--icon-dash)` on `.checkbox-custom:indeterminate` as shown above.
 
 ```js
 const selectAll = document.querySelector("#select-all");
@@ -124,7 +125,6 @@ selectAll.indeterminate = true;
 
 Browser rendering of `accent-color` varies.
 For indicators generally painted over an accent color background, such as checkbox marks and radio-button dots, browsers may apply different treatments:
-
 - **Chromium** and **Firefox** generally select a contrasting indicator color.
 - **Safari** may instead preserve a white indicator in light mode or a black indicator in dark mode, while modifying the accent color behind it. This adjustment does not always provide sufficient contrast for every supplied color, so test important combinations in Safari, including both light and dark color schemes. Do not assume that Safari will automatically choose whichever indicator color provides the best contrast.
 

@@ -14,14 +14,16 @@ The first step is to create a trigger button that opens the overlay container us
 **MANDATORY Accessibility Distinction:** This pattern explicitly models a **button group revealed inside a popover** rather than a true ARIA menu. Do not apply `role="menu"` or `role="menuitem"` unless you fully implement the corresponding keyboard navigation contract (such as handling spatial arrow-key navigation between items). For the same reason, do not add `aria-haspopup` to the trigger — its value (`menu`, `listbox`, `tree`, `grid`, or the legacy `true`) is a promise that the target exposes a matching role, which this pattern does not.
 
 ```html
-<button popovertarget="action-panel">Open Actions</button>
+<button popovertarget="action-panel">
+  Open Actions
+</button>
 <!-- Use the Popover API (`popover="auto"`) for the overlay to ensure it is placed in the top layer and handled accessibly by the browser. -->
 <div id="action-panel" popover="auto" class="panel">
   <button class="action-item" type="button">Edit</button>
 </div>
 ```
 
-This creates an _implicit_ anchor association between the button and the panel, so that the panel can be positioned relative to the button natively without needing `anchor-name` on the button or `position-anchor` on the panel.
+This creates an *implicit* anchor association between the button and the panel, so that the panel can be positioned relative to the button natively without needing `anchor-name` on the button or `position-anchor` on the panel.
 
 ### 2. Positioning with `position-area`
 
@@ -34,7 +36,7 @@ Instead of manual `top`/`left` offsets, use `position-area` to place the target 
      aligned to the start of the anchor and spanning to its end (span-inline-end).
   */
   position-area: block-end span-inline-end;
-
+  
   /* Reset insets to allow the grid to take control */
   inset: auto;
 }
@@ -55,10 +57,7 @@ To prevent the panel from being cut off at the edge of the screen, define "try t
      If it overflows the inline edges, flip it horizontally (flip-inline).
      If it overflows both (e.g., in a corner), flip on both axes (flip-block flip-inline).
   */
-  position-try-fallbacks:
-    flip-block,
-    flip-inline,
-    flip-block flip-inline;
+  position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
 }
 ```
 
@@ -87,7 +86,6 @@ if (!Object.hasOwn(HTMLElement.prototype, "popover")) {
 If not using a package manager, import from a CDN, e.g. `"https://unpkg.com/@oddbird/popover-polyfill@latest/dist/popover.min.js"`.
 
 Caveats when using the polyfill:
-
 - Do NOT use the `popover` IDL attribute for any code that may run before the polyfill is fully loaded. It will not be mirrored as an attribute, the popover will not be picked up by the polyfill, and the property will be shadowing the accessor the polyfill adds forever. Use `setAttribute()`/`removeAttribute()` instead.
 - **Styling caveat:** The polyfill cannot define the real `:popover-open` pseudo-class, so it applies a `.\:popover-open` class instead. **MANDATORY:** Combine the two with `:is()` or `:where()`, otherwise browsers that lack `:popover-open` discard the entire rule:
 
@@ -132,7 +130,6 @@ Without a bundler, import from a CDN inside a `<script type="module">`:
 ```
 
 **Polyfill caveats:**
-
 - **No implicit anchors:** The polyfill does not support implicit anchor associations (such as those created by `popovertarget`, `commandfor`, `interestfor`, or `showPopover({ source })`). You **MUST** set a unique explicit `anchor-name` on each trigger and a matching `position-anchor` on the positioned element.
 - **No `position-area` with `position-try-fallbacks`:** `position-area` with `position-try-fallbacks` is not supported by the polyfill. When using the polyfill on elements needing fallbacks, position elements using `anchor()` functions on inset properties (`top`, `left`, `right`, `bottom`) with `inset: auto` instead of `position-area`.
 - **Do not wrap polyfilled rules in `@supports`:** Browsers without native anchor positioning evaluate `@supports (position-area: ...)` and `@supports (anchor-name: --a)` to `false` and discard the block before the polyfill can process it.
@@ -165,10 +162,7 @@ Instead, gate `inset: auto` and `margin: 0` inside `@supports` for the specific 
     inset: auto;
     margin: 0;
     position-area: block-end span-inline-end;
-    position-try-fallbacks:
-      flip-block,
-      flip-inline,
-      flip-block flip-inline;
+    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
   }
 }
 

@@ -87,7 +87,7 @@ Instead, design C/C++ entry points to process entire buffers or memory regions
 in a single call and read or write the contiguous buffer in linear memory:
 
 ```js
-import initRenderer from "./renderer.js";
+import initRenderer from './renderer.js';
 
 const wasm = await initRenderer();
 const byteLength = width * height * 4;

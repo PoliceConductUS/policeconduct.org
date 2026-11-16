@@ -54,17 +54,11 @@ The hidden state lives in the `from` keyframe, so an item whose animation never 
   }
 }
 
-.stagger-item:nth-child(2) {
-  animation-delay: 100ms;
-}
-.stagger-item:nth-child(3) {
-  animation-delay: 200ms;
-}
+.stagger-item:nth-child(2) { animation-delay: 100ms; }
+.stagger-item:nth-child(3) { animation-delay: 200ms; }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
+  from { opacity: 0; }
 }
 
 @keyframes fade-in-up {
@@ -160,9 +154,7 @@ Slide fully out only where the destination carries meaning, such as a card retur
 .item-exit {
   opacity: 0;
   transform: translateY(-12px);
-  transition:
-    opacity 150ms ease-out,
-    transform 150ms ease-out;
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
 }
 
 /* Bad: dramatic exit that steals focus */

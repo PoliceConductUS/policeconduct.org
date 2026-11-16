@@ -13,12 +13,8 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 function IconButton({ isActive, icon: Icon }) {
   const reduce = useReducedMotion();
-  const hidden = reduce
-    ? { opacity: 0 }
-    : { opacity: 0, scale: 0.25, filter: "blur(4px)" };
-  const shown = reduce
-    ? { opacity: 1 }
-    : { opacity: 1, scale: 1, filter: "blur(0px)" };
+  const hidden = reduce ? { opacity: 0 } : { opacity: 0, scale: 0.25, filter: "blur(4px)" };
+  const shown = reduce ? { opacity: 1 } : { opacity: 1, scale: 1, filter: "blur(0px)" };
   return (
     <button>
       <AnimatePresence initial={false} mode="popLayout">
@@ -47,7 +43,7 @@ Both icons stay mounted in one grid cell, so enter and exit both animate and the
 const layer = cn(
   "[grid-area:1/1] transition-[opacity,filter,scale] duration-300",
   "ease-[cubic-bezier(0.2,0,0,1)]",
-  "motion-reduce:scale-100 motion-reduce:blur-[0px]",
+  "motion-reduce:scale-100 motion-reduce:blur-[0px]"
 );
 const shown = "scale-100 opacity-100 blur-[0px]";
 const hidden = "scale-[0.25] opacity-0 blur-[4px]";
@@ -72,8 +68,8 @@ Tailwind 4's `scale-*` utilities write the `scale` property, so `transition-[...
 
 ## Which icons animate
 
-| Animate                                                                       | Don't animate                       |
-| ----------------------------------------------------------------------------- | ----------------------------------- |
+| Animate | Don't animate |
+| --- | --- |
 | Infrequent state swaps such as play to pause, like to liked or copy to copied | Hover-revealed actions in list rows |
-| Icons in a toolbar that appears on selection                                  | Tab and navigation icon swaps       |
-| Loading and success indicators                                                | Decorative or always-visible icons  |
+| Icons in a toolbar that appears on selection | Tab and navigation icon swaps |
+| Loading and success indicators | Decorative or always-visible icons |
