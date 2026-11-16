@@ -32,34 +32,13 @@ Variants sit in a vertical list under the group headings from **Name the axis be
   <div class="variant-layout">
     <nav class="variant-picker" aria-label="Variants">
       <!-- one group per heading -->
-      <div
-        class="variant-picker-group"
-        role="group"
-        aria-labelledby="variants-density"
-      >
+      <div class="variant-picker-group" role="group" aria-labelledby="variants-density">
         <span class="variant-picker-heading" id="variants-density">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 16 16"
-            width="12"
-            height="12"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M3 3v4a3 3 0 0 0 3 3h7" />
-            <path d="m10 7 3 3-3 3" />
-          </svg>
+          <svg aria-hidden="true" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v4a3 3 0 0 0 3 3h7" /><path d="m10 7 3 3-3 3" /></svg>
           Density
         </span>
-        <button type="button" data-variant="quiet" aria-pressed="true">
-          Quiet
-        </button>
-        <button type="button" data-variant="dense" aria-pressed="false">
-          Dense
-        </button>
+        <button type="button" data-variant="quiet" aria-pressed="true">Quiet</button>
+        <button type="button" data-variant="dense" aria-pressed="false">Dense</button>
       </div>
     </nav>
 
@@ -70,19 +49,7 @@ Variants sit in a vertical list under the group headings from **Name the axis be
           <option value="dense">Dense</option>
         </optgroup>
       </select>
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 16 16"
-        width="12"
-        height="12"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="m4 6 4 4 4-4" />
-      </svg>
+      <svg aria-hidden="true" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 4 4 4-4" /></svg>
     </div>
 
     <div class="variant-stage">
@@ -130,12 +97,7 @@ The list's 6px padding keeps its own scrolling from clipping focus rings. The re
   border-radius: 14px;
   background: rgb(20 20 20 / 0.92);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
-  font:
-    13px/1 system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font: 13px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   user-select: none;
 }
 
@@ -166,9 +128,7 @@ The list's 6px padding keeps its own scrolling from clipping focus rings. The re
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition:
-    color 200ms ease-out,
-    font-weight 200ms ease-out;
+  transition: color 200ms ease-out, font-weight 200ms ease-out;
 }
 
 .variant-picker button:hover {
@@ -201,12 +161,7 @@ The list's 6px padding keeps its own scrolling from clipping focus rings. The re
   border-radius: 999px;
   background: rgb(20 20 20 / 0.92);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
-  font:
-    500 13px/1 system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font: 500 13px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   cursor: pointer;
 }
 
