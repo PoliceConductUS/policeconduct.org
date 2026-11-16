@@ -154,6 +154,11 @@ const finderGroups = [
         .toLowerCase()
         .replace(/\s+/g, " ");
 
+    // Words and numbers in the query, without the punctuation between them, so
+    // "Dallas, TX" and "dallas tx" both search for "dallas" and "tx".
+    const searchTerms = (query) =>
+      query.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+
     const reportNoResults = (query) => {
       if (!query || reportedNoResultQueries.has(query)) {
         return;
@@ -224,10 +229,11 @@ const finderGroups = [
 
     const updateResults = async () => {
       const query = normalize(input?.value);
+      const terms = searchTerms(query);
       window.clearTimeout(noResultTimer);
       clearResults();
 
-      if (!query) {
+      if (terms.length === 0) {
         completedSearch = null;
         lastReportedQuery = "";
         setHidden(startState, false);
@@ -258,9 +264,19 @@ const finderGroups = [
       let matchTotal = 0;
 
       finderGroups.forEach((group) => {
-        const matches = group.results.filter((result) =>
-          normalize(result.searchText).includes(query),
-        );
+        // Results that contain the query as typed come first, so widening the
+        // match to separate words never pushes them past the per-group cap.
+        const phraseMatches = [];
+        const wordMatches = [];
+        group.results.forEach((result) => {
+          const searchText = normalize(result.searchText);
+          if (searchText.includes(query)) {
+            phraseMatches.push(result);
+          } else if (terms.every((term) => searchText.includes(term))) {
+            wordMatches.push(result);
+          }
+        });
+        const matches = [...phraseMatches, ...wordMatches];
         matchTotal += matches.length;
 
         const list = resultLists.get(group.type);
