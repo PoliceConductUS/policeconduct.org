@@ -1945,6 +1945,12 @@ async function submitForm(event, requestId) {
 
   const expectedAction = `${formName}Submit`;
 
+  // Look up the release while reCAPTCHA is checked: both are network calls,
+  // and waiting for one before starting the other adds its time to the
+  // response. A lookup error only matters once reCAPTCHA has passed.
+  const releaseCheck = isKnownFormRelease(payload.releaseId);
+  releaseCheck.catch(() => {});
+
   const recaptcha = await verifyRecaptchaEnterprise(
     recaptchaToken,
     sourceIp,
@@ -1975,7 +1981,7 @@ async function submitForm(event, requestId) {
   );
 
   const releaseId = payload.releaseId;
-  if (!(await isKnownFormRelease(releaseId))) {
+  if (!(await releaseCheck)) {
     return json(400, {
       error: "This form has an unrecognized website release.",
     });
