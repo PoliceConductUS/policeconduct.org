@@ -135,7 +135,9 @@ const finderGroups = [
             finderDataLoaded = true;
           })
           .catch(() => {
-            finderGroups = [];
+            // Leave finderGroups unset and drop the promise so the next
+            // keystroke retries instead of reporting an empty record set.
+            loadPromise = null;
           });
       }
       return loadPromise;
@@ -243,6 +245,12 @@ const finderGroups = [
         await loadFinderData();
         // A newer keystroke may have superseded this call while loading.
         if (normalize(input?.value) !== query) return;
+        if (!finderGroups) {
+          setStatus(
+            "Unable to load records. Check your connection and try again.",
+          );
+          return;
+        }
         clearResults();
       }
 
