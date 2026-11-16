@@ -69,6 +69,7 @@ Things that are easy to get wrong:
 ### Accessibility Constraints (WCAG 1.4.13)
 
 Even with `interestfor` handling the semantics above, your implementation MUST still satisfy WCAG 1.4.13 (Content on Hover or Focus):
+
 - **Dismissible:** Users must be able to dismiss the tooltip without moving pointer hover or keyboard focus (e.g., by pressing the `Escape` key). The native `popover` attribute manages this binding automatically.
 - **Hoverable:** The pointer must be able to move over the tooltip content itself without the tooltip disappearing. This allows users with magnification tools to read the tooltip text safely.
 - **Persistent:** The tooltip must remain visible until the hover or focus trigger is removed, the user explicitly dismisses it, or its content is no longer valid.
@@ -95,11 +96,22 @@ In modern browsers supporting native anchor positioning, you do **not** need to 
 Give a toggletip both triggers: `interestfor` opens it on hover, focus, and long-press; `popovertarget` opens it on click, tap, and `Enter`.
 
 ```html
-<label>Shipping <input name="shipping"></label>
+<label>Shipping <input name="shipping" /></label>
 <!-- The name says what the button reveals; the "?" alone is not a name. -->
-<button type="button" interestfor="shipping-help" popovertarget="shipping-help" popovertargetaction="show" aria-label="More about shipping">?</button>
+<button
+  type="button"
+  interestfor="shipping-help"
+  popovertarget="shipping-help"
+  popovertargetaction="show"
+  aria-label="More about shipping"
+>
+  ?
+</button>
 <!-- Right after the trigger, so it reads in sequence. -->
-<div id="shipping-help" popover="hint">Free shipping applies to orders over $50. Orders placed before 2pm ship the same day.</div>
+<div id="shipping-help" popover="hint">
+  Free shipping applies to orders over $50. Orders placed before 2pm ship the
+  same day.
+</div>
 ```
 
 - Use `popovertargetaction="show"`, not the default `toggle`: hover has usually opened the popover already, and a toggle would close it on the click that follows. `Escape`, light dismiss, and losing interest close it.
@@ -135,8 +147,12 @@ When using the polyfill, the CSS API changes slightly to account for the lack of
 
 ```css
 /* Styles to apply when the effect is being previewed */
-:is(:interest-source, .interest-source) { /* ... */ }
-:is(:interest-target, .interest-target) { /* ... */ }
+:is(:interest-source, .interest-source) {
+  /* ... */
+}
+:is(:interest-target, .interest-target) {
+  /* ... */
+}
 ```
 
 - **CSS Properties:** For `interest-delay`, `interest-delay-start`, and `interest-delay-end`, the polyfill requires using CSS variables as it cannot read the custom properties directly in all browsers.
@@ -172,6 +188,7 @@ if (!Object.hasOwn(HTMLElement.prototype, "popover")) {
 If not using a package manager, import from a CDN, e.g. `"https://unpkg.com/@oddbird/popover-polyfill@latest/dist/popover.min.js"`.
 
 Caveats when using the polyfill:
+
 - Do NOT use the `popover` IDL attribute for any code that may run before the polyfill is fully loaded. It will not be mirrored as an attribute, the popover will not be picked up by the polyfill, and the property will be shadowing the accessor the polyfill adds forever. Use `setAttribute()`/`removeAttribute()` instead.
 - **Styling caveat:** The polyfill cannot define the real `:popover-open` pseudo-class, so it applies a `.\:popover-open` class instead. **MANDATORY:** Combine the two with `:is()` or `:where()`, otherwise browsers that lack `:popover-open` discard the entire rule:
 
@@ -196,13 +213,18 @@ A toggletip can also be opened by click, with no interest to lose, so a `manual`
 const probe = document.createElement("div");
 probe.popover = "hint";
 if (probe.popover !== "hint") {
-  document.addEventListener("beforetoggle", ({ target, newState }) => {
-    const toggletip = target.getAttribute("popover") === "hint"
-      && document.querySelector(`[popovertarget="${CSS.escape(target.id)}"]`);
-    if (newState === "open" && toggletip) {
-      target.popover = "auto";
-    }
-  }, true);
+  document.addEventListener(
+    "beforetoggle",
+    ({ target, newState }) => {
+      const toggletip =
+        target.getAttribute("popover") === "hint" &&
+        document.querySelector(`[popovertarget="${CSS.escape(target.id)}"]`);
+      if (newState === "open" && toggletip) {
+        target.popover = "auto";
+      }
+    },
+    true,
+  );
 }
 ```
 
@@ -241,6 +263,7 @@ Without a bundler, import from a CDN inside a `<script type="module">`:
 ```
 
 **Polyfill caveats:**
+
 - **No implicit anchors:** The polyfill does not support implicit anchor associations (such as those created by `popovertarget`, `commandfor`, `interestfor`, or `showPopover({ source })`). You **MUST** set a unique explicit `anchor-name` on each trigger and a matching `position-anchor` on the positioned element.
 - **No `position-area` with `position-try-fallbacks`:** `position-area` with `position-try-fallbacks` is not supported by the polyfill. When using the polyfill on elements needing fallbacks, position elements using `anchor()` functions on inset properties (`top`, `left`, `right`, `bottom`) with `inset: auto` instead of `position-area`.
 - **Do not wrap polyfilled rules in `@supports`:** Browsers without native anchor positioning evaluate `@supports (position-area: ...)` and `@supports (anchor-name: --a)` to `false` and discard the block before the polyfill can process it.
@@ -273,7 +296,10 @@ Instead, gate `inset: auto` and `margin: 0` inside `@supports` for the specific 
     inset: auto;
     margin: 0;
     position-area: block-end span-inline-end;
-    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+    position-try-fallbacks:
+      flip-block,
+      flip-inline,
+      flip-block flip-inline;
   }
 }
 

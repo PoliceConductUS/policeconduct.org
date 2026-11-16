@@ -19,7 +19,7 @@ Use the **Interest Invokers** API to trigger the hovercard. This ensures the car
   <h2>The buzz on hummingbirds</h2>
   <p class="byline">By Delphi Aguilar</p>
   <div>
-    <img src="bird.jpg" alt="A vibrant hummingbird">
+    <img src="bird.jpg" alt="A vibrant hummingbird" />
     <p>Brief summary of the article...</p>
   </div>
 </div>
@@ -78,7 +78,7 @@ Position the hovercard relative to its trigger using **CSS Anchor Positioning**.
 By default, interest is shown and lost for keyboard and mouse users with a delay of half a second. This prevents the targeted popover from opening while tabbing through a page or moving your mouse around, and from closing while moving your mouse from the trigger to the popover. To adjust the timing, use the `interest-delay` CSS property.
 
 ```css
-[interestfor]{
+[interestfor] {
   /* Shorthand for interest-delay-start and interest-delay-end */
   interest-delay: 0.2s 0.1s;
 }
@@ -115,11 +115,7 @@ Use `@starting-style` to define the entry animation and `transition-behavior: al
 /* MANDATORY: Respect user preference for reduced motion by selectively applying transitions. */
 @media (prefers-reduced-motion: no-preference) {
   [popover].hovercard {
-    transition:
-      opacity,
-      transform,
-      display,
-      overlay;
+    transition: opacity, transform, display, overlay;
     transition-duration: 0.4s;
     /* Separate after transition so the shorthand doesn't reset it or fail in older browsers */
     transition-behavior: allow-discrete;
@@ -168,12 +164,12 @@ By assigning matching `view-transition-name` values to elements in the hovercard
 <head>
   <!-- Block rendering until the hero image and title are parsed,
        ensuring the view transition snapshot is taken at the right time. -->
-  <link rel="expect" href="#main-content" blocking="render">
+  <link rel="expect" href="#main-content" blocking="render" />
 </head>
 <body>
   <main id="main-content">
     <h1>The buzz on hummingbirds</h1>
-    <img src="bird.jpg">
+    <img src="bird.jpg" />
   </main>
 </body>
 ```
@@ -232,6 +228,7 @@ if (!Object.hasOwn(HTMLElement.prototype, "popover")) {
 If not using a package manager, import from a CDN, e.g. `"https://unpkg.com/@oddbird/popover-polyfill@latest/dist/popover.min.js"`.
 
 Caveats when using the polyfill:
+
 - Do NOT use the `popover` IDL attribute for any code that may run before the polyfill is fully loaded. It will not be mirrored as an attribute, the popover will not be picked up by the polyfill, and the property will be shadowing the accessor the polyfill adds forever. Use `setAttribute()`/`removeAttribute()` instead.
 - **Styling caveat:** The polyfill cannot define the real `:popover-open` pseudo-class, so it applies a `.\:popover-open` class instead. **MANDATORY:** Combine the two with `:is()` or `:where()`, otherwise browsers that lack `:popover-open` discard the entire rule:
 
@@ -276,8 +273,12 @@ When using the polyfill, the CSS API changes slightly to account for the lack of
 
 ```css
 /* Styles to apply when the effect is being previewed */
-:is(:interest-source, .interest-source) { /* ... */ }
-:is(:interest-target, .interest-target) { /* ... */ }
+:is(:interest-source, .interest-source) {
+  /* ... */
+}
+:is(:interest-target, .interest-target) {
+  /* ... */
+}
 ```
 
 - **CSS Properties:** For `interest-delay`, `interest-delay-start`, and `interest-delay-end`, the polyfill requires using CSS variables as it cannot read the custom properties directly in all browsers.
@@ -327,6 +328,7 @@ Without a bundler, import from a CDN inside a `<script type="module">`:
 ```
 
 **Polyfill caveats:**
+
 - **No implicit anchors:** The polyfill does not support implicit anchor associations (such as those created by `popovertarget`, `commandfor`, `interestfor`, or `showPopover({ source })`). You **MUST** set a unique explicit `anchor-name` on each trigger and a matching `position-anchor` on the positioned element.
 - **No `position-area` with `position-try-fallbacks`:** `position-area` with `position-try-fallbacks` is not supported by the polyfill. When using the polyfill on elements needing fallbacks, position elements using `anchor()` functions on inset properties (`top`, `left`, `right`, `bottom`) with `inset: auto` instead of `position-area`.
 - **Do not wrap polyfilled rules in `@supports`:** Browsers without native anchor positioning evaluate `@supports (position-area: ...)` and `@supports (anchor-name: --a)` to `false` and discard the block before the polyfill can process it.
@@ -359,7 +361,10 @@ Instead, gate `inset: auto` and `margin: 0` inside `@supports` for the specific 
     inset: auto;
     margin: 0;
     position-area: block-end span-inline-end;
-    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+    position-try-fallbacks:
+      flip-block,
+      flip-inline,
+      flip-block flip-inline;
   }
 }
 
