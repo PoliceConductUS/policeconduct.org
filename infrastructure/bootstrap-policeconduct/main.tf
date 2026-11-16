@@ -147,12 +147,6 @@ locals {
         PUBLIC_SENTRY_DSN         = local.sentry_dsn_preview
         PUBLIC_SENTRY_ENVIRONMENT = "preview"
       },
-      local.sentry_org == null ? {} : {
-        SENTRY_ORG = local.sentry_org
-      },
-      local.sentry_project == null ? {} : {
-        SENTRY_PROJECT = local.sentry_project
-      },
       local.recaptcha_site_key == null ? {} : {
         RECAPTCHA_SITE_KEY = local.recaptcha_site_key
       }
@@ -2615,12 +2609,13 @@ resource "github_actions_environment_variable" "preview_kvs_arn" {
 }
 
 resource "github_actions_environment_secret" "sentry_auth_token" {
-  for_each = local.has_sentry_auth_token ? local.github_environment_names : toset([])
+  # Sourcemaps are uploaded for production only; preview builds do not need the token.
+  for_each = local.has_sentry_auth_token ? toset(["production"]) : toset([])
 
-  repository      = var.github_repo
-  environment     = each.value
-  secret_name     = "SENTRY_AUTH_TOKEN"
-  plaintext_value = local.sentry_auth_token
+  repository  = var.github_repo
+  environment = each.value
+  secret_name = "SENTRY_AUTH_TOKEN"
+  value       = local.sentry_auth_token
 
   depends_on = [github_repository_environment.environments]
 }

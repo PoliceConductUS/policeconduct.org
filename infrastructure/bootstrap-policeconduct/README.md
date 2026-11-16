@@ -196,7 +196,7 @@ change with rollback. Do not run an untargeted Terraform apply for email repairs
 
 - `RESEND_API_KEY`: send-only key used by the forms Lambda verification-email path
 - `RESEND_API_KEY_FULL_ACCESS`: full-access key used only by `scripts/bootstrap-resend-domain.mjs` for Resend Domains API calls
-- `SENTRY_AUTH_TOKEN`: written to the GitHub `production` and `preview` environments
+- `SENTRY_AUTH_TOKEN`: written to the GitHub `production` environment only, with `SENTRY_ORG` and `SENTRY_PROJECT`
 - `GITHUB_TOKEN`: used by the Terraform GitHub provider
 
 To change one, run `aws ssm put-parameter --overwrite --type SecureString --name /policeconduct/secrets/<NAME> --value file://<file>`.
