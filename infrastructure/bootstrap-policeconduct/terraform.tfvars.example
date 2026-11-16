@@ -58,14 +58,6 @@ extra_dns_records = [
     records = [
       "1 smtp.google.com."
     ]
-  },
-  {
-    name = "xdvktfq76yak"
-    type = "CNAME"
-    ttl  = 3600
-    records = [
-      "gv-wvopyga6fjhcn2.dv.googlehosted.com."
-    ]
   }
 ]
 

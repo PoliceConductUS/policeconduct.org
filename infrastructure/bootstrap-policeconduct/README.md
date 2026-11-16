@@ -133,6 +133,14 @@ Example `.env` keys:
 - `CLOUDFRONT_DIST_ID`
 
 `scripts/apply.sh` runs Terraform apply and then syncs `.env-policeconduct` after each phase.
+
+Before it changes anything, `scripts/apply.sh`:
+
+- refuses to run when `terraform.tfvars` is missing. The file is git-ignored, so a new checkout or worktree does not have it, and Terraform would plan against variable defaults and remove every resource those inputs define;
+- writes one plan, and refuses it when it destroys or replaces a resource whose address is not listed, one per line, in `TERRAFORM_APPROVED_DESTROYS`;
+- asks for `yes`, then applies exactly that plan. When live infrastructure already matches, it applies nothing.
+
+`extra_dns_records` must not repeat a record that `existing-dns.tf` manages; the plan fails if it does.
 The sync step comments any existing matching `KEY=...` line in `.env-policeconduct` and appends the latest value from Terraform outputs.
 It also writes all outputs as `TF_OUT_<OUTPUT_NAME>` keys (uppercase, non-alphanumeric chars replaced with `_`).
 For reCAPTCHA values, sync falls back to `.env-recaptcha` and fails fast if any required key is still missing.

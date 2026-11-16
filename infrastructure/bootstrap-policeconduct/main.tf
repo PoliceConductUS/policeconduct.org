@@ -2550,6 +2550,16 @@ resource "aws_route53_record" "extra_standard" {
   type            = each.value.type
   ttl             = each.value.ttl
   records         = each.value.records
+
+  lifecycle {
+    precondition {
+      condition = !contains(local.adopted_dns_record_keys, join(" ", [
+        lower(endswith(trimsuffix(each.value.name, "."), var.domain_name) ? trimsuffix(each.value.name, ".") : "${each.value.name}.${var.domain_name}"),
+        each.value.type,
+      ]))
+      error_message = "extra_dns_records repeats ${each.value.name} ${each.value.type}, which existing-dns.tf already manages. Remove it from extra_dns_records."
+    }
+  }
 }
 
 resource "aws_route53_record" "extra_alias" {

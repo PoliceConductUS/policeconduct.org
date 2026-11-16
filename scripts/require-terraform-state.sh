@@ -13,5 +13,9 @@ if ! terraform -chdir="${STACK_DIR}" state pull | jq -e '
 ' >/dev/null; then
   echo "Error: refusing apply: Terraform state is missing, unreadable, invalid, or has no managed instances." >&2
   echo "Restore and verify the existing backend/state before retrying. Do not bootstrap the live stack again." >&2
+  if [[ ! -f "${STACK_DIR}/.terraform/terraform.tfstate" ]]; then
+    echo "This directory has not been initialized, so the existing state could not be read." >&2
+    echo "With credentials for the account that holds the state, run: terraform -chdir=\"${STACK_DIR}\" init" >&2
+  fi
   exit 1
 fi
