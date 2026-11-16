@@ -147,7 +147,10 @@ const props = Astro.props as Props;
         )}
         {empty && helpCollectHref ? (
           <span class="topic-foot">
-            <a href={helpCollectHref}>{helpCollectLabel}</a>
+            <a href={helpCollectHref}>
+              {helpCollectLabel}
+              <span class="visually-hidden">: {label}</span>
+            </a>
           </span>
         ) : null}
       </li>
@@ -166,7 +169,10 @@ const props = Astro.props as Props;
         {gloss ? <span class="ledger-meta topic-gloss">{gloss}</span> : null}
         {empty && helpCollectHref ? (
           <span class="stat-action">
-            <a href={helpCollectHref}>{helpCollectLabel}</a>
+            <a href={helpCollectHref}>
+              {helpCollectLabel}
+              <span class="visually-hidden">: {label}</span>
+            </a>
           </span>
         ) : null}
       </div>
