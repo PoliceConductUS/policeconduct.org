@@ -3009,7 +3009,9 @@ textarea.form-control.is-invalid {
   color: var(--bs-btn-hover-color);
   background-color: var(--bs-btn-hover-bg);
   border-color: var(--bs-btn-hover-border-color);
-  outline: 0;
+  /* Undo the "outline: 0" the imported Bootstrap build sets on this same
+     selector, so the browser's own focus outline shows. */
+  outline: revert;
   box-shadow: var(--bs-btn-focus-box-shadow);
 }
 .btn-check:focus-visible + .btn {
