@@ -280,7 +280,20 @@ const finderGroups = [
             wordMatches.push(result);
           }
         });
-        const matches = [...phraseMatches, ...wordMatches];
+        // Within each set, results whose name starts with the first word
+        // typed lead, so "Dallas, TX" lists Dallas before places near it.
+        const nameFirst = (results) => [
+          ...results.filter((result) =>
+            normalize(result.label).startsWith(terms[0]),
+          ),
+          ...results.filter(
+            (result) => !normalize(result.label).startsWith(terms[0]),
+          ),
+        ];
+        const matches = [
+          ...nameFirst(phraseMatches),
+          ...nameFirst(wordMatches),
+        ];
         matchTotal += matches.length;
 
         const list = resultLists.get(group.type);
