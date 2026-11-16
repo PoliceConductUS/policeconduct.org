@@ -166,7 +166,7 @@ const serializeStructuredData = (value: unknown) =>
 
     <footer class="border-top mt-auto d-print-none" data-pagefind-ignore>
       <div class="container py-5">
-        <div class="d-flex justify-content-center align-items-center gap-4 mb-4">
+        <div class="d-flex flex-wrap justify-content-center align-items-center gap-4 mb-4">
           {ORG_SOCIAL_LINKS.map((social) => (
             <a
               href={social.href}
@@ -643,8 +643,10 @@ const serializeStructuredData = (value: unknown) =>
         text-decoration: none;
       }
 
-      .masthead-nav-link:hover {
-        color: var(--ipc-color-ink);
+      @media (hover: hover) {
+        .masthead-nav-link:hover {
+          color: var(--ipc-color-ink);
+        }
       }
 
       .masthead-nav-link:focus-visible {
@@ -672,9 +674,11 @@ const serializeStructuredData = (value: unknown) =>
         color: var(--ipc-color-paper) !important;
       }
 
-      .nav-action-share:hover {
-        background: var(--ipc-color-ink);
-        border-color: var(--ipc-color-ink);
+      @media (hover: hover) {
+        .nav-action-share:hover {
+          background: var(--ipc-color-ink);
+          border-color: var(--ipc-color-ink);
+        }
       }
 
       /* Volunteer: a quiet ghost action — lifted above plain text, below the
@@ -685,9 +689,11 @@ const serializeStructuredData = (value: unknown) =>
         color: var(--ipc-color-teal-ink) !important;
       }
 
-      .nav-action-volunteer:hover {
-        background: var(--ipc-color-teal-wash);
-        border-color: var(--ipc-color-teal-ink);
+      @media (hover: hover) {
+        .nav-action-volunteer:hover {
+          background: var(--ipc-color-teal-wash);
+          border-color: var(--ipc-color-teal-ink);
+        }
       }
 
       @media (max-width: 767.98px) {

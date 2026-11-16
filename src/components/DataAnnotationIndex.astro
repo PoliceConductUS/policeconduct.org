@@ -31,7 +31,7 @@ const pageHref = (page: number) =>
       .filter((filter) => filter.provider === view.provider)
       .map((filter) => (
         <a
-          class="me-3"
+          class="me-3 text-break"
           href={annotationHref(base, filter.parts)}
           aria-current={filter.type === view.type ? "page" : undefined}
         >
@@ -46,7 +46,7 @@ const pageHref = (page: number) =>
         .filter((filter) => filter.type === view.type)
         .map((filter) => (
           <a
-            class="me-3"
+            class="me-3 text-break"
             href={annotationHref(base, filter.parts)}
             aria-current={
               filter.provider === view.provider ? "page" : undefined
@@ -123,7 +123,7 @@ const pageHref = (page: number) =>
 )}
 {view.pageCount > 1 && (
   <nav aria-label="Data notes pages">
-    <ul class="pagination">
+    <ul class="pagination flex-wrap">
       {Array.from({ length: view.pageCount }, (_, i) => (
         <li class:list={["page-item", { active: view.page === i + 1 }]}>
           <a

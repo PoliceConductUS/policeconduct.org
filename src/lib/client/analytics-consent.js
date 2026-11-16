@@ -70,7 +70,7 @@ export const initializeConsentControls = () => {
     const choice = readAnalyticsChoice();
     analytics.checked = choice === "granted";
     advertising.checked = readAdvertisingChoice() === "granted";
-    status.textContent = `Analytics cookies: ${analytics.checked ? "allowed" : "declined"}. Advertising: ${advertising.checked ? "allowed" : "declined"}.`;
+    status.textContent = "";
   };
   const apply = (choice, ads) => {
     if (typeof window.gtag === "function") {
@@ -99,7 +99,6 @@ export const initializeConsentControls = () => {
         JSON.stringify({ analytics: choice, advertising: ads }),
       );
       hide();
-      settings.focus();
     } catch {
       status.textContent =
         "Your choice applies to this page. Your browser could not save it for your next visit.";

@@ -68,43 +68,83 @@ const PLATFORM_LABELS: Record<SocialPlatform, string> = {
      design-system colors, so they are not represented as --ipc-* tokens.
      Scope is deliberately narrow — hover/focus tint only, never used for
      text or other UI chrome. */
-  .social-link--youtube:hover,
   .social-link--youtube:focus-visible {
     color: #ff0000;
   }
 
-  .social-link--facebook:hover,
+  @media (hover: hover) {
+    .social-link--youtube:hover {
+      color: #ff0000;
+    }
+  }
+
   .social-link--facebook:focus-visible {
     color: #1877f2;
   }
 
-  .social-link--twitter:hover,
+  @media (hover: hover) {
+    .social-link--facebook:hover {
+      color: #1877f2;
+    }
+  }
+
   .social-link--twitter:focus-visible {
     color: #000000;
   }
 
-  .social-link--instagram:hover,
+  @media (hover: hover) {
+    .social-link--twitter:hover {
+      color: #000000;
+    }
+  }
+
   .social-link--instagram:focus-visible {
     color: #e4405f;
   }
 
-  .social-link--tiktok:hover,
+  @media (hover: hover) {
+    .social-link--instagram:hover {
+      color: #e4405f;
+    }
+  }
+
   .social-link--tiktok:focus-visible {
     color: #000000;
   }
 
-  .social-link--linkedin:hover,
+  @media (hover: hover) {
+    .social-link--tiktok:hover {
+      color: #000000;
+    }
+  }
+
   .social-link--linkedin:focus-visible {
     color: #0a66c2;
   }
 
-  .social-link--reddit:hover,
+  @media (hover: hover) {
+    .social-link--linkedin:hover {
+      color: #0a66c2;
+    }
+  }
+
   .social-link--reddit:focus-visible {
     color: #ff4500;
   }
 
-  .social-link--github:hover,
+  @media (hover: hover) {
+    .social-link--reddit:hover {
+      color: #ff4500;
+    }
+  }
+
   .social-link--github:focus-visible {
     color: #181717;
+  }
+
+  @media (hover: hover) {
+    .social-link--github:hover {
+      color: #181717;
+    }
   }
 </style>
