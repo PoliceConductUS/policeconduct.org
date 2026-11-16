@@ -319,7 +319,7 @@ const finderGroups = [
           ? `No matching records for "${input?.value.trim() || query}".`
           : visibleTotal < matchTotal
             ? `Showing ${visibleTotal} of ${matchTotal} matching records. Type more to narrow the list.`
-            : `Showing ${visibleTotal} of ${matchTotal} matching records.`,
+            : `Showing ${matchTotal} matching ${matchTotal === 1 ? "record" : "records"}.`,
       );
 
       completedSearch = finderDataLoaded
