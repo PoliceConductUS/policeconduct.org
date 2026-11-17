@@ -66,9 +66,9 @@
     max-height: 80vh;
     margin: auto;
     padding: 0;
-    color: #172b4d;
-    background: #fff;
-    border: 1px solid #172b4d;
+    color: var(--ipc-color-ink);
+    background: var(--ipc-color-paper-raised);
+    border: 1px solid var(--ipc-color-ink);
     font-size: 1rem;
     line-height: 1.5;
   }
@@ -110,12 +110,12 @@
   /* Opening the dialog puts keyboard focus on the scrolling text, at its
      top, so the explanation is read first and arrow keys scroll it. */
   .analytics-consent-body:focus-visible {
-    outline: 3px solid #172b4d;
+    outline: 3px solid var(--ipc-color-ink);
     outline-offset: -3px;
   }
   .analytics-consent-actions {
     flex: none;
-    border-top: 1px solid #172b4d;
+    border-top: 1px solid var(--ipc-color-ink);
     padding: 1rem 1.5rem 1.5rem;
   }
   .analytics-privacy dialog::backdrop {
@@ -135,7 +135,7 @@
     margin-top: 0.25rem;
   }
   .analytics-privacy input:focus-visible {
-    outline: 3px solid #172b4d;
+    outline: 3px solid var(--ipc-color-ink);
     outline-offset: 3px;
   }
   .analytics-privacy p {
@@ -148,9 +148,9 @@
   }
   .analytics-privacy button {
     font: inherit;
-    color: #172b4d;
-    background: #fff;
-    border: 1px solid #172b4d;
+    color: var(--ipc-color-ink);
+    background: var(--ipc-color-paper-raised);
+    border: 1px solid var(--ipc-color-ink);
     padding: 0.5rem 1rem;
     cursor: pointer;
     transition:
@@ -174,7 +174,7 @@
     }
   }
   .analytics-privacy button:focus-visible {
-    outline: 3px solid #172b4d;
+    outline: 3px solid var(--ipc-color-ink);
     outline-offset: 3px;
   }
 </style>

@@ -45,7 +45,6 @@ or project. Google credentials still require access to the configured project.
 
 ```bash
 cd infrastructure/bootstrap-recaptcha
-cp terraform.tfvars.example terraform.tfvars
 terraform init
 bash scripts/apply.sh
 ```
@@ -58,7 +57,11 @@ bash scripts/bootstrap-all.sh
 
 That wrapper runs this stack first and then `infrastructure/bootstrap-policeconduct/scripts/apply.sh`.
 
-`scripts/apply.sh` also syncs Terraform outputs into `.env-recaptcha` at repo root by default.
+The policeconduct stack and the site scripts read this stack's outputs at run time through `scripts/terraform-outputs.mjs`.
+
+The inputs for this stack are tracked in `recaptcha.auto.tfvars`, which Terraform loads on every plan and apply. Secrets never go in that file.
+
+Before it changes anything, `scripts/apply.sh` writes one plan and refuses it when it destroys or replaces a resource whose address is not listed, one per line, in `TERRAFORM_APPROVED_DESTROYS`. It then asks for `yes` and applies exactly that plan. When live infrastructure already matches, it applies nothing.
 Use `ENV_FILE_NAME=.env` to write directly into your main env file.
 
 ## Authentication Prerequisites (GCP)

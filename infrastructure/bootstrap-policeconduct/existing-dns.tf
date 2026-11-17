@@ -39,3 +39,15 @@ import {
   to = aws_route53_record.google_domain_verification
   id = "Z046401021MODBVBU4TKS_xdvktfq76yak.policeconduct.org_CNAME"
 }
+
+# extra_dns_records must not repeat a record adopted above: two resources would
+# then manage one record, and removing either one deletes it.
+locals {
+  adopted_dns_record_keys = [
+    for record in [
+      aws_route53_record.google_mail_dmarc,
+      aws_route53_record.google_mail_dkim,
+      aws_route53_record.google_domain_verification,
+    ] : "${lower(trimsuffix(record.name, "."))} ${record.type}"
+  ]
+}

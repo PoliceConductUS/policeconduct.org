@@ -275,7 +275,7 @@ variable "forms_lambda_alarm_throttles_threshold" {
 variable "lambda_nodejs_runtime" {
   description = "Node.js runtime identifier for forms API Lambda functions."
   type        = string
-  default     = "nodejs22.x"
+  default     = "nodejs24.x"
 }
 
 variable "recaptcha_project_id" {

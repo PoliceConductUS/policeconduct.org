@@ -15,6 +15,21 @@ export const GET: APIRoute = async () => {
     loadAgencyFinderResults(),
   ]);
 
+  const stateLabels = new Map(
+    locations
+      .filter((location) => location.level === "state")
+      .map((location) => [location.state.toLowerCase(), location.stateLabel]),
+  );
+  const requireStateLabel = (state: string, agencyPath: string) => {
+    const label = stateLabels.get(state.toLowerCase());
+    if (!label) {
+      throw new Error(
+        `Record finder cannot render: no state location for "${state}" (agency ${agencyPath}).`,
+      );
+    }
+    return label;
+  };
+
   const places = locations
     .filter((location) => location.level === "place")
     .map((place) => ({
@@ -36,23 +51,27 @@ export const GET: APIRoute = async () => {
         .join(" "),
     }));
 
-  const agencyResults = agencies.map((agency) => ({
-    href: agency.canonicalPath,
-    label: agency.name,
-    meta: [agency.city, agency.administrativeArea, agency.state]
-      .filter(Boolean)
-      .join(", "),
-    searchText: [
-      agency.name,
-      agency.city,
-      agency.administrativeArea,
-      agency.state,
-      agency.zipCode,
-      agency.canonicalPath,
-    ]
-      .filter(Boolean)
-      .join(" "),
-  }));
+  const agencyResults = agencies.map((agency) => {
+    const stateLabel = requireStateLabel(agency.state, agency.canonicalPath);
+    return {
+      href: agency.canonicalPath,
+      label: agency.name,
+      meta: [agency.city, agency.administrativeArea, stateLabel]
+        .filter(Boolean)
+        .join(", "),
+      searchText: [
+        agency.name,
+        agency.city,
+        agency.administrativeArea,
+        agency.state,
+        stateLabel,
+        agency.zipCode,
+        agency.canonicalPath,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    };
+  });
 
   const federalAgencyResults = federalAgencies.map((agency) => ({
     href: agency.path,

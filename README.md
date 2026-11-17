@@ -22,8 +22,9 @@ npm ci
 npm run dev
 ```
 
-Set `FORMS_API_PROXY_TARGET` to the preview forms API URL in `.env-policeconduct`
-for local UI testing against deployed forms infrastructure.
+`npm run dev` reads the preview forms API URL and the reCAPTCHA site key from
+Terraform outputs, which needs AWS credentials. Set `FORMS_API_PROXY_TARGET` and
+`RECAPTCHA_SITE_KEY` in the environment to skip that lookup.
 
 `npm run` is the project command surface. Common setup and validation commands:
 
@@ -240,8 +241,8 @@ tooling tweaks, and internal refactors that preserve specified behavior.
 
 ## Build
 
-Build requires `RECAPTCHA_SITE_KEY`. The build script loads `.env`,
-`.env-recaptcha`, and `.env-policeconduct` before validating env.
+Build requires `RECAPTCHA_SITE_KEY`. `npm run build` reads it from the
+`bootstrap-recaptcha` Terraform outputs unless the environment already sets it.
 
 ```bash
 npm run build
@@ -282,6 +283,12 @@ supported audit baseline.
 npm run build
 npm run audit
 ```
+
+The accessibility audit runs axe (WCAG A and AA) on each sampled route, then checks
+what a screen reader receives (landmarks, one page heading, image alt text, a name
+for every control), focus indicators and control edges in forced-colors mode, and
+reflow at 200% and 400% zoom. It reads the accessibility tree and computed styles;
+it does not replace a person using a screen reader.
 
 Run either audit directly when needed:
 
@@ -382,8 +389,6 @@ Provisions:
 Bootstrap usage:
 
 ```bash
-cp infrastructure/bootstrap-policeconduct/terraform.tfvars.example \
-   infrastructure/bootstrap-policeconduct/terraform.tfvars
 export GITHUB_TOKEN=<github-token-with-repo-admin-access>
 terraform -chdir=infrastructure/bootstrap-policeconduct init
 bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
@@ -391,35 +396,14 @@ bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
 
 See `infrastructure/README.md` and `infrastructure/bootstrap-policeconduct/README.md`.
 
-## Environment Variables (Canonical)
+## Environment Variables
 
-After running:
+- **Inputs** for each stack are tracked in its `*.auto.tfvars` file.
+- **Secrets** live only in AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`.
+- **Deployed resource names** (buckets, CloudFront IDs, redirect stores, the preview forms API URL, the reCAPTCHA site key) are Terraform outputs. Scripts read them at run time through `scripts/terraform-outputs.mjs`; nothing copies them into a file. A value already set in the environment is kept, which is how CI passes them in.
+- **Machine settings** go in the git-ignored `.env` at the repo root: `AWS_PROFILE`, `DATABASE_URL`, `INTAKE_WORKSPACE`, and the public `PUBLIC_GA_MEASUREMENT_ID`, `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT`.
 
-- `bash infrastructure/bootstrap-recaptcha/scripts/apply.sh`
-- `bash infrastructure/bootstrap-policeconduct/scripts/apply.sh`
-
-your `.env-recaptcha` and `.env-policeconduct` should include the canonical
-runtime/build variables below.
-
-`.env-policeconduct` is the assembled runtime file for site/forms local runs.
-`bootstrap-policeconduct` sync merges Terraform outputs and required reCAPTCHA
-values (fallback from `.env-recaptcha`) and fails if required keys are missing.
-
-### Required For Local Forms Runtime
-
-- `DRAFTS_BUCKET`
-- `DRAFTS_KMS_KEY_ID`
-- `SUBMISSIONS_BUCKET`
-- `SUBMISSIONS_KMS_KEY_ID`
-- `RECAPTCHA_PROJECT_ID`
-- `RECAPTCHA_SITE_KEY`
-- `RECAPTCHA_SERVICE_ACCOUNT_EMAIL`
-- `RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME`
-- `RECAPTCHA_WIF_AUDIENCE`
-
-### Required For Frontend Build/Client
-
-- `RECAPTCHA_SITE_KEY`
+Reading a Terraform output needs AWS credentials for the account that holds the state. The first read in a new checkout runs `terraform init` for that stack.
 
 ### Submission Status
 
@@ -428,40 +412,6 @@ values (fallback from `.env-recaptcha`) and fails if required keys are missing.
 - Endpoint behavior: always returns HTTP `200` with JSON.
   If no status file exists, response falls back to:
   `{ "submissionId": "<id>", "status": "pending" }`.
-
-### Canonical Apply Inputs (non-`TF_VAR` env names)
-
-- `RECAPTCHA_PROJECT_ID`
-- `RECAPTCHA_SITE_KEY`
-- `RECAPTCHA_SERVICE_ACCOUNT_EMAIL`
-- `RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME`
-- `RECAPTCHA_WIF_AUDIENCE`
-
-Optional examples:
-
-- `GA_MEASUREMENT_ID_PRODUCTION`
-- `GA_MEASUREMENT_ID_PREVIEW`
-- `SENTRY_DSN_PRODUCTION`
-- `SENTRY_DSN_PREVIEW`
-- `SENTRY_ORG`
-- `SENTRY_PROJECT`
-- `SENTRY_AUTH_TOKEN`
-
-### Canonical Deploy/Infra Convenience
-
-- `TF_STATE_BUCKET`
-- `AWS_ROLE_ARN`
-- `S3_BUCKET`
-- `S3_BUCKET_PREVIEW`
-- `CLOUDFRONT_DIST_ID`
-- `CLOUDFRONT_DIST_PREVIEW`
-- `DRAFTS_BUCKET`
-- `SUBMISSIONS_BUCKET`
-
-### Canonical Terraform Output Mirror
-
-- `TF_OUT_*` keys are generated automatically for every Terraform output.
-- Treat these as generated read-only values.
 
 ## Sentry
 

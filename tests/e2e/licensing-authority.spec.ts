@@ -5,7 +5,7 @@ import { Client } from "pg";
 let client: Client;
 test.beforeAll(async () => {
   const databaseUrl = process.env.DATABASE_URL;
-  for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
+  for (const path of [".env"]) {
     dotenv.config({ path, override: true, quiet: true });
   }
   if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;

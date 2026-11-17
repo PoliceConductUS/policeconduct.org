@@ -6,7 +6,7 @@ import { Client } from "pg";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
 const databaseUrl = process.env.DATABASE_URL;
-const envFiles = [".env", ".env-recaptcha", ".env-policeconduct"];
+const envFiles = [".env"];
 
 for (const envFile of envFiles) {
   dotenv.config({

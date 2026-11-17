@@ -6,7 +6,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
-import { GoogleAuth } from "google-auth-library";
+import { ExternalAccountClient, GoogleAuth } from "google-auth-library";
 import { RecaptchaEnterpriseServiceClient } from "@google-cloud/recaptcha-enterprise";
 import { createId } from "@paralleldrive/cuid2";
 import crypto from "crypto";
@@ -1231,10 +1231,12 @@ function buildRecaptchaWifCredentials() {
 async function getRecaptchaClient() {
   if (!recaptchaClientPromise) {
     recaptchaClientPromise = (async () => {
-      const auth = new GoogleAuth({
-        credentials: buildRecaptchaWifCredentials(),
-        scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+      const scopes = ["https://www.googleapis.com/auth/cloud-platform"];
+      const authClient = ExternalAccountClient.fromJSON({
+        ...buildRecaptchaWifCredentials(),
+        scopes,
       });
+      const auth = new GoogleAuth({ authClient, scopes });
       return new RecaptchaEnterpriseServiceClient({ auth });
     })();
   }
@@ -1945,6 +1947,12 @@ async function submitForm(event, requestId) {
 
   const expectedAction = `${formName}Submit`;
 
+  // Look up the release while reCAPTCHA is checked: both are network calls,
+  // and waiting for one before starting the other adds its time to the
+  // response. A lookup error only matters once reCAPTCHA has passed.
+  const releaseCheck = isKnownFormRelease(payload.releaseId);
+  releaseCheck.catch(() => {});
+
   const recaptcha = await verifyRecaptchaEnterprise(
     recaptchaToken,
     sourceIp,
@@ -1975,7 +1983,7 @@ async function submitForm(event, requestId) {
   );
 
   const releaseId = payload.releaseId;
-  if (!(await isKnownFormRelease(releaseId))) {
+  if (!(await releaseCheck)) {
     return json(400, {
       error: "This form has an unrecognized website release.",
     });

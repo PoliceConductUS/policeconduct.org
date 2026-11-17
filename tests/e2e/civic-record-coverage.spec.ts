@@ -11,7 +11,7 @@ import ts from "typescript";
 let client: Client;
 test.beforeAll(async () => {
   const configuredDatabaseUrl = process.env.DATABASE_URL;
-  for (const path of [".env", ".env-recaptcha", ".env-policeconduct"])
+  for (const path of [".env"])
     dotenv.config({ path, override: true, quiet: true });
   if (configuredDatabaseUrl !== undefined)
     process.env.DATABASE_URL = configuredDatabaseUrl;

@@ -379,7 +379,11 @@ test.describe("form submissions", () => {
         },
       };
     });
-    await page.getByRole("link", { name: /report issue/i }).click();
+    // Two footer links carry this name; the last is the one below the address.
+    await page
+      .getByRole("link", { name: "Report a site issue" })
+      .last()
+      .click();
 
     const calls = await page.evaluate(() => {
       return window.__IPC_SENTRY_FEEDBACK__?.__calls || [];

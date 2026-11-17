@@ -41,7 +41,6 @@ It creates:
 
 ```bash
 cd infrastructure/bootstrap-policeconduct
-cp terraform.tfvars.example terraform.tfvars
 export GITHUB_TOKEN=<github-token-with-repo-admin-access>
 terraform init
 bash scripts/apply.sh
@@ -96,47 +95,23 @@ If reCAPTCHA apply fails with Google auth errors (`invalid_grant` /
 
 - `infrastructure/bootstrap-recaptcha/README.md`
 
-## Using .env
+## Where values come from
 
-This stack syncs Terraform outputs into `.env-policeconduct` (gitignored).
-You can keep local values there and load before Terraform:
+- **Inputs** for each stack are tracked in its `*.auto.tfvars` file.
+- **Secrets** live only in AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`.
+- **Deployed resource names** (buckets, CloudFront IDs, redirect stores, the preview forms API URL, the reCAPTCHA site key) are Terraform outputs. Scripts read them at run time through `scripts/terraform-outputs.mjs`; nothing copies them into a file. A value already set in the environment is kept, which is how CI passes them in.
+- **Machine settings** go in the git-ignored `.env` at the repo root: `AWS_PROFILE`, `DATABASE_URL`, `INTAKE_WORKSPACE`, and the public `PUBLIC_GA_MEASUREMENT_ID`, `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT`.
 
-```bash
-set -a
-source .env-policeconduct
-set +a
-bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
-```
+Reading a Terraform output needs AWS credentials for the account that holds the state. The first read in a new checkout runs `terraform init` for that stack.
 
-Example `.env` keys:
+The inputs for this stack are tracked in `policeconduct.auto.tfvars`, which Terraform loads on every plan and apply, so every checkout and worktree plans against the same values. Secrets never go in that file. A private `terraform.tfvars` is not needed; values in `policeconduct.auto.tfvars` take precedence over one.
 
-- `GITHUB_TOKEN`
-- `GA_MEASUREMENT_ID_PRODUCTION`
-- `GA_MEASUREMENT_ID_PREVIEW`
-- `SENTRY_DSN_PRODUCTION`
-- `SENTRY_DSN_PREVIEW`
-- `SENTRY_ORG`
-- `SENTRY_PROJECT`
-- `SENTRY_AUTH_TOKEN`
-- `RECAPTCHA_PROJECT_ID`
-- `RECAPTCHA_SITE_KEY`
-- `RECAPTCHA_SERVICE_ACCOUNT_EMAIL`
-- `RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME`
-- `RECAPTCHA_WIF_AUDIENCE`
-- `DRAFTS_BUCKET`
-- `DRAFTS_KMS_KEY_ID`
-- `SUBMISSIONS_BUCKET`
-- `SUBMISSIONS_KMS_KEY_ID`
-- `TF_STATE_BUCKET`
-- `AWS_ROLE_ARN`
-- `S3_BUCKET`
-- `CLOUDFRONT_DIST_ID`
+Before it changes anything, `scripts/apply.sh`:
 
-`scripts/apply.sh` runs Terraform apply and then syncs `.env-policeconduct` after each phase.
-The sync step comments any existing matching `KEY=...` line in `.env-policeconduct` and appends the latest value from Terraform outputs.
-It also writes all outputs as `TF_OUT_<OUTPUT_NAME>` keys (uppercase, non-alphanumeric chars replaced with `_`).
-For reCAPTCHA values, sync falls back to `.env-recaptcha` and fails fast if any required key is still missing.
-Result: `.env-policeconduct` remains the complete runtime env for local site/forms work.
+- writes one plan, and refuses it when it destroys or replaces a resource whose address is not listed, one per line, in `TERRAFORM_APPROVED_DESTROYS`;
+- asks for `yes`, then applies exactly that plan. When live infrastructure already matches, it applies nothing.
+
+`extra_dns_records` must not repeat a record that `existing-dns.tf` manages; the plan fails if it does.
 
 ## Shared redirect rollout
 
@@ -184,13 +159,13 @@ CloudFront bootstrap is idempotent for names:
 
 ## DNS Records Included
 
-Bootstrap applies DNS records from `extra_dns_records` in `terraform.tfvars`.
+Bootstrap applies DNS records from `extra_dns_records` in `policeconduct.auto.tfvars`.
 
 Current default includes Google Workspace MX:
 
 - `@ MX 1 smtp.google.com.`
 
-Add your domain-specific TXT verification/DKIM records in local `terraform.tfvars` under `extra_dns_records` so they are applied with the zone.
+Add your domain-specific TXT verification/DKIM records in `policeconduct.auto.tfvars` under `extra_dns_records` so they are applied with the zone.
 
 Verification email is sent from `noreply@mail.policeconduct.org` by default.
 The forms Lambda currently sends verification email through Resend using `RESEND_API_KEY`.
@@ -217,14 +192,14 @@ If a previous bootstrap wrote incorrect doubled-`mail` Route 53 records such as
 `send.mail.mail.policeconduct.org`, inspect the exact DNS diff and prepare a scoped
 change with rollback. Do not run an untargeted Terraform apply for email repairs.
 
-`infrastructure/bootstrap-policeconduct/scripts/apply.sh` now loads `.env-policeconduct` and maps `RESEND_API_KEY` into the Terraform input used by the forms Lambda. The same shell environment is used by the Resend bootstrap script, so keeping `RESEND_API_KEY` in `.env-policeconduct` is enough for the normal apply flow.
-
-Key split:
+`infrastructure/bootstrap-policeconduct/scripts/apply.sh` reads its secrets from AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`. It does not use a secret from a `.env` file; the stored value always wins.
 
 - `RESEND_API_KEY`: send-only key used by the forms Lambda verification-email path
 - `RESEND_API_KEY_FULL_ACCESS`: full-access key used only by `scripts/bootstrap-resend-domain.mjs` for Resend Domains API calls
+- `SENTRY_AUTH_TOKEN`: written to the GitHub `production` environment only, with `SENTRY_ORG` and `SENTRY_PROJECT`. `npm run deploy:prod` also reads it from Parameter Store so the production release build uploads its sourcemaps to Sentry
+- `GITHUB_TOKEN`: used by the Terraform GitHub provider
 
-`apply.sh` expects both keys to be present in `.env-policeconduct` or the shell environment.
+To change one, run `aws ssm put-parameter --overwrite --type SecureString --name /policeconduct/secrets/<NAME> --value file://<file>`.
 
 Example:
 
@@ -240,7 +215,8 @@ updates, or triggers verification of the Resend domain.
 To inspect the domain manually:
 
 ```bash
-source .env-policeconduct
+source scripts/parameter-store-secrets.sh
+load_parameter_store_secrets RESEND_API_KEY_FULL_ACCESS
 node scripts/bootstrap-resend-domain.mjs --read
 ```
 
@@ -250,14 +226,16 @@ or triggers verification. Configure tracking separately through the Resend
 Domains API or dashboard after inspecting the current settings. After obtaining the applicable production approval, run:
 
 ```bash
-source .env-policeconduct
+source scripts/parameter-store-secrets.sh
+load_parameter_store_secrets RESEND_API_KEY_FULL_ACCESS
 node scripts/bootstrap-resend-domain.mjs --apply
 ```
 
 If you want to trigger a Resend verification pass manually after DNS changes:
 
 ```bash
-source .env-policeconduct
+source scripts/parameter-store-secrets.sh
+load_parameter_store_secrets RESEND_API_KEY_FULL_ACCESS
 node scripts/bootstrap-resend-domain.mjs --verify
 ```
 
@@ -273,7 +251,7 @@ And sets these environment variables automatically:
 - `production`: `AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`, `FORMS_API_URL`
 - `preview`: `AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`, `FORMS_API_URL`
 
-Optional GA inputs in `terraform.tfvars`:
+Optional GA inputs in `policeconduct.auto.tfvars`:
 
 - `ga_measurement_id_production`
 - `ga_measurement_id_preview`
@@ -281,7 +259,7 @@ Optional GA inputs in `terraform.tfvars`:
 If set, Terraform also creates `GA_MEASUREMENT_ID` in the matching GitHub environment.
 If unset/null, no GA variable is written and the GA component renders nothing.
 
-Optional Sentry inputs in `terraform.tfvars`:
+Optional Sentry inputs in `policeconduct.auto.tfvars`, or `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_DSN_PRODUCTION` and `SENTRY_DSN_PREVIEW` in `.env`. The auth token is a secret: set `SENTRY_AUTH_TOKEN` in `.env` only.
 
 - `sentry_dsn_production`
 - `sentry_dsn_preview`

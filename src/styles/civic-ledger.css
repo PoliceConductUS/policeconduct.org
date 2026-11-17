@@ -249,12 +249,6 @@ a.stat-cell {
   padding: 0.6rem 1.7rem 0.6rem 0.6rem;
 }
 
-.jump-select:focus {
-  border-color: var(--ipc-color-teal);
-  box-shadow: 0 0 0 1px var(--ipc-color-teal);
-  outline: none;
-}
-
 .jump-go {
   background: var(--ipc-color-ink);
   border: 1px solid var(--ipc-color-ink);
@@ -776,6 +770,23 @@ a.stat-cell {
   display: none;
 }
 
+/* On a phone the toggle can sit anywhere in a wrapped row, so a menu hung
+   from it runs off the screen. Hang it from the row instead. */
+@media (max-width: 575.98px) {
+  .entity-actions {
+    position: relative;
+  }
+
+  .entity-menu {
+    position: static;
+  }
+
+  .entity-menu-list {
+    min-width: 0;
+    right: 0;
+  }
+}
+
 .entity-menu-item {
   color: var(--ipc-color-ink);
   display: block;
@@ -832,43 +843,29 @@ a.stat-cell {
 }
 
 .entity-side-list li {
-  align-items: center;
   border-top: 1px solid var(--ipc-color-rule);
-  display: flex;
-  gap: 0.75rem;
-  justify-content: space-between;
-  padding: 0.6rem 0;
 }
 
-.entity-side-list li span {
-  color: var(--ipc-color-ink-soft);
-  font-size: var(--ipc-type-small);
-}
-
+/* The whole row is the control. */
 .entity-side .entity-side-link {
   background: none;
-  border: none;
+  /* Invisible here; forced-colors mode draws it so each row reads as a control. */
+  border: 1px solid transparent;
   color: var(--ipc-color-teal);
   cursor: pointer;
+  display: block;
   font-size: var(--ipc-type-small);
   font-weight: 700;
-  padding: 0;
+  padding: 0.6rem 0;
+  text-align: start;
   text-decoration: none;
+  width: 100%;
 }
 
 @media (hover: hover) {
   .entity-side .entity-side-link:hover {
     text-decoration: underline;
   }
-}
-
-.agency-coming-soon {
-  color: var(--ipc-color-ink-soft);
-  display: block;
-  font-size: var(--ipc-type-caption);
-  font-weight: 700;
-  margin-top: 0.5rem;
-  min-height: 1.15rem;
 }
 
 .recent-list {

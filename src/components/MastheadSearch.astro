@@ -54,6 +54,12 @@
       aria-label="Search results"
       data-site-search-listbox
     ></ul>
+    <p class="masthead-search-empty" data-site-search-empty hidden>
+      No results.{" "}
+      <a href="/find-records/" data-site-search-empty-link>
+        Search places and agencies
+      </a>
+    </p>
   </div>
   <p
     class="visually-hidden"
@@ -97,14 +103,22 @@
     width: 100%;
   }
 
+  @media (max-width: 767.98px) {
+    /* iOS Safari zooms the whole page when a focused input's text is under
+       16px. */
+    .masthead-search-input {
+      font-size: var(--ipc-type-body);
+    }
+  }
+
   .masthead-search-input::placeholder {
     color: var(--ipc-color-ink-faint);
   }
 
   .masthead-search-input:focus {
     border-color: var(--ipc-color-teal-ink);
-    box-shadow: 0 0 0 2px var(--ipc-color-teal-ink);
-    outline: none;
+    outline: 2px solid var(--ipc-color-teal-ink);
+    outline-offset: 0;
   }
 
   .masthead-search-panel {
@@ -116,6 +130,7 @@
     margin-top: 0.35rem;
     max-height: 22rem;
     overflow-y: auto;
+    overscroll-behavior: contain;
     position: absolute;
     right: 0;
     top: 100%;
@@ -132,7 +147,9 @@
     padding: 0.3rem;
   }
 
-  .masthead-search-option {
+  /* Options are created by src/lib/client/site.js, so they never carry this
+     component's scope class. Reach them through the scoped listbox. */
+  .masthead-search-listbox :global(.masthead-search-option) {
     border-radius: 0.2rem;
     cursor: pointer;
     display: flex;
@@ -141,17 +158,26 @@
     padding: 0.45rem 0.6rem;
   }
 
-  .masthead-search-option.is-active {
+  .masthead-search-listbox :global(.masthead-search-option.is-active) {
     background: var(--ipc-color-teal-wash);
+    outline: 2px solid var(--ipc-color-teal-ink);
+    outline-offset: -2px;
   }
 
-  .masthead-search-option-title {
+  .masthead-search-empty {
+    color: var(--ipc-color-ink-soft);
+    font-size: var(--ipc-type-small);
+    margin: 0;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .masthead-search-listbox :global(.masthead-search-option-title) {
     color: var(--ipc-color-ink);
     font-size: var(--ipc-type-small);
     font-weight: 700;
   }
 
-  .masthead-search-option-path {
+  .masthead-search-listbox :global(.masthead-search-option-path) {
     color: var(--ipc-color-ink-faint);
     font-size: var(--ipc-type-caption);
   }

@@ -7,10 +7,11 @@
 // the canonical apex on the prod distribution, where this function is not
 // attached). See openspec/changes/atomic-sha-deploys/design.md.
 // CloudFront requires a global handler and invokes it outside this module.
-// An ES export would change the deployed runtime contract; there is no local caller.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Required CloudFront global entry point.
 function handler(event) {
   const response = event.response;
   response.headers["x-robots-tag"] = { value: "noindex, nofollow" };
   return response;
 }
+
+// Register the entry point on the runtime global rather than exporting a module.
+globalThis.handler = handler;

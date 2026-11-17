@@ -408,6 +408,74 @@ test("submissions retain the known release of the open form in its own environme
   );
 });
 
+test("the release lookup does not wait for reCAPTCHA, and its failure does not outrank a failed reCAPTCHA", async (t) => {
+  const order = [];
+  let valid = true;
+  t.mock.method(S3Client.prototype, "send", async (command) => {
+    if (command.constructor.name === "HeadObjectCommand") {
+      order.push("release lookup");
+      if (!valid) throw new Error("S3 unavailable");
+    }
+    return {};
+  });
+  t.mock.method(
+    RecaptchaEnterpriseServiceClient.prototype,
+    "createAssessment",
+    async () => {
+      order.push("reCAPTCHA");
+      return [
+        {
+          tokenProperties: { valid, action: "contactSubmit" },
+          riskAnalysis: { score: 0.9 },
+        },
+      ];
+    },
+  );
+  const previous = {};
+  const config = {
+    RECAPTCHA_SITE_KEY: "fixture",
+    RECAPTCHA_PROJECT_ID: "test",
+    RECAPTCHA_SERVICE_ACCOUNT_EMAIL: "test@example.org",
+    RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME:
+      "projects/1/locations/global/workloadIdentityPools/test/providers/test",
+    RECAPTCHA_WIF_AUDIENCE:
+      "//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/test/providers/test",
+    RELEASE_DATA_BUCKET: "prod-roster",
+  };
+  for (const [key, value] of Object.entries(config)) {
+    previous[key] = process.env[key];
+    process.env[key] = value;
+  }
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  const submit = () =>
+    handler(
+      apiEvent({
+        method: "POST",
+        path: "/api/forms/submit",
+        origin: "https://www.policeconduct.org",
+        body: {
+          formName: "contact",
+          releaseId: "prod-temp",
+          recaptchaToken: "test-token",
+          data: {},
+        },
+      }),
+    );
+
+  assert.equal((await submit()).statusCode, 200);
+  assert.deepEqual(order, ["release lookup", "reCAPTCHA"]);
+
+  valid = false;
+  const rejected = await submit();
+  assert.equal(rejected.statusCode, 400, rejected.body);
+  assert.match(rejected.body, /reCAPTCHA/);
+});
+
 // --- INS-35: submission notification ----------------------------------------
 //
 // The requirement these cover is not "an email got sent". It is that whoever

@@ -154,7 +154,7 @@ const simpleSenderCases: SenderCase[] = [
 
 test.beforeAll(async () => {
   const databaseUrl = process.env.DATABASE_URL;
-  for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
+  for (const path of [".env"]) {
     dotenv.config({ path, override: true, quiet: true });
   }
   if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
@@ -214,7 +214,7 @@ const profileSenderCases: SenderCase[] = [
         name: "James Markham V",
       },
     },
-    locator: { kind: "role", value: "Share your experience" },
+    locator: { kind: "role", value: "Share an experience" },
     targetPath: "/report/new/",
   },
   {
@@ -346,7 +346,7 @@ const profileSenderCases: SenderCase[] = [
       "currentAgencyState",
       "reportLinks",
     ],
-    locator: { kind: "role", value: "Suggest new personnel" },
+    locator: { kind: "role", value: "Add personnel" },
     targetPath: "/personnel/new/",
   },
   {

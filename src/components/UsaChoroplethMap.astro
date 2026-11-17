@@ -50,6 +50,8 @@ const {
   headerAction?: HeaderAction;
 };
 
+const helpCollectHref = `/volunteer/?${new URLSearchParams({ source: Astro.url.pathname })}`;
+
 const byCode = new Map(stats.map((entry) => [entry.code.toLowerCase(), entry]));
 
 const maxCount = Math.max(0, ...stats.map((entry) => Number(entry.count || 0)));
@@ -244,9 +246,10 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
             })}
           </svg>
         </div>
-        <div class="d-flex align-items-center text-muted small gap-2">
+        <div class="d-flex flex-wrap align-items-center text-muted small gap-2">
           <span class="legend-swatch"></span>
           <span>{emptyLabel}</span>
+          <a href={helpCollectHref}>Help collect this →</a>
           {interactionLabel ? (
             <span class="ms-auto">{interactionLabel}</span>
           ) : null}

@@ -310,7 +310,10 @@ for (const failure of ["http", "json"]) {
     await page
       .locator("[data-record-finder-input]")
       .fill("private-unavailable");
-    await expect(page.locator("[data-finder-no-results]")).toBeVisible();
+    await expect(page.locator("[data-finder-status]")).toHaveText(
+      "Unable to load records. Check your connection and try again.",
+    );
+    await expect(page.locator("[data-finder-no-results]")).toBeHidden();
     await page.waitForTimeout(850);
     expect(analytics.events("search_results")).toEqual([]);
     expect(analytics.events("coverage_search_no_results")).toEqual([]);

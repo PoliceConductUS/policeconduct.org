@@ -221,11 +221,40 @@ const initCopyLink = () => {
     const originalText = trigger.textContent;
     const url = window.location.href;
 
+    const status = trigger
+      .closest("li")
+      ?.querySelector("[data-copy-link-status]");
+
     copyTextToClipboard(url).then((succeeded) => {
-      trigger.textContent = succeeded ? "Copied!" : "Couldn't copy";
+      const message = succeeded ? "Copied!" : "Couldn't copy";
+      trigger.textContent = message;
+      // The link's own text changing is not announced; the status element is.
+      if (status) status.textContent = message;
       window.setTimeout(() => {
         trigger.textContent = originalText;
+        if (status) status.textContent = "";
       }, 1600);
+    });
+  });
+};
+
+// The "More actions" menu (EntityActionBar.astro) is a <details>. Close it on
+// Escape and on a click outside, so it does not stay over the page content.
+const initEntityMenu = () => {
+  const openMenus = () =>
+    document.querySelectorAll("details.entity-menu[open]");
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    openMenus().forEach((menu) => {
+      menu.open = false;
+      menu.querySelector("summary")?.focus();
+    });
+  });
+  document.addEventListener("click", (event) => {
+    openMenus().forEach((menu) => {
+      if (event.target instanceof Node && !menu.contains(event.target)) {
+        menu.open = false;
+      }
     });
   });
 };
@@ -338,11 +367,15 @@ const initSiteSearch = () => {
   const panel = form.querySelector("[data-site-search-panel]");
   const listbox = form.querySelector("[data-site-search-listbox]");
   const status = form.querySelector("[data-site-search-status]");
+  const empty = form.querySelector("[data-site-search-empty]");
+  const emptyLink = form.querySelector("[data-site-search-empty-link]");
   if (
     !(input instanceof HTMLInputElement) ||
     !(panel instanceof HTMLElement) ||
     !(listbox instanceof HTMLElement) ||
-    !(status instanceof HTMLElement)
+    !(status instanceof HTMLElement) ||
+    !(empty instanceof HTMLElement) ||
+    !(emptyLink instanceof HTMLAnchorElement)
   ) {
     return;
   }
@@ -390,6 +423,7 @@ const initSiteSearch = () => {
 
   const closePanel = () => {
     panel.hidden = true;
+    empty.hidden = true;
     input.setAttribute("aria-expanded", "false");
     input.removeAttribute("aria-activedescendant");
     activeIndex = -1;
@@ -465,11 +499,21 @@ const initSiteSearch = () => {
     });
 
     if (results.length > 0) {
+      empty.hidden = true;
       panel.hidden = false;
       input.setAttribute("aria-expanded", "true");
     } else {
       closePanel();
     }
+  };
+
+  // A search that matches nothing keeps the panel open with a visible note and
+  // a link that runs the same term on /find-records/. The listbox stays empty,
+  // so the combobox still reports aria-expanded="false".
+  const showNoResults = (term) => {
+    emptyLink.href = `/find-records/?q=${encodeURIComponent(term)}`;
+    empty.hidden = false;
+    panel.hidden = false;
   };
 
   const runSearch = async (term) => {
@@ -517,6 +561,9 @@ const initSiteSearch = () => {
       }));
       activeIndex = -1;
       renderResults();
+      if (results.length === 0) {
+        showNoResults(term);
+      }
       setStatus(
         results.length === 0
           ? "No results"
@@ -607,5 +654,6 @@ initHeaderScroll();
 initAnalyticsClicks();
 initMapAnalyticsClicks();
 initCopyLink();
+initEntityMenu();
 initJumpForms();
 initSiteSearch();

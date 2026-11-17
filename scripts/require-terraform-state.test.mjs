@@ -112,3 +112,21 @@ for (const stack of ["policeconduct", "iceconduct", "recaptcha"]) {
     });
   }
 }
+
+test("an uninitialized stack directory is named as the cause", (t) => {
+  const { dir, env } = fixture(t, "", 1);
+  const result = spawnSync("bash", [guard, dir], { env, encoding: "utf8" });
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /refusing apply/);
+  assert.match(result.stderr, /has not been initialized/);
+  assert.ok(result.stderr.includes(`terraform -chdir="${dir}" init`));
+
+  mkdirSync(join(dir, ".terraform"));
+  writeFileSync(join(dir, ".terraform", "terraform.tfstate"), "{}");
+  const initialized = spawnSync("bash", [guard, dir], {
+    env,
+    encoding: "utf8",
+  });
+  assert.equal(initialized.status, 1, initialized.stderr);
+  assert.equal(initialized.stderr.includes("has not been initialized"), false);
+});

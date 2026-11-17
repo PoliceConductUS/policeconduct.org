@@ -32,69 +32,78 @@ const finderGroups = [
   structuredData={structuredData}
   breadcrumbs={[
     { label: "Home", href: "/" },
-    { label: "Find Records", href: pagePath, current: true },
+    { label: "Find records", href: pagePath, current: true },
   ]}
   heading="Find records by place or agency"
   lede="Enter a place or law enforcement agency to see what PoliceConduct.org has in the record."
 >
   <section class="py-vh-2">
-    <div class="container">
-      <div class="finder-shell" data-record-finder>
-        <div class="finder-search-panel">
-          <label class="form-label fw-semibold" for="recordFinder">
-            Place or agency
-          </label>
-          <input
-            class="form-control form-control-lg rounded-0"
-            id="recordFinder"
-            type="search"
-            placeholder="Irving, Dallas County, Texas, or Irving Police Department"
-            data-record-finder-input
-            autocomplete="off"
-            aria-describedby="recordFinderStatus"
-          />
-          <p
-            class="finder-status text-muted small mb-0"
-            id="recordFinderStatus"
-            data-finder-status
-            role="status"
-            aria-live="polite"
+    <div class="finder-shell" data-record-finder>
+      <div class="finder-search-panel">
+        <label class="form-label fw-semibold" for="recordFinder">
+          Place or agency
+        </label>
+        <input
+          class="form-control form-control-lg rounded-0"
+          id="recordFinder"
+          type="search"
+          placeholder="Irving, Texas"
+          data-record-finder-input
+          autocomplete="off"
+          aria-describedby="recordFinderStatus"
+        />
+        <p
+          class="finder-status text-muted small mb-0"
+          id="recordFinderStatus"
+          data-finder-status
+          role="status"
+          aria-live="polite"
+        >
+          Type a place or agency name to show matching records.
+        </p>
+      </div>
+
+      <div class="finder-empty-state" data-finder-start>
+        <h2 class="ipc-section-title">Start with a place or agency.</h2>
+        <p class="text-muted mb-0">
+          Search results will focus on places, law enforcement agencies, and
+          federal agencies. Open a result to see connected personnel, reports,
+          civil cases, and other records.
+        </p>
+      </div>
+
+      <div class="finder-empty-state d-none" data-finder-no-results>
+        <h2 class="ipc-section-title">
+          We do not have records for that search yet.
+        </h2>
+        <p class="text-muted">
+          We use searches with no results to understand which places and
+          agencies people are looking for.
+        </p>
+        <p class="mb-0">
+          <a href="/report/new/">Share an experience</a> with this place or
+          agency, or <a href="/volunteer/">help collect its records</a>.
+        </p>
+      </div>
+
+      <div class="finder-result-groups d-none" data-finder-results>
+        {finderGroups.map((group) => (
+          <section
+            class="finder-result-group"
+            data-result-group={group.type}
+            hidden
           >
-            Type a place or agency name to show matching records.
-          </p>
-        </div>
-
-        <div class="finder-empty-state" data-finder-start>
-          <h2 class="ipc-section-title">Start with a place or agency.</h2>
-          <p class="text-muted mb-0">
-            Search results will focus on places, law enforcement agencies, and
-            federal agencies. Open a result to see connected personnel, reports,
-            civil cases, and other records.
-          </p>
-        </div>
-
-        <div class="finder-empty-state d-none" data-finder-no-results>
-          <h2 class="ipc-section-title">
-            We do not have records for that search yet.
-          </h2>
-          <p class="text-muted mb-0">
-            We use searches with no results to understand which places and
-            agencies people are looking for.
-          </p>
-        </div>
-
-        <div class="finder-result-groups d-none" data-finder-results>
-          {finderGroups.map((group) => (
-            <section
-              class="finder-result-group"
-              data-result-group={group.type}
+            <h2 class="ipc-section-title">{group.label}</h2>
+            <div class="finder-result-list" data-result-list={group.type} />
+            <button
+              type="button"
+              class="btn btn-outline-dark btn-sm rounded-0 mt-3"
+              data-show-all={group.type}
+              data-show-all-label={group.label.toLowerCase()}
               hidden
-            >
-              <h2 class="ipc-section-title">{group.label}</h2>
-              <div class="finder-result-list" data-result-list={group.type} />
-            </section>
-          ))}
-        </div>
+            />
+          </section>
+        ))}
       </div>
     </div>
   </section>
@@ -117,6 +126,12 @@ const finderGroups = [
         list,
       ]),
     );
+    const showAllButtons = new Map(
+      [...document.querySelectorAll("[data-show-all]")].map((button) => [
+        button.getAttribute("data-show-all"),
+        button,
+      ]),
+    );
     // The dataset is fetched lazily from a static JSON file instead of being
     // inlined, so the page HTML stays small. Load it on first interaction; if a
     // search happens before it arrives, show a loading note and run once ready.
@@ -135,7 +150,9 @@ const finderGroups = [
             finderDataLoaded = true;
           })
           .catch(() => {
-            finderGroups = [];
+            // Leave finderGroups unset and drop the promise so the next
+            // keystroke retries instead of reporting an empty record set.
+            loadPromise = null;
           });
       }
       return loadPromise;
@@ -145,12 +162,20 @@ const finderGroups = [
     let noResultTimer = 0;
     let lastReportedQuery = "";
     let completedSearch = null;
+    // Groups the visitor asked to see in full, for the current search only.
+    const expandedGroups = new Set();
+    let expandedQuery = "";
 
     const normalize = (value) =>
       String(value || "")
         .trim()
         .toLowerCase()
         .replace(/\s+/g, " ");
+
+    // Words and numbers in the query, without the punctuation between them, so
+    // "Dallas, TX" and "dallas tx" both search for "dallas" and "tx".
+    const searchTerms = (query) =>
+      query.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 
     const reportNoResults = (query) => {
       if (!query || reportedNoResultQueries.has(query)) {
@@ -193,6 +218,9 @@ const finderGroups = [
       groupElements.forEach((group) => {
         group.hidden = true;
       });
+      showAllButtons.forEach((button) => {
+        button.hidden = true;
+      });
     };
 
     const renderResult = (result, category) => {
@@ -222,10 +250,11 @@ const finderGroups = [
 
     const updateResults = async () => {
       const query = normalize(input?.value);
+      const terms = searchTerms(query);
       window.clearTimeout(noResultTimer);
       clearResults();
 
-      if (!query) {
+      if (terms.length === 0) {
         completedSearch = null;
         lastReportedQuery = "";
         setHidden(startState, false);
@@ -243,21 +272,57 @@ const finderGroups = [
         await loadFinderData();
         // A newer keystroke may have superseded this call while loading.
         if (normalize(input?.value) !== query) return;
+        if (!finderGroups) {
+          setStatus(
+            "Unable to load records. Check your connection and try again.",
+          );
+          return;
+        }
         clearResults();
+      }
+
+      if (query !== expandedQuery) {
+        expandedGroups.clear();
+        expandedQuery = query;
       }
 
       let visibleTotal = 0;
       let matchTotal = 0;
 
       finderGroups.forEach((group) => {
-        const matches = group.results.filter((result) =>
-          normalize(result.searchText).includes(query),
-        );
+        // Results that contain the query as typed come first, so widening the
+        // match to separate words never pushes them past the per-group cap.
+        const phraseMatches = [];
+        const wordMatches = [];
+        group.results.forEach((result) => {
+          const searchText = normalize(result.searchText);
+          if (searchText.includes(query)) {
+            phraseMatches.push(result);
+          } else if (terms.every((term) => searchText.includes(term))) {
+            wordMatches.push(result);
+          }
+        });
+        // Within each set, results whose name starts with the first word
+        // typed lead, so "Dallas, TX" lists Dallas before places near it.
+        const nameFirst = (results) => [
+          ...results.filter((result) =>
+            normalize(result.label).startsWith(terms[0]),
+          ),
+          ...results.filter(
+            (result) => !normalize(result.label).startsWith(terms[0]),
+          ),
+        ];
+        const matches = [
+          ...nameFirst(phraseMatches),
+          ...nameFirst(wordMatches),
+        ];
         matchTotal += matches.length;
 
         const list = resultLists.get(group.type);
         const groupElement = groupElements.get(group.type);
-        const visibleResults = matches.slice(0, maxVisiblePerGroup);
+        const visibleResults = expandedGroups.has(group.type)
+          ? matches
+          : matches.slice(0, maxVisiblePerGroup);
 
         if (!list || !groupElement || visibleResults.length === 0) {
           return;
@@ -268,6 +333,12 @@ const finderGroups = [
         );
         groupElement.hidden = false;
         visibleTotal += visibleResults.length;
+
+        const showAll = showAllButtons.get(group.type);
+        if (showAll && visibleResults.length < matches.length) {
+          showAll.textContent = `Show all ${matches.length} ${showAll.getAttribute("data-show-all-label")}`;
+          showAll.hidden = false;
+        }
       });
 
       setHidden(startState, true);
@@ -276,7 +347,9 @@ const finderGroups = [
       setStatus(
         visibleTotal === 0
           ? `No matching records for "${input?.value.trim() || query}".`
-          : `Showing ${visibleTotal} of ${matchTotal} matching records.`,
+          : visibleTotal < matchTotal
+            ? `Showing ${visibleTotal} of ${matchTotal} matching records. Type more to narrow the list.`
+            : `Showing ${matchTotal} matching ${matchTotal === 1 ? "record" : "records"}.`,
       );
 
       completedSearch = finderDataLoaded
@@ -288,7 +361,12 @@ const finderGroups = [
 
     // Seed from the masthead search form's GET submission (?q=…), the
     // no-JS / no-Pagefind fallback path, so arriving here runs the search.
-    const initialQuery = new URLSearchParams(window.location.search).get("q");
+    // Prefer the search remembered in this history entry, so coming Back from
+    // a result shows the same results instead of an empty finder. The
+    // remembered search stays out of the URL.
+    const initialQuery =
+      window.history.state?.finderQuery ??
+      new URLSearchParams(window.location.search).get("q");
     if (input && initialQuery) {
       input.value = initialQuery;
     }
@@ -296,7 +374,21 @@ const finderGroups = [
     // Prefetch the dataset as soon as the field is focused, so it is usually
     // ready by the time the first character is typed.
     input?.addEventListener("focus", loadFinderData, { once: true });
-    input?.addEventListener("input", updateResults);
+    input?.addEventListener("input", () => {
+      window.history.replaceState(
+        { ...window.history.state, finderQuery: input.value },
+        "",
+      );
+      updateResults();
+    });
+    showAllButtons.forEach((button, type) => {
+      button.addEventListener("click", async () => {
+        expandedGroups.add(type);
+        await updateResults();
+        // The button is gone now, so move focus to the first added result.
+        resultLists.get(type)?.children[maxVisiblePerGroup]?.focus();
+      });
+    });
     updateResults();
   </script>
 </PageShell>

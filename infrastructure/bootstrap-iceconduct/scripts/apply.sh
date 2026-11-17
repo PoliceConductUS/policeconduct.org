@@ -9,5 +9,4 @@ bash "${ROOT_DIR}/../../scripts/require-terraform-state.sh" "${ROOT_DIR}"
 
 bash "${ROOT_DIR}/../../scripts/require-terraform-account.sh" "${ROOT_DIR}"
 
-terraform -chdir="${ROOT_DIR}" apply "$@"
-ENV_FILE_NAME="${ENV_FILE_NAME:-.env-iceconduct}" bash "${SCRIPT_DIR}/sync-env.sh"
+bash "${ROOT_DIR}/../../scripts/terraform-reviewed-apply.sh" "${ROOT_DIR}" "$@"

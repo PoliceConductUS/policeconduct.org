@@ -6,6 +6,7 @@
     "astro": "astro",
     "audit": "npm run audit:seo && npm run audit:a11y",
     "audit:a11y": "node scripts/audit-a11y.mjs",
+    "test:audit": "node --test scripts/audit-a11y-checks.test.mjs",
     "audit:seo": "node scripts/audit-seo.mjs",
     "build": "NODE_OPTIONS=--max-old-space-size=12288 node scripts/build-release.mjs",
     "build:site": "node scripts/validate-build-env.mjs && node scripts/validate-schema-contract.mjs && node scripts/generate-icon-sprite.mjs && node scripts/refresh-build-projections.mjs && GIT_COMMIT_SHA=${GIT_COMMIT_SHA:-$(git rev-parse --short=12 HEAD)} GIT_COMMIT_DIRTY=${GIT_COMMIT_DIRTY:-$(if git diff --quiet HEAD -- && [ -z \"$(git ls-files --others --exclude-standard)\" ]; then echo 0; else echo 1; fi)} astro build && npm run build:search-index && npm run validate:no-inline-css && node scripts/generate-redirect-map.mjs && npm run purge:css && npm run validate:css",
@@ -35,7 +36,7 @@
     "scan:personal-data": "node scripts/scan-personal-data.mjs --tracked",
     "setup": "bash scripts/bootstrap-dev.sh",
     "test:client": "node --test scripts/copy-link.test.mjs scripts/google-analytics.test.mjs scripts/ai-complaint-summary.test.mjs scripts/ai-complaint-render.test.mjs scripts/canonical-metadata.test.mjs scripts/public-claims.test.mjs",
-    "test": "npm run test:contacts && npm run test:annotations && npm run test:analytics-config && npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:data && npm run test:coverage && npm run test:e2e && npm run test:infra",
+    "test": "npm run test:contacts && npm run test:annotations && npm run test:analytics-config && npm run test:client && npm run test:redirects && npm run test:media && npm run test:lambda && npm run test:css && npm run test:personal-data && npm run test:data && npm run test:coverage && npm run test:e2e && npm run test:infra && npm run test:audit",
     "test:coverage": "node --test \"src/lib/coverage/*.test.mjs\"",
     "test:css": "node --test scripts/purge-built-css.test.mjs",
     "test:data": "node --test src/lib/data/assignment-status.test.mjs scripts/verify-employment-claims.test.mjs scripts/report-detail.test.mjs scripts/release-news.test.mjs",
@@ -64,18 +65,18 @@
     "test:analytics-config": "node --test scripts/analytics-config.test.mjs",
     "analytics:pull": "node scripts/analytics-config.mjs pull",
     "analytics:push": "node scripts/analytics-config.mjs push",
-    "test:infra": "node --test scripts/deploy-forms-api.test.mjs scripts/require-terraform-state.test.mjs scripts/terraform-read-failures.test.mjs scripts/intake-workspace-sync.test.mjs scripts/workspace-operator.test.mjs scripts/workspace-demo.test.mjs",
-    "workspace:push": "node --env-file-if-exists=.env --env-file-if-exists=.env-policeconduct scripts/workspace-operator.mjs push",
-    "workspace:pull": "node --env-file-if-exists=.env --env-file-if-exists=.env-policeconduct scripts/workspace-operator.mjs pull",
-    "workspace:versions": "node --env-file-if-exists=.env --env-file-if-exists=.env-policeconduct scripts/intake-workspace-sync.mjs versions",
-    "workspace:restore": "node --env-file-if-exists=.env --env-file-if-exists=.env-policeconduct scripts/intake-workspace-sync.mjs restore",
-    "deploy:promote": "node --env-file-if-exists=.env-policeconduct scripts/manage-release.mjs promote",
-    "deploy:delete": "node --env-file-if-exists=.env-policeconduct scripts/manage-release.mjs delete"
+    "test:infra": "node --test scripts/deploy-forms-api.test.mjs scripts/require-terraform-state.test.mjs scripts/require-approved-terraform-destroys.test.mjs scripts/terraform-tracked-inputs.test.mjs scripts/parameter-store-secrets.test.mjs scripts/terraform-outputs.test.mjs scripts/terraform-read-failures.test.mjs scripts/intake-workspace-sync.test.mjs scripts/workspace-operator.test.mjs scripts/workspace-demo.test.mjs",
+    "workspace:push": "node --env-file-if-exists=.env scripts/workspace-operator.mjs push",
+    "workspace:pull": "node --env-file-if-exists=.env scripts/workspace-operator.mjs pull",
+    "workspace:versions": "node --env-file-if-exists=.env scripts/intake-workspace-sync.mjs versions",
+    "workspace:restore": "node --env-file-if-exists=.env scripts/intake-workspace-sync.mjs restore",
+    "deploy:promote": "node --env-file-if-exists=.env scripts/manage-release.mjs promote",
+    "deploy:delete": "node --env-file-if-exists=.env scripts/manage-release.mjs delete"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.5",
     "@fontsource/public-sans": "^5.3.0",
-    "@sentry/astro": "^11.12.0",
+    "@sentry/astro": "^11.13.0",
     "aos": "^2.3.4",
     "astro": "^7.4.12",
     "bootstrap": "^5.3.9",
@@ -88,7 +89,7 @@
     "@astrojs/check": "^0.9.12",
     "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^10.0.1",
-    "@fission-ai/openspec": "2.0.0",
+    "@fission-ai/openspec": "2.1.0",
     "@fullhuman/postcss-purgecss": "^9.1.0",
     "@playwright/test": "^1.65.1",
     "@types/leaflet": "^1.9.22",
@@ -101,8 +102,8 @@
     "postcss": "^8.5.33",
     "prettier": "^3.10.1",
     "prettier-plugin-astro": "^1.1.2",
-    "supabase": "3.1.0",
-    "typescript-eslint": "^8.72.2"
+    "supabase": "3.2.0",
+    "typescript-eslint": "^8.73.0"
   },
   "overrides": {
     "purgecss": {

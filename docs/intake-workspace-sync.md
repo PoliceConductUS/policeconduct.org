@@ -41,7 +41,7 @@ stream planned file operations and print the source, destination and count. They
 perform no transfers. The lower-level commands below remain available for version
 recovery and explicit arguments.
 
-Run from this website checkout using Node 24 and AWS CLI v2. Set
+Run from this website checkout using Node 26 and AWS CLI v2. Set
 `INTAKE_WORKSPACE` to the **existing directory to transfer**. Relative paths resolve from the current working
 directory. Select credentials for the matching workspace operator role. Bucket
 purpose and Enabled versioning are checked before transfer. The CLI does not use
