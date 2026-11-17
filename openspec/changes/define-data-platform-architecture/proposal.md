@@ -18,11 +18,13 @@ This change defines the operating model for the future PoliceConduct data platfo
 ## Capabilities
 
 ### New Capabilities
+
 - `data-platform`: defines source contracts, raw retention, staged transformations, lineage, data quality assertions, and stat recomputation expectations
 - `publish-contract`: defines the stable contract between the future pipeline repository and this publishing web app, including route-change manifests
 - `site-publishing`: defines how this repo continues as the static publisher while adopting delta publish inputs from the pipeline
 
 ### Modified Capabilities
+
 - None
 
 ## Impact

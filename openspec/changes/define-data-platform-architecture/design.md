@@ -7,6 +7,7 @@ The architecture must preserve provenance and replayability, support officer/age
 ## Goals / Non-Goals
 
 **Goals:**
+
 - define the ownership boundary between the future pipeline repo and this web repo
 - define source ingestion and retention expectations for heterogeneous sources
 - define raw, normalized, and publish data layers
@@ -15,6 +16,7 @@ The architecture must preserve provenance and replayability, support officer/age
 - define minimum lineage, backfill, idempotency, and data-quality guarantees
 
 **Non-Goals:**
+
 - implementing source connectors
 - implementing database migrations
 - implementing ECS/Fargate jobs or orchestration code
