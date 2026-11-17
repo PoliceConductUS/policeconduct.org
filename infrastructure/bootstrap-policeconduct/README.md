@@ -199,7 +199,9 @@ change with rollback. Do not run an untargeted Terraform apply for email repairs
 - `SENTRY_AUTH_TOKEN`: written to the GitHub `production` environment only, with `SENTRY_ORG` and `SENTRY_PROJECT`. `npm run deploy:prod` also reads it from Parameter Store so the production release build uploads its sourcemaps to Sentry
 - `GITHUB_TOKEN`: used by the Terraform GitHub provider
 
-To change one, run `aws ssm put-parameter --overwrite --type SecureString --name /policeconduct/secrets/<NAME> --value file://<file>`.
+To add or change one, run `npm run secret:set -- <NAME> < <file>`. It reads the value from standard input and always stores it as a SecureString.
+
+`apply.sh` first checks every parameter under `/policeconduct/` and stops if any is not a SecureString. A parameter that holds no secret may stay a plain String only when its exact name is listed in `PLAIN_STRING_PARAMETERS` in `scripts/audit-parameter-store.mjs`. Run the same check at any time with `npm run validate:parameter-store`.
 
 Example:
 

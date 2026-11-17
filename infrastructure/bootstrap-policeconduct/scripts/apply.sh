@@ -277,6 +277,9 @@ run_foundation_apply() {
 }
 
 load_dotenv_if_present
+# Every /policeconduct/ parameter must be a SecureString unless it is on the
+# allowed list in the audit script.
+node "${REPO_ROOT}/scripts/audit-parameter-store.mjs"
 # Secrets come only from Parameter Store. Drop any Terraform copy the .env files
 # set, so the stored values are the ones Terraform receives.
 # shellcheck source=scripts/parameter-store-secrets.sh
