@@ -13,7 +13,7 @@ variable "domain_name" {
 variable "redirect_target_url" {
   description = "Absolute destination URL for redirects."
   type        = string
-  default     = "https://policeconduct.org/law-enforcement-agency/federal/ice/"
+  default     = "https://www.policeconduct.org/federal/u-s-immigration-and-customs-enforcement/"
 
   validation {
     condition     = can(regex("^https://", trimspace(var.redirect_target_url)))

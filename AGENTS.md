@@ -11,25 +11,40 @@ Project Goal
 - Agents should look for what is working unusually well, not only failures, misconduct, lawsuits, or weak policies. Positive findings must be evidence-backed, clearly scoped, and never presented as unsupported praise or overall endorsement.
 - Positive-deviance analysis should follow an asset-based, community-informed workflow: define the problem and desired outcome, determine whether positive deviants exist, discover uncommon successful practices, develop ways to share or test those practices, and discern results through monitoring and revision.
 
-Prime Directive
+Scope Of A Change
 
-- Build the smallest correct thing that produces the intended outcome.
-- Start outside-in: define the observable user, community, data, or system outcome before choosing an implementation.
+- Most bad changes in this repo are unrequested ones or designs nobody approved. Hold this line first.
+- Do exactly what was asked, with the narrowest change that fully produces the intended outcome. Start outside-in: define the observable user, community, data, or system outcome before choosing an implementation.
+- A direct request for a fix or implementation is approval for the scoped edits it needs. Do not stop for a second approval round, and do not stop before the outcome is verified.
+- Fix concrete problems found during the work immediately, including pre-existing errors, warnings, and formatting problems. Preserve unrelated work in progress. Optional features, redesigns, speculative improvements, and broad refactors still require explicit user approval.
+- When a change needs a design decision (a new component, loader, table, route, or contract, or more than one reasonable approach), state the approach in a few lines and wait for approval before writing code. A small fix with one obvious implementation needs no design step.
+- When finishing the request would need behavior nobody asked for (a new rule, policy, restriction, flag, field, or special case, usually because the data does not fit), stop there. Report what blocks you and the options, and add nothing. Everything else, keep going until it is done.
+- Stop and get approval before coding when the change introduces an architectural compromise, weakens an invariant, changes data semantics beyond the requested correction, adds unrequested product behavior, or has materially risky or ambiguous scope. An architectural compromise is anything that weakens, bypasses, or temporarily works around a stated data model, routing invariant, source-of-truth rule, or project convention.
+- Do not ask for approval to inspect code, search the repo, or read files.
 - Avoid hidden product decisions. If a requirement is unclear, either inspect existing repo context or ask before encoding a new policy.
+- Build only what the current, known requirement needs. Do not add speculative complexity, optional abstractions, future-proofing, configurability, or extensibility unless the current task requires it or the user explicitly requests it.
+- Do not preserve backward compatibility unless the user explicitly requests it.
+
+Reporting
+
+- Use this project's words: its tables, routes, components, and commands. Do not coin a term. If something new must be named, define it in the same sentence.
+- Before reporting work as done, list each changed file with the part of the request that required it. Revert any change you cannot tie to the request.
+- End a work report with the state: worktree and branch, what is committed, what is pushed, what is merged, and what is left to do.
 
 This Repository Is Public
 
 - Everything committed here is world-readable the moment it is pushed, and permanently readable by anyone who forked it. History rewriting does not undo that: a third-party fork retains every blob, and `main` blocks force-pushes. Read `docs/third-party-personal-data.md` before committing anything that mentions a person or a filesystem path.
-- Personal information that a third party gave us — volunteers, tipsters, applicants, correspondents, donors, members of the public — must never be committed to this repository, in any file, in any form, including comments, fixtures, tests, and commit messages. It goes in the database behind the personnel publication gate. A scanner cannot enforce this, because a volunteer's name and email are textually identical to the public-official contacts that legitimately belong in our corpus. You have to not do it.
+- Personal information that a third party gave us — volunteers, tipsters, applicants, correspondents, donors, members of the public — must never be committed to this repository, in any file, in any form, including comments, fixtures, tests, and commit messages. Keep it in the existing private collection system. A scanner cannot enforce this, because a volunteer's name and email are textually identical to the public-official contacts that legitimately belong in our corpus. You have to not do it.
 - Public-official contact data is different. Agency contact names, work emails, and published phone numbers for officials acting in their official capacity are sourced corpus data and belong in the database and on the site.
 - Never commit absolute home directory paths (`/Users/<name>/`, `/home/<name>/`, or the Windows user-profile equivalent), cloud-storage account folders, machine-local files (`*.local.*`), environment files, or credential material. Use repo-relative paths. Agent temp-directory slugs encode the home path too — strip them.
-- `npm run scan:personal-data` runs the gate locally. `.github/workflows/personal-data-scan.yml` runs it on every pull request and is the enforcing gate. Do not bypass it with `git commit --no-verify`, and do not loosen a rule to get a change through; add a reviewed, dated `ALLOWLIST` entry in `scripts/scan-personal-data.mjs` instead.
+- `npm run scan:personal-data` runs the gate locally. `.github/workflows/personal-data-scan.yml` runs it on every pull request and is the enforcing gate. Do not bypass it with `git commit --no-verify`, and do not loosen a rule to get a change through; any legitimate scanner exception requires the explicit, scoped human decision described below before adding a reviewed, dated `ALLOWLIST` entry in `scripts/scan-personal-data.mjs`.
 - If you believe something personal has already been pushed, stop and escalate. Do not delete, amend, or rewrite it first — the remediation path depends on what is already mirrored.
 
 Workflow Standards
 
 - This repo uses Codex App, OpenSpec, Superpowers, and the OpenSpec Superpowers bridge for behavior-changing work.
 - OpenSpec governs what behavior should exist. Superpowers governs how agents execute the work. The bridge keeps brainstorming, plans, verification, and retrospectives under `openspec/changes/<change-name>/`.
+- Approval before implementation. When a change needs an OpenSpec change, write the proposal and the other artifacts first, then ask the user to approve. The user either says "approve now" or holds approval to read the documents. Do not implement until the user approves. Never merge a pull request unless the user names it and tells you to merge it.
 - Only one worktree and branch may be active for this repo at a time. Reuse the current worktree and branch for new work. Never create another worktree or branch without the user's explicit permission, even when isolation would otherwise be preferred.
 - Behavior changes, data-shape changes, seed/migration changes, validation changes, and downstream contract changes should use the active repo-local worktree under `.worktrees/<change-name>`; do not create a new one without the user's explicit permission.
 - Documentation-only edits, formatting, tooling tweaks, and internal refactors that preserve specified behavior may stay lightweight.
@@ -40,6 +55,7 @@ Design Standards
 - Before frontend, visual, layout, typography, component, or copy changes, read `.impeccable.md` and `DESIGN.md`.
 - `DESIGN.md` is the canonical design system standard. Do not invent page-local typography, heading, spacing, color, or component rules when a shared rule exists.
 - Public-facing copy must target an 8th-grade reading level. A 10th-grade reading level is acceptable only when precision requires it.
+- Never state or imply that reports, facts, sources, records, or site information are manually or automatically verified or fact checked. Email confirmation must describe confirming the email address, not verifying submission contents.
 - Replace technical, legal, and data-analysis terms in public labels with familiar wording. A tooltip, definition, or detail-page explanation may show the original source/legal term when needed, but the visible label must remain familiar.
 - H1/H2/H3 styling must come from shared typography tokens/classes. Do not use Bootstrap `display-*` classes or page-local heading CSS to change semantic heading size or font family.
 - One heading level means one visual role across pages. If a compact panel cannot visually support an H2, use a non-heading label or the correct lower heading level rather than styling H2 differently.
@@ -52,14 +68,6 @@ OpenSpec Usage
 - Use `/opsx:continue <change-name>`, `/opsx:apply <change-name>`, `/opsx:verify <change-name>`, and `/opsx:archive <change-name>` for the normal bridge lifecycle.
 - Review generated `proposal.md`, `design.md`, `tasks.md`, `plan.md`, `verify.md`, and retrospective artifacts before relying on them.
 
-Change Approval Workflow
-
-- When the user directly requests a fix or implementation, that request is approval to make the necessary scoped edits. Do not stop for a second approval round unless the change introduces an architectural compromise, weakens an invariant, changes data semantics, touches unrelated behavior, or has materially risky/ambiguous scope.
-- When proposing optional work, broad cleanup, or a change the user has not directly requested, summarize the exact files and changes you intend to make and wait for explicit user approval before editing.
-- Do not ask for approval to inspect code, search the repo, or read files. Inspect first, then ask for approval only before making edits.
-- Do not preserve backward compatibility unless the user explicitly requests it.
-- All architectural compromises must be explicitly explained and approved before implementation. If an implementation weakens, bypasses, or temporarily works around a stated data model, routing invariant, source-of-truth rule, or project convention, stop and get user approval before coding it.
-
 Data + Routing Conventions
 
 - URLs use database-backed slugs. Do not compute slugs during build/runtime.
@@ -69,7 +77,7 @@ Data + Routing Conventions
 - Seed data and data-loading code must use one authoritative representation for each fact or relationship. Keep required parent/reference identity in the same seed row whenever the table has that relationship column. Do not create parallel source-of-truth structures, derived relationship lists, split seed maps, or other drift-prone implementations unless the user has explicitly approved the architectural compromise.
 - Location-scoped reports and policy context must render only for the exact `location_path_id` they are attached to. Do not inherit, roll up, or cascade `location_reports` or similar location-scoped report records to child or parent locations unless inheritance is explicitly modeled in the database and approved for that report type.
 - Civil case geography has two distinct scopes. `public.civil_cases.location_path_id` is the incident-location geography and may be used only for geographic rollups where one case rolls up once by incident location. Agency, personnel, and federal civil-case scopes must use linked records through `public.civil_case_officers -> public.agency_officers -> public.agency -> public.location_path`; these relationship views may show the same case under multiple connected agencies or personnel. Pages must label which civil-case scope they use and must not mix incident-location metrics with agency/personnel-linked rows.
-- Report URLs must use slug: /report/{slug}/.
+- Report URLs use the stored incident location path, incident date, and required report slug: /{state}/{area}/{place}/reports/{year}/{month}/{day}/{slug}/.
 - Public report titles must be clean reader-facing titles. Do not include workflow, provenance, or processing prefixes such as "Processed submitted report:" or "Third-party AI review:" in `reviews.title`; put provenance/disclosure text in the report narrative or a dedicated disclosure field.
 - Agency canonical URLs use the joined location path plus the agency slug.
 - Pagination URLs use /page/{number}/; page 1 is the base path with no /page/1/.
@@ -81,6 +89,7 @@ Data Interpretation Standards
 - Do not present causal claims, intent, motive, targeting, discrimination, safety, accountability, or other interpretive conclusions from descriptive records.
 - Prefer descriptive labels, counts, rates, comparisons, cohorts, and methodology notes.
 - Any inference must be explicitly labeled as an inference and must identify the direct supporting data and limitations.
+- The site never claims accuracy or verification. No page, label, heading, or copy may say or imply that we verified, confirmed, checked, or vouch for a record. Do not hedge in the other direction either: no per-page or per-record disclaimers that we do not verify. State that limit once, in the footer or the FAQ.
 
 Database Expectations
 
@@ -88,7 +97,8 @@ Database Expectations
 - Agencies must have a required `location_path_id`.
 - seed.sql must be fully deterministic: every row must include explicit ids and slugs, with no triggers, generated slugs, or runtime ID generators (e.g., generate_cuid). Rerunning seed.sql must yield identical data and identifiers.
 - When adding federal agencies, keep the hash in the slug for consistency and safety.
-- If a migration adds a required DB field, update seed.sql in the Supabase repo.
+- If a migration adds a required DB field, supply that field through the intake source or data-mutation chain that produces the affected rows. `seed.sql` is retired and is no longer loaded on `db reset`, so updating it does not populate the local database. See "Local Database" in `README.md` for the current load and rebuild path. The `seed.sql` rules above and in "Data + Routing Conventions" still govern that file while it exists as the legacy-data record, but it is not the way to get data into a local database.
+- The local database on `127.0.0.1:54322` is a single shared instance used by every policeconduct.org and intake worktree. Do not run `data reset`, `supabase db reset`, or `supabase stop` without confirming no other worktree is mid-verification, and do not load data into a database that already has a rebuild in progress.
 - Missing expected database tables or fields must fail the build. Do not add silent fallbacks, empty results, or missing-schema guards for required data.
 
 Templates (Critical Fields)
@@ -111,16 +121,19 @@ General Code Standards
 - TypeScript types should be minimal, stable, and shared.
 - Keep functions small and testable; avoid duplication by sharing utilities.
 - Avoid new dependencies unless already present.
-- Never add speculative complexity. Implement only the simplest solution that satisfies the current known requirements, and nothing more.
-- Do not add optional abstractions, future-proofing, configurability, or extensibility unless they are required by the current task or explicitly requested by the user.
-- Prefer the simplest implementation that could possibly work.
 - Do not add boolean behavior flags to components or data models. Prefer explicit component composition, discriminated unions, or separate named components for distinct behavior.
 
 Validation Expectations
 
-- `npm run validate` is the aggregate validation gate for baseline-clean checks.
-- Run narrower checks during development when faster feedback is useful, but do not claim completion until relevant validation has actually run.
-- If validation cannot run because of missing local services, credentials, or external state, report that limitation explicitly.
+- Follow the complete [merge checklist in README.md](README.md#pr-merge-checklist); `package.json` is the source of truth for the gate chain. Run the entire `npm run validate` on the final PR head, even for documentation changes. Scoped checks are development feedback only. Rerun after fixes or head changes.
+- Use the repository runtime from `mise.toml` (currently Node 26.13.1), run `npm ci`, and verify installed package versions against the lockfile. Never substitute stale shared `node_modules`.
+- Every error and warning on the final PR head must be resolved before merge. Fix findings immediately, including pre-existing ones; do not defer them because they predate the change. Architectural compromises, ambiguous requirements, and risky data changes still need a specific user decision. Exit zero is not merge readiness. Calling a finding harmless, advisory, baseline, or out of scope does not waive it. Inspect diagnostic hints and resolve or explicitly justify each one; tool labels alone are not justification.
+- Do not disable rules, add ignores, weaken assertions, hide diagnostics, skip tests, or alter fixtures merely to get green output. Fix underlying causes. Fixture corrections must preserve the behavior and assertions being tested, including required form fields and qualifying record relationships.
+- Missing configuration, services, data, browsers, or generated assets block verification. Set up the intended environment safely; do not modify production data or publish personnel to satisfy checks. Never commit credentials, absolute home paths, or private data.
+- Account for every skipped test. Required coverage must run in the correct environment, including built and served Pagefind search. A skipped behavior did not pass. Any warning or coverage exception needs a linked, explicit human decision stating reason, affected check, scope, and duration. Silence or acknowledgment of a limitation is not permission.
+- Record final commit SHA, runtime and dependency verification, command, exit code, each stage outcome, test counts, warning/hint dispositions, skip accounting, task-specific checks, and actual CI status for that head. Inspect the final diff and preserve unrelated changes. PR descriptions and completion reports must reflect final scope and evidence.
+- Full final-build and sitemap verification are required before production release, not before PR merge. Keep task-relevant rendering/no-inline-CSS checks and required browser assets in merge verification without treating them as a full-build prerequisite.
+- Merge readiness, human-reviewed merge, deployment, and public release are separate states. Use feature branches and PRs only. Retain production-release and personnel-publication approval gates. Never claim deployment without deployed evidence.
 
 Legal Notices
 

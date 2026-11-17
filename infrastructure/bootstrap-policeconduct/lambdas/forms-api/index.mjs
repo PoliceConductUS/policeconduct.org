@@ -1,11 +1,12 @@
 import * as Sentry from "@sentry/node";
 import {
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
-import { GoogleAuth } from "google-auth-library";
+import { ExternalAccountClient, GoogleAuth } from "google-auth-library";
 import { RecaptchaEnterpriseServiceClient } from "@google-cloud/recaptcha-enterprise";
 import { createId } from "@paralleldrive/cuid2";
 import crypto from "crypto";
@@ -100,20 +101,20 @@ function emailDomain(email) {
 
 function verificationFailureMessage(reason) {
   const generic =
-    "We received your submission, but could not send the verification email. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+    "We received your submission, but could not send the email confirmation link. Confirm your email address to continue. Please contact hello@policeconduct.org if you need help.";
   if (sentryEnvironment === "production") {
     return generic;
   }
 
   switch (reason) {
     case "missing_origin":
-      return "We received your submission, but this environment could not build the verification link. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+      return "We received your submission, but this environment could not build the email confirmation link. Confirm your email address to continue. Please contact hello@policeconduct.org if you need help.";
     case "missing_email":
-      return "We received your submission, but no verification email address was present in the request. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+      return "We received your submission, but no email address was present in the request. Confirm your email address to continue. Please contact hello@policeconduct.org if you need help.";
     case "invalid_email":
-      return "We received your submission, but the verification email address was invalid. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+      return "We received your submission, but the email address was invalid. Confirm your email address to continue. Please contact hello@policeconduct.org if you need help.";
     case "send_failed":
-      return "We received your submission, but sending the verification email failed in this environment. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+      return "We received your submission, but sending the email confirmation link failed in this environment. Confirm your email address to continue. Please contact hello@policeconduct.org if you need help.";
     default:
       return generic;
   }
@@ -157,7 +158,7 @@ function pendingStatusPayload(submissionId) {
 function verificationLinkFailureMessage(message) {
   const detail =
     typeof message === "string" && message.trim() ? `${message.trim()} ` : "";
-  return `We could not verify your submission. ${detail}Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.`;
+  return `We could not confirm your email address. ${detail}Confirm your email address to continue. Please contact hello@policeconduct.org if you need help.`;
 }
 
 /**
@@ -169,7 +170,7 @@ function verificationLinkFailureMessage(message) {
  * the INS-89 sample did exactly that.
  */
 function verificationLinkExpiredMessage(ttlMs) {
-  return `This verification link has expired. Links stay valid for ${formatApproximateDuration(ttlMs)}. We still have your submission and you do not need to fill the form in again — ask us for a new link below and we will email one to the same address.`;
+  return `This confirmation link has expired. Links stay valid for ${formatApproximateDuration(ttlMs)}. We still have your submission and you do not need to fill the form in again — ask us for a new link below and we will email one to the same address.`;
 }
 
 function sentryRequestContext(context, extra = {}) {
@@ -558,18 +559,18 @@ async function sendVerificationEmail({
       : "";
   const body = [
     replacement
-      ? "PoliceConduct.org replacement verification link"
-      : "PoliceConduct.org submission verification",
+      ? "PoliceConduct.org replacement email confirmation link"
+      : "PoliceConduct.org email confirmation",
     "",
     ...(replacement
       ? [
-          "You asked for a new verification link because the previous one had",
+          "You asked for a new confirmation link because the previous one had",
           "expired. Your original submission is still held; you do not need to",
           "fill the form in again.",
           "",
         ]
       : []),
-    "Please verify your submission by opening this link:",
+    "Please confirm your email address by opening this link:",
     verifyUrl,
     "",
     `This link expires in ${window}.`,
@@ -594,8 +595,8 @@ async function sendVerificationEmail({
     body: JSON.stringify({
       from: fromAddress,
       subject: replacement
-        ? `${subjectPrefix}Your new PoliceConduct.org verification link`
-        : `${subjectPrefix}Verify your PoliceConduct.org submission`,
+        ? `${subjectPrefix}Your new PoliceConduct.org email confirmation link`
+        : `${subjectPrefix}Confirm your email address for PoliceConduct.org`,
       tags: [
         { name: "formName", value: formName },
         { name: "submissionId", value: submissionId },
@@ -1230,10 +1231,12 @@ function buildRecaptchaWifCredentials() {
 async function getRecaptchaClient() {
   if (!recaptchaClientPromise) {
     recaptchaClientPromise = (async () => {
-      const auth = new GoogleAuth({
-        credentials: buildRecaptchaWifCredentials(),
-        scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+      const scopes = ["https://www.googleapis.com/auth/cloud-platform"];
+      const authClient = ExternalAccountClient.fromJSON({
+        ...buildRecaptchaWifCredentials(),
+        scopes,
       });
+      const auth = new GoogleAuth({ authClient, scopes });
       return new RecaptchaEnterpriseServiceClient({ auth });
     })();
   }
@@ -1570,7 +1573,9 @@ async function verifySubmissionLink(event, requestId) {
 
   if (!verificationId || !secret) {
     return json(400, {
-      message: verificationLinkFailureMessage("Invalid verification token."),
+      message: verificationLinkFailureMessage(
+        "Invalid email confirmation link.",
+      ),
     });
   }
 
@@ -1578,14 +1583,16 @@ async function verifySubmissionLink(event, requestId) {
   if (!record) {
     return json(400, {
       reason: "not_found",
-      message: verificationLinkFailureMessage("Verification link not found."),
+      message: verificationLinkFailureMessage(
+        "Email confirmation link not found.",
+      ),
     });
   }
   if (record.usedAt) {
     return json(400, {
       reason: "already_used",
       message: verificationLinkFailureMessage(
-        "That verification link has already been used, so this submission is already verified.",
+        "That confirmation link has already been used, so your email address is already confirmed.",
       ),
     });
   }
@@ -1603,7 +1610,9 @@ async function verifySubmissionLink(event, requestId) {
   if (!timingSafeEqualHex(expectedHash, record.secretHash)) {
     return json(400, {
       reason: "invalid_token",
-      message: verificationLinkFailureMessage("Invalid verification token."),
+      message: verificationLinkFailureMessage(
+        "Invalid email confirmation link.",
+      ),
     });
   }
 
@@ -1617,7 +1626,7 @@ async function verifySubmissionLink(event, requestId) {
         resendsLeft > 0
           ? verificationLinkExpiredMessage(config.ttlMs)
           : verificationLinkFailureMessage(
-              "This verification link has expired and we have already sent as many replacements as we can.",
+              "This confirmation link has expired and we have already sent as many replacements as we can.",
             ),
     });
   }
@@ -1656,7 +1665,7 @@ async function verifySubmissionLink(event, requestId) {
 
   return json(200, {
     message:
-      "Your submission has been verified. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.",
+      "Your email address has been confirmed. Please contact hello@policeconduct.org if you need help.",
     submissionId: record.submissionId,
   });
 }
@@ -1683,7 +1692,9 @@ async function resendVerificationLink(event, requestId) {
   if (!verificationId || !secret) {
     return json(400, {
       reason: "invalid_token",
-      message: verificationLinkFailureMessage("Invalid verification token."),
+      message: verificationLinkFailureMessage(
+        "Invalid email confirmation link.",
+      ),
     });
   }
 
@@ -1701,14 +1712,16 @@ async function resendVerificationLink(event, requestId) {
   if (!record) {
     return json(400, {
       reason: "not_found",
-      message: verificationLinkFailureMessage("Verification link not found."),
+      message: verificationLinkFailureMessage(
+        "Email confirmation link not found.",
+      ),
     });
   }
   if (record.usedAt) {
     return json(400, {
       reason: "already_used",
       message: verificationLinkFailureMessage(
-        "That submission is already verified, so there is nothing to send.",
+        "Your email address is already confirmed, so there is nothing to send.",
       ),
     });
   }
@@ -1721,7 +1734,9 @@ async function resendVerificationLink(event, requestId) {
   if (!timingSafeEqualHex(expectedHash, record.secretHash)) {
     return json(400, {
       reason: "invalid_token",
-      message: verificationLinkFailureMessage("Invalid verification token."),
+      message: verificationLinkFailureMessage(
+        "Invalid email confirmation link.",
+      ),
     });
   }
 
@@ -1834,8 +1849,38 @@ async function resendVerificationLink(event, requestId) {
   // Deliberately does not echo the address back. The caller proved they hold
   // the link, not that they are the submitter reading that mailbox.
   return json(200, {
-    message: `We have emailed a new verification link to the address on this submission. It is valid for ${formatApproximateDuration(config.ttlMs)}. If it does not arrive, please check your spam folder.`,
+    message: `We have emailed a new confirmation link to the address on this submission. It is valid for ${formatApproximateDuration(config.ttlMs)}. If it does not arrive, please check your spam folder.`,
   });
+}
+
+async function isKnownFormRelease(releaseId) {
+  if (
+    typeof releaseId !== "string" ||
+    !releaseId ||
+    releaseId === "." ||
+    releaseId === ".." ||
+    /[\\/]/.test(releaseId) ||
+    Array.from(releaseId).some(
+      (character) =>
+        character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
+    )
+  ) {
+    return false;
+  }
+  const bucket = process.env.RELEASE_DATA_BUCKET;
+  if (!bucket) throw new Error("Missing RELEASE_DATA_BUCKET");
+  try {
+    await s3.send(
+      new HeadObjectCommand({
+        Bucket: bucket,
+        Key: `builds/${releaseId}/data/dynamic.json`,
+      }),
+    );
+    return true;
+  } catch (error) {
+    if (error.$metadata?.httpStatusCode === 404) return false;
+    throw error;
+  }
 }
 
 async function submitForm(event, requestId) {
@@ -1902,6 +1947,12 @@ async function submitForm(event, requestId) {
 
   const expectedAction = `${formName}Submit`;
 
+  // Look up the release while reCAPTCHA is checked: both are network calls,
+  // and waiting for one before starting the other adds its time to the
+  // response. A lookup error only matters once reCAPTCHA has passed.
+  const releaseCheck = isKnownFormRelease(payload.releaseId);
+  releaseCheck.catch(() => {});
+
   const recaptcha = await verifyRecaptchaEnterprise(
     recaptchaToken,
     sourceIp,
@@ -1931,6 +1982,13 @@ async function submitForm(event, requestId) {
     }),
   );
 
+  const releaseId = payload.releaseId;
+  if (!(await releaseCheck)) {
+    return json(400, {
+      error: "This form has an unrecognized website release.",
+    });
+  }
+
   const submissionId = createId();
   const receivedAt = new Date().toISOString();
   const receivedDate = receivedAt.slice(0, 10);
@@ -1953,6 +2011,7 @@ async function submitForm(event, requestId) {
     userAgent,
     payload: {
       formName,
+      releaseId,
       data,
     },
   };
@@ -2110,7 +2169,7 @@ async function submitForm(event, requestId) {
 
   return json(200, {
     message:
-      "We received your submission. Check your email and open the verification link within 15 minutes. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.",
+      "We received your submission. Check your email and open the link within 15 minutes to confirm your email address. Please contact hello@policeconduct.org if you need help.",
     verificationPending: true,
   });
 }

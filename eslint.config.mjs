@@ -54,7 +54,7 @@ export default [
     },
   },
   {
-    files: ["*.cjs"],
+    files: ["**/*.cjs"],
     languageOptions: {
       globals: {
         ...globals.commonjs,

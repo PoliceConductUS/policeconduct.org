@@ -12,14 +12,17 @@ and forms API remain.
 
 ## Deploy
 
+The inputs for this stack are tracked in `submission-notifications.auto.tfvars`.
 Use the existing S3-backed state for this stack. Review `terraform plan` before
-applying. Manual merge and production deployment require approval. Do not apply
-the separate bootstrap stack, whose state recovery remains outstanding.
+applying. Manual merge and production deployment require approval.
 
-The forms API deployment script accepts `--topic-arn` and `--recipients`, with
-`--only policeconduct-forms-api-preview` for preview. It removes the unused
-receipt-cutoff environment value on the next deployment. It no longer invokes
-a monitor or accepts a cutoff argument.
+The recovered bootstrap stack owns the forms Lambda environment. Change its
+notification inputs through the guarded Terraform wrapper after inspecting a
+scoped plan. The forms API deployment script accepts `--topic-arn` and
+`--recipients` as assertions against existing configuration, with
+`--only policeconduct-forms-api-preview` for preview. It checks every selected
+function before any release writes and stops on mismatches or failed reads.
+It deploys code only and never changes environment variables.
 
 ## Verify
 

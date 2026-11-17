@@ -20,4 +20,14 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
+
+  default_tags {
+    tags = {
+      Project     = "policeconduct.org"
+      Environment = "shared"
+      Stack       = "submission-notifications"
+      Repository  = "PoliceConductUS/policeconduct.org"
+      ManagedBy   = "Terraform"
+    }
+  }
 }

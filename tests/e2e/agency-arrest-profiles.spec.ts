@@ -3,8 +3,11 @@ import dotenv from "dotenv";
 import { Client } from "pg";
 let client: Client;
 test.beforeAll(async () => {
-  for (const path of [".env", ".env-recaptcha", ".env-policeconduct"])
+  const configuredDatabaseUrl = process.env.DATABASE_URL;
+  for (const path of [".env"])
     dotenv.config({ path, override: true, quiet: true });
+  if (configuredDatabaseUrl !== undefined)
+    process.env.DATABASE_URL = configuredDatabaseUrl;
   client = new Client({ connectionString: process.env.DATABASE_URL });
   await client.connect();
 });

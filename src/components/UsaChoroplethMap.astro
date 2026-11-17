@@ -50,6 +50,8 @@ const {
   headerAction?: HeaderAction;
 };
 
+const helpCollectHref = `/volunteer/?${new URLSearchParams({ source: Astro.url.pathname })}`;
+
 const byCode = new Map(stats.map((entry) => [entry.code.toLowerCase(), entry]));
 
 const maxCount = Math.max(0, ...stats.map((entry) => Number(entry.count || 0)));
@@ -244,9 +246,10 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
             })}
           </svg>
         </div>
-        <div class="d-flex align-items-center text-muted small gap-2">
+        <div class="d-flex flex-wrap align-items-center text-muted small gap-2">
           <span class="legend-swatch"></span>
           <span>{emptyLabel}</span>
+          <a href={helpCollectHref}>Help collect this →</a>
           {interactionLabel ? (
             <span class="ms-auto">{interactionLabel}</span>
           ) : null}
@@ -379,10 +382,16 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
     cursor: pointer;
   }
 
-  .usa-map path.is-interactive:hover,
   .usa-map path.is-interactive:focus-visible {
     transform: translateY(-1px);
     stroke-width: 2;
+  }
+
+  @media (hover: hover) {
+    .usa-map path.is-interactive:hover {
+      transform: translateY(-1px);
+      stroke-width: 2;
+    }
   }
 
   .usa-map path.is-linked-active {
@@ -426,15 +435,25 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
     cursor: pointer;
   }
 
-  .usa-map a .small-state-pill:hover,
   .usa-map a .small-state-pill:focus-visible {
     transform: translateY(-1px);
   }
 
-  .usa-map a .small-state-pill:hover .small-state-pill-rect,
+  @media (hover: hover) {
+    .usa-map a .small-state-pill:hover {
+      transform: translateY(-1px);
+    }
+  }
+
   .usa-map a .small-state-pill:focus-visible .small-state-pill-rect,
   .usa-map .small-state-pill.is-linked-active .small-state-pill-rect {
     stroke-width: 2;
+  }
+
+  @media (hover: hover) {
+    .usa-map a .small-state-pill:hover .small-state-pill-rect {
+      stroke-width: 2;
+    }
   }
 
   .usa-map .small-state-pill.is-linked-active {
@@ -498,10 +517,16 @@ const getStateDisplay = (stateId: string, stateLabel: string) => {
     text-transform: none;
   }
 
-  .state-tile.is-interactive:hover,
   .state-tile.is-interactive:focus-visible {
     outline: 2px solid rgba(0, 0, 0, 0.2);
     outline-offset: 1px;
+  }
+
+  @media (hover: hover) {
+    .state-tile.is-interactive:hover {
+      outline: 2px solid rgba(0, 0, 0, 0.2);
+      outline-offset: 1px;
+    }
   }
 
   .legend-swatch {

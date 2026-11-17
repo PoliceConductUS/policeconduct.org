@@ -1,4 +1,5 @@
 ---
+import RecordDataNotes from "#src/components/RecordDataNotes.astro";
 import CivicIndexPage from "#src/components/CivicIndexPage.astro";
 import { buildAdministrativeAreaCivicIndex } from "#src/lib/data/civic-index.js";
 import {
@@ -17,4 +18,6 @@ const area = await loadRequiredLocationByPath(
 const model = await buildAdministrativeAreaCivicIndex(area);
 ---
 
-<CivicIndexPage model={model} site={Astro.site} />
+<CivicIndexPage model={model} site={Astro.site}>
+  <RecordDataNotes recordPath={model.pagePath} />
+</CivicIndexPage>

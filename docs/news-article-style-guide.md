@@ -24,7 +24,7 @@ Articles use a consistent structure:
 
 2. **Opening paragraphs** — Establish the context and the article's purpose. End this section with a clear statement of what the article is arguing or explaining.
 
-3. **Sectioned body** — Use `<h2>` subheads (styled as `.h4 .text-uppercase .text-muted`) to break the article into named sections. Each section should address one idea. Typical section count: 4–7.
+3. **Sectioned body** — Use `<h2 class="ipc-section-title">` subheads to break the article into named sections. Each section should address one idea. Typical section count: 4–7.
 
 4. **Closing section** — End constructively. The final paragraphs should point toward what good looks like, what the reader can do, or why the issue matters going forward.
 
@@ -111,7 +111,7 @@ The dateline is bolded. The city and state are always Dover, Delaware.
 
 ## Meta Fields
 
-Each article file includes a `newsMeta` export with the following fields:
+Each article directory contains a sibling `_metadata.ts` file that exports `newsMeta` with the following fields. The `index.astro` page imports `newsMeta` from `./_metadata`; the news index loads the `_metadata.ts` files.
 
 | Field         | Notes                                                                                                    |
 | ------------- | -------------------------------------------------------------------------------------------------------- |
@@ -132,4 +132,4 @@ Slugs are lowercase, hyphen-separated, derived from the article title. Drop arti
 - "Why Documenting Police Interactions Helps Everyone" → `why-documenting-police-interactions-helps-everyone`
 - "What Happens After You Submit a Report" → `what-happens-after-you-submit-a-report`
 
-The full file path is: `src/pages/news/YYYY/MM/DD/[slug]/index.astro`
+The page path is `src/pages/news/YYYY/MM/DD/[slug]/index.astro`. Its metadata lives in `src/pages/news/YYYY/MM/DD/[slug]/_metadata.ts`.

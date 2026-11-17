@@ -194,8 +194,10 @@ const formatRecordedDate = (value: string) =>
     font: inherit;
     padding: 0.6rem 0.85rem;
   }
-  .education-controls button:hover:not([aria-disabled="true"]) {
-    background: var(--ipc-color-teal-wash);
+  @media (hover: hover) {
+    .education-controls button:hover:not([aria-disabled="true"]) {
+      background: var(--ipc-color-teal-wash);
+    }
   }
   .education-controls button[aria-disabled="true"] {
     color: var(--ipc-color-ink-soft);

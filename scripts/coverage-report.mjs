@@ -2,17 +2,16 @@
 /**
  * Generates the agency coverage report (INS-7) from live data.
  *
- * Reads the corpus through the same database door the site build uses, so the
- * report cannot drift from what we actually publish from.
+ * Reads the configured database and records its identity and measurement time.
+ * Projection rows do not establish live publication. Intake populates the
+ * database; retired seed dumps are not comparison inputs.
  *
  *   DATABASE_URL=postgres://... node scripts/coverage-report.mjs \
  *     --out docs/coverage-report.md \
- *     --json docs/coverage-report.json \
- *     --cross-check "seed.sql dump=3003"
+ *     --json docs/coverage-report.json
  *
- * `--cross-check` is repeatable and exists because more than one store claims to
- * hold our corpus. Passing the others in makes a disagreement a reported finding
- * instead of something only the person running the script notices.
+ * Use repeatable --cross-check "label=count" inputs to compare other measured
+ * counts directly. Differences are reported without inferring store authority.
  */
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";

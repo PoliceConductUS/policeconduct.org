@@ -1,37 +1,7 @@
 import "bootstrap/js/dist/collapse";
 import "bootstrap/js/dist/scrollspy";
 import "bootstrap/js/dist/tab";
-
-window.__IPC_ANALYTICS__ = window.__IPC_ANALYTICS__ || {
-  track(eventName, params = {}) {
-    if (!eventName || typeof window.gtag !== "function") {
-      return;
-    }
-
-    const payload = {
-      page_path: window.location.pathname,
-      ...params,
-    };
-
-    Object.keys(payload).forEach((key) => {
-      const value = payload[key];
-      if (
-        value === undefined ||
-        value === null ||
-        value === "" ||
-        Number.isNaN(value)
-      ) {
-        delete payload[key];
-      }
-    });
-
-    window.gtag("event", eventName, payload);
-  },
-};
-
-const trackAnalytics = (eventName, params = {}) => {
-  window.__IPC_ANALYTICS__?.track?.(eventName, params);
-};
+import { trackAnalytics } from "./analytics.js";
 
 const normalizeText = (value) => value?.replace(/\s+/g, " ").trim() || "";
 
@@ -123,6 +93,9 @@ const initAnalyticsClicks = () => {
     if (!(anchor instanceof HTMLAnchorElement)) {
       return;
     }
+    if (anchor.closest("[data-site-search], [data-record-finder]")) {
+      return;
+    }
 
     const hrefDetails = getHrefDetails(anchor);
     if (!hrefDetails || !hrefDetails.href || hrefDetails.href.startsWith("#")) {
@@ -136,9 +109,11 @@ const initAnalyticsClicks = () => {
       section_id: getSectionId(anchor),
     };
 
-    if (anchor.closest(".navbar")) {
+    if (anchor.closest(".masthead")) {
       trackAnalytics(
-        anchor.closest(".nav-cta") ? "nav_cta_click" : "nav_link_click",
+        anchor.classList.contains("nav-action")
+          ? "nav_cta_click"
+          : "nav_link_click",
         basePayload,
       );
       return;
@@ -212,36 +187,18 @@ const initMapAnalyticsClicks = () => {
   });
 };
 
-// Copy the given text to the clipboard, preferring the async Clipboard API
-// and falling back to the classic select + execCommand("copy") trick for
-// browsers/contexts (e.g. non-secure origins) where it is unavailable.
+// Use the supported Clipboard API. Report failure to the action bar when
+// access is unavailable or denied instead of invoking deprecated DOM commands.
 const copyTextToClipboard = async (text) => {
-  if (navigator.clipboard && window.isSecureContext) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (_error) {
-      // Fall through to the select+execCommand fallback below.
-    }
+  if (!navigator.clipboard || !window.isSecureContext) {
+    return false;
   }
-
-  const scratch = document.createElement("textarea");
-  scratch.value = text;
-  scratch.setAttribute("readonly", "");
-  scratch.style.position = "fixed";
-  scratch.style.opacity = "0";
-  document.body.appendChild(scratch);
-  scratch.select();
-  scratch.setSelectionRange(0, scratch.value.length);
-
-  let succeeded;
   try {
-    succeeded = document.execCommand("copy");
+    await navigator.clipboard.writeText(text);
+    return true;
   } catch (_error) {
-    succeeded = false;
+    return false;
   }
-  document.body.removeChild(scratch);
-  return succeeded;
 };
 
 // Shared entity action-bar "Copy link" behavior (EntityActionBar.astro).
@@ -264,11 +221,40 @@ const initCopyLink = () => {
     const originalText = trigger.textContent;
     const url = window.location.href;
 
+    const status = trigger
+      .closest("li")
+      ?.querySelector("[data-copy-link-status]");
+
     copyTextToClipboard(url).then((succeeded) => {
-      trigger.textContent = succeeded ? "Copied!" : "Couldn't copy";
+      const message = succeeded ? "Copied!" : "Couldn't copy";
+      trigger.textContent = message;
+      // The link's own text changing is not announced; the status element is.
+      if (status) status.textContent = message;
       window.setTimeout(() => {
         trigger.textContent = originalText;
+        if (status) status.textContent = "";
       }, 1600);
+    });
+  });
+};
+
+// The "More actions" menu (EntityActionBar.astro) is a <details>. Close it on
+// Escape and on a click outside, so it does not stay over the page content.
+const initEntityMenu = () => {
+  const openMenus = () =>
+    document.querySelectorAll("details.entity-menu[open]");
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    openMenus().forEach((menu) => {
+      menu.open = false;
+      menu.querySelector("summary")?.focus();
+    });
+  });
+  document.addEventListener("click", (event) => {
+    openMenus().forEach((menu) => {
+      if (event.target instanceof Node && !menu.contains(event.target)) {
+        menu.open = false;
+      }
     });
   });
 };
@@ -326,7 +312,50 @@ const initJumpForms = () => {
 // every one of the site's ~100k pages renders this same masthead.
 const PAGEFIND_MODULE_URL = "/pagefind/pagefind.js";
 const SEARCH_DEBOUNCE_MS = 150;
+const SEARCH_MEASUREMENT_DELAY_MS = 600;
 const MAX_SEARCH_RESULTS = 8;
+
+const getSearchResultCategory = (path) => {
+  const pathname = new URL(path, window.location.origin).pathname;
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length === 2 && !["new", "suggest-edit"].includes(parts[1])) {
+    if (parts[0] === "personnel") return "personnel";
+    if (parts[0] === "civil-cases") return "civil_case";
+    if (parts[0] === "report") return "report";
+  }
+  if (
+    /^\/[a-z]{2}\/[^/]+\/[^/]+\/reports\/\d{4}\/\d{2}\/\d{2}\/[^/]+\/$/.test(
+      pathname,
+    )
+  )
+    return "report";
+  if (
+    parts
+      .slice(1)
+      .some((part) =>
+        [
+          "agencies",
+          "budget",
+          "civil-cases",
+          "counties",
+          "fatal-force-incidents",
+          "liability-costs",
+          "licensing-authority",
+          "outcomes-by-income",
+          "personnel",
+          "places",
+          "reports",
+        ].includes(part),
+      )
+  )
+    return "other";
+  if (parts[0] === "federal" && parts.length === 2) return "federal-agency";
+  if (/^[a-z]{2}$/.test(parts[0] || "")) {
+    if (parts.length === 4) return "agency";
+    if (parts.length <= 3) return "place";
+  }
+  return "other";
+};
 
 const initSiteSearch = () => {
   const form = document.querySelector("[data-site-search]");
@@ -338,11 +367,15 @@ const initSiteSearch = () => {
   const panel = form.querySelector("[data-site-search-panel]");
   const listbox = form.querySelector("[data-site-search-listbox]");
   const status = form.querySelector("[data-site-search-status]");
+  const empty = form.querySelector("[data-site-search-empty]");
+  const emptyLink = form.querySelector("[data-site-search-empty-link]");
   if (
     !(input instanceof HTMLInputElement) ||
     !(panel instanceof HTMLElement) ||
     !(listbox instanceof HTMLElement) ||
-    !(status instanceof HTMLElement)
+    !(status instanceof HTMLElement) ||
+    !(empty instanceof HTMLElement) ||
+    !(emptyLink instanceof HTMLAnchorElement)
   ) {
     return;
   }
@@ -353,6 +386,18 @@ const initSiteSearch = () => {
   let activeIndex = -1;
   let requestId = 0;
   let debounceTimer = null;
+  let measurementTimer = null;
+  let completedSearch = null;
+  let lastReportedTerm = "";
+
+  const reportSearchResults = () => {
+    if (!completedSearch || lastReportedTerm === completedSearch.term) return;
+    lastReportedTerm = completedSearch.term;
+    trackAnalytics("search_results", {
+      search_source: "masthead",
+      result_count: completedSearch.resultCount,
+    });
+  };
 
   const loadPagefind = () => {
     if (!pagefindLoadPromise) {
@@ -378,6 +423,7 @@ const initSiteSearch = () => {
 
   const closePanel = () => {
     panel.hidden = true;
+    empty.hidden = true;
     input.setAttribute("aria-expanded", "false");
     input.removeAttribute("aria-activedescendant");
     activeIndex = -1;
@@ -394,6 +440,11 @@ const initSiteSearch = () => {
     if (!result?.path) {
       return;
     }
+    reportSearchResults();
+    trackAnalytics("search_result_selected", {
+      search_source: "masthead",
+      result_category: getSearchResultCategory(result.path),
+    });
     window.location.href = result.path;
   };
 
@@ -448,6 +499,7 @@ const initSiteSearch = () => {
     });
 
     if (results.length > 0) {
+      empty.hidden = true;
       panel.hidden = false;
       input.setAttribute("aria-expanded", "true");
     } else {
@@ -455,10 +507,22 @@ const initSiteSearch = () => {
     }
   };
 
+  // A search that matches nothing keeps the panel open with a visible note and
+  // a link that runs the same term on /find-records/. The listbox stays empty,
+  // so the combobox still reports aria-expanded="false".
+  const showNoResults = (term) => {
+    emptyLink.href = `/find-records/?q=${encodeURIComponent(term)}`;
+    empty.hidden = false;
+    panel.hidden = false;
+  };
+
   const runSearch = async (term) => {
     const currentRequestId = ++requestId;
+    window.clearTimeout(measurementTimer);
 
     if (!term) {
+      completedSearch = null;
+      lastReportedTerm = "";
       results = [];
       activeIndex = -1;
       renderResults();
@@ -486,12 +550,20 @@ const initSiteSearch = () => {
         return;
       }
 
+      completedSearch = { term, resultCount: search.results.length };
+      measurementTimer = window.setTimeout(() => {
+        if (input.value.trim() === term) reportSearchResults();
+      }, SEARCH_MEASUREMENT_DELAY_MS);
+
       results = entries.map((entry) => ({
         title: entry.meta?.title || entry.url,
         path: entry.url,
       }));
       activeIndex = -1;
       renderResults();
+      if (results.length === 0) {
+        showNoResults(term);
+      }
       setStatus(
         results.length === 0
           ? "No results"
@@ -517,6 +589,7 @@ const initSiteSearch = () => {
 
   input.addEventListener("focus", loadPagefind, { once: true });
   input.addEventListener("input", () => {
+    window.clearTimeout(measurementTimer);
     debouncedSearch(input.value.trim());
   });
 
@@ -581,5 +654,6 @@ initHeaderScroll();
 initAnalyticsClicks();
 initMapAnalyticsClicks();
 initCopyLink();
+initEntityMenu();
 initJumpForms();
 initSiteSearch();

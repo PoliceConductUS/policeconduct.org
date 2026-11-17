@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change agency-status. Update Purpose after archive.
+Show recorded agency status and its date without inferring activity from missing values, so readers can distinguish supplied inactive and active records.
 
 ## Requirements
 

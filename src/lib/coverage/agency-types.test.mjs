@@ -63,6 +63,19 @@ test("neither numerator counts federal, out-of-state or outside-the-census agenc
   }
 });
 
+test("tribal law enforcement agencies count in the all-agency comparison", () => {
+  const [summary] = summarizeClassifications([
+    {
+      state: "TX",
+      category: BJS_CATEGORY.TRIBAL,
+      sourceType: "Tribal Police",
+      provenance,
+    },
+  ]);
+  assert.equal(summary.held, 1);
+  assert.equal(summary.allAgencyHeld, 1);
+});
+
 test("an unmapped source type throws instead of being bucketed", () => {
   assert.throws(
     () => classifyTcoleDepartmentType("Drone Operations Division"),

@@ -438,7 +438,7 @@ const auditSitemapHygiene = async () => {
       return;
     }
     addError(
-      `Sitemap hygiene: ${urls.length} URL(s) ${message}. Samples: ${urls
+      `Sitemap hygiene (${label}): ${urls.length} URL(s) ${message}. Samples: ${urls
         .slice(0, SITEMAP_SAMPLE_LIMIT)
         .join(", ")}${urls.length > SITEMAP_SAMPLE_LIMIT ? ", ..." : ""}`,
     );

@@ -195,3 +195,13 @@ output "preview_redirects_kvs_arn" {
   description = "KeyValueStore for preview build redirects."
   value       = aws_cloudfront_key_value_store.preview_redirects.arn
 }
+
+output "sentry_org" {
+  description = "Sentry organization slug the production release uploads sourcemaps to."
+  value       = local.sentry_org
+}
+
+output "sentry_project" {
+  description = "Sentry project slug the production release uploads sourcemaps to."
+  value       = local.sentry_project
+}

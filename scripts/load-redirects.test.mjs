@@ -14,8 +14,10 @@ import { spawnSync } from "node:child_process";
 const script = resolve("scripts/load-redirects.mjs");
 const entry = (from, to) => ({ from, to, status: 301, source: "test" });
 function run(map, initial = [], namespace = "r:prod:") {
-  const dir = mkdtempSync(join(tmpdir(), "redirect-loader-"));
+  const dir = mkdtempSync(join(resolve(tmpdir()), "redirect-loader-"));
   try {
+    // Keep the fake CLI CommonJS even when TMPDIR is inside this ESM repo.
+    writeFileSync(join(dir, "package.json"), '{"type":"commonjs"}');
     writeFileSync(
       join(dir, "map.json"),
       typeof map === "string" ? map : JSON.stringify(map),
@@ -70,6 +72,9 @@ process.stdout.write(JSON.stringify(result));
         encoding: "utf8",
         env: {
           ...process.env,
+          // Shell startup files must not replace the fixture command PATH.
+          BASH_ENV: "/dev/null",
+          ENV: "/dev/null",
           PATH: `${dir}:${process.env.PATH}`,
           TEST_STATE: join(dir, "state.json"),
         },
@@ -254,17 +259,78 @@ test("rejects a desired store exceeding 5 MB including other namespaces before w
 function deploy(
   scriptName,
   args = [],
-  { unchanged = false, failSync = false } = {},
+  { unchanged = false, failSync = false, workspaceChoice = "skip" } = {},
 ) {
-  const dir = mkdtempSync(join(tmpdir(), "redirect-deploy-"));
+  const dir = mkdtempSync(join(resolve(tmpdir()), "redirect-deploy-"));
   try {
-    for (const name of ["scripts", "dist", "bin", ".deploy-cache"])
+    for (const name of [
+      "scripts",
+      "dist",
+      "bin",
+      ".deploy-cache",
+      ".release",
+      ".release/data",
+    ])
       mkdirSync(join(dir, name));
+    for (const name of [
+      "deploy-preview.sh",
+      "deploy-preview-sync.sh",
+      "deploy-incremental.sh",
+      "workspace-sync.sh",
+      "upload-release.sh",
+      "promote.sh",
+      "release-files.mjs",
+      "terraform-outputs.mjs",
+    ]) {
+      writeFileSync(
+        join(dir, "scripts", name),
+        readFileSync(resolve("scripts", name)),
+      );
+    }
     writeFileSync(
-      join(dir, "scripts", scriptName),
-      readFileSync(resolve("scripts", scriptName)),
+      join(dir, ".gitignore"),
+      "dist/\n.release/\n.deploy-cache/\ncalls\nbin/\n",
     );
+    for (const args of [
+      ["init", "-b", "main"],
+      ["add", "."],
+      [
+        "-c",
+        "user.name=Fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit",
+        "-m",
+        "fixture",
+      ],
+    ]) {
+      const result = spawnSync("/usr/bin/git", args, {
+        cwd: dir,
+        encoding: "utf8",
+      });
+      assert.equal(result.status, 0, result.stderr);
+    }
+    const releaseId = spawnSync("/usr/bin/git", ["rev-parse", "HEAD"], {
+      cwd: dir,
+      encoding: "utf8",
+    }).stdout.trim();
+    writeFileSync(join(dir, ".release/id"), releaseId);
+    writeFileSync(
+      join(dir, ".release/source.json"),
+      JSON.stringify({
+        commit: releaseId,
+        branch: scriptName.startsWith("deploy-preview") ? "feature" : "main",
+        pr: null,
+      }),
+    );
+    writeFileSync(join(dir, ".release/data/index.json"), "{}");
+    writeFileSync(
+      join(dir, ".release/data/alias.json"),
+      JSON.stringify({ CoverageLink: {} }),
+    );
+    writeFileSync(join(dir, ".release/data/dynamic.json"), "{}");
     writeFileSync(join(dir, "dist/index.html"), "content");
+    writeFileSync(join(dir, "dist/robots.txt"), "User-agent: *\nDisallow: /\n");
     writeFileSync(
       join(dir, "dist/_redirect-map.json"),
       JSON.stringify({ redirects: [] }),
@@ -281,6 +347,12 @@ function deploy(
       assert.equal(manifest.status, 0, manifest.stderr);
       writeFileSync(join(dir, ".deploy-cache/d"), manifest.stdout);
     }
+    const seal = spawnSync(
+      process.execPath,
+      ["scripts/release-files.mjs", "--record", releaseId],
+      { cwd: dir },
+    );
+    assert.equal(seal.status, 0, seal.stderr.toString());
     const log = join(dir, "calls");
     writeFileSync(log, "");
     // Coverage failures and ordering are exercised in deploy-release-guard.test.mjs.
@@ -291,7 +363,9 @@ function deploy(
     for (const tool of ["aws", "node"])
       writeFileSync(
         join(dir, "bin", tool),
-        `#!/usr/bin/env bash\nprintf '%s\\n' '${tool} '"$*" >> "$TEST_LOG"\n${tool === "aws" && failSync ? 'if [[ "$1 $2" == "s3 sync" ]]; then exit 23; fi' : ""}\n`,
+        `#!/usr/bin/env bash\n
+${tool === "node" ? 'if [[ "$1" == scripts/release-files.mjs || "$1" == scripts/terraform-outputs.mjs || "$1" == -e ]]; then exec "$TEST_NODE" "$@"; fi' : ""}
+printf '%s\\n' '${tool} '"$*" >> "$TEST_LOG"\n${tool === "aws" && failSync ? 'if [[ "$1 $2" == "s3 sync" ]]; then exit 23; fi' : ""}\n`,
         { mode: 0o755 },
       );
     const result = spawnSync(
@@ -301,8 +375,20 @@ function deploy(
         encoding: "utf8",
         env: {
           ...process.env,
+          // Shell startup files must not replace the fixture command PATH.
+          BASH_ENV: "/dev/null",
+          ENV: "/dev/null",
+          WORKSPACE_SYNC: workspaceChoice,
+          INTAKE_WORKSPACE: dir,
+          INTAKE_WORKSPACE_BUCKET: "fixture-workspaces",
           PATH: `${dir}/bin:${process.env.PATH}`,
+          TEST_NODE: process.execPath,
           TEST_LOG: log,
+          TMPDIR: dir,
+          GIT_COMMIT_SHA: "0123456789ab",
+          GIT_COMMIT_DIRTY: "false",
+          RELEASE_DATA_BUCKET: "private-prod",
+          RELEASE_DATA_BUCKET_PREVIEW: "private-preview",
           S3_BUCKET: "prod",
           CLOUDFRONT_DIST_ID: "prod-dist",
           KVS_ARN: "prod-kvs",
@@ -316,6 +402,7 @@ function deploy(
     );
     return {
       ...result,
+      releaseId,
       calls: readFileSync(log, "utf8").trim().split("\n").filter(Boolean),
     };
   } finally {
@@ -323,16 +410,53 @@ function deploy(
   }
 }
 
-test("preview publishes redirects after S3 sync and before invalidation", () => {
-  const result = deploy("deploy-preview-sync.sh");
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.calls[0], /^aws s3 sync /);
-  assert.equal(
-    result.calls[1],
-    "node scripts/load-redirects.mjs preview-kvs r:pr-12: dist/_redirect-map.json",
+for (const [script, args, namespace, bucket, pointer] of [
+  ["deploy-preview-sync.sh", [], "pr-12", "preview", "current:pr-12"],
+  ["deploy-incremental.sh", ["--skip-build"], "prod", "prod", "current"],
+]) {
+  test(
+    namespace +
+      " uploads a complete release and private roster before selecting it",
+    () => {
+      const { releaseId, status, stderr, calls } = deploy(script, args);
+      assert.equal(status, 0, stderr);
+      const prefix = "builds/" + releaseId;
+      assert.ok(
+        calls[0].startsWith(
+          "aws s3 sync dist/ s3://" + bucket + "/" + releaseId + "/build/",
+        ),
+      );
+      assert.ok(
+        calls[1].includes(
+          "s3://private-" +
+            bucket +
+            "/" +
+            prefix +
+            "/data/ --exclude dynamic.json",
+        ),
+      );
+      assert.ok(
+        calls[2].includes(
+          "s3://private-" +
+            bucket +
+            "/" +
+            prefix +
+            "/data/ --exclude * --include dynamic.json",
+        ),
+      );
+      assert.ok(calls[1].includes("--no-overwrite"));
+      const loader = calls.findIndex((call) =>
+        call.includes("r:" + releaseId + ":"),
+      );
+      assert.ok(loader > 2);
+      assert.ok(
+        calls.some((call) =>
+          call.includes('"Key":"' + pointer + '","Value":"' + releaseId + '"'),
+        ),
+      );
+    },
   );
-  assert.match(result.calls[2], /^aws cloudfront create-invalidation /);
-});
+}
 
 test("failed preview sync does not publish redirects", () => {
   const result = deploy("deploy-preview-sync.sh", [], { failSync: true });
@@ -346,9 +470,10 @@ test("production publishes redirects even without content changes", () => {
   });
   assert.equal(result.status, 0, result.stderr);
   assert.ok(
-    result.calls.includes(
-      "node scripts/load-redirects.mjs prod-kvs r:prod: dist/_redirect-map.json",
-    ),
+    result.calls.some((call) => call.includes("r:" + result.releaseId + ":")),
+  );
+  assert.ok(
+    result.calls[0].includes("s3://prod/" + result.releaseId + "/build/"),
   );
 });
 
@@ -362,22 +487,6 @@ test("production dry-run never mutates AWS or invokes loader", () => {
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(result.calls, []);
   }
-});
-
-test("production publishes redirects after content sync and before invalidation", () => {
-  const result = deploy("deploy-incremental.sh", ["--skip-build"]);
-  assert.equal(result.status, 0, result.stderr);
-  const sync = result.calls.findIndex((x) => x.startsWith("aws s3 sync "));
-  const loader = result.calls.indexOf(
-    "node scripts/load-redirects.mjs prod-kvs r:prod: dist/_redirect-map.json",
-  );
-  const invalidation = result.calls.findIndex((x) =>
-    x.startsWith("aws cloudfront create-invalidation "),
-  );
-  assert.ok(
-    sync >= 0 && loader > sync && invalidation > loader,
-    result.calls.join("\n"),
-  );
 });
 
 test("failed production sync does not publish redirects", () => {
@@ -417,3 +526,33 @@ test("shrinks existing values before growing values to stay within capacity duri
   );
   assert.equal(result.status, 0, result.stderr);
 });
+
+for (const [script, args] of [
+  ["deploy-preview.sh", []],
+  ["deploy-preview-sync.sh", []],
+  ["deploy-incremental.sh", ["--skip-build"]],
+]) {
+  test(`${script} accepted workspace upload follows hosting exactly once`, () => {
+    const result = deploy(script, args, { workspaceChoice: "upload" });
+    assert.equal(result.status, 0, result.stderr);
+    const hosting = result.calls.findIndex((call) =>
+      call.startsWith("aws s3 sync "),
+    );
+    const syncs = result.calls.filter((call) =>
+      call.includes("intake-workspace-sync.mjs sync"),
+    );
+    assert.equal(syncs.length, 1);
+    assert.doesNotMatch(syncs[0], /--environment/);
+    assert.match(
+      syncs[0],
+      /sync --direction upload --bucket fixture-workspaces/,
+    );
+    assert.ok(result.calls.indexOf(syncs[0]) > hosting);
+  });
+  test(`${script} missing automated choice prevents hosting upload`, () => {
+    const result = deploy(script, args, { workspaceChoice: "" });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /WORKSPACE_SYNC/);
+    assert.deepEqual(result.calls, []);
+  });
+}

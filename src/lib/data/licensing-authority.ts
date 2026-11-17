@@ -142,3 +142,15 @@ export const loadAuthorityRecords = async (
     actions.sort((a, b) => collator.compare(a.action, b.action));
     return { licenses, actions, discipline };
   });
+
+export async function loadAuthorityNamespaces(id: string): Promise<string[]> {
+  return withDb(async (client) => {
+    const result = await client.query<{ source_namespaces: string[] }>(
+      "select source_namespaces from public.licensing_authority where id = $1",
+      [id],
+    );
+    if (result.rows.length !== 1)
+      throw new Error(`Missing licensing authority ${id}.`);
+    return result.rows[0].source_namespaces;
+  });
+}

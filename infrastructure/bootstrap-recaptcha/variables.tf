@@ -8,6 +8,11 @@ variable "recaptcha_project_id" {
   description = "Google Cloud project ID that will host reCAPTCHA Enterprise resources."
   type        = string
   default     = "ipc-policeconduct"
+
+  validation {
+    condition     = var.recaptcha_project_id == "ipc-policeconduct"
+    error_message = "This existing stack is bound to Google project ipc-policeconduct."
+  }
 }
 
 variable "service_account_account_id" {

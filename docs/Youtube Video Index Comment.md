@@ -22,10 +22,8 @@ Suggested text:
 
 This profile indexes public-interest law-enforcement records and community-submitted reports. Allegations are labeled by source/status. Corrections, updates, and additional context are welcome.
 
-That would make the neutrality obvious before someone clicks into the report.
+This introduces the profile's purpose before the linked report.
 
 Recommended YouTube comment stays:
 
 We indexed this video as part of a public-interest officer/agency record. Source-linked profile for Officer [Name], [Agency]: [link]. Corrections welcome.
-
-That aligns well with YouTube’s external-link policy because the destination is public-interest, and YouTube’s own policy recognizes public-interest context around otherwise sensitive content.

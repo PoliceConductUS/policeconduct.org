@@ -1,12 +1,14 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./page-fixture";
 import dotenv from "dotenv";
 import { Client } from "pg";
 
 let client: Client;
 test.beforeAll(async () => {
-  for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
+  const databaseUrl = process.env.DATABASE_URL;
+  for (const path of [".env"]) {
     dotenv.config({ path, override: true, quiet: true });
   }
+  if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
   client = new Client({ connectionString: process.env.DATABASE_URL });
   await client.connect();
 });
@@ -149,6 +151,9 @@ test("discipline pages browse ten records locally and search the entire collecti
     rows.map((row) => row.getAttribute("data-discipline-id")),
   );
   expect(allIds.length).toBeGreaterThan(10);
+  // Exhaustive keyboard pagination scales with the corpus (currently 54 pages).
+  // Keep every record assertion and allow traced browser actions per page.
+  test.setTimeout(60_000 + Math.ceil(allIds.length / 10) * 3_000);
   const visible = page.locator("[data-discipline-id]:visible");
   await expect(visible).toHaveCount(10);
   const status = page
@@ -217,11 +222,15 @@ test("discipline pages browse ten records locally and search the entire collecti
 
 test("without JavaScript every compact discipline summary remains accessible", async ({
   browser,
+  baseURL,
 }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false });
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    baseURL,
+  });
   const page = await context.newPage();
   try {
-    await page.goto("http://127.0.0.1:4321/mn/licensing-authority/", {
+    await page.goto("/mn/licensing-authority/", {
       waitUntil: "domcontentloaded",
     });
     const all = page.locator("[data-discipline-id]");

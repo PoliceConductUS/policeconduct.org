@@ -4,7 +4,7 @@ import sitemap from "@astrojs/sitemap";
 import { stagePersonnelPhotos } from "./src/lib/personnel-photos.js";
 import { loadEnv } from "vite";
 
-import sentry from "@sentry/astro";
+import { sentryAstro } from "@sentry/astro/integration";
 import { buildSitemapLastmodMap } from "./src/lib/sitemap-lastmod.js";
 
 /**
@@ -44,8 +44,10 @@ const sentryAuthToken = (env.SENTRY_AUTH_TOKEN || "").trim();
 const recaptchaSiteKey = (env.RECAPTCHA_SITE_KEY || "").trim();
 const sentryRelease =
   (process.env.GIT_COMMIT_SHA || env.GIT_COMMIT_SHA || "").trim() || undefined;
+// Only a production release build is given the auth token (see
+// scripts/build-release.mjs), so its presence is what turns the upload on.
 const shouldUploadSentrySourcemaps = Boolean(
-  process.env.CI && sentryOrg && sentryProject && sentryAuthToken,
+  sentryOrg && sentryProject && sentryAuthToken,
 );
 const SITEMAP_EXCLUDED_PATHS = new Set([
   "/404/",
@@ -107,6 +109,9 @@ export default defineConfig({
       sourcemap: "hidden",
     },
     server: {
+      watch: {
+        ignored: ["**/.worktrees/**"],
+      },
       proxy: {
         "/api": {
           target: formsApiProxyTarget,
@@ -132,7 +137,10 @@ export default defineConfig({
       entryLimit: 45000,
       filter: (page) => {
         const pathname = new URL(page).pathname;
-        return !SITEMAP_EXCLUDED_PATHS.has(pathname);
+        return (
+          !SITEMAP_EXCLUDED_PATHS.has(pathname) &&
+          !pathname.split("/").includes("data-annotations")
+        );
       },
       serialize: async (item) => {
         const lastmodMap = await getSitemapLastmodMap();
@@ -147,7 +155,7 @@ export default defineConfig({
         };
       },
     }),
-    sentry({
+    sentryAstro({
       telemetry: false,
       enabled: {
         client: true,

@@ -1,9 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./page-fixture";
 
 const verificationInstructions =
-  "We received your submission. Check your email and open the verification link within 15 minutes. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+  "We received your submission. Check your email and open the link within 15 minutes to confirm your email address. Please contact hello@policeconduct.org if you need help.";
 const verificationEmailFailedMessage =
-  "We received your submission, but sending the verification email failed in this environment. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
+  "We received your submission, but sending the email confirmation link failed in this environment. Confirm your email address to continue. Please contact hello@policeconduct.org if you need help.";
 
 const forms = [
   { path: "/about/contact/", formName: "contact" },
@@ -61,6 +61,7 @@ async function fillRequiredFields(formLocator, formName = "") {
     await formLocator.locator("#confirmAccurate").check();
     await formLocator.locator("#confirmDeletion").check();
     await formLocator.locator("#confirmEmail").check();
+    await formLocator.locator("#confirmPublicRecords").check();
     return;
   }
 
@@ -180,7 +181,9 @@ test.describe("form submissions", () => {
           status: 200,
           contentType: "application/json",
           body: JSON.stringify({
-            message: verificationInstructions,
+            ...(form.formName === "contact"
+              ? {}
+              : { message: verificationInstructions }),
             verificationPending: true,
           }),
         });
@@ -225,11 +228,16 @@ test.describe("form submissions", () => {
           response.request().method() === "POST"
         );
       });
-      await Promise.all([
+      const [submitted] = await Promise.all([
         submitResponsePromise,
         formLocator.locator('button[type="submit"]').press("Enter"),
       ]);
 
+      const releaseId = await page
+        .locator("html")
+        .getAttribute("data-release-id");
+      expect(releaseId).toBeTruthy();
+      expect(submitted.request().postDataJSON().releaseId).toBe(releaseId);
       await expect(page).toHaveURL(new RegExp(`${originalPathname}$`));
       const success = formLocator.locator("[data-form-submit-success]");
       await expect(success).toBeVisible();
@@ -371,7 +379,11 @@ test.describe("form submissions", () => {
         },
       };
     });
-    await page.getByRole("link", { name: /report issue/i }).click();
+    // Two footer links carry this name; the last is the one below the address.
+    await page
+      .getByRole("link", { name: "Report a site issue" })
+      .last()
+      .click();
 
     const calls = await page.evaluate(() => {
       return window.__IPC_SENTRY_FEEDBACK__?.__calls || [];

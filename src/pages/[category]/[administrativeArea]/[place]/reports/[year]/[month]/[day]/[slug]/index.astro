@@ -1,4 +1,5 @@
 ---
+import RecordDataNotes from "#src/components/RecordDataNotes.astro";
 import "#src/styles/civic-ledger.css";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
@@ -402,6 +403,17 @@ const structuredData = {
         </>
       ) : null}
 
+      {data.relatedCases.length ? (
+        <>
+          <h3>Related cases</h3>
+          {data.relatedCases.map((civilCase) => (
+            <p>
+              <a href={civilCase.path}>{civilCase.title}</a>
+            </p>
+          ))}
+        </>
+      ) : null}
+
       {evidenceLinks.length ? (
         <>
           <h3>Records and evidence</h3>
@@ -430,4 +442,5 @@ const structuredData = {
   <section class="civic-section civic-section--last">
     <ReportDisclaimer />
   </section>
+  <RecordDataNotes recordPath={pagePath} />
 </PageShell>

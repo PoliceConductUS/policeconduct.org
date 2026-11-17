@@ -2,16 +2,32 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import dotenv from "dotenv";
+import { resolveTerraformEnv } from "./terraform-outputs.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
-const envFiles = [".env", ".env-recaptcha", ".env-policeconduct"];
+const databaseUrl = process.env.DATABASE_URL;
+const intakeWorkspace = process.env.INTAKE_WORKSPACE;
+const envFiles = [".env"];
 
 for (const envFile of envFiles) {
   dotenv.config({
     path: path.join(repoRoot, envFile),
     override: true,
   });
+}
+
+// Explicit connection/workspace inputs must survive layered local config.
+if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
+if (intakeWorkspace !== undefined)
+  process.env.INTAKE_WORKSPACE = intakeWorkspace;
+
+// Deployed values come from Terraform outputs unless the caller already set them.
+try {
+  resolveTerraformEnv(["FORMS_API_PROXY_TARGET", "RECAPTCHA_SITE_KEY"]);
+} catch (error) {
+  console.error(`Dev startup failed: ${error.message}`);
+  process.exit(1);
 }
 
 const formsApiProxyTarget = (process.env.FORMS_API_PROXY_TARGET || "").trim();

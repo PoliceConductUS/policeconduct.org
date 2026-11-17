@@ -8,7 +8,7 @@ data "external" "resend_domain" {
   program = [
     "node",
     "${path.module}/../../scripts/bootstrap-resend-domain.mjs",
-    "--apply",
+    "--read",
   ]
 
   query = {}
@@ -38,7 +38,7 @@ locals {
   create_www_cname_record              = var.www_record_mode == "cname"
   preview_wildcard_domain              = "*.preview.${var.domain_name}"
   distribution_aliases                 = local.include_www ? [var.domain_name, local.www_domain] : [var.domain_name]
-  preview_distribution_aliases         = [local.preview_wildcard_domain]
+  preview_distribution_aliases         = ["preview.${var.domain_name}", local.preview_wildcard_domain]
   certificate_san_names                = local.include_www ? [local.www_domain, local.preview_wildcard_domain] : [local.preview_wildcard_domain]
   origin_id                            = "s3-${local.site_bucket_name}"
   preview_origin_id                    = "s3-${local.preview_bucket_name}"
@@ -147,12 +147,6 @@ locals {
         PUBLIC_SENTRY_DSN         = local.sentry_dsn_preview
         PUBLIC_SENTRY_ENVIRONMENT = "preview"
       },
-      local.sentry_org == null ? {} : {
-        SENTRY_ORG = local.sentry_org
-      },
-      local.sentry_project == null ? {} : {
-        SENTRY_PROJECT = local.sentry_project
-      },
       local.recaptcha_site_key == null ? {} : {
         RECAPTCHA_SITE_KEY = local.recaptcha_site_key
       }
@@ -221,7 +215,15 @@ data "archive_file" "forms_api_lambda" {
   type        = "zip"
   source_dir  = "${path.module}/lambdas/forms-api"
   output_path = "${path.module}/lambdas/forms-api.zip"
-  excludes    = ["*.zip"]
+  # Match deploy-forms-api.sh: runtime files only, never local tests/coverage.
+  excludes = setsubtract(
+    fileset("${path.module}/lambdas/forms-api", "**"),
+    setunion(
+      toset(["index.mjs", "package.json"]),
+      fileset("${path.module}/lambdas/forms-api", "native-domexception/**"),
+      fileset("${path.module}/lambdas/forms-api", "node_modules/**")
+    )
+  )
 }
 
 resource "aws_s3_bucket" "terraform_state" {
@@ -296,6 +298,10 @@ resource "aws_s3_bucket_policy" "terraform_state_tls_only" {
 resource "aws_s3_bucket" "preview" {
   bucket        = local.preview_bucket_name
   force_destroy = var.preview_bucket_force_destroy
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "preview" {
@@ -323,6 +329,44 @@ resource "aws_s3_bucket_versioning" "preview" {
   }
 }
 
+# Versioning above means `aws s3 rm` -- what cleanup-preview.yml runs when a PR
+# closes -- only writes a delete marker. The object becomes noncurrent and keeps
+# billing, so tearing down a preview reclaimed nothing and the object count only
+# ever grew. Measured on 2026-11-01, before this rule existed: 5,589,610 objects
+# and 95.7 GB billed, against 17.7 GB of current versions (INS-106).
+#
+# 7 days, per the board's decision on INS-106. A preview is disposable build
+# output reproducible from its commit, so a week is ample room to notice a
+# mistaken delete. Current versions are untouched, so live previews for open
+# PRs keep serving normally.
+resource "aws_s3_bucket_lifecycle_configuration" "preview" {
+  bucket = aws_s3_bucket.preview.id
+
+  rule {
+    id     = "expire-noncurrent-preview-versions"
+    status = "Enabled"
+
+    # Applies to named previews, PR builds, and root diagnostic pages.
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = 7
+    }
+
+    # Sweep the delete marker once every version beneath it has expired;
+    # otherwise the markers accumulate as billable objects forever.
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.preview]
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "preview" {
   bucket = aws_s3_bucket.preview.id
 
@@ -336,11 +380,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "preview" {
 resource "aws_s3_bucket" "forms_drafts" {
   bucket        = local.forms_drafts_bucket_name
   force_destroy = var.forms_drafts_bucket_force_destroy
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_kms_key" "forms_drafts" {
   description         = "KMS key for ${var.project_name} form drafts bucket."
   enable_key_rotation = true
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_kms_alias" "forms_drafts" {
@@ -387,11 +439,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "forms_drafts" {
 resource "aws_s3_bucket" "forms_submissions" {
   bucket        = local.forms_submissions_bucket_name
   force_destroy = var.forms_submissions_bucket_force_destroy
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_kms_key" "forms_submissions" {
   description         = "KMS key for ${var.project_name} form submissions bucket."
   enable_key_rotation = true
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_kms_alias" "forms_submissions" {
@@ -438,11 +498,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "forms_submissions
 resource "aws_s3_bucket" "forms_drafts_preview" {
   bucket        = local.forms_drafts_preview_bucket_name
   force_destroy = var.forms_drafts_preview_bucket_force_destroy
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_kms_key" "forms_drafts_preview" {
   description         = "KMS key for ${var.project_name} preview form drafts bucket."
   enable_key_rotation = true
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_kms_alias" "forms_drafts_preview" {
@@ -489,11 +557,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "forms_drafts_prev
 resource "aws_s3_bucket" "forms_submissions_preview" {
   bucket        = local.forms_submissions_preview_bucket_name
   force_destroy = var.forms_submissions_preview_bucket_force_destroy
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_kms_key" "forms_submissions_preview" {
   description         = "KMS key for ${var.project_name} preview form submissions bucket."
   enable_key_rotation = true
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_kms_alias" "forms_submissions_preview" {
@@ -829,6 +905,17 @@ resource "random_password" "forms_email_verification_hmac_secret" {
 
 data "aws_iam_policy_document" "forms_lambda_permissions" {
   statement {
+    sid       = "IdentifyKnownFormReleases"
+    actions   = ["s3:GetObject"]
+    resources = [for bucket in aws_s3_bucket.release_data : "${bucket.arn}/builds/*/data/dynamic.json"]
+  }
+  statement {
+    sid       = "DistinguishMissingFormReleases"
+    actions   = ["s3:ListBucket"]
+    resources = [for bucket in aws_s3_bucket.release_data : bucket.arn]
+  }
+
+  statement {
     sid    = "CloudWatchLogsWrite"
     effect = "Allow"
     actions = [
@@ -1081,12 +1168,16 @@ resource "aws_lambda_function" "forms_api_prod" {
   handler       = "index.handler"
   runtime       = var.lambda_nodejs_runtime
   timeout       = 10
+  # CPU scales with memory. At the 128 MB default a form submit took about 7
+  # seconds, most of it in the reCAPTCHA client, and used 123 MB.
+  memory_size = 1024
 
   filename         = data.archive_file.forms_api_lambda.output_path
   source_code_hash = data.archive_file.forms_api_lambda.output_base64sha256
 
   environment {
     variables = {
+      RELEASE_DATA_BUCKET                  = aws_s3_bucket.release_data["prod"].id
       DRAFTS_BUCKET                        = aws_s3_bucket.forms_drafts.id
       DRAFTS_KMS_KEY_ID                    = aws_kms_key.forms_drafts.arn
       DRAFTS_PREFIX                        = "drafts/"
@@ -1112,6 +1203,10 @@ resource "aws_lambda_function" "forms_api_prod" {
       SUBMISSION_NOTIFICATION_RECIPIENTS   = join(",", local.normalized_submission_notification_emails)
     }
   }
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_lambda_function" "forms_api_preview" {
@@ -1120,12 +1215,16 @@ resource "aws_lambda_function" "forms_api_preview" {
   handler       = "index.handler"
   runtime       = var.lambda_nodejs_runtime
   timeout       = 10
+  # CPU scales with memory. At the 128 MB default a form submit took about 7
+  # seconds, most of it in the reCAPTCHA client, and used 123 MB.
+  memory_size = 1024
 
   filename         = data.archive_file.forms_api_lambda.output_path
   source_code_hash = data.archive_file.forms_api_lambda.output_base64sha256
 
   environment {
     variables = {
+      RELEASE_DATA_BUCKET                  = aws_s3_bucket.release_data["preview"].id
       DRAFTS_BUCKET                        = aws_s3_bucket.forms_drafts_preview.id
       DRAFTS_KMS_KEY_ID                    = aws_kms_key.forms_drafts_preview.arn
       DRAFTS_PREFIX                        = "drafts/"
@@ -1155,6 +1254,10 @@ resource "aws_lambda_function" "forms_api_preview" {
       NOTIFICATION_ENV_LABEL             = "preview"
       SUBMISSION_NOTIFICATION_RECIPIENTS = join(",", local.normalized_submission_notification_emails)
     }
+  }
+
+  tags = {
+    Environment = "preview"
   }
 }
 
@@ -1194,6 +1297,34 @@ resource "aws_wafv2_web_acl" "forms_api_cloudfront" {
     allow {}
   }
 
+  # A rate-limited client must be told "slow down", not "this page does not exist".
+  # This distribution maps 403 -> /404.html with ResponseCode 404, and /404.html
+  # carries <meta name="robots" content="noindex,follow">. So a plain `block {}`
+  # (HTTP 403) can mislabel a throttled request as a missing page. Returning 429
+  # keeps the response out of that mapping, because custom_error_response only
+  # rewrites the status codes it explicitly names (403 and 404 here).
+  custom_response_body {
+    key          = "site_rate_limited"
+    content_type = "TEXT_HTML"
+    content      = <<-EOT
+      <!doctype html>
+      <html lang="en"><head><meta charset="utf-8"><title>Rate limited</title></head>
+      <body>
+      <h1>Too many requests</h1>
+      <p>Too many requests have been sent in a short time.
+      Please slow down and retry after the interval given in the <code>Retry-After</code> header.</p>
+      <p>If you are crawling or bulk-downloading the corpus, that is welcome &mdash; see
+      <a href="https://www.policeconduct.org/data-and-methods/">Data and Methods</a>.</p>
+      </body></html>
+    EOT
+  }
+
+  custom_response_body {
+    key          = "api_rate_limited"
+    content_type = "APPLICATION_JSON"
+    content      = "{\"error\":\"rate_limited\",\"message\":\"Too many requests. Retry after the interval given in the Retry-After header.\"}"
+  }
+
   rule {
     name     = "RateLimitSitePerIp"
     priority = 1
@@ -1206,7 +1337,17 @@ resource "aws_wafv2_web_acl" "forms_api_cloudfront" {
     }
 
     action {
-      block {}
+      block {
+        custom_response {
+          response_code            = 429
+          custom_response_body_key = "site_rate_limited"
+
+          response_header {
+            name  = "Retry-After"
+            value = tostring(var.rate_limit_retry_after_seconds)
+          }
+        }
+      }
     }
 
     visibility_config {
@@ -1244,7 +1385,17 @@ resource "aws_wafv2_web_acl" "forms_api_cloudfront" {
     }
 
     action {
-      block {}
+      block {
+        custom_response {
+          response_code            = 429
+          custom_response_body_key = "api_rate_limited"
+
+          response_header {
+            name  = "Retry-After"
+            value = tostring(var.rate_limit_retry_after_seconds)
+          }
+        }
+      }
     }
 
     visibility_config {
@@ -1291,6 +1442,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_errors" {
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_prod.function_name
   }
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_cloudwatch_metric_alarm" "forms_api_prod_duration_p95" {
@@ -1309,6 +1464,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_duration_p95" {
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_prod.function_name
+  }
+
+  tags = {
+    Environment = "production"
   }
 }
 
@@ -1329,6 +1488,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_throttles" {
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_prod.function_name
   }
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_cloudwatch_metric_alarm" "forms_api_preview_errors" {
@@ -1347,6 +1510,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_errors" {
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_preview.function_name
+  }
+
+  tags = {
+    Environment = "preview"
   }
 }
 
@@ -1367,6 +1534,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_duration_p95" {
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_preview.function_name
   }
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_cloudwatch_metric_alarm" "forms_api_preview_throttles" {
@@ -1385,6 +1556,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_throttles" {
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_preview.function_name
+  }
+
+  tags = {
+    Environment = "preview"
   }
 }
 
@@ -1413,6 +1588,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_verification_email_failed
   treat_missing_data  = "notBreaching"
   alarm_actions       = local.effective_alarm_actions
   ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_cloudwatch_log_metric_filter" "forms_api_prod_verification_email_not_sent" {
@@ -1440,6 +1619,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_verification_email_not_se
   treat_missing_data  = "notBreaching"
   alarm_actions       = local.effective_alarm_actions
   ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_cloudwatch_log_metric_filter" "forms_api_preview_verification_email_failed" {
@@ -1467,6 +1650,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_verification_email_fai
   treat_missing_data  = "notBreaching"
   alarm_actions       = local.effective_alarm_actions
   ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_cloudwatch_log_metric_filter" "forms_api_preview_verification_email_not_sent" {
@@ -1494,6 +1681,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_verification_email_not
   treat_missing_data  = "notBreaching"
   alarm_actions       = local.effective_alarm_actions
   ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
@@ -1643,6 +1834,26 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     resources = ["*"]
   }
 
+  # The KeyValueStore data plane is a separate service prefix from cloudfront:*,
+  # so CloudFrontAccess above does not reach it. Without this statement the
+  # preview cleanup workflow's redirect-pruning step fails with AccessDenied
+  # (INS-106). These three actions are exactly what scripts/load-redirects.mjs
+  # invokes: list-keys, describe-key-value-store (for the ETag), and update-keys.
+  #
+  # Preview store only. No CI workflow deploys production, and the site store
+  # controls live-site routing, so CI has no reason to hold write access to it.
+  statement {
+    sid    = "CloudFrontKeyValueStorePreviewAccess"
+    effect = "Allow"
+
+    actions = [
+      "cloudfront-keyvaluestore:ListKeys",
+      "cloudfront-keyvaluestore:DescribeKeyValueStore",
+      "cloudfront-keyvaluestore:UpdateKeys",
+    ]
+    resources = [aws_cloudfront_key_value_store.preview_redirects.arn]
+  }
+
   statement {
     sid    = "AcmAccess"
     effect = "Allow"
@@ -1761,7 +1972,7 @@ resource "aws_ses_domain_identity" "site" {
 resource "aws_route53_record" "resend_domain_record" {
   for_each = local.resend_domain_records_map
 
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = each.value.name
   type            = each.value.type
@@ -1890,6 +2101,10 @@ resource "aws_sesv2_configuration_set_event_destination" "verification_email_eve
 resource "aws_s3_bucket" "site" {
   bucket        = local.site_bucket_name
   force_destroy = var.site_bucket_force_destroy
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "site" {
@@ -1945,6 +2160,10 @@ resource "aws_acm_certificate" "site" {
   lifecycle {
     create_before_destroy = true
   }
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_route53_record" "acm_validation" {
@@ -1957,7 +2176,7 @@ resource "aws_route53_record" "acm_validation" {
     if contains(local.acm_validation_domains, dvo.domain_name)
   }
 
-  allow_overwrite = true
+  allow_overwrite = false
   name            = each.value.name
   records         = [each.value.record]
   ttl             = 60
@@ -1980,7 +2199,8 @@ locals {
 }
 
 resource "aws_cloudfront_key_value_store" "site_redirects" {
-  name = "${var.project_name}-site-redirects"
+  name    = "${var.project_name}-site-redirects"
+  comment = "Production site redirects managed by bootstrap-policeconduct Terraform"
 }
 
 resource "aws_cloudfront_function" "index_rewrite" {
@@ -1992,6 +2212,10 @@ resource "aws_cloudfront_function" "index_rewrite" {
     aws_cloudfront_key_value_store.site_redirects.arn,
   ]
   code = local.shared_router_code
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_cloudfront_response_headers_policy" "site_security_headers" {
@@ -2061,9 +2285,6 @@ resource "aws_cloudfront_distribution" "site" {
     origin_id                = local.origin_id
     origin_access_control_id = aws_cloudfront_origin_access_control.site.id
 
-    s3_origin_config {
-      origin_access_identity = ""
-    }
   }
 
   origin {
@@ -2121,7 +2342,8 @@ resource "aws_cloudfront_distribution" "site" {
 
   restrictions {
     geo_restriction {
-      restriction_type = "none"
+      restriction_type = "whitelist"
+      locations        = ["US"]
     }
   }
 
@@ -2131,15 +2353,17 @@ resource "aws_cloudfront_distribution" "site" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  lifecycle {
-    ignore_changes = [origin]
+
+  tags = {
+    Environment = "production"
   }
 }
 
 # Preview uses the same router as production with a separate redirect store.
 # Keys are r:<label>:<path> = <target>, loaded from the build's _redirect-map.json.
 resource "aws_cloudfront_key_value_store" "preview_redirects" {
-  name = "${var.project_name}-preview-redirects"
+  name    = "${var.project_name}-preview-redirects"
+  comment = "Redirect maps for preview builds using the shared site router."
 }
 
 resource "aws_cloudfront_function" "preview_router" {
@@ -2153,6 +2377,10 @@ resource "aws_cloudfront_function" "preview_router" {
   ]
 
   code = local.shared_router_code
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 # Non-canonical preview hosts must not be indexed. Build-once means the same HTML
@@ -2165,6 +2393,10 @@ resource "aws_cloudfront_function" "preview_noindex" {
   publish = true
 
   code = file("${path.module}/functions/noindex.js")
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_cloudfront_distribution" "preview" {
@@ -2182,9 +2414,6 @@ resource "aws_cloudfront_distribution" "preview" {
     origin_id                = local.preview_origin_id
     origin_access_control_id = aws_cloudfront_origin_access_control.site.id
 
-    s3_origin_config {
-      origin_access_identity = ""
-    }
   }
 
   origin {
@@ -2247,18 +2476,20 @@ resource "aws_cloudfront_distribution" "preview" {
 
   restrictions {
     geo_restriction {
-      restriction_type = "none"
+      restriction_type = "whitelist"
+      locations        = ["US"]
     }
   }
 
   viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate_validation.site.certificate_arn
+    acm_certificate_arn      = aws_acm_certificate_validation.preview.certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  lifecycle {
-    ignore_changes = [origin]
+
+  tags = {
+    Environment = "preview"
   }
 }
 
@@ -2272,7 +2503,7 @@ data "aws_iam_policy_document" "site_bucket_policy" {
     }
 
     actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.site.arn}/*"]
+    resources = ["${aws_s3_bucket.site.arn}/*/build/*", "${aws_s3_bucket.site.arn}/*/override/*", "${aws_s3_bucket.site.arn}/404.html"]
 
     condition {
       test     = "StringEquals"
@@ -2303,7 +2534,7 @@ data "aws_iam_policy_document" "preview_bucket_policy" {
     }
 
     actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.preview.arn}/*"]
+    resources = ["${aws_s3_bucket.preview.arn}/*/build/*", "${aws_s3_bucket.preview.arn}/*/override/*", "${aws_s3_bucket.preview.arn}/404.html"]
 
     condition {
       test     = "StringEquals"
@@ -2388,7 +2619,7 @@ resource "aws_route53_record" "www_cname" {
 
 
 resource "aws_route53_record" "preview_wildcard_a" {
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = local.preview_wildcard_domain
   type            = "A"
@@ -2401,7 +2632,7 @@ resource "aws_route53_record" "preview_wildcard_a" {
 }
 
 resource "aws_route53_record" "preview_wildcard_aaaa" {
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = local.preview_wildcard_domain
   type            = "AAAA"
@@ -2419,12 +2650,22 @@ resource "aws_route53_record" "extra_standard" {
     if try(record.alias, null) == null
   }
 
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = each.value.name
   type            = each.value.type
   ttl             = each.value.ttl
   records         = each.value.records
+
+  lifecycle {
+    precondition {
+      condition = !contains(local.adopted_dns_record_keys, join(" ", [
+        lower(endswith(trimsuffix(each.value.name, "."), var.domain_name) ? trimsuffix(each.value.name, ".") : "${each.value.name}.${var.domain_name}"),
+        each.value.type,
+      ]))
+      error_message = "extra_dns_records repeats ${each.value.name} ${each.value.type}, which existing-dns.tf already manages. Remove it from extra_dns_records."
+    }
+  }
 }
 
 resource "aws_route53_record" "extra_alias" {
@@ -2433,7 +2674,7 @@ resource "aws_route53_record" "extra_alias" {
     if try(record.alias, null) != null
   }
 
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = each.value.name
   type            = each.value.type
@@ -2463,13 +2704,30 @@ resource "github_actions_environment_variable" "environment_variables" {
   depends_on = [github_repository_environment.environments]
 }
 
-resource "github_actions_environment_secret" "sentry_auth_token" {
-  for_each = local.has_sentry_auth_token ? local.github_environment_names : toset([])
+# Keep cleanup configuration independent of distribution and Lambda releases.
+# The variable is usable only after the preview store permissions exist.
+moved {
+  from = github_actions_environment_variable.environment_variables["preview:KVS_ARN_PREVIEW"]
+  to   = github_actions_environment_variable.preview_kvs_arn
+}
 
-  repository      = var.github_repo
-  environment     = each.value
-  secret_name     = "SENTRY_AUTH_TOKEN"
-  plaintext_value = local.sentry_auth_token
+resource "github_actions_environment_variable" "preview_kvs_arn" {
+  repository    = var.github_repo
+  environment   = github_repository_environment.environments["preview"].environment
+  variable_name = "KVS_ARN_PREVIEW"
+  value         = aws_cloudfront_key_value_store.preview_redirects.arn
+
+  depends_on = [aws_iam_role_policy.github_actions_permissions]
+}
+
+resource "github_actions_environment_secret" "sentry_auth_token" {
+  # Sourcemaps are uploaded for production only; preview builds do not need the token.
+  for_each = local.has_sentry_auth_token ? toset(["production"]) : toset([])
+
+  repository  = var.github_repo
+  environment = each.value
+  secret_name = "SENTRY_AUTH_TOKEN"
+  value       = local.sentry_auth_token
 
   depends_on = [github_repository_environment.environments]
 }

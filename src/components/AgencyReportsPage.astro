@@ -34,7 +34,7 @@ const reportHref = (report: AgencyReportSummary) => {
   data={data}
   topicLabel="Reports"
   topicSlug="reports"
-  description={`${data.reportedReports.length.toLocaleString("en-US")} public reports connected to this agency, shared by the public and reviewed before publication.`}
+  description={`${data.reportedReports.length.toLocaleString("en-US")} public reports connected to this agency, shared by the public.`}
 >
   <div class="recent-list">
     {pageReports.map((report) => (

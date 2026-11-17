@@ -360,8 +360,10 @@ const formatRecordedDate = (value: string) =>
     font: inherit;
     cursor: pointer;
   }
-  .discipline-controls button:hover:not([aria-disabled="true"]) {
-    background: var(--ipc-color-teal-wash);
+  @media (hover: hover) {
+    .discipline-controls button:hover:not([aria-disabled="true"]) {
+      background: var(--ipc-color-teal-wash);
+    }
   }
   .discipline-controls button[aria-disabled="true"] {
     color: var(--ipc-color-ink-soft);

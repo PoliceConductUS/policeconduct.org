@@ -75,9 +75,9 @@
 
 /* ---- drill-down emphasis ----
    On geography pages the ideal next action is drilling into child entities
-   (counties -> places -> agencies). That cell leads the strip (via CSS
-   `order`) and carries a quiet teal wash + eyebrow so it reads as "start
-   here" without shouting. */
+   (counties -> places -> agencies). That cell leads the strip in the markup
+   and carries a quiet teal wash + eyebrow so it reads as "start here"
+   without shouting. */
 .stat-strip--drill-first {
   grid-template-columns: minmax(18rem, 1.4fr) repeat(4, minmax(0, 1fr));
 }
@@ -88,15 +88,15 @@
 
 .stat-cell--drill {
   background: var(--ipc-color-teal-wash);
-  border-left: none;
-  order: -1;
 }
 
-/* The DOM-first data cell is no longer the visual first once the drill
-   cell reorders itself — restore its divider. */
-.stat-strip--drill-first .stat-cell:first-child {
-  border-left: 1px solid var(--ipc-color-rule);
-  padding-left: clamp(1.1rem, 1rem + 1vw, 1.75rem);
+/* The leading cell normally sits flush with the container edge. In the
+   one-row desktop strip the drill cell has a wash behind it, so it keeps
+   its inset. */
+@media (min-width: 992px) {
+  .stat-strip .stat-cell--drill:first-child {
+    padding-left: clamp(1.1rem, 1rem + 1vw, 1.75rem);
+  }
 }
 
 .stat-drill-eyebrow {
@@ -170,8 +170,10 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.stat-cell--link:hover {
-  background: rgba(23, 75, 255, 0.05);
+@media (hover: hover) {
+  .stat-cell--link:hover {
+    background: rgba(23, 75, 255, 0.05);
+  }
 }
 
 .ledger-value {
@@ -218,9 +220,11 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.stat-cell--link:hover .stat-action,
-.stat-action a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .stat-cell--link:hover .stat-action,
+  .stat-action a:hover {
+    text-decoration: underline;
+  }
 }
 
 /* ---- jump cell ---- */
@@ -245,12 +249,6 @@ a.stat-cell {
   padding: 0.6rem 1.7rem 0.6rem 0.6rem;
 }
 
-.jump-select:focus {
-  border-color: var(--ipc-color-teal);
-  box-shadow: 0 0 0 1px var(--ipc-color-teal);
-  outline: none;
-}
-
 .jump-go {
   background: var(--ipc-color-ink);
   border: 1px solid var(--ipc-color-ink);
@@ -262,9 +260,11 @@ a.stat-cell {
   padding: 0 0.85rem;
 }
 
-.jump-go:hover {
-  background: var(--ipc-color-teal);
-  border-color: var(--ipc-color-teal);
+@media (hover: hover) {
+  .jump-go:hover {
+    background: var(--ipc-color-teal);
+    border-color: var(--ipc-color-teal);
+  }
 }
 
 .jump-status {
@@ -285,8 +285,10 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.jump-browse a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .jump-browse a:hover {
+    text-decoration: underline;
+  }
 }
 
 /* ---- section rhythm ---- */
@@ -294,6 +296,10 @@ a.stat-cell {
 .civic-section {
   border-bottom: 1px solid var(--ipc-color-rule);
   padding: 2.1rem 0;
+}
+
+.civic-section--facts {
+  padding-top: 0;
 }
 
 .civic-section--last {
@@ -378,8 +384,10 @@ a.stat-cell {
 
 /* Hover wash on interactive topic/stat tiles, suppressed while pending
    (an empty cell isn't clickable data, just a contribution prompt). */
-.ledger-interactive:hover:not(.is-pending) {
-  background: var(--ipc-color-teal-wash);
+@media (hover: hover) {
+  .ledger-interactive:hover:not(.is-pending) {
+    background: var(--ipc-color-teal-wash);
+  }
 }
 
 .ledger-interactive.is-pending {
@@ -430,8 +438,10 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.topic-foot a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .topic-foot a:hover {
+    text-decoration: underline;
+  }
 }
 
 /* ---- fact list ---- */
@@ -476,8 +486,9 @@ a.stat-cell {
 
 @media (max-width: 991.98px) {
   .stat-strip,
-  .stat-strip--three {
-    grid-template-columns: repeat(2, 1fr);
+  .stat-strip--three,
+  .stat-strip--drill-first.stat-strip--three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .stat-cell:nth-child(odd) {
@@ -493,10 +504,25 @@ a.stat-cell {
   }
 }
 
+/* The drill cell takes the first row on its own, so the data cells after it
+   start at the second child: even children are the leading column. */
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .stat-strip--drill-first .stat-cell:nth-child(even) {
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .stat-strip--drill-first .stat-cell:nth-child(odd):not(.stat-cell--drill) {
+    border-left: 1px solid var(--ipc-color-rule);
+    padding-left: clamp(1.1rem, 1rem + 1vw, 1.75rem);
+  }
+}
+
 @media (max-width: 575.98px) {
   .stat-strip,
-  .stat-strip--three {
-    grid-template-columns: 1fr;
+  .stat-strip--three,
+  .stat-strip--drill-first.stat-strip--three {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .stat-cell {
@@ -508,6 +534,13 @@ a.stat-cell {
   .stat-cell:first-child {
     border-top: none;
   }
+}
+
+/* The role bar sits on the cell's leading edge. Cells that carry one keep
+   the standard inset at every width so the bar never touches the text.
+   Keep this after the rules above that zero the leading inset. */
+.stat-strip .stat-cell[data-role] {
+  padding-left: clamp(1.1rem, 1rem + 1vw, 1.75rem);
 }
 
 /* ---- agency/entity additions ---- */
@@ -600,34 +633,37 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.entity-contact-links a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .entity-contact-links a:hover {
+    text-decoration: underline;
+  }
 }
 
-.entity-contact-person {
+.entity-contact-person,
+.entity-contact-email {
   color: var(--ipc-color-ink-muted);
   font-size: var(--ipc-type-small);
   margin: 0;
 }
 
-/* Contact name + email are linked in the data model — render as one visual
-   group (the email travels with the person, not the agency links row). */
-.entity-contact-person a {
+.entity-contact-email a {
   color: var(--ipc-color-teal-ink);
   font-weight: 700;
   text-decoration: none;
 }
 
-.entity-contact-person a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .entity-contact-email a:hover {
+    text-decoration: underline;
+  }
 }
 
-.entity-contact-person a:focus-visible {
+.entity-contact-email a:focus-visible {
   outline: 2px solid var(--ipc-color-teal-ink);
   outline-offset: 2px;
 }
 
-.entity-contact-person .sep {
+.entity-contact-email .sep {
   color: var(--ipc-color-rule-strong);
   margin: 0 0.3rem;
 }
@@ -658,9 +694,11 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.entity-action:hover {
-  background: var(--ipc-color-teal-wash);
-  border-color: var(--ipc-color-teal-ink);
+@media (hover: hover) {
+  .entity-action:hover {
+    background: var(--ipc-color-teal-wash);
+    border-color: var(--ipc-color-teal-ink);
+  }
 }
 
 .entity-action:focus-visible {
@@ -674,9 +712,11 @@ a.stat-cell {
   color: var(--ipc-color-paper);
 }
 
-.entity-action-primary:hover {
-  background: var(--ipc-color-ink);
-  border-color: var(--ipc-color-ink);
+@media (hover: hover) {
+  .entity-action-primary:hover {
+    background: var(--ipc-color-ink);
+    border-color: var(--ipc-color-ink);
+  }
 }
 
 .entity-menu {
@@ -730,6 +770,23 @@ a.stat-cell {
   display: none;
 }
 
+/* On a phone the toggle can sit anywhere in a wrapped row, so a menu hung
+   from it runs off the screen. Hang it from the row instead. */
+@media (max-width: 575.98px) {
+  .entity-actions {
+    position: relative;
+  }
+
+  .entity-menu {
+    position: static;
+  }
+
+  .entity-menu-list {
+    min-width: 0;
+    right: 0;
+  }
+}
+
 .entity-menu-item {
   color: var(--ipc-color-ink);
   display: block;
@@ -739,9 +796,11 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.entity-menu-item:hover {
-  background: var(--ipc-color-teal-wash);
-  color: var(--ipc-color-teal-ink);
+@media (hover: hover) {
+  .entity-menu-item:hover {
+    background: var(--ipc-color-teal-wash);
+    color: var(--ipc-color-teal-ink);
+  }
 }
 
 /* Keyboard focus needs a real, high-contrast indicator (WCAG 2.4.11), not
@@ -784,41 +843,29 @@ a.stat-cell {
 }
 
 .entity-side-list li {
-  align-items: center;
   border-top: 1px solid var(--ipc-color-rule);
-  display: flex;
-  gap: 0.75rem;
-  justify-content: space-between;
-  padding: 0.6rem 0;
 }
 
-.entity-side-list li span {
-  color: var(--ipc-color-ink-soft);
-  font-size: var(--ipc-type-small);
-}
-
+/* The whole row is the control. */
 .entity-side .entity-side-link {
   background: none;
-  border: none;
+  /* Invisible here; forced-colors mode draws it so each row reads as a control. */
+  border: 1px solid transparent;
   color: var(--ipc-color-teal);
   cursor: pointer;
+  display: block;
   font-size: var(--ipc-type-small);
   font-weight: 700;
-  padding: 0;
+  padding: 0.6rem 0;
+  text-align: start;
   text-decoration: none;
+  width: 100%;
 }
 
-.entity-side .entity-side-link:hover {
-  text-decoration: underline;
-}
-
-.agency-coming-soon {
-  color: var(--ipc-color-ink-soft);
-  display: block;
-  font-size: var(--ipc-type-caption);
-  font-weight: 700;
-  margin-top: 0.5rem;
-  min-height: 1.15rem;
+@media (hover: hover) {
+  .entity-side .entity-side-link:hover {
+    text-decoration: underline;
+  }
 }
 
 .recent-list {
@@ -840,8 +887,10 @@ a.stat-cell {
   font-weight: 700;
 }
 
-.recent-list a:hover .recent-list-title {
-  text-decoration: underline;
+@media (hover: hover) {
+  .recent-list a:hover .recent-list-title {
+    text-decoration: underline;
+  }
 }
 
 .recent-list-meta {
@@ -888,8 +937,10 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.alpha-group a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .alpha-group a:hover {
+    text-decoration: underline;
+  }
 }
 
 .alpha-group .alpha-item-meta {
@@ -949,8 +1000,10 @@ a.stat-cell {
   text-decoration: none;
 }
 
-.record-table a.row-link:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .record-table a.row-link:hover {
+    text-decoration: underline;
+  }
 }
 
 .record-table .muted {
@@ -978,6 +1031,12 @@ a.stat-cell {
 
 .detail-body {
   max-width: 66ch;
+}
+
+.detail-body--sections {
+  display: grid;
+  gap: 1.6rem;
+  align-content: start;
 }
 
 .detail-body h3 {

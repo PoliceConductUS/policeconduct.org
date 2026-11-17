@@ -1,27 +1,9 @@
 #!/usr/bin/env bash
 #
-# Deploy the forms API Lambda: code, and the environment variables that point it
-# at the submission notifications topic.
-#
-# WHY THIS SCRIPT EXISTS, when the INS-35 infrastructure is plain Terraform
-# -------------------------------------------------------------------------
-# The infrastructure is applied with `terraform apply` in
-# infrastructure/submission-notifications. This is not infrastructure. The
-# forms API Lambda is an APPLICATION, its code lives in this repo, and the repo
-# has no deploy automation for it at all — the CloudFront static site has
-# scripts/deploy-*.sh, and /api has nothing. Every forms API deploy to date has
-# been a hand-typed sequence of four AWS CLI calls.
-#
-# That is not a theoretical problem. On 2026-08-24 the INS-21 deploy ran those
-# calls by hand, updated preview at 16:34, and the session died at 16:46 before
-# prod. The remaining step existed only in a running process, so it evaporated;
-# prod stayed unfixed for 23 days and the issue read as done. This script makes
-# the sequence one step, which is the actual fix for that.
-#
-# It is also why the environment update has to be a script and not Terraform:
-# the bootstrap stack that declares this Lambda has no state (INS-39), so
-# applying it is not an option, and the Lambda's environment holds live secrets
-# that a careless replace would wipe. This merges.
+# Deploy forms API application code. Terraform owns all Lambda configuration.
+# The bootstrap state has been recovered; notification settings must be changed
+# through its guarded Terraform apply, never merged by this release script.
+# --topic-arn and --recipients assert expected live settings before code writes.
 #
 # USAGE
 #   export AWS_PROFILE=<profile with write access to 942370948729>
@@ -47,36 +29,11 @@ TARGETS=""
 log()  { printf '\033[1m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[33mWARN\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[31mFATAL\033[0m %s\n' "$*" >&2; exit 1; }
-# Echo a command for dry-run WITHOUT printing secret values.
-#
-# This exists because the naive version leaked. The merged Lambda environment
-# is passed as a literal argument and contains RESEND_API_KEY and
-# EMAIL_VERIFICATION_HMAC_SECRET, so `printf '%s' "$*"` wrote both secrets to
-# the terminal, to any CI log, and to any agent transcript capturing stdout.
-# A dry run is the mode people run casually and paste the output of, which
-# makes it the worst possible place to print a secret.
-#
-# Any argument that parses as a Lambda environment object is reduced to its key
-# names -- the only part a reader needs in order to check that the merge kept
-# everything it should.
-redact_arg() {
-  local arg="$1"
-  if [[ "$arg" == '{"Variables":'* ]]; then
-    printf '{"Variables": <%s keys: %s>}' \
-      "$(jq -r '.Variables | keys | length' <<<"$arg")" \
-      "$(jq -r '.Variables | keys | join(", ")' <<<"$arg")"
-  else
-    printf '%s' "$arg"
-  fi
-}
-
 run() {
   if [[ $APPLY -eq 1 ]]; then
     "$@"
   else
-    local out="" a
-    for a in "$@"; do out+=" $(redact_arg "$a")"; done
-    printf '  [dry-run]%s\n' "$out"
+    printf '  [dry-run]'; printf ' %q' "$@"; printf '\n'
   fi
 }
 
@@ -135,6 +92,24 @@ else
   FUNCTIONS="${PREVIEW_FN},${PROD_FN}"
 fi
 
+# Validate every target before publishing versions or updating either function.
+# Read only the notification fields; never retrieve or print live secret values.
+IFS=',' read -ra _fns <<< "$FUNCTIONS"
+for fn in "${_fns[@]}"; do
+  case "$fn" in
+    "$PREVIEW_FN") expected_label="preview" ;;
+    "$PROD_FN") expected_label="" ;;
+    *) die "unknown function '$fn'. Expected $PREVIEW_FN or $PROD_FN." ;;
+  esac
+  settings="$(aws lambda get-function-configuration --function-name "$fn" \
+    --query 'Environment.Variables.{topic:SUBMISSION_NOTIFICATIONS_TOPIC_ARN,recipients:SUBMISSION_NOTIFICATION_RECIPIENTS,label:NOTIFICATION_ENV_LABEL}' --output json)" ||
+    die "cannot read notification configuration for $fn"
+  jq -e --arg topic "$TOPIC_ARN" --arg recipients "$RECIPIENTS" --arg label "$expected_label" \
+    '.topic == $topic and .recipients == $recipients and (.label // "") == $label' \
+    <<< "$settings" >/dev/null ||
+    die "notification configuration differs for $fn; reconcile bootstrap Terraform before deploying code"
+done
+
 # -------------------------------------------------------------------- build --
 
 BUILD_DIR="$(mktemp -d)"
@@ -142,11 +117,9 @@ trap 'rm -rf "$BUILD_DIR"' EXIT
 ZIP="${BUILD_DIR}/forms-api.zip"
 
 log "building deployment package from $SRC_DIR"
-# npm ci fails here on a package-name mismatch between package.json and the
-# lockfile; npm install is the working recipe. No devDependencies exist, so
-# --omit=dev leaves a prod-only tree.
-( cd "$SRC_DIR" && TMPDIR=/tmp npm install --omit=dev --no-audit --no-fund >/dev/null )
-( cd "$SRC_DIR" && zip -r -X -q "$ZIP" index.mjs package.json node_modules )
+# Install exactly the reviewed lockfile; a mismatch must stop before code writes.
+( cd "$SRC_DIR" && TMPDIR=/tmp npm ci --omit=dev --no-audit --no-fund >/dev/null )
+( cd "$SRC_DIR" && zip -r -X -q "$ZIP" index.mjs package.json native-domexception node_modules )
 log "package: $(du -h "$ZIP" | cut -f1)"
 
 # CodeSha256 is NOT comparable across builds — zip metadata varies, so two zips
@@ -158,12 +131,7 @@ log "index.mjs sha256: $SRC_SHA"
 # ------------------------------------------------------------------- deploy --
 
 deploy_one() {
-  local fn="$1" label="$2"
-
-  aws lambda get-function-configuration --function-name "$fn" >/dev/null 2>&1 || {
-    warn "$fn not found; skipping"
-    return 0
-  }
+  local fn="$1"
 
   log "--- $fn"
 
@@ -179,33 +147,7 @@ deploy_one() {
     log "  [dry-run] would publish a rollback version of $fn"
   fi
 
-  # Environment: MERGE, never replace. This env holds RESEND_API_KEY, the
-  # token-signing EMAIL_VERIFICATION_HMAC_SECRET and the KMS key ids. A replace
-  # takes form submission down entirely.
-  local current merged
-  current="$(aws lambda get-function-configuration --function-name "$fn" \
-    --query 'Environment.Variables' --output json)"
-  merged="$(jq -c \
-    --arg topic "$TOPIC_ARN" \
-    --arg recips "$RECIPIENTS" \
-    --arg label "$label" \
-    'del(.NOTIFICATION_RECEIPTS_SINCE) + {
-       SUBMISSION_NOTIFICATIONS_TOPIC_ARN: $topic,
-       SUBMISSION_NOTIFICATION_RECIPIENTS: $recips
-     } + (if $label == "" then {} else {NOTIFICATION_ENV_LABEL: $label} end)' \
-    <<< "$current")"
-
-  # Preserve existing keys except the retired monitor cutoff.
-  local before after
-  before="$(jq -r 'del(.NOTIFICATION_RECEIPTS_SINCE) | keys | length' <<< "$current")"
-  after="$(jq -r 'keys | length' <<< "$merged")"
-  [[ "$after" -ge "$before" ]] ||
-    die "environment merge for $fn would DROP variables ($before -> $after). Refusing."
-
   run aws lambda update-function-code --function-name "$fn" --zip-file "fileb://${ZIP}" --output text --query CodeSha256
-  run aws lambda wait function-updated --function-name "$fn"
-  run aws lambda update-function-configuration --function-name "$fn" \
-    --environment "{\"Variables\":${merged}}" --output text --query LastModified
   run aws lambda wait function-updated --function-name "$fn"
 
   if [[ $APPLY -eq 1 ]]; then
@@ -216,8 +158,8 @@ deploy_one() {
 IFS=',' read -ra _fns <<< "$FUNCTIONS"
 for fn in "${_fns[@]}"; do
   case "$(echo "$fn" | xargs)" in
-    "$PREVIEW_FN") deploy_one "$PREVIEW_FN" "preview" ;;
-    "$PROD_FN")    deploy_one "$PROD_FN" "" ;;
+    "$PREVIEW_FN") deploy_one "$PREVIEW_FN" ;;
+    "$PROD_FN")    deploy_one "$PROD_FN" ;;
     *) die "unknown function '$fn'. Expected $PREVIEW_FN or $PROD_FN." ;;
   esac
 done

@@ -1,0 +1,673 @@
+{
+  "generatedBy": "intake/scripts/publish-data-annotation-contract.ts",
+  "annotation": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "$ref": "#/$defs/__schema0"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema1"
+              }
+            }
+          },
+          "source_namespace": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_record_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "const": "warning"
+          }
+        },
+        "required": [
+          "field",
+          "value",
+          "message",
+          "source_namespace",
+          "source_record_id",
+          "type"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "$ref": "#/$defs/__schema0"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema1"
+              }
+            }
+          },
+          "source_namespace": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_record_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "const": "error"
+          }
+        },
+        "required": [
+          "field",
+          "value",
+          "message",
+          "source_namespace",
+          "source_record_id",
+          "type"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "$ref": "#/$defs/__schema0"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema1"
+              }
+            }
+          },
+          "source_namespace": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_record_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "const": "correction"
+          },
+          "replacement_value": {
+            "$ref": "#/$defs/__schema2"
+          }
+        },
+        "required": [
+          "field",
+          "value",
+          "message",
+          "source_namespace",
+          "source_record_id",
+          "type",
+          "replacement_value"
+        ],
+        "additionalProperties": false
+      }
+    ],
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema0"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0"
+            }
+          }
+        ]
+      },
+      "__schema1": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema1"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema1"
+            }
+          }
+        ]
+      },
+      "__schema2": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema2"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "annotationRecord": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "subject_kind": {
+        "type": "string",
+        "minLength": 1
+      },
+      "subject_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "producer_namespace": {
+        "type": "string",
+        "minLength": 1
+      },
+      "producer_record_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "source_namespace": {
+        "type": "string",
+        "minLength": 1
+      },
+      "source_record_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "type": {
+        "type": "string",
+        "enum": ["warning", "error", "correction"]
+      },
+      "field": {
+        "type": "string",
+        "minLength": 1
+      },
+      "value": {
+        "$ref": "#/$defs/__schema0"
+      },
+      "replacement_value": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/__schema1"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "message": {
+        "type": "string",
+        "minLength": 1
+      },
+      "evidence": {
+        "anyOf": [
+          {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema2"
+              }
+            }
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "status": {
+        "type": "string",
+        "enum": ["active", "resolved"]
+      }
+    },
+    "required": [
+      "subject_kind",
+      "subject_id",
+      "producer_namespace",
+      "producer_record_id",
+      "source_namespace",
+      "source_record_id",
+      "type",
+      "field",
+      "value",
+      "message",
+      "status"
+    ],
+    "additionalProperties": false,
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema0"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0"
+            }
+          }
+        ]
+      },
+      "__schema1": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema1"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema1"
+            }
+          }
+        ]
+      },
+      "__schema2": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema2"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "sourceValues": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "propertyNames": {
+      "type": "string"
+    },
+    "additionalProperties": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "effective_value": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "source_namespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_record_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "value",
+        "effective_value",
+        "source_namespace",
+        "source_record_id"
+      ],
+      "additionalProperties": false
+    },
+    "$defs": {
+      "__schema0": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema0"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema0"
+            }
+          }
+        ]
+      },
+      "__schema1": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema1"
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/__schema1"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "records": [
+    {
+      "kind": "LocationPath",
+      "table": "public.location_path",
+      "primaryKey": "location_path_id"
+    },
+    {
+      "kind": "LocationPathGeometry",
+      "table": "public.location_path_geometry",
+      "primaryKey": "location_path_id"
+    },
+    {
+      "kind": "LocationPathAlias",
+      "table": "public.location_path_alias",
+      "primaryKey": "alias_path"
+    },
+    {
+      "kind": "Agency",
+      "table": "public.agency",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "Personnel",
+      "table": "public.personnel",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "AgencyPersonnel",
+      "table": "public.agency_personnel",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "LicensingAuthority",
+      "table": "public.licensing_authority",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "AuthorityLicense",
+      "table": "public.authority_license",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "License",
+      "table": "public.license",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "LicenseAction",
+      "table": "public.license_action",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "PersonnelEducation",
+      "table": "public.personnel_education",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "PersonnelPhoto",
+      "table": "public.personnel_photo",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "Discipline",
+      "table": "public.discipline",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "DisciplineAgencyPersonnel",
+      "table": "public.discipline_agency_personnel",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "CoverageLink",
+      "table": "public.coverage_links",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "CoverageLinkAgencyPersonnel",
+      "table": "public.coverage_link_agency_personnel",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "AgencyPhoneNumber",
+      "table": "public.agency_phone_numbers",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "FederalAgency",
+      "table": "public.federal_agency",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "CivilCase",
+      "table": "public.civil_cases",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "CivilCasePersonnel",
+      "table": "public.civil_case_personnel",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "CivilCaseLink",
+      "table": "public.civil_case_links",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "Review",
+      "table": "public.reviews",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "ReviewPersonnel",
+      "table": "public.review_personnel",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "ReviewLink",
+      "table": "public.review_links",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "ArrestProfile",
+      "table": "public.arrest_profile",
+      "primaryKey": "id"
+    },
+    {
+      "kind": "AgencyArrestProfile",
+      "table": "public.agency_arrest_profile",
+      "primaryKey": "id"
+    }
+  ]
+}

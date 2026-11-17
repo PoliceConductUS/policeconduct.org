@@ -1,5 +1,12 @@
 # Verification Report
 
+Repository merge policy: follow the complete `README.md` PR merge checklist.
+Record final SHA, locked runtime/dependencies, full validation command and exit
+code, stage outcomes, suite counts, diagnostic dispositions, skips, task-specific
+checks, and actual CI status. Warnings and missing coverage block readiness unless
+a specific human decision records reason, check, scope, and duration. Archive,
+merge, deployment, and public release are separate states.
+
 > 此檔案由 `openspec-verify-change` skill 在 apply 完成後產生，用以確認實作
 > 與 specs / design / tasks 的一致性。失敗的檢查須返回對應 artifact 修正後
 > 再重跑 verify。
@@ -60,7 +67,7 @@ Scenarios 中：
 |---|---|---|---|
 | — | — | — | — |
 
-**漂移警告**（非阻塞）：
+**漂移警告**（must fix or obtain explicit scoped human permission）：
 
 - <若有，列出；無則填「無」>
 
@@ -75,7 +82,7 @@ Scenarios 中：
 
 ---
 
-## 6. Front-Door Routing Leak Detector（warning,非阻塞）
+## 6. Front-Door Routing Leak Detector（warning: must fix or obtain explicit scoped human permission）
 
 設計產出不應落在 `docs/superpowers/specs/`(brainstorm artifact 的
 output redirection 會把它導到 `openspec/changes/<name>/brainstorm.md`)。
@@ -94,7 +101,7 @@ ls docs/superpowers/specs/*.md 2>/dev/null
 |---|---|---|
 | — | — | — |
 
-> 不會擋住 archive。新的 schema-installed cycle 產生的洩漏,應搬進
+> Warnings block readiness without explicit scoped human permission.新的 schema-installed cycle 產生的洩漏,應搬進
 > `openspec/changes/<name>/brainstorm.md` 或 `design.md` 後刪原檔。
 
 ---
@@ -113,7 +120,7 @@ ls docs/superpowers/specs/*.md 2>/dev/null
 > **判讀規則**:
 > - 「等價」= 自動化測試的 assertion 集合是手動 dogfood 預期 assertion 的超集
 > - 「Coverage assessment」= 列出實際被觸及的 layer (context / DB schema / wiring / HTTP path / etc.)
-> - 任何「真正 gap = ✅」的列,Overall Decision 仍可 PASS,但須在 retrospective 留 follow-up 條目
+> - Any actual coverage gap blocks PASS unless a linked human decision states reason, affected check, scope, and duration.
 
 > **何時可以整節空白**:plan.md 完全沒有 `[~]` 標記的 row 時,本節不需要填(空白即 PASS)。
 > 只要 plan.md 出現任何 `[~]`,本節必須逐項列出,否則 Overall Decision 應降為 FAIL。
@@ -123,7 +130,7 @@ ls docs/superpowers/specs/*.md 2>/dev/null
 ## Overall Decision
 
 - [ ] ✅ PASS — 可進入 finishing-a-development-branch 與 archive
-- [ ] ⚠️ PASS WITH WARNINGS — 可進入後續步驟但需注意：`<說明>`
+- [ ] ⚠️ EXCEPTION REQUESTED — blocked pending explicit human permission: `<reason, check, scope, duration, decision link>`
 - [ ] ❌ FAIL — 返回失敗的 artifact 修正後重跑 verify
 
 **下一步**：

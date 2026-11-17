@@ -1,5 +1,3 @@
-# Tear down a PR preview when the PR closes (Phase A of atomic-sha-deploys):
-# remove its S3 folder and prune its redirect namespace from the preview KVS.
 name: Cleanup preview
 
 on:
@@ -13,34 +11,34 @@ permissions:
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    # A fork PR never gets a preview -- previews are published by hand from a
+    # branch in this repo -- and a fork cannot read environment values anyway,
+    # so running there would only trip the guard below and re-redden the check.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Required: every value below is scoped to the preview environment, not the
+    # repository. Without this the job sees empty strings for all of them.
+    environment: preview
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: "24"
+          node-version: "26.13.1"
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          # A variable, not a secret: the OIDC role ARN is not sensitive and the
+          # preview environment stores it as a variable.
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          # Pinned, as in deploy-preview.yml. CloudFront and ACM are us-east-1
+          # only (infrastructure/bootstrap-policeconduct/providers.tf).
+          aws-region: us-east-1
 
-      - name: Remove preview folder
-        run: |
-          set -euo pipefail
-          aws s3 rm "s3://${{ vars.S3_BUCKET_PREVIEW }}/pr-${PR_NUMBER}/" --recursive
-          aws cloudfront create-invalidation \
-            --distribution-id "${{ vars.CLOUDFRONT_DIST_PREVIEW }}" \
-            --paths "/pr-${PR_NUMBER}/*"
-
-      - name: Prune preview redirects
-        if: ${{ vars.KVS_ARN_PREVIEW != '' }}
-        run: |
-          set -euo pipefail
-          # An empty map prunes every r:pr-<N>: key for this namespace and adds none.
-          echo '{"redirects":[]}' > empty-map.json
-          node scripts/load-redirects.mjs \
-            "${{ vars.KVS_ARN_PREVIEW }}" "r:pr-${PR_NUMBER}:" empty-map.json
+      - name: Remove the closed preview and its release routes
+        env:
+          S3_BUCKET_PREVIEW: ${{ vars.S3_BUCKET }}
+          KVS_ARN_PREVIEW: ${{ vars.KVS_ARN_PREVIEW }}
+        run: node scripts/cleanup-preview.mjs

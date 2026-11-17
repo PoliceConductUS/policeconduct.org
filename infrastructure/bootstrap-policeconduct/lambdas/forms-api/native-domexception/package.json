@@ -1,0 +1,9 @@
+{
+  "name": "node-domexception",
+  "version": "3.0.0",
+  "private": true,
+  "main": "index.cjs",
+  "engines": {
+    "node": ">=22"
+  }
+}

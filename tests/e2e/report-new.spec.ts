@@ -1,6 +1,7 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "./page-fixture";
 
 type ReportRequestBody = {
+  releaseId: string;
   data: Record<string, unknown>;
 };
 
@@ -59,7 +60,13 @@ async function fillRequiredExperienceFields(page: Page) {
     .selectOption("Help me understand whether this was normal");
   await page.locator("#reporterName").fill("E2E Reporter");
   await page.locator("#reporterEmail").fill("e2e@example.org");
-  await page.locator("#consent").check();
+  const consent = page.locator("#consent");
+  // Finish focus-triggered smooth scrolling before Playwright aims the click.
+  await consent.evaluate((element) =>
+    element.scrollIntoView({ behavior: "instant", block: "center" }),
+  );
+  await consent.check();
+  await expect(consent).toBeChecked();
 }
 
 test.describe("report new", () => {
@@ -210,6 +217,11 @@ test.describe("report new", () => {
     await submitResponse;
 
     expect(submitRequestBody).not.toBeNull();
+    const releaseId = await page
+      .locator("html")
+      .getAttribute("data-release-id");
+    expect(releaseId).toBeTruthy();
+    expect(submitRequestBody!.releaseId).toBe(releaseId);
     expect(submitRequestBody!.data).toMatchObject({
       submitterRelationship: "Directly involved",
       interactionType: "Mixed",
@@ -381,7 +393,9 @@ test.describe("report new", () => {
     const draftSave = page.waitForResponse((response) => {
       return (
         response.url().includes("/api/forms/draft") &&
-        response.request().method() === "POST"
+        response.request().method() === "POST" &&
+        (response.request().postDataJSON() as ReportRequestBody).data
+          .reportPurpose === "Recognize helpful conduct"
       );
     });
     await page

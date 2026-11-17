@@ -91,7 +91,7 @@ test("reports no achieved coverage percentage anywhere", async () => {
   }
 });
 
-test("holding more than the denominator is a universe mismatch, not 100%+ coverage", async () => {
+test("holding more than the denominator reports an unexplained excess without coverage", async () => {
   const report = await build({ stateRows: [{ code: "TX", held: 2883 }] });
   const texas = stateIn(report, "TX");
 
@@ -103,9 +103,10 @@ test("holding more than the denominator is a universe mismatch, not 100%+ covera
     texas.generalPurpose.gap.kind,
     GAP_KIND.HELD_EXCEEDS_DENOMINATOR,
   );
-  assert.match(texas.allAgency.gap.detail, /universe mismatch/);
+  assert.match(texas.allAgency.gap.detail, /exceeds the dated estimate/);
+  assert.match(texas.allAgency.gap.detail, /remain unresolved/);
   // 2,883 / 1,935 is 149%. No computed ratio may appear — the only percentage
-  // allowed in this string is the literal "above 100%" that denies one.
+  // is reported for an unresolved excess.
   assert.doesNotMatch(texas.allAgency.gap.detail, /\b(?!100\b)\d+(\.\d+)?%/);
   assert.doesNotMatch(texas.allAgency.gap.detail, /149/);
 });
@@ -198,7 +199,7 @@ test("stores that disagree about the held count produce a reported finding", asy
     { stateRows: [{ code: "TX", held: 2883 }] },
     {
       corpusCrossChecks: [
-        { store: "seed.sql dump", count: 3003 },
+        { store: "comparison database", count: 3003 },
         { store: "agreeing store", count: 2883 },
       ],
     },
@@ -208,9 +209,9 @@ test("stores that disagree about the held count produce a reported finding", asy
     (g) => g.kind === GAP_KIND.CORPUS_COUNT_DISPUTED,
   );
   assert.ok(gap, "expected a disputed-count gap");
-  assert.match(gap.detail, /seed\.sql dump reports 3,003/);
+  assert.match(gap.detail, /comparison database reports 3,003/);
   assert.doesNotMatch(gap.detail, /agreeing store/);
-  assert.match(gap.detail, /no single authoritative held count/);
+  assert.match(gap.detail, /These supplied counts differ/);
 });
 
 test("agreeing stores raise no dispute", async () => {
@@ -353,12 +354,12 @@ test("missing optional columns become recorded limitations, not crashes", async 
   });
 
   assert.equal(measurement.federalHeld, null);
-  assert.equal(measurement.publishedAsPages, null);
+  assert.equal(measurement.projectedAgencyPages, null);
   assert.equal(measurement.limitations.length, 2);
   assert.match(measurement.limitations[0].consequence, /inflate the numerator/);
   assert.match(
     measurement.limitations[1].consequence,
-    /not the same as published/,
+    /not the same as projected/,
   );
 });
 
@@ -394,7 +395,10 @@ test("the rendered report names the store, the fingerprint and both denominators
   assert.match(markdown, /14,924 general-purpose agencies/);
   assert.match(markdown, /17,541 law enforcement agencies of all types/);
   // Held is not published.
-  assert.match(markdown, /2,800.*held is not the same as published/);
+  assert.match(
+    markdown,
+    /2,800.*projection rows do not establish live publication/,
+  );
   assert.match(
     markdown,
     /Federal agency records included in that total: \*\*11\*\*/,
@@ -402,7 +406,7 @@ test("the rendered report names the store, the fingerprint and both denominators
   // Gaps are rendered with their remedy, so the report directs work.
   assert.match(markdown, /Unblocked by:/);
   assert.match(markdown, /Nothing held — \d+ jurisdictions/);
-  assert.match(markdown, /universe mismatch/);
+  assert.match(markdown, /held count exceeds estimate/);
   // Conflicts are carried, not smoothed over.
   assert.match(markdown, /local_police_count_lear_vs_csllea/);
   assert.match(

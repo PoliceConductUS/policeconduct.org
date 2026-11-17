@@ -7,6 +7,7 @@ import {
   buildAuditRouteSelection,
   collectHtmlRoutes,
 } from "./audit-route-samples.mjs";
+import { assistiveFindings } from "./audit-a11y-checks.mjs";
 
 const DIST_DIR = path.resolve("dist");
 const PORT = Number(process.env.A11Y_PORT || "4173");
@@ -219,6 +220,12 @@ const main = async () => {
             violations,
           });
         }
+
+        // Screen-reader, forced-colors and zoom checks that axe does not make.
+        const findings = await assistiveFindings(page);
+        if (findings.length > 0) {
+          failures.push({ url, type: "assistive", findings });
+        }
       } catch (error) {
         failures.push({
           url,
@@ -268,6 +275,13 @@ const main = async () => {
                 console.error(`      details: ${failureSummary}`);
               }
             }
+          }
+        } else if (failure.type === "assistive") {
+          console.error(
+            `- ${getPathname(failure.url)}: ${failure.findings.length} finding(s)`,
+          );
+          for (const finding of failure.findings) {
+            console.error(`  - ${finding}`);
           }
         } else {
           console.error(`- ${getPathname(failure.url)}: ${failure.message}`);

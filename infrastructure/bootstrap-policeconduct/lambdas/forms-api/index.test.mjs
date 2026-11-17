@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { RecaptchaEnterpriseServiceClient } from "@google-cloud/recaptcha-enterprise";
 import { S3Client } from "@aws-sdk/client-s3";
 import { SNSClient } from "@aws-sdk/client-sns";
 
@@ -76,7 +77,15 @@ test("sendVerificationEmail sends the expected Resend request", async () => {
     const requestBody = JSON.parse(capturedInit.body);
     assert.equal(
       requestBody.subject,
-      "Verify your PoliceConduct.org submission",
+      "Confirm your email address for PoliceConduct.org",
+    );
+    assert.match(
+      requestBody.text,
+      /Please confirm your email address by opening this link:/,
+    );
+    assert.doesNotMatch(
+      requestBody.text.replace(/https?:\/\/\S+/g, ""),
+      /verif(?:y|ied|ication)/i,
     );
     assert.equal(requestBody.from, "noreply@mail.policeconduct.org");
     assert.deepEqual(requestBody.to, ["person@example.org"]);
@@ -298,6 +307,173 @@ test("personnel suggestions and edits reach normal reCAPTCHA validation", async 
     assert.equal(response.statusCode, 400);
     assert.match(JSON.parse(response.body).error, /recaptcha/i);
   }
+});
+
+test("submissions retain the known release of the open form in its own environment", async (t) => {
+  const oldProduction = "prod-temp";
+  const newProduction = "next-release";
+  const previewOnlyFolder = "preview-folder";
+  const releases = new Map([
+    ["prod-roster", [oldProduction, newProduction]],
+    ["preview-roster", [previewOnlyFolder]],
+  ]);
+  const writes = [];
+  t.mock.method(S3Client.prototype, "send", async (command) => {
+    const { Bucket, Key, Body } = command.input;
+    if (command.constructor.name === "PutObjectCommand") {
+      writes.push(JSON.parse(Body));
+      return {};
+    }
+    assert.equal(command.constructor.name, "HeadObjectCommand");
+    if (
+      !releases
+        .get(Bucket)
+        ?.some((id) => Key === `builds/${id}/data/dynamic.json`)
+    ) {
+      throw Object.assign(new Error("Not found"), {
+        $metadata: { httpStatusCode: 404 },
+      });
+    }
+    return {};
+  });
+  t.mock.method(
+    RecaptchaEnterpriseServiceClient.prototype,
+    "createAssessment",
+    async () => [
+      {
+        tokenProperties: { valid: true, action: "contactSubmit" },
+        riskAnalysis: { score: 0.9 },
+      },
+    ],
+  );
+  const previous = {};
+  const config = {
+    RECAPTCHA_SITE_KEY: "fixture",
+    RECAPTCHA_PROJECT_ID: "test",
+    RECAPTCHA_SERVICE_ACCOUNT_EMAIL: "test@example.org",
+    RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME:
+      "projects/1/locations/global/workloadIdentityPools/test/providers/test",
+    RECAPTCHA_WIF_AUDIENCE:
+      "//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/test/providers/test",
+    RELEASE_DATA_BUCKET: "prod-roster",
+  };
+  for (const [key, value] of Object.entries(config)) {
+    previous[key] = process.env[key];
+    process.env[key] = value;
+  }
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  for (const [bucket, origin, releaseId, expected] of [
+    ["prod-roster", "https://www.policeconduct.org", oldProduction, 200],
+    [
+      "preview-roster",
+      "https://pr-42.preview.policeconduct.org",
+      previewOnlyFolder,
+      200,
+    ],
+    ["prod-roster", "https://www.policeconduct.org", previewOnlyFolder, 400],
+    [
+      "preview-roster",
+      "https://pr-42.preview.policeconduct.org",
+      oldProduction,
+      400,
+    ],
+    ["prod-roster", "https://www.policeconduct.org", undefined, 400],
+    ["prod-roster", "https://www.policeconduct.org", "../bad", 400],
+    ["prod-roster", "https://www.policeconduct.org", "missing-folder", 400],
+  ]) {
+    process.env.RELEASE_DATA_BUCKET = bucket;
+    const response = await handler(
+      apiEvent({
+        method: "POST",
+        path: "/api/forms/submit",
+        origin,
+        body: {
+          formName: "contact",
+          releaseId,
+          recaptchaToken: "test-token",
+          data: {},
+        },
+      }),
+    );
+    assert.equal(response.statusCode, expected, response.body);
+  }
+  assert.deepEqual(
+    writes.map(({ payload }) => payload.releaseId),
+    [oldProduction, previewOnlyFolder],
+  );
+});
+
+test("the release lookup does not wait for reCAPTCHA, and its failure does not outrank a failed reCAPTCHA", async (t) => {
+  const order = [];
+  let valid = true;
+  t.mock.method(S3Client.prototype, "send", async (command) => {
+    if (command.constructor.name === "HeadObjectCommand") {
+      order.push("release lookup");
+      if (!valid) throw new Error("S3 unavailable");
+    }
+    return {};
+  });
+  t.mock.method(
+    RecaptchaEnterpriseServiceClient.prototype,
+    "createAssessment",
+    async () => {
+      order.push("reCAPTCHA");
+      return [
+        {
+          tokenProperties: { valid, action: "contactSubmit" },
+          riskAnalysis: { score: 0.9 },
+        },
+      ];
+    },
+  );
+  const previous = {};
+  const config = {
+    RECAPTCHA_SITE_KEY: "fixture",
+    RECAPTCHA_PROJECT_ID: "test",
+    RECAPTCHA_SERVICE_ACCOUNT_EMAIL: "test@example.org",
+    RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME:
+      "projects/1/locations/global/workloadIdentityPools/test/providers/test",
+    RECAPTCHA_WIF_AUDIENCE:
+      "//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/test/providers/test",
+    RELEASE_DATA_BUCKET: "prod-roster",
+  };
+  for (const [key, value] of Object.entries(config)) {
+    previous[key] = process.env[key];
+    process.env[key] = value;
+  }
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  const submit = () =>
+    handler(
+      apiEvent({
+        method: "POST",
+        path: "/api/forms/submit",
+        origin: "https://www.policeconduct.org",
+        body: {
+          formName: "contact",
+          releaseId: "prod-temp",
+          recaptchaToken: "test-token",
+          data: {},
+        },
+      }),
+    );
+
+  assert.equal((await submit()).statusCode, 200);
+  assert.deepEqual(order, ["release lookup", "reCAPTCHA"]);
+
+  valid = false;
+  const rejected = await submit();
+  assert.equal(rejected.statusCode, 400, rejected.body);
+  assert.match(rejected.body, /reCAPTCHA/);
 });
 
 // --- INS-35: submission notification ----------------------------------------
@@ -784,6 +960,8 @@ test("an expired link is no longer a dead end: it offers a resend", async () => 
     const body = JSON.parse(response.body);
     assert.equal(body.reason, "expired");
     assert.equal(body.canResend, true);
+    assert.match(body.message, /confirmation link/);
+    assert.doesNotMatch(body.message, /verif(?:y|ied|ication)/i);
     assert.match(body.message, /do not need to fill the form in again/);
     assert.doesNotMatch(body.message, /will not be accepted for review/);
   });
@@ -802,6 +980,11 @@ test("a resend rotates the secret, extends the window, and mails the stored addr
       verifyEvent("/forms/resend-verification", `verif_abc.${secret}`),
     );
     assert.equal(response.statusCode, 200);
+    assert.match(JSON.parse(response.body).message, /confirmation link/);
+    assert.doesNotMatch(
+      JSON.parse(response.body).message,
+      /verif(?:y|ied|ication)/i,
+    );
 
     const stored = store.get("submissions/verify/verif_abc.json");
     assert.equal(stored.resendCount, 1);
@@ -823,7 +1006,10 @@ test("a resend rotates the secret, extends the window, and mails the stored addr
     // The address is not an input. It can only ever be the one on the record.
     assert.equal(sent.length, 1);
     assert.deepEqual(sent[0].to, ["person@example.org"]);
-    assert.match(sent[0].subject, /new PoliceConduct\.org verification link/);
+    assert.match(
+      sent[0].subject,
+      /new PoliceConduct\.org email confirmation link/,
+    );
     assert.match(sent[0].text, /still held; you do not need to/);
     assert.deepEqual(
       sent[0].tags.find((tag) => tag.name === "replacement"),
@@ -862,6 +1048,10 @@ test("the replacement link actually verifies, and the old one does not", async (
     const fresh = await handler(verifyEvent("/forms/verify-link", newToken));
     assert.equal(fresh.statusCode, 200, fresh.body);
     assert.equal(JSON.parse(fresh.body).submissionId, "sub_abc");
+    assert.equal(
+      JSON.parse(fresh.body).message,
+      "Your email address has been confirmed. Please contact hello@policeconduct.org if you need help.",
+    );
   });
 });
 
@@ -1042,6 +1232,7 @@ test("verified events still send staff mail and persist the delivery receipt", a
   process.env.RESEND_API_KEY = "re_test";
   process.env.SUBMISSION_NOTIFICATION_RECIPIENTS = "staff@example.org";
   global.fetch = async (url, init) => {
+    assert.equal(url, "https://api.resend.com/emails");
     emails.push(JSON.parse(init.body));
     return new Response(JSON.stringify({ id: "test_email" }), { status: 200 });
   };

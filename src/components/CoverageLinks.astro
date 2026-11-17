@@ -2,6 +2,7 @@
 import type { CoverageLink } from "#src/lib/data/coverage.js";
 type Props = { links: CoverageLink[] };
 const { links } = Astro.props;
+const OfficerTag = process.env.NO_PERSONNEL?.trim() ? "span" : "a";
 const publicationDate = (value: string) =>
   new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -11,40 +12,64 @@ const publicationDate = (value: string) =>
   }).format(new Date(value));
 ---
 
-{links.length ? (
-  <section class="civic-section">
-    <h2>News coverage</h2>
-    <ul>
-      {links.map((link) => (
-        <li>
-          <a href={link.url} target="_blank" rel="noopener noreferrer">
-            {link.title}
-          </a>
-          {link.source_name ? <p>{link.source_name}</p> : null}
-          {link.published_at ? (
-            <p>
-              <time datetime={new Date(link.published_at).toISOString()}>
-                {publicationDate(link.published_at)}
-              </time>
-            </p>
-          ) : null}
-          {link.notes ? <p>{link.notes}</p> : null}
-          {link.officers.length ? (
-            <p>
-              {link.officers.map((person, index) => (
-                <>
-                  {index ? ", " : ""}
-                  <a href={`/personnel/${person.slug}/`}>
-                    {[person.first_name, person.last_name]
-                      .filter(Boolean)
-                      .join(" ")}
-                  </a>
-                </>
-              ))}
-            </p>
-          ) : null}
-        </li>
-      ))}
-    </ul>
-  </section>
-) : null}
+<section class="civic-section" data-page-part="news" hidden={!links.length}>
+  <h2>News coverage</h2>
+  <ul data-news-list>
+    {links.map((link) => (
+      <li data-source-namespace={link.namespace} data-source-id={link.sourceId}>
+        <a
+          data-news-title
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {link.title}
+        </a>
+        {link.source_name && <p>{link.source_name}</p>}
+        {link.published_at && (
+          <p>
+            <time datetime={new Date(link.published_at).toISOString()}>
+              {publicationDate(link.published_at)}
+            </time>
+          </p>
+        )}
+        {link.summary && <p>{link.summary}</p>}
+        {link.notes && <p>{link.notes}</p>}
+        {link.officers.length > 0 && (
+          <p>
+            {link.officers.map((person, index) => (
+              <>
+                {index ? ", " : ""}
+                <OfficerTag
+                  data-source-namespace={person.namespace}
+                  data-source-id={person.sourceId}
+                  href={
+                    OfficerTag === "a"
+                      ? `/personnel/${person.slug}/`
+                      : undefined
+                  }
+                >
+                  {[person.first_name, person.last_name]
+                    .filter(Boolean)
+                    .join(" ")}
+                </OfficerTag>
+              </>
+            ))}
+          </p>
+        )}
+      </li>
+    ))}
+  </ul>
+  <template data-template="coverage-item">
+    <li>
+      <a data-news-title target="_blank" rel="noopener noreferrer"></a>
+      <p data-news-publisher></p>
+      <p data-news-date>
+        <time></time>
+      </p>
+      <p data-news-summary></p>
+      <p data-news-notes></p>
+      <p data-news-officers></p>
+    </li>
+  </template>
+</section>

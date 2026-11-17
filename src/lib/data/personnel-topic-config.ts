@@ -1,11 +1,6 @@
 import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
 
 export const personnelTopics = {
-  agencies: {
-    description: "Agency assignments linked to this profile.",
-    label: metricLabels.agencies,
-    metric: metricVisuals.agencies,
-  },
   arrests: {
     description: "Arrest records linked to this profile.",
     label: metricLabels.arrests,

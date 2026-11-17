@@ -1,0 +1,2657 @@
+[
+  {
+    "Key": ".DS_Store",
+    "VersionId": "d5eSrLKzLixWG.cdLc9uryoZ35nFC_eC",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "404.html",
+    "VersionId": "JDklzD1rBMbGkzEY1F2c7TOjPwIf_6GC",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/ProfileTabs.DUMWvUs7.css",
+    "VersionId": "vb_FAzGEjp7TWrRqHOFtdtMfYag4I3sL",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/SiteLayout.DZdgCdRw.css",
+    "VersionId": "aFTfXIh0QH6IGTt1fN2B7v1qCYi_vcZ4",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/SiteLayout.astro_astro_type_script_index_0_lang.B5j6oBaQ.js",
+    "VersionId": "uOzuLidTQcXcW_EZ7L3dQ8BGU5HWaG68",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/aos.CH422-KW.js",
+    "VersionId": "1rZe_w1QFeyeUhTKNS_I01IjY3bhT.cU",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/aos.DvB2Xm2x.css",
+    "VersionId": "zzPHJg.XDMLNJSdJkBhKxHzDFT48gemc",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/debug-build.DgTNMwiB.js",
+    "VersionId": "9xN8CnQJ9osCjS0BdjA_563lQozXXXBg",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/forms.AFkfA6Cq.js",
+    "VersionId": "pGtpyDeNTeCKs7jq9qm7asNPVBbitNsD",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/index.astro_astro_type_script_index_0_lang.B-TKZI1H.js",
+    "VersionId": "H75WVl8J0wc5AcPp_H82cs1yWXYbU0Yp",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/index.astro_astro_type_script_index_0_lang.B9Er5sFW.js",
+    "VersionId": "2ag0vkagwsdM4XqY2SrYVIq9gv_wUSth",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/index.astro_astro_type_script_index_0_lang.BRrzqG-9.js",
+    "VersionId": "wwGm23VcBuhnqOusFbfj64aR28e7Dhq9",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/index.astro_astro_type_script_index_0_lang.Blsj3rXV.js",
+    "VersionId": "oOxfOKIoVbLLvvNBmyZ1OqVvbYDNHN5m",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/index.astro_astro_type_script_index_0_lang.C4-r6PUz.js",
+    "VersionId": "8vbzEbCZ6.0Am464_av.YBzbpyurX3ek",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/index.astro_astro_type_script_index_0_lang.Cb7PW2LJ.js",
+    "VersionId": "ssNUMQ5OYUPlOgu_hsx_SmDm0gZU_o7w",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/index.astro_astro_type_script_index_0_lang.CiwWCpc5.js",
+    "VersionId": "a0EIwOHhGTZVIfEzAuG_w4cG6UfX2zy7",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/index.astro_astro_type_script_index_0_lang.CnVNKNKe.js",
+    "VersionId": "D.2Ul1ciqFjYkU04MMHu6u_ZWDQHBIxF",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/index.astro_astro_type_script_index_0_lang.Cu9EHu1f.js",
+    "VersionId": "zmpNfb6fDwZV36wC82Gzlmp.EKplqICk",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/index.astro_astro_type_script_index_0_lang.IdoJGopV.js",
+    "VersionId": "RQ2SCtNx4248YCRaF5gMRA6PRhFxDbnj",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/index.astro_astro_type_script_index_0_lang.SBTZHAfd.js",
+    "VersionId": "KdozfP4uzodz8aTh5R9cwGwdtJgKeUGZ",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/index.astro_astro_type_script_index_0_lang.Vx7TRHI1.js",
+    "VersionId": "Pbreqbdv2blAF_KWatP.eUJ7iFnlD8qQ",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/index.astro_astro_type_script_index_0_lang.ehwvnfdm.js",
+    "VersionId": "UZWLQjl94bcx_Lw9PZ7c6RSBv9hiXQuR",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "_astro/page.B3ppdLKG.js",
+    "VersionId": "VyKW8hbdQcGmCdmGOXl.GbiMAJfrTdC3",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "about/board/index.html",
+    "VersionId": "XNNAvKfsXE_GUBSfT8iQ_K.P6jW010gm",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "about/contact/index.html",
+    "VersionId": "x9LFQPbOlWh8AqZVTizWte2MOCNFPsnR",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "about/financial-reports/index.html",
+    "VersionId": "rkTZ00G.sPBhhq4PpnrTIbH.p0aY.Vdy",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "about/index.html",
+    "VersionId": "6FFoYejJbKSHiAwjxvgtOB.e1jsYE9Eo",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "ak/index.html",
+    "VersionId": "6xJmyersfHz6Q..QdFMrQQvlI9hsvhQr",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "al/index.html",
+    "VersionId": "btSrLdiRpSLitv47q6pEqsSJgEKPCVlP",
+    "LastModified": "2026-04-17T03:03:13+00:00"
+  },
+  {
+    "Key": "ar/index.html",
+    "VersionId": "U8UDUqF0H17m7oB5faAXz8CtAqsms.Bg",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "az/index.html",
+    "VersionId": "czt_Ip.CLuzBH9a.cLy1VY.3.YMJN4gb",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "ca/index.html",
+    "VersionId": "1C5gD_MIicbWF31vzMHT3owamtO5.4mI",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ak/index.html",
+    "VersionId": "716D.pwZllwEyMy6Qr5xuriBp1TtsMNP",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/al/index.html",
+    "VersionId": "4OUUKccxBwXTi9_oAazqKlmsNMmT4QDQ",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/al/washington-v-city-of-reform-7-25-cv-00138-n-d-ala-2025/index.html",
+    "VersionId": "VONEEbLwF5yRYhJ0KZAA__CjSz4vClhh",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ar/index.html",
+    "VersionId": "lUSxzFSD_av9I4do7k3XZXfEvj7BhY3o",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/az/index.html",
+    "VersionId": "6zbA6U1.hItBGbSPzM0a9SkRN7pHIbyo",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ca/allen-v-city-of-antioch-3-23-cv-01895-n-d-cal-2023/index.html",
+    "VersionId": "zC0jouphAkB9FU0AMqdHTOKKrhMy5xwz",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ca/clark-v-city-of-sacramento-2-19-cv-00171-e-d-cal-2019/index.html",
+    "VersionId": "a06MOFiLRevKh2oxiD77KrSpfV1SCOgl",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ca/grant-v-bart-3-09-cv-04835-n-d-cal-2009/index.html",
+    "VersionId": "UY8DAoc788vK6QRK2SC0fawWQ0xzJBuP",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ca/im-v-state-of-california-2-20-cv-11174-c-d-cal-2020/index.html",
+    "VersionId": "jcAGjX0RBRYhyTfpdUARFMy.ZOodKWdy",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ca/index.html",
+    "VersionId": "yFhwnGU5Mwo74VuG61_jmILLbxrWC7SR",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ca/swaine-v-city-of-torrance-2-22-cv-00404-c-d-cal-2022/index.html",
+    "VersionId": "QIdKSCUFv3qFSBAzSRelH6BbMqjJgpsH",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/co/estate-of-mcclain-v-city-of-aurora-1-20-cv-02389-d-colo-2020/index.html",
+    "VersionId": "avZiD4RPHeSyrQA9b9wtL95YaYQoAyQY",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/co/index.html",
+    "VersionId": "nJdxEEbG7G72hh8fvHgqg1iwZ5xO0xp.",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ct/cox-v-city-of-new-haven-3-22-cv-01209-d-conn-2022/index.html",
+    "VersionId": "HH8o4Qevr8JI1_6EUGjLIPIMpa9JRb_B",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ct/index.html",
+    "VersionId": "G2oRKvFMoAWMRv.UYT8bbBzLwQ8BNbbD",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/dc/index.html",
+    "VersionId": "KKTYb01Q7uQal8Kus3.xjD0ATAXUW5L6",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/de/index.html",
+    "VersionId": "aWMV3GoTDQf_JBXMDym54ewqSfsimbm2",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/federal/index.html",
+    "VersionId": "KuBYe6DtQaPKSoP_qmFrT4bJKxnaLYwl",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/fl/8-25-cv-02790-a7b42c/index.html",
+    "VersionId": "Uzyva8DJPQgrSpxjVzwj6OL1_LHcdYAV",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/fl/index.html",
+    "VersionId": "HtXlmqloDsFy_kKWXw3YTPaY.Rbm5_hR",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ga/index.html",
+    "VersionId": "l8mSBKWBPcZRBVScdpKE7JzC.GXIHL1l",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ga/miller-v-city-of-atlanta-1-21-cv-03752-n-d-ga-2021/index.html",
+    "VersionId": "2sQMwoVPdl_EB_X99E1CoX9Utyg.g0s6",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/hi/index.html",
+    "VersionId": "AjtEAyDuJ90mMyXxb__1WPqr3BXBySTg",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ia/galanakis-v-city-of-newton-iowa-4-23-cv-00044-s-d-iowa-2023/index.html",
+    "VersionId": "10p2B04YJEN28_NmzHPZvK5qI7uhs8BE",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ia/index.html",
+    "VersionId": "__oBuCF6X5KT.7hxzc0USwxX3O.ZgGPU",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/id/index.html",
+    "VersionId": "J0_ZGJ0D2ZMh5qFpbgk8qvWHUFygIZQ9",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/il/index.html",
+    "VersionId": "bZrNorStqekM24iUwFZ_j9RSrQXpWd7Y",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/il/massey-v-sangamon-county-il-2024/index.html",
+    "VersionId": "2zAGIfsOrGD5lJbNXijYT0ntgGiP_fj6",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/il/mcdonald-v-city-of-chicago-il-2015/index.html",
+    "VersionId": "tob5860QvA3i_CWS_SDtrB8ps.bIXZ.0",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/in/index.html",
+    "VersionId": "CPh1gi9mpoWEa1jlsTsii0uUZ908lhJt",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/index.html",
+    "VersionId": "FjM9eD7DSq4gJ_4V6RpfjMb3xqb5xML3",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ks/index.html",
+    "VersionId": "7DX9lIG.LiFyh95Gsr2aGo63ut7t8vWQ",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ky/index.html",
+    "VersionId": "mjrfzVL96A1OmSsuP_GPDFhBk6DD64GB",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ky/taylor-v-city-of-louisville-20-ci-003134-jefferson-cir-ky-2020/index.html",
+    "VersionId": "sE0ApQO.vNRXO.pUZLrvZDUJtCj7BChO",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/la/dilley-v-state-of-louisiana-3-19-cv-00391-m-d-la-2019/index.html",
+    "VersionId": "O_GXEAuNgwO1m._nfucdDF0qI3W6DIaK",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/la/index.html",
+    "VersionId": "GP1QxLOC9p2qZ.0OlWONeJaRNv3ckiD1",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ma/index.html",
+    "VersionId": "qnKDf6gkRjAxRvJJno7zGVp0Mu91EeZW",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/md/gray-v-city-of-baltimore-pre-litigation-baltimore-md-2015/index.html",
+    "VersionId": "GnGz7eQ5ZVi3Bk10zlrPCP4Tv0goSsuD",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/md/index.html",
+    "VersionId": "asycJA8uUMmfcRHW5JqJnuK5NaHOvoqa",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/me/index.html",
+    "VersionId": "GuYsL2KFZDd0ENlTpY5XfHiPrxSqt07v",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/mi/index.html",
+    "VersionId": "TNL1z163lsU0TdmGiTn6XYSZtRLajTsx",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/mi/lyoya-v-city-of-grand-rapids-1-22-cv-01160-w-d-mich-2022/index.html",
+    "VersionId": "cSJRCY2KLzGaViu1_.JroXyN9zoq63dP",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/mn/castile-v-city-of-st-anthony-pre-litigation-mn-2017/index.html",
+    "VersionId": "WRivwvTtaFuj4fkQmFJigKIQ4vQoQBSm",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/mn/floyd-v-city-of-minneapolis-0-20-cv-01577-d-minn-2020/index.html",
+    "VersionId": "6D7g7smDQVUG1POIRVT_kLNdqaHWLZ92",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/mn/index.html",
+    "VersionId": "l5vMqNLzUXWNDK4OjeW6eEThO.iXvQbr",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/mn/locke-v-city-of-minneapolis-0-23-cv-00273-d-minn-2023/index.html",
+    "VersionId": "kS0yKEZgSI6H9gqKOoxNrCPJaVsHcav0",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/mn/wright-v-city-of-brooklyn-center-mn-2021/index.html",
+    "VersionId": "2l9TSssv5dKExZ4wDGgbnE3uLiylH0lM",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/mo/index.html",
+    "VersionId": "BJX2WejsB6mPF1NAFiT7nqgJQoSN1w0v",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ms/index.html",
+    "VersionId": "bqJRAtIsprfYw6clTb4Tny8t1WIob55z",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/mt/index.html",
+    "VersionId": "OEKVzRUCv9JwkOOUIS.6BAfmcdDDVvb3",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/nc/index.html",
+    "VersionId": "txOcR8a2tUcI.LNmEBwgEMWYr94HSkrQ",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/nd/index.html",
+    "VersionId": "8inJmBPbUhayvV._bRzbYHKk9nVmo.F.",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/ne/index.html",
+    "VersionId": "tkl2kJ22pyBnfW1Ot1RcVzNWS8TEkpEY",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/new/index.html",
+    "VersionId": "DmsGTU.PQ91YowAzD9EiAMPrPPD6GoUe",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/nh/index.html",
+    "VersionId": "faad_rx_UsozZaB51eDgvVvwyG_NRKCL",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/nj/index.html",
+    "VersionId": "ATf5Jkh2DI32GVHutgJpyjKhEcvJTYzf",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/nm/index.html",
+    "VersionId": "8iA_cxOnfMBAioJp_alOahAKGZjpgQd0",
+    "LastModified": "2026-04-17T03:03:14+00:00"
+  },
+  {
+    "Key": "civil-litigation/nv/index.html",
+    "VersionId": "jLeDPJBaFrCnToV5LxIe9XsEs.5xdBlG",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/ny/bell-v-city-of-new-york-1-07-cv-02994-e-d-n-y-2007/index.html",
+    "VersionId": "JYC4iDzHgmwImkkGFSFX2M7MXG_Pe5r_",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/ny/diallo-v-city-of-new-york-ny-2000/index.html",
+    "VersionId": "CEfkAgcJ5I._jZBV_mNBZFCQJe.jQVKk",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/ny/garner-v-city-of-new-york-pre-litigation-nyc-2015/index.html",
+    "VersionId": "G3YQK.FEMDU7ZKoqKJfgVvY_fgWe46l4",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/ny/index.html",
+    "VersionId": "SZW70TRhf41QLMtPw2NcJH3JAntdE8Ks",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/ny/khaled-v-town-of-lloyd-1-25-cv-01172-n-d-n-y-2025/index.html",
+    "VersionId": ".BI8ifrfqUiXaAqhXfSISu7EqSur1mOt",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/ny/prude-v-city-of-rochester-6-20-cv-06675-w-d-n-y-2020/index.html",
+    "VersionId": "CBiTMU6_nfbC_ezZorxMfPCDJeKQqcT0",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/oh/cvh-20230069-19dc58/index.html",
+    "VersionId": "UZjLwOVmzlv2RSke.v6Fx7x9ScMG0YBu",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/oh/hill-v-city-of-columbus-oh-2021/index.html",
+    "VersionId": "mKZfS2hPPIiPOzLSoJqr2PxjVkjON1w8",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/oh/index.html",
+    "VersionId": ".QSLOukIpPyqgeEPdJVfL_lc_P435w0r",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/oh/rice-v-city-of-cleveland-1-14-cv-02670-n-d-ohio-2014/index.html",
+    "VersionId": "4mBS5khTTt5qU_.5KSbBH9O8Vt0TlnYU",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/oh/walker-v-city-of-akron-5-23-cv-01205-n-d-ohio-2023/index.html",
+    "VersionId": "Y4Gvm3qItlxq2fZY0ibIEhFoklUJI3AT",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/ok/index.html",
+    "VersionId": "7Yh_ZfA.77OnB_nRA1ZgkdS.8WIKg6cx",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/or/index.html",
+    "VersionId": "uxE8A3ujcSFKUi5jSZAZPkxUN1Da9iLJ",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/pa/index.html",
+    "VersionId": "HYRivUlElpRwfDwWw3yld_1r76RAy9UM",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/ri/index.html",
+    "VersionId": "ZjXYoeoCQuI25rX5LDlLoph5UqRaRln4",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/sc/index.html",
+    "VersionId": "OWtsS2PUibuoRPUz8r.yae6IPu_xUFCU",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/sc/scott-v-city-of-north-charleston-sc-2015/index.html",
+    "VersionId": "ncflqOKdTnBg5J_z0H619mRzFGMlfBib",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/sd/index.html",
+    "VersionId": "oz4mJibTdN327gQzgQuYYBB2GWYpRl2x",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/suggest-edit/index.html",
+    "VersionId": "tm4TWHv95acP_n5k9CanCMExbJQJYr5U",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tn/index.html",
+    "VersionId": "UFr8v0NJa4ciafoyBTdNqJj2vBw.9wW7",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tn/wells-v-city-of-memphis-2-23-cv-02224-w-d-tenn-2023/index.html",
+    "VersionId": "7qysisLnP6nnDhT7PacNUJpY9zxz1Kd9",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/alrawaziq-v-city-of-irving-3-99-cv-00970-n-d-tex-1999/index.html",
+    "VersionId": "n2iejmeRYjoTNjoGuHQ59TOKIAq0x950",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/barrera-v-city-of-irving-et-al-3-25-cv-03160-n-d-tex-2025/index.html",
+    "VersionId": "b5CC_DREE3ucUGcVXWzD4Vf3K6J._wMR",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/caba-v-city-of-irving-3-96-cv-00249-n-d-tex-1996/index.html",
+    "VersionId": "GbtUYeT1iSaWeR7I1HFC5vBYPQIFPwwt",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/clark-v-elmore-4-25-cv-01072-alm-bd-e-d-tex-2025/index.html",
+    "VersionId": "4AkJ0r6guSfbW4tdUqAJCD.._MADfX_Y",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/davis-v-city-of-irving-3-97-cv-02512-n-d-tex-1997/index.html",
+    "VersionId": "PEoGmQdnpbUqy.9VswdQGh.80RYdJQQD",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/duke-v-city-of-irving-tx-3-20-cv-00116-k-n-d-tex-2020/index.html",
+    "VersionId": "Nia243ThIdl6xsUi4000zj8a9jrvdoW.",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/edwards-v-city-of-irving-3-90-cv-02603-n-d-tex-1990/index.html",
+    "VersionId": "LbNnZ_1zx3HoK13locpjK0QjLUNTKe1o",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/eldreth-v-harris-county-texas-4-26-cv-01418-s-d-tex-2026/index.html",
+    "VersionId": "FFW7AhRUNMoSGjo9tYyGnJAh3nQWFWUl",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/ellis-v-police-dept-of-irving-et-al-3-22-cv-00265-b-bn-n-d-tex-2022/index.html",
+    "VersionId": "TDQ2mrpPzsijdc8AniOHu7xOooaOoN88",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/flash-v-jeff-davis-county-4-26-cv-00004-w-d-tex-2026/index.html",
+    "VersionId": "dhN21wFnNaAnVgvZBk7FY.kHkKRrkb_9",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/grigoryan-v-wheeler-county-texas-2-25-cv-00276-n-d-tex-2025/index.html",
+    "VersionId": "2o5VHLP7CHXocl0TdEGsX1Yg2Jhi3Fp9",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/guymon-v-carson-county-2-26-cv-00007-n-d-tex-2026/index.html",
+    "VersionId": "idQGTVIf0vAEBK2fg.WzmDCaElDRHiJ_",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/hill-v-city-of-irving-3-91-cv-01190-n-d-tex-1991/index.html",
+    "VersionId": "76XVRgvzWwZaZHAbhBc_iwriFwwNzI26",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/house-v-city-of-irving-texas-3-03-cv-02524-n-d-tex-2003/index.html",
+    "VersionId": "10cM6tgA9oKo5c9_BmzEJu2P3vYPn37q",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/howie-v-city-of-irving-texas-3-00-cv-02094-n-d-tex-2000/index.html",
+    "VersionId": "gP0C_Tb7h7.eNUsj.X_HpPPQaDM1AB4b",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/index.html",
+    "VersionId": "nN5X91PLPFzODFwBexi_YvnhqBhmlr8i",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/ivatury-v-city-of-irving-3-94-cv-01556-n-d-tex-1994/index.html",
+    "VersionId": "x6cL5rMZDDVXA_ARqZtFajHEgf8m7.aI",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/jean-v-guyger-3-18-cv-02862-n-d-tex-2018/index.html",
+    "VersionId": "Sw8vggRa5tf.ttmEaBsXbRtxnwWFKIa8",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/langiano-v-city-of-fort-worth-4-21-cv-00808-n-d-tex-2021/index.html",
+    "VersionId": "KTJgadbmCeOV1cQdk95xLdrCU6hzPHhv",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025/index.html",
+    "VersionId": "fHngUA1bfyBZ6w1JSC8lY8TzeiklnSgo",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025/watch/lotts8link8youtube8bwc8v1/index.html",
+    "VersionId": "NhC04IsOPo6tp2guJOQn62NRIKeLEmku",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/nichols-v-city-of-irving-3-86-cv-02848-n-d-tex-1986/index.html",
+    "VersionId": "h46dk_NUL4xC9TuUszdqsdITMLukpa_J",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/papke-v-city-of-irving-3-95-cv-02644-n-d-tex-1995/index.html",
+    "VersionId": "YX_qUVXVahoXPhgVqIsq_7_MFZaYLqYw",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/papke-v-city-of-irving-3-98-cv-00941-n-d-tex-1998/index.html",
+    "VersionId": "ikJ6dmONFymEFnOyH7hphHnTw_K.tQHu",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/raper-v-city-of-irving-texas-3-95-cv-01275-n-d-tex-1995/index.html",
+    "VersionId": "02xn82MZkKZdP6TojkeJDKGsi239wI7w",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/reed-veal-v-encinia-4-15-cv-02232-s-d-tex-2015/index.html",
+    "VersionId": "XqxAl1lHJHDID3OIO_T8gLimy84sBtc9",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/roden-sr-v-reamer-5-26-cv-00081-w-d-tex-2026/index.html",
+    "VersionId": "lXesmsonvyHVhW68ohQ9_2M7d3xwu8i4",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/savell-v-galveston-police-deparment-3-26-cv-00060-s-d-tex-2026/index.html",
+    "VersionId": "saObg1HzmkEDh4l9UMT4w2OfaP3i8Bsq",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/van-kirk-v-officer-hernandez-4-26-cv-02517-s-d-tex-2026/index.html",
+    "VersionId": "MkJbvD6Ws77._LP9Kpk5yVkptr.RaMDN",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/wallis-v-the-city-of-irving-3-07-cv-01483-n-d-tex-2007/index.html",
+    "VersionId": "GoYHXklbr6YkSUXRD_It0kS9kDvZOhER",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/williams-v-city-of-irving-texas-et-al-3-15-cv-1701-l-n-d-tex-2015/index.html",
+    "VersionId": "TK19NPWPIkB1mAeo8DQ9dEJNF5fedRIa",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/tx/young-v-city-of-irving-et-al-3-2023cv01423-n-d-tex-2023/index.html",
+    "VersionId": "LiSO44V5khhz3fcc2n_QK1fzNLy9k3cv",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/ut/index.html",
+    "VersionId": "H1B2bjgISsMz4Gy4I5.o.JII1BpddI55",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/va/index.html",
+    "VersionId": "y8cQxGfX3MhskIb2BtD1oDvqDh.ImAtg",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/vt/index.html",
+    "VersionId": "VAvOFYVmySNM79YcC6Lv7KeNSy98a3EA",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/wa/carter-mixon-v-city-of-tacoma-3-21-cv-05692-w-d-wash-2021/index.html",
+    "VersionId": "jAXGkZdt126VY5rSBh0s0GkAevlRntG3",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/wa/index.html",
+    "VersionId": "GdaXdVEpSZILhiaOaiANdNzJnXdG19T.",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/wi/index.html",
+    "VersionId": "_pa4n.u2XHDaLAm7BNjVvygwSK_BfqiF",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/wv/index.html",
+    "VersionId": "7DKODfT6i_kINuAc0grjleQo6NUgYS9T",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "civil-litigation/wy/index.html",
+    "VersionId": "Vlmfj038Gc_BI4vElH7idyJJvxKhnw8m",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "co/index.html",
+    "VersionId": "M17cpmnGnndvGPZJDE6lkDKGqOxCaL6r",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "ct/index.html",
+    "VersionId": "jH8wnqGl36RaAQCc1TXq2sBpUBrUrF5V",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "dc/index.html",
+    "VersionId": "a3mg0bW5_buxpA9KfxWJuF4_oIYUdZ_3",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "de/index.html",
+    "VersionId": "_19SBjrtEwMijjqGdfhrV2uYSOFZYwGp",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "donate/index.html",
+    "VersionId": "yHhJ_VTDTmMwMdk4IVOKObYr4KoOUDsF",
+    "LastModified": "2026-04-17T03:03:15+00:00"
+  },
+  {
+    "Key": "favicon.svg",
+    "VersionId": "YWnY5Jfxrb0KwG.p6GZu_8rvGV2SYoSO",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "federal/index.html",
+    "VersionId": "USPFLBY9HvL_KsA1IwkpEr4JMC9ZQTwW",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "fl/index.html",
+    "VersionId": "HDg.f6Cq8VDpMCiLwxJ7nGOTnEz43xxc",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "frequently-asked-questions/index.html",
+    "VersionId": "T_YCedWtBWUzOVpSx12G1ozCahxkHGm1",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "ga/index.html",
+    "VersionId": "9Q4eRBA7hX5ZbPZrTFwvOj8XSkU6.Pqi",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "help-center/index.html",
+    "VersionId": "DCYndYuoOU8D6w9BXA0eWKb6twBeXL7H",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "hi/index.html",
+    "VersionId": "m40qj47Ox0aTnmQwu2WbbGJXagGkqpHH",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "ia/index.html",
+    "VersionId": "jcQhEbo36TFW0rtej6puofiVuGTalVHR",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "id/index.html",
+    "VersionId": "zPl0qrcVp968peEksxz8QbArhNbPi2x_",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "il/index.html",
+    "VersionId": "Ywt0P9Y7MjOMpWVARpdZtCrRtzvOj4Y_",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "img/.DS_Store",
+    "VersionId": "uBFGaFK96d.b60r_AL42ZOoFfBbSW_r8",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "img/apple-touch-icon.png",
+    "VersionId": "7LLZqVJ1Wx7H8azntj_M6BTRlO2KEG8f",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "img/favicon-16x16.png",
+    "VersionId": "ZwS7di38YTkhZWFNq6gzxZ3gLoI4kwnH",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "img/favicon-32x32.png",
+    "VersionId": "TxLd993efPLPoWwsSZqigC6dYleJVq3p",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "img/favicon.ico",
+    "VersionId": "u5XQAg5Bs3oQydWnkgId4DMza2taiEOX",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "img/personnel/cm7a0bh1z2f39ewvglexrgaig.webp",
+    "VersionId": "i0sucy5FUAei7XYjZqtbUxIBf35ZO..R",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "img/personnel/default.webp",
+    "VersionId": "0Ge4NriZMpvKdNAc6COSrA4Ij6y5NzTm",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "img/police.jpeg",
+    "VersionId": "RUqC9wMDFmtclJi5mzghIJFAjMUaDaAB",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "img/usa.svg",
+    "VersionId": "SfcZ7VrOq7Zf3G4qxgRJIwRlmoUFle_j",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "img/webp/people15.webp",
+    "VersionId": "TzktNelzyTtDVP65JEE.8HwAC4vHr8C0",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "img/webp/person9.webp",
+    "VersionId": "o9hl3CrDBTbTQ.i9Q0BTrYRS8zpU2EPX",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "img/webp/usa-1778524_1280.webp",
+    "VersionId": "0uwOFVmLWZNsiYEqEFw55XGzQUyyoppV",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "img/webp/woman-5896534_1280.webp",
+    "VersionId": "l3ZRuGVAhYtLUMdg6y050EjulysYXaPU",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "in/index.html",
+    "VersionId": "xebvUuVvVFA1VAUD9LSwILEAsxjwK2D0",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "index.html",
+    "VersionId": "c0C4HPqXWY501Wbei0edMvsC.iaMDMGO",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "ks/index.html",
+    "VersionId": "xzccnw.0dpdf2X7iwgKwEIKmAq8oI1uo",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "ky/index.html",
+    "VersionId": "fmZVrxaUjMs6qTXlNLdMUlXLYnvQ8pgD",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "la/index.html",
+    "VersionId": "Hv6vPze9gOiKLVAJeEW2Hz8589MkZBUc",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ak/index.html",
+    "VersionId": "3y4J1vFKqeYbN69z7sR0g_FAXM4RT82Z",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/al/index.html",
+    "VersionId": "inV91h.Piv1pipvWBMcTCNVqPEj_dPkP",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/al/reform-police-department-al-qyf3/index.html",
+    "VersionId": "5qcGW_PjxXf24hJstnYU07rZyWpvj9wO",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ar/index.html",
+    "VersionId": "CZNpDmgOcUFN5dKSF_2yfpPLa7h.lAM8",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/az/index.html",
+    "VersionId": "6PLHlPA9CGZi3YKmKswQCxgLC_roV3Jq",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ca/antioch-police-department-ca-4ncy7/index.html",
+    "VersionId": "2IOV404GikmAhL2HZWJa7ZdHbygIe7JR",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ca/antioch-police-department-ca-hkqq/index.html",
+    "VersionId": "f08H85QmrkDJNzcic3b232OZIh9Es6qm",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ca/bart-police-department-ca-50kz/index.html",
+    "VersionId": "h.kksWl8F1JQp_J9ZikFmj_YawUFXSRh",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ca/california-highway-patrol-ca-76k8/index.html",
+    "VersionId": "lm1zBLZjJjt7dd1D0bnB9BXrU9ExJ4xo",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ca/index.html",
+    "VersionId": "0ujPM5SyAMCR5QQKFzFP_7nYWRLqevhH",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ca/sacramento-police-department-ca-ejqg/index.html",
+    "VersionId": "vGTWoPfFZiaTQqOJMBLKIuSnPSj6Idfk",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ca/torrance-police-department-ca-o71r/index.html",
+    "VersionId": "EA0ZN73dTg0wUtqJVMtIGUe965Okw8ae",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/co/aurora-police-department-co-9ewm/index.html",
+    "VersionId": "GWo4Nr77mdVrBjx2nYLE_NYunw7HWAL.",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/co/index.html",
+    "VersionId": "149SDxEIj7hF_CiD9IwCnz0ZWyB21wxu",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ct/index.html",
+    "VersionId": "LRzGRwnMolL0CiBh0BEKo1hNInLNMFzZ",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ct/new-haven-police-department-ct-hlfv/index.html",
+    "VersionId": "hpXbzR9AVeS6016jtL6ex4NAyRsGLvOe",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/dc/index.html",
+    "VersionId": "IkkfY2DKDC4ubyCJwUQGuWZge09j0mNv",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/dc/office-of-inspector-general-u-s-department-of-agriculture-af9bb9/index.html",
+    "VersionId": "RfEqLA04jirdCappzW7J8dhc9KpmRLfP",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/dc/office-of-inspector-general-u-s-department-of-health-and-human-services-a8a99b/index.html",
+    "VersionId": "sdtM.2rSXtlxwcAn2qlsPSbDQqT68hAt",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/dc/u-s-bureau-of-alcohol-tobacco-and-firearms-f6cd18/index.html",
+    "VersionId": "Jzx73XeF03gEvDxHwrEzKaClwSqfaV4s",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/dc/u-s-bureau-of-diplomatic-security-d96c37/index.html",
+    "VersionId": "78l77_xrKkUPM2hq.FhxGX8kXTsPVUoa",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/dc/u-s-customs-service-480037/index.html",
+    "VersionId": "3KHiGgubyOy3HxtZ.oooyEWD_c6Ji_zJ",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/dc/u-s-department-of-energy-1605c3/index.html",
+    "VersionId": "qmvQLrt64281Fllv6OIo.3ly0Szi2bRm",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/dc/u-s-department-of-veterans-affairs-c3f258/index.html",
+    "VersionId": "FDuXX18ui3NymowO8vhzo4VHqiqnKU5O",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/dc/u-s-federal-bureau-of-investigation-ca5492/index.html",
+    "VersionId": "_Cmqp_KVuO66968hStqb5Jo5CrSNkm9K",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/dc/u-s-federal-reserve-system-d9bacf/index.html",
+    "VersionId": "OlEMUR_3qB5M3BtfmFs3dMfnRNSl9OX2",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/dc/u-s-internal-revenue-service-cf63e4/index.html",
+    "VersionId": "Gr8JZGODm27z3JXwvg3_ixaO3n3gOmlz",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/dc/u-s-national-parks-service-686f61/index.html",
+    "VersionId": "Rr7JSa.TcSyct4433wxt54dQ4LXNf9_2",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/dc/u-s-secret-service-06ce24/index.html",
+    "VersionId": ".y4njawFOjg3HVLYNtHC9CrmfLuQYSNc",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/de/index.html",
+    "VersionId": "YLqSNys4SmJ39l9upu7dVLYdjhEcgm_p",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/federal/atf/index.html",
+    "VersionId": "QEsRHmbKOTslHHe5Q5yEsAm.Z8nRBsFx",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/federal/cbp/index.html",
+    "VersionId": "lkQxOmekDaHE9E6BQ6qaSfnNF4evNcUt",
+    "LastModified": "2026-04-17T03:03:16+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/federal/dea/index.html",
+    "VersionId": "Q2olhd.BpAoXLd5quGhJW1ilxwd4wDj4",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/federal/fbi/index.html",
+    "VersionId": "IrfZ9lZgrhwLR5mpCDoGtwPIfq4D7HMF",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/federal/ice/index.html",
+    "VersionId": "byrf5y4a3_OltxHvJ_gp0.vb3Rg5oNUM",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/federal/index.html",
+    "VersionId": "V5wmdbr2rZSgQ9H3Fbz9JOyezoF6egMT",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/federal/tsa/index.html",
+    "VersionId": "ig.tktW2U9ip7X5oEFPPtkufRszh5Dyn",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/federal/uscg/index.html",
+    "VersionId": "aRwcaULq.e68dVW.mjVLKCAtc_c48gI9",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/federal/usms/index.html",
+    "VersionId": "hgp.eonQmM87e2MS76dH8.nlPcOyjHF1",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/federal/usss/index.html",
+    "VersionId": "Rpoxq.Uww32eloBUB9a1sV1LKeUZ9c8w",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/fl/index.html",
+    "VersionId": "sxeaDRzw7u8ywF137H_OE0_EJsv0u6ju",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/fl/polk-county-sheriffs-office-fl-dy4b9/index.html",
+    "VersionId": "ybMTkSg0F0o66vvyVUSvRsSbsznHzrvb",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ga/atlanta-police-department-ga-o44v/index.html",
+    "VersionId": "gzCqtfNEDYBT3dh__Weo6W8PIu1HdEmY",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ga/index.html",
+    "VersionId": "o0cViJx6wagmvsoKNrAiIHBuTeQiU6EF",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/hi/index.html",
+    "VersionId": "1e26bo2Yy7PU9EGHbJYOeqn_q4sGKvvb",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ia/index.html",
+    "VersionId": "NZhxeHGLYEVsEoyXLHyv87nwEpDtF8qx",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ia/newton-police-department-ia-7g/index.html",
+    "VersionId": "NMa9FIpQp7QeOSexLS8rHVTuUFD.tTWo",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/id/index.html",
+    "VersionId": "PulVPuuJprVxZ_xRr8mnvJoZBajHX.NC",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/il/chicago-police-department-il-073y/index.html",
+    "VersionId": "0UJF9LLTmwrLvyQ1D7HaQFW5SM4.aJC2",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/il/index.html",
+    "VersionId": "9rWr5ccljwT9DN1mIU0zjfcyzeCQEYKs",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/il/sangamon-county-sheriffs-office-il-1nsq/index.html",
+    "VersionId": "EOIYq41S.VvI2NP8w6FQuLOXqxMXq1Ee",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/il/u-s-postal-inspection-service-17b7ab/index.html",
+    "VersionId": "ZB3VVcnTZQWWzjnlueBZ3ZDS.a7r0_JO",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/in/index.html",
+    "VersionId": "JsHU.OWDDskTFfBMKK2gx0c2zjteOygc",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/in/state-of-indiana-6087b7/index.html",
+    "VersionId": "ysV81gS.NwlYPQAmM77FO07uAQHYza_3",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/index.html",
+    "VersionId": "8dDi0GSRwWSVxLWmPOa2vf416e6TjhLa",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ks/index.html",
+    "VersionId": "hAIcsQfvklJJ3xow6wYmX2TTY3mY1dms",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ky/index.html",
+    "VersionId": "qB25aA7D3_J7LJAg26GdEvrAy61u6bM.",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ky/louisville-metro-police-department-ky-0gks/index.html",
+    "VersionId": "el7DwO9cVqhefmvWQ01gXzRVE6poiCqv",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/la/index.html",
+    "VersionId": "ms_3QKrxRWsBZkWuEFMYXgI_G0uoxkJy",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/la/louisiana-state-police-la-7g/index.html",
+    "VersionId": "nEsKPG0kAItt.qq0iS4zmlrA8HHJzcGs",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ma/index.html",
+    "VersionId": "hMN6l7v.qDHWj8btY4z0ZgCtEaaGiwxf",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/md/baltimore-police-department-md-zr7w/index.html",
+    "VersionId": "13durK3S..3uuUFuj7yViAO8fRD4govY",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/md/index.html",
+    "VersionId": "HuemGvTJOl2jC12zir5e6_nf_GO1I9PQ",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/me/index.html",
+    "VersionId": "rSBiPzwn_P3bDlXHZmNVAUsMfziW8Tgg",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/mi/grand-rapids-police-department-mi-mkf6/index.html",
+    "VersionId": "z4uXbA1ksXXhL88myHfnQE3nA2xzWLXi",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/mi/index.html",
+    "VersionId": "WlcpGpWkuhYtKOT.MIidxxlCEfv3MFL8",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/mn/brooklyn-center-police-department-mn-ypgp/index.html",
+    "VersionId": "BQRhqIJsL3Bf0sLjWo_9EnF7xkv8ZUOX",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/mn/index.html",
+    "VersionId": "cK4WMzQYuo.xsWI2RjzU.WGLjq2r_7yR",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/mn/minneapolis-police-department-mn-n6rd/index.html",
+    "VersionId": "Of6yhUbzDEemghbBnfCXwUEOosgivF7s",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/mn/minnesota-state-patrol-d4e5f6/index.html",
+    "VersionId": "qOfYeIW164iMKyi7ChsePkQ2lqBkO5T6",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/mn/st-anthony-police-department-mn-tbh3/index.html",
+    "VersionId": "YmfaJ4ipNy5y4MT2XRSo1lQ2mtLiejRC",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/mo/index.html",
+    "VersionId": "PPABtOE7MEpiLYJWMpldrDtL5BX21uje",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ms/index.html",
+    "VersionId": "4nsgD7vwaPU4EHdJq7lE8obRmvSlwR0U",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/mt/index.html",
+    "VersionId": "eeyy4aSU9f066VWclQI1G7ilYh3cWlty",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/nc/index.html",
+    "VersionId": "vAxHrJ41KPRk6wlrDZ0AsUZWH3svT7oI",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/nd/index.html",
+    "VersionId": "9zKMahUVkvRvzmOj7Mh2rEQvOUplPaJH",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ne/index.html",
+    "VersionId": "M7jYiP9PrQCY5jwni1Yic64iMR4KpIHa",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/new/index.html",
+    "VersionId": "zATyWAympgEXv7xyJfhqM3IaQL8VgCfo",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/nh/index.html",
+    "VersionId": "Se3rULwcumSmxdoHtjyqqgg1B7Q5Rn46",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/nj/index.html",
+    "VersionId": "gA08rM5IYL9Pqz2uHQPsK9LsoEj3EHf7",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/nm/index.html",
+    "VersionId": "6j2E8A5QegQiJaK5riBpLlwpCcndPG1o",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/nv/index.html",
+    "VersionId": "eoGxYLBXhZjVQjNtGpw.eWG2SyDpelzZ",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ny/index.html",
+    "VersionId": "MqUwkmnNsO6NwjwDqFpEmmEcC1qPdf2h",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ny/lloyd-police-department-ny-dbog/index.html",
+    "VersionId": "AY6HArRLiaqoPKVdL6d3EyKN6t8GK0eB",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ny/new-york-city-police-department-ny-hges/index.html",
+    "VersionId": "SUWHasW7rq6oY4PiGdEJracyFywum.em",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ny/rochester-police-department-ny-x7hw/index.html",
+    "VersionId": "RRV_JbX5g3EV3uMPvZt8Lo.xSGYvytSD",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/oh/adams-county-sheriffs-office-oh-a9xpv/index.html",
+    "VersionId": "keJu6mvXb.hUxvc6X8GYvcsxNe_SF5cP",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/oh/akron-police-department-oh-7u4k/index.html",
+    "VersionId": "iLvDt9lYMGUx363rV2qAwdUu6IQ_TwMz",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/oh/cleveland-division-of-police-oh-ek9o/index.html",
+    "VersionId": "RgVB.xnYoZyT.KErkcHU6gB0urhVn6t8",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/oh/columbus-division-of-police-oh-ldvw/index.html",
+    "VersionId": "JyztvgMtr_RXjLRlZGIu8EYsX_yO5LhM",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/oh/index.html",
+    "VersionId": "tt4AQDOslcJenQ1RU.lGo6edtSR3SLTF",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ok/index.html",
+    "VersionId": "maaU5OKtOugs1RZV1hFfd.Nb5R9mHIvj",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ok/state-of-oklahoma-2708ac/index.html",
+    "VersionId": "GNW1_yLZiSyQBqjQ.izvw8rD9vNTeRrh",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/or/index.html",
+    "VersionId": "VV8_LI8KaBcfo_YiNB3W7tgPGJFULtiF",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/pa/index.html",
+    "VersionId": "lAyKVqaTBN3jjQTJrUUqCjJUVJK_wy6K",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/ri/index.html",
+    "VersionId": "0AfCGwZImUCLYASp8euCT51fg74139.6",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/sc/index.html",
+    "VersionId": "m0WijCZCHpuR9X_JCEu61IQSmwjcgKHg",
+    "LastModified": "2026-04-17T03:03:17+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/sc/north-charleston-police-department-sc-cfi9/index.html",
+    "VersionId": "jwAZOESweScDrOdmvhMjjdLxEIaP9Y56",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/sd/index.html",
+    "VersionId": "opAi8_E1rg7i69hsIOFgfKw36r.xkTOy",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/suggest-edit/index.html",
+    "VersionId": "KJYqjNqk5vg0LTIvE8mLelO9GREulfmn",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tn/index.html",
+    "VersionId": "nMKpsXzFFLKzW5YLs1TMPm9AhviHRbAk",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tn/memphis-police-department-tn-q7bd/index.html",
+    "VersionId": "XbOb5DRrOxmfhAEXkaz20yFvz1.a6lxt",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/100th-judicial-dist-atty-s-office-5ffbb3/index.html",
+    "VersionId": "Br47N_uzySIAY.K0eE2Of0Sl7rcKHihD",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/106th-judicial-dist-atty-s-office-c19b3a/index.html",
+    "VersionId": "SRTY5klRSHOfn89S39HEnt5BIitmK_s8",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/106th-judicial-district-cscd-e8410e/index.html",
+    "VersionId": "KzKdnBhMecDyRHMv9Ue2NN01_rzZMf5F",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/108th-dist-court-8325cc/index.html",
+    "VersionId": "1YDnIfCtqVC_2BQzTlYQ1zW7PwBScuM7",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/109th-district-attorney-s-office-88ef0b/index.html",
+    "VersionId": "9cWBFCjImFbOriUktU7TNoFD51aNDeRq",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/109th-judicial-district-winkler-co-cscd-a478ac/index.html",
+    "VersionId": "UN83VCcw52F8GY5ZmqTE.8NMsJyxdiwp",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/110th-judicial-district-attorney-s-office-5c0294/index.html",
+    "VersionId": "hxRz1CIKqrx__SBtfC6alf7f1C_CwdlB",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/112th-judicial-dist-atty-s-office-4ee70d/index.html",
+    "VersionId": "SS18Tou5Frs3Knm5692rv7iHygbRI9SE",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/118th-judicial-dist-atty-s-office-c57ef4/index.html",
+    "VersionId": ".sinZaDw1PR0LfX56ACxlhzXxuolKNR1",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/118th-judicial-district-juvenile-probation-department-f1037d/index.html",
+    "VersionId": "ro7NdyH46Fa7npx17YOlVrGPUeAHccXO",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/119th-judicial-dist-atty-s-office-f97139/index.html",
+    "VersionId": ".QvlVWEjpokCcQTi4ufw2GL6z2RyOaY7",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/132nd-judicial-district-attorney-s-office-f9e7a9/index.html",
+    "VersionId": "mzLAnqI7LanHRQ.nfyGHigENPECKk4MC",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/143rd-judicial-dist-atty-s-office-6e5413/index.html",
+    "VersionId": "OZNAAInOgKg25qDlP_VZifPGZg5rpke3",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/145th-judicial-dist-atty-s-office-252239/index.html",
+    "VersionId": "0KE7dnidlLVPjVmttlpdU5NmNavNcYlC",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/155th-judicial-dist-cscd-ef158f/index.html",
+    "VersionId": "xuDQCZreMPuIJLM2VZUE4dcp65TXuufH",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/156th-judicial-district-attorney-e5f6df/index.html",
+    "VersionId": "VOoNgsE9ZwMdu2jY2BfFljrRcrZ4T5qf",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/181st-dist-court-2d4d2d/index.html",
+    "VersionId": "kwzzgrPUCsXJTuLH7ZtLcU726JzwV_2G",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/198th-judical-dist-atty-s-office-2ec028/index.html",
+    "VersionId": "WfjRyWdsrshCAyMx4tRgl4QhpaOr1XvA",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/1st-judicial-district-attorney-s-office-a5a5d0/index.html",
+    "VersionId": "AsP0HwqxpIJ9uEacpbgyXFTOvwSyprM1",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/20th-82nd-judicial-district-juvenile-probation-department-c81db4/index.html",
+    "VersionId": "WSMl9jpmzBy68CcNI.kP7I8eBJJskfFp",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/216th-dist-atty-s-office-337b64/index.html",
+    "VersionId": "dQAUU5QUBd119yNDhHOLoOhT7A.P83a7",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/21st-judicial-dist-atty-s-office-755330/index.html",
+    "VersionId": "eo.CCxybiyeTHUTX3Cdso99ZcwIuK6zT",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/220th-judicial-dist-atty-s-office-932251/index.html",
+    "VersionId": "ZrTPKPdjAU1OmKKlBOGSyKIKeME_hj5N",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/229th-judicial-dist-atty-s-office-20fa2f/index.html",
+    "VersionId": "_XVxMCb3ql8BfWy8.NnOAjlchUvp2Ft9",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/235th-judicial-dist-atty-s-office-064b1e/index.html",
+    "VersionId": "SLLOUx6uScoFtOntWHvZWswWl.Af36QS",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/24th-judicial-district-attorney-s-office-3b5b9c/index.html",
+    "VersionId": "V1eHL6J68_laCeugpHyB1PKlFHWIyF3a",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/253rd-judicial-district-4489c9/index.html",
+    "VersionId": "qdiJ4mmvjBE2e4tOrkd2cA9ZrQydqbtq",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/258th-411th-judical-dist-cscd-f7112f/index.html",
+    "VersionId": "Jas3Y3MxaH1xOSBV4CvdUftKF.ZbwHHA",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/258th-judicial-dist-atty-s-office-abe243/index.html",
+    "VersionId": "rp.y2MmdL2dIrQt832Muh1dgEvO_hG9t",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/259th-judicial-dist-atty-s-office-64db47/index.html",
+    "VersionId": "_zDeD2ecWODreuId6lKTBvZWQNnYcdrG",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/259th-judicial-dist-cscd-9186f7/index.html",
+    "VersionId": "Tmgi8zUFSyvZCocur1pA3wxE_xcaH2ND",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/266th-judicial-dist-atty-s-office-e09a8b/index.html",
+    "VersionId": "Tm7GBa36XYWp_4McDM_VPvty0R5_Ejef",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/266th-judicial-district-comm-supv-and-corr-dept-95c4cb/index.html",
+    "VersionId": "y29npLmkXj3TSzx.oZgIshM_rL3LG5ao",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/271st-judicial-dist-cscd-f4cae0/index.html",
+    "VersionId": "vO0qAGfqhacD79Hly5JPhbmCnxP3Xe1w",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/286th-judicial-dist-atty-s-office-800814/index.html",
+    "VersionId": "i_vZcFg649pvpKHjvG0s8em5ImYFzNHU",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/287th-district-attorney-s-office-27cd2f/index.html",
+    "VersionId": "jKXfLKKPFCiVtMI2fGR4Av7rr7pnClIF",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/287th-judicial-dist-cscd-fb44df/index.html",
+    "VersionId": "WSJAOxmEztNa27R.Z_0MB0X62_cZDRaM",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/293rd-judicial-dist-atty-s-office-eb85f5/index.html",
+    "VersionId": "CJyjRmpGlOMVnq.Jrjb1S2kp7SGT34Hl",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/29th-judicial-dist-atty-s-office-3ac375/index.html",
+    "VersionId": "uAZlb7_Gk1bEcw2o65PorKd0o65lvysx",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/31st-223rd-dist-atty-s-office-5e32b9/index.html",
+    "VersionId": "WMmh9gUz099Doy_Fz4CD3WZ0jW1gdW6M",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/320th-dist-court-b96e29/index.html",
+    "VersionId": "m5IYhh4DqB7RFHz8qPm5eitRfRMu40Ec",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/33rd-judicial-dist-atty-s-office-66b6c5/index.html",
+    "VersionId": "012vZbcd3y194Q6VZj4xV6NLSSdb5eYW",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/33rd-judicial-dist-cscd-a010a0/index.html",
+    "VersionId": "9MEFDmv6JkPo5TjMlaMRE5r1E0R4aOBo",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/34th-judicial-dist-atty-s-office-df4291/index.html",
+    "VersionId": "9UluRphCraHFmeStihhk8JStumTpF7g2",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/355th-judicial-dist-attorney-abe57b/index.html",
+    "VersionId": "UPjCVgBRt3n0U4dSW.RjFy9rk_w5RudO",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/35th-judicial-dist-atty-s-office-e8486b/index.html",
+    "VersionId": "d_ShR0uHAj50FkLPY7dIVwheXpTZXMzs",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/36th-156th-343rd-judicial-district-cscd-5f2ef5/index.html",
+    "VersionId": "5xuRmkrKGT0y7PsaM3xMRqqGL5pwlAmp",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/36th-judicial-dist-atty-s-office-a9fd64/index.html",
+    "VersionId": "up5aPo0UQunJdalEbBwUr7xDZSofv1kb",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/38th-judicial-district-attorney-s-office-93a413/index.html",
+    "VersionId": "9vhGkphdLeNg8blaMNYlJmHNSYCwo42q",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/39th-judicial-district-attorney-s-office-448585/index.html",
+    "VersionId": "5BkG7XQnmomWpPCwS_CYBPHRr0tdiWyR",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/39th-judicial-district-cscd-f5daa3/index.html",
+    "VersionId": "u06EPrO0MR1ip5P5oxMCs6rRPq93.Zyg",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/452nd-district-attorney-s-office-238ac7/index.html",
+    "VersionId": "wjVkKOaMKYnot_wL2zh36xugf7Io8dTH",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/452nd-judicial-dist-cscd-0b5ed5/index.html",
+    "VersionId": "4dpc0hL7dNt.Tm8b04mD4LU0qfsN9yFz",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/46th-judicial-dist-atty-s-office-fe8c96/index.html",
+    "VersionId": "vdAJQ7PqlUqJE0zLVXy.IMot9WplT9UX",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/47th-dist-court-339a34/index.html",
+    "VersionId": "Eck7XAg6IZNMXOZb2NGxmzQegT3nWvJI",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/47th-judicial-dist-atty-s-office-75ebbe/index.html",
+    "VersionId": "5ZB1.CEIUeT0BAMVm1io2t7IhE7sHatb",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/49th-judicial-dist-atty-s-office-941b82/index.html",
+    "VersionId": "VXqMvLjfZFzoa0wkFj7TSqMfhjpkn3KX",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/50th-judicial-dist-atty-s-office-661dfa/index.html",
+    "VersionId": "CJ36Oye8Mhmp8v_fDj8I.vCvIRRdcQ2g",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/52nd-judicial-dist-atty-s-office-f7dc4f/index.html",
+    "VersionId": "fI23eaYhDAqF2vQuM70DlVGm9xjkF6QK",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/63rd-83rd-judicial-district-cscd-ab8a82/index.html",
+    "VersionId": "RDVRzXm3.9qJgd5_ras_60GWZCs0kKca",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/63rd-judicial-district-attorney-s-office-bb9cbf/index.html",
+    "VersionId": "aZj4S6zKWome1R5a4DILpFgN_mRVQig1",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/69th-judicial-district-attorney-s-office-ad32f3/index.html",
+    "VersionId": "aUKJlObb7dmtobuY2aXqwUTo0h4AWonv",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/76th-276th-judicial-district-cscd-66ef71/index.html",
+    "VersionId": "JU9lRGBtrRW6QU0qxTNjhAMHmwnD5Y05",
+    "LastModified": "2026-04-17T03:03:18+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/76th-276th-judicial-districts-juvenile-probation-department-f3d748/index.html",
+    "VersionId": "ReoTE4osSDbOKgUmeFE0qrGskJeyzVzc",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/79th-judicial-district-attorney-s-office-8bda64/index.html",
+    "VersionId": "zgwX5hwAQmGg0Lx_DoMdWJJ_nm_AWXlI",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/79th-judicial-district-cscd-a50d76/index.html",
+    "VersionId": "NxQ13ZVdL4FmEFNgjcTHp9dLuYfjGhvo",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/81st-judical-dist-atty-s-office-b76627/index.html",
+    "VersionId": "V4IR23rqbabyuFZfQOISJ9bwJjxu7D40",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/83rd-judicial-dist-atty-s-office-d4524e/index.html",
+    "VersionId": "GtTSi9jJrG184QJqch3gNO.X2Ip2yphn",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/8th-judicial-dist-atty-s-office-33357b/index.html",
+    "VersionId": "gQiRHVTfByYuUUoLPCSa5PK8PsXteY6u",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/8th-judicial-dist-cscd-02263b/index.html",
+    "VersionId": "JdxtGfuiJrWHDzg0755GXYUtyK7rRqKy",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/90th-judicial-district-attorney-5835a3/index.html",
+    "VersionId": "BlNAKyTLoLnXsBEgEyM4T7BBI.Yga6To",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/90th-judicial-district-cscd-75717c/index.html",
+    "VersionId": "on2Au2qle7u72HMHHhWdPqioUX6zstni",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/90th-judicial-district-juvenile-probation-f90dcf/index.html",
+    "VersionId": "m15fmLe0_rBGdKA2jeObPvPD8oxPyuPX",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/91st-judicial-district-probation-department-756fdc/index.html",
+    "VersionId": "DgtqSjYSgme1pVBB4VLAflXHljDM9BIh",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/97th-judicial-dist-atty-s-office-67c48d/index.html",
+    "VersionId": "PjLRxIMQ.WBOZf4M5d7HDGjbE8Mflb6p",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/a-charter-schools-police-department-3fc56f/index.html",
+    "VersionId": "Yn2BRA2BHD2XOlc..xWpJFrRmX6PVL4L",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/abernathy-police-dept-8c758c/index.html",
+    "VersionId": "AT0TFnSNUhXgi5VyA6XPHd6xg_TN4_Z4",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/abilene-christian-university-police-4034fe/index.html",
+    "VersionId": "EcECeMiq12hipY9qxkWVejLyI0uYerdc",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/abilene-city-marshal-s-office-6cb133/index.html",
+    "VersionId": "NACsn3u9zG_YdSbYte3NmkeZdBx_6yQF",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/abilene-fire-marshal-s-office-8d854e/index.html",
+    "VersionId": "uzvEBDcQFDs0r7hCkSC4xipXlhZwvZNU",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/abilene-police-department-dbc2bc/index.html",
+    "VersionId": ".1ZABFXZCn8RpCDZkGRoYrCMvYIEoA0.",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/addison-fire-dept-7d1587/index.html",
+    "VersionId": "AgbIqM3kqMjLkZz5OEen05uoL.2r9Z0.",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/addison-police-department-5b4874/index.html",
+    "VersionId": "E_0VgAZR8AD0fa_pO6k4eOuwQPU40rjV",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/adjutant-general-s-department-6f5964/index.html",
+    "VersionId": "fegA70UcrzOa3NlZqy6JZ6jlzQto36.m",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/agua-dulce-marshal-s-office-f109cf/index.html",
+    "VersionId": "3LwgaEKYB9THnA17dAfbwLmkIaq_aSCL",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alabama-coushatta-tribe-of-texas-police-dept-a51fa4/index.html",
+    "VersionId": "nMLs78.oinn8sZVWJnvpZPTJ7CT6ST7c",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alamo-colleges-district-0003d1/index.html",
+    "VersionId": "ubhBMcgLe8YB5peFZyxH9TQZWuXGiVWM",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alamo-fire-dept-7c7c52/index.html",
+    "VersionId": "oOv3d2uBAGz8T8FGx04DcVLBPmiU8t3U",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alamo-heights-police-dept-a6fb9b/index.html",
+    "VersionId": "pKLa.7Y6qxlN3gWr1bW_3ymWxKdL.3dj",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alamo-police-dept-0020fc/index.html",
+    "VersionId": "MHwHP4ZUKA_1fROUBCQg7M8VTuov31ik",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alba-police-dept-139bc6/index.html",
+    "VersionId": "4Vo9kqIOTuxIi__H3aZUhOd4vB.oKBwj",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/albany-police-dept-8e5ad1/index.html",
+    "VersionId": "w1VmxfciJWEIJ5uE5YD775MD9V2.BEEw",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/aldine-isd-police-department-d298ba/index.html",
+    "VersionId": ".UcFRLCe73IiKoAuuYJ2BKV9tDFT3iTU",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/aledo-i-s-d-police-dept-5ec880/index.html",
+    "VersionId": "N2QT9XDxcZ1T49Qbiupf7FwL1nJWAo9x",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alice-police-dept-fe7545/index.html",
+    "VersionId": "Cncc28rvhtmgSl5JVvqu.8LxNizM0BRQ",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alief-i-s-d-police-dept-ff0c49/index.html",
+    "VersionId": "hdYYTVFYDjtHVfGErHO5bw5Sj2HCYUzi",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/allen-fire-dept-640c6b/index.html",
+    "VersionId": "sHAHc9.h5hpHR.OYeeARnZ9c6zMVIiud",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/allen-police-department-9e6b5d/index.html",
+    "VersionId": "sZ6D3axSntpeU7fP_rNVZgn25ExIzGOD",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alpine-police-department-13e700/index.html",
+    "VersionId": "ErW0x3RIBTLe2IVFB15zzU4vLlMPUUuE",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alto-police-department-884f0c/index.html",
+    "VersionId": "rTknLfy50AxXyxYGbeZBCRarzaA3cJ3_",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alton-fire-marshal-s-office-1c3ac4/index.html",
+    "VersionId": "zJKDMcQr4kXS7Bs8pvErQNUGqu6f._sC",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alton-police-dept-fce90e/index.html",
+    "VersionId": "i.88YCO_fKJcKJIzJc3KW1UE8sb_lkeY",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alvarado-isd-police-department-267426/index.html",
+    "VersionId": "rGwd8PRbVJW5Gm.ya_QujtSLJ_7AmhGL",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alvarado-marshal-s-office-abbc8a/index.html",
+    "VersionId": "yrTuhaaXjyZGi25MHIN7WRXY5MXO7r.n",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alvarado-police-dept-a4ccec/index.html",
+    "VersionId": "fbCOsiFa1E_oD4UcdvhFGFu305mI7n4j",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alvin-community-college-police-dept-00aca3/index.html",
+    "VersionId": "szEarrLYBAeKx8q8owhi3EfWbrUubWi_",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alvin-isd-police-department-73ae08/index.html",
+    "VersionId": "tT44Na5v.pTYaAk5ulcs39k_O5wqLvNH",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alvin-police-department-8da812/index.html",
+    "VersionId": "cTOV5OJDkirOarAC4X83dbrv9wFzCber",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/alvord-isd-police-department-25e10a/index.html",
+    "VersionId": "DgIMax1Blfe.qTw_NI_4WBCA1sOFyNnU",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/amarillo-airport-police-dept-4cee68/index.html",
+    "VersionId": "U_0HmQ63Ss5r8n7744gg4SRJDLU0zQ1j",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/amarillo-city-marshal-office-d31907/index.html",
+    "VersionId": "3k4VoU5anwnjneP3pnQwb.uKUXdQ47tq",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/amarillo-college-police-dept-690ea8/index.html",
+    "VersionId": "f2W8vKbSYcK8HMVLKkjTrgE_vUi7_MHf",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/amarillo-emergency-communication-center-85f3c9/index.html",
+    "VersionId": "gvJPuueMVvEZxnnmrOlDg69ag1U67C4o",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/amarillo-fire-marshal-s-office-702de5/index.html",
+    "VersionId": "n321yxUC66m_Xbtl8d5l49u3p3LWx7TZ",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/amarillo-isd-police-department-1d0db5/index.html",
+    "VersionId": "g_DICQZqqijuTc4ec1HJWv0TvUYHYP5a",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/amarillo-police-department-1defd1/index.html",
+    "VersionId": "njPGQ2TCEdQdDnz09azys7Mzjuw0MRjs",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/anderson-co-const-pct-1-730f92/index.html",
+    "VersionId": "Eo5fwDSg.92EHJ_llh2_tW3haYUkFNiN",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/anderson-co-const-pct-2-347865/index.html",
+    "VersionId": "K_6EQRCvEqmJhi.Xfu8m7.Ato54iVNxI",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/anderson-co-const-pct-3-628ed1/index.html",
+    "VersionId": "ZKtJjW57IsaqJwveSU.Uzohrv1Gonod0",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/anderson-co-const-pct-4-44c6f5/index.html",
+    "VersionId": "mLNVdp8YOlp1tfjLc8jalckm1.nQYIy9",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/anderson-co-dist-atty-s-office-877932/index.html",
+    "VersionId": "WmDudCFFcXc40ijeDbPgnHuRxSjhyIMO",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/anderson-co-sheriff-s-office-ce31d9/index.html",
+    "VersionId": "izwD2jXdO2hZT4a84jBVrQKcqnIdBI_p",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/anderson-houston-co-comm-supervision-and-corr-dept-f021af/index.html",
+    "VersionId": "vxQvGPyaqdo1jGxqWf4BrRrt2Wm3a3YS",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/andrews-co-const-pct-1-and-4-b97b76/index.html",
+    "VersionId": "rQWQDbeWqAkYR1K3aIjZxyqVtpcN.jeV",
+    "LastModified": "2026-04-17T03:03:19+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/andrews-co-const-pct-2-and-3-423f89/index.html",
+    "VersionId": "nXm2TNpCcrvyOZ9kAJmyiGS0yKlzI.6u",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/andrews-co-juvenile-probation-dept-a6db1c/index.html",
+    "VersionId": "6RvDrYIEI0QR8VvZXYOn3x8KtploTPYQ",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/andrews-co-sheriff-s-office-29d77c/index.html",
+    "VersionId": "tqkc0G9wIgffMkASP6zBdOhVTTJfZaUd",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/andrews-county-enviromental-enforcement-fire-marshal-s-office-90ed9b/index.html",
+    "VersionId": "AH.TUJU2hD1rFt48AFvAyKyIWeZYySEe",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/andrews-police-dept-8204b7/index.html",
+    "VersionId": "hIXNzfRpIAPNTITQAvDRNFYvbrBt4Uw1",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/angelina-co-atty-s-office-3dd004/index.html",
+    "VersionId": "mRkddcvujmL09IbpNUyfn.dtmEgC05po",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/angelina-co-const-pct-1-f8ebd7/index.html",
+    "VersionId": "kn4.A77mnVAd5sTj.Ban9k9qOunmmc4D",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/angelina-co-const-pct-2-a9fa34/index.html",
+    "VersionId": "f9fmLWXFvnI01jmrB01a.BqdS2nxqcal",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/angelina-co-const-pct-3-96d3c7/index.html",
+    "VersionId": ".fI4sB4AhFZdcREWfNN_g3GeFo1T5rtc",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/angelina-co-const-pct-4-890901/index.html",
+    "VersionId": "KcEPEli4S14G3H3IpOAMrbj5JUZXoOb4",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/angelina-co-dist-atty-s-office-91e1c6/index.html",
+    "VersionId": "HFBnLiUYSn4KrWYhGZrGXYb8gR6RqaAG",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/angelina-college-police-department-73a24d/index.html",
+    "VersionId": "8MseNg1Upbgi_0F0UbARC99ejUwKlsj5",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/angelina-county-cscd-f7315c/index.html",
+    "VersionId": "fAh2opdeZ3AkpPDSpU_TL6BNAFKob0gz",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/angelina-county-sheriff-s-office-5f44c5/index.html",
+    "VersionId": "lTGQHAg3rpHyBc.XivOUTMzR1vnDoTAA",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/angelo-state-univ-police-5e71c7/index.html",
+    "VersionId": "Q8Sjtlqo9zk4RGBXc_hYWxeCjeyKDwvS",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/angleton-i-s-d-police-dept-ad8c02/index.html",
+    "VersionId": "EtY25Gntv6X6Yy6sdhB8sZOXBWT3iovt",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/angleton-police-dept-4522cf/index.html",
+    "VersionId": "Uxh6.v9mfJ2G8.8tCRlDmKERON6ZXilt",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/anna-isd-police-department-9000c4/index.html",
+    "VersionId": "J2zAbnwOnJ5qgBygR2u1eXTQgF83w0V3",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/anna-police-department-e6af63/index.html",
+    "VersionId": "yntu8QJ4yE5HN31aWnC9n1iDQCjqWZKf",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/anson-police-dept-a133e1/index.html",
+    "VersionId": "u5fKAG1UcpYqtm3L9Bpo1If.oWlU86EO",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/anthony-police-dept-eb1b55/index.html",
+    "VersionId": "_xUeh_8tAFl4Wk48F0bXn6Ag82JMnyBO",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/anton-police-dept-7b870e/index.html",
+    "VersionId": "e0n7hswY2X6fs8K65WhqoSfj9hEM61jx",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/aquilla-isd-police-department-5f8676/index.html",
+    "VersionId": "hWYCVEGthLUkinUme3L7abeUy319Pmwd",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/aransas-co-atty-s-office-2d7a37/index.html",
+    "VersionId": "Bhctm25rLLPprzdtnQMGPv0LAMIBnUcA",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/aransas-co-const-pct-1-bd34d9/index.html",
+    "VersionId": "h2BjBj7SRxAApZOooA4Yq3RbrYaoCJDp",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/aransas-co-const-pct-2-0b5586/index.html",
+    "VersionId": "uhFd71Jwe9kmWobXJ2MFQnMIGmA0zCdp",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/aransas-county-sheriff-s-office-eb4ec5/index.html",
+    "VersionId": "sN0xTnMMnzv76ERoV..W3yudSLR__JlM",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/aransas-pass-police-department-c71b25/index.html",
+    "VersionId": "xP_G_YdvcC23ajMqn6IhCSYgkXy2mko1",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/archer-city-police-department-ad4972/index.html",
+    "VersionId": "jNzmoLuvCIb9Z.P_5BmTbKIyZsWIQsXy",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/archer-co-const-pct-1-ad79ec/index.html",
+    "VersionId": "YmYIpfJNzUEDTHKGLsnZRe0sYM0KRq9m",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/archer-co-const-pct-2-54cb44/index.html",
+    "VersionId": "EN94GcxX04sK2TCFLWYRyBq6oW15t9ms",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/archer-co-const-pct-3-d12f82/index.html",
+    "VersionId": "TzM04dDV67DoYYjvISY7FInks2dBbvEW",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/archer-co-const-pct-4-616e3a/index.html",
+    "VersionId": "lALgTivIfdcOqDlgfRqQGbhzrbQlneoV",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/archer-co-sheriff-s-office-57d4dc/index.html",
+    "VersionId": "2zYzLl2oSvrQUqmxzq1H0Nlw8g3vSHZR",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/arcola-police-dept-fb0103/index.html",
+    "VersionId": "Uv1wmC2x7UfyyGF1tmMu5Hb3OqbDdvMb",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/argyle-isd-police-department-62ddee/index.html",
+    "VersionId": "UUqdpVfXZgOC.7u9xoN3KyFzi7xeZHbU",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/argyle-police-dept-1d341c/index.html",
+    "VersionId": "rzPDieIs0_1a_QfaOX1xZRX29NKMg4X2",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/arlington-fire-dept-7f20e4/index.html",
+    "VersionId": "ZfHz7EBbxBtJqzdnC25LseNXwZAmFXL_",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/arlington-police-department-1ee9d6/index.html",
+    "VersionId": "mzXU8nfSs7njXh662V7iGJPhncNTfwGL",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/armstrong-county-sheriff-s-office-a1facd/index.html",
+    "VersionId": "2ZiS_CLWWmP6fG8qgMvjaATclapZJG1U",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/arp-isd-police-department-664104/index.html",
+    "VersionId": "yTt.V9LMJ_SeY5g_Bzd3TO5h5CODN410",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/arp-police-dept-b9a4ce/index.html",
+    "VersionId": "BdJJ.WMpbQlT2gDg1bEYyfb1YBGnA5E4",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/atascosa-co-atty-s-office-28cfe1/index.html",
+    "VersionId": "OehKl_tXaz.kHy7ITrFnrhH2r9sBzwSA",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/atascosa-co-const-pct-1-1118df/index.html",
+    "VersionId": "dzlutiPmyemLBpDTwhE2jQramFZAZ1yS",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/atascosa-co-const-pct-2-39768d/index.html",
+    "VersionId": "BJUxguQ.9RoBtKMrqtogWXtd19uSHijW",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/atascosa-co-const-pct-3-60fad0/index.html",
+    "VersionId": "GYIqiGVumMKvae09u2FexnNmWf4EEELo",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/atascosa-co-const-pct-4-a950dc/index.html",
+    "VersionId": "ydiEg_pqnZmkBGZqONovevUwEylZB7Bt",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/atascosa-co-sheriff-s-office-a2132b/index.html",
+    "VersionId": "h2w.9uQCpQMxDlFf5hWJmSyarKO6qikB",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/atascosa-county-fire-marshal-s-office-4b2464/index.html",
+    "VersionId": "GOaSMHgmnc6Sk_w2.iX.MVRd_1j7OJp3",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/athens-municipal-water-authority-police-department-cf30ec/index.html",
+    "VersionId": "A3wCNFuv.hc.3O4dsdjbgXBa2C_Slx9b",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/athens-police-department-96cdda/index.html",
+    "VersionId": "hOq5IZI5JyKWgmQ1F8JZdzZZUANBJ.M3",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/atlanta-fire-dept-bdc230/index.html",
+    "VersionId": "oI3EG_gs8PgFyvwviCxSWRg9CXeeREeK",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/atlanta-isd-police-department-3ebdc5/index.html",
+    "VersionId": "f7egbVfjiZ183sq6sZdW6SY..b4KuEui",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/atlanta-police-dept-c161a8/index.html",
+    "VersionId": "Buj9F.RCgBPOvbXhEBsrBSfELo5X.sHe",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/aubrey-isd-pd-5be75a/index.html",
+    "VersionId": "wY1Cr8PgK07Y6eW9ZpMGeaULFQh1KeRw",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/aubrey-police-department-aee6cf/index.html",
+    "VersionId": "ahFUQBMk5vnBaqaYfX1jiQ3stQBmdK0L",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/austin-co-const-pct-1-e9ed15/index.html",
+    "VersionId": "c1dkF9hRAHBveGddWovpN3Lnh4l_EFAp",
+    "LastModified": "2026-04-17T03:03:20+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/austin-co-const-pct-2-eb3622/index.html",
+    "VersionId": "uU18Zt53yLLPDk6JKMV1Jg35G9enBTgg",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/austin-co-const-pct-3-818e8a/index.html",
+    "VersionId": "EzoYbvaotceOnRKmN_NzjldLz6Nv_1cQ",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/austin-co-const-pct-4-7f43ee/index.html",
+    "VersionId": ".4qVqve6xuM4plj0SbTEWSPKLNl4GE1C",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/austin-co-sheriff-s-office-53792d/index.html",
+    "VersionId": "BpDYOzVBc1LmnzGZ4Rdec1cb5gPG_ZBc",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/austin-college-police-dept-795aad/index.html",
+    "VersionId": "isfOPPZJDez_FqwbRTSLd3A31xddxvxj",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/austin-comm-col-dist-police-3bfe41/index.html",
+    "VersionId": "17DN1YAOos9FnQ8ToPJ2.mfzQmCm3b0i",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/austin-fire-department-e6cb5d/index.html",
+    "VersionId": "jRCupTFVx_rGkAiSSyM32z1Xjd7.72uQ",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/austin-isd-police-department-4aa8f4/index.html",
+    "VersionId": "gXv0jwDBOuoacA3nFR.rt5NkR.dFTKg6",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/austin-police-department-188a8e/index.html",
+    "VersionId": "zEnZ5X5h6YZP1o4.2XMkb2N8HAGfINzN",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/avery-isd-police-department-bed9f9/index.html",
+    "VersionId": "gtpwL4dd9Yj9DFCFTZNKy7f5N2RlmGAE",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/axtell-isd-police-department-186608/index.html",
+    "VersionId": "0KioX8Em.3.c.ZXKy1LceIRKdRtd_TfS",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/azle-fire-dept-527a63/index.html",
+    "VersionId": "aiSl2x9lIEbFZ7WrCMBSm4pXEMdJoR.o",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/azle-i-s-d-police-dept-dacb13/index.html",
+    "VersionId": "OsVKhA8JUOWKUK2W0_f3nqvYsp4wcHYf",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/azle-police-department-ce24cb/index.html",
+    "VersionId": "OmY24XuoNDUTIzsvRmvXtLTd6J1zFegg",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bailey-co-sheriff-s-office-f2f37d/index.html",
+    "VersionId": "UTjMZN1lPwG9d4Bc4zg.MXkd9S_ogDPi",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/balch-springs-city-marshal-s-office-c946fe/index.html",
+    "VersionId": "ETYudp701ptUpteknV3KK4lv2kFZUvBl",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/balch-springs-fire-dept-f39bc5/index.html",
+    "VersionId": "krjDPRMW6Ucltmw9ducKbZstIpVT0H7U",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/balch-springs-police-department-bc0793/index.html",
+    "VersionId": "eMEJt15nsEbyq.opffhR_Ln5oUNrGhdm",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/balcones-heights-police-dept-440069/index.html",
+    "VersionId": "Sy7_g5R_5QIfCgZMNvi0RXLmo5YW5Veq",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/ballinger-police-dept-e6d049/index.html",
+    "VersionId": "0_a3W_d4WPH82tjwe7YXptK_jF88PBtY",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bandera-co-const-pct-1-611fa5/index.html",
+    "VersionId": "XE1WbvQRbFMnFqOhnmUzTJTEXc5qCGUN",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bandera-co-const-pct-2-a1b6fc/index.html",
+    "VersionId": "tYjB6gE2f01iLMO.HJQvb9huoecFxye0",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bandera-co-const-pct-3-4a35ab/index.html",
+    "VersionId": "49G0WjyG5SNXoWEwwdDxAEvjchNC6h0I",
+    "LastModified": "2026-04-17T03:03:21+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bandera-co-const-pct-4-34229a/index.html",
+    "VersionId": "nYMgvNOXksbZIJyP7IsKpgFqou0aCW1W",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bandera-co-sheriff-s-office-776d26/index.html",
+    "VersionId": "7kwdj67If6irG5kLtBizqilQzGqPFPRL",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bangs-police-dept-ce43c4/index.html",
+    "VersionId": "GoHWxM.8qP9iTnt6b41KmiF8G44AJY3Q",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/barbers-hill-isd-police-dept-6380a8/index.html",
+    "VersionId": "QJtyu5.M0YLNrkYMuS8zYqmQxYlVkhKy",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bartlett-police-dept-9c05c0/index.html",
+    "VersionId": "AQwzAM4GcSrq9afYbL9yeO_dJrsw3xOs",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bartonville-police-dept-a4ee9c/index.html",
+    "VersionId": "D7rT.H.OVj5crIWIhR7_63zyj.oLh1v8",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bastrop-co-const-pct-1-40f928/index.html",
+    "VersionId": "OAT61OgjVE.YZdULZyQtLlUazciq17Xo",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bastrop-co-const-pct-2-891469/index.html",
+    "VersionId": "WYOUq3yb.8QEoRUzzd.GilWghDKH48sD",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bastrop-co-const-pct-3-7941e6/index.html",
+    "VersionId": "Ay54aGdU6m0_Pyvc7JTr6ZRknMAVY8Np",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bastrop-co-const-pct-4-980ac4/index.html",
+    "VersionId": "49jyXLkpjNrgyU7mN4ZB1r6ZjfcgpvV3",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bastrop-co-dist-atty-s-office-d6a7bf/index.html",
+    "VersionId": "Df400eD6Rvuga6RhmqihmPfMJhoUUQ3y",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bastrop-county-emergency-communications-bf9854/index.html",
+    "VersionId": "1zndBSYPkelZnJutvezDPD2wQ87LsKqj",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bastrop-county-sheriff-s-office-0ffb1b/index.html",
+    "VersionId": "FP0yxmSj_1wJiabptQ2QY72I8jOtZusj",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bastrop-isd-police-department-d71e87/index.html",
+    "VersionId": "5xgg1w9JSNGLuB98Zy6l5zFGMlKdR_CA",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bastrop-police-department-566f97/index.html",
+    "VersionId": "GlwMmK3o2WepvBezag.kVqLQ.WVzy7cX",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bay-city-i-s-d-police-dept-081c5c/index.html",
+    "VersionId": "ZNpR.E4_QJ9ZGjCxnIE6rfYI8skEpyOL",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bay-city-police-dept-d5762e/index.html",
+    "VersionId": "ssfr8Whh8ykJ.IHzLG2x8GjRMi5O35n7",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/baylor-co-sheriff-s-office-8432c1/index.html",
+    "VersionId": "MobWzu5qoVbATKzDcR00JmmC0KLOkj1e",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/baylor-scott-white-health-public-safety-40b3df/index.html",
+    "VersionId": "NM960O4Vtr8ZWjLZle7nDh4TfkhYjXQd",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/baylor-univ-police-dept-46f16b/index.html",
+    "VersionId": "E8hvvG_XOyV2s.duG8ez52d7jpzyn4yj",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bayou-vista-police-dept-fca1f5/index.html",
+    "VersionId": ".ilfMh3_zCTbx_zZndKniLIvhndb1Zga",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/baytown-city-marshal-office-ae73b6/index.html",
+    "VersionId": "Ya7bPAWlPq3AnNR1M.cryeXLK01cYv.L",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/baytown-fire-and-emergency-service-767570/index.html",
+    "VersionId": "mIhU3ZUZL5TufvzaqEIdCqt8ef4jF5QP",
+    "LastModified": "2026-04-17T03:03:22+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/baytown-police-dept-e85e20/index.html",
+    "VersionId": "7eumZ_E6Mn1kMpCn4BFuiDMJRdbG5OQm",
+    "LastModified": "2026-04-17T03:03:23+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/beaumont-fire-dept-ae5b28/index.html",
+    "VersionId": "_YtDCO0QblEQwU3Ql0pSpmNR7eBN7zR8",
+    "LastModified": "2026-04-17T03:03:23+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/beaumont-i-s-d-police-dept-e56e69/index.html",
+    "VersionId": "ZcgIxC9HVuKGkLGqTgSIaU51.tCFpgc5",
+    "LastModified": "2026-04-17T03:03:23+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/beaumont-police-department-ac0861/index.html",
+    "VersionId": "q5tcqkQrTcd.siXuowBLFrKdvMUSspaS",
+    "LastModified": "2026-04-17T03:03:23+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bedford-arson-bureau-672fc7/index.html",
+    "VersionId": "f6.8K9Wu1q1vIL5GwWlXECUout0XJAtu",
+    "LastModified": "2026-04-17T03:03:23+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bedford-police-department-9918ae/index.html",
+    "VersionId": "L2vGTJwnkBkgFcpjXLA7_H9TvLOEQ56_",
+    "LastModified": "2026-04-17T03:03:23+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bee-cave-police-department-7c7fa3/index.html",
+    "VersionId": "EMsP6XhDgGfUQkmLM4eBYsdFqxFQVTyJ",
+    "LastModified": "2026-04-17T03:03:23+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bee-co-const-pct-1-5024a6/index.html",
+    "VersionId": "xSRZehb5oOpgDrxc8bCC0zsoX92dc99f",
+    "LastModified": "2026-04-17T03:03:23+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bee-co-const-pct-2-111d85/index.html",
+    "VersionId": "2qUdQ9X3sqwDKsi4R2Wt0cZHm.Spbft9",
+    "LastModified": "2026-04-17T03:03:23+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bee-co-const-pct-3-5c3a78/index.html",
+    "VersionId": ".uypV8W961fkeHCjxFveHR8lpwVuHs8a",
+    "LastModified": "2026-04-17T03:03:23+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bee-co-const-pct-4-4d0540/index.html",
+    "VersionId": "mIF_P9l0sEBDpWUWPENktHATzVop3rO6",
+    "LastModified": "2026-04-17T03:03:23+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bee-co-sheriff-s-office-effbe7/index.html",
+    "VersionId": "n240Pvvx7d2O5qBnwwR0r5fRhe_5XR7C",
+    "LastModified": "2026-04-17T03:03:24+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/beeville-isd-police-department-192d20/index.html",
+    "VersionId": "NZgvfih8QJBssDUlKcz3pTe8NZxXCGi6",
+    "LastModified": "2026-04-17T03:03:24+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/beeville-police-dept-63c769/index.html",
+    "VersionId": "zI1jOMPWZrwmFjicvBVY6lkfhDDRhaVZ",
+    "LastModified": "2026-04-17T03:03:24+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bell-co-atty-s-office-417afb/index.html",
+    "VersionId": "de7TJ.Bc1AOXIN9Kxe7by1tmkuOQr80G",
+    "LastModified": "2026-04-17T03:03:24+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bell-co-communications-center-bfcbf1/index.html",
+    "VersionId": "8LQxfQBrbTJ4x5zXmiFAEbbQ1RYWMIml",
+    "LastModified": "2026-04-17T03:03:24+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bell-co-const-pct-1-2d5751/index.html",
+    "VersionId": "2KJ_ZstpiTiiKHgamCBNHu3_JCyHTwF6",
+    "LastModified": "2026-04-17T03:03:24+00:00"
+  },
+  {
+    "Key": "law-enforcement-agency/tx/bell-co-const-pct-2-188c8f/index.html",
+    "VersionId": "ftbytjzEt79dl.FFeWMwgrALL2ibBVJU",
+    "LastModified": "2026-04-17T03:03:24+00:00"
+  }
+]

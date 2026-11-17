@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change align-validation-with-live-data. Update Purpose after archive.
+Keep browser validation tied to current database fixtures while preserving exact routing, form, and source-data assertions and failing when required fixtures are absent.
 
 ## Requirements
 

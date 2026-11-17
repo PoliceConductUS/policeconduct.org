@@ -14,7 +14,7 @@ const BLOCKED_SUBMIT_FALLBACK =
 const FORM_LOAD_ERROR_MESSAGE = `
   <p class="mb-2"><strong>An error occurred while loading this page, and we have already reported it.</strong></p>
   <p class="mb-2">If the form fields are visible, you can still fill them out, print the page, and email it to hello@policeconduct.org.</p>
-  <p class="mb-0">To report additional details, please click "Report issue" at the bottom of the page.</p>
+  <p class="mb-0">To report additional details, please click "Report a site issue" at the bottom of the page.</p>
 `;
 
 type RecaptchaEnterprise = {
@@ -84,7 +84,9 @@ type SubmitJsonFormOptions = {
   validate?: () => boolean | Promise<boolean>;
   onInvalid?: () => void | Promise<void>;
   onBeforeSubmit?: () => unknown | Promise<unknown>;
-  buildPayload?: (args: SubmitPayloadArgs) => unknown | Promise<unknown>;
+  buildPayload?: (
+    args: SubmitPayloadArgs,
+  ) => Record<string, unknown> | Promise<Record<string, unknown>>;
   onSuccess?: (args: SubmitSuccessArgs) => void | Promise<void>;
   successKind?: "verification_pending";
   getSuccessDetail?: (args: { result: unknown }) => string;
@@ -704,12 +706,14 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
     };
 
     failureStage = "request";
+    const releaseId = form.ownerDocument.documentElement.dataset.releaseId;
+    if (!releaseId) throw new Error("The form is missing its website release.");
     const response = await fetch("/api/forms/submit", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, releaseId }),
     });
     responseStatus = response.status;
 
@@ -733,15 +737,20 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
 
     failureStage = "response";
     const result = await response.json();
+    const verificationPending = (result as { verificationPending?: unknown })
+      ?.verificationPending;
+    const verificationEmailStatus =
+      verificationPending === true
+        ? "pending"
+        : verificationPending === false
+          ? "failed"
+          : "unknown";
 
     form.classList.remove("was-validated");
     const detailNode = inlineSuccess.querySelector<HTMLElement>(
       "[data-form-submit-success-detail]",
     );
     if (detailNode) {
-      const verificationPending =
-        (result as { verificationPending?: unknown })?.verificationPending !==
-        false;
       const message =
         typeof (result as { message?: unknown })?.message === "string"
           ? (result as { message: string }).message.trim()
@@ -753,8 +762,8 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
       let detailMessage =
         getSuccessDetail?.({ result }) ||
         message ||
-        "We received your submission. Check your email and open the verification link within 15 minutes. Your submission will not be accepted for review unless it is verified. Please contact hello@policeconduct.org if you need help.";
-      if (!verificationPending) {
+        "We received your submission. Check your email and open the link within 15 minutes to confirm your email address. Please contact hello@policeconduct.org if you need help.";
+      if (verificationPending === false) {
         console.error("Form verification email failed", result);
         if (requestId) {
           detailMessage = `${detailMessage} Reference: ${requestId}.`;
@@ -770,7 +779,27 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
     inlineSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
     trackFormAnalytics("form_submit_success", formName, {
       response_status: responseStatus ?? response.status,
+      verification_email_status: verificationEmailStatus,
     });
+    if (verificationPending === false) {
+      const reason = (result as { verificationFailureReason?: unknown })
+        ?.verificationFailureReason;
+      trackFormAnalytics("form_verification_email_failed", formName, {
+        response_status: responseStatus ?? response.status,
+        verification_email_status: "failed",
+        failure_stage: "verification_email",
+        failure_reason:
+          typeof reason === "string" &&
+          [
+            "missing_origin",
+            "missing_email",
+            "invalid_email",
+            "send_failed",
+          ].includes(reason)
+            ? reason
+            : "unknown",
+      });
+    }
     await onSuccess?.({
       form,
       inlineSuccess,

@@ -5,7 +5,8 @@ import { Client } from "pg";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
-const envFiles = [".env", ".env-recaptcha", ".env-policeconduct"];
+const databaseUrl = process.env.DATABASE_URL;
+const envFiles = [".env"];
 
 for (const envFile of envFiles) {
   dotenv.config({
@@ -14,7 +15,42 @@ for (const envFile of envFiles) {
   });
 }
 
+// Preserve an explicit isolated connection over layered local configuration.
+if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
+
 const requiredTables = {
+  data_annotation: {
+    columns: [
+      "id",
+      "subject_kind",
+      "subject_id",
+      "type",
+      "field",
+      "value",
+      "replacement_value",
+      "message",
+      "evidence",
+      "source_namespace",
+      "source_record_id",
+      "producer_namespace",
+      "producer_record_id",
+      "status",
+    ],
+    notNull: [
+      "id",
+      "subject_kind",
+      "subject_id",
+      "type",
+      "field",
+      "value",
+      "message",
+      "source_namespace",
+      "source_record_id",
+      "producer_namespace",
+      "producer_record_id",
+      "status",
+    ],
+  },
   personnel_photo: {
     columns: [
       "id",
@@ -154,6 +190,8 @@ const requiredTables = {
       "filed_date",
       "date_terminated",
       "claims_summary",
+      "ai_complaint_summary",
+      "complaint_summary_unavailability",
       "outcome",
       "primary_source_url",
       "created_at",
@@ -163,14 +201,36 @@ const requiredTables = {
     uniqueColumnSets: [["slug"]],
   },
   coverage_link_agency_personnel: {
-    columns: ["coverage_link_id", "agency_personnel_id"],
+    columns: [
+      "id",
+      "coverage_link_id",
+      "agency_personnel_id",
+      "occurrence_url",
+      "correction_reason",
+      "source_namespace",
+      "source_id",
+      "confidence",
+      "notes",
+    ],
     notNull: ["coverage_link_id", "agency_personnel_id"],
+  },
+  coverage_homepage_windows: {
+    columns: ["id", "window_end", "placement_count"],
+    notNull: ["id", "window_end", "placement_count"],
+  },
+  coverage_homepage_placements: {
+    columns: ["id", "window_id", "coverage_link_id", "position", "clicks"],
+    notNull: ["id", "window_id", "coverage_link_id", "position", "clicks"],
   },
   coverage_links: {
     columns: [
       "id",
       "url",
       "normalized_url",
+      "source_namespace",
+      "source_id",
+      "summary",
+      "occurrences",
       "title",
       "source_name",
       "published_at",
@@ -290,8 +350,8 @@ const requiredTables = {
     notNull: ["id", "personnel_id", "name"],
   },
   review_links: {
-    columns: ["id", "review_id", "title", "url"],
-    notNull: ["id", "title", "url"],
+    columns: ["id", "review_id", "title", "url", "civil_case_id"],
+    notNull: ["id", "review_id"],
   },
   review_personnel: {
     columns: ["id", "review_id", "agency_personnel_id", "rating_overall"],

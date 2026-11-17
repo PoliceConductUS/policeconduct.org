@@ -1,3 +1,9 @@
+import {
+  requireAiComplaintSummary,
+  requireComplaintSummaryUnavailability,
+  type ComplaintSummaryUnavailability,
+  type AiComplaintSummary,
+} from "./ai-complaint-summary.js";
 import { withDb } from "#src/lib/db.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
 
@@ -42,6 +48,8 @@ export type CivilCaseDetail = {
     filed_date: string;
     date_terminated: string | null;
     claims_summary: string;
+    ai_complaint_summary: AiComplaintSummary | null;
+    complaint_summary_unavailability: ComplaintSummaryUnavailability | null;
     outcome: string | null;
     primary_source_url: string | null;
     created_at: string;
@@ -80,6 +88,16 @@ export const loadCivilCaseDetail = async (
         `Civil case ${civilCase.id || slug} is missing required claims_summary.`,
       );
     }
+
+    civilCase.ai_complaint_summary = requireAiComplaintSummary(
+      civilCase.ai_complaint_summary,
+    );
+
+    civilCase.complaint_summary_unavailability =
+      requireComplaintSummaryUnavailability(
+        civilCase.complaint_summary_unavailability,
+        civilCase.ai_complaint_summary,
+      );
 
     const civilCaseLinks = (
       await client.query(

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./page-fixture";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,9 +13,11 @@ let client: Client;
 const previousTimezone = process.env.TZ;
 test.beforeAll(async () => {
   process.env.TZ = "America/Los_Angeles";
-  for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
+  const databaseUrl = process.env.DATABASE_URL;
+  for (const path of [".env"]) {
     dotenv.config({ path, override: true, quiet: true });
   }
+  if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
   client = new Client({ connectionString: process.env.DATABASE_URL });
   await client.connect();
 });

@@ -7,12 +7,8 @@
  *
  * Two design rules, both learned the hard way:
  *
- * 1. A count without the identity of the store it came from is not a fact. We
- *    have three stores that disagree about how many agencies we hold (the
- *    production site database, the local intake re-import, and the seed dump).
- *    Every measurement therefore carries the database it was taken from, the
- *    time it was taken, and a corpus fingerprint, so a stale number cannot be
- *    quoted as a current one.
+ * 1. Every measurement records the database, measurement time, and corpus
+ *    fingerprint. Counts describe that database at that time.
  *
  * 2. Query only what the schema contract guarantees. `agency.state` is in
  *    `scripts/validate-schema-contract.mjs` and is NOT NULL, so it is safe
@@ -116,7 +112,7 @@ export const measureHeldAgencies = async (
     limitations.push({
       missing: OPTIONAL.PAGE_PAYLOAD,
       consequence:
-        "Cannot distinguish agencies held in the database from agencies that actually render as public pages. Held is not the same as published and this run cannot report the difference.",
+        "Cannot count agency rows in the database page projection. Held is not the same as projected; neither count establishes live publication.",
     });
   }
 
@@ -169,7 +165,7 @@ export const measureHeldAgencies = async (
     fingerprint,
     totalHeld,
     federalHeld: federal,
-    publishedAsPages: published,
+    projectedAgencyPages: published,
     byState: Object.freeze(
       stateRows.map((row) => Object.freeze({ code: row.code, held: row.held })),
     ),

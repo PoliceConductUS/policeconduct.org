@@ -1,5 +1,6 @@
 # build output
 dist/
+/.release/
 
 # generated types
 .astro/
@@ -41,9 +42,11 @@ pnpm-debug.log*
 *.tfstate.*
 crash.log
 *.tfvars
+!infrastructure/*/*.auto.tfvars
 !infrastructure/bootstrap/terraform.tfvars.example
 infrastructure/bootstrap/lambdas/*.zip
 forms-api.zip
+release-api.zip
 notification-canary.zip
 upgrade.log
 test-results/
@@ -67,3 +70,7 @@ rollback.json
 
 # Personnel portraits staged from intake database associations.
 /public/img/personnel-photos/
+
+# code coverage
+coverage/
+*.lcov

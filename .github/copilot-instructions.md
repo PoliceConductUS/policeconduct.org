@@ -19,3 +19,11 @@ The UI should feel sober, civic, trustworthy, accountability-oriented, and evide
 - Do not add page-local H1/H2 font-family, font-size, font-weight, line-height, or letter-spacing.
 - Avoid gradients, glassmorphism, decorative blobs, neon dashboards, nested cards, generic AI metric walls, and placeholder copy that explains missing data.
 - Preserve database-backed routing conventions from `AGENTS.md`.
+
+## Merge checks
+
+Follow `AGENTS.md` and the complete [README merge checklist](../README.md#pr-merge-checklist). Use mise and exact lockfile dependencies, run full validation on the final head, fix all errors and warnings, and account for hints and skips. Exit zero or green CI alone is not merge readiness. Warning/coverage exceptions require explicit scoped human permission.
+
+Full final-build and sitemap verification are required before production release,
+not PR merge. Required task-specific rendering checks and browser coverage still
+apply; record release evidence separately from merge evidence.

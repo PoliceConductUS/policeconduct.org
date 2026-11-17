@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "./page-fixture";
 import dotenv from "dotenv";
 import { Client } from "pg";
 import {
@@ -153,9 +153,11 @@ const simpleSenderCases: SenderCase[] = [
 ];
 
 test.beforeAll(async () => {
-  for (const path of [".env", ".env-recaptcha", ".env-policeconduct"]) {
+  const databaseUrl = process.env.DATABASE_URL;
+  for (const path of [".env"]) {
     dotenv.config({ path, override: true, quiet: true });
   }
+  if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
   const client = new Client({ connectionString: process.env.DATABASE_URL });
   await client.connect();
   try {
@@ -169,12 +171,16 @@ test.beforeAll(async () => {
       `
       select c.title, c.cause_number, c.court, c.slug, lp.display_name as city
       from public.civil_cases c
-      cross join public.agency a
+      join public.civil_case_personnel ccp on ccp.civil_case_id = c.id
+      join public.agency_personnel ap on ap.id = ccp.agency_personnel_id
+      join public.personnel p on p.id = ap.personnel_id
+      join public.agency a on a.id = ap.agency_id
       join public.location_path lp on lp.location_path_id = a.location_path_id
-      where c.slug = $1 and a.slug = $2
+      where c.id = $1 and p.slug = $2 and a.slug = $3
     `,
       [
-        "lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025",
+        "ogecfxi5p67286qbmvkfjoa4",
+        "james-markham-v-7635c7",
         "irving-police-department-049f9a",
       ],
     );
@@ -208,7 +214,7 @@ const profileSenderCases: SenderCase[] = [
         name: "James Markham V",
       },
     },
-    locator: { kind: "role", value: "Share your experience" },
+    locator: { kind: "role", value: "Share an experience" },
     targetPath: "/report/new/",
   },
   {
@@ -340,7 +346,7 @@ const profileSenderCases: SenderCase[] = [
       "currentAgencyState",
       "reportLinks",
     ],
-    locator: { kind: "role", value: "Suggest new personnel" },
+    locator: { kind: "role", value: "Add personnel" },
     targetPath: "/personnel/new/",
   },
   {
