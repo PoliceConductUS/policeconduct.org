@@ -30,6 +30,8 @@ export const TERRAFORM_ENV = {
     "preview_cloudfront_distribution_id",
   ],
   FORMS_API_PROXY_TARGET: [policeconduct, "forms_api_preview_function_url"],
+  SENTRY_ORG: [policeconduct, "sentry_org"],
+  SENTRY_PROJECT: [policeconduct, "sentry_project"],
   RECAPTCHA_SITE_KEY: [recaptcha, "recaptcha_site_key"],
   RECAPTCHA_PROJECT_ID: [recaptcha, "recaptcha_project_id"],
   RECAPTCHA_SERVICE_ACCOUNT_EMAIL: [

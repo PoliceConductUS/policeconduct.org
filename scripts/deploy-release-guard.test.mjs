@@ -384,3 +384,81 @@ process.stdout.write(JSON.stringify(data));`,
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("a production release build is given the Sentry token from Parameter Store, and no other build is", () => {
+  const dir = mkdtempSync(join(resolve(tmpdir()), "build-release-sentry-"));
+  try {
+    mkdirSync(join(dir, "scripts"));
+    mkdirSync(join(dir, "bin"));
+    for (const file of [
+      "build-release.mjs",
+      "release-files.mjs",
+      "terraform-outputs.mjs",
+    ]) {
+      copyFileSync(new URL(file, import.meta.url), join(dir, "scripts", file));
+    }
+    writeFileSync(
+      join(dir, "scripts/write-release-news.mjs"),
+      "import fs from 'node:fs'; fs.mkdirSync('.release/data'); fs.writeFileSync('.release/data/dynamic.json', process.env.RELEASE_ID);",
+    );
+    writeFileSync(
+      join(dir, "bin/npm"),
+      '#!/bin/sh\nmkdir -p dist && echo "$RELEASE_ID" > dist/index.html && printf "%s|%s|%s" "$SENTRY_AUTH_TOKEN" "$SENTRY_ORG" "$SENTRY_PROJECT" > "$BUILD_ENV_LOG"\n',
+      { mode: 0o755 },
+    );
+    writeFileSync(
+      join(dir, "bin/aws"),
+      '#!/bin/sh\necho "aws $*" >> "$AWS_LOG"\nprintf "stored-token\\n"\n',
+      { mode: 0o755 },
+    );
+    initializeRepository(dir);
+    const awsLog = join(dir, "calls");
+    // Both logs sit under paths the fixture repository ignores.
+    const buildEnvLog = join(dir, "bin", "build-env");
+    const build = (extra) => {
+      writeFileSync(awsLog, "");
+      const result = spawnSync(
+        process.execPath,
+        ["scripts/build-release.mjs"],
+        {
+          cwd: dir,
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            PATH: join(dir, "bin") + ":" + process.env.PATH,
+            RELEASE_ID: "",
+            RECAPTCHA_SITE_KEY: "fixture-site-key",
+            SENTRY_ORG: "fixture-org",
+            SENTRY_PROJECT: "fixture-project",
+            SENTRY_AUTH_TOKEN: "",
+            AWS_LOG: awsLog,
+            BUILD_ENV_LOG: buildEnvLog,
+            ...extra,
+          },
+        },
+      );
+      assert.equal(result.status, 0, result.stderr);
+      return {
+        buildEnv: readFileSync(buildEnvLog, "utf8"),
+        aws: readFileSync(awsLog, "utf8"),
+      };
+    };
+
+    const ordinary = build({});
+    assert.equal(ordinary.buildEnv, "|fixture-org|fixture-project");
+    assert.equal(ordinary.aws, "");
+
+    rmSync(join(dir, "dist"), { recursive: true, force: true });
+    const production = build({ SENTRY_SOURCEMAPS: "upload" });
+    assert.equal(
+      production.buildEnv,
+      "stored-token|fixture-org|fixture-project",
+    );
+    assert.match(
+      production.aws,
+      /^aws ssm get-parameter .*--name \/policeconduct\/secrets\/SENTRY_AUTH_TOKEN --with-decryption/,
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

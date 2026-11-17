@@ -37,7 +37,8 @@ if [[ "$SKIP_BUILD" == false && "$(git branch --show-current)" != main ]]; then
   exit 1
 fi
 if [[ "$SKIP_BUILD" == false ]]; then
-  PR_NUMBER="" PREVIEW_NAME="" npm run build
+  # A production release uploads its sourcemaps to Sentry.
+  PR_NUMBER="" PREVIEW_NAME="" SENTRY_SOURCEMAPS=upload npm run build
 fi
 npm run validate:redirects
 args=()

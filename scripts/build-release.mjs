@@ -7,6 +7,31 @@ import { resolveTerraformEnv } from "./terraform-outputs.mjs";
 if (existsSync(".env")) process.loadEnvFile(".env");
 resolveTerraformEnv(["RECAPTCHA_SITE_KEY"]);
 
+// scripts/deploy-incremental.sh asks for this on a production release. The auth
+// token is a secret, so it comes from Parameter Store and nowhere else.
+if (process.env.SENTRY_SOURCEMAPS === "upload") {
+  resolveTerraformEnv(["SENTRY_ORG", "SENTRY_PROJECT"]);
+  process.env.SENTRY_AUTH_TOKEN = execFileSync(
+    "aws",
+    [
+      "ssm",
+      "get-parameter",
+      "--region",
+      "us-east-1",
+      "--name",
+      "/policeconduct/secrets/SENTRY_AUTH_TOKEN",
+      "--with-decryption",
+      "--query",
+      "Parameter.Value",
+      "--output",
+      "text",
+    ],
+    { encoding: "utf8" },
+  ).trim();
+  if (!process.env.SENTRY_AUTH_TOKEN)
+    throw new Error("SENTRY_AUTH_TOKEN in Parameter Store is empty");
+}
+
 const pr = process.env.PR_NUMBER;
 if (pr && !/^[1-9]\d*$/.test(pr)) throw new Error("Invalid PR_NUMBER");
 const commit = execFileSync("git", ["rev-parse", "HEAD"], {
