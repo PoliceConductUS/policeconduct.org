@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
+import { execFileSync } from "node:child_process";
 import process from "node:process";
 
+const API_KEY_PARAMETER = "/policeconduct/secrets/RESEND_API_KEY_FULL_ACCESS";
 const DOMAIN_NAME = "mail.policeconduct.org";
 const DNS_ZONE_NAME = "policeconduct.org";
 const REGION = "us-east-1";
@@ -206,16 +208,42 @@ async function readJsonStdin() {
 
 function loadConfig() {
   return {
-    apiKey: trimToNull(process.env.RESEND_API_KEY_FULL_ACCESS),
     domainName: DOMAIN_NAME,
     region: REGION,
   };
 }
 
-function validateConfig(config) {
-  if (!config.apiKey) {
-    throw new Error("Missing RESEND_API_KEY_FULL_ACCESS");
+// The key comes only from Parameter Store. A value in the environment is never
+// used, so a stale local copy cannot reach Resend.
+function readApiKey() {
+  const stored = execFileSync(
+    "aws",
+    [
+      "ssm",
+      "get-parameter",
+      "--region",
+      process.env.PARAMETER_STORE_REGION || "us-east-1",
+      "--name",
+      API_KEY_PARAMETER,
+      "--with-decryption",
+      "--query",
+      "Parameter.[Type,Value]",
+      "--output",
+      "text",
+    ],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
+  );
+  // Text output is the type, a tab, then the value.
+  const [type, value] = stored.replace(/\r?\n$/, "").split("\t");
+  if (type !== "SecureString") {
+    throw new Error(
+      `${API_KEY_PARAMETER} in Parameter Store must be a SecureString, but its type is '${type}'.`,
+    );
   }
+  if (!value || value === "None") {
+    throw new Error(`${API_KEY_PARAMETER} in Parameter Store is empty.`);
+  }
+  return value;
 }
 
 function formatTerraformResult(result) {
@@ -244,8 +272,7 @@ function parseMode(argv) {
 async function main() {
   const stdin = await readJsonStdin();
   const mode = parseMode(process.argv);
-  const config = loadConfig();
-  validateConfig(config);
+  const config = { ...loadConfig(), apiKey: readApiKey() };
   const result =
     mode === "apply"
       ? await ensureDomain(config)

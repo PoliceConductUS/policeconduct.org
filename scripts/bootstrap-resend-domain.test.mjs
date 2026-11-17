@@ -56,22 +56,11 @@ test("buildRoute53Records includes tracking DNS and formats MX priorities", () =
   ]);
 });
 
-test("loadConfig reads the api key from environment and uses fixed values", () => {
-  const previousFullAccessKey = process.env.RESEND_API_KEY_FULL_ACCESS;
-  process.env.RESEND_API_KEY_FULL_ACCESS = "re_test_full_access_123";
-
-  try {
-    const config = __testables.loadConfig(false);
-
-    assert.equal(config.apiKey, "re_test_full_access_123");
-    assert.equal(config.domainName, "mail.policeconduct.org");
-  } finally {
-    if (previousFullAccessKey === undefined) {
-      delete process.env.RESEND_API_KEY_FULL_ACCESS;
-    } else {
-      process.env.RESEND_API_KEY_FULL_ACCESS = previousFullAccessKey;
-    }
-  }
+test("loadConfig uses fixed values and holds no api key", () => {
+  assert.deepEqual(__testables.loadConfig(), {
+    domainName: "mail.policeconduct.org",
+    region: "us-east-1",
+  });
 });
 
 test("resendRequest retries 429 responses", async () => {
@@ -198,9 +187,11 @@ test("verifyExistingDomain does not patch domain settings", async () => {
 });
 
 // Exercise the exact Terraform program through its CLI and JSON stdin contract.
-// The child has a fake key and a fetch replacement: no provider access is needed.
+// The child has a fake aws command and a fetch replacement: no provider or AWS
+// access is needed. The key in the environment must never reach Resend.
 test("Terraform lookup is GET-only, including missing domains and tracking drift", async () => {
-  const { readFile, mkdtemp, writeFile, rm } = await import("node:fs/promises");
+  const { readFile, mkdir, mkdtemp, writeFile, rm } =
+    await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
   const { join, resolve } = await import("node:path");
   const { spawnSync } = await import("node:child_process");
@@ -229,6 +220,7 @@ test("Terraform lookup is GET-only, including missing domains and tracking drift
       let calls = 0;
       globalThis.fetch = async (url, init) => {
         assert.equal(init.method, 'GET', 'Terraform must never write to Resend');
+        assert.equal(init.headers.Authorization, 'Bearer stored-key');
         calls++;
         const domain = {id: 'test-domain', name: 'mail.policeconduct.org',
           click_tracking: true, open_tracking: true, tracking_subdomain: 'different',
@@ -240,6 +232,24 @@ test("Terraform lookup is GET-only, including missing domains and tracking drift
       process.on('exit', () => assert.equal(calls, process.env.TEST_MISSING === 'yes' ? 1 : 2));
     `,
     );
+    const bin = join(directory, "bin");
+    await mkdir(bin);
+    const awsCalls = join(directory, "aws-calls");
+    await writeFile(
+      join(bin, "aws"),
+      `#!/usr/bin/env bash
+printf '%s\\n' "$*" >> "$AWS_CALLS"
+printf '%s\\t%s\\n' "\${STORED_TYPE:-SecureString}" 'stored-key'
+`,
+      { mode: 0o755 },
+    );
+    const childEnv = {
+      ...process.env,
+      PATH: `${bin}:${process.env.PATH}`,
+      AWS_CALLS: awsCalls,
+      PARAMETER_STORE_REGION: "",
+      RESEND_API_KEY_FULL_ACCESS: "environment-key-must-be-ignored",
+    };
     for (const missing of [false, true]) {
       const result = spawnSync(
         process.execPath,
@@ -252,11 +262,7 @@ test("Terraform lookup is GET-only, including missing domains and tracking drift
         {
           input: "{}",
           encoding: "utf8",
-          env: {
-            ...process.env,
-            RESEND_API_KEY_FULL_ACCESS: "test-only",
-            TEST_MISSING: missing ? "yes" : "no",
-          },
+          env: { ...childEnv, TEST_MISSING: missing ? "yes" : "no" },
         },
       );
       assert.equal(result.status, missing ? 1 : 0, result.stderr);
@@ -277,6 +283,39 @@ test("Terraform lookup is GET-only, including missing domains and tracking drift
         );
       }
     }
+    assert.equal(
+      await readFile(awsCalls, "utf8"),
+      "ssm get-parameter --region us-east-1 --name /policeconduct/secrets/RESEND_API_KEY_FULL_ACCESS --with-decryption --query Parameter.[Type,Value] --output text\n".repeat(
+        2,
+      ),
+    );
+
+    // A key stored as any other type stops the run before Resend is called.
+    const noFetch = resolve(directory, "no-fetch.mjs");
+    await writeFile(
+      noFetch,
+      "globalThis.fetch = async () => { throw new Error('Resend was called'); };",
+    );
+    const wrongType = spawnSync(
+      process.execPath,
+      [
+        "--import",
+        noFetch,
+        new URL("scripts/bootstrap-resend-domain.mjs", root).pathname,
+        args[2],
+      ],
+      {
+        input: "{}",
+        encoding: "utf8",
+        env: { ...childEnv, STORED_TYPE: "String" },
+      },
+    );
+    assert.equal(wrongType.status, 1);
+    assert.match(
+      wrongType.stderr,
+      /\/policeconduct\/secrets\/RESEND_API_KEY_FULL_ACCESS in Parameter Store must be a SecureString, but its type is 'String'/,
+    );
+    assert.equal(wrongType.stdout, "");
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

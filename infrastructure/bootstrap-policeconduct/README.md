@@ -195,7 +195,7 @@ change with rollback. Do not run an untargeted Terraform apply for email repairs
 `infrastructure/bootstrap-policeconduct/scripts/apply.sh` reads its secrets from AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`. It does not use a secret from a `.env` file; the stored value always wins. A secret stored as any type other than SecureString stops the script, and stops the production release build that reads `SENTRY_AUTH_TOKEN`.
 
 - `RESEND_API_KEY`: send-only key used by the forms Lambda verification-email path
-- `RESEND_API_KEY_FULL_ACCESS`: full-access key used only by `scripts/bootstrap-resend-domain.mjs` for Resend Domains API calls
+- `RESEND_API_KEY_FULL_ACCESS`: full-access key used only by `scripts/bootstrap-resend-domain.mjs` for Resend Domains API calls. The script reads it from Parameter Store on every run and ignores any value in the environment
 - `SENTRY_AUTH_TOKEN`: written to the GitHub `production` environment only, with `SENTRY_ORG` and `SENTRY_PROJECT`. `npm run deploy:prod` also reads it from Parameter Store so the production release build uploads its sourcemaps to Sentry
 - `GITHUB_TOKEN`: used by the Terraform GitHub provider
 
@@ -217,8 +217,6 @@ updates, or triggers verification of the Resend domain.
 To inspect the domain manually:
 
 ```bash
-source scripts/parameter-store-secrets.sh
-load_parameter_store_secrets RESEND_API_KEY_FULL_ACCESS
 node scripts/bootstrap-resend-domain.mjs --read
 ```
 
@@ -228,16 +226,12 @@ or triggers verification. Configure tracking separately through the Resend
 Domains API or dashboard after inspecting the current settings. After obtaining the applicable production approval, run:
 
 ```bash
-source scripts/parameter-store-secrets.sh
-load_parameter_store_secrets RESEND_API_KEY_FULL_ACCESS
 node scripts/bootstrap-resend-domain.mjs --apply
 ```
 
 If you want to trigger a Resend verification pass manually after DNS changes:
 
 ```bash
-source scripts/parameter-store-secrets.sh
-load_parameter_store_secrets RESEND_API_KEY_FULL_ACCESS
 node scripts/bootstrap-resend-domain.mjs --verify
 ```
 

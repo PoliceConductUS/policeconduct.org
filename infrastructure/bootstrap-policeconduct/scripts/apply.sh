@@ -182,11 +182,6 @@ preflight_resend_requirements() {
     echo "Store it in Parameter Store as /policeconduct/secrets/RESEND_API_KEY." >&2
     exit 1
   fi
-  if [[ -z "${RESEND_API_KEY_FULL_ACCESS+x}" ]]; then
-    echo "Error: missing RESEND_API_KEY_FULL_ACCESS for Resend domain bootstrap." >&2
-    echo "Store it in Parameter Store as /policeconduct/secrets/RESEND_API_KEY_FULL_ACCESS." >&2
-    exit 1
-  fi
 }
 
 preflight_account_check() {
@@ -284,7 +279,8 @@ node "${REPO_ROOT}/scripts/audit-parameter-store.mjs"
 # set, so the stored values are the ones Terraform receives.
 # shellcheck source=scripts/parameter-store-secrets.sh
 source "${REPO_ROOT}/scripts/parameter-store-secrets.sh"
-load_parameter_store_secrets RESEND_API_KEY RESEND_API_KEY_FULL_ACCESS SENTRY_AUTH_TOKEN GITHUB_TOKEN
+# scripts/bootstrap-resend-domain.mjs reads RESEND_API_KEY_FULL_ACCESS itself.
+load_parameter_store_secrets RESEND_API_KEY SENTRY_AUTH_TOKEN GITHUB_TOKEN
 unset TF_VAR_sentry_auth_token TF_VAR_forms_email_resend_api_key
 # The reCAPTCHA stack's outputs are inputs to this stack.
 unset RECAPTCHA_PROJECT_ID RECAPTCHA_SITE_KEY RECAPTCHA_SERVICE_ACCOUNT_EMAIL RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME RECAPTCHA_WIF_AUDIENCE
