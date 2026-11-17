@@ -121,3 +121,18 @@ Credentials used by deploy workflows:
 1. `infrastructure/bootstrap-policeconduct/README.md`
 2. `infrastructure/bootstrap-iceconduct/`
 3. `infrastructure/bootstrap-recaptcha/`
+
+## Tags
+
+Every AWS resource carries these tags, set as provider default tags in each stack:
+
+| Tag           | Value                                                         |
+| ------------- | ------------------------------------------------------------- |
+| `Project`     | The site the resource serves, for example `policeconduct.org` |
+| `Environment` | `production`, `preview`, or `shared` when it serves both      |
+| `Stack`       | The Terraform folder that owns the resource                   |
+| `Repository`  | The GitHub repository that holds that folder                  |
+| `ManagedBy`   | `Terraform`                                                   |
+
+A resource that serves one environment sets its own `Environment` tag; everything
+else inherits `shared` from the stack.

@@ -298,6 +298,10 @@ resource "aws_s3_bucket_policy" "terraform_state_tls_only" {
 resource "aws_s3_bucket" "preview" {
   bucket        = local.preview_bucket_name
   force_destroy = var.preview_bucket_force_destroy
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "preview" {
@@ -376,11 +380,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "preview" {
 resource "aws_s3_bucket" "forms_drafts" {
   bucket        = local.forms_drafts_bucket_name
   force_destroy = var.forms_drafts_bucket_force_destroy
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_kms_key" "forms_drafts" {
   description         = "KMS key for ${var.project_name} form drafts bucket."
   enable_key_rotation = true
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_kms_alias" "forms_drafts" {
@@ -427,11 +439,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "forms_drafts" {
 resource "aws_s3_bucket" "forms_submissions" {
   bucket        = local.forms_submissions_bucket_name
   force_destroy = var.forms_submissions_bucket_force_destroy
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_kms_key" "forms_submissions" {
   description         = "KMS key for ${var.project_name} form submissions bucket."
   enable_key_rotation = true
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_kms_alias" "forms_submissions" {
@@ -478,11 +498,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "forms_submissions
 resource "aws_s3_bucket" "forms_drafts_preview" {
   bucket        = local.forms_drafts_preview_bucket_name
   force_destroy = var.forms_drafts_preview_bucket_force_destroy
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_kms_key" "forms_drafts_preview" {
   description         = "KMS key for ${var.project_name} preview form drafts bucket."
   enable_key_rotation = true
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_kms_alias" "forms_drafts_preview" {
@@ -529,11 +557,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "forms_drafts_prev
 resource "aws_s3_bucket" "forms_submissions_preview" {
   bucket        = local.forms_submissions_preview_bucket_name
   force_destroy = var.forms_submissions_preview_bucket_force_destroy
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_kms_key" "forms_submissions_preview" {
   description         = "KMS key for ${var.project_name} preview form submissions bucket."
   enable_key_rotation = true
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_kms_alias" "forms_submissions_preview" {
@@ -1167,6 +1203,10 @@ resource "aws_lambda_function" "forms_api_prod" {
       SUBMISSION_NOTIFICATION_RECIPIENTS   = join(",", local.normalized_submission_notification_emails)
     }
   }
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_lambda_function" "forms_api_preview" {
@@ -1214,6 +1254,10 @@ resource "aws_lambda_function" "forms_api_preview" {
       NOTIFICATION_ENV_LABEL             = "preview"
       SUBMISSION_NOTIFICATION_RECIPIENTS = join(",", local.normalized_submission_notification_emails)
     }
+  }
+
+  tags = {
+    Environment = "preview"
   }
 }
 
@@ -1398,6 +1442,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_errors" {
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_prod.function_name
   }
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_cloudwatch_metric_alarm" "forms_api_prod_duration_p95" {
@@ -1416,6 +1464,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_duration_p95" {
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_prod.function_name
+  }
+
+  tags = {
+    Environment = "production"
   }
 }
 
@@ -1436,6 +1488,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_throttles" {
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_prod.function_name
   }
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_cloudwatch_metric_alarm" "forms_api_preview_errors" {
@@ -1454,6 +1510,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_errors" {
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_preview.function_name
+  }
+
+  tags = {
+    Environment = "preview"
   }
 }
 
@@ -1474,6 +1534,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_duration_p95" {
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_preview.function_name
   }
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_cloudwatch_metric_alarm" "forms_api_preview_throttles" {
@@ -1492,6 +1556,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_throttles" {
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_preview.function_name
+  }
+
+  tags = {
+    Environment = "preview"
   }
 }
 
@@ -1520,6 +1588,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_verification_email_failed
   treat_missing_data  = "notBreaching"
   alarm_actions       = local.effective_alarm_actions
   ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_cloudwatch_log_metric_filter" "forms_api_prod_verification_email_not_sent" {
@@ -1547,6 +1619,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_verification_email_not_se
   treat_missing_data  = "notBreaching"
   alarm_actions       = local.effective_alarm_actions
   ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_cloudwatch_log_metric_filter" "forms_api_preview_verification_email_failed" {
@@ -1574,6 +1650,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_verification_email_fai
   treat_missing_data  = "notBreaching"
   alarm_actions       = local.effective_alarm_actions
   ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_cloudwatch_log_metric_filter" "forms_api_preview_verification_email_not_sent" {
@@ -1601,6 +1681,10 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_verification_email_not
   treat_missing_data  = "notBreaching"
   alarm_actions       = local.effective_alarm_actions
   ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
@@ -2017,6 +2101,10 @@ resource "aws_sesv2_configuration_set_event_destination" "verification_email_eve
 resource "aws_s3_bucket" "site" {
   bucket        = local.site_bucket_name
   force_destroy = var.site_bucket_force_destroy
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "site" {
@@ -2072,6 +2160,10 @@ resource "aws_acm_certificate" "site" {
   lifecycle {
     create_before_destroy = true
   }
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_route53_record" "acm_validation" {
@@ -2120,6 +2212,10 @@ resource "aws_cloudfront_function" "index_rewrite" {
     aws_cloudfront_key_value_store.site_redirects.arn,
   ]
   code = local.shared_router_code
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_cloudfront_response_headers_policy" "site_security_headers" {
@@ -2257,6 +2353,10 @@ resource "aws_cloudfront_distribution" "site" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 # Preview uses the same router as production with a separate redirect store.
@@ -2277,6 +2377,10 @@ resource "aws_cloudfront_function" "preview_router" {
   ]
 
   code = local.shared_router_code
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 # Non-canonical preview hosts must not be indexed. Build-once means the same HTML
@@ -2289,6 +2393,10 @@ resource "aws_cloudfront_function" "preview_noindex" {
   publish = true
 
   code = file("${path.module}/functions/noindex.js")
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_cloudfront_distribution" "preview" {
@@ -2379,6 +2487,10 @@ resource "aws_cloudfront_distribution" "preview" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 data "aws_iam_policy_document" "site_bucket_policy" {

@@ -57,9 +57,13 @@ extra_dns_records = [
   }
 ]
 
+# Applied to every AWS resource in this stack. A resource that serves only one
+# environment sets its own Environment tag.
 tags = {
-  Project   = "policeconduct.org"
-  ManagedBy = "Terraform"
-  Stack     = "bootstrap"
+  Project     = "policeconduct.org"
+  Environment = "shared"
+  Stack       = "bootstrap-policeconduct"
+  Repository  = "PoliceConductUS/policeconduct.org"
+  ManagedBy   = "Terraform"
 }
 submission_notification_email_endpoints = ["hello@policeconduct.org"]

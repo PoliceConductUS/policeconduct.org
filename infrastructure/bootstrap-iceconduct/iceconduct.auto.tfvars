@@ -8,8 +8,11 @@ redirect_target_url = "https://www.policeconduct.org/federal/u-s-immigration-and
 project_name        = "iceconduct-redirect"
 price_class         = "PriceClass_100"
 
+# Applied to every AWS resource in this stack.
 tags = {
-  ManagedBy = "Terraform"
-  Project   = "iceconduct.org"
-  Stack     = "bootstrap-iceconduct"
+  Project     = "iceconduct.org"
+  Environment = "production"
+  Stack       = "bootstrap-iceconduct"
+  Repository  = "PoliceConductUS/policeconduct.org"
+  ManagedBy   = "Terraform"
 }

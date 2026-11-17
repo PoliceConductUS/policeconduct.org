@@ -31,7 +31,13 @@ data "aws_caller_identity" "current" {}
 provider "aws" {
   region = "us-east-1"
   default_tags {
-    tags = { ManagedBy = "Terraform", Project = "policeconduct.org", Stack = "intake-workspace" }
+    tags = {
+      Project     = "policeconduct.org"
+      Environment = "shared"
+      Stack       = "intake-workspace"
+      Repository  = "PoliceConductUS/policeconduct.org"
+      ManagedBy   = "Terraform"
+    }
   }
 }
 locals {

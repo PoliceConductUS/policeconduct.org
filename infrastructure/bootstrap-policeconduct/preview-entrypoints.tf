@@ -5,6 +5,10 @@ resource "aws_acm_certificate" "preview" {
   subject_alternative_names = [local.preview_wildcard_domain]
   validation_method         = "DNS"
   lifecycle { create_before_destroy = true }
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 # ACM shares the apex/wildcard validation token already managed by this root.
@@ -36,4 +40,8 @@ resource "aws_s3_object" "preview_entrypoint" {
   source_hash   = filemd5("${path.module}/preview-pages/${each.value}")
   content_type  = "text/html; charset=utf-8"
   cache_control = "no-cache"
+
+  tags = {
+    Environment = "preview"
+  }
 }

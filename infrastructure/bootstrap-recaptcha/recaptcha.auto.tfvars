@@ -16,3 +16,12 @@ allowed_domains = [
 service_account_account_id   = "ipc-recaptcha-assessor"
 service_account_display_name = "policeconduct reCAPTCHA assessor"
 recaptcha_key_display_name   = "policeconduct-site"
+
+# Applied to every AWS resource in this stack.
+aws_tags = {
+  Project     = "policeconduct.org"
+  Environment = "shared"
+  Stack       = "bootstrap-recaptcha"
+  Repository  = "PoliceConductUS/policeconduct.org"
+  ManagedBy   = "Terraform"
+}

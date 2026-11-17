@@ -2,6 +2,10 @@
 resource "aws_s3_bucket" "release_data" {
   for_each = toset(["prod", "preview"])
   bucket   = "${var.project_name}-${each.key}-release-${data.aws_caller_identity.current.account_id}"
+
+  tags = {
+    Environment = each.key == "prod" ? "production" : "preview"
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "release_data" {
