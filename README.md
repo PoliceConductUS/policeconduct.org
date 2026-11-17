@@ -229,8 +229,8 @@ npx openspec schemas
 npx openspec status --change <change-name>
 ```
 
-Then brainstorm the outcome, reuse the active branch and worktree (creating
-another requires explicit human permission), and ask Codex to turn the brainstorm into an
+Then brainstorm the outcome, create the task's branch and worktree folder as
+`AGENTS.md` describes (creating one requires explicit human permission), and ask Codex to turn the brainstorm into an
 OpenSpec change. Use `/opsx:continue <change-name>` until proposal/spec/task/plan
 artifacts are coherent, then `/opsx:apply <change-name>`, `/opsx:verify
 <change-name>`, `/opsx:continue <change-name>` for the retrospective, and
