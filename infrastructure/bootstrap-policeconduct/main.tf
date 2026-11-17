@@ -893,8 +893,15 @@ data "aws_iam_policy_document" "forms_lambda_assume_role" {
   }
 }
 
+# The production and preview forms Lambdas each have their own role, so neither
+# can reach the other environment's buckets, keys or logs.
 resource "aws_iam_role" "forms_lambda" {
   name               = "${var.project_name}-forms-lambda"
+  assume_role_policy = data.aws_iam_policy_document.forms_lambda_assume_role.json
+}
+
+resource "aws_iam_role" "forms_lambda_preview" {
+  name               = "${var.project_name}-forms-lambda-preview"
   assume_role_policy = data.aws_iam_policy_document.forms_lambda_assume_role.json
 }
 
@@ -907,12 +914,12 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
   statement {
     sid       = "IdentifyKnownFormReleases"
     actions   = ["s3:GetObject"]
-    resources = [for bucket in aws_s3_bucket.release_data : "${bucket.arn}/builds/*/data/dynamic.json"]
+    resources = ["${aws_s3_bucket.release_data["prod"].arn}/builds/*/data/dynamic.json"]
   }
   statement {
     sid       = "DistinguishMissingFormReleases"
     actions   = ["s3:ListBucket"]
-    resources = [for bucket in aws_s3_bucket.release_data : bucket.arn]
+    resources = [aws_s3_bucket.release_data["prod"].arn]
   }
 
   statement {
@@ -923,7 +930,10 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
       "logs:CreateLogStream",
       "logs:PutLogEvents",
     ]
-    resources = ["arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:*"]
+    resources = [
+      "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.project_name}-forms-api-prod",
+      "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.project_name}-forms-api-prod:*",
+    ]
   }
 
   statement {
@@ -962,36 +972,6 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
       "s3:GetObject",
     ]
     resources = ["${aws_s3_bucket.forms_submissions.arn}/*"]
-  }
-
-  statement {
-    sid    = "PreviewDraftBucketWriteRead"
-    effect = "Allow"
-    actions = [
-      "s3:PutObject",
-      "s3:PutObjectTagging",
-      "s3:GetObject",
-    ]
-    resources = ["${aws_s3_bucket.forms_drafts_preview.arn}/*"]
-  }
-
-  statement {
-    sid    = "PreviewSubmissionBucketWrite"
-    effect = "Allow"
-    actions = [
-      "s3:PutObject",
-      "s3:PutObjectTagging",
-    ]
-    resources = ["${aws_s3_bucket.forms_submissions_preview.arn}/*"]
-  }
-
-  statement {
-    sid    = "PreviewSubmissionBucketRead"
-    effect = "Allow"
-    actions = [
-      "s3:GetObject",
-    ]
-    resources = ["${aws_s3_bucket.forms_submissions_preview.arn}/*"]
   }
 
   statement {
@@ -1034,6 +1014,93 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
       "kms:DescribeKey",
     ]
     resources = [aws_kms_key.forms_submissions.arn]
+  }
+
+  statement {
+    sid       = "SesSendVerificationEmail"
+    effect    = "Allow"
+    actions   = ["ses:SendEmail"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "ses:FromAddress"
+      values   = [var.forms_email_verification_from_address]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = local.enable_submission_notifications ? [1] : []
+
+    content {
+      sid       = "PublishSubmissionNotifications"
+      effect    = "Allow"
+      actions   = ["sns:Publish"]
+      resources = [trimspace(var.submission_notifications_topic_arn)]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "forms_lambda_permissions" {
+  name   = "${var.project_name}-forms-lambda"
+  role   = aws_iam_role.forms_lambda.id
+  policy = data.aws_iam_policy_document.forms_lambda_permissions.json
+}
+
+data "aws_iam_policy_document" "forms_lambda_preview_permissions" {
+  statement {
+    sid       = "IdentifyKnownFormReleases"
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.release_data["preview"].arn}/builds/*/data/dynamic.json"]
+  }
+  statement {
+    sid       = "DistinguishMissingFormReleases"
+    actions   = ["s3:ListBucket"]
+    resources = [aws_s3_bucket.release_data["preview"].arn]
+  }
+
+  statement {
+    sid    = "CloudWatchLogsWrite"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+    resources = [
+      "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.project_name}-forms-api-preview",
+      "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.project_name}-forms-api-preview:*",
+    ]
+  }
+
+  statement {
+    sid    = "PreviewDraftBucketWriteRead"
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+      "s3:GetObject",
+    ]
+    resources = ["${aws_s3_bucket.forms_drafts_preview.arn}/*"]
+  }
+
+  statement {
+    sid    = "PreviewSubmissionBucketWrite"
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+    ]
+    resources = ["${aws_s3_bucket.forms_submissions_preview.arn}/*"]
+  }
+
+  statement {
+    sid    = "PreviewSubmissionBucketRead"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = ["${aws_s3_bucket.forms_submissions_preview.arn}/*"]
   }
 
   statement {
@@ -1082,6 +1149,7 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
     }
   }
 
+  # Preview shares the notification topic so the pipe can be exercised end to end.
   dynamic "statement" {
     for_each = local.enable_submission_notifications ? [1] : []
 
@@ -1094,10 +1162,10 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
   }
 }
 
-resource "aws_iam_role_policy" "forms_lambda_permissions" {
-  name   = "${var.project_name}-forms-lambda"
-  role   = aws_iam_role.forms_lambda.id
-  policy = data.aws_iam_policy_document.forms_lambda_permissions.json
+resource "aws_iam_role_policy" "forms_lambda_preview_permissions" {
+  name   = "${var.project_name}-forms-lambda-preview"
+  role   = aws_iam_role.forms_lambda_preview.id
+  policy = data.aws_iam_policy_document.forms_lambda_preview_permissions.json
 }
 
 data "aws_iam_policy_document" "forms_readonly_assume_role" {
@@ -1193,7 +1261,7 @@ resource "aws_lambda_function" "forms_api_prod" {
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
       EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
-      RESEND_API_KEY                       = var.forms_email_resend_api_key == null ? "" : var.forms_email_resend_api_key
+      RESEND_API_KEY                       = var.forms_email_resend_api_key_production == null ? "" : var.forms_email_resend_api_key_production
       EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
       EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
@@ -1211,7 +1279,7 @@ resource "aws_lambda_function" "forms_api_prod" {
 
 resource "aws_lambda_function" "forms_api_preview" {
   function_name = "${var.project_name}-forms-api-preview"
-  role          = aws_iam_role.forms_lambda.arn
+  role          = aws_iam_role.forms_lambda_preview.arn
   handler       = "index.handler"
   runtime       = var.lambda_nodejs_runtime
   timeout       = 10
@@ -1240,7 +1308,7 @@ resource "aws_lambda_function" "forms_api_preview" {
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
       EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
-      RESEND_API_KEY                       = var.forms_email_resend_api_key == null ? "" : var.forms_email_resend_api_key
+      RESEND_API_KEY                       = var.forms_email_resend_api_key_preview == null ? "" : var.forms_email_resend_api_key_preview
       EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
       EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"

@@ -197,8 +197,16 @@ variable "forms_email_verification_from_address" {
   default     = "noreply@mail.policeconduct.org"
 }
 
-variable "forms_email_resend_api_key" {
-  description = "Resend API key used for post-submit verification emails."
+variable "forms_email_resend_api_key_production" {
+  description = "Resend API key the production forms Lambda uses to send email."
+  type        = string
+  default     = null
+  nullable    = true
+  sensitive   = true
+}
+
+variable "forms_email_resend_api_key_preview" {
+  description = "Resend API key the preview forms Lambda uses to send email."
   type        = string
   default     = null
   nullable    = true

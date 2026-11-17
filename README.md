@@ -399,7 +399,7 @@ See `infrastructure/README.md` and `infrastructure/bootstrap-policeconduct/READM
 ## Environment Variables
 
 - **Inputs** for each stack are tracked in its `*.auto.tfvars` file.
-- **Secrets** live only in AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`.
+- **Secrets** live only in AWS Systems Manager Parameter Store, as SecureString parameters. A secret every environment shares is named `/policeconduct/secrets/<NAME>`. A secret that differs by environment is named `/policeconduct/<environment>/secrets/<NAME>`, where the environment is `production` or `preview`.
 - **Deployed resource names** (buckets, CloudFront IDs, redirect stores, the preview forms API URL, the reCAPTCHA site key) are Terraform outputs. Scripts read them at run time through `scripts/terraform-outputs.mjs`; nothing copies them into a file. A value already set in the environment is kept, which is how CI passes them in.
 - **Machine settings** go in the git-ignored `.env` at the repo root: `AWS_PROFILE`, `DATABASE_URL`, `INTAKE_WORKSPACE`, and the public `PUBLIC_GA_MEASUREMENT_ID`, `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT`.
 

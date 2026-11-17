@@ -27,7 +27,11 @@ function trackedInputFiles(dir) {
 test("the check finds the secret variables it guards", () => {
   assert.deepEqual(
     sensitiveVariables("infrastructure/bootstrap-policeconduct").sort(),
-    ["forms_email_resend_api_key", "sentry_auth_token"],
+    [
+      "forms_email_resend_api_key_preview",
+      "forms_email_resend_api_key_production",
+      "sentry_auth_token",
+    ],
   );
 });
 

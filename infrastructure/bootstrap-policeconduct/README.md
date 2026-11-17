@@ -98,7 +98,7 @@ If reCAPTCHA apply fails with Google auth errors (`invalid_grant` /
 ## Where values come from
 
 - **Inputs** for each stack are tracked in its `*.auto.tfvars` file.
-- **Secrets** live only in AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`.
+- **Secrets** live only in AWS Systems Manager Parameter Store, as SecureString parameters. A secret every environment shares is named `/policeconduct/secrets/<NAME>`. A secret that differs by environment is named `/policeconduct/<environment>/secrets/<NAME>`, where the environment is `production` or `preview`.
 - **Deployed resource names** (buckets, CloudFront IDs, redirect stores, the preview forms API URL, the reCAPTCHA site key) are Terraform outputs. Scripts read them at run time through `scripts/terraform-outputs.mjs`; nothing copies them into a file. A value already set in the environment is kept, which is how CI passes them in.
 - **Machine settings** go in the git-ignored `.env` at the repo root: `AWS_PROFILE`, `DATABASE_URL`, `INTAKE_WORKSPACE`, and the public `PUBLIC_GA_MEASUREMENT_ID`, `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT`.
 
@@ -192,14 +192,16 @@ If a previous bootstrap wrote incorrect doubled-`mail` Route 53 records such as
 `send.mail.mail.policeconduct.org`, inspect the exact DNS diff and prepare a scoped
 change with rollback. Do not run an untargeted Terraform apply for email repairs.
 
-`infrastructure/bootstrap-policeconduct/scripts/apply.sh` reads its secrets from AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`. It does not use a secret from a `.env` file; the stored value always wins. A secret stored as any type other than SecureString stops the script, and stops the production release build that reads `SENTRY_AUTH_TOKEN`.
+`infrastructure/bootstrap-policeconduct/scripts/apply.sh` reads its secrets from AWS Systems Manager Parameter Store, as SecureString parameters. It does not use a secret from a `.env` file; the stored value always wins. A secret stored as any type other than SecureString stops the script, and stops the production release build that reads `SENTRY_AUTH_TOKEN`.
 
-- `RESEND_API_KEY`: send-only key used by the forms Lambda verification-email path
+- `RESEND_API_KEY`: send-only key the forms Lambda uses to send email. Each environment has its own key, at `/policeconduct/production/secrets/RESEND_API_KEY` and `/policeconduct/preview/secrets/RESEND_API_KEY`. `apply.sh` stops if either is missing; one environment never uses the other's key
 - `RESEND_API_KEY_FULL_ACCESS`: full-access key used only by `scripts/bootstrap-resend-domain.mjs` for Resend Domains API calls. The script reads it from Parameter Store on every run and ignores any value in the environment
 - `SENTRY_AUTH_TOKEN`: written to the GitHub `production` environment only, with `SENTRY_ORG` and `SENTRY_PROJECT`. `npm run deploy:prod` also reads it from Parameter Store so the production release build uploads its sourcemaps to Sentry
 - `GITHUB_TOKEN`: used by the Terraform GitHub provider
 
-To add or change one, run `npm run secret:set -- <NAME> < <file>`. It reads the value from standard input and always stores it as a SecureString.
+To add or change a shared secret, run `npm run secret:set -- <NAME> < <file>`. For a secret that differs by environment, name the environment first: `npm run secret:set -- preview RESEND_API_KEY < <file>`. The command reads the value from standard input and always stores it as a SecureString.
+
+The production and preview forms Lambdas run under separate IAM roles, `policeconduct-forms-lambda` and `policeconduct-forms-lambda-preview`. Each role reaches only its own environment's buckets, encryption keys, release data and log group.
 
 `apply.sh` first checks every parameter under `/policeconduct/` and stops if any is not a SecureString. A parameter that holds no secret may stay a plain String only when its exact name is listed in `PLAIN_STRING_PARAMETERS` in `scripts/audit-parameter-store.mjs`. Run the same check at any time with `npm run validate:parameter-store`.
 

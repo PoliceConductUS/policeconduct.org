@@ -99,9 +99,6 @@ map_common_env_to_tf_vars() {
   if [[ -n "${RECAPTCHA_MIN_SCORE+x}" ]] && [[ -z "${TF_VAR_recaptcha_min_score+x}" ]]; then
     export TF_VAR_recaptcha_min_score="${RECAPTCHA_MIN_SCORE}"
   fi
-  if [[ -n "${RESEND_API_KEY+x}" ]] && [[ -z "${TF_VAR_forms_email_resend_api_key+x}" ]]; then
-    export TF_VAR_forms_email_resend_api_key="${RESEND_API_KEY}"
-  fi
 }
 
 preflight_recaptcha_requirements() {
@@ -176,14 +173,6 @@ warn_if_sentry_tf_var_missing() {
   fi
 }
 
-preflight_resend_requirements() {
-  if [[ -z "${RESEND_API_KEY+x}" && -z "${TF_VAR_forms_email_resend_api_key+x}" ]]; then
-    echo "Error: missing RESEND_API_KEY for the forms Lambda send path." >&2
-    echo "Store it in Parameter Store as /policeconduct/secrets/RESEND_API_KEY." >&2
-    exit 1
-  fi
-}
-
 preflight_account_check() {
   bash "${REPO_ROOT}/scripts/require-terraform-account.sh" "${ROOT_DIR}"
 }
@@ -254,6 +243,8 @@ run_foundation_apply() {
     "aws_kms_alias.forms_submissions_preview"
     "aws_iam_role.forms_lambda"
     "aws_iam_role_policy.forms_lambda_permissions"
+    "aws_iam_role.forms_lambda_preview"
+    "aws_iam_role_policy.forms_lambda_preview_permissions"
     "aws_lambda_function.forms_api_prod"
     "aws_lambda_function_url.forms_api_prod"
     "aws_lambda_permission.forms_api_function_url_prod"
@@ -280,8 +271,13 @@ node "${REPO_ROOT}/scripts/audit-parameter-store.mjs"
 # shellcheck source=scripts/parameter-store-secrets.sh
 source "${REPO_ROOT}/scripts/parameter-store-secrets.sh"
 # scripts/bootstrap-resend-domain.mjs reads RESEND_API_KEY_FULL_ACCESS itself.
-load_parameter_store_secrets RESEND_API_KEY SENTRY_AUTH_TOKEN GITHUB_TOKEN
-unset TF_VAR_sentry_auth_token TF_VAR_forms_email_resend_api_key
+load_parameter_store_secrets SENTRY_AUTH_TOKEN GITHUB_TOKEN
+unset TF_VAR_sentry_auth_token
+# Each forms Lambda gets its own environment's Resend key. A missing key stops
+# the apply; one environment never falls back to the other's key.
+TF_VAR_forms_email_resend_api_key_production="$(read_parameter_store_secret /policeconduct/production/secrets/RESEND_API_KEY)"
+TF_VAR_forms_email_resend_api_key_preview="$(read_parameter_store_secret /policeconduct/preview/secrets/RESEND_API_KEY)"
+export TF_VAR_forms_email_resend_api_key_production TF_VAR_forms_email_resend_api_key_preview
 # The reCAPTCHA stack's outputs are inputs to this stack.
 unset RECAPTCHA_PROJECT_ID RECAPTCHA_SITE_KEY RECAPTCHA_SERVICE_ACCOUNT_EMAIL RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME RECAPTCHA_WIF_AUDIENCE
 unset TF_VAR_recaptcha_project_id TF_VAR_recaptcha_site_key TF_VAR_recaptcha_service_account_email TF_VAR_recaptcha_wif_provider_resource_name TF_VAR_recaptcha_wif_audience
@@ -292,7 +288,6 @@ preflight_recaptcha_requirements
 set_github_tf_vars_from_origin
 preflight_explicit_tf_var_secrets
 warn_if_sentry_tf_var_missing
-preflight_resend_requirements
 preflight_account_check
 prepare_forms_lambda_package
 npm --prefix "${ROOT_DIR}/lambdas/release-api" ci --omit=dev --no-audit --no-fund
