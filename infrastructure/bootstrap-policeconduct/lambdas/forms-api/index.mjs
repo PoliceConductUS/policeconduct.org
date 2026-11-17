@@ -6,7 +6,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
-import { GoogleAuth } from "google-auth-library";
+import { ExternalAccountClient, GoogleAuth } from "google-auth-library";
 import { RecaptchaEnterpriseServiceClient } from "@google-cloud/recaptcha-enterprise";
 import { createId } from "@paralleldrive/cuid2";
 import crypto from "crypto";
@@ -1231,10 +1231,12 @@ function buildRecaptchaWifCredentials() {
 async function getRecaptchaClient() {
   if (!recaptchaClientPromise) {
     recaptchaClientPromise = (async () => {
-      const auth = new GoogleAuth({
-        credentials: buildRecaptchaWifCredentials(),
-        scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+      const scopes = ["https://www.googleapis.com/auth/cloud-platform"];
+      const authClient = ExternalAccountClient.fromJSON({
+        ...buildRecaptchaWifCredentials(),
+        scopes,
       });
+      const auth = new GoogleAuth({ authClient, scopes });
       return new RecaptchaEnterpriseServiceClient({ auth });
     })();
   }
