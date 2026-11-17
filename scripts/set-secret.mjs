@@ -1,8 +1,8 @@
 // Usage: npm run secret:set -- [ENVIRONMENT] NAME < file-holding-the-value
 // Stores the value read from standard input as a SecureString parameter,
 // replacing any stored value. Without ENVIRONMENT the parameter is the shared
-// /policeconduct/secrets/NAME. With ENVIRONMENT, which is production or preview,
-// it is /policeconduct/ENVIRONMENT/secrets/NAME. The value is never a
+// /policeconduct.org/default/secrets/NAME. With ENVIRONMENT, which is production or preview,
+// it is /policeconduct.org/ENVIRONMENT/secrets/NAME. The value is never a
 // command-line argument, so it stays out of shell history and the process list.
 import { execFileSync } from "node:child_process";
 
@@ -33,8 +33,8 @@ if (process.stdin.isTTY) {
 }
 
 const parameter = environment
-  ? `/policeconduct/${environment}/secrets/${name}`
-  : `/policeconduct/secrets/${name}`;
+  ? `/policeconduct.org/${environment}/secrets/${name}`
+  : `/policeconduct.org/default/secrets/${name}`;
 // Wait for the whole value. A pipe whose writer has not written yet has nothing
 // to read at first, and a single synchronous read fails there.
 let input = "";

@@ -73,19 +73,19 @@ test("the value is stored as a SecureString and never passed as an argument", (t
   assert.equal(result.status, 0, result.stderr);
   assert.equal(
     calls,
-    "ssm put-parameter --region us-east-1 --name /policeconduct/secrets/RESEND_API_KEY --type SecureString --overwrite --value file:///dev/stdin\n",
+    "ssm put-parameter --region us-east-1 --name /policeconduct.org/default/secrets/RESEND_API_KEY --type SecureString --overwrite --value file:///dev/stdin\n",
   );
   assert.equal(value, "fixture-value");
   assert.equal(
     result.stdout,
-    "Stored /policeconduct/secrets/RESEND_API_KEY as a SecureString.\n",
+    "Stored /policeconduct.org/default/secrets/RESEND_API_KEY as a SecureString.\n",
   );
 });
 
 for (const args of [
   [],
   ["resend_api_key"],
-  ["/policeconduct/secrets/RESEND_API_KEY"],
+  ["/policeconduct.org/default/secrets/RESEND_API_KEY"],
   ["RESEND_API_KEY", "fixture-value"],
   ["staging", "RESEND_API_KEY"],
   ["preview", "resend_api_key"],
@@ -112,7 +112,7 @@ for (const environment of ["production", "preview"]) {
     assert.equal(result.status, 0, result.stderr);
     assert.equal(
       calls,
-      `ssm put-parameter --region us-east-1 --name /policeconduct/${environment}/secrets/RESEND_API_KEY --type SecureString --overwrite --value file:///dev/stdin\n`,
+      `ssm put-parameter --region us-east-1 --name /policeconduct.org/${environment}/secrets/RESEND_API_KEY --type SecureString --overwrite --value file:///dev/stdin\n`,
     );
     assert.equal(value, "fixture-value");
   });
@@ -131,7 +131,7 @@ test("an empty value is refused before anything is stored", (t) => {
   assert.equal(result.status, 1);
   assert.match(
     result.stderr,
-    /no value was given for \/policeconduct\/secrets\/RESEND_API_KEY/,
+    /no value was given for \/policeconduct\.org\/default\/secrets\/RESEND_API_KEY/,
   );
   assert.equal(calls, "");
 });

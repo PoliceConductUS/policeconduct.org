@@ -285,7 +285,7 @@ printf '%s\\t%s\\n' "\${STORED_TYPE:-SecureString}" 'stored-key'
     }
     assert.equal(
       await readFile(awsCalls, "utf8"),
-      "ssm get-parameter --region us-east-1 --name /policeconduct/secrets/RESEND_API_KEY_FULL_ACCESS --with-decryption --query Parameter.[Type,Value] --output text\n".repeat(
+      "ssm get-parameter --region us-east-1 --name /policeconduct.org/default/secrets/RESEND_API_KEY_FULL_ACCESS --with-decryption --query Parameter.[Type,Value] --output text\n".repeat(
         2,
       ),
     );
@@ -313,7 +313,7 @@ printf '%s\\t%s\\n' "\${STORED_TYPE:-SecureString}" 'stored-key'
     assert.equal(wrongType.status, 1);
     assert.match(
       wrongType.stderr,
-      /\/policeconduct\/secrets\/RESEND_API_KEY_FULL_ACCESS in Parameter Store must be a SecureString, but its type is 'String'/,
+      /\/policeconduct\.org\/default\/secrets\/RESEND_API_KEY_FULL_ACCESS in Parameter Store must be a SecureString, but its type is 'String'/,
     );
     assert.equal(wrongType.stdout, "");
   } finally {

@@ -3,7 +3,8 @@
 import { execFileSync } from "node:child_process";
 import process from "node:process";
 
-const API_KEY_PARAMETER = "/policeconduct/secrets/RESEND_API_KEY_FULL_ACCESS";
+const API_KEY_PARAMETER =
+  "/policeconduct.org/default/secrets/RESEND_API_KEY_FULL_ACCESS";
 const DOMAIN_NAME = "mail.policeconduct.org";
 const DNS_ZONE_NAME = "policeconduct.org";
 const REGION = "us-east-1";

@@ -456,7 +456,7 @@ test("a production release build is given the Sentry token from Parameter Store,
     );
     assert.match(
       production.aws,
-      /^aws ssm get-parameter .*--name \/policeconduct\/secrets\/SENTRY_AUTH_TOKEN --with-decryption/,
+      /^aws ssm get-parameter .*--name \/policeconduct\.org\/default\/secrets\/SENTRY_AUTH_TOKEN --with-decryption/,
     );
 
     rmSync(join(dir, "dist"), { recursive: true, force: true });

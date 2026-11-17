@@ -20,7 +20,7 @@ if (process.env.SENTRY_SOURCEMAPS === "upload") {
       "--region",
       "us-east-1",
       "--name",
-      "/policeconduct/secrets/SENTRY_AUTH_TOKEN",
+      "/policeconduct.org/default/secrets/SENTRY_AUTH_TOKEN",
       "--with-decryption",
       "--query",
       "Parameter.[Type,Value]",

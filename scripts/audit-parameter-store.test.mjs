@@ -44,16 +44,15 @@ printf '%s' "$PARAMETERS_JSON"
   return { result, calls: readFileSync(callLog, "utf8") };
 }
 
-test("SecureString parameters and the allowed plain String pass, and no value is read", (t) => {
+test("SecureString parameters pass, and no value is read", (t) => {
   const { result, calls } = run(t, [
-    ["/policeconduct/config/default/GOOGLE_CLOUD_PROJECT", "String"],
-    ["/policeconduct/secrets/GITHUB_TOKEN", "SecureString"],
-    ["/policeconduct/secrets/RESEND_API_KEY", "SecureString"],
+    ["/policeconduct.org/default/secrets/GITHUB_TOKEN", "SecureString"],
+    ["/policeconduct.org/preview/secrets/RESEND_API_KEY", "SecureString"],
   ]);
   assert.equal(result.status, 0, result.stderr);
   assert.match(
     result.stdout,
-    /3 parameter\(s\) under \/policeconduct\/ checked/,
+    /2 parameter\(s\) under \/policeconduct\.org\/ checked/,
   );
   const lines = calls.trim().split("\n");
   assert.equal(lines.length, 1);
@@ -61,41 +60,34 @@ test("SecureString parameters and the allowed plain String pass, and no value is
   assert.match(lines[0], /--region us-east-1/);
   assert.match(
     lines[0],
-    /--parameter-filters Key=Path,Option=Recursive,Values=\/policeconduct /,
+    /--parameter-filters Key=Path,Option=Recursive,Values=\/policeconduct\.org /,
   );
   assert.doesNotMatch(lines[0], /get-parameter|with-decryption/);
 });
 
-test("a secret stored as a plain String fails and is named", (t) => {
+test("any parameter that is not a SecureString fails and is named", (t) => {
   const { result } = run(t, [
-    ["/policeconduct/secrets/GITHUB_TOKEN", "SecureString"],
-    ["/policeconduct/secrets/RESEND_API_KEY", "String"],
+    ["/policeconduct.org/default/secrets/GITHUB_TOKEN", "SecureString"],
+    ["/policeconduct.org/production/secrets/RESEND_API_KEY", "String"],
+    ["/policeconduct.org/default/secrets/SOME_LIST", "StringList"],
   ]);
   assert.equal(result.status, 1);
   assert.match(
     result.stderr,
-    /\/policeconduct\/secrets\/RESEND_API_KEY in Parameter Store must be a SecureString, but its type is 'String'/,
+    /\/policeconduct\.org\/production\/secrets\/RESEND_API_KEY in Parameter Store must be a SecureString, but its type is 'String'/,
   );
+  assert.match(result.stderr, /SOME_LIST .* its type is 'StringList'/);
   assert.doesNotMatch(result.stderr, /GITHUB_TOKEN/);
   assert.equal(result.stdout, "");
-});
-
-test("a plain parameter that is not on the allowed list fails, whatever its path", (t) => {
-  const { result } = run(t, [
-    ["/policeconduct/config/default/GOOGLE_CLOUD_PROJECT", "String"],
-    ["/policeconduct/config/default/OTHER_SETTING", "String"],
-    ["/policeconduct/config/default/SOME_LIST", "StringList"],
-  ]);
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /OTHER_SETTING .* its type is 'String'/);
-  assert.match(result.stderr, /SOME_LIST .* its type is 'StringList'/);
-  assert.doesNotMatch(result.stderr, /GOOGLE_CLOUD_PROJECT in Parameter Store/);
 });
 
 test("finding no parameters fails instead of passing", (t) => {
   const { result } = run(t, []);
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /no parameters found under \/policeconduct\//);
+  assert.match(
+    result.stderr,
+    /no parameters found under \/policeconduct\.org\//,
+  );
 });
 
 test("a failed Parameter Store read fails the audit", (t) => {

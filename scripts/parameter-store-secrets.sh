@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Sourced, not executed. Secrets live only in AWS Systems Manager Parameter Store,
 # as SecureString parameters. A secret every environment shares is named
-# /policeconduct/secrets/<ENV_NAME>. A secret that differs by environment is named
-# /policeconduct/<environment>/secrets/<ENV_NAME>, where the environment is
+# /policeconduct.org/default/secrets/<ENV_NAME>. A secret that differs by environment is named
+# /policeconduct.org/<environment>/secrets/<ENV_NAME>, where the environment is
 # production or preview.
 
 # Usage: read_parameter_store_secret PARAMETER_NAME
@@ -40,7 +40,7 @@ read_parameter_store_secret() {
 load_parameter_store_secrets() {
   local name value
   for name in "$@"; do
-    value="$(read_parameter_store_secret "/policeconduct/secrets/${name}")" || return 1
+    value="$(read_parameter_store_secret "/policeconduct.org/default/secrets/${name}")" || return 1
     export "${name}=${value}"
   done
 }

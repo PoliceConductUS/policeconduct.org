@@ -263,8 +263,7 @@ run_foundation_apply() {
 }
 
 load_dotenv_if_present
-# Every /policeconduct/ parameter must be a SecureString unless it is on the
-# allowed list in the audit script.
+# Every /policeconduct.org/ parameter must be a SecureString.
 node "${REPO_ROOT}/scripts/audit-parameter-store.mjs"
 # Secrets come only from Parameter Store. Drop any Terraform copy the .env files
 # set, so the stored values are the ones Terraform receives.
@@ -275,8 +274,8 @@ load_parameter_store_secrets SENTRY_AUTH_TOKEN GITHUB_TOKEN
 unset TF_VAR_sentry_auth_token
 # Each forms Lambda gets its own environment's Resend key. A missing key stops
 # the apply; one environment never falls back to the other's key.
-TF_VAR_forms_email_resend_api_key_production="$(read_parameter_store_secret /policeconduct/production/secrets/RESEND_API_KEY)"
-TF_VAR_forms_email_resend_api_key_preview="$(read_parameter_store_secret /policeconduct/preview/secrets/RESEND_API_KEY)"
+TF_VAR_forms_email_resend_api_key_production="$(read_parameter_store_secret /policeconduct.org/production/secrets/RESEND_API_KEY)"
+TF_VAR_forms_email_resend_api_key_preview="$(read_parameter_store_secret /policeconduct.org/preview/secrets/RESEND_API_KEY)"
 export TF_VAR_forms_email_resend_api_key_production TF_VAR_forms_email_resend_api_key_preview
 # The reCAPTCHA stack's outputs are inputs to this stack.
 unset RECAPTCHA_PROJECT_ID RECAPTCHA_SITE_KEY RECAPTCHA_SERVICE_ACCOUNT_EMAIL RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME RECAPTCHA_WIF_AUDIENCE
