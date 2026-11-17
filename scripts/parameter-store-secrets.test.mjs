@@ -28,8 +28,9 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 if [[ "$name" == "$FAIL_NAME" ]]; then echo "ParameterNotFound" >&2; exit 254; fi
-if [[ "$name" == "$EMPTY_NAME" ]]; then exit 0; fi
-printf 'stored:%s' "$name"
+if [[ "$name" == "$EMPTY_NAME" ]]; then printf 'SecureString\\t'; exit 0; fi
+if [[ "$name" == "$STRING_NAME" ]]; then printf 'String\\tstored:%s' "$name"; exit 0; fi
+printf 'SecureString\\tstored:%s' "$name"
 `,
     { mode: 0o755 },
   );
@@ -51,6 +52,7 @@ printf 'stored:%s' "$name"
         CALL_LOG: callLog,
         FAIL_NAME: "",
         EMPTY_NAME: "",
+        STRING_NAME: "",
         ...overrides,
       },
     },
@@ -72,6 +74,18 @@ test("each named secret is read decrypted and exported", (t) => {
     assert.match(line, /--with-decryption/);
     assert.match(line, /--region us-east-1/);
   }
+});
+
+test("a secret stored as a plain String stops the caller and is named", (t) => {
+  const { result } = run(t, ["RESEND_API_KEY", "GITHUB_TOKEN"], {
+    STRING_NAME: "/policeconduct/secrets/GITHUB_TOKEN",
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /\/policeconduct\/secrets\/GITHUB_TOKEN in Parameter Store must be a SecureString, but its type is 'String'/,
+  );
+  assert.equal(result.stdout, "");
 });
 
 test("the stored value replaces a value already in the environment", (t) => {

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
+  existsSync,
   mkdtempSync,
   mkdirSync,
   copyFileSync,
@@ -408,35 +409,34 @@ test("a production release build is given the Sentry token from Parameter Store,
     );
     writeFileSync(
       join(dir, "bin/aws"),
-      '#!/bin/sh\necho "aws $*" >> "$AWS_LOG"\nprintf "stored-token\\n"\n',
+      '#!/bin/sh\necho "aws $*" >> "$AWS_LOG"\nprintf "%s\\tstored-token\\n" "${PARAMETER_TYPE:-SecureString}"\n',
       { mode: 0o755 },
     );
     initializeRepository(dir);
     const awsLog = join(dir, "calls");
     // Both logs sit under paths the fixture repository ignores.
     const buildEnvLog = join(dir, "bin", "build-env");
-    const build = (extra) => {
+    const run = (extra) => {
       writeFileSync(awsLog, "");
-      const result = spawnSync(
-        process.execPath,
-        ["scripts/build-release.mjs"],
-        {
-          cwd: dir,
-          encoding: "utf8",
-          env: {
-            ...process.env,
-            PATH: join(dir, "bin") + ":" + process.env.PATH,
-            RELEASE_ID: "",
-            RECAPTCHA_SITE_KEY: "fixture-site-key",
-            SENTRY_ORG: "fixture-org",
-            SENTRY_PROJECT: "fixture-project",
-            SENTRY_AUTH_TOKEN: "",
-            AWS_LOG: awsLog,
-            BUILD_ENV_LOG: buildEnvLog,
-            ...extra,
-          },
+      return spawnSync(process.execPath, ["scripts/build-release.mjs"], {
+        cwd: dir,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          PATH: join(dir, "bin") + ":" + process.env.PATH,
+          RELEASE_ID: "",
+          RECAPTCHA_SITE_KEY: "fixture-site-key",
+          SENTRY_ORG: "fixture-org",
+          SENTRY_PROJECT: "fixture-project",
+          SENTRY_AUTH_TOKEN: "",
+          AWS_LOG: awsLog,
+          BUILD_ENV_LOG: buildEnvLog,
+          ...extra,
         },
-      );
+      });
+    };
+    const build = (extra) => {
+      const result = run(extra);
       assert.equal(result.status, 0, result.stderr);
       return {
         buildEnv: readFileSync(buildEnvLog, "utf8"),
@@ -458,6 +458,19 @@ test("a production release build is given the Sentry token from Parameter Store,
       production.aws,
       /^aws ssm get-parameter .*--name \/policeconduct\/secrets\/SENTRY_AUTH_TOKEN --with-decryption/,
     );
+
+    rmSync(join(dir, "dist"), { recursive: true, force: true });
+    rmSync(buildEnvLog);
+    const plain = run({
+      SENTRY_SOURCEMAPS: "upload",
+      PARAMETER_TYPE: "String",
+    });
+    assert.notEqual(plain.status, 0);
+    assert.match(
+      plain.stderr,
+      /SENTRY_AUTH_TOKEN in Parameter Store must be a SecureString, but its type is 'String'/,
+    );
+    assert.equal(existsSync(buildEnvLog), false);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

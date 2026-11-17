@@ -192,7 +192,7 @@ If a previous bootstrap wrote incorrect doubled-`mail` Route 53 records such as
 `send.mail.mail.policeconduct.org`, inspect the exact DNS diff and prepare a scoped
 change with rollback. Do not run an untargeted Terraform apply for email repairs.
 
-`infrastructure/bootstrap-policeconduct/scripts/apply.sh` reads its secrets from AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`. It does not use a secret from a `.env` file; the stored value always wins.
+`infrastructure/bootstrap-policeconduct/scripts/apply.sh` reads its secrets from AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`. It does not use a secret from a `.env` file; the stored value always wins. A secret stored as any type other than SecureString stops the script, and stops the production release build that reads `SENTRY_AUTH_TOKEN`.
 
 - `RESEND_API_KEY`: send-only key used by the forms Lambda verification-email path
 - `RESEND_API_KEY_FULL_ACCESS`: full-access key used only by `scripts/bootstrap-resend-domain.mjs` for Resend Domains API calls

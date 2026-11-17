@@ -11,7 +11,8 @@ resolveTerraformEnv(["RECAPTCHA_SITE_KEY"]);
 // token is a secret, so it comes from Parameter Store and nowhere else.
 if (process.env.SENTRY_SOURCEMAPS === "upload") {
   resolveTerraformEnv(["SENTRY_ORG", "SENTRY_PROJECT"]);
-  process.env.SENTRY_AUTH_TOKEN = execFileSync(
+  // Text output is the type, a tab, then the value.
+  const [type, token] = execFileSync(
     "aws",
     [
       "ssm",
@@ -22,14 +23,20 @@ if (process.env.SENTRY_SOURCEMAPS === "upload") {
       "/policeconduct/secrets/SENTRY_AUTH_TOKEN",
       "--with-decryption",
       "--query",
-      "Parameter.Value",
+      "Parameter.[Type,Value]",
       "--output",
       "text",
     ],
     { encoding: "utf8" },
-  ).trim();
-  if (!process.env.SENTRY_AUTH_TOKEN)
-    throw new Error("SENTRY_AUTH_TOKEN in Parameter Store is empty");
+  )
+    .trim()
+    .split("\t");
+  if (type !== "SecureString")
+    throw new Error(
+      `SENTRY_AUTH_TOKEN in Parameter Store must be a SecureString, but its type is '${type}'`,
+    );
+  if (!token) throw new Error("SENTRY_AUTH_TOKEN in Parameter Store is empty");
+  process.env.SENTRY_AUTH_TOKEN = token;
 }
 
 const pr = process.env.PR_NUMBER;
