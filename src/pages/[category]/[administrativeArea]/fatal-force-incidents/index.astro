@@ -1,0 +1,20 @@
+---
+import CivicScopedIndexPage from "#src/components/CivicScopedIndexPage.astro";
+import { buildAdministrativeAreaCivicIndex } from "#src/lib/data/civic-index.js";
+import {
+  loadAdministrativeAreaScopedPathsForTopic,
+  loadRequiredLocationByPath,
+} from "#src/lib/data/civic-scoped-routes.js";
+
+export async function getStaticPaths() {
+  return loadAdministrativeAreaScopedPathsForTopic("fatal-force-incidents");
+}
+
+const location = await loadRequiredLocationByPath(
+  `/${Astro.params.category}/${Astro.params.administrativeArea}/`,
+  "administrative_area",
+);
+const model = await buildAdministrativeAreaCivicIndex(location);
+---
+
+<CivicScopedIndexPage model={model} kind="fatal-force-incidents" />

@@ -1,0 +1,32 @@
+---
+import CivicChildIndexPage from "#src/components/CivicChildIndexPage.astro";
+import { buildPlaceCivicIndex } from "#src/lib/data/civic-index.js";
+import {
+  loadPlaceScopedPaths,
+  loadRequiredLocationByPath,
+} from "#src/lib/data/civic-scoped-routes.js";
+
+export async function getStaticPaths() {
+  return loadPlaceScopedPaths();
+}
+
+const location = await loadRequiredLocationByPath(
+  `/${Astro.params.category}/${Astro.params.administrativeArea}/${Astro.params.place}/`,
+  "place",
+);
+const label = "Agencies";
+const model = await buildPlaceCivicIndex(location);
+const pagePath = `${model.pagePath}agencies/`;
+const page = {
+  currentPage: 1,
+  data: model.rows,
+  lastPage: 1,
+};
+---
+
+<CivicChildIndexPage
+  label={label}
+  model={model}
+  page={page}
+  pagePath={pagePath}
+/>

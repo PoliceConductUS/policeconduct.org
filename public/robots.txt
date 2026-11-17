@@ -1,4 +1,41 @@
+# AI answer/search crawlers (GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot,
+# Claude-SearchBot, PerplexityBot, Perplexity-User, Google-Extended, CCBot,
+# Bytespider, Amazonbot, Applebot-Extended, etc.) are intentionally permitted:
+# this is a public-interest accountability record and we want it read, cited,
+# and attributed by generative engines. They match the User-agent: * group
+# below, which already excludes only the form/utility routes. Note that a single
+# named group here would REPLACE (not extend) these rules for that bot, so the
+# shared * group is kept deliberately rather than split per crawler.
 User-agent: *
 Allow: /
 
+# Form, prefill, and utility routes: noindex by design, and every prefilled
+# link creates a unique query URL. Disallow saves Google from crawling tens of
+# thousands of parameterized variations just to discover the noindex tag
+# (Search Console 2026-07-28: ~32k "excluded by noindex" URLs, almost all
+# prefill form permutations; 1 "blocked by 4xx" = the form API endpoint).
+Disallow: /api/
+Disallow: /issue/
+Disallow: /about/contact
+Disallow: /volunteer/?
+Disallow: /report/new/
+Disallow: /personnel/new/
+Disallow: /personnel/suggest-edit/
+Disallow: /agency/new/
+Disallow: /agency/suggest-edit/
+Disallow: /civil-cases/new/
+Disallow: /civil-cases/suggest-edit/
+Disallow: /civil-litigation/new/
+Disallow: /law-enforcement-agency/new/
+Disallow: /law-enforcement-agency/suggest-edit/
+Disallow: /legal-notice/data-subject-access-request/
+Disallow: /status/
+Disallow: /verify/
+
 Sitemap: https://www.policeconduct.org/sitemap-index.xml
+
+# Guide for AI answer/search engines: a curated map of the site, record types,
+# and citation context. Fetched directly at the well-known /llms.txt path (no
+# registered robots.txt directive exists for it) and advertised site-wide via a
+# <link rel="alternate" type="text/plain" href="/llms.txt"> tag in each page head.
+# https://www.policeconduct.org/llms.txt

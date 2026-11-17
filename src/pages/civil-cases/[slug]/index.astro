@@ -1,0 +1,328 @@
+---
+import RecordDataNotes from "#src/components/RecordDataNotes.astro";
+import { getVideoEmbedUrl } from "#src/lib/video.js";
+import ComplaintSummaryUnavailable from "#src/components/ComplaintSummaryUnavailable.astro";
+import AiComplaintSummary from "#src/components/AiComplaintSummary.astro";
+import PageShell from "#src/layouts/PageShell.astro";
+import "#src/styles/civic-ledger.css";
+import EntityActionBar from "#src/components/EntityActionBar.astro";
+import { withDb } from "#src/lib/db.js";
+import { loadCivilCaseDetailBySlug } from "#src/lib/data/civil-litigation-detail.js";
+import { formatLongDate } from "#src/lib/format.js";
+import {
+  buildContentPageNode,
+  buildGovernmentOrganizationNode,
+  buildPersonNode,
+  buildPublisherOrganization,
+  buildWebSite,
+  getSiteUrl,
+} from "#src/lib/structured-data.js";
+
+export async function getStaticPaths() {
+  const civilCases = await withDb(async (client) => {
+    return (
+      await client.query(
+        `
+          select slug
+          from public.civil_cases
+          order by filed_date desc, title
+        `,
+      )
+    ).rows;
+  });
+
+  return civilCases.map((civilCase: { slug: string }) => ({
+    params: {
+      slug: civilCase.slug,
+    },
+  }));
+}
+
+const { slug } = Astro.params;
+const data = await loadCivilCaseDetailBySlug(String(slug || ""));
+if (!data) {
+  throw new Error(`Civil case ${slug} not found.`);
+}
+const caseTitle = data.civilCase.title;
+const casePath = `/civil-cases/${data.civilCase.slug}/`;
+if (!data.civilCase.filed_date) {
+  throw new Error(`Civil case ${data.civilCase.id} is missing filed_date.`);
+}
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(casePath, siteUrl).toString();
+const coverageLinks = data.coverageLinks;
+const courtListenerCaseUrl = [
+  data.civilCase.primary_source_url,
+  ...coverageLinks.map((link) => link.url),
+].find(
+  (url) => url && /^https:\/\/(www\.)?courtlistener\.com\/docket\//i.test(url),
+);
+const caseMetaItems = [
+  data.civilCase.primary_source_url
+    ? {
+        label: "Primary source",
+        href: data.civilCase.primary_source_url,
+        value: "Open source",
+      }
+    : null,
+].filter(Boolean) as { label: string; href: string; value: string }[];
+const truncateText = (value: string, maxLength: number) => {
+  if (value.length <= maxLength) {
+    return value;
+  }
+  const truncated = value.slice(0, maxLength + 1);
+  const lastSpace = truncated.lastIndexOf(" ");
+  return `${truncated.slice(0, lastSpace > 0 ? lastSpace : maxLength).trim()}...`;
+};
+const formatLabelList = (values: string[]) => {
+  if (values.length <= 1) {
+    return values[0] || "";
+  }
+  if (values.length === 2) {
+    return `${values[0]} and ${values[1]}`;
+  }
+  return `${values.slice(0, -1).join(", ")}, and ${values[values.length - 1]}`;
+};
+const officerNames = data.officers.map((officer) =>
+  [officer.first_name, officer.last_name].filter(Boolean).join(" "),
+);
+const agencyNames = data.agencies.map((agency) => agency.name);
+const pageDescriptionParts = [
+  data.civilCase.cause_number
+    ? `Cause number ${data.civilCase.cause_number}.`
+    : null,
+  data.civilCase.court ? `Court: ${data.civilCase.court}.` : null,
+  `Filed ${formatLongDate(data.civilCase.filed_date)}.`,
+  officerNames.length
+    ? `Officers: ${formatLabelList(officerNames.slice(0, 2))}${officerNames.length > 2 ? ", and others" : ""}.`
+    : null,
+  agencyNames.length
+    ? `Agencies: ${formatLabelList(agencyNames.slice(0, 2))}${agencyNames.length > 2 ? ", and others" : ""}.`
+    : null,
+];
+const pageDescription = truncateText(
+  pageDescriptionParts.filter(Boolean).join(" "),
+  280,
+);
+const webpageId = `${pageUrl}#webpage`;
+const legalCaseId = `${pageUrl}#legalcase`;
+const officerEntities = data.officers.map((officer) =>
+  buildPersonNode({
+    siteUrl,
+    path: `/personnel/${officer.slug}/`,
+    name: [officer.first_name, officer.last_name].filter(Boolean).join(" "),
+  }),
+);
+const agencyEntities = data.agencies.map((agency) =>
+  buildGovernmentOrganizationNode({
+    siteUrl,
+    path: agency.canonicalPath,
+    name: agency.name,
+  }),
+);
+const legalCaseEntity: Record<string, unknown> = {
+  "@type": "LegalCase",
+  "@id": legalCaseId,
+  name: caseTitle,
+  url: pageUrl,
+  mainEntityOfPage: { "@id": webpageId },
+  ...(data.civilCase.cause_number
+    ? { identifier: data.civilCase.cause_number }
+    : {}),
+  dateFiled: new Date(data.civilCase.filed_date).toISOString(),
+  ...(data.civilCase.court ? { court: data.civilCase.court } : {}),
+  ...(data.civilCase.primary_source_url
+    ? { sameAs: [data.civilCase.primary_source_url] }
+    : {}),
+};
+if (officerEntities.length || agencyEntities.length) {
+  legalCaseEntity.about = [...officerEntities, ...agencyEntities].map(
+    (entity) => ({
+      "@id": entity["@id"],
+    }),
+  );
+}
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    buildWebSite(siteUrl),
+    buildContentPageNode({
+      siteUrl,
+      id: webpageId,
+      pageUrl,
+      name: `${caseTitle} | PoliceConduct.org`,
+      description: pageDescription,
+      mainEntityId: legalCaseId,
+    }),
+    buildPublisherOrganization(siteUrl),
+    ...agencyEntities,
+    ...officerEntities,
+    legalCaseEntity,
+  ],
+};
+---
+
+<PageShell
+  title={`${caseTitle} | PoliceConduct.org`}
+  description={pageDescription}
+  pagePath={casePath}
+  canonicalUrl={casePath}
+  structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Civil cases", href: "/civil-cases/" },
+    { label: caseTitle, href: casePath },
+  ]}
+  eyebrow="Civil case"
+  heading={caseTitle}
+>
+  <Fragment slot="header">
+    <EntityActionBar
+      actions={[{ label: "Suggest edit", href: "/civil-cases/suggest-edit/" }]}
+    />
+  </Fragment>
+
+  <section class="civic-section civic-section--facts">
+    <dl class="fact-list">
+      {data.civilCase.cause_number ? (
+        <div>
+          <dt>Cause number</dt>
+          <dd>{data.civilCase.cause_number}</dd>
+        </div>
+      ) : null}
+      {data.civilCase.court ? (
+        <div>
+          <dt>Court</dt>
+          <dd>{data.civilCase.court}</dd>
+        </div>
+      ) : null}
+      <div>
+        <dt>Filed</dt>
+        <dd>{formatLongDate(data.civilCase.filed_date)}</dd>
+      </div>
+      {data.civilCase.date_terminated ? (
+        <div>
+          <>
+            <dt>Closed</dt>
+            <dd>{formatLongDate(data.civilCase.date_terminated)}</dd>
+          </>
+        </div>
+      ) : null}
+      {data.civilCase.location_path ? (
+        <div>
+          <>
+            <dt>Incident location</dt>
+            <dd>
+              <a href={data.civilCase.location_path}>
+                {data.civilCase.location_name!}
+              </a>
+            </dd>
+          </>
+        </div>
+      ) : null}
+      {data.civilCase.outcome ? (
+        <div>
+          <dt>Outcome</dt>
+          <dd>{data.civilCase.outcome}</dd>
+        </div>
+      ) : null}
+      {caseMetaItems.map((item) => (
+        <div>
+          <dt>{item.label}</dt>
+          <dd>
+            <a href={item.href} target="_blank" rel="noopener noreferrer">
+              {item.value}
+            </a>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  </section>
+
+  <div class="detail-layout civic-section civic-section--last">
+    <article class="detail-body detail-body--sections">
+      {data.civilCase.ai_complaint_summary ? (
+        <AiComplaintSummary summary={data.civilCase.ai_complaint_summary} />
+      ) : (
+        <ComplaintSummaryUnavailable
+          unavailability={data.civilCase.complaint_summary_unavailability}
+        />
+      )}
+      {data.officers.length ? (
+        <section>
+          <h2>Personnel named in this case</h2>
+          {data.officers.map((officer) => (
+            <p>
+              <a href={`/personnel/${officer.slug}/`}>
+                {officer.first_name} {officer.last_name}
+              </a>
+              {officer.title ? ` — ${officer.title}` : ""}
+            </p>
+          ))}
+        </section>
+      ) : null}
+
+      {data.agencies.length ? (
+        <section>
+          <h2>Agencies</h2>
+          {data.agencies.map((agency) => (
+            <p>
+              <a href={agency.canonicalPath}>{agency.name}</a>
+              {agency.city || agency.state
+                ? ` — ${[agency.city, agency.state].filter(Boolean).join(", ")}`
+                : ""}
+            </p>
+          ))}
+        </section>
+      ) : null}
+
+      {coverageLinks.length ? (
+        <section>
+          <h2>Related links</h2>
+          {coverageLinks.map((link) => (
+            <p>
+              <a
+                href={
+                  getVideoEmbedUrl(link.url)
+                    ? `${casePath}watch/${link.id}/`
+                    : link.url
+                }
+                target={getVideoEmbedUrl(link.url) ? undefined : "_blank"}
+                rel={
+                  getVideoEmbedUrl(link.url) ? undefined : "noopener noreferrer"
+                }
+              >
+                {link.title}
+              </a>
+            </p>
+          ))}
+        </section>
+      ) : null}
+    </article>
+
+    <aside class="detail-aside">
+      <p class="civic-kicker">Court records</p>
+      <h2>Case notifications</h2>
+      <ul>
+        <li>
+          {courtListenerCaseUrl ? (
+            <a href={courtListenerCaseUrl}>Open this case on CourtListener</a>
+          ) : (
+            <a href="https://www.courtlistener.com/">
+              Find this case on CourtListener
+            </a>
+          )}{" "}
+          to set up notifications.{" "}
+          <a href="https://www.courtlistener.com/help/alerts/">
+            Learn about CourtListener alerts →
+          </a>
+        </li>
+        <li>
+          Know something about this case?{" "}
+          <a href="/civil-cases/suggest-edit/">Suggest an edit →</a>
+        </li>
+      </ul>
+    </aside>
+  </div>
+  <RecordDataNotes recordPath={casePath} />
+</PageShell>

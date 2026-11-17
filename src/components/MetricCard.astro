@@ -1,0 +1,85 @@
+---
+import MetricCardButton from "#src/components/MetricCardButton.astro";
+import MetricCardLink from "#src/components/MetricCardLink.astro";
+import type { MetricCardItem } from "#src/components/metric-card-types.js";
+
+const { metric } = Astro.props as {
+  metric: MetricCardItem;
+};
+const action = metric.action;
+
+// Render metrics in the shared civic-ledger language (big value, small label,
+// subtle role accent) instead of icon cards — dense and scannable, no metric
+// wall. Map the legacy accent names onto the stat-strip role vocabulary.
+const roleByAccent = {
+  blue: "neutral",
+  green: "budget",
+  purple: "civil",
+  red: "liability",
+} as const;
+const role = roleByAccent[metric.accent ?? "blue"];
+const isEmpty =
+  metric.value === "--" || metric.value === "$--" || metric.value === "";
+---
+
+<div
+  class:list={["entity-metric-cell", { "is-pending": isEmpty }]}
+  data-role={role}
+>
+  <strong class="ledger-value">{metric.value}</strong>
+  <span class="ledger-label">{metric.label}</span>
+  {metric.detail ? <span class="ledger-meta">{metric.detail}</span> : null}
+  {action ? (
+    <span class="entity-metric-action">
+      {action.kind === "link" ? (
+        <MetricCardLink href={action.href}>{action.label}</MetricCardLink>
+      ) : (
+        <MetricCardButton href={action.href}>{action.label}</MetricCardButton>
+      )}
+    </span>
+  ) : null}
+</div>
+
+<style>
+  .entity-metric-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.15rem 0 0.15rem 0.85rem;
+    position: relative;
+  }
+
+  /* A quiet role accent stands in for the old rounded icon. */
+  .entity-metric-cell::before {
+    background: var(--ipc-color-teal);
+    border-radius: 1px;
+    content: "";
+    inset: 0.2rem auto 0.2rem 0;
+    position: absolute;
+    width: 2px;
+  }
+
+  .entity-metric-cell[data-role="civil"]::before {
+    background: var(--ipc-role-civil);
+  }
+
+  .entity-metric-cell[data-role="budget"]::before {
+    background: var(--ipc-role-budget);
+  }
+
+  .entity-metric-cell[data-role="liability"]::before {
+    background: var(--ipc-role-liability);
+  }
+
+  .entity-metric-cell.is-pending::before {
+    background: var(--ipc-color-rule);
+  }
+
+  .entity-metric-cell.is-pending .ledger-value {
+    color: var(--ipc-color-ink-faint);
+  }
+
+  .entity-metric-action {
+    margin-top: 0.4rem;
+  }
+</style>

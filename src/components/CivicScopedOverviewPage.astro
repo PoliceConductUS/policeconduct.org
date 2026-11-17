@@ -1,0 +1,102 @@
+---
+import StatCell from "#src/components/StatCell.astro";
+import PageShell from "#src/layouts/PageShell.astro";
+import {
+  buildHelpCollectHref,
+  type CivicIndexModel,
+} from "#src/lib/data/civic-index.js";
+import type {
+  CivicTopicKind,
+  CivicTopicRecords,
+} from "#src/lib/data/civic-topic-records.js";
+import { metricLabels } from "#src/lib/metric-vocabulary.js";
+import "#src/styles/civic-ledger.css";
+
+const { model, kind, records } = Astro.props as {
+  model: CivicIndexModel;
+  kind: CivicTopicKind;
+  records?: CivicTopicRecords;
+};
+
+const pageConfig = {
+  budget: {
+    title: metricLabels.budget,
+    description: "Budget, revenue, spending, forfeiture, and overtime records.",
+    role: "budget" as const,
+    gloss: "Yearly department spending",
+  },
+  "civil-cases": {
+    title: metricLabels.civilCases,
+    description: "Civil cases connected to this geography, from court records.",
+    role: "civil" as const,
+    gloss: undefined,
+  },
+  "fatal-force-incidents": {
+    title: metricLabels.fatalForceIncidents,
+    description:
+      "Deaths involving police contact, including custody and pursuit deaths.",
+    role: "neutral" as const,
+    gloss: "Deaths involving police",
+  },
+  "liability-costs": {
+    title: metricLabels.liabilityCosts,
+    description:
+      "Claims, settlements, judgments, defense costs, and related payments.",
+    role: "liability" as const,
+    gloss: "Payouts in police-conduct cases",
+  },
+  "outcomes-by-income": {
+    title: metricLabels.outcomesByIncome,
+    description: "Case outcomes grouped by income, where source data exists.",
+    role: "neutral" as const,
+    gloss: "Case results by neighborhood income",
+  },
+}[kind];
+
+const heading =
+  model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
+  model.jurisdictionLabel;
+const pagePath = `${model.pagePath}${kind}/`;
+const pageTitle = `${heading} ${pageConfig.title}`;
+const entitySlug = model.pagePath.split("/").filter(Boolean).pop() || "";
+const volunteerHref = buildHelpCollectHref(pagePath, model.level, entitySlug);
+
+const hasRows = records ? records.rows.length > 0 : false;
+---
+
+<PageShell
+  title={`${pageTitle} | PoliceConduct.org`}
+  description={pageConfig.description}
+  pagePath={pagePath}
+  breadcrumbs={[
+    ...model.breadcrumbs.map((item) => ({ ...item, current: false })),
+    { label: pageConfig.title, href: pagePath },
+  ]}
+  eyebrow={heading}
+  heading={pageConfig.title}
+  lede={pageConfig.description}
+>
+  {hasRows ? (
+    <section class="civic-section civic-section--last">
+      <slot />
+      <p class="civic-limit-note">
+        Case records come from court dockets. A pending case is an allegation,
+        not a finding. A dismissal is a court outcome, not a statement that no
+        misconduct occurred.
+      </p>
+    </section>
+  ) : (
+    <section class="civic-section civic-section--last">
+      <ul class="topic-row">
+        <StatCell
+          variant="topic"
+          label={pageConfig.title}
+          gloss={pageConfig.gloss}
+          role={pageConfig.role ?? undefined}
+          empty
+          helpCollectHref={volunteerHref}
+        />
+      </ul>
+    </section>
+  )}
+</PageShell>

@@ -8,19 +8,20 @@ const recaptchaFormRoutes = [
   "/report/new/",
   "/personnel/new/",
   "/personnel/suggest-edit/",
-  "/law-enforcement-agency/new/",
-  "/law-enforcement-agency/suggest-edit/",
-  "/civil-litigation/new/",
-  "/civil-litigation/suggest-edit/",
+  "/agency/new/",
+  "/agency/suggest-edit/",
+  "/civil-cases/new/",
+  "/civil-cases/suggest-edit/",
   "/legal-notice/data-subject-access-request/",
 ];
 
 const nonRecaptchaRoutes = [
   "/",
   "/about/",
-  "/report/",
-  "/personnel/tx/",
-  "/law-enforcement-agency/tx/",
+  "/tx/",
+  "/personnel/",
+  "/status/",
+  "/verify/",
 ];
 
 const repoRoot = path.resolve(process.cwd());
@@ -47,7 +48,7 @@ test.describe("recaptcha", () => {
   test.describe("route loading", () => {
     for (const route of recaptchaFormRoutes) {
       test(`${route} initializes recaptcha`, async ({ page }) => {
-        await page.goto(route);
+        await page.goto(route, { waitUntil: "domcontentloaded" });
         const recaptchaScript = page.locator(
           'script[src*="google.com/recaptcha/enterprise.js"]',
         );
@@ -57,7 +58,7 @@ test.describe("recaptcha", () => {
 
     for (const route of nonRecaptchaRoutes) {
       test(`${route} does not load recaptcha`, async ({ page }) => {
-        await page.goto(route);
+        await page.goto(route, { waitUntil: "domcontentloaded" });
         const recaptchaScript = page.locator(
           'script[src*="google.com/recaptcha/enterprise.js"]',
         );

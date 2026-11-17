@@ -1,28 +1,32 @@
 import { withDb } from "#src/lib/db.js";
 import { groupBy, mapBy } from "#src/lib/data.js";
+import { requireAgencyCanonicalPath } from "./location-paths.js";
 
 export type OfficerRef = {
   id: string;
   slug: string;
   first_name: string;
-  last_name: string;
+  last_name: string | null;
 };
 
 export type AgencyRef = {
   id: string;
   slug: string;
   name: string;
-  category: string;
+  state: string;
+  location_path?: string | null;
+  canonicalPath?: string | null;
 };
 
 export type CivilCaseSummary = {
   id: string;
   slug: string;
-  category: string;
+  state: string;
+  locationPath: string;
   title: string;
   cause_number: string;
   court: string | null;
-  filed_date: string | null;
+  filed_date: string;
   claims_summary: string | null;
   outcome: string | null;
   primary_source_url: string | null;
@@ -31,8 +35,8 @@ export type CivilCaseSummary = {
   agencies: AgencyRef[];
 };
 
-export const loadCivilCasesByCategory = async (
-  categoryCode: string,
+export const loadCivilCasesByState = async (
+  stateCode: string,
 ): Promise<CivilCaseSummary[]> => {
   const {
     civilCases = [],
@@ -42,11 +46,13 @@ export const loadCivilCasesByCategory = async (
   } = await withDb(async (client) => {
     const casesResult = await client.query(
       `
-        select *
-        from public.civil_cases
-        where upper(category) = $1
+        select c.*, split_part(lp.path, '/', 2) as state, lp.path as location_path
+        from public.civil_cases c
+        join public.location_path lp
+          on lp.location_path_id = c.location_path_id
+        where upper(split_part(lp.path, '/', 2)) = $1
       `,
-      [categoryCode],
+      [stateCode],
     );
     const caseIds = casesResult.rows.map((row: { id: string }) => row.id);
     if (!caseIds.length) {
@@ -60,9 +66,9 @@ export const loadCivilCasesByCategory = async (
 
     const caseOfficersResult = await client.query(
       `
-        select cco.civil_case_id, ao.officer_id
-        from public.civil_case_officers cco
-        join public.agency_officers ao on ao.id = cco.agency_officer_id
+        select cco.civil_case_id, ao.personnel_id
+        from public.civil_case_personnel cco
+        join public.agency_personnel ao on ao.id = cco.agency_personnel_id
         where cco.civil_case_id = any($1)
       `,
       [caseIds],
@@ -70,7 +76,7 @@ export const loadCivilCasesByCategory = async (
     const officerIds = [
       ...new Set(
         caseOfficersResult.rows
-          .map((entry: { officer_id: string }) => entry.officer_id)
+          .map((entry: { personnel_id: string }) => entry.personnel_id)
           .filter(Boolean),
       ),
     ];
@@ -79,7 +85,7 @@ export const loadCivilCasesByCategory = async (
           await client.query(
             `
               select id, slug, first_name, last_name
-              from public.officers
+              from public.personnel
               where id = any($1)
             `,
             [officerIds],
@@ -95,10 +101,16 @@ export const loadCivilCasesByCategory = async (
             a.id,
             a.slug,
             a.name,
-            a.category
-          from public.civil_case_officers cco
-          join public.agency_officers ao on ao.id = cco.agency_officer_id
+            split_part(lp.path, '/', 2) as state,
+            lp.path as location_path,
+            bpp.path as canonical_path
+          from public.civil_case_personnel cco
+          join public.agency_personnel ao on ao.id = cco.agency_personnel_id
           join public.agency a on a.id = ao.agency_id
+          join public.location_path lp on lp.location_path_id = a.location_path_id
+          join public.build_page_payload bpp
+            on bpp.page_type = 'agency'
+           and bpp.entity_id = a.id
           where cco.civil_case_id = any($1)
           order by a.name
         `,
@@ -122,24 +134,22 @@ export const loadCivilCasesByCategory = async (
     .map((civilCase) => ({
       ...civilCase,
       officers: (officersByCase[civilCase.id] || [])
-        .map((entry: { officer_id: string }) => officersById[entry.officer_id])
+        .map(
+          (entry: { personnel_id: string }) => officersById[entry.personnel_id],
+        )
         .filter(Boolean),
       agencies: (agenciesByCase[civilCase.id] || []).map(
         (entry: AgencyRef & { civil_case_id: string }) => ({
           id: entry.id,
           slug: entry.slug,
           name: entry.name,
-          category: entry.category,
+          canonicalPath: requireAgencyCanonicalPath(entry),
         }),
       ),
     }))
     .sort((left, right) => {
-      const leftDate = new Date(
-        left.filed_date || left.created_at || 0,
-      ).getTime();
-      const rightDate = new Date(
-        right.filed_date || right.created_at || 0,
-      ).getTime();
+      const leftDate = new Date(left.filed_date).getTime();
+      const rightDate = new Date(right.filed_date).getTime();
       return rightDate - leftDate;
     }) as CivilCaseSummary[];
 };

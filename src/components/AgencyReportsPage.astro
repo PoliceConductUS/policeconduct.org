@@ -1,0 +1,63 @@
+---
+import type { ComponentProps } from "astro/types";
+import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
+import Pagination from "#src/components/Pagination.astro";
+import { formatShortDate } from "#src/lib/format.js";
+
+type AgencyReportSummary = {
+  canonicalPath?: string;
+  incidentDate?: string | null;
+  title: string;
+  url?: string;
+};
+
+const { currentPage, data, lastPage, pageReports } = Astro.props as {
+  currentPage: number;
+  data: ComponentProps<typeof AgencyTopicPage>["data"] & {
+    reportedReports: AgencyReportSummary[];
+  };
+  lastPage: number;
+  pageReports: AgencyReportSummary[];
+};
+
+const reportsIndexPath = `${data.agencyPath}reports/`;
+const reportHref = (report: AgencyReportSummary) => {
+  const href = report.canonicalPath || report.url;
+  if (!href) {
+    throw new Error(`Report ${report.title} is missing a canonical path.`);
+  }
+  return href;
+};
+---
+
+<AgencyTopicPage
+  data={data}
+  topicLabel="Reports"
+  topicSlug="reports"
+  description={`${data.reportedReports.length.toLocaleString("en-US")} public reports connected to this agency, shared by the public.`}
+>
+  <div class="recent-list">
+    {pageReports.map((report) => (
+      <a href={reportHref(report)}>
+        <span class="recent-list-title">{report.title}</span>
+        <span class="recent-list-meta">
+          Report
+          {report.incidentDate
+            ? ` · Incident ${formatShortDate(report.incidentDate)}`
+            : ""}
+        </span>
+      </a>
+    ))}
+  </div>
+  {lastPage > 1 ? (
+    <Pagination
+      basePath={reportsIndexPath}
+      currentPage={currentPage}
+      lastPage={lastPage}
+    />
+  ) : null}
+  <p class="civic-limit-note">
+    Reports reflect the submitter's account and linked public records.
+    Publication is not a court finding.
+  </p>
+</AgencyTopicPage>

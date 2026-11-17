@@ -1,0 +1,195 @@
+/* ==========================================================================
+   PoliceConduct.org — Agency/entity page mockup (v2)
+   Converged from the 12-option catalog in agency-entity.html onto one
+   direction (Option K's header: address + contact links share one row).
+   Loads alongside shared-v2.css and reuses its tokens + ledger-cell
+   vocabulary (.stat-strip/.stat-cell, .topic-row/.topic-cell, .ledger-*)
+   for the record-count tiles — this file only adds what's genuinely new
+   to an entity page: the hero/contact block, the help sidebar, and the
+   recent-activity feed.
+   ========================================================================== */
+
+.entity-hero {
+  border-bottom: 1px solid var(--rule);
+  padding-block: 0.9rem 1.6rem;
+}
+
+.entity-hero-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+.entity-hero h1 {
+  max-width: 34ch;
+}
+
+.entity-address-contact-row {
+  align-items: start;
+  column-gap: 2rem;
+  display: grid;
+  grid-template-columns: minmax(17rem, 0.9fr) minmax(18rem, 1.1fr);
+  margin-top: 0.85rem;
+  max-width: 54rem;
+}
+
+.entity-address {
+  color: var(--ink-soft);
+  font-size: 1.0625rem;
+  font-style: normal;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.header-contact-links {
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.85rem;
+  padding-top: 0.65rem;
+}
+
+.header-contact-links a,
+.header-contact-links span {
+  color: var(--ink);
+  font-size: var(--small);
+  font-weight: 700;
+}
+
+.header-contact-links a {
+  text-decoration: none;
+}
+
+.entity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1.1rem;
+}
+
+.entity-action {
+  align-items: center;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink);
+  display: inline-flex;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.7rem;
+  text-decoration: none;
+}
+
+.entity-action:hover {
+  background: var(--teal-wash);
+  border-color: var(--teal-ink);
+}
+
+.entity-action-primary {
+  background: var(--deep-red);
+  border-color: var(--deep-red);
+  color: var(--paper);
+}
+
+.entity-action-primary:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.entity-action-text {
+  border-color: transparent;
+  color: var(--teal-ink);
+  padding-inline: 0.25rem;
+}
+
+.entity-action-text:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+
+.entity-side {
+  border: 1px solid var(--rule);
+  background: var(--paper-raised);
+  padding: 1.1rem 1.25rem;
+  align-self: start;
+}
+
+.entity-side h2 {
+  font-size: var(--h4);
+  margin-top: 0.15rem;
+}
+
+.entity-side-list {
+  display: grid;
+  gap: 0;
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.entity-side-list li {
+  align-items: center;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding-block: 0.6rem;
+}
+
+.entity-side-list a {
+  font-size: var(--small);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* ---- recent activity feed (chronological, not a metric — kept as its
+   own list rather than forced into the ledger-cell tile pattern) ---- */
+
+.recent-list {
+  display: grid;
+}
+
+.recent-list a {
+  border-top: 1px solid var(--rule);
+  color: var(--ink);
+  display: grid;
+  gap: 0.25rem;
+  padding-block: 0.75rem;
+  text-decoration: none;
+}
+
+.recent-list a:hover .recent-list-title {
+  color: var(--teal-ink);
+}
+
+.recent-list-title {
+  font-size: var(--small);
+  font-weight: 700;
+}
+
+.recent-list-meta {
+  color: var(--ink-faint);
+  font-size: var(--caption);
+}
+
+.limit-note {
+  background: color-mix(in oklch, var(--teal-wash) 64%, var(--paper));
+  border-left: 4px solid var(--teal-ink);
+  color: var(--ink-soft);
+  font-size: var(--small);
+  margin-top: 1.75rem;
+  padding: 0.8rem 0.9rem;
+}
+
+@media (min-width: 900px) {
+  .entity-hero-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.34fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .entity-address-contact-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.4rem;
+  }
+}

@@ -2,16 +2,32 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import dotenv from "dotenv";
+import { resolveTerraformEnv } from "./terraform-outputs.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
-const envFiles = [".env", ".env-recaptcha", ".env-policeconduct"];
+const databaseUrl = process.env.DATABASE_URL;
+const intakeWorkspace = process.env.INTAKE_WORKSPACE;
+const envFiles = [".env"];
 
 for (const envFile of envFiles) {
   dotenv.config({
     path: path.join(repoRoot, envFile),
     override: true,
   });
+}
+
+// Explicit connection/workspace inputs must survive layered local config.
+if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
+if (intakeWorkspace !== undefined)
+  process.env.INTAKE_WORKSPACE = intakeWorkspace;
+
+// Deployed values come from Terraform outputs unless the caller already set them.
+try {
+  resolveTerraformEnv(["FORMS_API_PROXY_TARGET", "RECAPTCHA_SITE_KEY"]);
+} catch (error) {
+  console.error(`Dev startup failed: ${error.message}`);
+  process.exit(1);
 }
 
 const formsApiProxyTarget = (process.env.FORMS_API_PROXY_TARGET || "").trim();
@@ -46,15 +62,66 @@ if (missingVars.length > 0) {
 }
 
 const args = process.argv.slice(2);
-const child = spawn("astro", ["dev", ...args], {
+
+const runStep = async (label, scriptPath, failureMessage) => {
+  console.log(label);
+  const step = spawn(process.execPath, [scriptPath], {
+    cwd: repoRoot,
+    env: process.env,
+    stdio: "inherit",
+  });
+  const result = await new Promise((resolve) => {
+    step.on("exit", (code, signal) => resolve({ code, signal }));
+  });
+  if (result.signal) {
+    process.kill(process.pid, result.signal);
+  }
+  if (result.code !== 0) {
+    console.error(failureMessage);
+    process.exit(result.code ?? 1);
+  }
+};
+
+await runStep(
+  "Generating icon sprite...",
+  "scripts/generate-icon-sprite.mjs",
+  "Dev startup failed: icon sprite generation failed.",
+);
+
+await runStep(
+  "Refreshing build projections...",
+  "scripts/refresh-build-projections.mjs",
+  "Dev startup failed: build projection refresh failed.",
+);
+
+const astroBin = path.join(
+  repoRoot,
+  "node_modules",
+  "astro",
+  "bin",
+  "astro.mjs",
+);
+
+const child = spawn(process.execPath, [astroBin, "dev", ...args], {
   cwd: repoRoot,
   env: process.env,
   stdio: "inherit",
-  shell: true,
 });
+
+let shuttingDown = false;
+
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.once(signal, () => {
+    shuttingDown = true;
+    child.kill(signal);
+  });
+}
 
 child.on("exit", (code, signal) => {
   if (signal) {
+    if (shuttingDown) {
+      process.exit(0);
+    }
     process.kill(process.pid, signal);
     return;
   }

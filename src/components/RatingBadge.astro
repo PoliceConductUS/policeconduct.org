@@ -8,7 +8,7 @@ type RatingLabel =
   | "No Rating";
 
 type RatingStyle = {
-  color: string;
+  className: string;
 };
 
 type Props = {
@@ -26,27 +26,18 @@ const getRatingLabel = (value: number): RatingLabel => {
 };
 
 const ratingStyles: Record<RatingLabel, RatingStyle> = {
-  Outstanding: { color: "#b45309" },
-  Good: { color: "#22c55e" },
-  Adequate: { color: "#8E9196" },
-  "Needs Improvement": { color: "#f59e0b" },
-  Unacceptable: { color: "#ef4444" },
-  "No Rating": { color: "#e5e7eb" },
+  Outstanding: { className: "rating-badge-outstanding" },
+  Good: { className: "rating-badge-good" },
+  Adequate: { className: "rating-badge-adequate" },
+  "Needs Improvement": { className: "rating-badge-needs-improvement" },
+  Unacceptable: { className: "rating-badge-unacceptable" },
+  "No Rating": { className: "rating-badge-no-rating" },
 };
 
 const ratingLabel: RatingLabel =
   typeof rating === "number" && Number.isFinite(rating)
     ? getRatingLabel(rating)
     : "No Rating";
-
-const style = ratingStyles[ratingLabel];
-const textColor =
-  ratingLabel === "Adequate" ||
-  ratingLabel === "No Rating" ||
-  ratingLabel === "Needs Improvement" ||
-  ratingLabel === "Unacceptable"
-    ? "#111827"
-    : "#ffffff";
 
 const ratingIcons: Record<RatingLabel, string> = {
   Outstanding: `
@@ -86,9 +77,55 @@ const ratingIcons: Record<RatingLabel, string> = {
 ---
 
 <span
-  class="badge border rounded-pill d-inline-flex align-items-center gap-2"
-  style={`background-color: ${style.color}; border-color: ${style.color}; color: ${textColor};`}
+  class:list={[
+    "badge",
+    "border",
+    "rounded-pill",
+    "d-inline-flex",
+    "align-items-center",
+    "gap-2",
+    "rating-badge",
+    ratingStyles[ratingLabel].className,
+  ]}
 >
   <span set:html={ratingIcons[ratingLabel]} />
   <span>{ratingLabel}</span>
 </span>
+
+<style>
+  .rating-badge-outstanding {
+    background-color: #b45309;
+    border-color: #b45309;
+    color: #fbfcff;
+  }
+
+  .rating-badge-good {
+    background-color: #22c55e;
+    border-color: #22c55e;
+    color: #fbfcff;
+  }
+
+  .rating-badge-adequate {
+    background-color: #8e9196;
+    border-color: #8e9196;
+    color: #111827;
+  }
+
+  .rating-badge-needs-improvement {
+    background-color: #f59e0b;
+    border-color: #f59e0b;
+    color: #111827;
+  }
+
+  .rating-badge-unacceptable {
+    background-color: #ef4444;
+    border-color: #ef4444;
+    color: #111827;
+  }
+
+  .rating-badge-no-rating {
+    background-color: #e5e7eb;
+    border-color: #e5e7eb;
+    color: #111827;
+  }
+</style>

@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
-const envFiles = [".env", ".env-recaptcha", ".env-policeconduct"];
+const envFiles = [".env"];
 
 for (const envFile of envFiles) {
   dotenv.config({

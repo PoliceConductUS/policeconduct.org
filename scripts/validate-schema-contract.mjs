@@ -1,0 +1,543 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
+import { Client } from "pg";
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, "..");
+const databaseUrl = process.env.DATABASE_URL;
+const envFiles = [".env"];
+
+for (const envFile of envFiles) {
+  dotenv.config({
+    path: path.join(repoRoot, envFile),
+    override: true,
+  });
+}
+
+// Preserve an explicit isolated connection over layered local configuration.
+if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
+
+const requiredTables = {
+  data_annotation: {
+    columns: [
+      "id",
+      "subject_kind",
+      "subject_id",
+      "type",
+      "field",
+      "value",
+      "replacement_value",
+      "message",
+      "evidence",
+      "source_namespace",
+      "source_record_id",
+      "producer_namespace",
+      "producer_record_id",
+      "status",
+    ],
+    notNull: [
+      "id",
+      "subject_kind",
+      "subject_id",
+      "type",
+      "field",
+      "value",
+      "message",
+      "source_namespace",
+      "source_record_id",
+      "producer_namespace",
+      "producer_record_id",
+      "status",
+    ],
+  },
+  personnel_photo: {
+    columns: [
+      "id",
+      "personnel_id",
+      "workspace_path",
+      "sha256",
+      "byte_size",
+      "content_type",
+      "source_filename",
+      "source_url",
+    ],
+    notNull: [
+      "id",
+      "personnel_id",
+      "workspace_path",
+      "sha256",
+      "byte_size",
+      "content_type",
+      "source_filename",
+    ],
+    uniqueColumnSets: [["personnel_id"]],
+  },
+  agency: {
+    columns: [
+      "id",
+      "name",
+      "slug",
+      "state",
+      "city",
+      "address",
+      "zip_code",
+      "latitude",
+      "longitude",
+      "created_at",
+      "updated_at",
+      "location_path_id",
+      "parent_federal_agency_id",
+      "status",
+      "status_date",
+    ],
+    notNull: ["id", "name", "slug", "state", "location_path_id"],
+    uniqueColumnSets: [["slug"]],
+  },
+  agency_personnel: {
+    columns: [
+      "id",
+      "agency_id",
+      "personnel_id",
+      "title",
+      "badge_number",
+      "license_id",
+      "start_date",
+      "end_date",
+    ],
+    notNull: ["id", "personnel_id", "title"],
+  },
+  agency_arrest_profile: {
+    columns: [
+      "id",
+      "agency_id",
+      "coverage",
+      "breakdowns",
+      "created_at",
+      "updated_at",
+    ],
+    notNull: [
+      "id",
+      "agency_id",
+      "coverage",
+      "breakdowns",
+      "created_at",
+      "updated_at",
+    ],
+  },
+  arrest_profile: {
+    columns: [
+      "id",
+      "agency_personnel_id",
+      "coverage",
+      "breakdowns",
+      "created_at",
+      "updated_at",
+    ],
+    notNull: [
+      "id",
+      "agency_personnel_id",
+      "coverage",
+      "breakdowns",
+      "created_at",
+      "updated_at",
+    ],
+  },
+  agency_phone_numbers: {
+    columns: ["id", "agency_id", "phone_number", "created_at"],
+    notNull: ["id", "phone_number"],
+  },
+  agency_zip_index: {
+    columns: ["postal_code", "agency_id", "relationship_type"],
+    notNull: ["postal_code", "agency_id", "relationship_type"],
+  },
+  build_page_payload: {
+    columns: [
+      "path",
+      "page_type",
+      "entity_id",
+      "payload",
+      "content_hash",
+      "content_updated_at",
+      "generated_at",
+    ],
+    notNull: ["path", "page_type", "payload"],
+    uniqueColumnSets: [["path"]],
+  },
+  civil_case_links: {
+    columns: [
+      "id",
+      "civil_case_id",
+      "title",
+      "url",
+      "created_at",
+      "updated_at",
+    ],
+    notNull: ["id", "civil_case_id", "title", "url"],
+  },
+  civil_case_personnel: {
+    columns: ["id", "civil_case_id", "agency_personnel_id"],
+    notNull: ["id", "civil_case_id", "agency_personnel_id"],
+  },
+  civil_cases: {
+    columns: [
+      "id",
+      "slug",
+      "location_path_id",
+      "title",
+      "cause_number",
+      "court",
+      "filed_date",
+      "date_terminated",
+      "claims_summary",
+      "ai_complaint_summary",
+      "complaint_summary_unavailability",
+      "outcome",
+      "primary_source_url",
+      "created_at",
+      "updated_at",
+    ],
+    notNull: ["id", "slug", "title", "cause_number", "filed_date"],
+    uniqueColumnSets: [["slug"]],
+  },
+  coverage_link_agency_personnel: {
+    columns: [
+      "id",
+      "coverage_link_id",
+      "agency_personnel_id",
+      "occurrence_url",
+      "correction_reason",
+      "source_namespace",
+      "source_id",
+      "confidence",
+      "notes",
+    ],
+    notNull: ["coverage_link_id", "agency_personnel_id"],
+  },
+  coverage_homepage_windows: {
+    columns: ["id", "window_end", "placement_count"],
+    notNull: ["id", "window_end", "placement_count"],
+  },
+  coverage_homepage_placements: {
+    columns: ["id", "window_id", "coverage_link_id", "position", "clicks"],
+    notNull: ["id", "window_id", "coverage_link_id", "position", "clicks"],
+  },
+  coverage_links: {
+    columns: [
+      "id",
+      "url",
+      "normalized_url",
+      "source_namespace",
+      "source_id",
+      "summary",
+      "occurrences",
+      "title",
+      "source_name",
+      "published_at",
+      "notes",
+    ],
+    notNull: ["id", "url", "title"],
+    uniqueColumnSets: [["normalized_url"]],
+  },
+  federal_agency: {
+    columns: ["id", "name", "slug"],
+    notNull: ["id", "name", "slug"],
+    uniqueColumnSets: [["slug"]],
+  },
+  discipline: {
+    columns: [
+      "id",
+      "personnel_id",
+      "licensing_authority_id",
+      "document_url",
+      "allegation",
+      "violation",
+      "finding",
+      "chief_action",
+      "sanction",
+      "action",
+      "effective_date",
+      "expiration_date",
+      "case_number",
+    ],
+    notNull: ["id", "action", "personnel_id", "licensing_authority_id"],
+  },
+  discipline_agency_personnel: {
+    columns: ["id", "discipline_id", "agency_personnel_id"],
+    notNull: ["id", "discipline_id", "agency_personnel_id"],
+    uniqueColumnSets: [["discipline_id", "agency_personnel_id"]],
+  },
+  authority_license: {
+    columns: ["id", "licensing_authority_id", "name"],
+    notNull: ["id", "licensing_authority_id", "name"],
+  },
+  license: {
+    columns: [
+      "id",
+      "personnel_id",
+      "authority_license_id",
+      "status",
+      "first_awarded",
+    ],
+    notNull: ["id", "personnel_id", "authority_license_id"],
+    uniqueColumnSets: [["personnel_id", "authority_license_id"]],
+  },
+  license_action: {
+    columns: ["id", "license_id", "action", "action_date", "status"],
+    notNull: ["id", "license_id", "action"],
+  },
+  licensing_authority: {
+    columns: ["id", "name", "abbreviation", "website", "location_path_id"],
+    notNull: ["id", "name", "location_path_id"],
+  },
+  location_path: {
+    columns: [
+      "location_path_id",
+      "path",
+      "level",
+      "display_name",
+      "parent_location_path_id",
+      "centroid",
+      "bbox",
+      "updated_at",
+    ],
+    notNull: ["location_path_id", "path", "level", "display_name"],
+    uniqueColumnSets: [["path"]],
+  },
+  location_path_geometry: {
+    columns: ["location_path_id", "boundary"],
+    notNull: ["location_path_id", "boundary"],
+    uniqueColumnSets: [["location_path_id"]],
+  },
+  location_path_closure: {
+    columns: [
+      "ancestor_location_path_id",
+      "descendant_location_path_id",
+      "depth",
+    ],
+    notNull: [
+      "ancestor_location_path_id",
+      "descendant_location_path_id",
+      "depth",
+    ],
+  },
+  personnel: {
+    columns: [
+      "id",
+      "slug",
+      "first_name",
+      "middle_name",
+      "last_name",
+      "suffix",
+      "prefix",
+      "deceased_on",
+      "deceased_message",
+      "deceased_source",
+    ],
+    notNull: ["id", "slug", "first_name"],
+    uniqueColumnSets: [["slug"]],
+  },
+  personnel_education: {
+    columns: [
+      "id",
+      "personnel_id",
+      "name",
+      "completion_date",
+      "credits",
+      "sponsor_name",
+      "sponsor_instructor",
+    ],
+    notNull: ["id", "personnel_id", "name"],
+  },
+  review_links: {
+    columns: ["id", "review_id", "title", "url", "civil_case_id"],
+    notNull: ["id", "review_id"],
+  },
+  review_personnel: {
+    columns: ["id", "review_id", "agency_personnel_id", "rating_overall"],
+    notNull: ["id", "review_id", "agency_personnel_id"],
+  },
+  reviews: {
+    columns: [
+      "id",
+      "slug",
+      "location_path_id",
+      "title",
+      "incident_date",
+      "address",
+      "latitude",
+      "longitude",
+      "created_at",
+      "updated_at",
+      "description",
+      "submitter_relationship",
+      "interaction_type",
+      "setting",
+      "case_number",
+      "complaint_filed",
+      "bodycam_requested",
+      "incident_time",
+      "charges",
+      "how_felt",
+      "desired_outcome",
+      "what_happened",
+      "what_else",
+      "purpose",
+    ],
+    notNull: ["id", "slug", "title"],
+    uniqueColumnSets: [["slug"]],
+  },
+};
+
+const getDatabaseUrl = () => {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error(
+      "DATABASE_URL is required to validate the schema contract.",
+    );
+  }
+  return url;
+};
+
+const keyFor = (tableName, columnName) => `${tableName}.${columnName}`;
+
+const formatColumnSet = (columns) => columns.join(", ");
+
+const normalizePgArray = (value) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (typeof value !== "string") {
+    return [];
+  }
+  return value
+    .replace(/^\{|\}$/g, "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+};
+
+const validate = async () => {
+  const client = new Client({ connectionString: getDatabaseUrl() });
+  await client.connect();
+
+  try {
+    const tableNames = Object.keys(requiredTables);
+    const columnRows = (
+      await client.query(
+        `
+          select table_name, column_name, is_nullable
+          from information_schema.columns
+          where table_schema = 'public'
+            and table_name = any($1)
+        `,
+        [tableNames],
+      )
+    ).rows;
+
+    const existingTables = new Set(columnRows.map((row) => row.table_name));
+    const columns = new Map(
+      columnRows.map((row) => [keyFor(row.table_name, row.column_name), row]),
+    );
+
+    const uniqueRows = (
+      await client.query(
+        `
+          select
+            table_class.relname as table_name,
+            array_agg(attribute.attname order by key_position.ordinality) as columns
+          from pg_index index_info
+          join pg_class index_class
+            on index_class.oid = index_info.indexrelid
+          join pg_class table_class
+            on table_class.oid = index_info.indrelid
+          join pg_namespace namespace
+            on namespace.oid = table_class.relnamespace
+          join lateral unnest(index_info.indkey)
+            with ordinality as key_position(attribute_number, ordinality)
+            on true
+          join pg_attribute attribute
+            on attribute.attrelid = table_class.oid
+           and attribute.attnum = key_position.attribute_number
+          where namespace.nspname = 'public'
+            and table_class.relname = any($1)
+            and index_info.indisunique
+          group by table_class.relname, index_class.relname
+        `,
+        [tableNames],
+      )
+    ).rows;
+
+    const uniqueColumnSetsByTable = new Map();
+    for (const row of uniqueRows) {
+      const list = uniqueColumnSetsByTable.get(row.table_name) || [];
+      list.push(normalizePgArray(row.columns));
+      uniqueColumnSetsByTable.set(row.table_name, list);
+    }
+
+    const failures = [];
+
+    for (const [tableName, contract] of Object.entries(requiredTables)) {
+      if (!existingTables.has(tableName)) {
+        failures.push(`Missing required table: public.${tableName}`);
+        continue;
+      }
+
+      for (const columnName of contract.columns) {
+        if (!columns.has(keyFor(tableName, columnName))) {
+          failures.push(
+            `public.${tableName} is missing required column ${columnName}`,
+          );
+        }
+      }
+
+      for (const columnName of contract.notNull || []) {
+        const column = columns.get(keyFor(tableName, columnName));
+        if (column && column.is_nullable !== "NO") {
+          failures.push(
+            `public.${tableName}.${columnName} must be NOT NULL for the build contract`,
+          );
+        }
+      }
+
+      for (const expectedColumns of contract.uniqueColumnSets || []) {
+        const actualSets = uniqueColumnSetsByTable.get(tableName) || [];
+        const hasExpectedSet = actualSets.some(
+          (actualColumns) =>
+            actualColumns.length === expectedColumns.length &&
+            actualColumns.every(
+              (columnName, index) => columnName === expectedColumns[index],
+            ),
+        );
+        if (!hasExpectedSet) {
+          failures.push(
+            `public.${tableName} must have a unique constraint or primary key on (${formatColumnSet(expectedColumns)})`,
+          );
+        }
+      }
+    }
+
+    if (failures.length) {
+      console.error("Schema contract validation failed:");
+      for (const failure of failures) {
+        console.error(`- ${failure}`);
+      }
+      process.exitCode = 1;
+      return;
+    }
+
+    console.log(
+      `Schema contract validation passed for ${tableNames.length} public tables.`,
+    );
+  } finally {
+    await client.end();
+  }
+};
+
+try {
+  await validate();
+} catch (error) {
+  console.error("Schema contract validation failed:");
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
+}

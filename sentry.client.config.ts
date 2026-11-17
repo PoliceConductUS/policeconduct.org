@@ -38,7 +38,6 @@ Sentry.init({
     return event;
   },
   dsn,
-  enableLogs: true,
   environment,
   ...(release ? { release } : {}),
   integrations: [

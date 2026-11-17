@@ -1,0 +1,446 @@
+---
+import RecordDataNotes from "#src/components/RecordDataNotes.astro";
+import "#src/styles/civic-ledger.css";
+import EntityActionBar from "#src/components/EntityActionBar.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
+import ReportNarrative from "#src/components/ReportNarrative.astro";
+import ReportDisclaimer from "#src/components/ReportDisclaimer.astro";
+import { getVideoEmbedUrl } from "#src/lib/video.js";
+import PageShell from "#src/layouts/PageShell.astro";
+import { loadReportSummaries } from "#src/lib/data/summaries.js";
+import { parseLocationPathParts } from "#src/lib/data/report-paths.js";
+import { formatLongDate } from "#src/lib/format.js";
+import { loadReportDetail } from "#src/lib/report-detail.js";
+import {
+  buildContentPageNode,
+  buildPublisherOrganization,
+  buildWebSite,
+  getSiteUrl,
+  organizationId,
+} from "#src/lib/structured-data.js";
+
+export async function getStaticPaths() {
+  const reports = await loadReportSummaries();
+  return reports.map((report) => {
+    const location = parseLocationPathParts(report.locationPath, report.id);
+    return {
+      params: {
+        category: location.state,
+        administrativeArea: location.administrativeArea,
+        place: location.place,
+        year: report.year,
+        month: report.month,
+        day: report.day,
+        slug: report.slug,
+      },
+    };
+  });
+}
+
+const { day, month, slug, year } = Astro.params;
+const data = await loadReportDetail(slug);
+if (!data) {
+  throw new Error(`Report ${slug} not found.`);
+}
+const primaryAgency = data.officers[0]?.agency;
+if (!primaryAgency) {
+  throw new Error(`Report ${slug} is missing a primary agency.`);
+}
+const primaryAgencySlug = primaryAgency.slug as string | null;
+if (!primaryAgencySlug) {
+  throw new Error(`Report ${slug} primary agency is missing slug.`);
+}
+const primaryAgencyName = String(primaryAgency.name ?? "");
+const primaryAgencyPath = String(
+  (primaryAgency as { canonicalPath?: string }).canonicalPath || "",
+);
+if (!primaryAgencyPath) {
+  throw new Error(`Report ${slug} primary agency is missing a canonical path.`);
+}
+const facts = data.facts;
+// Native <input type="time"> submits 24-hour "HH:MM"; render it the way a
+// reader expects to see a clock time. Absent/unrecognized values render
+// nothing (when-present rule — see report-detail.ts ReportDetailFacts).
+const formatIncidentTime = (value: string | null) => {
+  if (!value) {
+    return null;
+  }
+  const match = /^(\d{1,2}):(\d{2})/.exec(value);
+  if (!match) {
+    return null;
+  }
+  const hour24 = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hour24 > 23 || minutes > 59) {
+    return null;
+  }
+  const period = hour24 >= 12 ? "PM" : "AM";
+  const hour12 = hour24 % 12 || 12;
+  return `${hour12}:${match[2]} ${period}`;
+};
+const incidentDate =
+  data.report.incident_date instanceof Date
+    ? data.report.incident_date
+    : new Date(String(data.report.incident_date));
+const incidentDateDisplay = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+}).format(incidentDate);
+const incidentTimeDisplay = formatIncidentTime(facts.incidentTime);
+const pagePath = data.canonicalPath;
+const officers = data.officers;
+const evidenceLinks = data.evidenceLinks;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const reportsBasePath = data.locationBreadcrumbs.reports.href;
+const yearPath = `${reportsBasePath}${year}/`;
+const monthPath = `${yearPath}${month}/`;
+const dayPath = `${monthPath}${day}/`;
+const normalizeIsoDate = (value?: string | Date | null) => {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+};
+const stripHtml = (value?: string | null) =>
+  value
+    ? value
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+    : "";
+if (typeof data.report.title !== "string" || !data.report.title.trim()) {
+  throw new Error(`Report ${slug} is missing required title.`);
+}
+const reportTitle = data.report.title;
+const reportDescriptionSource =
+  typeof data.report.description === "string" ? data.report.description : "";
+const reportDescription = reportDescriptionSource
+  ? stripHtml(reportDescriptionSource)
+  : `Public record of a reported police experience: ${reportTitle}. Includes linked agencies and personnel, sources, and the current status of the report.`;
+// Report narratives can run to thousands of characters; the full text stays on
+// the Report entity, but the page <meta description> and WebPage node use a
+// search-length summary (~160 chars, trimmed to a word boundary).
+const truncateForMeta = (text: string, max = 160) => {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length <= max) {
+    return normalized;
+  }
+  const slice = normalized.slice(0, max - 1);
+  const lastSpace = slice.lastIndexOf(" ");
+  const trimmed = lastSpace > 40 ? slice.slice(0, lastSpace) : slice;
+  return `${trimmed.replace(/[.,;:!?\s-]+$/, "")}…`;
+};
+const metaDescription = truncateForMeta(reportDescription);
+const reportAddress =
+  typeof data.report.address === "string" ? data.report.address : "";
+const createdAtIso = normalizeIsoDate(
+  data.report.created_at as string | Date | null,
+);
+const updatedAtIso = normalizeIsoDate(
+  data.report.updated_at as string | Date | null,
+);
+const webpageId = `${pageUrl}#webpage`;
+const officerEntities = Array.from(
+  new Map(
+    officers
+      .map((entry) => {
+        if (!entry.officer || !entry.path) {
+          return null;
+        }
+        const officerName = [
+          entry.officer.first_name,
+          entry.officer.last_name,
+          entry.officer.suffix,
+        ]
+          .filter(Boolean)
+          .join(" ");
+        const officerUrl = new URL(entry.path, siteUrl).toString();
+        return [
+          `${officerUrl}#person`,
+          {
+            "@type": "Person",
+            "@id": `${officerUrl}#person`,
+            name: officerName,
+            url: officerUrl,
+          },
+        ] as const;
+      })
+      .filter(
+        (
+          entry,
+        ): entry is readonly [
+          `${string}#person`,
+          {
+            readonly "@type": "Person";
+            readonly "@id": `${string}#person`;
+            readonly name: string;
+            readonly url: string;
+          },
+        ] => Boolean(entry),
+      ),
+  ).values(),
+);
+const agencyEntities = Array.from(
+  new Map(
+    officers.flatMap((entry) => {
+      const agency = entry.agency as {
+        name?: string;
+        slug?: string;
+        canonicalPath: string;
+      } | null;
+      if (!agency || !agency.name || !agency.slug || !agency.canonicalPath) {
+        return [];
+      }
+      const agencyUrl = new URL(agency.canonicalPath, siteUrl).toString();
+      return [
+        [
+          `${agencyUrl}#organization`,
+          {
+            "@type": "GovernmentOrganization",
+            "@id": `${agencyUrl}#organization`,
+            name: agency.name,
+            url: agencyUrl,
+          },
+        ] as const,
+      ];
+    }),
+  ).values(),
+);
+const reportEntity = {
+  "@type": "Report",
+  "@id": `${pageUrl}#report`,
+  name: reportTitle,
+  url: pageUrl,
+  mainEntityOfPage: { "@id": webpageId },
+  ...(reportDescription ? { description: reportDescription } : {}),
+  ...(createdAtIso ? { datePublished: createdAtIso } : {}),
+  ...(updatedAtIso ? { dateModified: updatedAtIso } : {}),
+  author: {
+    "@type": "Person",
+    name: "Anonymous",
+  },
+  publisher: { "@id": organizationId(siteUrl) },
+  ...(reportAddress
+    ? { contentLocation: { "@type": "Place", name: reportAddress } }
+    : {}),
+  ...(officerEntities.length || agencyEntities.length
+    ? {
+        about: [...officerEntities, ...agencyEntities].map((entity) => ({
+          "@id": entity["@id"],
+        })),
+      }
+    : {}),
+};
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    buildWebSite(siteUrl),
+    buildContentPageNode({
+      siteUrl,
+      id: webpageId,
+      pageUrl,
+      name: `${reportTitle} | PoliceConduct.org`,
+      description: metaDescription,
+      mainEntityId: reportEntity["@id"],
+    }),
+    buildPublisherOrganization(siteUrl),
+    ...agencyEntities,
+    ...officerEntities,
+    reportEntity,
+  ],
+};
+---
+
+<PageShell
+  title={`${reportTitle} | PoliceConduct.org`}
+  description={metaDescription}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+  structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    data.locationBreadcrumbs.state,
+    data.locationBreadcrumbs.administrativeArea,
+    data.locationBreadcrumbs.place,
+    data.locationBreadcrumbs.reports,
+    { label: String(year), href: yearPath },
+    { label: String(month), href: monthPath },
+    { label: String(day), href: dayPath },
+    { label: reportTitle, href: pagePath },
+  ]}
+  eyebrow="Public report"
+  heading={reportTitle}
+>
+  <PrefillBootstrap />
+  <Fragment slot="header">
+    <EntityActionBar>
+      <PrefillNavButton
+        class="entity-action"
+        to="/about/contact/"
+        payload={{
+          whoami: "Subscriber",
+          message: `Please notify me when this report changes: ${pagePath}`,
+        }}
+      >
+        Notify me when this report changes
+      </PrefillNavButton>
+    </EntityActionBar>
+  </Fragment>
+
+  <section class="civic-section">
+    <dl class="fact-list">
+      <div>
+        <dt>Incident date</dt>
+        <dd>
+          {incidentDateDisplay}
+          {incidentTimeDisplay ? ` at ${incidentTimeDisplay}` : ""}
+        </dd>
+      </div>
+      {reportAddress ? (
+        <div>
+          <dt>Location</dt>
+          <dd>{reportAddress}</dd>
+        </div>
+      ) : null}
+      <div>
+        <dt>Agency</dt>
+        <dd>
+          <a href={primaryAgencyPath}>{primaryAgencyName}</a>
+        </dd>
+      </div>
+      {facts.submitterRelationship ? (
+        <div>
+          <dt>Submitted by</dt>
+          <dd>{facts.submitterRelationship}</dd>
+        </div>
+      ) : null}
+      {facts.interactionType ? (
+        <div>
+          <dt>Experience type</dt>
+          <dd>{facts.interactionType}</dd>
+        </div>
+      ) : null}
+      {facts.setting ? (
+        <div>
+          <dt>Setting</dt>
+          <dd>{facts.setting}</dd>
+        </div>
+      ) : null}
+      {facts.complaintFiled ? (
+        <div>
+          <dt>Complaint filed</dt>
+          <dd>{facts.complaintFiled}</dd>
+        </div>
+      ) : null}
+      {facts.caseNumber ? (
+        <div>
+          <dt>Case number</dt>
+          <dd>{facts.caseNumber}</dd>
+        </div>
+      ) : null}
+      {facts.bodycamRequested ? (
+        <div>
+          <dt>Bodycam requested</dt>
+          <dd>{facts.bodycamRequested}</dd>
+        </div>
+      ) : null}
+      {facts.charges ? (
+        <div>
+          <dt>Charges</dt>
+          <dd>{facts.charges}</dd>
+        </div>
+      ) : null}
+      {data.report.updated_at ? (
+        <div>
+          <>
+            <dt>Updated</dt>
+            <dd>{formatLongDate(data.report.updated_at)}</dd>
+          </>
+        </div>
+      ) : null}
+    </dl>
+  </section>
+
+  <div class="civic-section civic-section--last">
+    <article class="detail-body">
+      <ReportNarrative
+        description={String(data.report.description!)}
+        facts={facts}
+      />
+
+      {officers.length ? (
+        <>
+          <h3>People involved</h3>
+          {officers.map((entry) => (
+            <p>
+              <a href={entry.path}>
+                {entry.officer!.first_name} {entry.officer!.last_name}
+                {entry.officer!.suffix ? ` ${entry.officer!.suffix}` : ""}
+              </a>
+              {entry.agencyOfficer.title
+                ? ` — ${entry.agencyOfficer.title}`
+                : ""}
+              {entry.badge ? ` — Badge ${entry.badge}` : ""}
+              {" · "}
+              <a
+                href={
+                  (
+                    entry.agency as typeof entry.agency & {
+                      canonicalPath: string;
+                    }
+                  ).canonicalPath
+                }
+              >
+                {entry.agency!.name}
+              </a>
+            </p>
+          ))}
+        </>
+      ) : null}
+
+      {data.relatedCases.length ? (
+        <>
+          <h3>Related cases</h3>
+          {data.relatedCases.map((civilCase) => (
+            <p>
+              <a href={civilCase.path}>{civilCase.title}</a>
+            </p>
+          ))}
+        </>
+      ) : null}
+
+      {evidenceLinks.length ? (
+        <>
+          <h3>Records and evidence</h3>
+          {evidenceLinks.map((link) => (
+            <p>
+              <a
+                href={
+                  getVideoEmbedUrl(link.url)
+                    ? `${data.canonicalPath}watch/${link.id}/`
+                    : link.url
+                }
+                target={getVideoEmbedUrl(link.url) ? undefined : "_blank"}
+                rel={
+                  getVideoEmbedUrl(link.url) ? undefined : "noopener noreferrer"
+                }
+              >
+                {link.title}
+              </a>
+            </p>
+          ))}
+        </>
+      ) : null}
+    </article>
+  </div>
+
+  <section class="civic-section civic-section--last">
+    <ReportDisclaimer />
+  </section>
+  <RecordDataNotes recordPath={pagePath} />
+</PageShell>

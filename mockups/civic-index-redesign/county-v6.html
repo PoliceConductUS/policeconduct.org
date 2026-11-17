@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dallas County Civic Index v6 | PoliceConduct.org (mockup)</title>
+    <link rel="stylesheet" href="shared-v5.css" />
+  </head>
+  <body>
+    <div class="variant-banner">
+      Design mockup v6 — county index — personnel is data (not a link) at geo
+      levels · up to <a href="texas-v6.html">Texas</a> · down to
+      <a href="place-v6.html">Irving</a>
+    </div>
+
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="masthead">
+      <div class="container">
+        <a class="masthead-mark" href="#">Police<span>Conduct</span>.org</a>
+        <form class="masthead-search" role="search" action="#">
+          <label for="site-search" class="visually-hidden"
+            >Search records</label
+          >
+          <input
+            id="site-search"
+            class="masthead-search-input"
+            type="search"
+            name="q"
+            placeholder="Search agencies, officers, or cases…"
+            autocomplete="off"
+          />
+        </form>
+        <nav class="masthead-nav">
+          <a class="nav-action nav-action-share" href="#"
+            >Share an experience</a
+          >
+          <a class="nav-action nav-action-volunteer" href="/volunteer/"
+            >Volunteer</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <div class="container">
+        <nav aria-label="Breadcrumb">
+          <ol class="crumbs">
+            <li><a href="#">Home</a></li>
+            <li><a href="texas-v6.html">Texas</a></li>
+            <li aria-current="page">Dallas County</li>
+          </ol>
+        </nav>
+
+        <section class="lede">
+          <p class="kicker">County civic index</p>
+          <h1>Dallas County</h1>
+          <p class="lede-sub">
+            Public records for law enforcement agencies, personnel, reports, and
+            civil litigation across Dallas County's 27 places.
+          </p>
+        </section>
+
+        <section
+          class="stat-strip stat-strip--drill-first"
+          aria-label="Dallas County coverage totals"
+        >
+          <div class="stat-cell">
+            <strong class="ledger-value ledger-value--lg tabular">89</strong>
+            <span class="ledger-label">Agencies</span>
+            <span class="ledger-meta">Countywide</span>
+          </div>
+          <div class="stat-cell">
+            <strong class="ledger-value ledger-value--lg tabular"
+              >11,563</strong
+            >
+            <span class="ledger-label">Personnel records</span>
+            <span class="ledger-meta">Current &amp; former</span>
+          </div>
+          <a class="stat-cell stat-cell--link" href="report-detail-v5.html">
+            <strong class="ledger-value ledger-value--lg tabular">1</strong>
+            <span class="ledger-label">Reports</span>
+            <span class="ledger-meta">Shared by the public</span>
+            <span class="stat-action">View reports →</span>
+          </a>
+          <a class="stat-cell stat-cell--link" data-role="civil" href="#">
+            <strong class="ledger-value ledger-value--lg tabular">22</strong>
+            <span class="ledger-label">Civil cases</span>
+            <span class="ledger-meta">Court records</span>
+            <span class="stat-action">View civil cases →</span>
+          </a>
+          <div class="stat-cell jump-cell stat-cell--drill">
+            <span class="stat-drill-eyebrow">Start here</span>
+            <strong class="ledger-value ledger-value--lg tabular">27</strong>
+            <span class="ledger-label">Places</span>
+            <form class="jump-form" data-jump-form>
+              <label for="place-jump" class="visually-hidden">Place</label>
+              <select id="place-jump" class="jump-select" data-jump-select>
+                <option value="" selected disabled>Choose place…</option>
+                <option value="#">Addison</option>
+                <option value="#">Balch Springs</option>
+                <option value="#">Bear Creek Ranch</option>
+                <option value="#">Carrollton</option>
+                <option value="#">Cedar Hill</option>
+                <option value="#">Cockrell Hill</option>
+                <option value="#">Coppell</option>
+                <option value="#">Dallas</option>
+                <option value="#">DeSoto</option>
+                <option value="#">DFW Airport</option>
+                <option value="#">Duncanville</option>
+                <option value="#">Farmers Branch</option>
+                <option value="#">Garland</option>
+                <option value="#">Glenn Heights</option>
+                <option value="#">Grand Prairie</option>
+                <option value="#">Highland Park</option>
+                <option value="#">Hutchins</option>
+                <option value="place-v6.html">Irving</option>
+                <option value="#">Lancaster</option>
+                <option value="#">Mesquite</option>
+                <option value="#">Richardson</option>
+                <option value="#">Rowlett</option>
+                <option value="#">Sachse</option>
+                <option value="#">Seagoville</option>
+                <option value="#">Sunnyvale</option>
+                <option value="#">University Park</option>
+                <option value="#">Wilmer</option>
+              </select>
+              <button class="jump-go" type="submit">Go →</button>
+            </form>
+            <p class="jump-status" data-jump-status aria-live="polite"></p>
+            <p class="jump-browse"><a href="#">Browse all 27 places →</a></p>
+          </div>
+        </section>
+
+        <section class="section">
+          <ul class="topic-row ledger-grid">
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="budget"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Budget</span>
+                <span class="ledger-value">--</span>
+                <span class="ledger-meta topic-gloss"
+                  >Yearly department spending</span
+                >
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="/volunteer/"
+                  >Help collect this →</a
+                ></span
+              >
+            </li>
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="liability"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Liability costs</span>
+                <span class="ledger-value">--</span>
+                <span class="ledger-meta topic-gloss"
+                  >Payouts in police-conduct cases</span
+                >
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="/volunteer/"
+                  >Help collect this →</a
+                ></span
+              >
+            </li>
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="neutral"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Fatal force incidents</span>
+                <span class="ledger-value">--</span>
+                <span class="ledger-meta topic-gloss"
+                  >Deaths involving police</span
+                >
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="/volunteer/"
+                  >Help collect this →</a
+                ></span
+              >
+            </li>
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="neutral"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Outcomes by income</span>
+                <span class="ledger-value">--</span>
+                <span class="ledger-meta topic-gloss"
+                  >Case results by neighborhood income</span
+                >
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="/volunteer/"
+                  >Help collect this →</a
+                ></span
+              >
+            </li>
+          </ul>
+        </section>
+      </div>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

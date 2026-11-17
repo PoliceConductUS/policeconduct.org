@@ -8,83 +8,59 @@ const collator = new Intl.Collator("en", {
 
 export const FORM_ROUTES = [
   "/about/contact/",
-  "/volunteer/",
   "/report/new/",
   "/personnel/new/",
   "/personnel/suggest-edit/",
-  "/law-enforcement-agency/new/",
-  "/law-enforcement-agency/suggest-edit/",
-  "/civil-litigation/new/",
-  "/civil-litigation/suggest-edit/",
+  "/agency/new/",
+  "/agency/suggest-edit/",
+  "/civil-cases/new/",
+  "/civil-cases/suggest-edit/",
   "/legal-notice/data-subject-access-request/",
   "/status/",
 ];
 
 const OPTIONAL_SAMPLE_SPECS = [
   {
-    label: "report watch",
-    pattern: /^\/report\/[^/]+\/[^/]+\/watch\/[^/]+\/$/,
+    label: "state report date archive",
+    pattern: /^\/[a-z]{2}\/reports\/\d{4}\/\d{2}\/\d{2}\/$/,
   },
-  {
-    label: "report pagination",
-    pattern: /^\/report\/[^/]+\/page\/\d+\/$/,
-  },
-  {
-    label: "agency pagination",
-    pattern: /^\/law-enforcement-agency\/[^/]+\/page\/\d+\/$/,
-  },
-  {
-    label: "personnel pagination",
-    pattern: /^\/personnel\/[^/]+\/page\/\d+\/$/,
-  },
-  {
-    label: "civil litigation pagination",
-    pattern: /^\/civil-litigation\/[^/]+\/page\/\d+\/$/,
-  },
-  {
-    label: "civil litigation watch",
-    pattern: /^\/civil-litigation\/[^/]+\/[^/]+\/watch\/[^/]+\/$/,
-  },
+];
+
+const REDIRECT_ROUTE_PATTERNS = [
+  /^\/personnel\/[a-z]{2,8}\/$/,
+  /^\/personnel\/[a-z]{2,8}\/page\/\d+\/$/,
 ];
 
 const REQUIRED_SAMPLE_SPECS = [
   { label: "home", pattern: /^\/$/ },
-  { label: "report index", pattern: /^\/report\/$/ },
-  { label: "report category", pattern: /^\/report\/[a-z]{2,8}\/$/ },
-  { label: "report detail", pattern: /^\/report\/[^/]+\/[^/]+\/$/ },
+  { label: "state report archive", pattern: /^\/[a-z]{2}\/reports\/$/ },
   {
-    label: "agency index",
-    pattern: /^\/law-enforcement-agency\/$/,
+    label: "report detail",
+    pattern:
+      /^\/[a-z]{2}\/[^/]+\/[^/]+\/reports\/\d{4}\/\d{2}\/\d{2}\/[^/]+\/$/,
   },
   {
-    label: "agency category",
-    pattern: /^\/law-enforcement-agency\/[a-z-]{2,20}\/$/,
+    label: "county-equivalent",
+    pattern: /^\/[a-z]{2}\/[^/]+\/$/,
   },
   {
-    label: "agency detail",
-    pattern: /^\/law-enforcement-agency\/[^/]+\/[^/]+\/$/,
+    label: "place",
+    pattern: /^\/[a-z]{2}\/[^/]+\/[^/]+\/$/,
+  },
+  {
+    label: "location agency detail",
+    pattern: /^\/[a-z]{2}\/[^/]+\/[^/]+\/[^/]+\/$/,
   },
   { label: "personnel index", pattern: /^\/personnel\/$/ },
-  {
-    label: "personnel category",
-    pattern: /^\/personnel\/[a-z]{2,8}\/$/,
-  },
   {
     label: "personnel detail",
     pattern:
       /^\/personnel\/(?!new\/|suggest-edit\/)(?=.*-[a-f0-9]{6}\/$)[^/]+\/$/,
   },
+  { label: "civil cases index", pattern: /^\/civil-cases\/$/ },
   {
-    label: "civil litigation index",
-    pattern: /^\/civil-litigation\/$/,
-  },
-  {
-    label: "civil litigation category",
-    pattern: /^\/civil-litigation\/[a-z]{2,8}\/$/,
-  },
-  {
-    label: "civil litigation detail",
-    pattern: /^\/civil-litigation\/[^/]+\/[^/]+\/$/,
+    label: "civil case detail",
+    pattern: /^\/civil-cases\/[^/]+\/$/,
   },
 ];
 
@@ -148,8 +124,13 @@ export const collectHtmlRoutes = async (distDir) => {
 };
 
 export const buildAuditRouteSelection = ({ routes, maxRoutes }) => {
-  const allRoutes = sortRoutes(routes);
-  const routeSet = new Set(allRoutes);
+  const routeSet = new Set(sortRoutes(routes));
+  const allRoutes = sortRoutes(
+    routes.filter(
+      (route) =>
+        !REDIRECT_ROUTE_PATTERNS.some((pattern) => pattern.test(route)),
+    ),
+  );
   const formSet = new Set(FORM_ROUTES);
   const nonFormRoutes = allRoutes.filter((route) => !formSet.has(route));
 

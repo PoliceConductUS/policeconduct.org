@@ -191,6 +191,51 @@ variable "forms_draft_max_bytes" {
   default     = 1048576
 }
 
+variable "forms_email_verification_from_address" {
+  description = "Sender address for post-submit verification emails."
+  type        = string
+  default     = "noreply@mail.policeconduct.org"
+}
+
+variable "forms_email_resend_api_key" {
+  description = "Resend API key used for post-submit verification emails."
+  type        = string
+  default     = null
+  nullable    = true
+  sensitive   = true
+}
+
+variable "forms_email_verification_domain" {
+  description = "SES-verified domain used for post-submit verification emails."
+  type        = string
+  default     = "mail.policeconduct.org"
+}
+
+variable "forms_email_mail_from_subdomain" {
+  description = "Subdomain used for the SES custom MAIL FROM domain under the verification domain."
+  type        = string
+  default     = "bounce"
+}
+
+variable "forms_email_dmarc_policy" {
+  description = "DMARC policy applied to the verification email domain."
+  type        = string
+  default     = "none"
+}
+
+variable "forms_email_dmarc_aggregate_report_address" {
+  description = "Optional mailbox for DMARC aggregate reports."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+variable "forms_email_verification_ttl_seconds" {
+  description = "Lifetime of post-submit verification links in seconds."
+  type        = number
+  default     = 900
+}
+
 variable "forms_api_rate_limit_per_5m" {
   description = "Rate limit (requests per 5 minutes per source IP) for forms API."
   type        = number
@@ -201,6 +246,12 @@ variable "site_rate_limit_per_5m" {
   description = "Global rate limit (requests per 5 minutes per source IP) for all CloudFront traffic."
   type        = number
   default     = 3000
+}
+
+variable "rate_limit_retry_after_seconds" {
+  description = "Retry-After value (seconds) sent with a 429 from the WAF rate-limit rules. Matches the rules' 300s evaluation window."
+  type        = number
+  default     = 300
 }
 
 variable "forms_api_alarm_5xx_threshold" {
@@ -224,7 +275,7 @@ variable "forms_lambda_alarm_throttles_threshold" {
 variable "lambda_nodejs_runtime" {
   description = "Node.js runtime identifier for forms API Lambda functions."
   type        = string
-  default     = "nodejs22.x"
+  default     = "nodejs24.x"
 }
 
 variable "recaptcha_project_id" {
@@ -290,6 +341,39 @@ variable "recaptcha_min_score" {
 
 variable "alarm_actions" {
   description = "Optional list of SNS topic ARNs (or other alarm action ARNs) to notify when alarms trigger."
+  type        = list(string)
+  default     = []
+}
+
+variable "alert_topic_name" {
+  description = "SNS topic name for stack-managed infrastructure alerts. Leave null/empty to use <project_name>-alerts."
+  type        = string
+  default     = null
+}
+
+variable "alert_email_endpoints" {
+  description = "Email endpoints subscribed to the stack-managed infrastructure alerts SNS topic."
+  type        = list(string)
+  default     = []
+}
+
+variable "submission_notification_email_endpoints" {
+  description = <<-EOT
+    Email endpoints told when a form submission arrives or is verified (INS-35).
+
+    Different audience from alert_email_endpoints: these are the people who work
+    the submissions queue, not the people who get paged by a Lambda p95 alarm.
+    Data subject access requests carry a 5-business-day acknowledgement
+    commitment (INS-16), so at least one of these addresses has to belong to
+    someone who reads it on that cadence.
+
+    Leaving this empty disables the whole notification path rather than creating
+    a topic nobody is subscribed to. That is deliberate: a topic with zero
+    subscribers is what INS-20 found, and it reads as working.
+
+    Notifications carry no submission content -- only form type, submission id
+    and S3 key.
+  EOT
   type        = list(string)
   default     = []
 }
@@ -382,4 +466,22 @@ variable "tags" {
     Project   = "policeconduct.org"
     Stack     = "bootstrap"
   }
+}
+
+variable "submission_notifications_topic_arn" {
+  description = <<-EOT
+    ARN of the submission notifications SNS topic, taken from the
+    submission_notifications_topic_arn output of
+    infrastructure/submission-notifications.
+
+    That stack owns the topic and the S3 event notifications. This stack only grants the forms API permission to publish and puts
+    the ARN in its environment, so it needs the ARN and nothing else.
+
+    Empty means the forms API gets no topic and no publish grant — which is the
+    pre-INS-35 state where a submission stored and nobody was told. It is the
+    default only because this stack must still plan before the other one has
+    been applied.
+  EOT
+  type        = string
+  default     = ""
 }

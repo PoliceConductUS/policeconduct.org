@@ -1,0 +1,579 @@
+---
+import RecordDataNotes from "#src/components/RecordDataNotes.astro";
+import "#src/styles/civic-ledger.css";
+import { contactEmailsForDisplay } from "#src/lib/contact-emails.js";
+import { agencyStatusPresentation } from "#src/lib/agency-status";
+import CoverageLinks from "#src/components/CoverageLinks.astro";
+import EntityActionBar from "#src/components/EntityActionBar.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
+import PageShell from "#src/layouts/PageShell.astro";
+import StatCell from "#src/components/StatCell.astro";
+import StatStrip from "#src/components/StatStrip.astro";
+import { buildHelpCollectHref } from "#src/lib/data/civic-index.js";
+import {
+  loadAgencyDetailByRouteParams,
+  loadAgencyLocationStaticPaths,
+} from "#src/lib/data/agency-detail.js";
+import type { ReportNewPrefill } from "#src/lib/forms/prefill";
+import {
+  buildContentPageNode,
+  buildGovernmentOrganizationNode,
+  buildPublisherOrganization,
+  buildWebSite,
+  getSiteUrl,
+} from "#src/lib/structured-data.js";
+
+export async function getStaticPaths() {
+  return loadAgencyLocationStaticPaths();
+}
+
+type AgencyDetail = Awaited<ReturnType<typeof loadAgencyDetailByRouteParams>>;
+type CivilCaseRecord = AgencyDetail["civilCases"][number];
+type PersonnelLinkedCivilCaseRecord =
+  AgencyDetail["personnelLinkedCivilCases"][number];
+
+const data = await loadAgencyDetailByRouteParams(Astro.params);
+
+const {
+  agencyName,
+  agencyState,
+  categorySlug,
+  categoryLabel,
+  agencyPath,
+  administrativeArea,
+  placeLabel,
+  placePath,
+  civilCases,
+  counts,
+} = data;
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(agencyPath, siteUrl).toString();
+const profilePageId = `${pageUrl}#profilepage`;
+const status = agencyStatusPresentation(
+  data.agency.status,
+  data.agency.status_date,
+);
+const pageTitle = `${agencyName}${status.prominence === "notice" ? ` — ${status.label}` : ""} | PoliceConduct.org`;
+const pageDescription = [
+  `${agencyName} agency profile.`,
+  status.summary,
+  "Contact information, personnel, public reports, and recent civil litigation references.",
+]
+  .filter(Boolean)
+  .join(" ");
+const civilCaseTotal = counts.civilCases + counts.personnelLinkedCivilCases;
+const addressAvailable =
+  data.agency.address ||
+  data.agency.city ||
+  agencyState ||
+  data.agency.zip_code;
+const address = addressAvailable
+  ? {
+      "@type": "PostalAddress",
+      addressCountry: "US",
+      ...(data.agency.address ? { streetAddress: data.agency.address } : {}),
+      ...(data.agency.city ? { addressLocality: data.agency.city } : {}),
+      addressRegion: agencyState,
+      ...(data.agency.zip_code ? { postalCode: data.agency.zip_code } : {}),
+    }
+  : null;
+const contactPoints = data.agencyPhones.map(
+  (phone: { phone_number: string; description?: string | null }) => ({
+    "@type": "ContactPoint",
+    telephone: phone.phone_number,
+    ...(phone.description ? { contactType: phone.description } : {}),
+  }),
+);
+const agencyPrefillName = agencyName.toLocaleUpperCase("en-US");
+const civilLitigationRecords = [
+  ...civilCases.map((record: CivilCaseRecord) => ({
+    ...record,
+    caseUrl: `/civil-cases/${record.slug}/`,
+  })),
+  ...data.personnelLinkedCivilCases.map(
+    (record: PersonnelLinkedCivilCaseRecord) => ({
+      ...record,
+      caseUrl: `/civil-cases/${record.slug}/`,
+    }),
+  ),
+];
+const civilLitigationSummary = civilLitigationRecords
+  .map((record) => {
+    const segments = [
+      record.title || "Civil case",
+      record.cause_number || null,
+      record.court || null,
+      record.caseUrl,
+    ];
+    return segments.filter(Boolean).join(" — ");
+  })
+  .join("\n");
+const reportLinksSummary = data.reportedReports
+  .map((report: { url: string }) => report.url)
+  .join("\n");
+const reportNewPrefillPayload = JSON.stringify({
+  officer: {
+    department: agencyPrefillName,
+  },
+} satisfies ReportNewPrefill);
+const addCivilCasePrefillPayload = JSON.stringify({
+  jurisdiction: categorySlug,
+  defendants: agencyPrefillName,
+  summary: `${agencyPrefillName} agency profile: ${agencyPath}`,
+  links: [
+    agencyPath,
+    ...data.reportedReports
+      .slice(0, 3)
+      .map((report: { url: string }) => report.url),
+  ]
+    .filter(Boolean)
+    .join("\n"),
+});
+const suggestEditPrefillPayload = JSON.stringify({
+  agencyPath,
+  agencyName: agencyPrefillName,
+  jurisdiction: categorySlug,
+  departmentHead: data.agency.contact_name || "",
+  civilLitigation: civilLitigationSummary,
+});
+const suggestPersonnelPrefillPayload = JSON.stringify({
+  currentAgency: agencyPrefillName,
+  currentAgencyCity: data.agency.city || "",
+  currentAgencyState: agencyState,
+  civilLitigation: civilLitigationSummary,
+  reportLinks: reportLinksSummary,
+});
+const subscribePrefillPayload = JSON.stringify({
+  whoami: "Subscriber",
+  message: `Please notify me when this agency page changes: ${agencyPath}`,
+});
+const claimProfilePrefillPayload = JSON.stringify({
+  whoami: "Profile Owner",
+  message: `I would like to claim ownership of this profile.\nProfile path: ${agencyPath}`,
+});
+const federalAgency = data.federalAgency
+  ? {
+      name: data.federalAgency.name,
+      path: `/federal/${data.federalAgency.slug}/`,
+    }
+  : null;
+const toDisplayName = (value: string) =>
+  value === value.toUpperCase()
+    ? value
+        .toLocaleLowerCase("en-US")
+        .replace(/\b[a-z]/g, (letter) => letter.toLocaleUpperCase("en-US"))
+    : value;
+const agencyDisplayName = toDisplayName(agencyName);
+const cityDisplayName = data.agency.city
+  ? toDisplayName(data.agency.city)
+  : null;
+
+const formatCount = (value: number) => value.toLocaleString("en-US");
+const formatDate = (value: string | Date) =>
+  new Date(value).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+
+const addressLine = [
+  data.agency.address,
+  [
+    [cityDisplayName, (agencyState || "").toUpperCase()]
+      .filter(Boolean)
+      .join(", "),
+    data.agency.zip_code || "",
+  ]
+    .filter(Boolean)
+    .join(" "),
+]
+  .filter(Boolean)
+  .join(", ");
+const updatedLine = data.agency.updated_at
+  ? `Updated ${formatDate(data.agency.updated_at)}`
+  : null;
+
+const agencySlugSegment = agencyPath.split("/").filter(Boolean).pop();
+if (!agencySlugSegment) {
+  throw new Error(`Agency path ${agencyPath} is missing a slug segment.`);
+}
+const volunteerHref = buildHelpCollectHref(
+  agencyPath,
+  "agency",
+  agencySlugSegment,
+);
+// The headline personnel count is currently-serving officers; note any former
+// officers still on record (browsable via the roster's status filter).
+const personnelMeta =
+  counts.formerPersonnel > 0
+    ? `${formatCount(counts.formerPersonnel)} former on record`
+    : counts.currentPersonnel > 0
+      ? "Currently serving"
+      : null;
+
+type RecentItem = {
+  href: string;
+  meta: string;
+  title: string;
+  sortDate: number;
+};
+
+const recentCaseItems: RecentItem[] = civilLitigationRecords
+  .filter(
+    (record, index, records) =>
+      records.findIndex((entry) => entry.slug === record.slug) === index,
+  )
+  .map((record) => ({
+    href: record.caseUrl,
+    title: record.title || "Civil case",
+    meta: [
+      "Civil case",
+      record.court || null,
+      record.filed_date ? `Filed ${formatDate(record.filed_date)}` : null,
+      record.outcome || null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    sortDate: record.filed_date ? new Date(record.filed_date).getTime() : 0,
+  }));
+const recentReportItems: RecentItem[] = data.reportedReports.map(
+  (report: { incidentDate: string; title?: string; url: string }) => ({
+    href: report.url,
+    title: report.title || "Public report",
+    meta: `Report · Incident ${formatDate(report.incidentDate)}`,
+    sortDate: new Date(report.incidentDate).getTime(),
+  }),
+);
+// Experience reports (public accounts) and civil cases (court records) are
+// always rendered as separate sections — never merged into one combined
+// list (openspec redesign-civic-index-to-production, "Separate
+// record-class surfaces").
+const sortRecent = (items: RecentItem[]) =>
+  [...items].sort((left, right) => right.sortDate - left.sortDate).slice(0, 6);
+const recentReports = sortRecent(recentReportItems);
+const recentCases = sortRecent(recentCaseItems);
+
+const contactEmails = contactEmailsForDisplay(data.agency.contact_email);
+
+const organization: ReturnType<typeof buildGovernmentOrganizationNode> = {
+  ...buildGovernmentOrganizationNode({
+    siteUrl,
+    url: pageUrl,
+    name: agencyName,
+    mainEntityOfPageId: profilePageId,
+    address: address || undefined,
+    email: contactEmails.length ? contactEmails : undefined,
+    contactPoint: contactPoints,
+    areaServed: { "@type": "AdministrativeArea", name: agencyState },
+  }),
+  description: pageDescription,
+};
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    buildWebSite(siteUrl),
+    buildContentPageNode({
+      siteUrl,
+      type: "ProfilePage",
+      id: profilePageId,
+      pageUrl,
+      name: pageTitle,
+      description: pageDescription,
+      mainEntityId: organization["@id"],
+      dateModified: data.agency.updated_at
+        ? String(data.agency.updated_at)
+        : undefined,
+    }),
+    buildPublisherOrganization(siteUrl),
+    organization,
+  ],
+};
+---
+
+<PageShell
+  title={pageTitle}
+  description={pageDescription}
+  pagePath={agencyPath}
+  canonicalUrl={agencyPath}
+  structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: categoryLabel, href: `/${categorySlug}/` },
+    {
+      label: administrativeArea,
+      href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+    },
+    {
+      label: placeLabel,
+      href: placePath,
+    },
+    { label: agencyDisplayName, href: agencyPath },
+  ]}
+  eyebrow="Department profile"
+  heading={agencyDisplayName}
+>
+  <PrefillBootstrap />
+  <Fragment slot="header">
+    {status.label || status.dateLabel ? (
+      <div
+        class:list={[
+          "agency-status",
+          { "agency-status--notice": status.prominence === "notice" },
+        ]}
+      >
+        {status.label ? (
+          <p>
+            <strong>Status: {status.label}</strong>
+          </p>
+        ) : null}
+        {status.dateLabel ? (
+          <p>
+            Status date:{" "}
+            <time datetime={data.agency.status_date}>{status.dateLabel}</time>
+          </p>
+        ) : null}
+      </div>
+    ) : null}
+    {federalAgency ? (
+      <p class="agency-overview-federal">
+        <span>Federal agency</span>
+        <a href={federalAgency.path}>{federalAgency.name}</a>
+      </p>
+    ) : null}
+    <div class="entity-contact">
+      {addressLine ? (
+        <address class="entity-address">{addressLine}</address>
+      ) : null}
+      {data.agencyPhones.length ? (
+        <p class="entity-contact-links">
+          {data.agencyPhones.map(
+            (phone: { phone_number: string; description?: string | null }) => {
+              const label = (phone.description || "").trim();
+              const showLabel = label && label.toLowerCase() !== "phone";
+              // A fax number is not something to dial from a phone.
+              if (label.toLowerCase() === "fax") {
+                return <span>{`${label}: ${phone.phone_number}`}</span>;
+              }
+              return (
+                <a
+                  href={`tel:${phone.phone_number}`}
+                  aria-label={
+                    showLabel
+                      ? `${label}: ${phone.phone_number}`
+                      : phone.phone_number
+                  }
+                >
+                  {showLabel
+                    ? `${label}: ${phone.phone_number}`
+                    : phone.phone_number}
+                </a>
+              );
+            },
+          )}
+        </p>
+      ) : null}
+      {data.agency.contact_name ? (
+        <p class="entity-contact-person">
+          Contact name: {toDisplayName(data.agency.contact_name)}
+        </p>
+      ) : null}
+      {contactEmails.length ? (
+        <p class="entity-contact-email">
+          Email:{" "}
+          {contactEmails.map((address: string, index: number) => (
+            <>
+              {index > 0 ? (
+                <span class="sep" aria-hidden="true">
+                  ·
+                </span>
+              ) : null}
+              <a href={`mailto:${address}`}>{address}</a>
+            </>
+          ))}
+        </p>
+      ) : null}
+    </div>
+    {updatedLine ? <p class="entity-updated">{updatedLine}</p> : null}
+  </Fragment>
+  <Fragment slot="actions">
+    <EntityActionBar>
+      <PrefillNavButton
+        to="/report/new/"
+        payload={reportNewPrefillPayload}
+        class="entity-action entity-action-primary"
+      >
+        Share an experience
+      </PrefillNavButton>
+      <PrefillNavButton
+        to="/agency/suggest-edit/"
+        payload={suggestEditPrefillPayload}
+        class="entity-action"
+      >
+        Suggest edit
+      </PrefillNavButton>
+      <PrefillNavButton
+        to="/civil-cases/new/"
+        payload={addCivilCasePrefillPayload}
+        class="entity-action"
+      >
+        Add a civil case
+      </PrefillNavButton>
+    </EntityActionBar>
+  </Fragment>
+  <aside class="entity-side" slot="aside">
+    <p class="civic-kicker">Help improve this page</p>
+    <h2>Add what is missing</h2>
+    <ul class="entity-side-list">
+      <li>
+        <PrefillNavButton
+          to="/personnel/new/"
+          payload={suggestPersonnelPrefillPayload}
+          class="entity-side-link"
+        >
+          Add personnel →
+        </PrefillNavButton>
+      </li>
+      <li>
+        <PrefillNavButton
+          to="/about/contact/"
+          payload={subscribePrefillPayload}
+          data-testid="agency-subscribe-link"
+          class="entity-side-link"
+        >
+          Get updates →
+        </PrefillNavButton>
+      </li>
+      <li>
+        <PrefillNavButton
+          to="/about/contact/"
+          payload={claimProfilePrefillPayload}
+          data-testid="agency-claim-profile-link"
+          class="entity-side-link"
+        >
+          Claim this profile →
+        </PrefillNavButton>
+      </li>
+    </ul>
+  </aside>
+
+  <StatStrip ariaLabel={`${agencyDisplayName} record totals`} columns="five">
+    <StatCell
+      label="Personnel"
+      value={
+        counts.currentPersonnel > 0
+          ? formatCount(counts.currentPersonnel)
+          : null
+      }
+      meta={personnelMeta || undefined}
+      href={counts.personnel > 0 ? `${agencyPath}personnel/` : undefined}
+      actionLabel="View personnel →"
+      helpCollectHref={volunteerHref}
+    />
+    <StatCell
+      label="Reports"
+      value={counts.reports > 0 ? formatCount(counts.reports) : null}
+      meta="Shared by the public"
+      href={counts.reports > 0 ? `${agencyPath}reports/` : undefined}
+      actionLabel="View reports →"
+      helpCollectHref="/report/new/"
+      helpCollectLabel="Share an experience →"
+    />
+    <StatCell
+      label="Civil Cases"
+      value={civilCaseTotal > 0 ? formatCount(civilCaseTotal) : null}
+      meta="Court records"
+      href={civilCaseTotal > 0 ? `${agencyPath}civil-cases/` : undefined}
+      actionLabel="View civil cases →"
+      role="civil"
+      helpCollectHref={volunteerHref}
+    />
+    <StatCell
+      label="Budget"
+      empty
+      role="budget"
+      helpCollectHref={volunteerHref}
+    />
+    <StatCell
+      label="Liability Costs"
+      empty
+      role="liability"
+      helpCollectHref={volunteerHref}
+    />
+  </StatStrip>
+
+  {counts.discipline > 0 && (
+    <p class="civic-limit-note">
+      <a href={`${agencyPath}personnel/`}>
+        {`${formatCount(counts.discipline)} discipline record${counts.discipline === 1 ? "" : "s"}`}
+      </a>
+      {" linked to this agency’s personnel."}
+    </p>
+  )}
+
+  {recentReports.length ? (
+    <section class="civic-section">
+      <div class="civic-section-head">
+        <div>
+          <h2>Recent experience reports</h2>
+          <p>Public accounts shared about this agency.</p>
+        </div>
+      </div>
+      <div class="recent-list">
+        {recentReports.map((item) => (
+          <a href={item.href}>
+            <span class="recent-list-title">{item.title}</span>
+            <span class="recent-list-meta">{item.meta}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  ) : null}
+
+  {recentCases.length ? (
+    <section class="civic-section">
+      <div class="civic-section-head">
+        <div>
+          <h2>Recent civil cases</h2>
+          <p>Court records connected to this agency.</p>
+        </div>
+      </div>
+      <div class="recent-list">
+        {recentCases.map((item) => (
+          <a href={item.href}>
+            <span class="recent-list-title">{item.title}</span>
+            <span class="recent-list-meta">{item.meta}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  ) : null}
+
+  <CoverageLinks links={data.coverageLinks} />
+
+  <section class="civic-section civic-section--last">
+    <p class="civic-limit-note">
+      Counts show items available on this site. They are not a rating.
+    </p>
+  </section>
+  <RecordDataNotes recordPath={agencyPath} />
+</PageShell>
+
+<style>
+  .agency-status {
+    margin-block: 1rem;
+    color: var(--ipc-color-ink);
+  }
+
+  .agency-status p {
+    margin: 0;
+    color: inherit;
+  }
+
+  .agency-status--notice {
+    padding: 0.75rem 1rem;
+    background: var(--ipc-color-ink);
+    color: var(--ipc-color-paper-raised);
+  }
+</style>

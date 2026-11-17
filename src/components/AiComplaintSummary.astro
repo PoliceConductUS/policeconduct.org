@@ -1,0 +1,17 @@
+---
+import type { AiComplaintSummary } from "#src/lib/data/ai-complaint-summary.js";
+interface Props {
+  summary: AiComplaintSummary;
+}
+const { summary } = Astro.props;
+---
+
+<section aria-labelledby="complaint-summary-heading">
+  <h2 id="complaint-summary-heading">AI-generated summary of the complaint</h2>
+  {summary.summary.split(/\n\s*\n/).map((paragraph) => (
+    <p>{paragraph}</p>
+  ))}
+  <p>
+    <a href={summary.source.sourcePage}>Read the complaint</a>
+  </p>
+</section>

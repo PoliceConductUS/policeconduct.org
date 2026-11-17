@@ -1,0 +1,88 @@
+---
+// Neutral measurement space: the row layout a chart will occupy once data is
+// collected. Deliberately empty — no sample fills — so it never implies data
+// that isn't there. `width`/`segments` are accepted for source compatibility
+// but intentionally not rendered.
+type ChartRow = {
+  label: string;
+  value: string;
+  width?: number;
+  segments?: number[];
+};
+
+const {
+  ariaLabel,
+  rows,
+  legend = [],
+} = Astro.props as {
+  ariaLabel: string;
+  rows: ChartRow[];
+  legend?: string[];
+};
+---
+
+<div class="measure-space" aria-label={ariaLabel}>
+  {rows.map((row) => (
+    <div class="measure-row">
+      <span class="measure-label">{row.label}</span>
+      <span class="measure-track" aria-hidden="true" />
+      <span class="measure-value">{row.value}</span>
+    </div>
+  ))}
+  {legend.length ? <p class="measure-legend">{legend.join(" · ")}</p> : null}
+</div>
+
+<style>
+  .measure-space {
+    border: 1px solid var(--ipc-color-rule);
+    border-radius: 0.4rem;
+    display: grid;
+    gap: 0.55rem;
+    margin-top: 0.85rem;
+    padding: 0.8rem 0.9rem;
+  }
+
+  .measure-row {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(5.5rem, 0.7fr) minmax(0, 1.6fr) 2.4rem;
+  }
+
+  .measure-label,
+  .measure-value {
+    color: var(--ipc-color-ink-muted);
+    font-size: var(--ipc-type-caption);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .measure-value {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .measure-track {
+    background: var(--ipc-color-rule);
+    border-radius: 2px;
+    height: 0.5rem;
+    opacity: 0.55;
+  }
+
+  .measure-legend {
+    color: var(--ipc-color-ink-faint);
+    font-size: var(--ipc-type-caption);
+    font-weight: 600;
+    margin: 0.15rem 0 0;
+  }
+
+  @media (max-width: 575.98px) {
+    .measure-row {
+      grid-template-columns: minmax(0, 1fr) 2.4rem;
+    }
+
+    .measure-track {
+      display: none;
+    }
+  }
+</style>

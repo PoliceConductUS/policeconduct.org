@@ -1,0 +1,98 @@
+---
+import PageShell from "#src/layouts/PageShell.astro";
+import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+
+const pagePath = "/data-and-methods/";
+const pageDescription =
+  "How PoliceConduct.org organizes public records, agency records, civil cases, personnel records, and derived public data views.";
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = new URL(pagePath, siteUrl).toString();
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: "Data and Methods | PoliceConduct.org",
+  description: pageDescription,
+});
+---
+
+<PageShell
+  title="Data and Methods | PoliceConduct.org"
+  description={pageDescription}
+  pagePath={pagePath}
+  canonicalUrl={pagePath}
+  structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Data and Methods", href: pagePath, current: true },
+  ]}
+  heading="Data and Methods"
+  lede="PoliceConduct.org organizes public records, agency records, court records, personnel records, and related source material into searchable civic views."
+>
+  <section class="civic-section civic-section--last">
+    <div class="data-methods-grid">
+      <article>
+        <h2>Records</h2>
+        <p>
+          The site connects agencies, personnel, public reports, civil cases,
+          budgets, liability costs, and location-based indexes using
+          database-backed records and canonical paths.
+        </p>
+      </article>
+      <article>
+        <h2>Location Views</h2>
+        <p>
+          State, county, place, agency, federal, and personnel pages use the
+          same route and projection rules for comparable index views.
+        </p>
+      </article>
+      <article>
+        <h2>Outcome Views</h2>
+        <p>
+          Outcome pages group case outcomes by charge, outcome category, income
+          band, income source, measure, and time period.
+        </p>
+      </article>
+      <article>
+        <h2>Corrections</h2>
+        <p>
+          Use the footer issue link to report factual errors, missing sources,
+          or records that need review.
+        </p>
+      </article>
+    </div>
+  </section>
+</PageShell>
+
+<style>
+  .data-methods-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .data-methods-grid article {
+    background: var(--ipc-color-paper-raised);
+    border: 1px solid var(--ipc-color-rule);
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px rgba(7, 24, 66, 0.04);
+    padding: 1rem 1.1rem;
+  }
+
+  .data-methods-grid h2 {
+    color: var(--ipc-color-ink);
+    margin: 0 0 0.45rem;
+  }
+
+  .data-methods-grid p {
+    color: var(--ipc-color-ink-muted);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  @media (min-width: 768px) {
+    .data-methods-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

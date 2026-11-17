@@ -1,9 +1,9 @@
-import { withDb } from "#src/lib/db.js";
 import {
   loadAgencySummaries,
   loadPersonnelSummaries,
   loadReportSummaries,
 } from "#src/lib/data/summaries.js";
+import { loadCivilCaseCountsByAgencyState } from "#src/lib/data/civil-case-scopes.js";
 
 export type CategoryCollectionCounts = {
   agencyCount: number;
@@ -13,9 +13,9 @@ export type CategoryCollectionCounts = {
 };
 
 type StatItem = {
-  actionLabel: string;
+  actionLabel?: string;
   description: string;
-  href: string;
+  href?: string;
   label: string;
   value: number;
 };
@@ -27,37 +27,18 @@ export const loadCategoryCollectionCounts = async (): Promise<
     loadAgencySummaries(),
     loadPersonnelSummaries(),
     loadReportSummaries(),
-    withDb(async (client) => {
-      const result = await client.query(
-        `
-          select upper(a.category) as category, count(distinct cco.civil_case_id) as case_count
-          from public.civil_case_officers cco
-          join public.agency_officers ao on ao.id = cco.agency_officer_id
-          join public.agency a on ao.agency_id = a.id
-          where a.category is not null
-          group by upper(a.category)
-        `,
-      );
-      return result.rows.map(
-        (row: { category: string; case_count: string | number }) => ({
-          category: String(row.category || "").toLowerCase(),
-          count: Number(row.case_count || 0),
-        }),
-      );
-    }),
+    loadCivilCaseCountsByAgencyState(),
   ]);
 
   const agencyCounts = new Map<string, number>();
   for (const agency of agencies) {
-    agencyCounts.set(
-      agency.category,
-      (agencyCounts.get(agency.category) || 0) + 1,
-    );
+    const state = agency.state.toLowerCase();
+    agencyCounts.set(state, (agencyCounts.get(state) || 0) + 1);
   }
 
   const personnelCounts = new Map<string, number>();
   for (const entry of personnel) {
-    const category = entry.agencyCategory?.toLowerCase();
+    const category = entry.agencyState?.toLowerCase();
     if (!category) {
       continue;
     }
@@ -66,15 +47,8 @@ export const loadCategoryCollectionCounts = async (): Promise<
 
   const reportCounts = new Map<string, number>();
   for (const report of reports) {
-    const agencySlug = report.agencySlug?.toLowerCase();
-    if (!agencySlug) {
-      continue;
-    }
-    const slashIndex = agencySlug.indexOf("/");
-    if (slashIndex === -1) {
-      continue;
-    }
-    const category = agencySlug.slice(0, slashIndex);
+    const category = report.state?.toLowerCase();
+    if (!category) continue;
     reportCounts.set(category, (reportCounts.get(category) || 0) + 1);
   }
 
@@ -108,23 +82,20 @@ export const buildCategoryCollectionStats = (
   categoryLabel: string,
   counts: CategoryCollectionCounts,
 ): StatItem[] => {
-  const reportHref =
-    category === "federal" ? "/report/" : `/report/${category}/`;
+  const reportHref = `/${category}/reports/`;
 
   return [
     {
       label: "Agencies",
       value: counts.agencyCount,
       description: `Listed agencies in ${categoryLabel}.`,
-      href: `/law-enforcement-agency/${category}/`,
+      href: `/${category}/`,
       actionLabel: "Open agencies",
     },
     {
       label: "Personnel",
       value: counts.personnelCount,
       description: `Listed personnel in ${categoryLabel}.`,
-      href: `/personnel/${category}/`,
-      actionLabel: "Open personnel",
     },
     {
       label: "Reports",
@@ -140,8 +111,6 @@ export const buildCategoryCollectionStats = (
       label: "Civil Cases",
       value: counts.civilCaseCount,
       description: `Civil litigation tied to ${categoryLabel}.`,
-      href: `/civil-litigation/${category}/`,
-      actionLabel: "Open civil cases",
     },
   ];
 };

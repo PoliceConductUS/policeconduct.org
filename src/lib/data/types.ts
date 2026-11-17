@@ -4,12 +4,12 @@ export type PersonnelSummary = {
   lastName: string;
   firstName: string;
   nameSuffix?: string | null;
-  roleTitle: string | null;
+  title: string | null;
   reportCount: number;
   civilCaseCount: number;
-  agencySlug: string;
   agencyName: string;
-  agencyCategory: string;
+  agencyState: string;
+  agencyCanonicalPath: string;
 };
 
 export type AgencySummary = {
@@ -17,27 +17,57 @@ export type AgencySummary = {
   slug: string;
   name: string;
   state: string;
-  category: string;
+  administrativeArea?: string | null;
+  administrativeAreaSlug?: string | null;
   city?: string | null;
+  placeSlug?: string | null;
   address?: string | null;
   zipCode?: string | null;
   phoneNumber?: string | null;
+  canonicalPath: string;
   activePersonnelCount: number;
   reportCount: number;
   civilCaseCount: number;
+};
+
+export type AgencyFinderResult = {
+  id: string;
+  name: string;
+  city?: string | null;
+  administrativeArea?: string | null;
+  administrativeAreaSlug?: string | null;
+  state: string;
+  zipCode?: string | null;
+  canonicalPath: string;
 };
 
 export type ReportSummary = {
   id: string;
   slug: string;
   state: string;
+  locationPath: string;
+  canonicalPath: string;
+  year: string;
+  month: string;
+  day: string;
+  administrativeAreaName: string;
+  administrativeAreaSlug: string;
+  placeName: string;
+  placeSlug: string;
+  stateName: string;
   title: string;
   incidentDate: string;
   address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   agencySlug: string;
   agencyName: string;
-  category?: string | null;
+  agencyCanonicalPath: string;
   ratingOverall?: number | null;
-  personnel?: { name: string; slug?: string | null }[];
+  personnel?: {
+    title?: string | null;
+    name: string;
+    slug?: string | null;
+  }[];
   personnelSlugs?: string[];
 };

@@ -1,0 +1,135 @@
+---
+import PageShell from "#src/layouts/PageShell.astro";
+import { buildNewsArticle, getSiteUrl } from "#src/lib/structured-data.js";
+import { newsMeta } from "./_metadata";
+
+const siteUrl = getSiteUrl(Astro.site);
+const structuredData = buildNewsArticle({
+  siteUrl,
+  pageUrl: new URL(newsMeta.href, siteUrl).toString(),
+  headline: newsMeta.title,
+  description: newsMeta.description,
+  datePublished: newsMeta.date,
+});
+---
+
+<PageShell
+  title={newsMeta.title}
+  description={newsMeta.description}
+  pagePath={newsMeta.href}
+  canonicalUrl={newsMeta.href}
+  structuredData={structuredData}
+  breadcrumbs={[
+    { label: "News", href: "/news/" },
+    { label: newsMeta.title, href: newsMeta.href, current: true },
+  ]}
+  heading={newsMeta.title}
+>
+  <Fragment slot="header">
+    <p class="text-muted">
+      <time datetime={newsMeta.date}>October 24, 2026</time>
+    </p>
+    <p class="lead mb-0">
+      A question about policing rarely ends with one record. You might start
+      with a city, find a department, look up a person, and then follow a link
+      to a report or court case. The new navigation on PoliceConduct.org helps
+      you follow those connections.
+    </p>
+  </Fragment>
+
+  <section class="py-vh-2">
+    <p>
+      The site brings local browsing and linked records together. You can start
+      with the place you know, then move between the agencies, people, and
+      records connected to it. Each page gives you a way to keep exploring
+      without starting your search over.
+    </p>
+
+    <h2 class="ipc-section-title mt-5">Start with a place or a search</h2>
+    <p>
+      On the <a href="/">home page</a>, use the map to choose a state with
+      records. From there, follow the links through counties or other local
+      areas, cities and towns, and agencies. When there is only one next
+      destination, a link may take you straight to it.
+    </p>
+    <p>
+      The navigation trail near the top of a page shows where you are and gives
+      you links back to broader views. Location pages also offer lists and jump
+      menus, so you can move directly to a place instead of opening each page in
+      turn.
+    </p>
+    <p>
+      If you already know what you are looking for, use the search box in the
+      site header or open <a href="/find-records/">Find Records</a>. Federal
+      agencies have their own list on the home page, with links to their related
+      places and offices.
+    </p>
+
+    <h2 class="ipc-section-title mt-5">Follow people across agencies</h2>
+    <p>
+      An agency page connects you to the people listed in its records. A
+      person's profile brings together records linked to that person, including
+      agency history, licenses, discipline, education and training, and civil
+      cases where those records are present.
+    </p>
+    <p>
+      That history matters when someone has worked for more than one agency. You
+      can follow a person across recorded assignments rather than treating each
+      department's listing as a separate person. Dates help show when an
+      assignment or event took place.
+    </p>
+    <p>
+      State pages also link to the licensing authority. For example, the{" "}
+      <a href="/mn/licensing-authority/">Minnesota licensing authority page</a>{" "}
+      connects discipline records to individual profiles. A record on a person's
+      profile does not, by itself, mean it belongs to every agency where that
+      person has worked.
+    </p>
+
+    <h2 class="ipc-section-title mt-5">Connect reports and court cases</h2>
+    <p>
+      Reports and civil cases provide other paths through the record. Their
+      links let you move between an account or case and the people and agencies
+      connected to it. Follow source links to read the material behind a record
+      and check its dates and details.
+    </p>
+    <p>
+      A case can have more than one connection. It may appear in a location view
+      because the incident took place there, and on a person's or agency's page
+      because of the people linked to the case. These are different ways to find
+      the same case, not separate cases to add together.
+    </p>
+    <p>
+      A link explains how records are connected. It does not turn a reported
+      claim into a finding. Read the report or case details to understand what
+      the source says and what outcome is recorded.
+    </p>
+
+    <h2 class="ipc-section-title mt-5">Read the page behind the number</h2>
+    <p>
+      Summary numbers help you choose where to look next. Open the linked
+      records to see which people, dates, agencies, or cases a number covers. A
+      count for a place and a count for an agency may describe different groups
+      of records.
+    </p>
+    <p>
+      For a simple starting point, open <a href="/tx/">Texas</a>, choose a
+      county and place, and open an agency. From its personnel list, choose a
+      person and explore the records on that profile. Use the navigation trail
+      to return to the broader area whenever you want to change direction.
+    </p>
+
+    <h2 class="ipc-section-title mt-5">Help make the connections useful</h2>
+    <p>
+      The goal is to make it easier to explore the public record and understand
+      how its pieces fit together. That includes records of help and
+      professionalism as well as concerns and harm.
+    </p>
+    <p>
+      You can <a href="/report/new/">share your experience</a>, use the
+      correction links on agency and personnel pages, or report an issue through
+      the site footer. For more about how the site organizes records, visit{" "}
+      <a href="/data-and-methods/">Data and Methods</a>.
+    </p>
+  </section>
+</PageShell>

@@ -1,5 +1,19 @@
 data "aws_caller_identity" "current" {}
 
+data "aws_cloudwatch_event_bus" "default" {
+  name = "default"
+}
+
+data "external" "resend_domain" {
+  program = [
+    "node",
+    "${path.module}/../../scripts/bootstrap-resend-domain.mjs",
+    "--read",
+  ]
+
+  query = {}
+}
+
 locals {
   provided_oidc_provider_arn            = var.existing_oidc_provider_arn == null || trimspace(var.existing_oidc_provider_arn) == "" ? null : trimspace(var.existing_oidc_provider_arn)
   create_oidc_provider                  = local.provided_oidc_provider_arn == null
@@ -24,7 +38,7 @@ locals {
   create_www_cname_record              = var.www_record_mode == "cname"
   preview_wildcard_domain              = "*.preview.${var.domain_name}"
   distribution_aliases                 = local.include_www ? [var.domain_name, local.www_domain] : [var.domain_name]
-  preview_distribution_aliases         = [local.preview_wildcard_domain]
+  preview_distribution_aliases         = ["preview.${var.domain_name}", local.preview_wildcard_domain]
   certificate_san_names                = local.include_www ? [local.www_domain, local.preview_wildcard_domain] : [local.preview_wildcard_domain]
   origin_id                            = "s3-${local.site_bucket_name}"
   preview_origin_id                    = "s3-${local.preview_bucket_name}"
@@ -64,8 +78,36 @@ locals {
   sentry_auth_token            = var.sentry_auth_token == null || trimspace(var.sentry_auth_token) == "" ? null : trimspace(var.sentry_auth_token)
   recaptcha_project_id         = var.recaptcha_project_id == null || trimspace(var.recaptcha_project_id) == "" ? null : trimspace(var.recaptcha_project_id)
   recaptcha_site_key           = var.recaptcha_site_key == null || trimspace(var.recaptcha_site_key) == "" ? null : trimspace(var.recaptcha_site_key)
-  has_sentry_auth_token        = nonsensitive(local.sentry_auth_token != null)
-  github_environment_names     = toset(["production", "preview"])
+  forms_email_mail_from_domain = "${var.forms_email_mail_from_subdomain}.${var.forms_email_verification_domain}"
+  forms_email_dmarc_value = join("; ", compact([
+    "v=DMARC1",
+    "p=${var.forms_email_dmarc_policy}",
+    "adkim=s",
+    "aspf=r",
+    var.forms_email_dmarc_aggregate_report_address == null || trimspace(var.forms_email_dmarc_aggregate_report_address) == "" ? null : "rua=mailto:${trimspace(var.forms_email_dmarc_aggregate_report_address)}",
+  ]))
+  resend_domain_records = jsondecode(data.external.resend_domain.result.records_json)
+  resend_domain_records_map = {
+    for record in local.resend_domain_records : record.id => record
+  }
+  alert_topic_name = var.alert_topic_name == null || trimspace(var.alert_topic_name) == "" ? "${var.project_name}-alerts" : trimspace(var.alert_topic_name)
+  normalized_alert_email_endpoints = distinct([
+    for endpoint in var.alert_email_endpoints : trimspace(endpoint)
+    if trimspace(endpoint) != ""
+  ])
+  # Submission notifications (INS-35) live in their OWN stack —
+  # infrastructure/submission-notifications — because they are all-new
+  # resources and that stack has real Terraform state, while this one has none
+  # (INS-39). This stack only has to know the topic ARN so the forms API can
+  # publish to it; it neither creates nor owns the topic.
+  normalized_submission_notification_emails = distinct([
+    for endpoint in var.submission_notification_email_endpoints : trimspace(endpoint)
+    if trimspace(endpoint) != ""
+  ])
+  enable_submission_notifications = trimspace(var.submission_notifications_topic_arn) != ""
+  has_sentry_auth_token           = nonsensitive(local.sentry_auth_token != null)
+  effective_alarm_actions         = concat(var.alarm_actions, length(local.normalized_alert_email_endpoints) > 0 ? [aws_sns_topic.infrastructure_alerts[0].arn] : [])
+  github_environment_names        = toset(["production", "preview"])
   github_environment_variables = {
     production = merge(
       {
@@ -105,12 +147,6 @@ locals {
         PUBLIC_SENTRY_DSN         = local.sentry_dsn_preview
         PUBLIC_SENTRY_ENVIRONMENT = "preview"
       },
-      local.sentry_org == null ? {} : {
-        SENTRY_ORG = local.sentry_org
-      },
-      local.sentry_project == null ? {} : {
-        SENTRY_PROJECT = local.sentry_project
-      },
       local.recaptcha_site_key == null ? {} : {
         RECAPTCHA_SITE_KEY = local.recaptcha_site_key
       }
@@ -132,8 +168,15 @@ locals {
     "object-src 'none';",
     "frame-ancestors 'self';",
     "form-action 'self';",
-    "img-src 'self' data: blob: https://i.ytimg.com https://www.google-analytics.com https://stats.g.doubleclick.net https://c.disquscdn.com https://*.disqus.com https://www.gstatic.com https://www.google.com;",
-    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com;",
+    # NOTE: Disqus sources are intentionally still allowed here even though the
+    # Disqus embed was removed from the site. This response-headers policy is
+    # SHARED by the preview and prod CloudFront distributions, and prod has not
+    # yet dropped Disqus. Removing the Disqus allowances now would tighten prod's
+    # CSP too and could break any Disqus still live there. Leaving them is inert
+    # (an unused allowance never breaks anything). Drop these when this branch
+    # merges to prod so both distributions lose Disqus together.
+    "img-src 'self' data: blob: https://tile.openstreetmap.org https://i.ytimg.com https://www.google-analytics.com https://stats.g.doubleclick.net https://c.disquscdn.com https://*.disqus.com https://www.gstatic.com https://www.google.com;",
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com;",
     "style-src 'self' 'unsafe-inline';",
     "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://policeconduct.disqus.com https://*.disqus.com https://*.ingest.us.sentry.io https://*.sentry.io;",
     "font-src 'self' data:;",
@@ -172,7 +215,15 @@ data "archive_file" "forms_api_lambda" {
   type        = "zip"
   source_dir  = "${path.module}/lambdas/forms-api"
   output_path = "${path.module}/lambdas/forms-api.zip"
-  excludes    = ["*.zip"]
+  # Match deploy-forms-api.sh: runtime files only, never local tests/coverage.
+  excludes = setsubtract(
+    fileset("${path.module}/lambdas/forms-api", "**"),
+    setunion(
+      toset(["index.mjs", "package.json"]),
+      fileset("${path.module}/lambdas/forms-api", "native-domexception/**"),
+      fileset("${path.module}/lambdas/forms-api", "node_modules/**")
+    )
+  )
 }
 
 resource "aws_s3_bucket" "terraform_state" {
@@ -247,6 +298,10 @@ resource "aws_s3_bucket_policy" "terraform_state_tls_only" {
 resource "aws_s3_bucket" "preview" {
   bucket        = local.preview_bucket_name
   force_destroy = var.preview_bucket_force_destroy
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "preview" {
@@ -274,6 +329,44 @@ resource "aws_s3_bucket_versioning" "preview" {
   }
 }
 
+# Versioning above means `aws s3 rm` -- what cleanup-preview.yml runs when a PR
+# closes -- only writes a delete marker. The object becomes noncurrent and keeps
+# billing, so tearing down a preview reclaimed nothing and the object count only
+# ever grew. Measured on 2026-11-01, before this rule existed: 5,589,610 objects
+# and 95.7 GB billed, against 17.7 GB of current versions (INS-106).
+#
+# 7 days, per the board's decision on INS-106. A preview is disposable build
+# output reproducible from its commit, so a week is ample room to notice a
+# mistaken delete. Current versions are untouched, so live previews for open
+# PRs keep serving normally.
+resource "aws_s3_bucket_lifecycle_configuration" "preview" {
+  bucket = aws_s3_bucket.preview.id
+
+  rule {
+    id     = "expire-noncurrent-preview-versions"
+    status = "Enabled"
+
+    # Applies to named previews, PR builds, and root diagnostic pages.
+    filter {}
+
+    noncurrent_version_expiration {
+      noncurrent_days = 7
+    }
+
+    # Sweep the delete marker once every version beneath it has expired;
+    # otherwise the markers accumulate as billable objects forever.
+    expiration {
+      expired_object_delete_marker = true
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+
+  depends_on = [aws_s3_bucket_versioning.preview]
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "preview" {
   bucket = aws_s3_bucket.preview.id
 
@@ -287,11 +380,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "preview" {
 resource "aws_s3_bucket" "forms_drafts" {
   bucket        = local.forms_drafts_bucket_name
   force_destroy = var.forms_drafts_bucket_force_destroy
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_kms_key" "forms_drafts" {
   description         = "KMS key for ${var.project_name} form drafts bucket."
   enable_key_rotation = true
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_kms_alias" "forms_drafts" {
@@ -338,11 +439,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "forms_drafts" {
 resource "aws_s3_bucket" "forms_submissions" {
   bucket        = local.forms_submissions_bucket_name
   force_destroy = var.forms_submissions_bucket_force_destroy
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_kms_key" "forms_submissions" {
   description         = "KMS key for ${var.project_name} form submissions bucket."
   enable_key_rotation = true
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_kms_alias" "forms_submissions" {
@@ -389,11 +498,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "forms_submissions
 resource "aws_s3_bucket" "forms_drafts_preview" {
   bucket        = local.forms_drafts_preview_bucket_name
   force_destroy = var.forms_drafts_preview_bucket_force_destroy
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_kms_key" "forms_drafts_preview" {
   description         = "KMS key for ${var.project_name} preview form drafts bucket."
   enable_key_rotation = true
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_kms_alias" "forms_drafts_preview" {
@@ -440,11 +557,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "forms_drafts_prev
 resource "aws_s3_bucket" "forms_submissions_preview" {
   bucket        = local.forms_submissions_preview_bucket_name
   force_destroy = var.forms_submissions_preview_bucket_force_destroy
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_kms_key" "forms_submissions_preview" {
   description         = "KMS key for ${var.project_name} preview form submissions bucket."
   enable_key_rotation = true
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_kms_alias" "forms_submissions_preview" {
@@ -773,7 +898,23 @@ resource "aws_iam_role" "forms_lambda" {
   assume_role_policy = data.aws_iam_policy_document.forms_lambda_assume_role.json
 }
 
+resource "random_password" "forms_email_verification_hmac_secret" {
+  length  = 64
+  special = false
+}
+
 data "aws_iam_policy_document" "forms_lambda_permissions" {
+  statement {
+    sid       = "IdentifyKnownFormReleases"
+    actions   = ["s3:GetObject"]
+    resources = [for bucket in aws_s3_bucket.release_data : "${bucket.arn}/builds/*/data/dynamic.json"]
+  }
+  statement {
+    sid       = "DistinguishMissingFormReleases"
+    actions   = ["s3:ListBucket"]
+    resources = [for bucket in aws_s3_bucket.release_data : bucket.arn]
+  }
+
   statement {
     sid    = "CloudWatchLogsWrite"
     effect = "Allow"
@@ -815,6 +956,15 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
   }
 
   statement {
+    sid    = "SubmissionBucketRead"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = ["${aws_s3_bucket.forms_submissions.arn}/*"]
+  }
+
+  statement {
     sid    = "PreviewDraftBucketWriteRead"
     effect = "Allow"
     actions = [
@@ -831,6 +981,15 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
     actions = [
       "s3:PutObject",
       "s3:PutObjectTagging",
+    ]
+    resources = ["${aws_s3_bucket.forms_submissions_preview.arn}/*"]
+  }
+
+  statement {
+    sid    = "PreviewSubmissionBucketRead"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
     ]
     resources = ["${aws_s3_bucket.forms_submissions_preview.arn}/*"]
   }
@@ -868,6 +1027,16 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
   }
 
   statement {
+    sid    = "SubmissionBucketKmsDecrypt"
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+    ]
+    resources = [aws_kms_key.forms_submissions.arn]
+  }
+
+  statement {
     sid    = "PreviewDraftBucketKmsEncryptDecrypt"
     effect = "Allow"
     actions = [
@@ -888,6 +1057,40 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
       "kms:DescribeKey",
     ]
     resources = [aws_kms_key.forms_submissions_preview.arn]
+  }
+
+  statement {
+    sid    = "PreviewSubmissionBucketKmsDecrypt"
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+    ]
+    resources = [aws_kms_key.forms_submissions_preview.arn]
+  }
+
+  statement {
+    sid       = "SesSendVerificationEmail"
+    effect    = "Allow"
+    actions   = ["ses:SendEmail"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "ses:FromAddress"
+      values   = [var.forms_email_verification_from_address]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = local.enable_submission_notifications ? [1] : []
+
+    content {
+      sid       = "PublishSubmissionNotifications"
+      effect    = "Allow"
+      actions   = ["sns:Publish"]
+      resources = [trimspace(var.submission_notifications_topic_arn)]
+    }
   }
 }
 
@@ -965,12 +1168,16 @@ resource "aws_lambda_function" "forms_api_prod" {
   handler       = "index.handler"
   runtime       = var.lambda_nodejs_runtime
   timeout       = 10
+  # CPU scales with memory. At the 128 MB default a form submit took about 7
+  # seconds, most of it in the reCAPTCHA client, and used 123 MB.
+  memory_size = 1024
 
   filename         = data.archive_file.forms_api_lambda.output_path
   source_code_hash = data.archive_file.forms_api_lambda.output_base64sha256
 
   environment {
     variables = {
+      RELEASE_DATA_BUCKET                  = aws_s3_bucket.release_data["prod"].id
       DRAFTS_BUCKET                        = aws_s3_bucket.forms_drafts.id
       DRAFTS_KMS_KEY_ID                    = aws_kms_key.forms_drafts.arn
       DRAFTS_PREFIX                        = "drafts/"
@@ -985,9 +1192,20 @@ resource "aws_lambda_function" "forms_api_prod" {
       RECAPTCHA_MIN_SCORE                  = tostring(var.recaptcha_min_score)
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
+      EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
+      RESEND_API_KEY                       = var.forms_email_resend_api_key == null ? "" : var.forms_email_resend_api_key
+      EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
+      EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
+      SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
       SENTRY_DSN                           = local.sentry_dsn_production == null ? "" : local.sentry_dsn_production
       SENTRY_ENVIRONMENT                   = "production"
+      SUBMISSION_NOTIFICATIONS_TOPIC_ARN   = trimspace(var.submission_notifications_topic_arn)
+      SUBMISSION_NOTIFICATION_RECIPIENTS   = join(",", local.normalized_submission_notification_emails)
     }
+  }
+
+  tags = {
+    Environment = "production"
   }
 }
 
@@ -997,12 +1215,16 @@ resource "aws_lambda_function" "forms_api_preview" {
   handler       = "index.handler"
   runtime       = var.lambda_nodejs_runtime
   timeout       = 10
+  # CPU scales with memory. At the 128 MB default a form submit took about 7
+  # seconds, most of it in the reCAPTCHA client, and used 123 MB.
+  memory_size = 1024
 
   filename         = data.archive_file.forms_api_lambda.output_path
   source_code_hash = data.archive_file.forms_api_lambda.output_base64sha256
 
   environment {
     variables = {
+      RELEASE_DATA_BUCKET                  = aws_s3_bucket.release_data["preview"].id
       DRAFTS_BUCKET                        = aws_s3_bucket.forms_drafts_preview.id
       DRAFTS_KMS_KEY_ID                    = aws_kms_key.forms_drafts_preview.arn
       DRAFTS_PREFIX                        = "drafts/"
@@ -1017,9 +1239,25 @@ resource "aws_lambda_function" "forms_api_preview" {
       RECAPTCHA_MIN_SCORE                  = tostring(var.recaptcha_min_score)
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
+      EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
+      RESEND_API_KEY                       = var.forms_email_resend_api_key == null ? "" : var.forms_email_resend_api_key
+      EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
+      EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
+      SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
       SENTRY_DSN                           = local.sentry_dsn_preview == null ? "" : local.sentry_dsn_preview
       SENTRY_ENVIRONMENT                   = "preview"
+      SUBMISSION_NOTIFICATIONS_TOPIC_ARN   = trimspace(var.submission_notifications_topic_arn)
+      # Preview shares the topic so the pipe can be exercised end to end
+      # without writing a synthetic DSAR into the production submissions store.
+      # The label prefixes the subject with [PREVIEW] so a drill is never
+      # mistaken for a real request with a real clock on it.
+      NOTIFICATION_ENV_LABEL             = "preview"
+      SUBMISSION_NOTIFICATION_RECIPIENTS = join(",", local.normalized_submission_notification_emails)
     }
+  }
+
+  tags = {
+    Environment = "preview"
   }
 }
 
@@ -1059,6 +1297,34 @@ resource "aws_wafv2_web_acl" "forms_api_cloudfront" {
     allow {}
   }
 
+  # A rate-limited client must be told "slow down", not "this page does not exist".
+  # This distribution maps 403 -> /404.html with ResponseCode 404, and /404.html
+  # carries <meta name="robots" content="noindex,follow">. So a plain `block {}`
+  # (HTTP 403) can mislabel a throttled request as a missing page. Returning 429
+  # keeps the response out of that mapping, because custom_error_response only
+  # rewrites the status codes it explicitly names (403 and 404 here).
+  custom_response_body {
+    key          = "site_rate_limited"
+    content_type = "TEXT_HTML"
+    content      = <<-EOT
+      <!doctype html>
+      <html lang="en"><head><meta charset="utf-8"><title>Rate limited</title></head>
+      <body>
+      <h1>Too many requests</h1>
+      <p>Too many requests have been sent in a short time.
+      Please slow down and retry after the interval given in the <code>Retry-After</code> header.</p>
+      <p>If you are crawling or bulk-downloading the corpus, that is welcome &mdash; see
+      <a href="https://www.policeconduct.org/data-and-methods/">Data and Methods</a>.</p>
+      </body></html>
+    EOT
+  }
+
+  custom_response_body {
+    key          = "api_rate_limited"
+    content_type = "APPLICATION_JSON"
+    content      = "{\"error\":\"rate_limited\",\"message\":\"Too many requests. Retry after the interval given in the Retry-After header.\"}"
+  }
+
   rule {
     name     = "RateLimitSitePerIp"
     priority = 1
@@ -1071,7 +1337,17 @@ resource "aws_wafv2_web_acl" "forms_api_cloudfront" {
     }
 
     action {
-      block {}
+      block {
+        custom_response {
+          response_code            = 429
+          custom_response_body_key = "site_rate_limited"
+
+          response_header {
+            name  = "Retry-After"
+            value = tostring(var.rate_limit_retry_after_seconds)
+          }
+        }
+      }
     }
 
     visibility_config {
@@ -1109,7 +1385,17 @@ resource "aws_wafv2_web_acl" "forms_api_cloudfront" {
     }
 
     action {
-      block {}
+      block {
+        custom_response {
+          response_code            = 429
+          custom_response_body_key = "api_rate_limited"
+
+          response_header {
+            name  = "Retry-After"
+            value = tostring(var.rate_limit_retry_after_seconds)
+          }
+        }
+      }
     }
 
     visibility_config {
@@ -1126,6 +1412,19 @@ resource "aws_wafv2_web_acl" "forms_api_cloudfront" {
   }
 }
 
+resource "aws_sns_topic" "infrastructure_alerts" {
+  count = length(local.normalized_alert_email_endpoints) > 0 ? 1 : 0
+  name  = local.alert_topic_name
+}
+
+resource "aws_sns_topic_subscription" "infrastructure_alert_emails" {
+  for_each = length(local.normalized_alert_email_endpoints) > 0 ? toset(local.normalized_alert_email_endpoints) : []
+
+  topic_arn = aws_sns_topic.infrastructure_alerts[0].arn
+  protocol  = "email"
+  endpoint  = each.value
+}
+
 resource "aws_cloudwatch_metric_alarm" "forms_api_prod_errors" {
   alarm_name          = "${var.project_name}-forms-api-prod-errors"
   alarm_description   = "Forms API prod Lambda is returning errors."
@@ -1137,11 +1436,15 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_errors" {
   threshold           = var.forms_api_alarm_5xx_threshold
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.alarm_actions
-  ok_actions          = var.alarm_actions
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_prod.function_name
+  }
+
+  tags = {
+    Environment = "production"
   }
 }
 
@@ -1156,11 +1459,15 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_duration_p95" {
   threshold           = var.forms_api_alarm_latency_p95_ms_threshold
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.alarm_actions
-  ok_actions          = var.alarm_actions
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_prod.function_name
+  }
+
+  tags = {
+    Environment = "production"
   }
 }
 
@@ -1175,11 +1482,15 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_prod_throttles" {
   threshold           = var.forms_lambda_alarm_throttles_threshold
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.alarm_actions
-  ok_actions          = var.alarm_actions
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_prod.function_name
+  }
+
+  tags = {
+    Environment = "production"
   }
 }
 
@@ -1194,11 +1505,15 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_errors" {
   threshold           = var.forms_api_alarm_5xx_threshold
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.alarm_actions
-  ok_actions          = var.alarm_actions
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_preview.function_name
+  }
+
+  tags = {
+    Environment = "preview"
   }
 }
 
@@ -1213,11 +1528,15 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_duration_p95" {
   threshold           = var.forms_api_alarm_latency_p95_ms_threshold
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.alarm_actions
-  ok_actions          = var.alarm_actions
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_preview.function_name
+  }
+
+  tags = {
+    Environment = "preview"
   }
 }
 
@@ -1232,11 +1551,139 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_throttles" {
   threshold           = var.forms_lambda_alarm_throttles_threshold
   comparison_operator = "GreaterThanOrEqualToThreshold"
   treat_missing_data  = "notBreaching"
-  alarm_actions       = var.alarm_actions
-  ok_actions          = var.alarm_actions
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
 
   dimensions = {
     FunctionName = aws_lambda_function.forms_api_preview.function_name
+  }
+
+  tags = {
+    Environment = "preview"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "forms_api_prod_verification_email_failed" {
+  name           = "${var.project_name}-forms-api-prod-verification-email-failed"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_prod.function_name}"
+  pattern        = "{ $.msg = \"forms.submit.verification_email_failed\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-prod-verification-email-failed"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_prod_verification_email_failed" {
+  alarm_name          = "${var.project_name}-forms-api-prod-verification-email-failed"
+  alarm_description   = "Forms API prod Lambda failed to send verification email."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_prod_verification_email_failed.metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "production"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "forms_api_prod_verification_email_not_sent" {
+  name           = "${var.project_name}-forms-api-prod-verification-email-not-sent"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_prod.function_name}"
+  pattern        = "{ $.msg = \"forms.submit.verification_email_not_sent\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-prod-verification-email-not-sent"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_prod_verification_email_not_sent" {
+  alarm_name          = "${var.project_name}-forms-api-prod-verification-email-not-sent"
+  alarm_description   = "Forms API prod Lambda could not prepare a verification email."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_prod_verification_email_not_sent.metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "production"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "forms_api_preview_verification_email_failed" {
+  name           = "${var.project_name}-forms-api-preview-verification-email-failed"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_preview.function_name}"
+  pattern        = "{ $.msg = \"forms.submit.verification_email_failed\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-preview-verification-email-failed"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_preview_verification_email_failed" {
+  alarm_name          = "${var.project_name}-forms-api-preview-verification-email-failed"
+  alarm_description   = "Forms API preview Lambda failed to send verification email."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_preview_verification_email_failed.metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "preview"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "forms_api_preview_verification_email_not_sent" {
+  name           = "${var.project_name}-forms-api-preview-verification-email-not-sent"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_preview.function_name}"
+  pattern        = "{ $.msg = \"forms.submit.verification_email_not_sent\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-preview-verification-email-not-sent"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_preview_verification_email_not_sent" {
+  alarm_name          = "${var.project_name}-forms-api-preview-verification-email-not-sent"
+  alarm_description   = "Forms API preview Lambda could not prepare a verification email."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_preview_verification_email_not_sent.metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "preview"
   }
 }
 
@@ -1387,6 +1834,26 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     resources = ["*"]
   }
 
+  # The KeyValueStore data plane is a separate service prefix from cloudfront:*,
+  # so CloudFrontAccess above does not reach it. Without this statement the
+  # preview cleanup workflow's redirect-pruning step fails with AccessDenied
+  # (INS-106). These three actions are exactly what scripts/load-redirects.mjs
+  # invokes: list-keys, describe-key-value-store (for the ETag), and update-keys.
+  #
+  # Preview store only. No CI workflow deploys production, and the site store
+  # controls live-site routing, so CI has no reason to hold write access to it.
+  statement {
+    sid    = "CloudFrontKeyValueStorePreviewAccess"
+    effect = "Allow"
+
+    actions = [
+      "cloudfront-keyvaluestore:ListKeys",
+      "cloudfront-keyvaluestore:DescribeKeyValueStore",
+      "cloudfront-keyvaluestore:UpdateKeys",
+    ]
+    resources = [aws_cloudfront_key_value_store.preview_redirects.arn]
+  }
+
   statement {
     sid    = "AcmAccess"
     effect = "Allow"
@@ -1498,9 +1965,146 @@ resource "aws_route53_zone" "site" {
   name = var.domain_name
 }
 
+resource "aws_ses_domain_identity" "site" {
+  domain = var.forms_email_verification_domain
+}
+
+resource "aws_route53_record" "resend_domain_record" {
+  for_each = local.resend_domain_records_map
+
+  allow_overwrite = false
+  zone_id         = local.route53_zone_id
+  name            = each.value.name
+  type            = each.value.type
+  ttl             = each.value.ttl
+  records         = each.value.values
+}
+
+resource "aws_route53_record" "ses_domain_identity_verification" {
+  zone_id = local.route53_zone_id
+  name    = "_amazonses.${var.forms_email_verification_domain}"
+  type    = "TXT"
+  ttl     = 600
+  records = [aws_ses_domain_identity.site.verification_token]
+}
+
+resource "aws_ses_domain_identity_verification" "site" {
+  domain = aws_ses_domain_identity.site.id
+
+  depends_on = [aws_route53_record.ses_domain_identity_verification]
+}
+
+resource "aws_ses_domain_dkim" "site" {
+  domain = aws_ses_domain_identity.site.domain
+}
+
+resource "aws_ses_domain_mail_from" "site" {
+  domain                 = aws_ses_domain_identity.site.domain
+  mail_from_domain       = local.forms_email_mail_from_domain
+  behavior_on_mx_failure = "RejectMessage"
+}
+
+resource "aws_route53_record" "ses_domain_dkim" {
+  count = 3
+
+  zone_id = local.route53_zone_id
+  name    = "${aws_ses_domain_dkim.site.dkim_tokens[count.index]}._domainkey.${var.forms_email_verification_domain}"
+  type    = "CNAME"
+  ttl     = 600
+  records = ["${aws_ses_domain_dkim.site.dkim_tokens[count.index]}.dkim.amazonses.com"]
+}
+
+resource "aws_route53_record" "ses_mail_from_mx" {
+  zone_id = local.route53_zone_id
+  name    = local.forms_email_mail_from_domain
+  type    = "MX"
+  ttl     = 600
+  records = ["10 feedback-smtp.${var.aws_region}.amazonses.com"]
+}
+
+resource "aws_route53_record" "ses_mail_from_spf" {
+  zone_id = local.route53_zone_id
+  name    = local.forms_email_mail_from_domain
+  type    = "TXT"
+  ttl     = 600
+  records = ["v=spf1 include:amazonses.com ~all"]
+}
+
+resource "aws_route53_record" "ses_dmarc" {
+  zone_id = local.route53_zone_id
+  name    = "_dmarc.${var.forms_email_verification_domain}"
+  type    = "TXT"
+  ttl     = 600
+  records = [local.forms_email_dmarc_value]
+}
+
+resource "aws_sesv2_account_vdm_attributes" "site" {
+  vdm_enabled = "ENABLED"
+
+  dashboard_attributes {
+    engagement_metrics = "ENABLED"
+  }
+
+  guardian_attributes {
+    optimized_shared_delivery = "ENABLED"
+  }
+}
+
+resource "aws_sesv2_configuration_set" "verification_email" {
+  configuration_set_name = "${var.project_name}-verification-email"
+
+  delivery_options {
+    tls_policy = "REQUIRE"
+  }
+
+  reputation_options {
+    reputation_metrics_enabled = true
+  }
+
+  sending_options {
+    sending_enabled = true
+  }
+
+  vdm_options {
+    dashboard_options {
+      engagement_metrics = "ENABLED"
+    }
+
+    guardian_options {
+      optimized_shared_delivery = "ENABLED"
+    }
+  }
+}
+
+resource "aws_sesv2_configuration_set_event_destination" "verification_email_eventbridge" {
+  configuration_set_name = aws_sesv2_configuration_set.verification_email.configuration_set_name
+  event_destination_name = "${var.project_name}-verification-email-eventbridge"
+
+  event_destination {
+    event_bridge_destination {
+      event_bus_arn = data.aws_cloudwatch_event_bus.default.arn
+    }
+
+    enabled = true
+    matching_event_types = [
+      "SEND",
+      "REJECT",
+      "BOUNCE",
+      "COMPLAINT",
+      "DELIVERY",
+      "DELIVERY_DELAY",
+      "RENDERING_FAILURE",
+    ]
+  }
+}
+
 resource "aws_s3_bucket" "site" {
   bucket        = local.site_bucket_name
   force_destroy = var.site_bucket_force_destroy
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "site" {
@@ -1556,6 +2160,10 @@ resource "aws_acm_certificate" "site" {
   lifecycle {
     create_before_destroy = true
   }
+
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_route53_record" "acm_validation" {
@@ -1568,7 +2176,7 @@ resource "aws_route53_record" "acm_validation" {
     if contains(local.acm_validation_domains, dvo.domain_name)
   }
 
-  allow_overwrite = true
+  allow_overwrite = false
   name            = each.value.name
   records         = [each.value.record]
   ttl             = 60
@@ -1583,60 +2191,31 @@ resource "aws_acm_certificate_validation" "site" {
   validation_record_fqdns = [for record in aws_route53_record.acm_validation : record.fqdn]
 }
 
+locals {
+  shared_router_code = templatefile("${path.module}/functions/router.js", {
+    domain_name    = var.domain_name
+    canonical_host = local.include_www ? local.www_domain : var.domain_name
+  })
+}
+
+resource "aws_cloudfront_key_value_store" "site_redirects" {
+  name    = "${var.project_name}-site-redirects"
+  comment = "Production site redirects managed by bootstrap-policeconduct Terraform"
+}
+
 resource "aws_cloudfront_function" "index_rewrite" {
   name    = local.index_rewrite_function_name
   runtime = "cloudfront-js-2.0"
-  comment = "Rewrite extensionless URIs to index.html."
+  comment = "Apply build redirects and rewrite site file paths."
   publish = true
-  code    = <<-EOF
-function handler(event) {
-  var request = event.request;
-  var host = request.headers.host && request.headers.host.value ? request.headers.host.value.toLowerCase() : '';
-  var apexHost = ${jsonencode(var.domain_name)};
-  var wwwHost = ${jsonencode(local.www_domain)};
-  var enforceWwwRedirect = ${local.include_www ? "true" : "false"};
-  var uri = request.uri;
-  var qs = '';
+  key_value_store_associations = [
+    aws_cloudfront_key_value_store.site_redirects.arn,
+  ]
+  code = local.shared_router_code
 
-  if (request.querystring) {
-    var keys = Object.keys(request.querystring);
-    if (keys.length > 0) {
-      var parts = [];
-      for (var i = 0; i < keys.length; i++) {
-        var key = keys[i];
-        var item = request.querystring[key];
-        if (item.multiValue && item.multiValue.length > 0) {
-          for (var j = 0; j < item.multiValue.length; j++) {
-            parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(item.multiValue[j].value || ''));
-          }
-        } else {
-          parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(item.value || ''));
-        }
-      }
-      qs = '?' + parts.join('&');
-    }
+  tags = {
+    Environment = "production"
   }
-
-  if (enforceWwwRedirect && host === apexHost) {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: {
-        location: { value: 'https://' + wwwHost + uri + qs },
-        'cache-control': { value: 'public, max-age=3600' }
-      }
-    };
-  }
-
-  if (uri.endsWith('/')) {
-    request.uri += 'index.html';
-  } else if (!uri.includes('.')) {
-    request.uri += '/index.html';
-  }
-
-  return request;
-}
-EOF
 }
 
 resource "aws_cloudfront_response_headers_policy" "site_security_headers" {
@@ -1706,9 +2285,6 @@ resource "aws_cloudfront_distribution" "site" {
     origin_id                = local.origin_id
     origin_access_control_id = aws_cloudfront_origin_access_control.site.id
 
-    s3_origin_config {
-      origin_access_identity = ""
-    }
   }
 
   origin {
@@ -1766,7 +2342,8 @@ resource "aws_cloudfront_distribution" "site" {
 
   restrictions {
     geo_restriction {
-      restriction_type = "none"
+      restriction_type = "whitelist"
+      locations        = ["US"]
     }
   }
 
@@ -1776,37 +2353,50 @@ resource "aws_cloudfront_distribution" "site" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  lifecycle {
-    ignore_changes = [origin]
+
+  tags = {
+    Environment = "production"
   }
+}
+
+# Preview uses the same router as production with a separate redirect store.
+# Keys are r:<label>:<path> = <target>, loaded from the build's _redirect-map.json.
+resource "aws_cloudfront_key_value_store" "preview_redirects" {
+  name    = "${var.project_name}-preview-redirects"
+  comment = "Redirect maps for preview builds using the shared site router."
 }
 
 resource "aws_cloudfront_function" "preview_router" {
   name    = local.preview_router_function_name
   runtime = "cloudfront-js-2.0"
-  comment = "Route preview subdomains to matching S3 prefix."
+  comment = "Route preview/build subdomains to their S3 prefix; apply per-build redirects."
   publish = true
-  code    = <<-EOF
-function handler(event) {
-  var request = event.request;
-  var host = request.headers.host && request.headers.host.value ? request.headers.host.value : '';
-  var uri = request.uri;
-  var match = host.match(/^([^.]+)\.preview\./);
 
-  if (!match) {
-    return request;
+  key_value_store_associations = [
+    aws_cloudfront_key_value_store.preview_redirects.arn,
+  ]
+
+  code = local.shared_router_code
+
+  tags = {
+    Environment = "preview"
   }
-
-  if (uri.endsWith('/')) {
-    uri += 'index.html';
-  } else if (!uri.includes('.')) {
-    uri += '/index.html';
-  }
-
-  request.uri = '/' + match[1] + uri;
-  return request;
 }
-EOF
+
+# Non-canonical preview hosts must not be indexed. Build-once means the same HTML
+# also serves the canonical apex on the prod distribution, so this is applied at
+# the edge here and is NOT attached to the prod distribution.
+resource "aws_cloudfront_function" "preview_noindex" {
+  name    = "${var.project_name}-preview-noindex"
+  runtime = "cloudfront-js-2.0"
+  comment = "Mark preview responses noindex (non-canonical hosts)."
+  publish = true
+
+  code = file("${path.module}/functions/noindex.js")
+
+  tags = {
+    Environment = "preview"
+  }
 }
 
 resource "aws_cloudfront_distribution" "preview" {
@@ -1824,9 +2414,6 @@ resource "aws_cloudfront_distribution" "preview" {
     origin_id                = local.preview_origin_id
     origin_access_control_id = aws_cloudfront_origin_access_control.site.id
 
-    s3_origin_config {
-      origin_access_identity = ""
-    }
   }
 
   origin {
@@ -1854,6 +2441,11 @@ resource "aws_cloudfront_distribution" "preview" {
     function_association {
       event_type   = "viewer-request"
       function_arn = aws_cloudfront_function.preview_router.arn
+    }
+
+    function_association {
+      event_type   = "viewer-response"
+      function_arn = aws_cloudfront_function.preview_noindex.arn
     }
   }
 
@@ -1884,18 +2476,20 @@ resource "aws_cloudfront_distribution" "preview" {
 
   restrictions {
     geo_restriction {
-      restriction_type = "none"
+      restriction_type = "whitelist"
+      locations        = ["US"]
     }
   }
 
   viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate_validation.site.certificate_arn
+    acm_certificate_arn      = aws_acm_certificate_validation.preview.certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  lifecycle {
-    ignore_changes = [origin]
+
+  tags = {
+    Environment = "preview"
   }
 }
 
@@ -1909,7 +2503,7 @@ data "aws_iam_policy_document" "site_bucket_policy" {
     }
 
     actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.site.arn}/*"]
+    resources = ["${aws_s3_bucket.site.arn}/*/build/*", "${aws_s3_bucket.site.arn}/*/override/*", "${aws_s3_bucket.site.arn}/404.html"]
 
     condition {
       test     = "StringEquals"
@@ -1940,7 +2534,7 @@ data "aws_iam_policy_document" "preview_bucket_policy" {
     }
 
     actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.preview.arn}/*"]
+    resources = ["${aws_s3_bucket.preview.arn}/*/build/*", "${aws_s3_bucket.preview.arn}/*/override/*", "${aws_s3_bucket.preview.arn}/404.html"]
 
     condition {
       test     = "StringEquals"
@@ -2025,7 +2619,7 @@ resource "aws_route53_record" "www_cname" {
 
 
 resource "aws_route53_record" "preview_wildcard_a" {
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = local.preview_wildcard_domain
   type            = "A"
@@ -2038,7 +2632,7 @@ resource "aws_route53_record" "preview_wildcard_a" {
 }
 
 resource "aws_route53_record" "preview_wildcard_aaaa" {
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = local.preview_wildcard_domain
   type            = "AAAA"
@@ -2056,12 +2650,22 @@ resource "aws_route53_record" "extra_standard" {
     if try(record.alias, null) == null
   }
 
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = each.value.name
   type            = each.value.type
   ttl             = each.value.ttl
   records         = each.value.records
+
+  lifecycle {
+    precondition {
+      condition = !contains(local.adopted_dns_record_keys, join(" ", [
+        lower(endswith(trimsuffix(each.value.name, "."), var.domain_name) ? trimsuffix(each.value.name, ".") : "${each.value.name}.${var.domain_name}"),
+        each.value.type,
+      ]))
+      error_message = "extra_dns_records repeats ${each.value.name} ${each.value.type}, which existing-dns.tf already manages. Remove it from extra_dns_records."
+    }
+  }
 }
 
 resource "aws_route53_record" "extra_alias" {
@@ -2070,7 +2674,7 @@ resource "aws_route53_record" "extra_alias" {
     if try(record.alias, null) != null
   }
 
-  allow_overwrite = true
+  allow_overwrite = false
   zone_id         = local.route53_zone_id
   name            = each.value.name
   type            = each.value.type
@@ -2100,13 +2704,48 @@ resource "github_actions_environment_variable" "environment_variables" {
   depends_on = [github_repository_environment.environments]
 }
 
-resource "github_actions_environment_secret" "sentry_auth_token" {
-  for_each = local.has_sentry_auth_token ? local.github_environment_names : toset([])
+# Keep cleanup configuration independent of distribution and Lambda releases.
+# The variable is usable only after the preview store permissions exist.
+moved {
+  from = github_actions_environment_variable.environment_variables["preview:KVS_ARN_PREVIEW"]
+  to   = github_actions_environment_variable.preview_kvs_arn
+}
 
-  repository      = var.github_repo
-  environment     = each.value
-  secret_name     = "SENTRY_AUTH_TOKEN"
-  plaintext_value = local.sentry_auth_token
+resource "github_actions_environment_variable" "preview_kvs_arn" {
+  repository    = var.github_repo
+  environment   = github_repository_environment.environments["preview"].environment
+  variable_name = "KVS_ARN_PREVIEW"
+  value         = aws_cloudfront_key_value_store.preview_redirects.arn
+
+  depends_on = [aws_iam_role_policy.github_actions_permissions]
+}
+
+resource "github_actions_environment_secret" "sentry_auth_token" {
+  # Sourcemaps are uploaded for production only; preview builds do not need the token.
+  for_each = local.has_sentry_auth_token ? toset(["production"]) : toset([])
+
+  repository  = var.github_repo
+  environment = each.value
+  secret_name = "SENTRY_AUTH_TOKEN"
+  value       = local.sentry_auth_token
 
   depends_on = [github_repository_environment.environments]
 }
+
+# ---------------------------------------------------------------------------
+# INS-35 — submission notifications
+#
+# Those resources are NOT here. They live in
+# infrastructure/submission-notifications, which has its own Terraform state.
+#
+# They were originally written into this file, which cannot be applied: this
+# stack has no state at all (INS-39), so `terraform apply` here plans a
+# create-from-scratch of the entire live estate. Everything INS-35 adds is a
+# brand-new resource with nothing to import, so it costs nothing to give it a
+# state file of its own — and buys a reviewable `terraform plan` instead of a
+# hand-run script.
+#
+# What stays here is only the part that modifies resources THIS stack owns: the
+# forms API Lambda environment and its sns:Publish grant, both driven by
+# var.submission_notifications_topic_arn.
+# ---------------------------------------------------------------------------

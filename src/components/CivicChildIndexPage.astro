@@ -1,0 +1,79 @@
+---
+import Pagination from "#src/components/Pagination.astro";
+import PageShell from "#src/layouts/PageShell.astro";
+import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
+import "#src/styles/civic-ledger.css";
+
+const { model, page, pagePath, label } = Astro.props as {
+  label: string;
+  model: CivicIndexModel;
+  page: {
+    currentPage: number;
+    data: CivicIndexModel["rows"];
+    lastPage: number;
+  };
+  pagePath: string;
+};
+const heading =
+  model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
+  model.jurisdictionLabel;
+const childLabel =
+  model.level === "state"
+    ? "county"
+    : model.level === "administrative_area"
+      ? "place"
+      : "agency";
+const canonicalPath =
+  page.currentPage > 1 ? `${pagePath}page/${page.currentPage}/` : pagePath;
+const pageTitle = `${heading} ${label.toLowerCase()}`;
+const description =
+  model.level === "place"
+    ? `All ${model.rows.length.toLocaleString("en-US")} law enforcement agencies serving ${heading}, with their personnel, reports, and civil litigation.`
+    : `All ${model.rows.length.toLocaleString("en-US")} ${label.toLowerCase()} in ${heading}. Every ${childLabel} page lists its agencies, personnel, reports, and civil litigation.`;
+
+const alphaGroups = new Map<string, CivicIndexModel["rows"]>();
+for (const row of page.data) {
+  const letter = (row.label[0] || "#").toUpperCase();
+  const group = alphaGroups.get(letter) || [];
+  group.push(row);
+  alphaGroups.set(letter, group);
+}
+---
+
+<PageShell
+  title={`${heading} ${label} | PoliceConduct.org`}
+  description={`${label} within ${heading}.`}
+  pagePath={pagePath}
+  canonicalUrl={canonicalPath}
+  breadcrumbs={[
+    ...model.breadcrumbs.map((item) => ({ ...item, current: false })),
+    { label, href: pagePath, current: true },
+  ]}
+  eyebrow={model.jurisdictionLabel}
+  heading={pageTitle}
+  lede={description}
+>
+  <section class="civic-section civic-section--last">
+    <div class="alpha-nav">
+      {[...alphaGroups.entries()].map(([letter, rows]) => (
+        <section class="alpha-group">
+          <h2>{letter}</h2>
+          <ul>
+            {rows.map((row) => (
+              <li>
+                <a href={row.href}>{row.label}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+    {page.lastPage > 1 ? (
+      <Pagination
+        basePath={pagePath}
+        currentPage={page.currentPage}
+        lastPage={page.lastPage}
+      />
+    ) : null}
+  </section>
+</PageShell>

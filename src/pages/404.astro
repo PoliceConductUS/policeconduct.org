@@ -1,42 +1,40 @@
 ---
-import SiteLayout from "#src/layouts/SiteLayout.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 ---
 
-<SiteLayout
+<PageShell
   title="Page Not Found | PoliceConduct.org"
   description="PoliceConduct.org page not found."
   pagePath="/404/"
+  canonicalUrl="/404/"
   robots="noindex,follow"
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Page not found", href: "/404/", current: true },
+  ]}
+  heading="Page not found"
+  lede="We could not find that page. The link may have changed, or the page may no longer be available."
 >
-  <main class="flex-grow-1">
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-8">
-            <p class="text-uppercase small text-muted mb-2">404 NOT FOUND</p>
-            <h1 class="display-5 fw-bold mb-3">
-              404 — Dispatch Received Your Request
-            </h1>
-            <p class="text-muted">
-              Units attempted to locate the page but it appears to have left the
-              scene.
-            </p>
-            <p class="text-muted mt-4">If you saw it, we'd love a statement.</p>
-            <div class="d-flex flex-wrap gap-2 mt-4">
-              <a class="btn btn-dark rounded-0" href="/">Home</a>
-              <a
-                class="btn btn-outline-dark rounded-0"
-                href="#report-issue"
-                id="report-issue-link"
-              >
-                Report this issue
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
+  <Fragment slot="actions">
+    <a class="btn btn-dark rounded-0" href="/">
+      Go home
+    </a>
+    <a
+      class="btn btn-outline-dark rounded-0"
+      href="/find-records/"
+      id="find-records-link"
+    >
+      Find records
+    </a>
+    <a
+      class="btn btn-outline-dark rounded-0"
+      href="/about/contact/"
+      id="report-issue-link"
+    >
+      Report a site issue
+    </a>
+  </Fragment>
+
   <script is:inline>
     (function () {
       const link = document.getElementById("report-issue-link");
@@ -46,5 +44,62 @@ import SiteLayout from "#src/layouts/SiteLayout.astro";
       const message = `Page not found: ${window.location.href}`;
       link.setAttribute("data-issue-message", message);
     })();
+
+    // Offer a search for the words in the address that was not found, such as
+    // "irving police department" from /tx/.../irving-police-department-049f9a/.
+    (function () {
+      const findLink = document.getElementById("find-records-link");
+      // Path words that name a section of the site, not a place or agency.
+      // Two-letter state codes are skipped by length.
+      const sectionNames = [
+        "404",
+        "404.html",
+        "agencies",
+        "budget",
+        "civil-cases",
+        "counties",
+        "fatal-force-incidents",
+        "federal",
+        "liability-costs",
+        "licensing-authority",
+        "outcomes-by-income",
+        "page",
+        "personnel",
+        "places",
+        "reports",
+      ];
+      const segment = window.location.pathname
+        .split("/")
+        .filter(Boolean)
+        .reverse()
+        .find(
+          (part) =>
+            part.length > 2 &&
+            /[a-z]/i.test(part) &&
+            !sectionNames.includes(part),
+        );
+      if (!findLink || !segment) {
+        return;
+      }
+      let words;
+      try {
+        words = decodeURIComponent(segment);
+      } catch (_error) {
+        return;
+      }
+      words = words
+        .replace(/-[0-9a-f]{6}$/, "")
+        .replace(/[^\p{L}\p{N}]+/gu, " ")
+        .trim()
+        .slice(0, 60);
+      if (!words) {
+        return;
+      }
+      findLink.setAttribute(
+        "href",
+        `/find-records/?q=${encodeURIComponent(words)}`,
+      );
+      findLink.textContent = `Find records for \u201c${words}\u201d`;
+    })();
   </script>
-</SiteLayout>
+</PageShell>

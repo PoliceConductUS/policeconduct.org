@@ -1,0 +1,28 @@
+---
+import type { ComplaintSummaryUnavailability } from "#src/lib/data/ai-complaint-summary";
+interface Props {
+  unavailability: ComplaintSummaryUnavailability | null;
+}
+const { unavailability } = Astro.props;
+const complaintAvailable = unavailability?.reason === "available_unsummarized";
+const message =
+  unavailability?.reason === "missing_copy"
+    ? "We don’t have a copy of the complaint, so we couldn’t automatically generate a summary."
+    : complaintAvailable
+      ? "The complaint is available, but we were unable to summarize it."
+      : "An AI summary of the complaint is not available for this case.";
+---
+
+<section aria-labelledby="complaint-summary-unavailable">
+  <h2 id="complaint-summary-unavailable">Complaint summary</h2>
+  <p>{message}</p>
+  {complaintAvailable && unavailability && (
+    <p>
+      <a href={unavailability.sourceUrl}>Read the complaint</a>
+    </p>
+  )}
+  <p>
+    <a href="/donate/">Donate</a> to help us buy court records and make them
+    available free on CourtListener.
+  </p>
+</section>

@@ -1,0 +1,156 @@
+---
+import { loadStateAuthorityLink } from "#src/lib/data/licensing-authority.js";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
+import StatCell from "#src/components/StatCell.astro";
+import StatStrip from "#src/components/StatStrip.astro";
+import "#src/styles/civic-ledger.css";
+import PageShell from "#src/layouts/PageShell.astro";
+import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
+import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
+
+const { model, site } = Astro.props as {
+  model: CivicIndexModel;
+  site: URL | undefined;
+};
+
+const authorityHref =
+  model.level === "state" ? await loadStateAuthorityLink(model.pagePath) : null;
+
+const siteUrl = getSiteUrl(site);
+const pageUrl = new URL(model.pagePath, siteUrl).toString();
+const structuredData = buildWebPage({
+  siteUrl,
+  pageUrl,
+  name: model.title,
+  description: model.description,
+  type: "CollectionPage",
+});
+
+const heading =
+  model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
+  model.jurisdictionLabel;
+
+// Prefill payloads for the "Add what is missing" CTAs. Keys match the target
+// forms' input `name` attributes (agency/new, civil-cases/new, about/contact).
+// `category`/`jurisdiction` want the lowercase state code (first path segment);
+// the agency `state` field wants the full state name.
+const stateName = model.breadcrumbs[1]?.label ?? "";
+const stateCode = model.pagePath.split("/").filter(Boolean)[0] ?? "";
+const cityName = model.level === "place" ? heading : "";
+const addAgencyPrefill = {
+  category: stateCode,
+  state: stateName,
+  ...(cityName ? { city: cityName } : {}),
+};
+const addCivilCasePrefill = {
+  jurisdiction: stateCode,
+  summary: `Civil case connected to ${heading}.`,
+  links: model.pagePath,
+};
+const getUpdatesPrefill = {
+  whoami: "Subscriber",
+  message: `Please notify me about updates for ${heading}: ${model.pagePath}`,
+};
+
+const statColumns = model.statCells.length + 1;
+---
+
+<PageShell
+  title={model.title}
+  description={model.description}
+  pagePath={model.pagePath}
+  structuredData={structuredData}
+  breadcrumbs={model.breadcrumbs}
+  heading={heading}
+  lede={model.description}
+>
+  {authorityHref && (
+    <a slot="actions" href={authorityHref}>
+      Licensing authority
+    </a>
+  )}
+  <StatStrip
+    ariaLabel={`${heading} coverage totals`}
+    drillFirst
+    columns={statColumns === 4 ? "three-plus-jump" : "four-plus-jump"}
+  >
+    <StatCell
+      drill
+      childCount={model.jumpCell.count}
+      childLabel={model.jumpCell.label}
+      jumpOptions={model.jumpCell.options}
+      placeholder={model.jumpCell.placeholder}
+      selectLabel={model.jumpCell.selectLabel}
+      browseHref={model.jumpCell.browse.href}
+      browseLabel={model.jumpCell.browse.label}
+    />
+    {model.statCells.map((cell) => (
+      <StatCell
+        label={cell.label}
+        value={cell.value}
+        meta={cell.meta}
+        href={cell.href}
+        actionLabel={cell.actionLabel}
+        role={cell.role}
+        helpCollectHref={cell.pendingHelp?.href}
+        helpCollectLabel={cell.pendingHelp?.label}
+      />
+    ))}
+  </StatStrip>
+
+  <section class="civic-section" aria-label="Additional civic metrics">
+    <ul class="topic-row">
+      {model.pendingTopics.map((topic) => (
+        <StatCell
+          variant="topic"
+          label={topic.label}
+          gloss={topic.gloss}
+          role={topic.role}
+          empty
+          helpCollectHref={topic.help.href}
+          helpCollectLabel={topic.help.label}
+        />
+      ))}
+    </ul>
+  </section>
+
+  <aside class="entity-side" slot="aside">
+    <p class="civic-kicker">Help improve this page</p>
+    <h2>Add what is missing</h2>
+    <ul class="entity-side-list">
+      <li>
+        <a class="entity-side-link" href="/report/new/">
+          Share an experience →
+        </a>
+      </li>
+      <li>
+        <PrefillNavButton
+          to="/agency/new/"
+          payload={addAgencyPrefill}
+          class="entity-side-link"
+        >
+          Add an agency →
+        </PrefillNavButton>
+      </li>
+      <li>
+        <PrefillNavButton
+          to="/civil-cases/new/"
+          payload={addCivilCasePrefill}
+          class="entity-side-link"
+        >
+          Add a civil case →
+        </PrefillNavButton>
+      </li>
+      <li>
+        <PrefillNavButton
+          to="/about/contact/"
+          payload={getUpdatesPrefill}
+          class="entity-side-link"
+        >
+          Get updates →
+        </PrefillNavButton>
+      </li>
+    </ul>
+  </aside>
+  <slot />
+</PageShell>

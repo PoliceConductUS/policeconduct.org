@@ -1,10 +1,9 @@
 ---
-import SiteLayout from "#src/layouts/SiteLayout.astro";
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import { loadPersonnelSummaries } from "#src/lib/data/summaries.js";
+import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
-import { withDb } from "#src/lib/db.js";
 import {
   buildItemList,
   buildWebPage,
@@ -12,50 +11,20 @@ import {
 } from "#src/lib/structured-data.js";
 
 const personnelRows = await loadPersonnelSummaries();
-const federalAgencies = await withDb(async (client) => {
-  const agencies = (
-    await client.query(
-      `
-        select
-          a.id,
-          a.name,
-          a.slug,
-          a.category,
-          count(distinct ao.officer_id) as active_personnel_count
-        from public.agency a
-        left join public.agency_officers ao
-          on ao.agency_id = a.id
-         and ao.end_date is null
-        where lower(a.category) = 'federal'
-        group by a.id, a.name, a.slug, a.category
-        order by a.name
-      `,
-    )
-  ).rows;
-  return agencies.map((agency: any) => ({
-    id: agency.id,
-    name: agency.name,
-    slug: agency.slug,
-    category: agency.category,
-    activePersonnelCount: Number(agency.active_personnel_count || 0),
-  }));
-});
+const federalAgencies = await loadFederalAgencySummaries();
 const stateStats = US_STATE_TILES.map((state) => {
   const count = personnelRows.filter(
-    (person) => person.agencyCategory?.toUpperCase() === state.code,
+    (person) => person.agencyState?.toUpperCase() === state.code,
   ).length;
   return {
     code: state.code,
     count,
-    href: `/personnel/${state.code.toLowerCase()}/`,
+    href: `/${state.code.toLowerCase()}/`,
   };
 });
 const totalPersonnel = personnelRows.length;
 const statesWithPersonnel = stateStats.filter(
   (state) => state.count > 0,
-).length;
-const federalPersonnelCount = personnelRows.filter(
-  (person) => person.agencyCategory?.toLowerCase() === "federal",
 ).length;
 const pagePath = "/personnel/";
 const suggestPersonnelHref = "/personnel/new/";
@@ -66,7 +35,9 @@ const personnelItems = personnelRows.slice(0, 25).map((person, index) => ({
   position: index + 1,
   item: {
     "@type": "Person",
-    name: person.name,
+    name: `${person.firstName} ${person.lastName}${
+      person.nameSuffix ? ` ${person.nameSuffix}` : ""
+    }`,
     url: new URL(`/personnel/${person.slug}/`, siteUrl).toString(),
     ...(person.agencyName
       ? {
@@ -91,82 +62,52 @@ if (personnelItemList) {
 }
 ---
 
-<SiteLayout
+<PageShell
   title="Personnel"
   description="Personnel profiles currently listed on PoliceConduct.org."
   pagePath={pagePath}
+  canonicalUrl={pagePath}
   structuredData={structuredData}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Personnel", href: pagePath, current: true },
+  ]}
+  heading="Personnel"
+  lede="Profiles of law enforcement personnel with listed agencies."
 >
-  <main>
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
-      <div class="container">
-        <div class="row g-4 align-items-end">
-          <div class="col-12 col-lg-8">
-            <Breadcrumbs
-              items={[
-                { label: "Home", href: "/" },
-                { label: "Personnel", href: pagePath, current: true },
-              ]}
-              className="mb-2"
-            />
-            <h1 class="display-4 fw-bold">Personnel</h1>
-            <p class="lead text-muted mb-0">
-              Profiles of law enforcement personnel with listed agencies.
-            </p>
-            <div class="ipc-hero-summary ipc-hero-summary-mobile mt-3">
-              <span class="badge bg-light text-dark border rounded-0">
-                {totalPersonnel} personnel
-              </span>
-              <span class="badge bg-light text-dark border rounded-0">
-                {statesWithPersonnel} states covered
-              </span>
-              <span class="badge bg-light text-dark border rounded-0">
-                {federalPersonnelCount} federal personnel
-              </span>
-            </div>
-          </div>
-          <div class="col-12 col-lg-4 d-none d-lg-flex justify-content-lg-end">
-            <div class="ipc-hero-summary" aria-label="Personnel summary">
-              <span class="badge bg-light text-dark border rounded-0">
-                {totalPersonnel} personnel
-              </span>
-              <span class="badge bg-light text-dark border rounded-0">
-                {statesWithPersonnel} states covered
-              </span>
-              <span class="badge bg-light text-dark border rounded-0">
-                {federalPersonnelCount} federal personnel
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <section class="py-vh-2">
-      <div class="container">
-        <UsaChoroplethMap
-          stats={stateStats}
-          title="States"
-          subtitle="Counts of active personnel by agency state."
-          emptyLabel="No personnel yet"
-          interactionLabel="Hover over a state to see the count."
-          headerAction={{
-            href: suggestPersonnelHref,
-            label: "Suggest new person",
-            target: "_self",
-          }}
-          federalPanel={{
-            eyebrow: "Federal",
-            title: "Federal agencies",
-            value: federalAgencies.length,
-            description: "Federal agencies with listed personnel.",
-            items: federalAgencies.map((agency) => ({
-              label: agency.name,
-              href: `/law-enforcement-agency/${agency.category}/${agency.slug}/`,
-              badgeText: `Personnel: ${agency.activePersonnelCount}`,
-            })),
-          }}
-        />
-      </div>
-    </section>
-  </main>
-</SiteLayout>
+  <Fragment slot="header">
+    <div class="ipc-hero-summary mt-3" aria-label="Personnel summary">
+      <span class="badge bg-light text-dark border rounded-0">
+        {totalPersonnel} personnel
+      </span>
+      <span class="badge bg-light text-dark border rounded-0">
+        {statesWithPersonnel} states covered
+      </span>
+    </div>
+  </Fragment>
+
+  <section class="civic-section civic-section--last">
+    <UsaChoroplethMap
+      stats={stateStats}
+      title="States"
+      subtitle="Select a state to browse available records by place."
+      emptyLabel="No personnel yet"
+      interactionLabel="Hover for counts; click a state to browse available records."
+      headerAction={{
+        href: suggestPersonnelHref,
+        label: "Suggest new person",
+        target: "_self",
+      }}
+      federalPanel={{
+        title: "Federal agencies",
+        value: federalAgencies.length,
+        description: "Federal agencies with listed personnel.",
+        items: federalAgencies.map((agency) => ({
+          label: agency.name,
+          href: agency.path,
+          badgeText: `${agency.branchCount} locations`,
+        })),
+      }}
+    />
+  </section>
+</PageShell>

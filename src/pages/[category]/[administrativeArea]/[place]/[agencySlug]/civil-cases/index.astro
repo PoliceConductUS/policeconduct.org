@@ -1,0 +1,69 @@
+---
+import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
+import TableScroll from "#src/components/TableScroll.astro";
+import {
+  buildAgencyCivilCaseRows,
+  type CivilCaseRow,
+} from "#src/lib/data/agency-civil-case-rows.js";
+import {
+  loadAgencyDetailByRouteParams,
+  loadAgencyLocationStaticPathsForTopic,
+} from "#src/lib/data/agency-detail.js";
+
+export async function getStaticPaths() {
+  return loadAgencyLocationStaticPathsForTopic("civil-cases");
+}
+
+const data = await loadAgencyDetailByRouteParams(Astro.params);
+const rows = buildAgencyCivilCaseRows(data);
+const formatDate = (value?: string | null) =>
+  value
+    ? new Date(value).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      })
+    : "";
+---
+
+<AgencyTopicPage
+  data={data}
+  topicLabel="Civil Cases"
+  topicSlug="civil-cases"
+  description={`${rows.length.toLocaleString("en-US")} civil cases linked to this agency through court and personnel records.`}
+>
+  <TableScroll>
+    <table class="record-table">
+      <thead>
+        <tr>
+          <th scope="col">Case</th>
+          <th scope="col">Cause number</th>
+          <th scope="col">Court</th>
+          <th scope="col">Filed</th>
+          <th scope="col">Outcome</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row: CivilCaseRow) => (
+          <tr>
+            <td>
+              <a class="row-link" href={row.caseUrl}>
+                {row.title || "Civil case"}
+              </a>
+            </td>
+            <td class="muted">{row.cause_number || ""}</td>
+            <td>{row.court || ""}</td>
+            <td>{formatDate(row.filed_date)}</td>
+            <td>{row.outcome}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </TableScroll>
+  <p class="civic-limit-note">
+    Case records come from court dockets. A pending case is an allegation, not a
+    finding. A dismissal is a court outcome, not a statement that no misconduct
+    occurred.
+  </p>
+</AgencyTopicPage>

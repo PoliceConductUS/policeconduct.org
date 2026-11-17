@@ -1,0 +1,338 @@
+---
+import PageShell from "#src/layouts/PageShell.astro";
+import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
+---
+
+<PageShell
+  title="Confirm Email | PoliceConduct.org"
+  pagePath="/verify/"
+  canonicalUrl="/verify/"
+  robots="noindex,follow"
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Confirm Email", href: "/verify/", current: true },
+  ]}
+  heading="Confirm Email"
+  lede="Open the link in your email to confirm your email address."
+>
+  <PrefillBootstrap />
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      <div
+        id="verificationResult"
+        class="border p-4 bg-light"
+        aria-live="polite"
+      ></div>
+
+      <div id="verificationActions" class="mt-4 d-none">
+        <button
+          id="checkStatusButton"
+          type="button"
+          class="btn btn-dark rounded-0"
+        >
+          Check status
+        </button>
+      </div>
+
+      <!--
+        An expired link used to end here with nothing to click. It is the
+        commonest way a verification attempt fails, and INS-89 found two
+        submitters in the store who responded by filling the entire form in
+        again. This button trades the dead link for a live one; it needs no
+        address input because the API sends only to the address already on the
+        submission.
+      -->
+      <div id="resendActions" class="mt-4 d-none">
+        <button
+          id="resendLinkButton"
+          type="button"
+          class="btn btn-dark rounded-0"
+        >
+          Email me a new link
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    (function () {
+      const storedVerificationResultKey = "ipc_verify_result_v1";
+      const result = document.getElementById("verificationResult");
+      const actions = document.getElementById("verificationActions");
+      const checkStatusButton = document.getElementById("checkStatusButton");
+      const resendActions = document.getElementById("resendActions");
+      const resendLinkButton = document.getElementById("resendLinkButton");
+      if (
+        !result ||
+        !actions ||
+        !checkStatusButton ||
+        !resendActions ||
+        !resendLinkButton
+      ) {
+        return;
+      }
+
+      let verifiedSubmissionId = "";
+
+      const readStoredVerificationResult = () => {
+        try {
+          const raw = window.sessionStorage.getItem(
+            storedVerificationResultKey,
+          );
+          if (!raw) {
+            return null;
+          }
+          const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            return null;
+          }
+          return parsed;
+        } catch (_error) {
+          return null;
+        }
+      };
+
+      const writeStoredVerificationResult = (value) => {
+        try {
+          window.sessionStorage.setItem(
+            storedVerificationResultKey,
+            JSON.stringify(value),
+          );
+        } catch (_error) {
+          // Ignore storage failures.
+        }
+      };
+
+      const clearStoredVerificationResult = () => {
+        try {
+          window.sessionStorage.removeItem(storedVerificationResultKey);
+        } catch (_error) {
+          // Ignore storage failures.
+        }
+      };
+
+      const renderMessage = (headingText, bodyText) => {
+        result.innerHTML = "";
+
+        const heading = document.createElement("h2");
+        heading.className = "h5 mb-3";
+        heading.textContent = headingText;
+
+        const body = document.createElement("p");
+        body.className = "mb-0";
+        body.textContent = bodyText;
+
+        result.appendChild(heading);
+        result.appendChild(body);
+      };
+
+      const renderVerified = (submissionId) => {
+        result.innerHTML = "";
+
+        const heading = document.createElement("h2");
+        heading.className = "h5 mb-3";
+        heading.textContent = "Email Confirmed";
+
+        const body = document.createElement("p");
+        body.className = "mb-3";
+        body.textContent = "Your email address has been confirmed.";
+
+        const details = document.createElement("p");
+        details.className = "mb-0";
+        details.textContent = `Submission ID: ${submissionId}. This is the only place your submission ID will be shown. Please save it now.`;
+
+        result.appendChild(heading);
+        result.appendChild(body);
+        result.appendChild(details);
+        actions.classList.remove("d-none");
+      };
+
+      checkStatusButton.addEventListener("click", function () {
+        if (!verifiedSubmissionId) {
+          return;
+        }
+        window.__IPC_PREFILL__?.set?.("/status/", {
+          submissionId: verifiedSubmissionId,
+        });
+        clearStoredVerificationResult();
+        window.location.assign("/status/");
+      });
+
+      // Holds the expired token so the resend button can trade it in. The
+      // token stays in this closure and is never written to sessionStorage:
+      // it is a live bearer credential until it is redeemed.
+      let resendableToken = "";
+
+      resendLinkButton.addEventListener("click", async function () {
+        if (!resendableToken) {
+          return;
+        }
+        const token = resendableToken;
+        // Cleared up front so a double-tap cannot send two requests. Restored
+        // only if the attempt fails in a way worth retrying.
+        resendableToken = "";
+        resendLinkButton.disabled = true;
+        resendLinkButton.textContent = "Sending...";
+        try {
+          const response = await fetch("/api/forms/resend-verification", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ token }),
+          });
+          let payload;
+          try {
+            payload = await response.json();
+          } catch (_error) {
+            payload = null;
+          }
+          const message =
+            payload &&
+            typeof payload.message === "string" &&
+            payload.message.trim()
+              ? payload.message.trim()
+              : response.ok
+                ? "We have emailed a new confirmation link to the address on this submission."
+                : "We could not send a new link right now.";
+          resendActions.classList.add("d-none");
+          if (response.ok) {
+            // The token in the URL has just been rotated out of existence.
+            // Leaving it there means a reload reports "invalid token" at
+            // somebody who did exactly the right thing.
+            window.history.replaceState({}, "", "/verify/");
+          }
+          renderMessage(
+            response.ok ? "New Link Sent" : "Could Not Send a New Link",
+            message,
+          );
+        } catch (_error) {
+          // Network-level failure: nothing was sent, so let them try again.
+          resendableToken = token;
+          resendLinkButton.disabled = false;
+          resendLinkButton.textContent = "Email me a new link";
+          renderMessage(
+            "Could Not Send a New Link",
+            "We could not reach the server. Please check your connection and try again.",
+          );
+          resendActions.classList.remove("d-none");
+        }
+      });
+
+      const token = new URLSearchParams(window.location.search).get("token");
+      const storedVerificationResult = readStoredVerificationResult();
+      const storedSubmissionId =
+        storedVerificationResult &&
+        typeof storedVerificationResult.submissionId === "string" &&
+        storedVerificationResult.submissionId.trim()
+          ? storedVerificationResult.submissionId.trim()
+          : "";
+      const storedToken =
+        storedVerificationResult &&
+        typeof storedVerificationResult.token === "string" &&
+        storedVerificationResult.token.trim()
+          ? storedVerificationResult.token.trim()
+          : "";
+
+      if (storedSubmissionId && (!token || storedToken === token)) {
+        verifiedSubmissionId = storedSubmissionId;
+        if (token) {
+          window.history.replaceState({}, "", "/verify/");
+        }
+        renderVerified(storedSubmissionId);
+        return;
+      }
+
+      if (!token) {
+        // Reached by anyone who lands on /verify/ directly, and by anyone who
+        // reloads after a resend. Not an error state to shout about, and it
+        // should say what to do rather than name the missing parameter.
+        renderMessage(
+          "Open the Link From Your Email",
+          "This page confirms your email address when you arrive from the link in our email. Open that link to continue. If the link has expired, open it anyway and we will offer to send you a new one.",
+        );
+        return;
+      }
+
+      renderMessage("Email Confirmation", "Confirming your email address...");
+
+      void (async function () {
+        try {
+          const response = await fetch("/api/forms/verify-link", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ token }),
+          });
+          let payload;
+          try {
+            payload = await response.json();
+          } catch (_error) {
+            payload = null;
+          }
+
+          if (!response.ok) {
+            const message =
+              payload &&
+              typeof payload.message === "string" &&
+              payload.message.trim()
+                ? payload.message.trim()
+                : "We could not confirm your email address with that link.";
+            const expired = payload && payload.reason === "expired";
+            renderMessage(
+              expired
+                ? "Confirmation Link Expired"
+                : "Email Confirmation Failed",
+              message,
+            );
+            // Only the expired-but-authentic case gets a way forward. Every
+            // other failure reason is either already resolved (the link was
+            // used) or not something a resend can fix, and offering the button
+            // regardless would invite people to hammer it at a dead end.
+            if (expired && payload.canResend) {
+              resendableToken = token;
+              resendActions.classList.remove("d-none");
+            }
+            return;
+          }
+
+          const submissionId =
+            payload &&
+            typeof payload.submissionId === "string" &&
+            payload.submissionId.trim()
+              ? payload.submissionId.trim()
+              : "";
+          const message =
+            payload &&
+            typeof payload.message === "string" &&
+            payload.message.trim()
+              ? payload.message.trim()
+              : "";
+
+          if (!submissionId) {
+            renderMessage(
+              "Email Confirmation Failed",
+              "The confirmation response did not include a submission ID.",
+            );
+            return;
+          }
+
+          verifiedSubmissionId = submissionId;
+          writeStoredVerificationResult({
+            message,
+            submissionId,
+            token,
+          });
+          window.history.replaceState({}, "", "/verify/");
+          renderVerified(submissionId);
+        } catch (_error) {
+          renderMessage(
+            "Email Confirmation Failed",
+            "We could not confirm your email address with that link right now.",
+          );
+        }
+      })();
+    })();
+  </script>
+</PageShell>

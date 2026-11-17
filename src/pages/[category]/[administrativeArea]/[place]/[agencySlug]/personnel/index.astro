@@ -1,0 +1,28 @@
+---
+import AgencyPersonnelList from "#src/components/AgencyPersonnelList.astro";
+import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
+import {
+  loadAgencyDetailByRouteParams,
+  loadAgencyLocationStaticPathsForTopic,
+} from "#src/lib/data/agency-detail.js";
+
+export async function getStaticPaths() {
+  return loadAgencyLocationStaticPathsForTopic("personnel");
+}
+
+const data = await loadAgencyDetailByRouteParams(Astro.params);
+const { employees } = data;
+---
+
+<AgencyTopicPage
+  data={data}
+  topicLabel="Personnel"
+  topicSlug="personnel"
+  description="Current and former officers linked to this agency, from state licensing data."
+>
+  <AgencyPersonnelList employees={employees} />
+  <p class="civic-limit-note">
+    Personnel records come from state licensing data. A listing here is
+    employment history, not an allegation.
+  </p>
+</AgencyTopicPage>

@@ -1,0 +1,126 @@
+---
+import DataAnnotations from "#src/components/DataAnnotations.astro";
+import { annotationFromRecord } from "#src/lib/data/annotation-values.js";
+import { withDb } from "#src/lib/db.js";
+import {
+  formatAssignmentDate,
+  getAssignmentStatus,
+} from "#src/lib/data/assignment-status.js";
+import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
+import { metricLabels } from "#src/lib/metric-vocabulary.js";
+import type { PersonnelLicensing } from "#src/lib/data/licensing.js";
+
+interface Props {
+  assignmentHistory: {
+    id: string;
+    title?: string | null;
+    license_id?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    agency: {
+      id: string;
+      name: string;
+      slug: string;
+      location_path: string;
+      page_type?: string | null;
+    };
+  }[];
+  currentTitle: string;
+  licensing: PersonnelLicensing;
+}
+const { assignmentHistory, currentTitle, licensing } = Astro.props;
+const assignmentAnnotations = await withDb(
+  async (client) =>
+    (
+      await client.query(
+        "select * from public.data_annotation where status = 'active' and subject_kind = 'AgencyPersonnel' and subject_id = any($1) order by id",
+        [assignmentHistory.map((entry) => entry.id)],
+      )
+    ).rows,
+);
+---
+
+<section id="agency-assignments" class="personnel-panel personnel-panel-wide">
+  <div class="personnel-panel-heading">
+    <h2>{metricLabels.agencies}</h2>
+    <p>Known agency assignments linked to this profile.</p>
+  </div>
+  {assignmentHistory.length ? (
+    <div class="personnel-table-wrap">
+      <table class="personnel-mini-table">
+        <thead>
+          <tr>
+            <th scope="col">Agency</th>
+            <th scope="col">Role</th>
+            <th scope="col">License</th>
+            <th scope="col">Start Date</th>
+            <th scope="col">End Date</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {assignmentHistory.map((entry) => (
+            <tr data-agency-assignment-id={entry.id}>
+              <th scope="row">
+                {entry.agency.page_type === "agency" ? (
+                  <a href={requireAgencyCanonicalPath(entry.agency)}>
+                    {entry.agency.name}
+                  </a>
+                ) : (
+                  entry.agency.name
+                )}
+              </th>
+              <td>{entry.title || currentTitle}</td>
+              <td>
+                {entry.license_id &&
+                  (() => {
+                    const license = licensing.licenses.find(
+                      (license) => license.id === entry.license_id,
+                    );
+                    if (!license)
+                      throw new Error(
+                        `Assignment ${entry.id} references missing license ${entry.license_id}`,
+                      );
+                    return (
+                      <a href={`#license-${license.id}`}>
+                        {license.licenseType}
+                      </a>
+                    );
+                  })()}
+              </td>
+              <td>
+                {entry.start_date ? formatAssignmentDate(entry.start_date) : ""}
+                <DataAnnotations
+                  annotations={assignmentAnnotations
+                    .filter((annotation) => annotation.subject_id === entry.id)
+                    .map(annotationFromRecord)}
+                  field="start_date"
+                />
+              </td>
+              <td>
+                {entry.end_date != null
+                  ? formatAssignmentDate(entry.end_date)
+                  : "Present"}
+                <DataAnnotations
+                  annotations={assignmentAnnotations
+                    .filter((annotation) => annotation.subject_id === entry.id)
+                    .map(annotationFromRecord)}
+                  field="end_date"
+                />
+              </td>
+              <td>
+                <span class="personnel-status-pill">
+                  {getAssignmentStatus(entry).isEnded
+                    ? "Completed"
+                    : getAssignmentStatus(entry).isCurrent
+                      ? "Active"
+                      : "Status uncertain"}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : null}
+</section>

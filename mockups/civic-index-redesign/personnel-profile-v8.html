@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>James Markham v8 | PoliceConduct.org (mockup)</title>
+    <link rel="stylesheet" href="shared-v5.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+    <link rel="stylesheet" href="entity-actions.css" />
+  </head>
+  <body>
+    <div class="variant-banner">
+      Design mockup v8 — adds the shared action row + "More actions" dropdown
+      (same component as the agency pages) · previous:
+      <a href="personnel-profile-v7.html">v7</a>
+    </div>
+
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="masthead">
+      <div class="container">
+        <a class="masthead-mark" href="#">Police<span>Conduct</span>.org</a>
+        <form class="masthead-search" role="search" action="#">
+          <label for="site-search" class="visually-hidden"
+            >Search records</label
+          >
+          <input
+            id="site-search"
+            class="masthead-search-input"
+            type="search"
+            name="q"
+            placeholder="Search agencies, officers, or cases…"
+            autocomplete="off"
+          />
+        </form>
+        <nav class="masthead-nav">
+          <a class="nav-action nav-action-share" href="#"
+            >Share an experience</a
+          >
+          <a class="nav-action nav-action-volunteer" href="/volunteer/"
+            >Volunteer</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <div class="container">
+        <nav aria-label="Breadcrumb">
+          <ol class="crumbs">
+            <li><a href="#">Home</a></li>
+            <li><a href="#">Personnel</a></li>
+            <li aria-current="page">James Markham</li>
+          </ol>
+        </nav>
+
+        <section class="lede">
+          <div class="profile-head">
+            <div>
+              <!-- with a photo: <img class="profile-photo" ... /> -->
+              <div class="profile-monogram" aria-hidden="true">JM</div>
+              <p class="profile-photo-note">No photo on file</p>
+            </div>
+            <div>
+              <p class="kicker">Peace Officer · Irving Police Department</p>
+              <h1>James Markham</h1>
+              <p class="lede-sub">
+                A licensed Texas peace officer. This profile is built from state
+                licensing data and the public reports and civil cases that name
+                this officer.
+              </p>
+            </div>
+          </div>
+          <div class="entity-actions">
+            <a class="entity-action entity-action-primary" href="#"
+              >Share an experience</a
+            >
+            <a class="entity-action" href="#">Suggest edit</a>
+            <details class="entity-menu">
+              <summary class="entity-action entity-menu-toggle">
+                More actions
+                <i class="bi bi-chevron-down" aria-hidden="true"></i>
+              </summary>
+              <ul class="entity-menu-list">
+                <li>
+                  <a class="entity-menu-item" href="#">Copy link</a>
+                </li>
+                <li>
+                  <a class="entity-menu-item" href="#"
+                    >View sources &amp; methodology</a
+                  >
+                </li>
+                <li>
+                  <a class="entity-menu-item" href="#">Report a data problem</a>
+                </li>
+              </ul>
+            </details>
+          </div>
+        </section>
+
+        <section class="section">
+          <dl class="fact-list">
+            <div>
+              <dt>License</dt>
+              <dd>Peace Officer</dd>
+            </div>
+            <div>
+              <dt>Agency</dt>
+              <dd>
+                <a href="agency-entity-v5.html">Irving Police Department</a>
+              </dd>
+            </div>
+            <div>
+              <dt>Started</dt>
+              <dd>Nov 2022</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>Current</dd>
+            </div>
+            <div>
+              <dt>Badge</dt>
+              <dd>1379</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <div>
+              <h2>Employment history</h2>
+              <p>Agencies where this license has been held.</p>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="record-table">
+              <thead>
+                <tr>
+                  <th scope="col">Agency</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Started</th>
+                  <th scope="col">Ended</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <a class="row-link" href="agency-entity-v5.html"
+                      >Irving Police Department</a
+                    >
+                  </td>
+                  <td>Peace Officer</td>
+                  <td>Nov 2022</td>
+                  <td><span class="muted">Current</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <div>
+              <h2>Reports</h2>
+              <p>Public reports that name this officer.</p>
+            </div>
+          </div>
+          <div class="recent-list">
+            <a href="report-detail-v5.html">
+              <span class="recent-list-title"
+                >First Amendment retaliation arrest</span
+              >
+              <span class="recent-list-meta"
+                >Incident Dec 4, 2023 · identified as the arresting
+                officer</span
+              >
+            </a>
+          </div>
+          <p class="limit-note">
+            Reports reflect submitters' accounts, reviewed before publication.
+            Being named in a report is not a finding of wrongdoing.
+          </p>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <div>
+              <h2>Civil cases</h2>
+              <p>Court cases that name this officer.</p>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="record-table">
+              <thead>
+                <tr>
+                  <th scope="col">Case</th>
+                  <th scope="col">Cause number</th>
+                  <th scope="col">Court</th>
+                  <th scope="col">Filed</th>
+                  <th scope="col">Outcome</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <a class="row-link" href="#"
+                      >Lotts v. City of Irving et al</a
+                    >
+                  </td>
+                  <td class="muted">3:25-CV-03329-S-BN</td>
+                  <td>N.D. Tex.</td>
+                  <td>Dec 4, 2025</td>
+                  <td>Pending</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="limit-note">
+            Case records come from court dockets. A pending case is an
+            allegation, not a finding.
+          </p>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <div>
+              <h2>Improve this profile</h2>
+              <p>Employment and identity details come from public sources.</p>
+            </div>
+          </div>
+          <ul class="topic-row ledger-grid">
+            <li class="topic-cell is-pending" data-role="neutral">
+              <span class="ledger-label">Photo</span>
+              <span class="topic-value">No photo on file</span>
+              <span class="topic-foot">
+                <a class="help-collect" href="#">Suggest a source →</a>
+              </span>
+            </li>
+            <li class="topic-cell is-pending" data-role="neutral">
+              <span class="ledger-label">Corrections</span>
+              <span class="topic-value">See something wrong?</span>
+              <span class="topic-foot">
+                <a class="help-collect" href="#">Suggest an edit →</a>
+              </span>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

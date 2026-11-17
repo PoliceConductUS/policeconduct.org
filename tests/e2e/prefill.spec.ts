@@ -1,119 +1,149 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "./page-fixture";
+import dotenv from "dotenv";
+import { Client } from "pg";
 import {
   assertPrefillApplied,
   assertPrefillConsumed,
   formatFieldList,
-  type PrefillKey,
-  readPrefillFromLink,
+  installPrefillCapture,
+  type PrefillPath,
+  readCapturedPrefill,
   seedFlashPrefill,
 } from "./prefill";
 
 type SenderCase = {
   name: string;
+  payload?: Record<string, unknown>;
   route: string;
-  key: PrefillKey;
   expectedFields: string[];
   locator: {
-    kind: "css" | "role" | "testId";
+    kind: "role" | "testId";
     value: string;
   };
-  targetPath: string;
+  targetPath: PrefillPath;
 };
 
 type FlashCase = {
-  key: PrefillKey;
-  route: string;
+  key: PrefillPath;
+  route: PrefillPath;
   expectedFields: string[];
   payload: Record<string, unknown>;
 };
 
 const simpleSenderCases: SenderCase[] = [
   {
-    name: "suggest new civil case",
-    route: "/civil-litigation/",
-    key: "prefill:civilLitigationNew",
-    expectedFields: ["jurisdiction"],
-    locator: { kind: "role", value: "Suggest a new civil case" },
-    targetPath: "/civil-litigation/new/",
-  },
-  {
     name: "ask about club benefits",
     route: "/donate/",
-    key: "prefill:contact",
     expectedFields: ["message", "whoami"],
+    payload: {
+      whoami: "Donor",
+      message: "Question about club benefits.",
+    },
     locator: { kind: "role", value: "Ask about club benefits" },
     targetPath: "/about/contact/",
   },
   {
     name: "contact the team",
     route: "/legal-notice/",
-    key: "prefill:contact",
     expectedFields: ["message", "whoami"],
+    payload: {
+      whoami: "Partner",
+      message: "I have a question about your legal policies.",
+    },
     locator: { kind: "role", value: "Contact the team" },
     targetPath: "/about/contact/",
   },
   {
     name: "subscribe",
     route: "/news/",
-    key: "prefill:contact",
     expectedFields: ["message", "whoami"],
+    payload: {
+      whoami: "Subscriber",
+      message:
+        "Please notify me about news updates from PoliceConduct.org: /news/",
+    },
     locator: { kind: "role", value: "Notify me about news updates" },
     targetPath: "/about/contact/",
   },
   {
     name: "contact partnerships",
     route: "/partner/",
-    key: "prefill:contact",
     expectedFields: ["message", "whoami"],
+    payload: {
+      whoami: "Partner",
+      message: "I want to discuss a partnership with PoliceConduct.org.",
+    },
     locator: { kind: "role", value: "Contact partnerships" },
     targetPath: "/about/contact/",
   },
   {
     name: "contact",
     route: "/partner/academic/",
-    key: "prefill:contact",
     expectedFields: ["message", "whoami"],
-    locator: { kind: "css", value: 'a[data-prefill-key="prefill:contact"]' },
+    payload: {
+      whoami: "Partner",
+      message:
+        "I am interested in a scoped academic partnership or letter of support.",
+    },
+    locator: { kind: "role", value: "Contact partnerships" },
     targetPath: "/about/contact/",
   },
   {
     name: "contact",
     route: "/partner/law-firm/",
-    key: "prefill:contact",
     expectedFields: ["message", "whoami"],
-    locator: { kind: "css", value: 'a[data-prefill-key="prefill:contact"]' },
+    payload: {
+      whoami: "Partner",
+      message:
+        "I am interested in a scoped law firm partnership for public-record case review.",
+    },
+    locator: { kind: "role", value: "Contact partnerships" },
     targetPath: "/about/contact/",
   },
   {
     name: "contact",
     route: "/partner/media/",
-    key: "prefill:contact",
     expectedFields: ["message", "whoami"],
-    locator: { kind: "css", value: 'a[data-prefill-key="prefill:contact"]' },
+    payload: {
+      whoami: "Partner",
+      message:
+        "I am interested in a scoped records brief for a newsroom reporting project.",
+    },
+    locator: { kind: "role", value: "Contact partnerships" },
     targetPath: "/about/contact/",
   },
   {
     name: "contact",
     route: "/partner/nonprofit/",
-    key: "prefill:contact",
     expectedFields: ["message", "whoami"],
-    locator: { kind: "css", value: 'a[data-prefill-key="prefill:contact"]' },
+    payload: {
+      whoami: "Partner",
+      message: "I am interested in a scoped nonprofit partnership proposal.",
+    },
+    locator: { kind: "role", value: "Request the partnership proposal" },
     targetPath: "/about/contact/",
   },
   {
     name: "subscribe",
     route:
-      "/report/tx/2023-12-04-75039-1st-amendment-retaliation-arrest-2c545f/",
-    key: "prefill:contact",
+      "/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
     expectedFields: ["message", "whoami"],
+    payload: {
+      whoami: "Subscriber",
+      message:
+        "Please notify me when this report changes: /tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
+    },
     locator: { kind: "role", value: "Notify me when this report changes" },
     targetPath: "/about/contact/",
   },
   {
     name: "reach out for volunteer role matching",
     route: "/volunteer/",
-    key: "prefill:contact",
     expectedFields: ["message", "whoami"],
+    payload: {
+      whoami: "Volunteer",
+      message: "Help me find the right volunteer role.",
+    },
     locator: {
       kind: "role",
       value: "Reach out and we will match you to a role.",
@@ -122,27 +152,89 @@ const simpleSenderCases: SenderCase[] = [
   },
 ];
 
+test.beforeAll(async () => {
+  const databaseUrl = process.env.DATABASE_URL;
+  for (const path of [".env"]) {
+    dotenv.config({ path, override: true, quiet: true });
+  }
+  if (databaseUrl !== undefined) process.env.DATABASE_URL = databaseUrl;
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    const { rows } = await client.query<{
+      title: string;
+      cause_number: string;
+      court: string;
+      slug: string;
+      city: string;
+    }>(
+      `
+      select c.title, c.cause_number, c.court, c.slug, lp.display_name as city
+      from public.civil_cases c
+      join public.civil_case_personnel ccp on ccp.civil_case_id = c.id
+      join public.agency_personnel ap on ap.id = ccp.agency_personnel_id
+      join public.personnel p on p.id = ap.personnel_id
+      join public.agency a on a.id = ap.agency_id
+      join public.location_path lp on lp.location_path_id = a.location_path_id
+      where c.id = $1 and p.slug = $2 and a.slug = $3
+    `,
+      [
+        "ogecfxi5p67286qbmvkfjoa4",
+        "james-markham-v-7635c7",
+        "irving-police-department-049f9a",
+      ],
+    );
+    expect(rows).toHaveLength(1);
+    const record = rows[0];
+    for (const entry of profileSenderCases) {
+      if (
+        entry.route !== "/personnel/james-markham-v-7635c7/" ||
+        !entry.payload
+      )
+        continue;
+      if ("civilLitigation" in entry.payload) {
+        entry.payload.civilLitigation = `${record.title} — ${record.cause_number} — ${record.court} — /civil-cases/${record.slug}/`;
+      }
+      if ("currentAgencyCity" in entry.payload)
+        entry.payload.currentAgencyCity = record.city;
+    }
+  } finally {
+    await client.end();
+  }
+});
+
 const profileSenderCases: SenderCase[] = [
   {
     name: "submit report",
     route: "/personnel/james-markham-v-7635c7/",
-    key: "prefill:reportNew",
     expectedFields: ["officer.department", "officer.name"],
-    locator: { kind: "role", value: "Submit Report" },
+    payload: {
+      officer: {
+        department: "IRVING POLICE DEPARTMENT",
+        name: "James Markham V",
+      },
+    },
+    locator: { kind: "role", value: "Share an experience" },
     targetPath: "/report/new/",
   },
   {
     name: "add civil case",
     route: "/personnel/james-markham-v-7635c7/",
-    key: "prefill:civilLitigationNew",
     expectedFields: ["defendants", "jurisdiction", "links", "summary"],
+    payload: {
+      jurisdiction: "tx",
+      defendants: "James Markham V\nIRVING POLICE DEPARTMENT",
+      summary:
+        "James Markham V profile: /personnel/james-markham-v-7635c7/\nCurrent agency: IRVING POLICE DEPARTMENT",
+      links:
+        "/personnel/james-markham-v-7635c7/\n/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
+    },
     locator: { kind: "role", value: "Add a civil case" },
-    targetPath: "/civil-litigation/new/",
+    targetPath: "/civil-cases/new/",
   },
   {
     name: "submit past employer",
     route: "/personnel/james-markham-v-7635c7/",
-    key: "prefill:personnelNew",
     expectedFields: [
       "badgeNumber",
       "civilLitigation",
@@ -155,13 +247,25 @@ const profileSenderCases: SenderCase[] = [
       "reportLinks",
       "suffix",
     ],
+    payload: {
+      firstName: "James",
+      lastName: "Markham",
+      suffix: "V",
+      badgeNumber: "",
+      currentAgency: "IRVING POLICE DEPARTMENT",
+      currentAgencyCity: "",
+      currentAgencyState: "TX",
+      pastEmployers: "",
+      civilLitigation: "",
+      reportLinks:
+        "/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
+    },
     locator: { kind: "role", value: "Submit past employer" },
     targetPath: "/personnel/new/",
   },
   {
     name: "suggest edit",
     route: "/personnel/james-markham-v-7635c7/",
-    key: "prefill:personnelSuggestEdit",
     expectedFields: [
       "badgeNumber",
       "civilLitigation",
@@ -170,48 +274,71 @@ const profileSenderCases: SenderCase[] = [
       "officerPath",
       "pastEmployers",
     ],
+    payload: {
+      officerPath: "/personnel/james-markham-v-7635c7/",
+      officerName: "James Markham V",
+      badgeNumber: "",
+      currentEmployer: "IRVING POLICE DEPARTMENT",
+      pastEmployers: "",
+      civilLitigation: "",
+    },
     locator: { kind: "role", value: "Suggest edit" },
     targetPath: "/personnel/suggest-edit/",
   },
   {
     name: "subscribe",
     route: "/personnel/james-markham-v-7635c7/",
-    key: "prefill:contact",
     expectedFields: ["message", "whoami"],
+    payload: {
+      whoami: "Subscriber",
+      message:
+        "Please notify me when this profile changes: /personnel/james-markham-v-7635c7/",
+    },
     locator: { kind: "testId", value: "personnel-subscribe-link" },
     targetPath: "/about/contact/",
   },
   {
     name: "claim profile",
     route: "/personnel/james-markham-v-7635c7/",
-    key: "prefill:contact",
     expectedFields: ["message", "whoami"],
+    payload: {
+      whoami: "Profile Owner",
+      message:
+        "I would like to claim ownership of this profile.\nProfile path: /personnel/james-markham-v-7635c7/",
+    },
     locator: { kind: "testId", value: "personnel-claim-profile-link" },
     targetPath: "/about/contact/",
   },
   {
     name: "submit report",
-    route: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
-    key: "prefill:reportNew",
+    route: "/tx/dallas-county/irving/irving-police-department-049f9a/",
     expectedFields: ["officer.department"],
-    locator: {
-      kind: "css",
-      value: 'a[data-prefill-key="prefill:reportNew"][href="/report/new/"]',
+    payload: {
+      officer: {
+        department: "IRVING POLICE DEPARTMENT",
+      },
     },
+    locator: { kind: "role", value: "Share an experience" },
     targetPath: "/report/new/",
   },
   {
     name: "add civil case",
-    route: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
-    key: "prefill:civilLitigationNew",
+    route: "/tx/dallas-county/irving/irving-police-department-049f9a/",
     expectedFields: ["defendants", "jurisdiction", "links", "summary"],
+    payload: {
+      jurisdiction: "tx",
+      defendants: "IRVING POLICE DEPARTMENT",
+      summary:
+        "IRVING POLICE DEPARTMENT agency profile: /tx/dallas-county/irving/irving-police-department-049f9a/",
+      links:
+        "/tx/dallas-county/irving/irving-police-department-049f9a/\n/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
+    },
     locator: { kind: "role", value: "Add a civil case" },
-    targetPath: "/civil-litigation/new/",
+    targetPath: "/civil-cases/new/",
   },
   {
     name: "suggest new personnel",
-    route: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
-    key: "prefill:personnelNew",
+    route: "/tx/dallas-county/irving/irving-police-department-049f9a/",
     expectedFields: [
       "civilLitigation",
       "currentAgency",
@@ -219,38 +346,43 @@ const profileSenderCases: SenderCase[] = [
       "currentAgencyState",
       "reportLinks",
     ],
-    locator: { kind: "role", value: "Suggest new personnel" },
+    locator: { kind: "role", value: "Add personnel" },
     targetPath: "/personnel/new/",
   },
   {
     name: "suggest edit",
-    route: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
-    key: "prefill:agencySuggestEdit",
+    route: "/tx/dallas-county/irving/irving-police-department-049f9a/",
     expectedFields: [
       "agencyName",
       "agencyPath",
       "civilLitigation",
       "departmentHead",
-      "departmentWebsite",
       "jurisdiction",
-      "socialLinks",
     ],
     locator: { kind: "role", value: "Suggest edit" },
-    targetPath: "/law-enforcement-agency/suggest-edit/",
+    targetPath: "/agency/suggest-edit/",
   },
   {
     name: "subscribe",
-    route: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
-    key: "prefill:contact",
+    route: "/tx/dallas-county/irving/irving-police-department-049f9a/",
     expectedFields: ["message", "whoami"],
+    payload: {
+      whoami: "Subscriber",
+      message:
+        "Please notify me when this agency page changes: /tx/dallas-county/irving/irving-police-department-049f9a/",
+    },
     locator: { kind: "testId", value: "agency-subscribe-link" },
     targetPath: "/about/contact/",
   },
   {
     name: "claim profile",
-    route: "/law-enforcement-agency/tx/irving-police-department-049f9a/",
-    key: "prefill:contact",
+    route: "/tx/dallas-county/irving/irving-police-department-049f9a/",
     expectedFields: ["message", "whoami"],
+    payload: {
+      whoami: "Profile Owner",
+      message:
+        "I would like to claim ownership of this profile.\nProfile path: /tx/dallas-county/irving/irving-police-department-049f9a/",
+    },
     locator: { kind: "testId", value: "agency-claim-profile-link" },
     targetPath: "/about/contact/",
   },
@@ -258,13 +390,13 @@ const profileSenderCases: SenderCase[] = [
 
 const flashCases: FlashCase[] = [
   {
-    key: "prefill:contact",
+    key: "/about/contact/",
     route: "/about/contact/",
     expectedFields: ["message", "whoami"],
     payload: { whoami: "Subscriber", message: "One-time contact prefill" },
   },
   {
-    key: "prefill:reportNew",
+    key: "/report/new/",
     route: "/report/new/",
     expectedFields: ["officer.department", "officer.name"],
     payload: {
@@ -275,13 +407,13 @@ const flashCases: FlashCase[] = [
     },
   },
   {
-    key: "prefill:civilLitigationNew",
-    route: "/civil-litigation/new/",
+    key: "/civil-cases/new/",
+    route: "/civil-cases/new/",
     expectedFields: ["jurisdiction"],
     payload: { jurisdiction: "tx" },
   },
   {
-    key: "prefill:personnelNew",
+    key: "/personnel/new/",
     route: "/personnel/new/",
     expectedFields: [
       "currentAgency",
@@ -295,17 +427,17 @@ const flashCases: FlashCase[] = [
     },
   },
   {
-    key: "prefill:personnelSuggestEdit",
+    key: "/personnel/suggest-edit/",
     route: "/personnel/suggest-edit/",
     expectedFields: ["officerPath"],
     payload: { officerPath: "/personnel/example/" },
   },
   {
-    key: "prefill:agencySuggestEdit",
-    route: "/law-enforcement-agency/suggest-edit/",
+    key: "/agency/suggest-edit/",
+    route: "/agency/suggest-edit/",
     expectedFields: ["agencyPath", "jurisdiction"],
     payload: {
-      agencyPath: "/law-enforcement-agency/tx/example/",
+      agencyPath: "/tx/example-county/example-place/example-agency/",
       jurisdiction: "tx",
     },
   },
@@ -316,16 +448,21 @@ function escapeRegExp(value: string): string {
 }
 
 function getLinkLocator(page: Page, locator: SenderCase["locator"]) {
-  if (locator.kind === "css") {
-    return page.locator(locator.value).first();
-  }
   if (locator.kind === "role") {
-    return page.getByRole("link", { name: locator.value }).first();
+    return page.getByRole("button", { name: locator.value }).first();
   }
   return page.getByTestId(locator.value);
 }
 
-async function assertClearedAfterReload(page: Page, key: PrefillKey) {
+async function activateSender(
+  page: Page,
+  locator: ReturnType<typeof getLinkLocator>,
+) {
+  await locator.focus();
+  await page.keyboard.press("Enter");
+}
+
+async function assertClearedAfterReload(page: Page, key: PrefillPath) {
   await page.reload();
   await assertPrefillApplied(page, key, {}, []);
 }
@@ -336,15 +473,19 @@ test.describe("prefill", () => {
       test(`${entry.route} › ${entry.name} prefills ${formatFieldList(entry.expectedFields)}`, async ({
         page,
       }) => {
+        await installPrefillCapture(page);
         await page.goto(entry.route);
         const link = getLinkLocator(page, entry.locator);
-        const { key, payload } = await readPrefillFromLink(link);
-        expect(key).toBe(entry.key);
-        await link.click();
+        await activateSender(page, link);
         await expect(page).toHaveURL(
           new RegExp(`${escapeRegExp(entry.targetPath)}$`),
         );
+        const { key, payload } = await readCapturedPrefill(page);
+        expect(key).toBe(entry.targetPath);
         await assertPrefillApplied(page, key, payload, entry.expectedFields);
+        if (entry.payload) {
+          expect(payload).toEqual(entry.payload);
+        }
       });
     }
 
@@ -352,15 +493,19 @@ test.describe("prefill", () => {
       test(`${entry.route} › ${entry.name} prefills ${formatFieldList(entry.expectedFields)}`, async ({
         page,
       }) => {
+        await installPrefillCapture(page);
         await page.goto(entry.route);
         const link = getLinkLocator(page, entry.locator);
-        const { key, payload } = await readPrefillFromLink(link);
-        expect(key).toBe(entry.key);
-        await link.click();
+        await activateSender(page, link);
         await expect(page).toHaveURL(
           new RegExp(`${escapeRegExp(entry.targetPath)}$`),
         );
+        const { key, payload } = await readCapturedPrefill(page);
+        expect(key).toBe(entry.targetPath);
         await assertPrefillApplied(page, key, payload, entry.expectedFields);
+        if (entry.payload) {
+          expect(payload).toEqual(entry.payload);
+        }
       });
     }
   });

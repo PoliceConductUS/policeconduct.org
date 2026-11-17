@@ -1,19 +1,23 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./page-fixture";
+
+const verificationInstructions =
+  "We received your submission. Check your email and open the link within 15 minutes to confirm your email address. Please contact hello@policeconduct.org if you need help.";
+const verificationEmailFailedMessage =
+  "We received your submission, but sending the email confirmation link failed in this environment. Confirm your email address to continue. Please contact hello@policeconduct.org if you need help.";
 
 const forms = [
   { path: "/about/contact/", formName: "contact" },
   { path: "/volunteer/", formName: "volunteer" },
-  { path: "/law-enforcement-agency/new/", formName: "agencyNew" },
-  { path: "/law-enforcement-agency/suggest-edit/", formName: "agencyEdit" },
+  { path: "/agency/new/", formName: "agencyNew" },
+  { path: "/agency/suggest-edit/", formName: "agencyEdit" },
   { path: "/personnel/new/", formName: "personnelNew" },
   { path: "/personnel/suggest-edit/", formName: "officerEdit" },
-  { path: "/civil-litigation/new/", formName: "civilLitigationNew" },
-  { path: "/civil-litigation/suggest-edit/", formName: "civilLitigationEdit" },
+  { path: "/civil-cases/new/", formName: "civilLitigationNew" },
+  { path: "/civil-cases/suggest-edit/", formName: "civilLitigationEdit" },
   {
     path: "/legal-notice/data-subject-access-request/",
     formName: "dataSubjectAccessRequest",
   },
-  { path: "/report/new/", formName: "reportNew", hasDraft: true },
 ];
 
 function buildInputValue(type, name) {
@@ -47,81 +51,102 @@ function buildInputValue(type, name) {
   return "E2E Test";
 }
 
-async function fillRequiredFields(page, formLocator) {
-  const required = formLocator.locator(
-    "input[required], textarea[required], select[required]",
+async function fillRequiredFields(formLocator, formName = "") {
+  if (formName === "dataSubjectAccessRequest") {
+    await formLocator.locator("#dsarName").fill("E2E Test");
+    await formLocator.locator("#dsarEmail").fill("e2e@example.org");
+    await formLocator.locator("#requestAsPersonal").check();
+    await formLocator.locator("#dsarLaw").selectOption("gdpr");
+    await formLocator.locator("#actionKnow").check();
+    await formLocator.locator("#confirmAccurate").check();
+    await formLocator.locator("#confirmDeletion").check();
+    await formLocator.locator("#confirmEmail").check();
+    await formLocator.locator("#confirmPublicRecords").check();
+    return;
+  }
+
+  const textLikeFields = formLocator.locator(
+    'input[required]:not([type="radio"]):not([type="checkbox"]), textarea[required]',
   );
-  const count = await required.count();
-  for (let i = 0; i < count; i += 1) {
-    const field = required.nth(i);
-    if (!(await field.isVisible())) {
-      continue;
-    }
-    if (!(await field.isEnabled())) {
-      continue;
-    }
-
-    const tag = await field.evaluate((el) => el.tagName.toLowerCase());
-    const name = (await field.getAttribute("name")) || "";
-
-    if (tag === "select") {
-      const currentValue = await field.inputValue();
-      if (currentValue) {
-        continue;
-      }
-      const optionValue = await field.evaluate((el) => {
-        const select = /** @type {HTMLSelectElement} */ (el);
-        const options = Array.from(select.options).filter(
-          (o) => !o.disabled && o.value !== "",
-        );
-        return options.length > 0 ? options[0].value : "";
-      });
-      if (optionValue) {
-        await field.selectOption(optionValue);
-      }
-      continue;
-    }
-
-    const type = ((await field.getAttribute("type")) || "text").toLowerCase();
-    if (type === "radio") {
-      if (await field.isChecked()) {
-        continue;
-      }
-      await field.check();
-      continue;
-    }
-    if (type === "checkbox") {
-      if (await field.isChecked()) {
-        continue;
-      }
-      await field.check();
+  const textLikeCount = await textLikeFields.count();
+  for (let i = 0; i < textLikeCount; i += 1) {
+    const field = textLikeFields.nth(i);
+    if (!(await field.isVisible()) || !(await field.isEnabled())) {
       continue;
     }
     if (await field.inputValue()) {
       continue;
     }
+
+    const type = ((await field.getAttribute("type")) || "text").toLowerCase();
+    const name = (await field.getAttribute("name")) || "";
     await field.fill(buildInputValue(type, name));
   }
-}
 
-async function answerReportOfficerAssessments(formLocator) {
-  const assessments = formLocator.locator("[data-officer-assessment]");
-  const count = await assessments.count();
-
-  for (let officerIndex = 0; officerIndex < count; officerIndex += 1) {
-    const assessment = assessments.nth(officerIndex);
-    if ((await assessment.getAttribute("open")) === null) {
-      await assessment.locator("summary").click();
+  const selects = formLocator.locator("select[required]");
+  const selectCount = await selects.count();
+  for (let i = 0; i < selectCount; i += 1) {
+    const field = selects.nth(i);
+    if (!(await field.isVisible()) || !(await field.isEnabled())) {
+      continue;
+    }
+    if (await field.inputValue()) {
+      continue;
     }
 
-    const notObservedOptions = assessment.locator(
-      'input[data-null-option="true"]',
-    );
-    const optionCount = await notObservedOptions.count();
-
-    for (let index = 0; index < optionCount; index += 1) {
-      await notObservedOptions.nth(index).check();
+    const optionValues = await field.evaluate((el) => {
+      const select = /** @type {HTMLSelectElement} */ (el);
+      return Array.from(select.options)
+        .filter((o) => !o.disabled && o.value !== "")
+        .map((o) => o.value);
+    });
+    for (const optionValue of optionValues) {
+      await field.selectOption(optionValue);
+      if ((await field.inputValue()) === optionValue) {
+        break;
+      }
     }
+  }
+
+  const requiredRadioNames = await formLocator.evaluate((form) => {
+    const names = new Set();
+    for (const input of form.querySelectorAll(
+      'input[type="radio"][required]',
+    )) {
+      if (
+        input instanceof HTMLInputElement &&
+        input.name &&
+        input.offsetParent !== null &&
+        !input.disabled
+      ) {
+        names.add(input.name);
+      }
+    }
+    return Array.from(names);
+  });
+  for (const name of requiredRadioNames) {
+    const option = formLocator
+      .locator(`input[type="radio"][required][name="${name}"]`)
+      .first();
+    if (await option.isChecked()) {
+      continue;
+    }
+    await option.check();
+  }
+
+  const requiredCheckboxes = formLocator.locator(
+    'input[type="checkbox"][required]',
+  );
+  const checkboxCount = await requiredCheckboxes.count();
+  for (let i = 0; i < checkboxCount; i += 1) {
+    const field = requiredCheckboxes.nth(i);
+    if (!(await field.isVisible()) || !(await field.isEnabled())) {
+      continue;
+    }
+    if (await field.isChecked()) {
+      continue;
+    }
+    await field.check();
   }
 }
 
@@ -142,23 +167,25 @@ async function installRecaptchaMock(page) {
 
 test.describe("form submissions", () => {
   for (const form of forms) {
-    test(`success › ${form.formName} stays on-page and shows submission ID`, async ({
+    test(`success › ${form.formName} stays on-page and shows verification instructions`, async ({
       page,
     }) => {
       await installRecaptchaMock(page);
-      let submitRequestBody = null;
-
       await page.route("**/api/forms/submit", async (route) => {
         const req = route.request();
         if (req.method() !== "POST") {
           await route.fallback();
           return;
         }
-        submitRequestBody = req.postDataJSON();
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ submissionId: `e2e_${form.formName}_id` }),
+          body: JSON.stringify({
+            ...(form.formName === "contact"
+              ? {}
+              : { message: verificationInstructions }),
+            verificationPending: true,
+          }),
         });
       });
 
@@ -193,26 +220,7 @@ test.describe("form submissions", () => {
       await expect(formLocator).toBeVisible();
       const originalPathname = new URL(page.url()).pathname;
 
-      if (form.formName === "reportNew") {
-        await page.getByRole("button", { name: "Add another officer" }).click();
-        await formLocator
-          .locator('[name="officers[0][name]"]')
-          .fill("Officer Zero");
-        await formLocator
-          .locator('[name="officers[0][department]"]')
-          .fill("Department Zero");
-        await formLocator
-          .locator('[name="officers[1][name]"]')
-          .fill("Officer One");
-        await formLocator
-          .locator('[name="officers[1][department]"]')
-          .fill("Department One");
-      }
-
-      await fillRequiredFields(page, formLocator);
-      if (form.formName === "reportNew") {
-        await answerReportOfficerAssessments(formLocator);
-      }
+      await fillRequiredFields(formLocator, form.formName);
 
       const submitResponsePromise = page.waitForResponse((response) => {
         return (
@@ -220,35 +228,25 @@ test.describe("form submissions", () => {
           response.request().method() === "POST"
         );
       });
-      await Promise.all([
+      const [submitted] = await Promise.all([
         submitResponsePromise,
-        formLocator.locator('button[type="submit"]').click(),
+        formLocator.locator('button[type="submit"]').press("Enter"),
       ]);
 
+      const releaseId = await page
+        .locator("html")
+        .getAttribute("data-release-id");
+      expect(releaseId).toBeTruthy();
+      expect(submitted.request().postDataJSON().releaseId).toBe(releaseId);
       await expect(page).toHaveURL(new RegExp(`${originalPathname}$`));
       const success = formLocator.locator("[data-form-submit-success]");
       await expect(success).toBeVisible();
-      await expect(success.locator("[data-submission-id]")).toHaveText(
-        `e2e_${form.formName}_id`,
-      );
+      await expect(success).toContainText(verificationInstructions);
+      await expect(success).not.toContainText("submissionId");
+      await expect(success.locator("[data-submission-id]")).toHaveCount(0);
       await expect(
         formLocator.locator("[data-form-submit-error]"),
       ).toBeHidden();
-
-      if (form.formName === "reportNew") {
-        expect(submitRequestBody?.data).toMatchObject({
-          officers: [
-            {
-              department: "Department Zero",
-              name: "Officer Zero",
-            },
-            {
-              department: "Department One",
-              name: "Officer One",
-            },
-          ],
-        });
-      }
     });
   }
 
@@ -277,7 +275,7 @@ test.describe("form submissions", () => {
     await expect(formLocator).toBeVisible();
     const originalPathname = new URL(page.url()).pathname;
 
-    await fillRequiredFields(page, formLocator);
+    await fillRequiredFields(formLocator, "contact");
     const submitResponsePromise = page.waitForResponse((response) => {
       return (
         response.url().includes("/api/forms/submit") &&
@@ -286,7 +284,7 @@ test.describe("form submissions", () => {
     });
     await Promise.all([
       submitResponsePromise,
-      formLocator.locator('button[type="submit"]').click(),
+      formLocator.locator('button[type="submit"]').press("Enter"),
     ]);
 
     await expect(page).toHaveURL(new RegExp(`${originalPathname}$`));
@@ -296,6 +294,76 @@ test.describe("form submissions", () => {
     const error = formLocator.locator("[data-form-submit-error]");
     await expect(error).toBeVisible();
     await expect(error).toContainText("Mocked submission failure for e2e.");
+  });
+
+  test("verification email failure › contact shows request reference and logs diagnostics", async ({
+    page,
+  }) => {
+    await installRecaptchaMock(page);
+
+    const consoleMessages = [];
+    page.on("console", (msg) => {
+      consoleMessages.push({
+        text: msg.text(),
+        type: msg.type(),
+      });
+    });
+
+    await page.route("**/api/forms/submit", async (route) => {
+      const req = route.request();
+      if (req.method() !== "POST") {
+        await route.fallback();
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          message: verificationEmailFailedMessage,
+          requestId: "req_e2e_verification_failure",
+          verificationFailureReason: "send_failed",
+          verificationPending: false,
+        }),
+      });
+    });
+
+    await page.goto("/about/contact/");
+    const formLocator = page.locator('form[name="contact"]');
+    await expect(formLocator).toBeVisible();
+    const originalPathname = new URL(page.url()).pathname;
+
+    await fillRequiredFields(formLocator, "contact");
+    const submitResponsePromise = page.waitForResponse((response) => {
+      return (
+        response.url().includes("/api/forms/submit") &&
+        response.request().method() === "POST"
+      );
+    });
+    await Promise.all([
+      submitResponsePromise,
+      formLocator.locator('button[type="submit"]').press("Enter"),
+    ]);
+
+    await expect(page).toHaveURL(new RegExp(`${originalPathname}$`));
+    const success = formLocator.locator("[data-form-submit-success]");
+    await expect(success).toBeVisible();
+    await expect(success).toContainText(verificationEmailFailedMessage);
+    await expect(success).toContainText(
+      "Reference: req_e2e_verification_failure.",
+    );
+    await expect(success).not.toContainText("submissionId");
+    await expect(success.locator("[data-submission-id]")).toHaveCount(0);
+    await expect(formLocator.locator("[data-form-submit-error]")).toBeHidden();
+
+    expect(
+      consoleMessages.some(
+        (entry) =>
+          entry.type === "error" &&
+          entry.text.includes("Form verification email failed") &&
+          entry.text.includes("req_e2e_verification_failure") &&
+          entry.text.includes("send_failed"),
+      ),
+    ).toBe(true);
   });
 
   test("feedback › footer report issue opens Sentry feedback", async ({
@@ -311,7 +379,11 @@ test.describe("form submissions", () => {
         },
       };
     });
-    await page.getByRole("link", { name: /report issue/i }).click();
+    // Two footer links carry this name; the last is the one below the address.
+    await page
+      .getByRole("link", { name: "Report a site issue" })
+      .last()
+      .click();
 
     const calls = await page.evaluate(() => {
       return window.__IPC_SENTRY_FEEDBACK__?.__calls || [];

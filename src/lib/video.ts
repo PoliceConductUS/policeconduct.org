@@ -1,70 +1,33 @@
-const isYouTubeUrl = (url: string) => {
-  try {
-    const parsed = new URL(url);
-    return (
-      parsed.hostname.includes("youtube.com") ||
-      parsed.hostname.includes("youtu.be")
-    );
-  } catch {
-    return false;
-  }
-};
-
-const DIRECT_VIDEO_EXTENSIONS = [
-  ".mp4",
-  ".m4v",
-  ".mov",
-  ".webm",
-  ".ogv",
-  ".ogg",
-  ".m3u8",
-  ".mpd",
-];
-
-export const isDirectVideoContentUrl = (url: string) => {
-  try {
-    const parsed = new URL(url);
-    const pathname = parsed.pathname.toLowerCase();
-    return DIRECT_VIDEO_EXTENSIONS.some((extension) =>
-      pathname.endsWith(extension),
-    );
-  } catch {
-    return false;
-  }
-};
-
-export const getVideoEmbedUrl = (url: string) => {
-  if (!isYouTubeUrl(url)) {
-    return null;
-  }
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname.includes("youtu.be")) {
-      return `https://www.youtube.com/embed/${parsed.pathname.replace("/", "")}`;
-    }
-    const videoId = parsed.searchParams.get("v");
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-  } catch {
-    return null;
-  }
-};
-
 export const getYouTubeVideoId = (url: string) => {
-  if (!isYouTubeUrl(url)) {
-    return null;
-  }
   try {
     const parsed = new URL(url);
-    if (parsed.hostname.includes("youtu.be")) {
-      return parsed.pathname.replace("/", "") || null;
-    }
-    return parsed.searchParams.get("v");
+    const host = parsed.hostname.toLowerCase();
+    if (host === "youtu.be" || host === "www.youtu.be")
+      return parsed.pathname.slice(1) || null;
+    if (
+      host === "youtube.com" ||
+      host === "www.youtube.com" ||
+      host === "m.youtube.com"
+    )
+      return parsed.searchParams.get("v");
   } catch {
-    return null;
+    /* Not a video URL. */
   }
+  return null;
 };
-
+export const getVideoEmbedUrl = (url: string) => {
+  const id = getYouTubeVideoId(url);
+  return id ? `https://www.youtube.com/embed/${id}` : null;
+};
 export const getYouTubeThumbnailUrl = (url: string) => {
-  const videoId = getYouTubeVideoId(url);
-  return videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : null;
+  const id = getYouTubeVideoId(url);
+  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
+};
+export type VideoLink = { id: string; title: string; url: string };
+export const requireWatchVideo = (links: VideoLink[], id: string) => {
+  const video = links.find(
+    (link) => link.id === id && getVideoEmbedUrl(link.url),
+  );
+  if (!video) throw new Error(`Video ${id} not found on this record.`);
+  return video;
 };

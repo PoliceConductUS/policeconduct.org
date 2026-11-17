@@ -1,6 +1,6 @@
 # Infrastructure
 
-This repo uses two Terraform entrypoints:
+This repo uses three Terraform entrypoints:
 
 1. `infrastructure/bootstrap-policeconduct` (policeconduct.org foundation + static-site infra)
 2. `infrastructure/bootstrap-iceconduct` (independent iceconduct.org redirect infra)
@@ -22,25 +22,27 @@ export AWS_PROFILE=policeconduct-setup-admin
 aws sts get-caller-identity
 ```
 
-6. Run bootstrap:
+6. Run the full bootstrap in the correct order:
 
 ```bash
-export GITHUB_TOKEN=<github-token-with-repo-admin-access>
-terraform -chdir=infrastructure/bootstrap-policeconduct init
-terraform -chdir=infrastructure/bootstrap-policeconduct apply
+bash scripts/bootstrap-all.sh
 ```
 
-Or load from local `.env` (gitignored):
+This wrapper runs:
+
+1. `infrastructure/bootstrap-recaptcha/scripts/apply.sh`
+2. `infrastructure/bootstrap-policeconduct/scripts/apply.sh`
+
+Load credentials and local env first if needed:
 
 ```bash
 set -a
 source .env
 set +a
-terraform -chdir=infrastructure/bootstrap-policeconduct init
-terraform -chdir=infrastructure/bootstrap-policeconduct apply
+bash scripts/bootstrap-all.sh
 ```
 
-Optional phased bootstrap (create buckets/KMS/forms API first, sync `.env`, then finish DNS/CDN):
+Optional: if you are only working on the AWS/bootstrap stack and want the phased flow, use:
 
 ```bash
 PHASE=foundation bash infrastructure/bootstrap-policeconduct/scripts/apply.sh
@@ -54,10 +56,10 @@ terraform -chdir=infrastructure/bootstrap-policeconduct output route53_name_serv
 dig +short NS <your-domain>
 ```
 
-8. Wait for DNS propagation, then re-run bootstrap apply if ACM is still pending:
+8. Wait for DNS propagation, then rerun the bootstrap if ACM is still pending:
 
 ```bash
-terraform -chdir=infrastructure/bootstrap-policeconduct apply
+bash scripts/bootstrap-all.sh
 ```
 
 If apply is waiting at `aws_acm_certificate_validation.site`, fetch nameservers from the just-created zone and update your registrar:
@@ -69,12 +71,12 @@ terraform -chdir=infrastructure/bootstrap-policeconduct output route53_name_serv
 9. Bootstrap also creates GitHub environments and environment variables for workflows:
    `production` (`AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`) and
    `preview` (`AWS_ROLE_ARN`, `S3_BUCKET`, `CLOUDFRONT_DIST_ID`).
-   If GA IDs are set in bootstrap tfvars, it also writes `GA_MEASUREMENT_ID` per environment.
-   If Sentry DSNs are set in bootstrap tfvars, it also writes `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT` per environment.
+   If GA IDs are set in `policeconduct.auto.tfvars`, it also writes `GA_MEASUREMENT_ID` per environment.
+   If Sentry DSNs are set in `policeconduct.auto.tfvars`, it also writes `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT` per environment.
    If `sentry_org`/`sentry_project` are set, workflows can upload source maps to Sentry.
    If `sentry_auth_token` is set in bootstrap inputs, bootstrap also writes `SENTRY_AUTH_TOKEN` as a GitHub environment secret for both environments.
 
-If `bucket_name` is omitted in `infrastructure/bootstrap-policeconduct/terraform.tfvars`, bootstrap uses `<project_name>-site-<account_id>`.
+If `bucket_name` is omitted in `infrastructure/bootstrap-policeconduct/policeconduct.auto.tfvars`, bootstrap uses `<project_name>-site-<account_id>`.
 
 10. Optional hardening: remove `AdministratorAccess` from `policeconduct-setup-admin`, then disable or delete its access key.
 
@@ -107,7 +109,7 @@ aws sts get-caller-identity
 
 Bootstrap is manual/local only and creates infra.
 
-1. Run `infrastructure/bootstrap-policeconduct` locally once.
+1. Run `bash scripts/bootstrap-all.sh` locally once.
 2. Then GitHub deploy workflows (`deploy.yml`, `preview.yml`, `preview-cleanup.yml`) only publish content and assume infra already exists.
 
 Credentials used by deploy workflows:
@@ -119,3 +121,18 @@ Credentials used by deploy workflows:
 1. `infrastructure/bootstrap-policeconduct/README.md`
 2. `infrastructure/bootstrap-iceconduct/`
 3. `infrastructure/bootstrap-recaptcha/`
+
+## Tags
+
+Every AWS resource carries these tags, set as provider default tags in each stack:
+
+| Tag           | Value                                                         |
+| ------------- | ------------------------------------------------------------- |
+| `Project`     | The site the resource serves, for example `policeconduct.org` |
+| `Environment` | `production`, `preview`, or `shared` when it serves both      |
+| `Stack`       | The Terraform folder that owns the resource                   |
+| `Repository`  | The GitHub repository that holds that folder                  |
+| `ManagedBy`   | `Terraform`                                                   |
+
+A resource that serves one environment sets its own `Environment` tag; everything
+else inherits `shared` from the stack.

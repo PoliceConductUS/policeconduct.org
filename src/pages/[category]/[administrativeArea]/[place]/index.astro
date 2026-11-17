@@ -1,0 +1,23 @@
+---
+import RecordDataNotes from "#src/components/RecordDataNotes.astro";
+import CivicIndexPage from "#src/components/CivicIndexPage.astro";
+import { buildPlaceCivicIndex } from "#src/lib/data/civic-index.js";
+import {
+  loadPlaceScopedPaths,
+  loadRequiredLocationByPath,
+} from "#src/lib/data/civic-scoped-routes.js";
+
+export async function getStaticPaths() {
+  return loadPlaceScopedPaths();
+}
+
+const place = await loadRequiredLocationByPath(
+  `/${Astro.params.category}/${Astro.params.administrativeArea}/${Astro.params.place}/`,
+  "place",
+);
+const model = await buildPlaceCivicIndex(place);
+---
+
+<CivicIndexPage model={model} site={Astro.site}>
+  <RecordDataNotes recordPath={model.pagePath} />
+</CivicIndexPage>

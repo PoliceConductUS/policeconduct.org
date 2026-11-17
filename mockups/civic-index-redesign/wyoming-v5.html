@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wyoming Civic Index v5 | PoliceConduct.org (mockup)</title>
+    <link rel="stylesheet" href="shared-v5.css" />
+  </head>
+  <body>
+    <div class="variant-banner">
+      Design mockup v5 — true empty state, one band, teal = clickable · see also
+      <a href="texas-v5.html">Texas</a> and
+      <a href="agency-entity-v5.html">Irving Police Department</a> · previous:
+      <a href="wyoming-v3.html">v3</a>
+    </div>
+
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="masthead">
+      <div class="container">
+        <a class="masthead-mark" href="#">Police<span>Conduct</span>.org</a>
+        <form class="masthead-search" role="search" action="#">
+          <label for="site-search" class="visually-hidden"
+            >Search records</label
+          >
+          <input
+            id="site-search"
+            class="masthead-search-input"
+            type="search"
+            name="q"
+            placeholder="Search agencies, officers, or cases…"
+            autocomplete="off"
+          />
+        </form>
+        <nav class="masthead-nav">
+          <a class="nav-action nav-action-share" href="#"
+            >Share an experience</a
+          >
+          <a class="nav-action nav-action-volunteer" href="/volunteer/"
+            >Volunteer</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <div class="container">
+        <nav aria-label="Breadcrumb">
+          <ol class="crumbs">
+            <li><a href="#">Home</a></li>
+            <li aria-current="page">Wyoming</li>
+          </ol>
+        </nav>
+
+        <section class="lede">
+          <p class="kicker">State civic index</p>
+          <h1>Wyoming</h1>
+          <p class="lede-sub">
+            Public records for law enforcement agencies, personnel, reports, and
+            civil litigation across Wyoming's 23 counties.
+          </p>
+        </section>
+
+        <section
+          class="stat-strip stat-strip--drill-first"
+          aria-label="Wyoming coverage totals"
+        >
+          <a class="stat-cell stat-cell--link is-pending" href="#">
+            <strong class="ledger-value ledger-value--lg tabular">--</strong>
+            <span class="ledger-label">Agencies</span>
+            <span class="stat-action">Help collect →</span>
+          </a>
+          <a class="stat-cell stat-cell--link is-pending" href="#">
+            <strong class="ledger-value ledger-value--lg tabular">--</strong>
+            <span class="ledger-label">Personnel records</span>
+            <span class="stat-action">Help collect →</span>
+          </a>
+          <a class="stat-cell stat-cell--link is-pending" href="#">
+            <strong class="ledger-value ledger-value--lg tabular">--</strong>
+            <span class="ledger-label">Reports</span>
+            <span class="stat-action">Share an experience →</span>
+          </a>
+          <a class="stat-cell stat-cell--link is-pending" href="#">
+            <strong class="ledger-value ledger-value--lg tabular">--</strong>
+            <span class="ledger-label">Civil cases</span>
+            <span class="stat-action">Help collect →</span>
+          </a>
+          <div class="stat-cell jump-cell stat-cell--drill">
+            <span class="stat-drill-eyebrow">Start here</span>
+            <strong class="ledger-value ledger-value--lg tabular">23</strong>
+            <span class="ledger-label">Counties</span>
+            <form class="jump-form" data-jump-form>
+              <label for="county-jump" class="visually-hidden">County</label>
+              <select id="county-jump" class="jump-select" data-jump-select>
+                <option value="" selected disabled>Choose county…</option>
+                <option value="/wy/albany-county/">Albany</option>
+                <option value="/wy/big-horn-county/">Big Horn</option>
+                <option value="/wy/campbell-county/">Campbell</option>
+                <option value="/wy/carbon-county/">Carbon</option>
+                <option value="/wy/converse-county/">Converse</option>
+                <option value="/wy/crook-county/">Crook</option>
+                <option value="/wy/fremont-county/">Fremont</option>
+                <option value="/wy/goshen-county/">Goshen</option>
+                <option value="/wy/hot-springs-county/">Hot Springs</option>
+                <option value="/wy/johnson-county/">Johnson</option>
+                <option value="/wy/laramie-county/">Laramie</option>
+                <option value="/wy/lincoln-county/">Lincoln</option>
+                <option value="/wy/natrona-county/">Natrona</option>
+                <option value="/wy/niobrara-county/">Niobrara</option>
+                <option value="/wy/park-county/">Park</option>
+                <option value="/wy/platte-county/">Platte</option>
+                <option value="/wy/sheridan-county/">Sheridan</option>
+                <option value="/wy/sublette-county/">Sublette</option>
+                <option value="/wy/sweetwater-county/">Sweetwater</option>
+                <option value="/wy/teton-county/">Teton</option>
+                <option value="/wy/uinta-county/">Uinta</option>
+                <option value="/wy/washakie-county/">Washakie</option>
+                <option value="/wy/weston-county/">Weston</option>
+              </select>
+              <button class="jump-go" type="submit">Go →</button>
+            </form>
+            <p class="jump-status" data-jump-status aria-live="polite"></p>
+            <p class="jump-browse"><a href="#">Browse all 23 counties →</a></p>
+          </div>
+        </section>
+
+        <section class="section">
+          <ul class="topic-row ledger-grid">
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="budget"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Budget</span>
+                <span class="ledger-value">--</span>
+                <span class="ledger-meta topic-gloss"
+                  >Yearly department spending</span
+                >
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="/volunteer/"
+                  >Help collect this →</a
+                ></span
+              >
+            </li>
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="liability"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Liability costs</span>
+                <span class="ledger-value">--</span>
+                <span class="ledger-meta topic-gloss"
+                  >Payouts in police-conduct cases</span
+                >
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="/volunteer/"
+                  >Help collect this →</a
+                ></span
+              >
+            </li>
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="neutral"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Fatal force incidents</span>
+                <span class="ledger-value">--</span>
+                <span class="ledger-meta topic-gloss"
+                  >Deaths involving police</span
+                >
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="/volunteer/"
+                  >Help collect this →</a
+                ></span
+              >
+            </li>
+            <li
+              class="topic-cell ledger-interactive is-pending"
+              data-role="neutral"
+            >
+              <a class="topic-link" href="#">
+                <span class="ledger-label">Outcomes by income</span>
+                <span class="ledger-value">--</span>
+                <span class="ledger-meta topic-gloss"
+                  >Case results by neighborhood income</span
+                >
+              </a>
+              <span class="topic-foot"
+                ><a class="help-collect" href="/volunteer/"
+                  >Help collect this →</a
+                ></span
+              >
+            </li>
+          </ul>
+        </section>
+
+        <p class="limit-note">
+          Wyoming county pages are ready, but no source records have been
+          collected for this state yet.
+          <a href="#">Volunteer to request and review Wyoming records →</a>
+        </p>
+      </div>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

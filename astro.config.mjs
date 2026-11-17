@@ -1,9 +1,10 @@
 // @ts-check
 import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
+import { stagePersonnelPhotos } from "./src/lib/personnel-photos.js";
 import { loadEnv } from "vite";
 
-import sentry from "@sentry/astro";
+import { sentryAstro } from "@sentry/astro/integration";
 import { buildSitemapLastmodMap } from "./src/lib/sitemap-lastmod.js";
 
 /**
@@ -43,21 +44,31 @@ const sentryAuthToken = (env.SENTRY_AUTH_TOKEN || "").trim();
 const recaptchaSiteKey = (env.RECAPTCHA_SITE_KEY || "").trim();
 const sentryRelease =
   (process.env.GIT_COMMIT_SHA || env.GIT_COMMIT_SHA || "").trim() || undefined;
+// Only a production release build is given the auth token (see
+// scripts/build-release.mjs), so its presence is what turns the upload on.
+const shouldUploadSentrySourcemaps = Boolean(
+  sentryOrg && sentryProject && sentryAuthToken,
+);
 const SITEMAP_EXCLUDED_PATHS = new Set([
   "/404/",
   "/about/contact/",
-  "/civil-litigation/new/",
-  "/civil-litigation/suggest-edit/",
-  "/law-enforcement-agency/new/",
-  "/law-enforcement-agency/suggest-edit/",
+  "/civil-cases/new/",
+  "/civil-cases/suggest-edit/",
+  "/agency/new/",
+  "/agency/suggest-edit/",
   "/legal-notice/data-subject-access-request/",
   "/personnel/new/",
   "/personnel/suggest-edit/",
   "/report/new/",
   "/status/",
-  "/volunteer/",
+  "/verify/",
 ]);
-const sitemapLastmodMapPromise = buildSitemapLastmodMap();
+let sitemapLastmodMapPromise;
+
+const getSitemapLastmodMap = () => {
+  sitemapLastmodMapPromise ??= buildSitemapLastmodMap();
+  return sitemapLastmodMapPromise;
+};
 
 // https://astro.build/config
 export default defineConfig({
@@ -66,9 +77,25 @@ export default defineConfig({
     enabled: process.env.DISABLE_ASTRO_DEV_TOOLBAR !== "1",
   },
   build: {
+    concurrency: 8,
     inlineStylesheets: "never",
   },
+  // Scope component styles with short `astro-<hash>` class markers wrapped in
+  // `:where()` rather than the default `data-astro-cid-<hash>` attributes.
+  // Same zero specificity as the default, but far fewer bytes per element —
+  // meaningful across the ~150k statically rendered personnel pages.
+  scopedStyleStrategy: "where",
   vite: {
+    optimizeDeps: {
+      include: [
+        "@sentry/astro",
+        "aos",
+        "bootstrap/js/dist/collapse",
+        "bootstrap/js/dist/scrollspy",
+        "bootstrap/js/dist/tab",
+        "leaflet",
+      ],
+    },
     define: {
       "import.meta.env.RECAPTCHA_SITE_KEY": JSON.stringify(recaptchaSiteKey),
       "import.meta.env.PUBLIC_SENTRY_DSN": JSON.stringify(sentryDsn),
@@ -82,6 +109,9 @@ export default defineConfig({
       sourcemap: "hidden",
     },
     server: {
+      watch: {
+        ignored: ["**/.worktrees/**"],
+      },
       proxy: {
         "/api": {
           target: formsApiProxyTarget,
@@ -92,14 +122,28 @@ export default defineConfig({
     },
   },
   integrations: [
+    {
+      name: "intake-personnel-photos",
+      hooks: {
+        "astro:config:setup": async ({ command }) => {
+          if (command === "dev") await stagePersonnelPhotos();
+        },
+        "astro:build:start": async () => {
+          await stagePersonnelPhotos();
+        },
+      },
+    },
     sitemap({
       entryLimit: 45000,
       filter: (page) => {
         const pathname = new URL(page).pathname;
-        return !SITEMAP_EXCLUDED_PATHS.has(pathname);
+        return (
+          !SITEMAP_EXCLUDED_PATHS.has(pathname) &&
+          !pathname.split("/").includes("data-annotations")
+        );
       },
       serialize: async (item) => {
-        const lastmodMap = await sitemapLastmodMapPromise;
+        const lastmodMap = await getSitemapLastmodMap();
         const pathname = new URL(item.url).pathname;
         const lastmod = lastmodMap.get(pathname);
         if (!lastmod) {
@@ -111,14 +155,22 @@ export default defineConfig({
         };
       },
     }),
-    sentry({
+    sentryAstro({
       telemetry: false,
+      enabled: {
+        client: true,
+        server: false,
+      },
       ...(sentryOrg ? { org: sentryOrg } : {}),
       ...(sentryProject ? { project: sentryProject } : {}),
       ...(sentryAuthToken ? { authToken: sentryAuthToken } : {}),
-      sourcemaps: {
-        assets: ["dist/_astro/**/*", "dist/.prerender/**/*"],
-      },
+      sourcemaps: shouldUploadSentrySourcemaps
+        ? {
+            assets: ["dist/_astro/**/*"],
+          }
+        : {
+            disable: true,
+          },
     }),
   ],
 });

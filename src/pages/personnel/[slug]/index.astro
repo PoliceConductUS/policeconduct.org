@@ -1,15 +1,48 @@
 ---
-import Breadcrumbs from "#src/components/Breadcrumbs.astro";
+import RecordDataNotes from "#src/components/RecordDataNotes.astro";
+import PersonnelAssignments from "#src/components/PersonnelAssignments.astro";
+import CoverageLinks from "#src/components/CoverageLinks.astro";
+import { loadCoverageLinksForOfficer } from "#src/lib/data/coverage.js";
+import EntityActionBar from "#src/components/EntityActionBar.astro";
+import "#src/styles/civic-ledger.css";
+import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
+import MetricGrid from "#src/components/MetricGrid.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
-import SiteLayout from "#src/layouts/SiteLayout.astro";
-import DisqusComments from "#src/components/DisqusComments.astro";
+import PrefillNavButton from "#src/components/PrefillNavButton.astro";
+import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
+import {
+  selectHeadlineAssignment,
+  getAssignmentStatus,
+  formatAssignmentDate,
+} from "#src/lib/data/assignment-status.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
-import { getPersonnelImageById } from "#src/lib/personnel-images.js";
-import ProfileTabs from "#src/components/ProfileTabs.astro";
-import { getSiteUrl } from "#src/lib/structured-data.js";
+import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
+import { getPersonnelPhotoById } from "#src/lib/personnel-photos.js";
+import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
+import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
+import LicenseTimeline from "#src/components/LicenseTimeline.astro";
+import PersonnelDiscipline from "#src/components/PersonnelDiscipline.astro";
+import PersonnelDeceasedNotice from "#src/components/PersonnelDeceasedNotice.astro";
+import PersonnelArrestProfiles from "#src/components/PersonnelArrestProfiles.astro";
+import { loadArrestProfilesForPersonnel } from "#src/lib/data/arrest-profiles.js";
+import PersonnelEducation from "#src/components/PersonnelEducation.astro";
+import {
+  loadDisciplineForPersonnel,
+  loadLicensingForPersonnel,
+} from "#src/lib/data/licensing.js";
+import { loadEducationForPersonnel } from "#src/lib/data/personnel-education.js";
+import {
+  buildContentPageNode,
+  buildGovernmentOrganizationNode,
+  buildPersonNode,
+  buildPublisherOrganization,
+  buildWebSite,
+  getSiteUrl,
+} from "#src/lib/structured-data.js";
+import type { MetricCardItem } from "#src/components/metric-card-types.js";
 
 export async function getStaticPaths() {
   if ((process.env.NO_PERSONNEL || "").trim() !== "") {
@@ -19,34 +52,33 @@ export async function getStaticPaths() {
   const officers = await withDb(async (client) => {
     return (
       await client.query(
-        `select distinct o.id, o.first_name, o.last_name, o.suffix, o.slug
-         from public.officers o
-         join public.agency_officers ao on ao.officer_id = o.id`,
+        `select distinct o.slug
+         from public.personnel o
+         join public.agency_personnel ao on ao.personnel_id = o.id`,
       )
     ).rows;
   });
 
-  return officers.map((officer: { id: string; slug: string }) => ({
+  return officers.map((officer: { slug: string }) => ({
     params: { slug: officer.slug },
-    props: { officerId: officer.id },
   }));
 }
 
-const { officerId } = Astro.props;
+const { slug } = Astro.params;
+if (!slug) {
+  throw new Error("Personnel route requires a slug.");
+}
 const data = await withDb(async (client) => {
   const officer = (
-    await client.query("select * from public.officers where id = $1", [
-      officerId,
-    ])
+    await client.query("select * from public.personnel where slug = $1", [slug])
   ).rows[0];
-  const officerStats = (
-    await client.query("select * from public.officers_stats where id = $1", [
-      officerId,
-    ])
-  ).rows[0];
+  if (!officer || officer.slug !== slug) {
+    throw new Error(`Personnel ${slug} not found.`);
+  }
+  const officerId = officer.id;
   const agencyOfficers = (
     await client.query(
-      "select * from public.agency_officers where officer_id = $1",
+      "select * from public.agency_personnel where personnel_id = $1",
       [officerId],
     )
   ).rows;
@@ -55,9 +87,19 @@ const data = await withDb(async (client) => {
   );
   const agencies = agencyIds.length
     ? (
-        await client.query("select * from public.agency where id = any($1)", [
-          agencyIds,
-        ])
+        await client.query(
+          `
+            select a.*, lp.path as location_path, bpp.page_type
+            from public.agency a
+            join public.location_path lp
+              on lp.location_path_id = a.location_path_id
+            left join public.build_page_payload bpp
+              on bpp.page_type = 'agency'
+             and bpp.entity_id = a.id
+            where a.id = any($1)
+          `,
+          [agencyIds],
+        )
       ).rows
     : [];
   const agencyOfficerIds = agencyOfficers.map(
@@ -66,7 +108,7 @@ const data = await withDb(async (client) => {
   const reportOfficers = agencyOfficerIds.length
     ? (
         await client.query(
-          "select * from public.review_officers where agency_officer_id = any($1)",
+          "select * from public.review_personnel where agency_personnel_id = any($1)",
           [agencyOfficerIds],
         )
       ).rows
@@ -76,47 +118,106 @@ const data = await withDb(async (client) => {
   );
   const reports = reportIds.length
     ? (
-        await client.query("select * from public.reviews where id = any($1)", [
-          reportIds,
-        ])
+        await client.query(
+          `
+            select r.*, lp.path as location_path
+            from public.reviews r
+            join public.location_path lp on lp.location_path_id = r.location_path_id
+            where r.id = any($1)
+          `,
+          [reportIds],
+        )
       ).rows
     : [];
 
   const civilCaseIds = (
     await client.query(
       `select distinct cco.civil_case_id
-       from public.civil_case_officers cco
-       join public.agency_officers ao on ao.id = cco.agency_officer_id
-       where ao.officer_id = $1`,
+       from public.civil_case_personnel cco
+       join public.agency_personnel ao on ao.id = cco.agency_personnel_id
+       where ao.personnel_id = $1`,
       [officerId],
     )
   ).rows.map((row: { civil_case_id: string }) => row.civil_case_id);
   const civilCases = civilCaseIds.length
     ? (
         await client.query(
-          "select * from public.civil_cases where id = any($1)",
+          `select *
+           from public.civil_cases
+           where id = any($1)
+           order by filed_date desc, title asc, cause_number asc`,
           [civilCaseIds],
         )
       ).rows
     : [];
-
   return {
     officer,
-    officerStats,
     agencyOfficers,
     agencies,
     reports,
     civilCases,
   };
 });
-
+const coverageLinks = await loadCoverageLinksForOfficer(data.officer.id);
+const arrestProfiles = await loadArrestProfilesForPersonnel(data.officer.id);
+const licensing = await loadLicensingForPersonnel(data.officer.id);
+const discipline = await loadDisciplineForPersonnel(data.officer.id);
+const education = await loadEducationForPersonnel(data.officer.id);
 const agenciesById = mapBy(data.agencies, "id");
 const history = normalizeAgencyHistory(data.agencyOfficers);
-const currentAssignment = history[history.length - 1];
+const missingAgencyAssignment = history.find(
+  (entry) => !agenciesById[entry.agency_id],
+);
+if (missingAgencyAssignment) {
+  throw new Error(
+    `Personnel ${data.officer.slug} assignment ${missingAgencyAssignment.id} references agency ${missingAgencyAssignment.agency_id} without a required canonical path.`,
+  );
+}
+const assignmentHistory = history
+  .map((entry) => ({
+    ...entry,
+    agency: agenciesById[entry.agency_id],
+  }))
+  .filter((entry) => entry.agency);
+// Which assignment this page headlines is decided by `end_date`, never by
+// array position. `history[history.length - 1]` used to win here, which
+// published present-tense employment for assignments our own source records as
+// ended (INS-63 / INS-75).
+const headline = selectHeadlineAssignment(history);
+const currentAssignment = headline.assignment;
+if (!currentAssignment) {
+  throw new Error(
+    `Personnel ${data.officer.slug} is missing required agency assignment history.`,
+  );
+}
+const hasCurrentAssignment = headline.isCurrent;
+const headlineEndDateDisplay =
+  headline.isEnded && headline.endDate
+    ? formatAssignmentDate(headline.endDate)
+    : null;
 const currentBadge = currentAssignment?.badge_number || null;
+const currentTitle =
+  typeof currentAssignment?.title === "string"
+    ? currentAssignment.title.trim()
+    : "";
 const currentAgency = currentAssignment
   ? agenciesById[currentAssignment.agency_id]
   : null;
+if (!currentAgency) {
+  throw new Error(
+    `Personnel ${data.officer.slug} assignment ${currentAssignment.id} is missing required agency ${currentAssignment.agency_id}.`,
+  );
+}
+const currentAgencyPrefillName = currentAgency.name.toLocaleUpperCase("en-US");
+const isPlaceholderPersonnel =
+  data.officer.slug === "unknown-personnel-935d1d" ||
+  (data.officer.first_name === "Unknown" &&
+    data.officer.last_name === "Personnel");
+if (!isPlaceholderPersonnel && !currentTitle) {
+  throw new Error(
+    `Personnel ${data.officer.slug} is missing required title on agency_personnel ${currentAssignment?.id || "unknown"}`,
+  );
+}
 
 const civilCasesWithPaths = data.civilCases.map(
   (caseItem: {
@@ -125,30 +226,49 @@ const civilCasesWithPaths = data.civilCases.map(
     category: string;
     title?: string | null;
     cause_number?: string | null;
-    filed_date?: string | null;
+    filed_date: string;
+    date_terminated?: string | null;
     court?: string | null;
     primary_source_url?: string | null;
   }) => {
     return {
       ...caseItem,
-      caseUrl: `/civil-litigation/${caseItem.category}/${caseItem.slug}/`,
+      caseUrl: `/civil-cases/${caseItem.slug}/`,
     };
   },
 );
 
 const reportItems = data.reports.map(
-  (report: { incident_date: string; slug: string; category: string }) => {
+  (report: {
+    id: string;
+    incident_date: string;
+    location_path: string;
+    slug: string;
+    title?: string | null;
+  }) => {
     return {
       ...report,
       incidentDate: formatShortDate(report.incident_date),
-      url: `/report/${report.category}/${report.slug}/`,
+      url: buildReportCanonicalPath({
+        id: report.id,
+        incidentDate: report.incident_date,
+        locationPath: report.location_path,
+        slug: report.slug,
+      }),
     };
   },
 );
 
 const officerPath = `/personnel/${data.officer.slug}/`;
-const officerName =
-  `${data.officer.first_name} ${data.officer.last_name}`.trim();
+const officerName = [
+  data.officer.prefix,
+  data.officer.first_name,
+  data.officer.middle_name,
+  data.officer.last_name,
+  data.officer.suffix,
+]
+  .filter(Boolean)
+  .join(" ");
 const deceasedOnValue = data.officer.deceased_on;
 const isDeceased = Boolean(deceasedOnValue);
 const deceasedOnDisplay = deceasedOnValue
@@ -161,22 +281,31 @@ const deceasedPublicMessage =
   (deceasedOnDisplay
     ? `Reported deceased on ${deceasedOnDisplay}.`
     : "This individual is reported deceased.");
-const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${data.officer.first_name} ${data.officer.last_name} | ${currentAgency!.name}`;
+const assignmentStatusLabel = hasCurrentAssignment
+  ? "Current agency"
+  : headline.hasUncertainHistory
+    ? "Recorded agency"
+    : "Most recent agency";
+const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${hasCurrentAssignment ? currentAgency!.name : `${headline.hasUncertainHistory ? "Recorded" : "Most recent"}: ${currentAgency!.name}`} | PoliceConduct.org`;
 const pageDescription = isDeceased
-  ? `${officerName} personnel profile with agency history, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
-  : `${officerName} personnel profile with agency history, public reports, and civil litigation records.`;
-const pastEmployerSummary = history
-  .slice(0, -1)
+  ? `${officerName} personnel profile with agency assignments, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
+  : // The snippet is the claim most readers see, so the qualifier and the end
+    // date have to survive into it rather than only appearing on the page.
+    `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}${
+      !hasCurrentAssignment && headlineEndDateDisplay
+        ? ` (assignment ended ${headlineEndDateDisplay})`
+        : ""
+    }, agency assignments, public reports, coverage, and civil litigation records.`;
+const pastEmployerSummary = assignmentHistory
+  .filter((entry) => getAssignmentStatus(entry).isEnded)
   .map((entry) => ({
     ...entry,
-    agency: agenciesById[entry.agency_id],
   }))
-  .filter((entry) => entry.agency)
   .map((entry) => {
     const segments = [entry.agency?.name];
     const dateRange = [
-      entry.start_date ? formatShortDate(entry.start_date) : null,
-      entry.end_date ? formatShortDate(entry.end_date) : "Current",
+      entry.start_date ? formatAssignmentDate(entry.start_date) : null,
+      entry.end_date != null ? formatAssignmentDate(entry.end_date) : null,
     ]
       .filter(Boolean)
       .join(" to ");
@@ -203,17 +332,17 @@ const civilLitigationSummary = civilCasesWithPaths
 const reportLinksSummary = reportItems.map((report) => report.url).join("\n");
 const reportNewPrefillPayload = JSON.stringify({
   officer: {
-    department: currentAgency!.name,
-    name: `${data.officer.first_name} ${data.officer.last_name}`,
+    department: currentAgencyPrefillName,
+    name: officerName,
   },
 } satisfies ReportNewPrefill);
-const addCivilCaseHref = "/civil-litigation/new/";
+const addCivilCaseHref = "/civil-cases/new/";
 const addCivilCasePrefillPayload = JSON.stringify({
-  jurisdiction: currentAgency?.category?.toLowerCase() || "",
-  defendants: [officerName, currentAgency?.name || ""]
+  jurisdiction: String(currentAgency?.state || "").toLowerCase(),
+  defendants: [officerName, currentAgencyPrefillName]
     .filter(Boolean)
     .join("\n"),
-  summary: `${officerName} profile: ${officerPath}${currentAgency?.name ? `\nCurrent agency: ${currentAgency.name}` : ""}`,
+  summary: `${officerName} profile: ${officerPath}\n${assignmentStatusLabel}: ${currentAgencyPrefillName}`,
   links: [officerPath, ...reportItems.slice(0, 3).map((report) => report.url)]
     .filter(Boolean)
     .join("\n"),
@@ -224,9 +353,9 @@ const pastEmployerPrefillPayload = JSON.stringify({
   lastName: data.officer.last_name || "",
   suffix: data.officer.suffix || "",
   badgeNumber: currentBadge || "",
-  currentAgency: currentAgency?.name || "",
-  currentAgencyCity: currentAgency?.city || "",
-  currentAgencyState: currentAgency?.state || "",
+  currentAgency: hasCurrentAssignment ? currentAgencyPrefillName : "",
+  currentAgencyCity: hasCurrentAssignment ? currentAgency?.city || "" : "",
+  currentAgencyState: hasCurrentAssignment ? currentAgency?.state || "" : "",
   pastEmployers: pastEmployerSummary,
   civilLitigation: civilLitigationSummary,
   reportLinks: reportLinksSummary,
@@ -236,7 +365,7 @@ const suggestEditPrefillPayload = JSON.stringify({
   officerPath,
   officerName,
   badgeNumber: currentBadge || "",
-  currentEmployer: currentAgency?.name || "",
+  currentEmployer: hasCurrentAssignment ? currentAgencyPrefillName : "",
   pastEmployers: pastEmployerSummary,
   civilLitigation: civilLitigationSummary,
 });
@@ -246,303 +375,753 @@ const claimProfilePrefillPayload = JSON.stringify({
   message: `I would like to claim ownership of this profile.\nProfile path: ${officerPath}`,
 });
 
-const pastEmployers = history
-  .slice(0, -1)
-  .map((entry) => ({
-    ...entry,
-    agency: agenciesById[entry.agency_id],
-  }))
-  .filter((entry) => entry.agency);
-
-const defaultPersonnelImagePath = "/img/personnel/default.webp";
-const personnelImageSrc =
-  getPersonnelImageById(data.officer.id) || defaultPersonnelImagePath;
+const personnelPhoto = await getPersonnelPhotoById(data.officer.id);
+const personnelImageSrc = personnelPhoto || "/img/personnel/default.webp";
+const hasPersonnelPhoto = Boolean(personnelPhoto);
 const civilCaseCount = data.civilCases.length;
-const reportCount = data.reports.length;
-const pastEmployerCount = pastEmployers.length;
+const activeCivilCaseCount = civilCasesWithPaths.filter(
+  (caseItem) => !caseItem.date_terminated,
+).length;
+const associatedAgencyCount = new Set(
+  assignmentHistory.map((entry) => entry.agency_id),
+).size;
+const currentAgencyPath = requireAgencyCanonicalPath(currentAgency!);
+const currentAgencyLocation = [currentAgency!.city, currentAgency!.state]
+  .filter(Boolean)
+  .join(", ");
+const statusLabel = isDeceased
+  ? "Deceased"
+  : hasCurrentAssignment
+    ? "Active"
+    : headline.isEnded && !headline.hasUncertainHistory
+      ? "Former"
+      : "Status uncertain";
+const formatCount = (value: number) =>
+  new Intl.NumberFormat("en-US").format(value);
+const unavailableValue = "--";
+
+const personnelMetricCards: MetricCardItem[] = [
+  {
+    action: {
+      href: "#agency-assignments",
+      kind: "link" as const,
+      label: "View details",
+    },
+    accent: metricVisuals.agencies.accent,
+    icon: metricVisuals.agencies.icon,
+    label: metricVisuals.agencies.label,
+    value: formatCount(associatedAgencyCount),
+  },
+  {
+    accent: metricVisuals.currentSalary.accent,
+    icon: metricVisuals.currentSalary.icon,
+    label: metricVisuals.currentSalary.label,
+    value: unavailableValue,
+  },
+  {
+    ...(civilCaseCount > 0
+      ? {
+          action: {
+            href: `${officerPath}civil-cases/`,
+            kind: "link" as const,
+            label: "View details",
+          },
+        }
+      : {}),
+    accent: metricVisuals.civilCases.accent,
+    detail: metricLabels.activeTotal,
+    icon: metricVisuals.civilCases.icon,
+    label: metricVisuals.civilCases.label,
+    value: `${formatCount(activeCivilCaseCount)} / ${formatCount(civilCaseCount)}`,
+  },
+  {
+    accent: metricVisuals.liabilityCosts.accent,
+    icon: metricVisuals.liabilityCosts.icon,
+    label: metricVisuals.liabilityCosts.label,
+    value: unavailableValue,
+  },
+  {
+    ...(arrestProfiles.length
+      ? {
+          detail: "Recorded counts by agency assignment",
+          action: {
+            href: "#arrest-records",
+            kind: "link" as const,
+            label: "View records",
+          },
+        }
+      : {}),
+    accent: metricVisuals.arrests.accent,
+    icon: metricVisuals.arrests.icon,
+    label: metricVisuals.arrests.label,
+    value: arrestProfiles.length ? "Available" : unavailableValue,
+  },
+  {
+    ...(reportItems.length > 0
+      ? {
+          action: {
+            href: `${officerPath}reports/`,
+            kind: "link" as const,
+            label: "View details",
+          },
+        }
+      : {}),
+    accent: metricVisuals.reports.accent,
+    icon: metricVisuals.reports.icon,
+    label: metricVisuals.reports.label,
+    value: formatCount(reportItems.length),
+  },
+];
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(officerPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
-const disqusIdentifier = `personnel:${data.officer.slug}`;
-const agencyUrl = currentAgency
-  ? new URL(
-      `/law-enforcement-agency/${currentAgency.category}/${currentAgency.slug}/`,
-      siteUrl,
-    ).toString()
-  : null;
+const agencyUrl =
+  currentAgency.page_type === "agency"
+    ? new URL(requireAgencyCanonicalPath(currentAgency), siteUrl).toString()
+    : null;
 const organization =
   currentAgency && agencyUrl
-    ? {
-        "@type": "GovernmentOrganization",
-        "@id": `${agencyUrl}#organization`,
-        name: currentAgency.name,
+    ? buildGovernmentOrganizationNode({
+        siteUrl,
         url: agencyUrl,
-      }
+        name: currentAgency.name,
+      })
     : null;
-const person = {
-  "@type": "Person",
-  "@id": `${pageUrl}#person`,
-  name: officerName,
+const person = buildPersonNode({
+  siteUrl,
   url: pageUrl,
-  image: new URL(personnelImageSrc, siteUrl).toString(),
-  mainEntityOfPage: { "@id": profilePageId },
-  ...(isDeceased ? { deathDate: String(deceasedOnValue) } : {}),
-  ...(organization ? { worksFor: { "@id": organization["@id"] } } : {}),
-};
+  name: officerName,
+  image: hasPersonnelPhoto
+    ? new URL(personnelImageSrc, siteUrl).toString()
+    : undefined,
+  mainEntityOfPageId: profilePageId,
+  deathDate: isDeceased ? String(deceasedOnValue) : undefined,
+  // `worksFor` is a present-tense employment assertion, so it is emitted only
+  // for an assignment our source still records as open. For an ended
+  // association the organization node stays in the graph (the page links to
+  // the agency, and that association is real) but no employment edge is made
+  // to it — a crawler that flattens the graph must not be able to read
+  // "currently employed by" off a separation we already hold. Encoding it as
+  // `worksFor` → `OrganizationRole` with an `endDate` was considered and
+  // rejected: consumers routinely flatten the Role wrapper, which would
+  // reintroduce exactly the false claim this fixes.
+  worksForId:
+    organization && hasCurrentAssignment ? organization["@id"] : undefined,
+});
 const structuredData = {
   "@context": "https://schema.org",
   "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": new URL("/", siteUrl).toString(),
-      url: new URL("/", siteUrl).toString(),
-      name: "PoliceConduct.org",
-    },
-    {
-      "@type": "ProfilePage",
-      "@id": profilePageId,
-      url: pageUrl,
+    buildWebSite(siteUrl),
+    buildContentPageNode({
+      siteUrl,
+      type: "ProfilePage",
+      id: profilePageId,
+      pageUrl,
       name: pageTitle,
       description: pageDescription,
-      isPartOf: { "@id": new URL("/", siteUrl).toString() },
-      mainEntity: { "@id": person["@id"] },
+      mainEntityId: person["@id"],
       dateModified: String(data.officer.updated_at),
-    },
+    }),
+    buildPublisherOrganization(siteUrl),
     ...(organization ? [organization] : []),
     person,
   ],
 };
 ---
 
-<SiteLayout
+<PageShell
   title={pageTitle}
   description={pageDescription}
   pagePath={`/personnel/${data.officer.slug}/`}
+  canonicalUrl={`/personnel/${data.officer.slug}/`}
   structuredData={structuredData}
+  searchable={false}
+  breadcrumbs={[
+    { label: "Home", href: "/" },
+    { label: "Personnel", href: "/personnel/" },
+    { label: officerName, href: officerPath },
+  ]}
 >
   <PrefillBootstrap />
-  <main class="">
-    <section class="py-vh-3 bg-gray-100 border-bottom border-dark">
-      <div class="container">
-        <Breadcrumbs
-          items={[
-            { label: "Personnel", href: "/personnel/" },
-            { label: officerName, href: officerPath, current: true },
-          ]}
-        />
-        <div class="row align-items-center">
-          <div class="col-lg-12">
-            <p class="text-uppercase small text-muted mb-2">
-              {currentAgency!.name} • {currentAgency!.city || "Unknown"},{" "}
-              {currentAgency!.state}
-            </p>
-            <h1 class="display-4 fw-bold mb-3">
-              {data.officer.first_name}
-              {data.officer.last_name}
-            </h1>
-            {
-              isDeceased ? (
-                <div
-                  class="alert alert-secondary border-dark rounded-0 mb-3"
-                  role="status"
-                >
-                  <p class="mb-1 fw-semibold">Status: Deceased.</p>
-                  <p class="mb-0">{deceasedPublicMessage}</p>
-                </div>
-              ) : null
-            }
-            <p class="text-muted small mb-0">
-              Last updated {formatShortDate(data.officer.updated_at)}. Compiled
-              from public records and community submitted reports.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-vh-2">
-      <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-12 col-lg-10">
-            <h2 class="h4 text-uppercase text-muted">Basic details</h2>
-            <div class="row align-items-start">
-              <div class="col-12 col-lg-7">
-                <dl class="row mb-4 mb-lg-0">
-                  <dt class="col-sm-4">Badge number</dt>
-                  <dd class="col-sm-8">
-                    {currentBadge || "Not publicly listed"}
-                  </dd>
-                  <dt class="col-sm-4">Agency</dt>
-                  <dd class="col-sm-8">
-                    {
-                      currentAgency ? (
-                        <a
-                          href={`/law-enforcement-agency/${currentAgency.category}/${currentAgency.slug}/`}
-                        >
-                          {currentAgency.name}
-                        </a>
-                      ) : (
-                        "Not listed"
-                      )
-                    }
-                    {
-                      currentAssignment?.start_date
-                        ? ` since: ${formatShortDate(currentAssignment.start_date)}`
-                        : ""
-                    }
-                  </dd>
-                  <dt class="col-sm-4">Civil litigation</dt>
-                  <dd class="col-sm-8">{data.civilCases.length}</dd>
-                  <dt class="col-sm-4">Reports</dt>
-                  <dd class="col-sm-8">{reportCount}</dd>
-                  <dt class="col-sm-4">Past employers</dt>
-                  <dd class="col-sm-8">{pastEmployers.length}</dd>
-                </dl>
-                <div class="d-flex flex-wrap gap-2 mt-3">
-                  <a
-                    class="btn btn-dark rounded-0"
-                    href="/report/new/"
-                    target="_self"
-                    data-prefill-key="prefill:reportNew"
-                    data-prefill-payload={reportNewPrefillPayload}
-                  >
-                    Submit Report
-                  </a>
-                  <a
-                    class="btn btn-outline-dark rounded-0"
-                    href={addCivilCaseHref}
-                    target="_self"
-                    data-prefill-key="prefill:civilLitigationNew"
-                    data-prefill-payload={addCivilCasePrefillPayload}
-                  >
-                    Add a civil case
-                  </a>
-                  <a
-                    class="btn btn-outline-dark rounded-0"
-                    href={pastEmployerHref}
-                    target="_self"
-                    data-prefill-key="prefill:personnelNew"
-                    data-prefill-payload={pastEmployerPrefillPayload}
-                  >
-                    Submit past employer
-                  </a>
-                  <a
-                    class="btn btn-outline-dark rounded-0"
-                    href={suggestEditHref}
-                    target="_self"
-                    data-prefill-key="prefill:personnelSuggestEdit"
-                    data-prefill-payload={suggestEditPrefillPayload}
-                  >
-                    Suggest edit
-                  </a>
-                  <a
-                    class="btn btn-outline-dark rounded-0 d-flex align-items-center gap-2"
-                    href="/about/contact/"
-                    target="_self"
-                    data-testid="personnel-subscribe-link"
-                    data-prefill-key="prefill:contact"
-                    data-prefill-payload={JSON.stringify({
-                      whoami: "Subscriber",
-                      message: `Please notify me when this profile changes: /personnel/${data.officer.slug}/`,
-                    })}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="lucide lucide-bell"
-                    >
-                      <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
-                      <path
-                        d="M3.262 15a4 4 0 0 0 3.938 3h9.6a4 4 0 0 0 3.938-3"
-                      ></path>
-                      <path d="M7 18v-7a5 5 0 0 1 10 0v7"></path>
-                    </svg>
-                    <span>Notify me when this profile changes</span>
-                  </a>
-                </div>
-              </div>
-              <div class="col-12 col-lg-5 text-center">
-                <img
-                  src={personnelImageSrc}
-                  class="img-fluid rounded shadow"
-                  alt={`Portrait of ${data.officer.first_name} ${data.officer.last_name}`}
-                />
-                {
-                  personnelImageSrc === defaultPersonnelImagePath ? (
-                    <p class="small text-muted mt-2">
-                      Official portrait not yet available — placeholder image
-                      shown.
-                    </p>
-                  ) : null
-                }
-              </div>
-            </div>
-
-            <hr class="my-5" />
-
-            <ProfileTabs
-              tabs={[
-                {
-                  id: "officer-litigation",
-                  label: "Civil litigation",
-                  badge: civilCaseCount,
-                  tabType: "litigation",
-                },
-                {
-                  id: "officer-reports",
-                  label: "Reports",
-                  badge: reportCount,
-                  tabType: "reports",
-                },
-                {
-                  id: "officer-past",
-                  label: "Past employers",
-                  badge: pastEmployerCount,
-                  tabType: "pastEmployers",
-                },
-              ]}
-              litigation={{
-                cases: civilCasesWithPaths,
-              }}
-              reports={{
-                items: reportItems,
-                layout: "table",
-              }}
-              pastEmployers={{
-                entries: pastEmployers,
-              }}
+  <Fragment slot="hero">
+    <div class="personnel-profile-hero">
+      <div class="personnel-profile-title">
+        <h1 class="ipc-page-title">{officerName}</h1>
+        <p class="personnel-current-line">
+          {assignmentStatusLabel}:{" "}
+          {currentAgency.page_type === "agency" ? (
+            <a href={currentAgencyPath}>{currentAgency.name}</a>
+          ) : (
+            currentAgency.name
+          )}
+          <span aria-hidden="true"> · </span>
+          {currentAgencyLocation}
+          {!hasCurrentAssignment && headlineEndDateDisplay ? (
+            <Fragment>
+              <span aria-hidden="true"> · </span>
+              <span class="personnel-assignment-ended">
+                assignment ended {headlineEndDateDisplay}
+              </span>
+            </Fragment>
+          ) : null}
+        </p>
+        <p class="personnel-profile-note">
+          Combined career data aggregated across all known agencies.
+        </p>
+        {isDeceased ? (
+          <div class="personnel-status-note" role="status">
+            <PersonnelDeceasedNotice
+              message={deceasedPublicMessage}
+              source={data.officer.deceased_source}
             />
-
-            <div class="mt-3">
-              <a
-                class="link-dark small"
-                href={claimProfileHref}
-                target="_self"
-                data-testid="personnel-claim-profile-link"
-                data-prefill-key="prefill:contact"
-                data-prefill-payload={claimProfilePrefillPayload}
-              >
-                Claim this profile
-              </a>
-            </div>
-
-            <div class="my-5">
-              <h2 class="h5 text-uppercase text-muted">Comments</h2>
-              <DisqusComments
-                pageUrl={pageUrl}
-                disqusIdentifier={disqusIdentifier}
-              />
-            </div>
           </div>
-        </div>
+        ) : null}
+        <EntityActionBar>
+          <HelpCollectDataButton
+            context={officerName}
+            sourcePage={officerPath}
+            topic="Personnel"
+          />
+          <PrefillNavButton
+            to={suggestEditHref}
+            payload={suggestEditPrefillPayload}
+            class="personnel-action"
+          >
+            Suggest edit
+          </PrefillNavButton>
+          <PrefillNavButton
+            to="/report/new/"
+            payload={reportNewPrefillPayload}
+            class="personnel-action personnel-action-primary"
+          >
+            Share an experience
+          </PrefillNavButton>
+        </EntityActionBar>
       </div>
+
+      <figure class="personnel-portrait">
+        <img src={personnelImageSrc} alt={`Portrait of ${officerName}`} />
+      </figure>
+
+      <aside class="personnel-profile-aside" aria-label="Personnel summary">
+        <dl>
+          <div>
+            <dt>Status</dt>
+            <dd>
+              <span class="personnel-status-pill">{statusLabel}</span>
+            </dd>
+          </div>
+          {currentBadge ? (
+            <div>
+              <dt>Badge Number</dt>
+              <dd>{currentBadge}</dd>
+            </div>
+          ) : null}
+          <div>
+            <dt>{assignmentStatusLabel}</dt>
+            <dd>
+              {currentAgency.page_type === "agency" ? (
+                <a href={currentAgencyPath}>{currentAgency.name}</a>
+              ) : (
+                currentAgency.name
+              )}
+            </dd>
+          </div>
+          {!hasCurrentAssignment && headlineEndDateDisplay ? (
+            <div>
+              <dt>Assignment ended</dt>
+              <dd>{headlineEndDateDisplay}</dd>
+            </div>
+          ) : null}
+          <div>
+            <dt>Updated</dt>
+            <dd>{formatShortDate(data.officer.updated_at)}</dd>
+          </div>
+        </dl>
+      </aside>
+    </div>
+  </Fragment>
+
+  <MetricGrid metrics={personnelMetricCards} />
+
+  <div class="personnel-section-grid">
+    <PersonnelArrestProfiles profiles={arrestProfiles} />
+    <CoverageLinks links={coverageLinks} />
+    {licensing.licenses.length ? (
+      <section class="personnel-panel personnel-panel-wide">
+        <div class="personnel-panel-heading">
+          <h2>Licenses &amp; certification</h2>
+          <p>Licenses issued to this individual by a licensing authority.</p>
+        </div>
+        <div class="personnel-license-cards">
+          {licensing.licenses.map((license) => (
+            <article
+              class="personnel-license-card"
+              id={`license-${license.id}`}
+            >
+              <h3>{license.licenseType}</h3>
+              <dl>
+                {license.status ? (
+                  <div>
+                    <dt>Status</dt>
+                    <dd>
+                      <span class="personnel-status-pill">
+                        {license.status}
+                      </span>
+                    </dd>
+                  </div>
+                ) : null}
+                {license.firstAwarded ? (
+                  <div>
+                    <dt>First awarded</dt>
+                    <dd>{formatShortDate(license.firstAwarded)}</dd>
+                  </div>
+                ) : null}
+                {license.authority ? (
+                  <div>
+                    <dt>Issued by</dt>
+                    <dd>
+                      <a href={license.authority.href}>
+                        {license.authority.abbreviation ||
+                          license.authority.name}
+                      </a>
+                    </dd>
+                  </div>
+                ) : null}
+              </dl>
+            </article>
+          ))}
+        </div>
+      </section>
+    ) : null}
+
+    {licensing.timeline.length ? (
+      <section class="personnel-panel personnel-panel-wide">
+        <div class="personnel-panel-heading">
+          <h2>License history</h2>
+          <p>Certification actions across all licenses, most recent first.</p>
+        </div>
+        <LicenseTimeline entries={licensing.timeline} />
+      </section>
+    ) : null}
+
+    {discipline.length ? (
+      <section id="discipline" class="personnel-panel personnel-panel-wide">
+        <div class="personnel-panel-heading">
+          <h2>Discipline</h2>
+          <p>Disciplinary or administrative certification actions.</p>
+        </div>
+        <PersonnelDiscipline records={discipline} />
+      </section>
+    ) : null}
+
+    {education.length ? (
+      <section class="personnel-panel personnel-panel-wide">
+        <div class="personnel-panel-heading">
+          <h2>Education &amp; training</h2>
+          <p>Recorded courses, newest completion dates first.</p>
+        </div>
+        <PersonnelEducation records={education} />
+      </section>
+    ) : null}
+
+    <section class="personnel-panel personnel-panel-wide">
+      <div class="personnel-panel-heading">
+        <h2>Civil Cases</h2>
+        <p>Cases connected through agency assignments.</p>
+      </div>
+      {civilCasesWithPaths.length ? (
+        <div class="personnel-table-wrap">
+          <table class="personnel-mini-table">
+            <thead>
+              <tr>
+                <th scope="col">Case Name</th>
+                <th scope="col">Filed</th>
+                <th scope="col">Court</th>
+                <th scope="col">Cause</th>
+              </tr>
+            </thead>
+            <tbody>
+              {civilCasesWithPaths.slice(0, 4).map((caseItem) => (
+                <tr>
+                  <th scope="row">
+                    <a href={caseItem.caseUrl}>
+                      {caseItem.title || "Civil case"}
+                    </a>
+                  </th>
+                  <td>
+                    {caseItem.filed_date
+                      ? formatShortDate(caseItem.filed_date)
+                      : ""}
+                  </td>
+                  <td>{caseItem.court || ""}</td>
+                  <td>{caseItem.cause_number || ""}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
     </section>
-  </main>
-</SiteLayout>
+
+    <PersonnelAssignments
+      assignmentHistory={assignmentHistory}
+      currentTitle={currentTitle}
+      licensing={licensing}
+    />
+  </div>
+
+  <div class="personnel-footer-actions">
+    <PrefillNavButton
+      to={addCivilCaseHref}
+      payload={addCivilCasePrefillPayload}
+      class="personnel-action"
+    >
+      Add a civil case
+    </PrefillNavButton>
+    <PrefillNavButton
+      to={pastEmployerHref}
+      payload={pastEmployerPrefillPayload}
+      class="personnel-action"
+    >
+      Submit past employer
+    </PrefillNavButton>
+    <PrefillNavButton
+      to="/about/contact/"
+      payload={{
+        whoami: "Subscriber",
+        message: `Please notify me when this profile changes: /personnel/${data.officer.slug}/`,
+      }}
+      data-testid="personnel-subscribe-link"
+      class="personnel-action"
+    >
+      Notify Me
+    </PrefillNavButton>
+    <PrefillNavButton
+      to={claimProfileHref}
+      payload={claimProfilePrefillPayload}
+      data-testid="personnel-claim-profile-link"
+      class="personnel-action"
+    >
+      Claim Profile
+    </PrefillNavButton>
+  </div>
+  <RecordDataNotes recordPath={`/personnel/${data.officer.slug}/`} />
+</PageShell>
+
+<style>
+  /* The panel, table and status-pill classes below are also used by
+     PersonnelAssignments.astro. Scoped selectors do not reach a child
+     component's markup, so those selectors are :global(). */
+  .personnel-panel a,
+  :global(.personnel-mini-table a) {
+    color: var(--ipc-color-teal);
+    font-weight: 750;
+    text-decoration: none;
+  }
+
+  .personnel-action {
+    align-items: center;
+    background: var(--ipc-color-paper);
+    border: 1px solid var(--ipc-color-rule);
+    border-radius: 0.35rem;
+    color: var(--ipc-color-ink);
+    display: inline-flex;
+    font-size: 0.8125rem;
+    font-weight: 750;
+    justify-content: center;
+    line-height: 1.1;
+    min-height: 2.35rem;
+    padding: 0.6rem 0.85rem;
+    text-decoration: none;
+  }
+
+  .personnel-action-primary {
+    background: var(--ipc-color-ink);
+    border-color: var(--ipc-color-ink);
+    color: var(--ipc-color-paper);
+  }
+
+  .personnel-status-note {
+    background: var(--ipc-color-paper);
+    border: 1px solid var(--ipc-color-rule);
+    border-radius: 0.45rem;
+    color: var(--ipc-color-ink-muted);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-top: 0.85rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .personnel-status-note strong,
+  .personnel-status-note span {
+    display: block;
+  }
+
+  .personnel-portrait {
+    margin: 0;
+  }
+
+  .personnel-portrait img {
+    aspect-ratio: 4 / 5;
+    background: var(--ipc-color-rule);
+    border: 1px solid var(--ipc-color-rule);
+    border-radius: 0.45rem;
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  .personnel-portrait figcaption {
+    color: var(--ipc-color-ink-muted);
+    font-size: 0.75rem;
+    line-height: 1.35;
+    margin-top: 0.45rem;
+  }
+
+  :global(.personnel-panel) {
+    background: var(--ipc-color-paper);
+    border: 1px solid var(--ipc-color-rule);
+    border-radius: 0.45rem;
+    box-shadow: 0 1px 2px
+      color-mix(in oklch, var(--ipc-color-ink) 4%, transparent);
+  }
+
+  :global(.personnel-status-pill) {
+    background: #dff5e7;
+    border: 1px solid #b9e7c8;
+    border-radius: 999px;
+    color: #087f3b;
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 750;
+    line-height: 1;
+    padding: 0.25rem 0.55rem;
+  }
+
+  .personnel-license-cards {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  }
+
+  .personnel-license-card {
+    background: var(--ipc-color-paper-raised, #fff);
+    border: 1px solid var(--ipc-color-rule, #d5deeb);
+    border-radius: 0.4rem;
+    padding: 0.85rem 0.95rem;
+  }
+
+  .personnel-license-card h3 {
+    color: var(--ipc-color-ink, #101926);
+    font-size: 0.95rem;
+    margin: 0 0 0.55rem;
+  }
+
+  .personnel-license-card dl {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+  }
+
+  .personnel-license-card dl div {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(6rem, auto) minmax(0, 1fr);
+  }
+
+  .personnel-license-card dt {
+    color: var(--ipc-color-ink-faint, #5b6472);
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .personnel-license-card dd {
+    color: var(--ipc-color-ink, #101926);
+    font-size: 0.82rem;
+    margin: 0;
+  }
+
+  .personnel-section-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 1rem;
+  }
+
+  :global(.personnel-panel-heading p) {
+    color: var(--ipc-color-ink-muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  .personnel-section-grid {
+    align-items: stretch;
+  }
+
+  :global(.personnel-panel) {
+    min-height: 15rem;
+    padding: 1rem 1.1rem;
+  }
+
+  :global(.personnel-panel-heading) {
+    margin-bottom: 0.85rem;
+  }
+
+  :global(.personnel-panel h2) {
+    color: var(--ipc-color-ink);
+    margin: 0 0 0.25rem;
+  }
+
+  :global(.personnel-table-wrap) {
+    overflow-x: auto;
+  }
+
+  :global(.personnel-mini-table) {
+    border-collapse: collapse;
+    min-width: 36rem;
+    width: 100%;
+  }
+
+  :global(.personnel-mini-table th),
+  :global(.personnel-mini-table td) {
+    border-top: 1px solid var(--ipc-color-rule);
+    color: var(--ipc-color-ink);
+    font-size: 0.75rem;
+    line-height: 1.35;
+    padding: 0.55rem 0.45rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  :global(.personnel-mini-table thead th) {
+    color: var(--ipc-color-ink-muted);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  @media (min-width: 992px) {
+    .personnel-section-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    :global(.personnel-panel-wide) {
+      grid-column: span 2;
+    }
+  }
+
+  @media (max-width: 991.98px) {
+    .personnel-portrait {
+      max-width: 14rem;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .personnel-action {
+      width: 100%;
+    }
+  }
+
+  .personnel-profile-hero {
+    align-items: start;
+    display: grid;
+    gap: 1.1rem;
+    grid-template-columns: minmax(0, 1fr) 10rem minmax(22rem, 27rem);
+    margin-bottom: 1.05rem;
+  }
+
+  .personnel-profile-title h1 {
+    color: var(--ipc-color-ink);
+    margin: 0;
+  }
+
+  .personnel-current-line {
+    color: var(--ipc-color-ink);
+    font-size: 0.95rem;
+    font-weight: 750;
+    line-height: 1.45;
+    margin: 0.7rem 0 0;
+  }
+
+  /* The separation date is part of the employment claim, not a footnote to it,
+     so it keeps the headline's weight instead of being de-emphasised. */
+  .personnel-assignment-ended {
+    white-space: nowrap;
+  }
+
+  .personnel-profile-note {
+    color: var(--ipc-color-ink-soft);
+    font-size: 0.93rem;
+    line-height: 1.45;
+    margin: 0.7rem 0 0;
+  }
+
+  .personnel-current-line a,
+  .personnel-profile-aside a {
+    color: var(--ipc-color-teal);
+    font-weight: 750;
+    text-decoration: none;
+  }
+
+  .personnel-profile-hero .personnel-portrait {
+    justify-self: end;
+    width: 9.3rem;
+  }
+
+  .personnel-profile-hero .personnel-portrait img {
+    aspect-ratio: 4 / 5;
+    height: auto;
+    max-height: 12rem;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  .personnel-profile-aside dl {
+    margin: 0;
+  }
+
+  .personnel-profile-aside dl div {
+    border-bottom: 1px solid var(--ipc-color-rule);
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: minmax(7.5rem, 10rem) minmax(0, 1fr);
+    padding: 0.46rem 0;
+  }
+
+  .personnel-profile-aside dt,
+  .personnel-profile-aside dd {
+    color: var(--ipc-color-ink);
+    font-size: 0.75rem;
+    margin: 0;
+  }
+
+  .personnel-profile-aside dt {
+    font-weight: 800;
+  }
+
+  .personnel-profile-aside dd {
+    font-weight: 650;
+  }
+
+  @media (max-width: 991.98px) {
+    .personnel-profile-hero {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .personnel-profile-hero .personnel-portrait {
+      justify-self: start;
+      width: 10rem;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .personnel-profile-aside dl div {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

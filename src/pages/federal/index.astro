@@ -1,0 +1,12 @@
+---
+import CivicIndexPage from "#src/components/CivicIndexPage.astro";
+import {
+  buildFederalCivicIndex,
+  loadFederalAgencySummaries,
+} from "#src/lib/data/federal-agencies.js";
+
+const federalAgencies = await loadFederalAgencySummaries();
+const model = buildFederalCivicIndex(federalAgencies);
+---
+
+<CivicIndexPage model={model} site={Astro.site} />

@@ -1,12 +1,9 @@
 import * as Sentry from "@sentry/astro";
 
-const createSubmissionSuccessMarkup = () =>
-  `<div>
+const createSubmissionSuccessMarkup = () => `<div>
     <p class="mb-1"><strong>Submission received.</strong></p>
-    <p class="mb-1">Submission ID: <code data-submission-id></code></p>
-    <p class="mb-0">Save this ID in a safe place. It cannot be recovered or displayed again. You can print this page and use this ID for follow-up questions or change requests.</p>
+    <p class="mb-0" data-form-submit-success-detail></p>
     <div class="mt-3 d-flex flex-wrap gap-2">
-      <button type="button" class="btn btn-sm btn-outline-dark" data-print-submission>Print</button>
       <button type="button" class="btn btn-sm btn-dark" data-dismiss-submit-success>Reset</button>
     </div>
   </div>`;
@@ -17,7 +14,7 @@ const BLOCKED_SUBMIT_FALLBACK =
 const FORM_LOAD_ERROR_MESSAGE = `
   <p class="mb-2"><strong>An error occurred while loading this page, and we have already reported it.</strong></p>
   <p class="mb-2">If the form fields are visible, you can still fill them out, print the page, and email it to hello@policeconduct.org.</p>
-  <p class="mb-0">To report additional details, please click "Report issue" at the bottom of the page.</p>
+  <p class="mb-0">To report additional details, please click "Report a site issue" at the bottom of the page.</p>
 `;
 
 type RecaptchaEnterprise = {
@@ -54,7 +51,7 @@ type FlattenedPrimitive = string | string[];
 interface FlattenedObject {
   [key: string]: FlattenedValue;
 }
-interface FlattenedArray extends Array<FlattenedValue> {}
+type FlattenedArray = FlattenedValue[];
 type FlattenedValue = FlattenedPrimitive | FlattenedObject | FlattenedArray;
 type FlattenedContainer = FlattenedObject | FlattenedArray;
 
@@ -73,7 +70,6 @@ type SubmitSuccessArgs = {
   recaptchaToken: string;
   response: Response;
   result: unknown;
-  submissionId: string;
   submitButton: HTMLButtonElement | null;
 };
 
@@ -88,8 +84,12 @@ type SubmitJsonFormOptions = {
   validate?: () => boolean | Promise<boolean>;
   onInvalid?: () => void | Promise<void>;
   onBeforeSubmit?: () => unknown | Promise<unknown>;
-  buildPayload?: (args: SubmitPayloadArgs) => unknown | Promise<unknown>;
+  buildPayload?: (
+    args: SubmitPayloadArgs,
+  ) => Record<string, unknown> | Promise<Record<string, unknown>>;
   onSuccess?: (args: SubmitSuccessArgs) => void | Promise<void>;
+  successKind?: "verification_pending";
+  getSuccessDetail?: (args: { result: unknown }) => string;
 };
 
 const trackAnalytics = (
@@ -489,7 +489,7 @@ const getRecaptchaToken = async (action: string) => {
   }
   await recaptchaReadyPromise;
 
-  let token: string | null = null;
+  let token: string | null;
   try {
     token = await enterprise.execute(recaptchaSiteKey, { action });
   } catch (error) {
@@ -596,9 +596,6 @@ const getSubmitSuccess = ({
     const dismissButton = inlineSuccess.querySelector<HTMLButtonElement>(
       "[data-dismiss-submit-success]",
     );
-    const printButton = inlineSuccess.querySelector<HTMLButtonElement>(
-      "[data-print-submission]",
-    );
 
     dismissButton?.addEventListener("click", function () {
       trackFormAnalytics("form_success_reset", formName);
@@ -609,11 +606,6 @@ const getSubmitSuccess = ({
       }
       form.dataset.submitLocked = "false";
       setSubmitButtonBusy(submitButton, false);
-    });
-
-    printButton?.addEventListener("click", function () {
-      trackFormAnalytics("form_success_print", formName);
-      window.print();
     });
 
     inlineSuccess.dataset.submitUiBound = "1";
@@ -638,6 +630,8 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
     onBeforeSubmit,
     buildPayload,
     onSuccess,
+    successKind: _successKind,
+    getSuccessDetail,
   } = options;
 
   const inlineError = getInlineError(form);
@@ -712,12 +706,14 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
     };
 
     failureStage = "request";
+    const releaseId = form.ownerDocument.documentElement.dataset.releaseId;
+    if (!releaseId) throw new Error("The form is missing its website release.");
     const response = await fetch("/api/forms/submit", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, releaseId }),
     });
     responseStatus = response.status;
 
@@ -741,22 +737,39 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
 
     failureStage = "response";
     const result = await response.json();
-    const submissionId =
-      typeof (result as { submissionId?: unknown })?.submissionId === "string"
-        ? (result as { submissionId: string }).submissionId
-        : "";
-    if (!submissionId) {
-      throw new Error(
-        "Submission succeeded but no submission ID was returned.",
-      );
-    }
+    const verificationPending = (result as { verificationPending?: unknown })
+      ?.verificationPending;
+    const verificationEmailStatus =
+      verificationPending === true
+        ? "pending"
+        : verificationPending === false
+          ? "failed"
+          : "unknown";
 
     form.classList.remove("was-validated");
-    const submissionIdNode = inlineSuccess.querySelector<HTMLElement>(
-      "[data-submission-id]",
+    const detailNode = inlineSuccess.querySelector<HTMLElement>(
+      "[data-form-submit-success-detail]",
     );
-    if (submissionIdNode) {
-      submissionIdNode.textContent = submissionId;
+    if (detailNode) {
+      const message =
+        typeof (result as { message?: unknown })?.message === "string"
+          ? (result as { message: string }).message.trim()
+          : "";
+      const requestId =
+        typeof (result as { requestId?: unknown })?.requestId === "string"
+          ? (result as { requestId: string }).requestId.trim()
+          : "";
+      let detailMessage =
+        getSuccessDetail?.({ result }) ||
+        message ||
+        "We received your submission. Check your email and open the link within 15 minutes to confirm your email address. Please contact hello@policeconduct.org if you need help.";
+      if (verificationPending === false) {
+        console.error("Form verification email failed", result);
+        if (requestId) {
+          detailMessage = `${detailMessage} Reference: ${requestId}.`;
+        }
+      }
+      detailNode.textContent = detailMessage;
     }
     setSubmitButtonBusy(submitButton, false);
     if (submitButton) {
@@ -766,14 +779,33 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
     inlineSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
     trackFormAnalytics("form_submit_success", formName, {
       response_status: responseStatus ?? response.status,
+      verification_email_status: verificationEmailStatus,
     });
+    if (verificationPending === false) {
+      const reason = (result as { verificationFailureReason?: unknown })
+        ?.verificationFailureReason;
+      trackFormAnalytics("form_verification_email_failed", formName, {
+        response_status: responseStatus ?? response.status,
+        verification_email_status: "failed",
+        failure_stage: "verification_email",
+        failure_reason:
+          typeof reason === "string" &&
+          [
+            "missing_origin",
+            "missing_email",
+            "invalid_email",
+            "send_failed",
+          ].includes(reason)
+            ? reason
+            : "unknown",
+      });
+    }
     await onSuccess?.({
       form,
       inlineSuccess,
       recaptchaToken,
       response,
       result,
-      submissionId,
       submitButton,
     });
     submissionCompleted = true;

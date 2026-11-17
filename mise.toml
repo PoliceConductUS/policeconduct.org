@@ -1,0 +1,11 @@
+[tools]
+node = "26.13.1"
+gh = "2.104.0"
+uv = "0.13.8"
+
+[env]
+DO_NOT_TRACK = "1"
+SUPABASE_TELEMETRY_DISABLED = "1"
+TMPDIR = ".cache/tmp"
+UV_CACHE_DIR = ".cache/uv"
+UV_TOOL_DIR = ".cache/uv-tools"

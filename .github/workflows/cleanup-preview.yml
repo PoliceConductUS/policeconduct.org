@@ -1,0 +1,44 @@
+name: Cleanup preview
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    # A fork PR never gets a preview -- previews are published by hand from a
+    # branch in this repo -- and a fork cannot read environment values anyway,
+    # so running there would only trip the guard below and re-redden the check.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Required: every value below is scoped to the preview environment, not the
+    # repository. Without this the job sees empty strings for all of them.
+    environment: preview
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26.13.1"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          # A variable, not a secret: the OIDC role ARN is not sensitive and the
+          # preview environment stores it as a variable.
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          # Pinned, as in deploy-preview.yml. CloudFront and ACM are us-east-1
+          # only (infrastructure/bootstrap-policeconduct/providers.tf).
+          aws-region: us-east-1
+
+      - name: Remove the closed preview and its release routes
+        env:
+          S3_BUCKET_PREVIEW: ${{ vars.S3_BUCKET }}
+          KVS_ARN_PREVIEW: ${{ vars.KVS_ARN_PREVIEW }}
+        run: node scripts/cleanup-preview.mjs

@@ -7,6 +7,7 @@ import {
   buildAuditRouteSelection,
   collectHtmlRoutes,
 } from "./audit-route-samples.mjs";
+import { assistiveFindings } from "./audit-a11y-checks.mjs";
 
 const DIST_DIR = path.resolve("dist");
 const PORT = Number(process.env.A11Y_PORT || "4173");
@@ -15,14 +16,6 @@ const MAX_URLS = Number(process.env.A11Y_MAX_URLS || "200");
 const BASE_URL = `http://${HOST}:${PORT}`;
 const FRESH_BUILD_REQUIRED_MESSAGE =
   "Fresh full build required. Run `npm run build` before `npm run audit` or `npm run audit:a11y`. Audits do not build automatically, and stale or partial dist/ output is not supported.";
-
-const readText = async (filePath) => {
-  try {
-    return await fs.readFile(filePath, "utf8");
-  } catch {
-    return null;
-  }
-};
 
 const startStaticServer = async () => {
   const contentTypes = {
@@ -186,6 +179,13 @@ const main = async () => {
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext();
+    await context.route("**/*", (route) => {
+      const requestUrl = new URL(route.request().url());
+      if (requestUrl.hostname !== HOST) {
+        return route.abort();
+      }
+      return route.continue();
+    });
 
     const failures = [];
 
@@ -219,6 +219,12 @@ const main = async () => {
             type: "axe",
             violations,
           });
+        }
+
+        // Screen-reader, forced-colors and zoom checks that axe does not make.
+        const findings = await assistiveFindings(page);
+        if (findings.length > 0) {
+          failures.push({ url, type: "assistive", findings });
         }
       } catch (error) {
         failures.push({
@@ -269,6 +275,13 @@ const main = async () => {
                 console.error(`      details: ${failureSummary}`);
               }
             }
+          }
+        } else if (failure.type === "assistive") {
+          console.error(
+            `- ${getPathname(failure.url)}: ${failure.findings.length} finding(s)`,
+          );
+          for (const finding of failure.findings) {
+            console.error(`  - ${finding}`);
           }
         } else {
           console.error(`- ${getPathname(failure.url)}: ${failure.message}`);

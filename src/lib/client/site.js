@@ -1,37 +1,7 @@
 import "bootstrap/js/dist/collapse";
 import "bootstrap/js/dist/scrollspy";
 import "bootstrap/js/dist/tab";
-
-window.__IPC_ANALYTICS__ = window.__IPC_ANALYTICS__ || {
-  track(eventName, params = {}) {
-    if (!eventName || typeof window.gtag !== "function") {
-      return;
-    }
-
-    const payload = {
-      page_path: window.location.pathname,
-      ...params,
-    };
-
-    Object.keys(payload).forEach((key) => {
-      const value = payload[key];
-      if (
-        value === undefined ||
-        value === null ||
-        value === "" ||
-        Number.isNaN(value)
-      ) {
-        delete payload[key];
-      }
-    });
-
-    window.gtag("event", eventName, payload);
-  },
-};
-
-const trackAnalytics = (eventName, params = {}) => {
-  window.__IPC_ANALYTICS__?.track?.(eventName, params);
-};
+import { trackAnalytics } from "./analytics.js";
 
 const normalizeText = (value) => value?.replace(/\s+/g, " ").trim() || "";
 
@@ -112,39 +82,6 @@ const initHeaderScroll = () => {
   onScroll();
 };
 
-const initPrefillLinks = () => {
-  document.addEventListener("click", (event) => {
-    const target = event.target.closest("[data-prefill-key]");
-    if (!target) {
-      return;
-    }
-    const key = target.getAttribute("data-prefill-key");
-    const payloadRaw = target.getAttribute("data-prefill-payload");
-    if (!key || !payloadRaw) {
-      return;
-    }
-    try {
-      const payload = JSON.parse(payloadRaw);
-      if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-        return;
-      }
-      window.__IPC_PREFILL__?.set?.(key, payload);
-      if (target instanceof HTMLAnchorElement) {
-        const hrefDetails = getHrefDetails(target);
-        trackAnalytics("prefill_link_click", {
-          href_path: hrefDetails?.path || "",
-          link_text: normalizeText(target.textContent),
-          page_path: window.location.pathname,
-          prefill_key: key,
-          section_id: getSectionId(target),
-        });
-      }
-    } catch (_error) {
-      // Ignore malformed payloads.
-    }
-  });
-};
-
 const initAnalyticsClicks = () => {
   document.addEventListener("click", (event) => {
     const target = event.target;
@@ -156,13 +93,12 @@ const initAnalyticsClicks = () => {
     if (!(anchor instanceof HTMLAnchorElement)) {
       return;
     }
-
-    const hrefDetails = getHrefDetails(anchor);
-    if (!hrefDetails || !hrefDetails.href || hrefDetails.href.startsWith("#")) {
+    if (anchor.closest("[data-site-search], [data-record-finder]")) {
       return;
     }
 
-    if (anchor.matches("[data-prefill-key]")) {
+    const hrefDetails = getHrefDetails(anchor);
+    if (!hrefDetails || !hrefDetails.href || hrefDetails.href.startsWith("#")) {
       return;
     }
 
@@ -173,9 +109,11 @@ const initAnalyticsClicks = () => {
       section_id: getSectionId(anchor),
     };
 
-    if (anchor.closest(".navbar")) {
+    if (anchor.closest(".masthead")) {
       trackAnalytics(
-        anchor.closest(".nav-cta") ? "nav_cta_click" : "nav_link_click",
+        anchor.classList.contains("nav-action")
+          ? "nav_cta_click"
+          : "nav_link_click",
         basePayload,
       );
       return;
@@ -202,44 +140,6 @@ const initAnalyticsClicks = () => {
       });
     });
   }
-};
-
-const initProfileTabsAnalytics = () => {
-  document.addEventListener("click", (event) => {
-    const target = event.target;
-    if (!(target instanceof Element)) {
-      return;
-    }
-
-    const tabButton = target.closest("[data-profile-tab]");
-    if (tabButton instanceof HTMLButtonElement) {
-      trackAnalytics("profile_tab_selected", {
-        page_path: window.location.pathname,
-        tab_id: tabButton.dataset.tabId || "",
-        tab_label: tabButton.dataset.tabLabel || "",
-      });
-      return;
-    }
-
-    const link = target.closest("a[data-profile-link-type]");
-    if (!(link instanceof HTMLAnchorElement)) {
-      return;
-    }
-
-    const tabRoot = link.closest("[data-profile-tabs]");
-    if (!tabRoot) {
-      return;
-    }
-
-    const tabPanel = link.closest('[role="tabpanel"]');
-    trackAnalytics("profile_tab_link_clicked", {
-      destination_url: link.href,
-      link_text: normalizeText(link.textContent),
-      link_type: link.dataset.profileLinkType || "",
-      page_path: window.location.pathname,
-      tab_id: tabPanel?.id || "",
-    });
-  });
 };
 
 const initMapAnalyticsClicks = () => {
@@ -287,9 +187,473 @@ const initMapAnalyticsClicks = () => {
   });
 };
 
+// Use the supported Clipboard API. Report failure to the action bar when
+// access is unavailable or denied instead of invoking deprecated DOM commands.
+const copyTextToClipboard = async (text) => {
+  if (!navigator.clipboard || !window.isSecureContext) {
+    return false;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (_error) {
+    return false;
+  }
+};
+
+// Shared entity action-bar "Copy link" behavior (EntityActionBar.astro).
+// The anchor's href is a real, working same-page link so the no-JS
+// experience is a harmless reload; with JS, intercept the click and copy
+// the current page's URL instead.
+const initCopyLink = () => {
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const trigger = target.closest("[data-copy-link]");
+    if (!(trigger instanceof HTMLAnchorElement)) {
+      return;
+    }
+
+    event.preventDefault();
+    const originalText = trigger.textContent;
+    const url = window.location.href;
+
+    const status = trigger
+      .closest("li")
+      ?.querySelector("[data-copy-link-status]");
+
+    copyTextToClipboard(url).then((succeeded) => {
+      const message = succeeded ? "Copied!" : "Couldn't copy";
+      trigger.textContent = message;
+      // The link's own text changing is not announced; the status element is.
+      if (status) status.textContent = message;
+      window.setTimeout(() => {
+        trigger.textContent = originalText;
+        if (status) status.textContent = "";
+      }, 1600);
+    });
+  });
+};
+
+// The "More actions" menu (EntityActionBar.astro) is a <details>. Close it on
+// Escape and on a click outside, so it does not stay over the page content.
+const initEntityMenu = () => {
+  const openMenus = () =>
+    document.querySelectorAll("details.entity-menu[open]");
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    openMenus().forEach((menu) => {
+      menu.open = false;
+      menu.querySelector("summary")?.focus();
+    });
+  });
+  document.addEventListener("click", (event) => {
+    openMenus().forEach((menu) => {
+      if (event.target instanceof Node && !menu.contains(event.target)) {
+        menu.open = false;
+      }
+    });
+  });
+};
+
+// Shared "jump to a child record" enhancement: a <select> + submit that
+// works as a plain form (no-JS) and, with JS, navigates as soon as the form
+// is submitted. Used by the civic-index drill-down cell
+// (CivicIndexPage.astro) and any future page that renders the same markup
+// contract: a form[data-jump-form] containing select[data-jump-select], with
+// an optional sibling [data-jump-status] (in the form's parent) for
+// aria-live feedback.
+const initJumpForms = () => {
+  document.querySelectorAll("[data-jump-form]").forEach((form) => {
+    const select = form.querySelector("[data-jump-select]");
+    if (!(select instanceof HTMLSelectElement)) {
+      return;
+    }
+    const status = form.parentElement?.querySelector("[data-jump-status]");
+    const setStatus = (text) => {
+      if (status) {
+        status.textContent = text;
+      }
+    };
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const option = select.options[select.selectedIndex];
+      if (!option || !option.value) {
+        setStatus("Choose one first.");
+        return;
+      }
+      const destination = new URL(option.value, window.location.href);
+      if (
+        destination.protocol !== "https:" &&
+        destination.protocol !== "http:"
+      ) {
+        return;
+      }
+      setStatus(`Opening ${option.textContent.trim()} →`);
+      window.location.href = destination.href;
+    });
+  });
+};
+
+// Masthead search (MastheadSearch.astro): progressively enhances the plain
+// `role="search"` GET form (action="/find-records/") with Pagefind's
+// self-hosted, statically-built index. Pagefind's JS lives at
+// /pagefind/pagefind.js only in the built site (produced post-`astro build`
+// by `npx pagefind --site dist`, see package.json's `build` script) — it is
+// absent in `astro dev` and would 404 there. That failure (and any other
+// load/search failure) is swallowed: the plain form submission above is
+// always the fallback, so degrading to it is silent and harmless.
+//
+// Loaded lazily on first focus/input of the field, not at page load, since
+// every one of the site's ~100k pages renders this same masthead.
+const PAGEFIND_MODULE_URL = "/pagefind/pagefind.js";
+const SEARCH_DEBOUNCE_MS = 150;
+const SEARCH_MEASUREMENT_DELAY_MS = 600;
+const MAX_SEARCH_RESULTS = 8;
+
+const getSearchResultCategory = (path) => {
+  const pathname = new URL(path, window.location.origin).pathname;
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length === 2 && !["new", "suggest-edit"].includes(parts[1])) {
+    if (parts[0] === "personnel") return "personnel";
+    if (parts[0] === "civil-cases") return "civil_case";
+    if (parts[0] === "report") return "report";
+  }
+  if (
+    /^\/[a-z]{2}\/[^/]+\/[^/]+\/reports\/\d{4}\/\d{2}\/\d{2}\/[^/]+\/$/.test(
+      pathname,
+    )
+  )
+    return "report";
+  if (
+    parts
+      .slice(1)
+      .some((part) =>
+        [
+          "agencies",
+          "budget",
+          "civil-cases",
+          "counties",
+          "fatal-force-incidents",
+          "liability-costs",
+          "licensing-authority",
+          "outcomes-by-income",
+          "personnel",
+          "places",
+          "reports",
+        ].includes(part),
+      )
+  )
+    return "other";
+  if (parts[0] === "federal" && parts.length === 2) return "federal-agency";
+  if (/^[a-z]{2}$/.test(parts[0] || "")) {
+    if (parts.length === 4) return "agency";
+    if (parts.length <= 3) return "place";
+  }
+  return "other";
+};
+
+const initSiteSearch = () => {
+  const form = document.querySelector("[data-site-search]");
+  if (!(form instanceof HTMLFormElement)) {
+    return;
+  }
+
+  const input = form.querySelector("[data-site-search-input]");
+  const panel = form.querySelector("[data-site-search-panel]");
+  const listbox = form.querySelector("[data-site-search-listbox]");
+  const status = form.querySelector("[data-site-search-status]");
+  const empty = form.querySelector("[data-site-search-empty]");
+  const emptyLink = form.querySelector("[data-site-search-empty-link]");
+  if (
+    !(input instanceof HTMLInputElement) ||
+    !(panel instanceof HTMLElement) ||
+    !(listbox instanceof HTMLElement) ||
+    !(status instanceof HTMLElement) ||
+    !(empty instanceof HTMLElement) ||
+    !(emptyLink instanceof HTMLAnchorElement)
+  ) {
+    return;
+  }
+
+  let pagefindApi = null;
+  let pagefindLoadPromise = null;
+  let results = [];
+  let activeIndex = -1;
+  let requestId = 0;
+  let debounceTimer = null;
+  let measurementTimer = null;
+  let completedSearch = null;
+  let lastReportedTerm = "";
+
+  const reportSearchResults = () => {
+    if (!completedSearch || lastReportedTerm === completedSearch.term) return;
+    lastReportedTerm = completedSearch.term;
+    trackAnalytics("search_results", {
+      search_source: "masthead",
+      result_count: completedSearch.resultCount,
+    });
+  };
+
+  const loadPagefind = () => {
+    if (!pagefindLoadPromise) {
+      pagefindLoadPromise = import(/* @vite-ignore */ PAGEFIND_MODULE_URL)
+        .then(async (module) => {
+          pagefindApi = module;
+          await module.init?.();
+          return module;
+        })
+        .catch(() => {
+          // No built index available (e.g. dev server, or the asset
+          // failed to load) — leave pagefindApi null so search is a
+          // silent no-op and the plain form submission keeps working.
+          pagefindApi = null;
+        });
+    }
+    return pagefindLoadPromise;
+  };
+
+  const setStatus = (text) => {
+    status.textContent = text;
+  };
+
+  const closePanel = () => {
+    panel.hidden = true;
+    empty.hidden = true;
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+    activeIndex = -1;
+    // Clear results (not just hide the panel) so a stale result set can't
+    // be reactivated: without this, ArrowDown after Escape would still see
+    // results.length > 0 and move an aria-activedescendant onto an option
+    // inside a hidden panel. Clearing here makes ArrowDown a no-op until
+    // the next search runs.
+    results = [];
+    listbox.innerHTML = "";
+  };
+
+  const navigateToResult = (result) => {
+    if (!result?.path) {
+      return;
+    }
+    reportSearchResults();
+    trackAnalytics("search_result_selected", {
+      search_source: "masthead",
+      result_category: getSearchResultCategory(result.path),
+    });
+    window.location.href = result.path;
+  };
+
+  const updateActiveDescendant = () => {
+    if (activeIndex < 0) {
+      input.removeAttribute("aria-activedescendant");
+    } else {
+      input.setAttribute(
+        "aria-activedescendant",
+        `site-search-option-${activeIndex}`,
+      );
+    }
+
+    Array.from(listbox.children).forEach((child, index) => {
+      const isActive = index === activeIndex;
+      child.classList.toggle("is-active", isActive);
+      child.setAttribute("aria-selected", isActive ? "true" : "false");
+      if (isActive && child instanceof HTMLElement) {
+        child.scrollIntoView({ block: "nearest" });
+      }
+    });
+  };
+
+  const renderResults = () => {
+    listbox.innerHTML = "";
+
+    results.forEach((result, index) => {
+      const option = document.createElement("li");
+      option.id = `site-search-option-${index}`;
+      option.className = "masthead-search-option";
+      option.setAttribute("role", "option");
+      option.setAttribute("aria-selected", "false");
+
+      const titleEl = document.createElement("span");
+      titleEl.className = "masthead-search-option-title";
+      titleEl.textContent = result.title;
+
+      const pathEl = document.createElement("span");
+      pathEl.className = "masthead-search-option-path";
+      pathEl.textContent = result.path;
+
+      option.append(titleEl, pathEl);
+      // mousedown (not click) fires before the input blurs, so we can
+      // preventDefault to keep focus on the input and navigate without
+      // racing a blur-triggered panel close.
+      option.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        navigateToResult(result);
+      });
+
+      listbox.appendChild(option);
+    });
+
+    if (results.length > 0) {
+      empty.hidden = true;
+      panel.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+    } else {
+      closePanel();
+    }
+  };
+
+  // A search that matches nothing keeps the panel open with a visible note and
+  // a link that runs the same term on /find-records/. The listbox stays empty,
+  // so the combobox still reports aria-expanded="false".
+  const showNoResults = (term) => {
+    emptyLink.href = `/find-records/?q=${encodeURIComponent(term)}`;
+    empty.hidden = false;
+    panel.hidden = false;
+  };
+
+  const runSearch = async (term) => {
+    const currentRequestId = ++requestId;
+    window.clearTimeout(measurementTimer);
+
+    if (!term) {
+      completedSearch = null;
+      lastReportedTerm = "";
+      results = [];
+      activeIndex = -1;
+      renderResults();
+      setStatus("");
+      return;
+    }
+
+    await loadPagefind();
+    if (currentRequestId !== requestId || !pagefindApi?.search) {
+      return;
+    }
+
+    try {
+      const search = await pagefindApi.search(term);
+      if (currentRequestId !== requestId) {
+        return;
+      }
+
+      const entries = await Promise.all(
+        search.results
+          .slice(0, MAX_SEARCH_RESULTS)
+          .map((entry) => entry.data()),
+      );
+      if (currentRequestId !== requestId) {
+        return;
+      }
+
+      completedSearch = { term, resultCount: search.results.length };
+      measurementTimer = window.setTimeout(() => {
+        if (input.value.trim() === term) reportSearchResults();
+      }, SEARCH_MEASUREMENT_DELAY_MS);
+
+      results = entries.map((entry) => ({
+        title: entry.meta?.title || entry.url,
+        path: entry.url,
+      }));
+      activeIndex = -1;
+      renderResults();
+      if (results.length === 0) {
+        showNoResults(term);
+      }
+      setStatus(
+        results.length === 0
+          ? "No results"
+          : results.length === 1
+            ? "1 result"
+            : `${results.length} results`,
+      );
+    } catch (_error) {
+      // Search failed after the module loaded (e.g. a malformed index) —
+      // stay silent; the plain form submission remains available.
+    }
+  };
+
+  const debouncedSearch = (term) => {
+    if (debounceTimer) {
+      window.clearTimeout(debounceTimer);
+    }
+    debounceTimer = window.setTimeout(
+      () => runSearch(term),
+      SEARCH_DEBOUNCE_MS,
+    );
+  };
+
+  input.addEventListener("focus", loadPagefind, { once: true });
+  input.addEventListener("input", () => {
+    window.clearTimeout(measurementTimer);
+    debouncedSearch(input.value.trim());
+  });
+
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (results.length === 0) {
+        return;
+      }
+      activeIndex = (activeIndex + 1) % results.length;
+      updateActiveDescendant();
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (results.length === 0) {
+        return;
+      }
+      activeIndex = (activeIndex - 1 + results.length) % results.length;
+      updateActiveDescendant();
+      return;
+    }
+
+    if (event.key === "Enter") {
+      if (activeIndex >= 0 && results[activeIndex]) {
+        event.preventDefault();
+        navigateToResult(results[activeIndex]);
+      }
+      return;
+    }
+
+    if (event.key === "Escape" && !panel.hidden) {
+      event.preventDefault();
+      closePanel();
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (event.target instanceof Node && !form.contains(event.target)) {
+      closePanel();
+    }
+  });
+
+  // Tab-away (or any focus loss to something outside the search form)
+  // closes the panel. This does not race the option mousedown+preventDefault
+  // pattern above: preventDefault on mousedown stops the browser's default
+  // focus-shift, so the input never blurs and this focusout handler never
+  // fires for an option click — navigateToResult already runs synchronously
+  // inside the mousedown handler.
+  form.addEventListener("focusout", (event) => {
+    const nextFocusTarget = event.relatedTarget;
+    if (nextFocusTarget instanceof Node && form.contains(nextFocusTarget)) {
+      return;
+    }
+    closePanel();
+  });
+};
+
 initBetaBanner();
 initHeaderScroll();
-initPrefillLinks();
 initAnalyticsClicks();
-initProfileTabsAnalytics();
 initMapAnalyticsClicks();
+initCopyLink();
+initEntityMenu();
+initJumpForms();
+initSiteSearch();
