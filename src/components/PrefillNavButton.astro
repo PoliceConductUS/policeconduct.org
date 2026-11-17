@@ -19,7 +19,9 @@ const payloadJson =
   typeof payload === "string" ? payload : JSON.stringify(payload);
 const storageKey = new URL(to, "https://www.policeconduct.org").pathname;
 const variantClass =
-  variant === "link" ? "border-0 bg-transparent p-0 text-start" : "";
+  variant === "link"
+    ? "border-0 bg-transparent p-0 text-start text-decoration-underline"
+    : "";
 ---
 
 <button

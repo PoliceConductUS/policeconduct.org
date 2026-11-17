@@ -284,6 +284,12 @@ npm run build
 npm run audit
 ```
 
+The accessibility audit runs axe (WCAG A and AA) on each sampled route, then checks
+what a screen reader receives (landmarks, one page heading, image alt text, a name
+for every control), focus indicators and control edges in forced-colors mode, and
+reflow at 200% and 400% zoom. It reads the accessibility tree and computed styles;
+it does not replace a person using a screen reader.
+
 Run either audit directly when needed:
 
 ```bash

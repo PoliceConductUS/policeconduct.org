@@ -2151,7 +2151,10 @@ progress {
   color: #212529;
   background-color: #fff;
   border-color: var(--ipc-color-ink);
-  outline: 0;
+  /* Invisible here; forced-colors mode removes the box-shadow ring and draws
+     this outline in a system color instead. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
   box-shadow: 0 0 0 0.25rem rgba(21, 21, 21, 0.25);
 }
 .form-control::-webkit-date-and-time-value {
@@ -2298,7 +2301,10 @@ textarea.form-control-lg {
 }
 .form-select:focus {
   border-color: var(--ipc-color-ink);
-  outline: 0;
+  /* Invisible here; forced-colors mode removes the box-shadow ring and draws
+     this outline in a system color instead. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
   box-shadow: 0 0 0 0.25rem rgba(21, 21, 21, 0.25);
 }
 .form-select[multiple],
@@ -2376,7 +2382,10 @@ textarea.form-control-lg {
 }
 .form-check-input:focus {
   border-color: var(--ipc-color-ink);
-  outline: 0;
+  /* Invisible here; forced-colors mode removes the box-shadow ring and draws
+     this outline in a system color instead. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
   box-shadow: 0 0 0 0.25rem rgba(21, 21, 21, 0.25);
 }
 .form-check-input:checked {
@@ -2616,6 +2625,50 @@ textarea.form-control-lg {
 }
 .form-floating > .form-control-plaintext ~ label {
   border-width: 1px 0;
+}
+
+/* A floating label cannot wrap, so a long one was cut off on narrow screens and
+   at 400% zoom. Below the sm breakpoint the label sits above its field. */
+@media (max-width: 575.98px) {
+  .form-floating {
+    display: flex;
+    flex-direction: column;
+  }
+  .form-floating > label {
+    position: static;
+    order: -1;
+    width: auto;
+    height: auto;
+    padding: 0 0 0.25rem;
+    overflow: visible;
+    white-space: normal;
+    pointer-events: auto;
+    border: 0;
+  }
+  .form-floating > .form-control:focus ~ label,
+  .form-floating > .form-control:not(:placeholder-shown) ~ label,
+  .form-floating > .form-control-plaintext ~ label,
+  .form-floating > .form-select ~ label,
+  .form-floating > .form-control:-webkit-autofill ~ label {
+    transform: none;
+  }
+  .form-floating > .form-control,
+  .form-floating > .form-control-plaintext,
+  .form-floating > .form-select {
+    height: auto;
+    min-height: 2.75rem;
+  }
+  .form-floating > .form-control,
+  .form-floating > .form-control:focus,
+  .form-floating > .form-control:not(:placeholder-shown),
+  .form-floating > .form-control:-webkit-autofill,
+  .form-floating > .form-control-plaintext,
+  .form-floating > .form-control-plaintext:focus,
+  .form-floating > .form-control-plaintext:not(:placeholder-shown),
+  .form-floating > .form-select {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
 }
 
 .input-group {

@@ -849,7 +849,8 @@ a.stat-cell {
 /* The whole row is the control. */
 .entity-side .entity-side-link {
   background: none;
-  border: none;
+  /* Invisible here; forced-colors mode draws it so each row reads as a control. */
+  border: 1px solid transparent;
   color: var(--ipc-color-teal);
   cursor: pointer;
   display: block;
