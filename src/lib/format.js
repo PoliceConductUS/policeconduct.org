@@ -6,7 +6,12 @@ const formatDate = (value, options) => {
   if (Number.isNaN(date.getTime())) {
     throw new Error(`Cannot format an invalid date: ${String(value)}`);
   }
-  return new Intl.DateTimeFormat("en-US", options).format(date);
+  const calendarDate =
+    typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+  return new Intl.DateTimeFormat("en-US", {
+    ...options,
+    ...(calendarDate ? { timeZone: "UTC" } : {}),
+  }).format(date);
 };
 
 export const formatShortDate = (value) =>
