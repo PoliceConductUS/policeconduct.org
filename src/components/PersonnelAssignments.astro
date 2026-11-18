@@ -13,7 +13,7 @@ import type { PersonnelLicensing } from "#src/lib/data/licensing.js";
 interface Props {
   assignmentHistory: {
     id: string;
-    title?: string | null;
+    title: string;
     license_id?: string | null;
     start_date?: string | null;
     end_date?: string | null;
@@ -25,10 +25,9 @@ interface Props {
       page_type?: string | null;
     };
   }[];
-  currentTitle: string;
   licensing: PersonnelLicensing;
 }
-const { assignmentHistory, currentTitle, licensing } = Astro.props;
+const { assignmentHistory, licensing } = Astro.props;
 const assignmentAnnotations = await withDb(
   async (client) =>
     (
@@ -70,7 +69,7 @@ const assignmentAnnotations = await withDb(
                   entry.agency.name
                 )}
               </th>
-              <td>{entry.title || currentTitle}</td>
+              <td>{entry.title}</td>
               <td>
                 {entry.license_id &&
                   (() => {
