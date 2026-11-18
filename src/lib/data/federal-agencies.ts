@@ -113,20 +113,18 @@ const isFederalFinancialTopic = (kind: FederalAgencyTopicKind) =>
 const federalTopicConfig = {
   personnel: {
     label: metricLabels.personnel,
-    description:
-      "Personnel records connected through federal child agencies currently available.",
+    describe: (scope) => `Current personnel at ${scope}.`,
     charts: ["Personnel Over Time", "Personnel by Child Agency", "Record Mix"],
   },
   reports: {
     label: metricLabels.reports,
-    description:
-      "Published public reports connected through federal child agencies currently available.",
+    describe: (scope) =>
+      `Public reports naming people who have worked at ${scope}.`,
     charts: ["Reports Over Time", "Reports by Child Agency", "Record Mix"],
   },
   budget: {
     label: metricLabels.budget,
-    description:
-      "Direct federal-agency budget records. Location-derived financial rollups are not projected.",
+    describe: (scope) => `Budget records for ${scope}.`,
     charts: [
       "Budget Over Time",
       "Revenue Sources Over Time",
@@ -135,14 +133,13 @@ const federalTopicConfig = {
   },
   "civil-cases": {
     label: metricLabels.civilCases,
-    description:
-      "Civil cases connected through federal child agencies and personnel.",
+    describe: (scope) =>
+      `Civil cases naming people who have worked at ${scope}.`,
     charts: ["Civil Cases Over Time", "Case Types", "Cases by Child Agency"],
   },
   "liability-costs": {
     label: metricLabels.liabilityCosts,
-    description:
-      "Direct federal-agency liability cost records. Location-derived financial rollups are not projected.",
+    describe: (scope) => `Liability cost records for ${scope}.`,
     charts: [
       "Liability Costs Over Time",
       "Cost Components Over Time",
@@ -151,12 +148,12 @@ const federalTopicConfig = {
   },
   "outcomes-by-income": {
     label: metricLabels.outcomesByIncome,
-    description: "Case outcomes by income band.",
+    describe: (scope) => `Case outcomes by income band for ${scope}.`,
     charts: [],
   },
 } satisfies Record<
   FederalAgencyTopicKind,
-  { charts: string[]; description: string; label: string }
+  { charts: string[]; describe: (scope: string) => string; label: string }
 >;
 
 const generalFederalCharts = [
@@ -191,19 +188,19 @@ const topicMetricsFor = (
       },
       {
         ...metricVisuals.agencies,
-        detail: "Assignment history coverage is not projected yet",
+        detail: "Where personnel have worked",
         key: "assignments",
         value: "--",
       },
       {
         ...metricVisuals.reports,
-        detail: "Public reports connected through linked agencies",
+        detail: "Reports naming people at these agencies",
         key: "reports",
         value: formatCount(totals.reports),
       },
       {
         ...metricVisuals.latestPersonnelUpdate,
-        detail: "Personnel update recency is not projected yet",
+        detail: "Most recent change to a personnel record",
         key: "latestPersonnelUpdate",
         value: "--",
       },
@@ -214,7 +211,7 @@ const topicMetricsFor = (
     return [
       {
         ...metricVisuals.reports,
-        detail: "Public reports connected through linked agencies",
+        detail: "Reports naming people at these agencies",
         key: "reports",
         actionKind: "button",
         value: formatCount(totals.reports),
@@ -233,7 +230,7 @@ const topicMetricsFor = (
       },
       {
         ...metricVisuals.latestRecordedYear,
-        detail: "Report recency is not projected yet",
+        detail: "Year of the most recent report",
         key: "latestRecordedYear",
         value: "--",
       },
@@ -244,32 +241,32 @@ const topicMetricsFor = (
     return [
       {
         ...metricVisuals.civilCases,
-        detail: "Civil cases connected through linked agencies",
+        detail: "Cases naming people at these agencies",
         key: "civilCases",
         actionKind: "button",
         value: formatCount(totals.civilCases),
       },
       {
         ...metricVisuals.caseTypes,
-        detail: "Case type coverage is not projected yet",
+        detail: "Kinds of claims in these cases",
         key: "caseTypes",
         value: "--",
       },
       {
         ...metricVisuals.caseOutcomes,
-        detail: "Outcome coverage is not projected yet",
+        detail: "How these cases ended",
         key: "caseOutcomes",
         value: "--",
       },
       {
         ...metricVisuals.reports,
-        detail: "Public reports connected through linked agencies",
+        detail: "Reports naming people at these agencies",
         key: "reports",
         value: formatCount(totals.reports),
       },
       {
         ...metricVisuals.latestCaseActivity,
-        detail: "Case activity recency is not projected yet",
+        detail: "Most recent filing or ruling",
         key: "latestCaseActivity",
         value: "--",
       },
@@ -280,34 +277,32 @@ const topicMetricsFor = (
     return [
       {
         ...metricVisuals.budget,
-        detail:
-          "Direct federal-agency budget totals are not projected yet; child-location totals are excluded",
+        detail: "Total budget",
         key: "budget",
         actionKind: "button",
         value: "$--",
       },
       {
         ...metricVisuals.operatingSpend,
-        detail: "Direct federal-agency operating spend is not projected yet",
+        detail: "Day-to-day spending",
         key: "operatingSpend",
         value: "$--",
       },
       {
         ...metricVisuals.overtime,
-        detail: "Direct federal-agency overtime spending is not projected yet",
+        detail: "Overtime pay",
         key: "overtime",
         value: "$--",
       },
       {
         ...metricVisuals.reports,
-        detail: "Public reports connected through linked agencies",
+        detail: "Reports naming people at these agencies",
         key: "reports",
         value: formatCount(totals.reports),
       },
       {
         ...metricVisuals.latestFiscalYear,
-        detail:
-          "Direct federal-agency fiscal-year coverage is not projected yet",
+        detail: "Most recent budget year",
         key: "latestFiscalYear",
         value: "--",
       },
@@ -321,34 +316,32 @@ const topicMetricsFor = (
   return [
     {
       ...metricVisuals.liabilityCosts,
-      detail:
-        "Direct federal-agency liability cost totals are not projected yet; child-location totals are excluded",
+      detail: "Claims, settlements and judgments paid",
       key: "liabilityCosts",
       actionKind: "button",
       value: "$--",
     },
     {
       ...metricVisuals.settlements,
-      detail: "Direct federal-agency settlement totals are not projected yet",
+      detail: "Paid to settle claims",
       key: "settlements",
       value: "$--",
     },
     {
       ...metricVisuals.judgments,
-      detail: "Direct federal-agency judgment totals are not projected yet",
+      detail: "Paid after court judgments",
       key: "judgments",
       value: "$--",
     },
     {
       ...metricVisuals.reports,
-      detail: "Public reports connected through linked agencies",
+      detail: "Reports naming people at these agencies",
       key: "reports",
       value: formatCount(totals.reports),
     },
     {
       ...metricVisuals.latestRecordedYear,
-      detail:
-        "Direct federal-agency liability-cost recency is not projected yet",
+      detail: "Year of the most recent payment",
       key: "latestRecordedYear",
       value: "--",
     },
@@ -724,7 +717,7 @@ export const buildFederalAgencyIndexModel = (
       },
       {
         ...metricVisuals.civilCases,
-        detail: "Civil cases connected through linked agencies",
+        detail: "Cases naming people at these agencies",
         href: `${pagePath}civil-cases/`,
         actionLabel: "View details",
         key: "civilCases",
@@ -732,7 +725,7 @@ export const buildFederalAgencyIndexModel = (
       },
       {
         ...metricVisuals.reports,
-        detail: "Public reports connected through linked agencies",
+        detail: "Reports naming people at these agencies",
         href: `${pagePath}reports/`,
         actionLabel: "View details",
         key: "reports",
@@ -784,7 +777,7 @@ export const buildFederalAgencyDetailIndexModel = (
     },
     {
       ...metricVisuals.civilCases,
-      detail: "Civil cases connected through linked agencies",
+      detail: "Cases naming people at these agencies",
       href: `${federalAgency.path}civil-cases/`,
       actionLabel: "View details",
       key: "civilCases",
@@ -792,7 +785,7 @@ export const buildFederalAgencyDetailIndexModel = (
     },
     {
       ...metricVisuals.reports,
-      detail: "Public reports connected through linked agencies",
+      detail: "Reports naming people at these agencies",
       href: `${federalAgency.path}reports/`,
       actionLabel: "View details",
       key: "reports",
@@ -891,7 +884,7 @@ export const buildFederalAgencyTopicIndexModel = (
           { key: "reports", label: metricLabels.reports, numeric: true },
           { key: "civilCases", label: metricLabels.civilCases, numeric: true },
         ],
-    description: `Federal ${topic.description.toLowerCase()}`,
+    description: topic.describe("federal agencies"),
     heading: `Federal ${topic.label}`,
     metrics: topicMetricsFor(kind, totals),
     pagePath: `/federal/${kind}/`,
@@ -941,7 +934,7 @@ export const buildFederalAgencyDetailTopicIndexModel = (
           { key: "reports", label: metricLabels.reports, numeric: true },
           { key: "civilCases", label: metricLabels.civilCases, numeric: true },
         ],
-    description: `${federalAgency.name} ${topic.description.toLowerCase()}`,
+    description: topic.describe(`the ${federalAgency.name}`),
     heading: `${federalAgency.name} ${topic.label}`,
     metrics: topicMetricsFor(kind, totals),
     pagePath: `${federalAgency.path}${kind}/`,
