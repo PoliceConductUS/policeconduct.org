@@ -141,6 +141,26 @@ data "aws_iam_policy_document" "intake_news" {
     actions   = ["cloudfront:GetInvalidation"]
     resources = [aws_cloudfront_distribution.site.arn]
   }
+  statement {
+    actions = ["ssm:GetParameter"]
+    resources = [
+      for name in ["SERPAPI_KEY", "SEARCH_CONSOLE_CREDENTIALS", "NEWS_INFERENCE_API_KEY"] :
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/policeconduct/secrets/${name}"
+    ]
+  }
+  statement {
+    actions   = ["kms:Decrypt"]
+    resources = [data.aws_kms_alias.ssm.target_key_arn]
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["ssm.${var.aws_region}.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_kms_alias" "ssm" {
+  name = "alias/aws/ssm"
 }
 
 resource "aws_iam_role_policy" "intake_news" {
