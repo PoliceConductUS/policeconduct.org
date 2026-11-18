@@ -76,7 +76,11 @@ if (personnelItemList) {
   lede="Profiles of law enforcement personnel with listed agencies."
 >
   <Fragment slot="header">
-    <div class="ipc-hero-summary mt-3" aria-label="Personnel summary">
+    <div
+      class="ipc-hero-summary mt-3"
+      role="group"
+      aria-label="Personnel summary"
+    >
       <span class="badge bg-light text-dark border rounded-0">
         {totalPersonnel} personnel
       </span>
