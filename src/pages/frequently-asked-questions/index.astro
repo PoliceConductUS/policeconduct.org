@@ -219,7 +219,7 @@ const faqEntries = [
   {
     question: "Why does the same civil case appear on more than one page?",
     answer:
-      "A civil case is listed on the page of every agency where someone named in the case has worked, and on the state, county, and city pages for those agencies. A case that names officers from two agencies appears on both agencies' pages. The list at /civil-cases/ shows each case once.",
+      "A civil case is listed on the page of each agency whose personnel it names, and on the state, county, and city pages where those agencies are located. A case that names officers from two agencies appears on both agencies' pages. The list at /civil-cases/ shows each case once.",
   },
   {
     question: "Why are you a national nonprofit, and why Delaware?",
@@ -1475,11 +1475,11 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
         data-bs-parent="#faqAccordionRecords"
       >
         <div class="accordion-body">
-          A civil case is listed on the page of every agency where someone named
-          in the case has worked, and on the state, county, and city pages for
-          those agencies. A case that names officers from two agencies appears
-          on both agencies' pages. The{" "}
-          <a href="/civil-cases/">civil case list</a> shows each case once.
+          A civil case is listed on the page of each agency whose personnel it
+          names, and on the state, county, and city pages where those agencies
+          are located. A case that names officers from two agencies appears on
+          both agencies' pages. The <a href="/civil-cases/">civil case list</a>{" "}
+          shows each case once.
         </div>
       </div>
     </div>

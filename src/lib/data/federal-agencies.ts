@@ -118,8 +118,7 @@ const federalTopicConfig = {
   },
   reports: {
     label: metricLabels.reports,
-    describe: (scope) =>
-      `Public reports naming people who have worked at ${scope}.`,
+    describe: (scope) => `Public reports that name personnel of ${scope}.`,
     charts: ["Reports Over Time", "Reports by Child Agency", "Record Mix"],
   },
   budget: {
@@ -133,8 +132,7 @@ const federalTopicConfig = {
   },
   "civil-cases": {
     label: metricLabels.civilCases,
-    describe: (scope) =>
-      `Civil cases naming people who have worked at ${scope}.`,
+    describe: (scope) => `Civil cases that name personnel of ${scope}.`,
     charts: ["Civil Cases Over Time", "Case Types", "Cases by Child Agency"],
   },
   "liability-costs": {
@@ -194,7 +192,7 @@ const topicMetricsFor = (
       },
       {
         ...metricVisuals.reports,
-        detail: "Reports naming people at these agencies",
+        detail: "Reports that name these agencies' personnel",
         key: "reports",
         value: formatCount(totals.reports),
       },
@@ -211,7 +209,7 @@ const topicMetricsFor = (
     return [
       {
         ...metricVisuals.reports,
-        detail: "Reports naming people at these agencies",
+        detail: "Reports that name these agencies' personnel",
         key: "reports",
         actionKind: "button",
         value: formatCount(totals.reports),
@@ -241,7 +239,7 @@ const topicMetricsFor = (
     return [
       {
         ...metricVisuals.civilCases,
-        detail: "Cases naming people at these agencies",
+        detail: "Cases that name these agencies' personnel",
         key: "civilCases",
         actionKind: "button",
         value: formatCount(totals.civilCases),
@@ -260,7 +258,7 @@ const topicMetricsFor = (
       },
       {
         ...metricVisuals.reports,
-        detail: "Reports naming people at these agencies",
+        detail: "Reports that name these agencies' personnel",
         key: "reports",
         value: formatCount(totals.reports),
       },
@@ -296,7 +294,7 @@ const topicMetricsFor = (
       },
       {
         ...metricVisuals.reports,
-        detail: "Reports naming people at these agencies",
+        detail: "Reports that name these agencies' personnel",
         key: "reports",
         value: formatCount(totals.reports),
       },
@@ -335,7 +333,7 @@ const topicMetricsFor = (
     },
     {
       ...metricVisuals.reports,
-      detail: "Reports naming people at these agencies",
+      detail: "Reports that name these agencies' personnel",
       key: "reports",
       value: formatCount(totals.reports),
     },
@@ -717,7 +715,7 @@ export const buildFederalAgencyIndexModel = (
       },
       {
         ...metricVisuals.civilCases,
-        detail: "Cases naming people at these agencies",
+        detail: "Cases that name these agencies' personnel",
         href: `${pagePath}civil-cases/`,
         actionLabel: "View details",
         key: "civilCases",
@@ -725,7 +723,7 @@ export const buildFederalAgencyIndexModel = (
       },
       {
         ...metricVisuals.reports,
-        detail: "Reports naming people at these agencies",
+        detail: "Reports that name these agencies' personnel",
         href: `${pagePath}reports/`,
         actionLabel: "View details",
         key: "reports",
@@ -777,7 +775,7 @@ export const buildFederalAgencyDetailIndexModel = (
     },
     {
       ...metricVisuals.civilCases,
-      detail: "Cases naming people at these agencies",
+      detail: "Cases that name these agencies' personnel",
       href: `${federalAgency.path}civil-cases/`,
       actionLabel: "View details",
       key: "civilCases",
@@ -785,7 +783,7 @@ export const buildFederalAgencyDetailIndexModel = (
     },
     {
       ...metricVisuals.reports,
-      detail: "Reports naming people at these agencies",
+      detail: "Reports that name these agencies' personnel",
       href: `${federalAgency.path}reports/`,
       actionLabel: "View details",
       key: "reports",
