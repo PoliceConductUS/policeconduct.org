@@ -38,10 +38,17 @@ export async function getStaticPaths() {
   });
 }
 
-const { day, month, slug, year } = Astro.params;
+const { administrativeArea, category, day, month, place, slug, year } =
+  Astro.params;
 const data = await loadReportDetail(slug);
 if (!data) {
   throw new Error(`Report ${slug} not found.`);
+}
+const routePath = `/${category}/${administrativeArea}/${place}/reports/${year}/${month}/${day}/${slug}/`;
+if (data.canonicalPath !== routePath) {
+  throw new Error(
+    `Report ${slug} route ${routePath} does not match its stored path ${data.canonicalPath}.`,
+  );
 }
 const primaryAgency = data.officers[0]?.agency;
 if (!primaryAgency) {
