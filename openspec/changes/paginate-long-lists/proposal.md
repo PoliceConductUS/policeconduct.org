@@ -19,8 +19,8 @@ civil-case list uses 25 rows per page. The user approved one standard on
 - Reason: approved standard; large pages are slow, and hidden truncation hides
   records.
 - Impact: non-breaking for existing URLs except the global civil-case page
-  numbers above the new last page, which become 404s (pending the user's
-  confirmation).
+  numbers above the new last page. The list keeps every case, but pages 13 to
+  23 no longer hold rows and become 404s, as the user confirmed.
 
 **Agency roster filters**
 

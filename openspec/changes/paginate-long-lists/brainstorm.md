@@ -67,11 +67,9 @@ the only option that keeps every roster control working unchanged.
 - Calls made by the agent after the builder check, open to the user's
   correction: roster pages stay in the site search index (D4a); an A–Z letter
   moves the filtered view instead of leaving the page (D4); later pages of area
-  civil-case lists repeat only the header, scope note and pager (D4b).
+  civil-case lists repeat only the header, description and pager (D4b).
 
 ## Open Questions
 
-- The global civil-case list moves from 25 to 50 rows per page, so its highest
-  page numbers stop existing. The design records those URLs as 404s in
-  `route-absences.json`, as the user decided for the removed duplicate pages.
-  The user should confirm that a 404 is also right here.
+None. On 2026-11-18 the user confirmed that global civil-case page numbers
+with no rows after the move to 50 per page are 404s with no redirect.

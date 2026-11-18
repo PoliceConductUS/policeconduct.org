@@ -76,7 +76,8 @@ self-canonical, as today for news and reports.
 
 The area civil-case query drops `limit 200`, and the table drops
 `slice(0, 50)` and the "showing the 50 most recent" note. The list is paginated
-like the others. The scope note from `d5031fe` stays on every page.
+like the others. The page description, which says which cases the list
+includes, stays on every page.
 
 ### D4. Rosters: 50 people per page, whole-roster filtering from a data file
 
@@ -123,18 +124,17 @@ separate header search change, where the user said "no people at the moment".
 ### D4b. Later pages of area civil-case lists
 
 Page 2 and later of `/{state}/civil-cases/` and the county and place versions
-repeat the heading, breadcrumb, scope note and pager. The overview above the
+repeat the heading, breadcrumb, description and pager. The overview above the
 table (stat band and charts from `CivicScopedOverviewPage`) appears on page 1
 only, like the global `/civil-cases/page/{n}/` pages, which repeat only their
 header.
 
 ### D5. Removed page numbers are 404s
 
-Moving the global civil-case list from 25 to 50 rows per page removes its
-higher page numbers (about `/civil-cases/page/13/` to `/page/23/` today). Those
-URLs are recorded in `route-absences.json` as 404s with no redirect, as the user
-decided for the removed duplicate pages. This waits on the user's confirmation
-(Open Questions).
+The global civil-case list keeps all 551 cases. At 50 rows per page they fill 12
+pages instead of 23, so `/civil-cases/page/13/` to `/page/23/` no longer hold
+any rows. Those URLs are recorded in `route-absences.json` as 404s with no
+redirect. The user confirmed this on 2026-11-18.
 
 ### D6. Document the standard
 
@@ -175,6 +175,4 @@ rebuild.
 
 ## Open Questions
 
-- Confirm that the global civil-case page numbers that stop existing
-  (about `/civil-cases/page/13/` to `/page/23/`) should be 404s with no
-  redirect, like the removed duplicate pages.
+None. The user is reviewing the design before approving it.
