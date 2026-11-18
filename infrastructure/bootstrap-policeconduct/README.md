@@ -115,7 +115,7 @@ Before it changes anything, `scripts/apply.sh`:
 
 ## Shared redirect rollout
 
-Production and preview use `functions/router.js` with separate CloudFront KeyValueStores. Local deployments load the built `_redirect-map.json` after uploading content. `KVS_ARN` selects the production store (`r:prod:`); `KVS_ARN_PREVIEW` selects the preview store (`r:pr-N:`). Terraform outputs and `scripts/sync-env.sh` supply these values.
+Production and preview use `functions/router.js` with separate CloudFront KeyValueStores. Local deployments load the built `_redirect-map.json` after uploading content. `KVS_ARN` selects the production store (`r:prod:`); `KVS_ARN_PREVIEW` selects the preview store (`r:pr-N:`). `scripts/deploy.sh` reads these values from Terraform outputs, and GitHub Actions reads them from the environment variables Terraform writes.
 
 For the first activation in each environment, **populate the store before publishing the router**. Do not run a full Terraform apply against an empty store: both function resources publish immediately. Use this order:
 
