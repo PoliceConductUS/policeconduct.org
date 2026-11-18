@@ -104,6 +104,26 @@ Saved screenshots stay outside the public repository. The versioned config match
 
 No `[~]` tasks exist. No required automated test was skipped. Live settings were checked in the UI; the command suite uses mocked APIs by design. Provisioning OAuth access, production release/full sitemap and personnel publication were not performed or represented as completed tests.
 
+## 8. Delivery and release evidence (recorded 2026-11-18)
+
+The owner stated on 2026-11-18 that this change is released and that its approvals are inferred from that release. The evidence below was read from GitHub, the production CloudFront KeyValueStore and S3 bucket, and the public site, all read-only.
+
+- Merge, annotations and analytics: [PR35](https://github.com/PoliceConductUS/policeconduct.org/pull/35) merged to `main` on 2026-11-11T09:01:06Z as `d82dd1e`. Its final head is `8ca37de`.
+- PR35 validation: the PR description records `npm run validate` exit 0 on final head `8ca37de`, with 256 unit tests and 208 browser tests passing and no skips.
+- PR35 hosted checks (`gh pr checks 35`): all six pass. They are Analyze (javascript-typescript), Analyze JavaScript/TypeScript, CodeQL, Scan for personal data, cleanup and copilot-setup-steps.
+- Merge, INS-121: [PR44](https://github.com/PoliceConductUS/policeconduct.org/pull/44) merged to `main` on 2026-11-15T20:39:08Z as `d6c17a6`. Its merged head is `1bc3f1d`. It carries the `analytics:pull` and `analytics:push` commands and the Google signals management.
+- PR44 hosted checks (`gh pr checks 44`): all eight pass. They are the six above plus coverage-javascript and upload-coverage-javascript.
+- PR44 validation gap: the PR44 description records no full local `npm run validate` pass on its merged head.
+- INS-121 aggregate validation: not complete. PR44's description records no full `npm run validate` on its own head. A later full run on 2026-11-18, on a working tree at `58e8b1f` that carried uncommitted edits, does not stand in for it. The task moved to `fix-licensing-authority-annotations`.
+- Production release:
+  - The production KeyValueStore key `current` names the live folder `2c594baf1d600145df841a877072f01eadc56b13`. That is `main` commit `2c594ba` (#48), and both `d82dd1e` and `d6c17a6` are its ancestors.
+  - The site bucket holds `2c594ba…/build/data-annotations/`, and its `build/index.html` is dated 2026-11-15 17:48:24.
+  - `scripts/deploy.sh` deploys only `main` builds to production.
+  - `https://www.policeconduct.org/tx/licensing-authority/data-annotations/` serves the listing ("179 matching notes").
+- Live Analytics settings: these were checked in the Analytics UI, as section 6 records. That check was saved and re-opened in the UI. No authenticated Admin API compare or apply was run, so no API check is claimed. The owner accepts the UI check as the live-settings verification.
+- Not covered: the INS-121 pull and push task says "on both sites". This repository holds only the policeconduct.org property; section1983.org's CLI is in its own repository and was not checked. The task moved to `fix-licensing-authority-annotations`.
+- Not covered: no full release build or sitemap verification record was found beyond the live production release above.
+
 ## Overall decision
 
 - [x] PASS — implementation/spec review and complete local validation pass, subject to the explicit dependency exception.

@@ -1,5 +1,4 @@
 ---
-import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import TableScroll from "#src/components/TableScroll.astro";
 import type {
   CivicCivilCaseRecord,
@@ -72,11 +71,6 @@ const formatDate = (value: string) =>
     </TableScroll>
     <div class="list-foot">
       <span>Sorted by filing date, newest first</span>
-      <CivilCaseScopeNote>
-        A case is listed when it names someone who has worked at an agency in
-        this area. The case can be about that person's work somewhere else, so
-        the same case can appear on more than one page.
-      </CivilCaseScopeNote>
     </div>
   </div>
 ) : null}

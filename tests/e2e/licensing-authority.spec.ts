@@ -136,7 +136,9 @@ test("California identity-only page has its website and no record sections", asy
   await expect(
     page.getByRole("link", { name: "Official website" }),
   ).toHaveAttribute("href", "https://post.ca.gov/");
-  await expect(page.getByRole("heading", { level: 2 })).toHaveCount(0);
+  await expect(
+    page.getByRole("main").getByRole("heading", { level: 2 }),
+  ).toHaveCount(0);
 });
 
 test("discipline pages browse ten records locally and search the entire collection", async ({

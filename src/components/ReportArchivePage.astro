@@ -34,12 +34,18 @@ const metricCards = [
     value: reports[0]!.year,
   },
 ];
-const reportTimeRows = [
-  { label: "2021", value: "--", width: 34 },
-  { label: "2022", value: "--", width: 48 },
-  { label: "2023", value: "--", width: 62 },
-  { label: "2024", value: "--", width: 54 },
-];
+const reportYears = reports.map((report) => Number(report.year));
+const firstReportYear = Math.min(...reportYears);
+const reportTimeRows = Array.from(
+  { length: Math.max(...reportYears) - firstReportYear + 1 },
+  (_, index) => {
+    const year = firstReportYear + index;
+    return {
+      label: String(year),
+      value: formatCount(reportYears.filter((value) => value === year).length),
+    };
+  },
+);
 const reportAgencyRows = [
   { label: "Agency reports", value: "--", width: 58 },
   { label: "Personnel reports", value: "--", width: 36 },
@@ -81,7 +87,7 @@ const structuredData = buildCollectionPage({
   <div class="entity-chart-grid">
     <DataPanel title="Reports Over Time" description="By incident year">
       <SampleMeasurementChart
-        ariaLabel="Sample reports over time chart"
+        ariaLabel="Reports over time chart"
         rows={reportTimeRows}
       />
     </DataPanel>

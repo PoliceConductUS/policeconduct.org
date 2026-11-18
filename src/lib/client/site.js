@@ -204,8 +204,24 @@ const copyTextToClipboard = async (text) => {
 // Shared entity action-bar "Copy link" behavior (EntityActionBar.astro).
 // The anchor's href is a real, working same-page link so the no-JS
 // experience is a harmless reload; with JS, intercept the click and copy
-// the current page's URL instead.
+// the current page's URL instead. With JS it acts as a button, so it says so
+// and answers the Space key like one.
 const initCopyLink = () => {
+  document
+    .querySelectorAll("[data-copy-link]")
+    .forEach((trigger) => trigger.setAttribute("role", "button"));
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== " " || !(event.target instanceof Element)) {
+      return;
+    }
+    const trigger = event.target.closest("[data-copy-link]");
+    if (trigger instanceof HTMLAnchorElement) {
+      event.preventDefault();
+      trigger.click();
+    }
+  });
+
   document.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) {

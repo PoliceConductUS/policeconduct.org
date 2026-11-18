@@ -18,6 +18,10 @@ const { model, kind, records } = Astro.props as {
   records?: CivicTopicRecords;
 };
 
+const heading =
+  model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
+  model.jurisdictionLabel;
+
 const pageConfig = {
   budget: {
     title: metricLabels.budget,
@@ -27,7 +31,7 @@ const pageConfig = {
   },
   "civil-cases": {
     title: metricLabels.civilCases,
-    description: "Civil cases connected to this geography, from court records.",
+    description: `Civil cases that name personnel of agencies in ${heading}.`,
     role: "civil" as const,
     gloss: undefined,
   },
@@ -53,9 +57,6 @@ const pageConfig = {
   },
 }[kind];
 
-const heading =
-  model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||
-  model.jurisdictionLabel;
 const pagePath = `${model.pagePath}${kind}/`;
 const pageTitle = `${heading} ${pageConfig.title}`;
 const entitySlug = model.pagePath.split("/").filter(Boolean).pop() || "";
@@ -79,11 +80,6 @@ const hasRows = records ? records.rows.length > 0 : false;
   {hasRows ? (
     <section class="civic-section civic-section--last">
       <slot />
-      <p class="civic-limit-note">
-        Case records come from court dockets. A pending case is an allegation,
-        not a finding. A dismissal is a court outcome, not a statement that no
-        misconduct occurred.
-      </p>
     </section>
   ) : (
     <section class="civic-section civic-section--last">

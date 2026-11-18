@@ -1,5 +1,4 @@
 ---
-import RecordDataNotes from "#src/components/RecordDataNotes.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import LicensingAuthorityRecords from "#src/components/LicensingAuthorityRecords.astro";
 import {
@@ -36,5 +35,4 @@ const pagePath = `${authority.statePath}licensing-authority/`;
     <a href={`${pagePath}data-annotations/`}>Source data notes and downloads</a>
   </p>
   <LicensingAuthorityRecords {...records} />
-  <RecordDataNotes recordPath={pagePath} />
 </PageShell>

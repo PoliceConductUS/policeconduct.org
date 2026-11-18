@@ -241,12 +241,20 @@ test.describe("form submissions", () => {
       await expect(page).toHaveURL(new RegExp(`${originalPathname}$`));
       const success = formLocator.locator("[data-form-submit-success]");
       await expect(success).toBeVisible();
+      await expect(success).toBeFocused();
       await expect(success).toContainText(verificationInstructions);
       await expect(success).not.toContainText("submissionId");
       await expect(success.locator("[data-submission-id]")).toHaveCount(0);
       await expect(
         formLocator.locator("[data-form-submit-error]"),
       ).toBeHidden();
+
+      await success.locator("[data-dismiss-submit-success]").click();
+      await expect(
+        formLocator.locator(
+          ':is(input, select, textarea):not([tabindex="-1"]):focus',
+        ),
+      ).toHaveCount(1);
     });
   }
 
