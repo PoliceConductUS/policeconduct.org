@@ -61,6 +61,11 @@ const sampleRows = [
         placeholder={model.searchPlaceholder}
         data-civic-hierarchy-filter-input
       />
+      <span
+        class="visually-hidden"
+        role="status"
+        data-civic-hierarchy-filter-status
+      ></span>
     </label>
   </Fragment>
 
@@ -209,15 +214,26 @@ const sampleRows = [
       .forEach((input) => {
         input.addEventListener("input", () => {
           const query = input.value.trim().toLowerCase();
-          document
-            .querySelectorAll("[data-civic-hierarchy-filter-item]")
-            .forEach((item) => {
-              const text =
-                item
-                  .getAttribute("data-civic-hierarchy-filter-text")
-                  ?.toLowerCase() || "";
-              item.hidden = Boolean(query) && !text.includes(query);
-            });
+          const items = document.querySelectorAll(
+            "[data-civic-hierarchy-filter-item]",
+          );
+          let shown = 0;
+          items.forEach((item) => {
+            const text =
+              item
+                .getAttribute("data-civic-hierarchy-filter-text")
+                ?.toLowerCase() || "";
+            item.hidden = Boolean(query) && !text.includes(query);
+            if (!item.hidden) shown += 1;
+          });
+          const status = input
+            .closest("label")
+            ?.querySelector("[data-civic-hierarchy-filter-status]");
+          if (status) {
+            status.textContent = query
+              ? `${shown} of ${items.length} shown`
+              : "";
+          }
         });
       });
   </script>
