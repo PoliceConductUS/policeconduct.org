@@ -20,6 +20,13 @@ const missingVars = requiredVars.filter((name) => {
   return typeof value !== "string" || value.trim() === "";
 });
 
+if (process.env.TZ !== "UTC") {
+  console.error(
+    `Build failed: TZ must be UTC so builds and checks format dates in the same time zone (got ${process.env.TZ || "unset"}). Run the build through npm.`,
+  );
+  process.exit(1);
+}
+
 if (missingVars.length > 0) {
   console.error("Build failed: missing required environment variable(s):");
   for (const name of missingVars) {
