@@ -225,26 +225,3 @@ export const loadAgencyFinderResults = async (): Promise<
 
   return results;
 };
-
-export const resolveAgencyByStateSlug = async (state: string, slug: string) => {
-  const agencies = await loadAgencySummaries();
-  return agencies.find(
-    (agency) => agency.state.toLowerCase() === state && agency.slug === slug,
-  );
-};
-
-export const resolveAgencyByLocationSlug = async (
-  state: string,
-  administrativeArea: string,
-  place: string,
-  slug: string,
-) => {
-  const agencies = await loadAgencySummaries();
-  return agencies.find(
-    (agency) =>
-      agency.state.toLowerCase() === state.toLowerCase() &&
-      agency.administrativeAreaSlug === administrativeArea.toLowerCase() &&
-      agency.placeSlug === place.toLowerCase() &&
-      agency.slug === slug,
-  );
-};
