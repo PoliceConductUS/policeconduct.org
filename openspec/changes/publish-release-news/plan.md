@@ -28,7 +28,7 @@ Use the [reviewed design](design.md), [acceptance scenarios](specs/release-page-
 
 ## 4. Route complete releases and attribute form submissions
 
-- [x] Adapt website `scripts/deploy-incremental.sh`, `scripts/deploy-preview-sync.sh` and `scripts/promote.sh` to produce complete originals per release, including unchanged assets. Give preview and production builds distinct release identities even at the same commit.
+- [x] Adapt website `scripts/deploy-prod.sh`, `scripts/deploy-preview-sync.sh` and `scripts/promote.sh` to produce complete originals per release, including unchanged assets. Give preview and production builds distinct release identities even at the same commit.
 - [x] Connect `infrastructure/bootstrap-policeconduct/functions/router.js` and the production snapshot API to the same selected release. Serve the original until an override is available and refresh the canonical path after first and later publication. Extend `scripts/cloudfront-router.test.mjs` for both hosts and previously cached responses.
 - [x] Set the private origin and access permissions in `infrastructure/bootstrap-policeconduct/main.tf`. Test direct requests to the release’s saved page JSON and extracted body through both public hosts. Verify the authorized snapshot and import paths can still read their inputs.
 - [x] Embed the build’s release identity in forms. Include it after ordinary or custom payload construction in `src/lib/client/forms.ts`. Validate the originating release against the environment’s known releases and retain it in `infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.mjs`. Run `npm run test:client` and `npm run test:lambda` with an old open form after promotion and a preview at the same commit.

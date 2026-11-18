@@ -80,7 +80,7 @@ creating redirects, pages, or 410 responses.
 
 #### Scenario: Deployment coverage gate
 
-- **WHEN** preview sync or production incremental deployment runs, including
+- **WHEN** preview sync or production deployment runs, including
   standalone preview sync and production `--skip-build`
 - **THEN** `npm run validate:redirects` runs after the build (when requested) and
   the output directory check

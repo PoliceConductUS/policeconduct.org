@@ -39,10 +39,10 @@ function initializeRepository(dir) {
 for (const [name, script, args, builds] of [
   ["preview sync", "deploy-preview-sync.sh", [], false],
   ["preview build", "deploy-preview.sh", [], true],
-  ["production build", "deploy-incremental.sh", [], true],
+  ["production build", "deploy-prod.sh", [], true],
   [
     "production existing build",
-    "deploy-incremental.sh",
+    "deploy-prod.sh",
     ["--skip-build"],
     false,
   ],
@@ -77,7 +77,7 @@ for (const [name, script, args, builds] of [
           "terraform-outputs.mjs",
           "deploy-preview-sync.sh",
           "workspace-sync.sh",
-          "deploy-incremental.sh",
+          "deploy-prod.sh",
         ]) {
           copyFileSync(
             new URL(file, import.meta.url),

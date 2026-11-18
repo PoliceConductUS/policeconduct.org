@@ -68,21 +68,6 @@ optional upload completes. This command does not generate data, create IDs, pars
 or rewrite envelopes, or access a database. Evidence and stable-ID mappings are
 copied byte-for-byte. Push skips symlinks; unsafe remote object paths fail before local writes. No folder names are specially excluded; local pre-download backups preserve the entire original workspace. No workspace files are copied into `dist/` or a hosting bucket.
 
-## Recover an overwritten file
-
-```sh
-npm run workspace:versions -- --bucket "$INTAKE_WORKSPACE_BUCKET" --key state/example.yaml
-npm run workspace:restore -- --bucket "$INTAKE_WORKSPACE_BUCKET" --key state/example.yaml --version-id VERSION_ID --dry-run
-npm run workspace:restore -- --bucket "$INTAKE_WORKSPACE_BUCKET" --key state/example.yaml --version-id VERSION_ID
-```
-
-`versions` filters to the exact key, not similarly prefixed files. `restore`
-retrieves that version to the local workspace, preserving a local backup and
-leaving S3 history untouched. Upload the recovered local file explicitly if it
-should become the latest remote version. Fixture tests exercise two uploads and
-recovery of the first version. Real AWS recovery remains an operational check
-after provisioning authorization, not a claim made from the fixture tests.
-
 ## Hosting deployment
 
 Hosting uploads transfer the website build to the hosting bucket. They do not
@@ -101,7 +86,7 @@ WORKSPACE_SYNC=skip npm run deploy:prod -- --skip-build
 ```
 
 The actual upload sites are `deploy-preview-sync.sh` (also called by
-`deploy-preview.sh`) and `deploy-incremental.sh`. Only the separate workspace push uses the configured workspace leaf name as its remote prefix; hosting destinations are unchanged. The prompt happens immediately after
+`deploy-preview.sh`) and `deploy-prod.sh`. Only the separate workspace push uses the configured workspace leaf name as its remote prefix; hosting destinations are unchanged. The prompt happens immediately after
 the S3 hosting upload. Failed hosting uploads and production dry-runs do not
 prompt or upload workspaces. A no-content-change production run does not perform
 a hosting upload and therefore does not prompt. Hosting promotion and preview

@@ -275,7 +275,7 @@ function deploy(
     for (const name of [
       "deploy-preview.sh",
       "deploy-preview-sync.sh",
-      "deploy-incremental.sh",
+      "deploy-prod.sh",
       "workspace-sync.sh",
       "upload-release.sh",
       "promote.sh",
@@ -412,7 +412,7 @@ printf '%s\\n' '${tool} '"$*" >> "$TEST_LOG"\n${tool === "aws" && failSync ? 'if
 
 for (const [script, args, namespace, bucket, pointer] of [
   ["deploy-preview-sync.sh", [], "pr-12", "preview", "current:pr-12"],
-  ["deploy-incremental.sh", ["--skip-build"], "prod", "prod", "current"],
+  ["deploy-prod.sh", ["--skip-build"], "prod", "prod", "current"],
 ]) {
   test(
     namespace +
@@ -465,7 +465,7 @@ test("failed preview sync does not publish redirects", () => {
 });
 
 test("production publishes redirects even without content changes", () => {
-  const result = deploy("deploy-incremental.sh", ["--skip-build"], {
+  const result = deploy("deploy-prod.sh", ["--skip-build"], {
     unchanged: true,
   });
   assert.equal(result.status, 0, result.stderr);
@@ -479,18 +479,16 @@ test("production publishes redirects even without content changes", () => {
 
 test("production dry-run never mutates AWS or invokes loader", () => {
   for (const unchanged of [false, true]) {
-    const result = deploy(
-      "deploy-incremental.sh",
-      ["--skip-build", "--dry-run"],
-      { unchanged },
-    );
+    const result = deploy("deploy-prod.sh", ["--skip-build", "--dry-run"], {
+      unchanged,
+    });
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(result.calls, []);
   }
 });
 
 test("failed production sync does not publish redirects", () => {
-  const result = deploy("deploy-incremental.sh", ["--skip-build"], {
+  const result = deploy("deploy-prod.sh", ["--skip-build"], {
     failSync: true,
   });
   assert.equal(result.status, 23, result.stderr);
@@ -530,7 +528,7 @@ test("shrinks existing values before growing values to stay within capacity duri
 for (const [script, args] of [
   ["deploy-preview.sh", []],
   ["deploy-preview-sync.sh", []],
-  ["deploy-incremental.sh", ["--skip-build"]],
+  ["deploy-prod.sh", ["--skip-build"]],
 ]) {
   test(`${script} accepted workspace upload follows hosting exactly once`, () => {
     const result = deploy(script, args, { workspaceChoice: "upload" });

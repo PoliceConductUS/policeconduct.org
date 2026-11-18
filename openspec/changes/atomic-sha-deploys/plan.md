@@ -30,7 +30,7 @@ redirects. No production paths will be invented or inferred from a missing row.
 
 ## Deployment guard follow-up
 
-The current preview sync and production incremental deployment must run the
+The current preview sync and production deployment must run the
 existing strict redirect coverage check after build/output existence checks and
 before any cloud publication. Standalone preview sync and production
 `--skip-build` use the same gate. This changes no route policy or data and does

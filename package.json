@@ -13,7 +13,7 @@
     "build:search-index": "npx pagefind --site dist",
     "purge:css": "node --max-old-space-size=12288 scripts/purge-built-css.mjs",
     "deploy:preview": "bash scripts/deploy-preview.sh",
-    "deploy:prod": "bash scripts/deploy-incremental.sh",
+    "deploy:prod": "bash scripts/deploy-prod.sh",
     "dev": "node scripts/dev.mjs",
     "doctor": "bash scripts/bootstrap-dev.sh --check",
     "enrich:agency-coordinates": "node scripts/enrich-missing-agency-coordinates.mjs",
@@ -70,8 +70,6 @@
     "test:infra": "node --test scripts/deploy-forms-api.test.mjs scripts/require-terraform-state.test.mjs scripts/require-approved-terraform-destroys.test.mjs scripts/terraform-tracked-inputs.test.mjs scripts/parameter-store-secrets.test.mjs scripts/audit-parameter-store.test.mjs scripts/set-secret.test.mjs scripts/bootstrap-resend-domain.test.mjs scripts/terraform-outputs.test.mjs scripts/terraform-read-failures.test.mjs scripts/intake-workspace-sync.test.mjs scripts/workspace-operator.test.mjs scripts/workspace-demo.test.mjs",
     "workspace:push": "node --env-file-if-exists=.env scripts/workspace-operator.mjs push",
     "workspace:pull": "node --env-file-if-exists=.env scripts/workspace-operator.mjs pull",
-    "workspace:versions": "node --env-file-if-exists=.env scripts/intake-workspace-sync.mjs versions",
-    "workspace:restore": "node --env-file-if-exists=.env scripts/intake-workspace-sync.mjs restore",
     "deploy:promote": "node --env-file-if-exists=.env scripts/manage-release.mjs promote",
     "deploy:delete": "node --env-file-if-exists=.env scripts/manage-release.mjs delete"
   },
