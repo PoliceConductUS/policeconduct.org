@@ -18,9 +18,29 @@ The agency page SHALL omit the full arrest breakdown display while its presentat
 
 ### Requirement: Personnel profiles preserve current import count units
 
-Personnel arrest sections SHALL render public count maps using the correct arrest, charge-row, or distinct reported charge-record denominator. Income matching status SHALL be presented as income ranges including Unknown, as specified in show-neighborhood-income. Internal arrest-location matching results and residential census tract code tables SHALL be omitted from the public display. Arrest beat codes SHALL be presented as named count maps under map-arrests-by-beat. Other Unknown groups SHALL remain visible.
+Personnel arrest sections SHALL render public count maps using the correct arrest, charge-row, or distinct reported charge-record denominator.
 
 #### Scenario: Imported charges have repeated rows
 
 - **WHEN** a profile includes charge rows and distinct reported charge records
 - **THEN** the display labels the different units and calculates shares against their respective stored totals
+
+#### Scenario: Income matching status is shown
+
+- **WHEN** a profile includes income matching status
+- **THEN** the display presents it as income ranges including Unknown, as specified in show-neighborhood-income
+
+#### Scenario: Internal matching data is present
+
+- **WHEN** a profile includes internal arrest-location matching results or residential census tract code tables
+- **THEN** the public display omits them
+
+#### Scenario: Arrest beat codes are present
+
+- **WHEN** a profile includes arrest beat codes
+- **THEN** the display presents them as named count maps under map-arrests-by-beat
+
+#### Scenario: A count map has other Unknown groups
+
+- **WHEN** a count map other than income ranges has an Unknown group
+- **THEN** the Unknown group remains visible
