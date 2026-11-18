@@ -305,16 +305,7 @@ const getValidationSummary = (form: HTMLFormElement) => {
 };
 
 const getInvalidFields = (form: HTMLFormElement) =>
-  Array.from(
-    form.querySelectorAll<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >("input, select, textarea"),
-  ).filter((field) => {
-    if (field.disabled || field.type === "hidden") {
-      return false;
-    }
-    return !field.checkValidity();
-  });
+  getValidatableFields(form).filter((field) => !field.checkValidity());
 
 const getFieldLabelText = (
   field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
@@ -361,8 +352,81 @@ const openAncestorDetails = (field: HTMLElement) => {
   }
 };
 
+type FormField = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+
+// A field's message is a sibling .invalid-feedback. A radio group shares one
+// message placed after its .form-check wrappers.
+const getFieldFeedback = (field: FormField) => {
+  const own = field.parentElement?.querySelector<HTMLElement>(
+    ":scope > .invalid-feedback",
+  );
+  if (own) {
+    return own;
+  }
+  return (
+    field
+      .closest(".form-check")
+      ?.parentElement?.querySelector<HTMLElement>(
+        ":scope > .invalid-feedback",
+      ) ?? null
+  );
+};
+
+let feedbackIdCount = 0;
+
+const syncFieldValidity = (field: FormField) => {
+  const invalid = !field.checkValidity();
+  if (invalid) {
+    field.setAttribute("aria-invalid", "true");
+  } else {
+    field.removeAttribute("aria-invalid");
+  }
+  const feedback = getFieldFeedback(field);
+  if (!feedback) {
+    return;
+  }
+  if (!feedback.id) {
+    feedbackIdCount += 1;
+    feedback.id = `form-field-feedback-${feedbackIdCount}`;
+  }
+  const ids = new Set(
+    (field.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean),
+  );
+  if (invalid) {
+    ids.add(feedback.id);
+  } else {
+    ids.delete(feedback.id);
+  }
+  if (ids.size) {
+    field.setAttribute("aria-describedby", [...ids].join(" "));
+  } else {
+    field.removeAttribute("aria-describedby");
+  }
+};
+
+const getValidatableFields = (form: HTMLFormElement) =>
+  Array.from(
+    form.querySelectorAll<FormField>("input, select, textarea"),
+  ).filter((field) => !field.disabled && field.type !== "hidden");
+
+const syncFormValidity = (form: HTMLFormElement) => {
+  getValidatableFields(form).forEach(syncFieldValidity);
+  if (form.dataset.validitySync) {
+    return;
+  }
+  form.dataset.validitySync = "true";
+  const onEdit = () => {
+    if (form.classList.contains("was-validated")) {
+      getValidatableFields(form).forEach(syncFieldValidity);
+    }
+  };
+  form.addEventListener("input", onEdit);
+  form.addEventListener("change", onEdit);
+};
+
 const showValidationSummary = (form: HTMLFormElement) => {
   const summary = getValidationSummary(form);
+  syncFormValidity(form);
   const invalidFields = getInvalidFields(form);
 
   if (invalidFields.length === 0) {
