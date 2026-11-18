@@ -322,7 +322,7 @@ const pastEmployerSummary = assignmentHistory
 const civilLitigationSummary = civilCasesWithPaths
   .map((caseItem) => {
     const segments = [
-      caseItem.title || "Civil case",
+      caseItem.title!,
       caseItem.cause_number || null,
       caseItem.court || null,
       caseItem.caseUrl,
@@ -759,9 +759,7 @@ const structuredData = {
               {civilCasesWithPaths.slice(0, 4).map((caseItem) => (
                 <tr>
                   <th scope="row">
-                    <a href={caseItem.caseUrl}>
-                      {caseItem.title || "Civil case"}
-                    </a>
+                    <a href={caseItem.caseUrl}>{caseItem.title!}</a>
                   </th>
                   <td>
                     {caseItem.filed_date

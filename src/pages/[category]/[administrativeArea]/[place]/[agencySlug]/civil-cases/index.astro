@@ -50,7 +50,7 @@ const formatDate = (value?: string | null) =>
           <tr>
             <td>
               <a class="row-link" href={row.caseUrl}>
-                {row.title || "Civil case"}
+                {row.title!}
               </a>
             </td>
             <td class="muted">{row.cause_number || ""}</td>

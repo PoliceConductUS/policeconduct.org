@@ -125,7 +125,7 @@ const formatDate = (value?: string | null) =>
           {page.data.map((caseItem: CivilCaseRow) => (
             <tr>
               <td>
-                <a href={caseItem.caseUrl}>{caseItem.title || "Civil case"}</a>
+                <a href={caseItem.caseUrl}>{caseItem.title!}</a>
               </td>
               <td>{caseItem.type}</td>
               <td>{formatDate(caseItem.filed_date)}</td>

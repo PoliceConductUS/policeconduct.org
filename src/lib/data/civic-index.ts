@@ -294,7 +294,7 @@ const buildAgencyMapPoints = (
       label: agency.name,
       lat: agency.mapPoint!.lat,
       lng: agency.mapPoint!.lng,
-      meta: agency.address || "Agency",
+      meta: agency.address!,
     }));
 
 const getCoverageCount = (

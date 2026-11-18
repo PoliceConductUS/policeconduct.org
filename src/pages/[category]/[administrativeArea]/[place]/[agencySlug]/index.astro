@@ -104,7 +104,7 @@ const civilLitigationRecords = [
 const civilLitigationSummary = civilLitigationRecords
   .map((record) => {
     const segments = [
-      record.title || "Civil case",
+      record.title!,
       record.cause_number || null,
       record.court || null,
       record.caseUrl,
@@ -230,7 +230,7 @@ const recentCaseItems: RecentItem[] = civilLitigationRecords
   )
   .map((record) => ({
     href: record.caseUrl,
-    title: record.title || "Civil case",
+    title: record.title!,
     meta: [
       "Civil case",
       record.court || null,
@@ -244,7 +244,7 @@ const recentCaseItems: RecentItem[] = civilLitigationRecords
 const recentReportItems: RecentItem[] = data.reportedReports.map(
   (report: { incidentDate: string; title?: string; url: string }) => ({
     href: report.url,
-    title: report.title || "Public report",
+    title: report.title!,
     meta: `Report · Incident ${formatDate(report.incidentDate)}`,
     sortDate: new Date(report.incidentDate).getTime(),
   }),
