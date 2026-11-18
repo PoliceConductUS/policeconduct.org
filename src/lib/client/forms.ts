@@ -309,6 +309,10 @@ const getInvalidFields = (form: HTMLFormElement) =>
 
 const getFieldLabelText = (
   field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
+) => readFieldLabelText(field).replace(/\s*\*$/, "");
+
+const readFieldLabelText = (
+  field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
 ) => {
   const labels = field.labels ? Array.from(field.labels) : [];
   const explicitLabel = labels

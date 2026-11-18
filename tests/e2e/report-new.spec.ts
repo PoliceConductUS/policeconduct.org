@@ -352,6 +352,9 @@ test.describe("report new", () => {
       "[data-report-form-shell] :is(input, select, textarea)[required]",
     );
     await expect(requiredFields.first()).toBeFocused();
+    await expect(page.locator("[data-form-validation-summary]")).toContainText(
+      "Start with Did this happen to you?.",
+    );
     const count = await requiredFields.count();
     expect(count).toBeGreaterThan(0);
     for (let index = 0; index < count; index += 1) {
