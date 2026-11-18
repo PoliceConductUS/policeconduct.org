@@ -35,7 +35,8 @@ Static Astro page for the route `/donate/`. It renders donation amount buttons a
 - The build throws `Stripe link hostname mismatch` when any non-empty Stripe link has a hostname different from the first non-empty link. `[index.astro:if (hostname && hostname !== firstHostname) {]`
 - The build throws `Invalid Stripe URL for` a key when a non-empty link is not a valid URL. `[index.astro:Invalid Stripe URL for "${key}": "${url}"]`
 - Empty links are skipped by the hostname check, and a `null` club link is treated as empty. `[index.astro:const link = links[clubKey] ?? "";]`
-- The default frequency is `monthly`, on the server (`checked` radio) and in the script (`setFrequency("monthly")`). `[index.astro:const defaultFrequency: DonationFrequency = "monthly";]`
+- The default frequency is `monthly`: the server renders that radio `checked`. `[index.astro:const defaultFrequency: DonationFrequency = "monthly";]`
+- The script reads the frequency from the checked radio on load and again on `pageshow`, so a choice the browser restores on Back navigation is kept. `[index.astro:window.addEventListener("pageshow", syncCheckedFrequency);]`
 - The `amount25` preset is the only one drawn with `btn-dark`. `[index.astro:const primaryPresetKey: PresetAmountKey = "amount25";]`
 - A preset with no link for the selected frequency is rendered disabled: class `disabled`, `aria-disabled="true"`, `tabindex` -1 and no `href`. The monthly `amountOther` link is empty, so `Other` is disabled for monthly giving. `[index.astro:amountOther: "",]`
 - The script applies the same rule when the frequency changes: a link sets `href` and enables the anchor, an empty link removes `href` and disables it. `[index.astro:anchorElement.removeAttribute("href");]`

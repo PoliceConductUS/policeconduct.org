@@ -9,7 +9,7 @@ Citations use the form `[path:text]`, where the path is relative to this directo
 ## Subdirectories & System Boundaries
 
 - components: [./components/EGM.md](./components/EGM.md) - Shared Astro components and the metric-card type module. Most take loaded data through props; a few load data at build time or ship client scripts.
-- layouts: [./layouts/EGM.md](./layouts/EGM.md) - The layouts that wrap every page: `SiteLayout` renders the HTML document, and `PageShell` wraps it with a breadcrumb, page header and content slots. `Layout.astro` is a bare starter document that no page imports. `[layouts/Layout.astro:Astro Basics]`
+- layouts: [./layouts/EGM.md](./layouts/EGM.md) - The layouts that wrap every page: `SiteLayout` renders the HTML document, and `PageShell` wraps it with a breadcrumb, page header and content slots. `[layouts/PageShell.astro:// SiteLayout passthrough]`
 - lib: [./lib/EGM.md](./lib/EGM.md) - The shared library: the database pool, build helpers, structured-data builders, and the `client`, `coverage`, `data`, `forms` and `geo` subdirectories.
 - pages: [./pages/EGM.md](./pages/EGM.md) - The route tree: the home and not-found pages and 19 child route directories.
 - types: [./types/EGM.md](./types/EGM.md) - One ambient TypeScript declaration for the `aos` module.

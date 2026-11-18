@@ -15,7 +15,6 @@ Static Astro page for the route `/personnel/new/`. It renders one HTML form name
 - Renders `PrefillBootstrap` from `src/components/PrefillBootstrap.astro` before the form. `[index.astro:<PrefillBootstrap />]`
 - The form section carries `data-form-shell="personnelNew"`. `[index.astro:<section class="py-vh-2" data-form-shell="personnelNew">]`
 - Form `name="personnelNew"` with `method="POST"`, class `needs-validation` and `novalidate`. `[index.astro:name="personnelNew"]`
-- The form declares `data-netlify-honeypot="organization"`. `[index.astro:data-netlify-honeypot="organization"]`
 - Hidden field `form-name` with the value `personnelNew`. `[index.astro:<input type="hidden" name="form-name" value="personnelNew" />]`
 - Honeypot text field `organization`. `[index.astro:<input type="text" name="organization" />]`
 - Field `firstName` (text, required). `[index.astro:name="firstName"]`

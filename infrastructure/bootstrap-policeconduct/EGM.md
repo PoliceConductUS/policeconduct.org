@@ -407,6 +407,8 @@ calls it.
 - The Lambda zip contains only `index.mjs`, `package.json`,
   `native-domexception/**` and `node_modules/**`, matching
   `scripts/deploy-forms-api.sh`. [main.tf:native-domexception/**]
+- The release API zip contains only `index.mjs`, `service.mjs`,
+  `package.json` and `node_modules/**`. [release.tf:toset(["index.mjs", "service.mjs", "package.json"])]
 - `forms_readonly` can list, read and decrypt submissions only; it has no
   access to drafts and no write access. [main.tf:DecryptSubmissionObjects]
 - The site and preview bucket policies grant read access only to CloudFront,
@@ -440,7 +442,8 @@ calls it.
   check for one. [preview-entrypoints.tf:allow_overwrite = false]
 - Adopted DNS records, log groups, security services and repository merge
   settings are brought in with `import` blocks; their values match what was
-  already live. [existing-dns.tf:Existing public DNS records adopted] [logs.tf:import {]
+  already live. The DNS import ids are built from `local.route53_zone_id` and
+  `var.domain_name`. [existing-dns.tf:Existing public DNS records adopted] [existing-dns.tf:id = "${local.route53_zone_id}__dmarc.${var.domain_name}_TXT"] [logs.tf:import {]
 - `github_repository.merge_policy` and every resource in the two `*.tf.json`
   files carry `prevent_destroy`; the repository resource ignores changes to
   every setting other than the four merge settings. [github-repository-settings.tf:prevent_destroy = true] [account-security.tf.json:prevent_destroy] [guardduty-features.tf.json:prevent_destroy]

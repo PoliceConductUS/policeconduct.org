@@ -17,7 +17,7 @@ Static Astro page for the route `/legal-notice/eula/`: the end user license agre
 - The body is static policy text placed in the default slot; it shows a last-updated date of January 14, 2026. [index.astro:January 14, 2026]
 - A table of contents links to in-page section anchors. [index.astro:href="#the-application"]
 - Section headings carry the matching `id` attributes. [index.astro:id="the-application"]
-- The text links to the path `/privacy-policy`, which is outside `/legal-notice/`. [index.astro:href="/privacy-policy"]
+- The text links to the privacy policy page and shows its path. [index.astro:<a href="/legal-notice/privacy/"> /legal-notice/privacy/ </a>]
 - The contact section holds a `mailto:` link inside an `address` element. [index.astro:href="mailto:]
 
 ## Invariants

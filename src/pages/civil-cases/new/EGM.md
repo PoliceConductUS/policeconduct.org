@@ -15,7 +15,6 @@ Static Astro page for the route `/civil-cases/new/`. It renders one HTML form na
 - Renders `PrefillBootstrap` from `src/components/PrefillBootstrap.astro` before the form. `[index.astro:<PrefillBootstrap />]`
 - The form section carries `data-form-shell="civilLitigationNew"`. `[index.astro:<section class="py-vh-2" data-form-shell="civilLitigationNew">]`
 - Form `name="civilLitigationNew"` with `method="POST"`, class `needs-validation` and `novalidate`. `[index.astro:name="civilLitigationNew"]`
-- The form declares `data-netlify-honeypot="organization"`. `[index.astro:data-netlify-honeypot="organization"]`
 - Hidden field `form-name` with the value `civilLitigationNew`. `[index.astro:<input type="hidden" name="form-name" value="civilLitigationNew" />]`
 - Honeypot text field `organization`. `[index.astro:<input type="text" name="organization" />]`
 - Field `caseTitle` (text, required), label "Case title\*". `[index.astro:name="caseTitle"]`

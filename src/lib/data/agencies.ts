@@ -103,7 +103,7 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
            lp.display_name as city,
            split_part(lp.path, '/', 4) as location_place_slug,
            lp.path as location_path,
-           bpp.path as canonical_path,
+           lp.path || a.slug || '/' as canonical_path,
            a.address,
            a.zip_code,
            a.slug,
@@ -208,7 +208,6 @@ export const loadAgencyFinderResults = async (): Promise<
         "location administrative_area",
         id,
       ),
-      administrativeAreaSlug: null,
       city: payload?.city || null,
       zipCode: payload?.postalCode || null,
       canonicalPath: requireText(payload?.path, "canonicalPath", id),
@@ -229,7 +228,9 @@ export const loadAgencyFinderResults = async (): Promise<
 export const resolveAgencyByStateSlug = async (state: string, slug: string) => {
   const agencies = await loadAgencySummaries();
   return agencies.find(
-    (agency) => agency.state.toLowerCase() === state && agency.slug === slug,
+    (agency) =>
+      agency.state.toLowerCase() === state.toLowerCase() &&
+      agency.slug === slug,
   );
 };
 

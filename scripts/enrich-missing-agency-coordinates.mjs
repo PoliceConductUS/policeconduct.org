@@ -61,18 +61,23 @@ const driftDuplicateApproximateCoordinate = (agency, match, source) => {
   };
 };
 
-const fetchJson = async (url) => {
-  const response = await fetch(url, {
+const fetchResponse = (url) =>
+  fetch(url, {
     headers: {
       "User-Agent": USER_AGENT,
       Accept: "application/json",
     },
   });
+
+const requireOk = (url, response) => {
   if (!response.ok) {
     throw new Error(`${url} failed: ${response.status} ${response.statusText}`);
   }
-  return response.json();
+  return response;
 };
+
+const fetchJson = async (url) =>
+  requireOk(url, await fetchResponse(url)).json();
 
 const nominatimSearch = async (params) => {
   const url = new URL(NOMINATIM_URL);
@@ -117,7 +122,14 @@ const zipCentroid = async (postalCode) => {
   if (!zip || zip === "00000") return null;
   const cacheKey = `zip:${zip}`;
   if (lookupCache.has(cacheKey)) return lookupCache.get(cacheKey);
-  const result = await fetchJson(`${ZIPPOPOTAM_URL}/${zip}`);
+  const url = `${ZIPPOPOTAM_URL}/${zip}`;
+  const response = await fetchResponse(url);
+  // Zippopotam answers 404 for a ZIP it does not know: that is no match.
+  if (response.status === 404) {
+    lookupCache.set(cacheKey, null);
+    return null;
+  }
+  const result = await requireOk(url, response).json();
   const place = Array.isArray(result.places) ? result.places[0] : null;
   if (!place) {
     lookupCache.set(cacheKey, null);

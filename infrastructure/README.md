@@ -1,10 +1,14 @@
 # Infrastructure
 
-This repo uses three Terraform entrypoints:
+This repo uses five Terraform entrypoints, each with its own state:
 
 1. `infrastructure/bootstrap-policeconduct` (policeconduct.org foundation + static-site infra)
 2. `infrastructure/bootstrap-iceconduct` (independent iceconduct.org redirect infra)
 3. `infrastructure/bootstrap-recaptcha` (independent Google reCAPTCHA Enterprise infra)
+4. `infrastructure/intake-workspace` (private intake workspace bucket and its operator roles)
+5. `infrastructure/submission-notifications` (staff notification topic and the S3 event notifications on the submissions buckets)
+
+`scripts/bootstrap-all.sh` applies only the first and third. Apply the others from their own folders as their READMEs describe.
 
 ## Zero-to-Deploy
 
@@ -74,7 +78,7 @@ terraform -chdir=infrastructure/bootstrap-policeconduct output route53_name_serv
    If GA IDs are set in `policeconduct.auto.tfvars`, it also writes `GA_MEASUREMENT_ID` per environment.
    If Sentry DSNs are set in `policeconduct.auto.tfvars`, it also writes `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT` per environment.
    If `sentry_org`/`sentry_project` are set, workflows can upload source maps to Sentry.
-   If `sentry_auth_token` is set in bootstrap inputs, bootstrap also writes `SENTRY_AUTH_TOKEN` as a GitHub environment secret for both environments.
+   If `sentry_auth_token` is set in bootstrap inputs, bootstrap also writes `SENTRY_AUTH_TOKEN` as a GitHub environment secret for `production` only.
 
 If `bucket_name` is omitted in `infrastructure/bootstrap-policeconduct/policeconduct.auto.tfvars`, bootstrap uses `<project_name>-site-<account_id>`.
 
@@ -119,8 +123,10 @@ Credentials used by deploy workflows:
 ## More Detail
 
 1. `infrastructure/bootstrap-policeconduct/README.md`
-2. `infrastructure/bootstrap-iceconduct/`
-3. `infrastructure/bootstrap-recaptcha/`
+2. `infrastructure/bootstrap-iceconduct/README.md`
+3. `infrastructure/bootstrap-recaptcha/README.md`
+4. `infrastructure/intake-workspace/README.md`
+5. `infrastructure/submission-notifications/README.md`
 
 ## Tags
 

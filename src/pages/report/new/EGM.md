@@ -16,10 +16,6 @@ Static Astro page for the route `/report/new/`. It renders the report intake for
 - The `header` slot holds two lede paragraphs and an info note saying contact information is not published and the submission must be confirmed by email. `[index.astro:<div class="alert alert-info mb-0" role="note">]`
 - The form wrapper carries `data-report-form-shell`; the client script uses it as the place to show a load error. `[index.astro:<div class="col-12" data-report-form-shell>]`
 - The form has `id="report-form"` and `novalidate`. `[index.astro:id="report-form"]`
-- The form declares `data-form-endpoint="/api/report/submit"`. `[index.astro:data-form-endpoint="/api/report/submit"]`
-- The form declares `data-form-draft-key="report-new"`. `[index.astro:data-form-draft-key="report-new"]`
-- The form declares `data-form-draft-cookiename="reportDraftId"`. `[index.astro:data-form-draft-cookiename="reportDraftId"]`
-- The form declares `data-form-success-kind="verification_pending"`. `[index.astro:data-form-success-kind="verification_pending"]`
 - Section `start` holds the two classification questions. `[index.astro:<section id="start" class="report-new-section">]`
 - Field `submitterRelationship` (select, required) with the options "Directly involved", "Witnessed in person", "Helping someone else" and "Records or evidence only". `[index.astro:name="submitterRelationship"]`
 - Field `interactionType` (select, required) with the options "Helpful or positive", "Routine but worth sharing", "Confusing or uncomfortable", "Mixed", "Concerning or harmful", "Severe harm or death" and "I am not sure". `[index.astro:name="interactionType"]`
@@ -117,7 +113,6 @@ Static Astro page for the route `/report/new/`. It renders the report intake for
 - The form is not submitted when the draft cannot be saved to the server first. `[index.astro:"We could not safely save your progress to the server. Please try again. If you cannot submit this form, print this page and email it to]`
 - The draft cookie is scoped to the path `/report/new/` when set and when cleared. ``[index.astro:document.cookie = `${reportDraftCookieName}=; Max-Age=0; Path=/report/new/; SameSite=Lax`;]``
 - Only one draft save request runs at a time. `[index.astro:saveDraftInFlight = saveDraft(saveMode);]`
-- The cookie name in the script matches the form's `data-form-draft-cookiename` value, `reportDraftId`. `[index.astro:data-form-draft-cookiename="reportDraftId"]`
 
 ## Side Effects
 

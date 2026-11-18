@@ -21,6 +21,14 @@ data "archive_file" "release_api" {
   type        = "zip"
   source_dir  = "${path.module}/lambdas/release-api"
   output_path = "${path.module}/lambdas/release-api.zip"
+  # Runtime files only, never docs, lock files, or local tests.
+  excludes = setsubtract(
+    fileset("${path.module}/lambdas/release-api", "**"),
+    setunion(
+      toset(["index.mjs", "service.mjs", "package.json"]),
+      fileset("${path.module}/lambdas/release-api", "node_modules/**")
+    )
+  )
 }
 
 resource "aws_iam_role" "release_api" {

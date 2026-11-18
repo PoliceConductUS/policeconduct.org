@@ -14,19 +14,12 @@ const location = await loadRequiredLocationByPath(
   `/${Astro.params.category}/`,
   "state",
 );
-const label = "Counties";
 const model = await buildStateCivicIndex(location);
-const pagePath = `${model.pagePath}counties/`;
-const page = {
-  currentPage: 1,
-  data: model.rows,
-  lastPage: 1,
-};
 ---
 
 <CivicChildIndexPage
-  label={label}
+  currentPage={1}
+  label="Counties"
   model={model}
-  page={page}
-  pagePath={pagePath}
+  pagePath={`${model.pagePath}counties/`}
 />

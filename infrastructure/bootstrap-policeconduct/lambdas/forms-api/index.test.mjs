@@ -309,6 +309,62 @@ test("personnel suggestions and edits reach normal reCAPTCHA validation", async 
   }
 });
 
+// Must run before any test builds a working reCAPTCHA client, because the
+// client is kept for the life of the module.
+test("a failed reCAPTCHA client is not kept, so the next request builds a new one", async (t) => {
+  const keys = [
+    "RECAPTCHA_SITE_KEY",
+    "RECAPTCHA_PROJECT_ID",
+    "RECAPTCHA_SERVICE_ACCOUNT_EMAIL",
+    "RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME",
+    "RECAPTCHA_WIF_AUDIENCE",
+  ];
+  const previous = Object.fromEntries(
+    keys.map((key) => [key, process.env[key]]),
+  );
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  t.mock.method(
+    RecaptchaEnterpriseServiceClient.prototype,
+    "createAssessment",
+    async () => [
+      { tokenProperties: { valid: false, invalidReason: "MALFORMED" } },
+    ],
+  );
+  const submit = () =>
+    __testables.submitForm(
+      {
+        requestContext: { http: { sourceIp: "203.0.113.10" } },
+        body: JSON.stringify({
+          formName: "contact",
+          recaptchaToken: "test-token",
+          data: {},
+        }),
+      },
+      "req_test",
+    );
+
+  process.env.RECAPTCHA_SITE_KEY = "fixture";
+  process.env.RECAPTCHA_PROJECT_ID = "test";
+  delete process.env.RECAPTCHA_SERVICE_ACCOUNT_EMAIL;
+  delete process.env.RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME;
+  delete process.env.RECAPTCHA_WIF_AUDIENCE;
+  await assert.rejects(submit, /Missing RECAPTCHA_SERVICE_ACCOUNT_EMAIL/);
+
+  process.env.RECAPTCHA_SERVICE_ACCOUNT_EMAIL = "test@example.org";
+  process.env.RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME =
+    "projects/1/locations/global/workloadIdentityPools/test/providers/test";
+  process.env.RECAPTCHA_WIF_AUDIENCE =
+    "//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/test/providers/test";
+  const response = await submit();
+  assert.equal(response.statusCode, 400, response.body);
+  assert.match(JSON.parse(response.body).error, /Invalid reCAPTCHA token/);
+});
+
 test("submissions retain the known release of the open form in its own environment", async (t) => {
   const oldProduction = "prod-temp";
   const newProduction = "next-release";
@@ -1263,3 +1319,216 @@ test("verified events still send staff mail and persist the delivery receipt", a
     delete process.env.SUBMISSION_NOTIFICATION_RECIPIENTS;
   }
 });
+
+// --- Review fixes: S3 key input, missing objects, config order, messages ----
+
+const RECAPTCHA_TEST_CONFIG = {
+  RECAPTCHA_SITE_KEY: "fixture",
+  RECAPTCHA_PROJECT_ID: "test",
+  RECAPTCHA_SERVICE_ACCOUNT_EMAIL: "test@example.org",
+  RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME:
+    "projects/1/locations/global/workloadIdentityPools/test/providers/test",
+  RECAPTCHA_WIF_AUDIENCE:
+    "//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/test/providers/test",
+  RELEASE_DATA_BUCKET: "prod-roster",
+};
+
+function setEnv(t, values) {
+  const previous = {};
+  for (const [key, value] of Object.entries(values)) {
+    previous[key] = process.env[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+}
+
+function mockValidRecaptcha(t) {
+  t.mock.method(
+    RecaptchaEnterpriseServiceClient.prototype,
+    "createAssessment",
+    async () => [
+      {
+        tokenProperties: { valid: true, action: "contactSubmit" },
+        riskAnalysis: { score: 0.9 },
+      },
+    ],
+  );
+}
+
+function getEvent(path, queryStringParameters) {
+  return {
+    ...apiEvent({ method: "GET", path }),
+    queryStringParameters,
+  };
+}
+
+test("a draft missing from S3 by error name (SDK v3) reads as no draft", async (t) => {
+  t.mock.method(S3Client.prototype, "send", async () => {
+    const error = new Error("The specified key does not exist.");
+    error.name = "NoSuchKey";
+    throw error;
+  });
+  const response = await handler(
+    getEvent("/forms/draft", { draftId: "draft-1" }),
+  );
+  assert.equal(response.statusCode, 200, response.body);
+  assert.deepEqual(JSON.parse(response.body), {});
+});
+
+test("a submitted draft missing from S3 by error name does not fail the submission", async (t) => {
+  setEnv(t, { ...RECAPTCHA_TEST_CONFIG, RESEND_API_KEY: "re_test_123" });
+  mockValidRecaptcha(t);
+  const puts = [];
+  t.mock.method(S3Client.prototype, "send", async (command) => {
+    const name = command.constructor.name;
+    if (name === "GetObjectCommand") {
+      const error = new Error("The specified key does not exist.");
+      error.name = "NoSuchKey";
+      throw error;
+    }
+    if (name === "PutObjectCommand") puts.push(command.input.Key);
+    return {};
+  });
+  const response = await handler(
+    apiEvent({
+      method: "POST",
+      path: "/forms/submit",
+      origin: "https://www.policeconduct.org",
+      body: {
+        formName: "contact",
+        releaseId: "prod-temp",
+        recaptchaToken: "test-token",
+        draftId: "draft-1",
+        data: {},
+      },
+    }),
+  );
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(
+    puts.some((key) => key.startsWith("drafts/")),
+    false,
+    "a missing draft is not recreated",
+  );
+});
+
+test("draft and status ids that are not one safe S3 key segment are rejected with 400", async (t) => {
+  setEnv(t, RECAPTCHA_TEST_CONFIG);
+  mockValidRecaptcha(t);
+  const s3Calls = [];
+  t.mock.method(S3Client.prototype, "send", async (command) => {
+    s3Calls.push(command.constructor.name);
+    return {};
+  });
+  for (const draftId of ["../other", "a/b", "a\\b", "..", "line\nbreak"]) {
+    const read = await handler(getEvent("/forms/draft", { draftId }));
+    assert.equal(read.statusCode, 400, `GET draft ${JSON.stringify(draftId)}`);
+
+    const save = await handler(
+      apiEvent({
+        method: "POST",
+        path: "/forms/draft",
+        origin: "https://www.policeconduct.org",
+        body: { draftId, data: {} },
+      }),
+    );
+    assert.equal(save.statusCode, 400, `POST draft ${JSON.stringify(draftId)}`);
+
+    const submit = await handler(
+      apiEvent({
+        method: "POST",
+        path: "/forms/submit",
+        origin: "https://www.policeconduct.org",
+        body: {
+          formName: "contact",
+          releaseId: "prod-temp",
+          recaptchaToken: "test-token",
+          draftId,
+          data: {},
+        },
+      }),
+    );
+    assert.equal(submit.statusCode, 400, `submit ${JSON.stringify(draftId)}`);
+  }
+  for (const path of ["/status/a%2Fb", "/status/..", "/status/a%5Cb"]) {
+    const status = await handler(getEvent(path));
+    assert.equal(status.statusCode, 400, path);
+  }
+  assert.deepEqual(s3Calls, [], "no rejected id reaches S3");
+});
+
+test("missing email settings fail the submission before anything is stored", async (t) => {
+  setEnv(t, { ...RECAPTCHA_TEST_CONFIG, RESEND_API_KEY: undefined });
+  mockValidRecaptcha(t);
+  const puts = [];
+  t.mock.method(S3Client.prototype, "send", async (command) => {
+    if (command.constructor.name === "PutObjectCommand") {
+      puts.push(command.input.Key);
+    }
+    return {};
+  });
+  const response = await handler(
+    apiEvent({
+      method: "POST",
+      path: "/forms/submit",
+      origin: "https://www.policeconduct.org",
+      body: {
+        formName: "contact",
+        releaseId: "prod-temp",
+        recaptchaToken: "test-token",
+        data: { email: "person@example.org" },
+      },
+    }),
+  );
+  assert.equal(response.statusCode, 500, response.body);
+  assert.deepEqual(puts, []);
+  const body = JSON.parse(response.body);
+  assert.equal(body.error, "Internal server error");
+  assert.doesNotMatch(response.body, /RESEND_API_KEY/);
+});
+
+for (const [ttlSeconds, phrase] of [
+  [undefined, "15 minutes"],
+  ["3600", "1 hour"],
+]) {
+  test(`the submission message states the configured link lifetime (${phrase})`, async (t) => {
+    setEnv(t, {
+      ...RECAPTCHA_TEST_CONFIG,
+      RESEND_API_KEY: "re_test_123",
+      EMAIL_VERIFICATION_TTL_SECONDS: ttlSeconds,
+    });
+    mockValidRecaptcha(t);
+    t.mock.method(S3Client.prototype, "send", async () => ({}));
+    t.mock.method(
+      global,
+      "fetch",
+      async () =>
+        new Response(JSON.stringify({ id: "email_1" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    const response = await handler(
+      apiEvent({
+        method: "POST",
+        path: "/forms/submit",
+        origin: "https://www.policeconduct.org",
+        body: {
+          formName: "contact",
+          releaseId: "prod-temp",
+          recaptchaToken: "test-token",
+          data: { email: "person@example.org" },
+        },
+      }),
+    );
+    assert.equal(response.statusCode, 200, response.body);
+    const body = JSON.parse(response.body);
+    assert.equal(body.verificationPending, true);
+    assert.match(body.message, new RegExp(`within ${phrase} to confirm`));
+  });
+}

@@ -7,8 +7,9 @@ release and publish a single overridden page into it. `service.mjs` holds the
 pure request logic behind injected dependencies; `index.mjs` wires those
 dependencies to the CloudFront KeyValueStore, S3 and CloudFront APIs.
 
-Callers: `../../release.tf` zips this directory (`data.archive_file.release_api`)
-and deploys it as `aws_lambda_function.release_api` with handler `index.handler`.
+Callers: `../../release.tf` zips `index.mjs`, `service.mjs`, `package.json`
+and `node_modules` from this directory (`data.archive_file.release_api`), leaving
+out this file, the lockfile and any other file, and deploys it as `aws_lambda_function.release_api` with handler `index.handler`.
 There is no Function URL; the function is invoked through the Lambda API by the
 `intake_news` IAM role defined in `../../release.tf`. `../../scripts/apply.sh`
 runs `npm ci --omit=dev` in this directory before Terraform. The repo root test

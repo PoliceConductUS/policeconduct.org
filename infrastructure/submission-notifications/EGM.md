@@ -39,9 +39,9 @@ State lives in an S3 backend. There is no apply wrapper in this directory.
 
 - `submission_notifications_topic_arn` — ARN of the SNS topic.
   `[outputs.tf:output "submission_notifications_topic_arn"]`
-- `verify_commands` — a multi-line string of two `aws` CLI commands (list the
-  topic's subscriptions; read the production bucket's notification
-  configuration) for an operator to run after apply. Terraform only prints them.
+- `verify_commands` — a multi-line string of three `aws` CLI commands (list the
+  topic's subscriptions; read the notification configuration of the production
+  and the preview submissions bucket) for an operator to run after apply. Terraform only prints them.
   `[outputs.tf:output "verify_commands"]`
 
 ### Provider and backend (`versions.tf`)
@@ -60,7 +60,9 @@ State lives in an S3 backend. There is no apply wrapper in this directory.
 
 - `data.aws_caller_identity.current`. `[main.tf:data "aws_caller_identity" "current" {}]`
 - `check.correct_account` — asserts the caller account equals
-  `var.aws_account_id`. `[main.tf:check "correct_account"]`
+  `var.aws_account_id`. A failed check block assertion is reported as a warning
+  and does not stop the plan or apply. `[main.tf:check "correct_account"]`
+  `[main.tf:it does not stop the run.]`
 - `data.aws_s3_bucket.submissions` — looks up `var.submissions_bucket`.
   `[main.tf:data "aws_s3_bucket" "submissions" {]`
 - `data.aws_s3_bucket.submissions_preview` — looks up

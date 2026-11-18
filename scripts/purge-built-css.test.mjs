@@ -60,3 +60,30 @@ test("CSS purge releases page text while retaining selectors from every page", a
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("a CSS purge crash fails with exit 1", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "purge-css-crash-"));
+  try {
+    await mkdir(path.join(root, "scripts"));
+    await mkdir(path.join(root, "dist"));
+    await copyFile(
+      path.join(repoRoot, "scripts", "purge-built-css.mjs"),
+      path.join(root, "scripts", "purge-built-css.mjs"),
+    );
+    await symlink(
+      path.join(repoRoot, "node_modules"),
+      path.join(root, "node_modules"),
+      "dir",
+    );
+    const result = spawnSync(
+      process.execPath,
+      [path.join(root, "scripts", "purge-built-css.mjs")],
+      { encoding: "utf8", timeout: 60000 },
+    );
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /Post-build CSS purge failed/);
+    assert.match(result.stderr, /No HTML files under/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

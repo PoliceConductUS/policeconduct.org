@@ -52,9 +52,7 @@ Neither file is an ES module consumed by Node code in production. Callers:
   - `preview.<apex>`: release id from `current:main`; 404 if the key is absent. [router.js:host === "preview." + apexHost]
   - `<label>.preview.<apex>` where the label matches `^[a-z0-9-]+$`: release id
     from `current:<label>`; 404 if the key is absent. [router.js:labels[1] === "preview"]
-  - `<label>.builds.<apex>` where the label matches `^[a-z0-9-]+$`: the label is
-    used directly as the release id (no KeyValueStore pointer lookup). [router.js:labels[1] === "builds"]
-  - Any other host: 404. [router.js:labels.slice(2).join(".") !== apexHost]
+  - Any other host, including `<label>.builds.<apex>`: 404. [router.js:labels.slice(2).join(".") !== apexHost]
 - Redirect lookup `mappedTarget(namespace, uri)`: exact key first, then terminal
   `/*` patterns probed from the longest path prefix to the shortest; returns the
   stored target or `null`. A hit produces a 301 to the target with the query

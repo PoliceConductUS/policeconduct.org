@@ -301,7 +301,7 @@ const loadAgencyRows = async (agencyId: string) =>
             a.*,
             a.status,
             a.status_date::text as status_date,
-            bpp.path as canonical_path,
+            lp.path || a.slug || '/' as canonical_path,
             lp.path as location_path,
             split_part(lp.path, '/', 2) as state,
             area_lp.display_name as administrative_area,
@@ -322,6 +322,11 @@ const loadAgencyRows = async (agencyId: string) =>
         [agencyId],
       )
     ).rows[0];
+    if (!agency) {
+      throw new Error(
+        `Agency ${agencyId} was not found with a location_path and an agency build projection.`,
+      );
+    }
     const agencyPhones = (
       await client.query(
         `select * from public.agency_phone_numbers
@@ -506,7 +511,7 @@ const loadAgencyRows = async (agencyId: string) =>
                 case_agency.name as case_agency_name,
                 case_agency.slug as case_agency_slug,
                 case_location.path as case_agency_location_path,
-                case_bpp.path as case_agency_canonical_path,
+                case_location.path || case_agency.slug || '/' as case_agency_canonical_path,
                 target_ao.title as target_title,
                 target_ao.start_date as target_start_date,
                 target_ao.end_date as target_end_date,
@@ -904,7 +909,10 @@ export const loadAgencyDetail = async (agencyId: string) => {
 
   let cached = agencyDetailCache.get(agencyId);
   if (!cached) {
-    cached = buildAgencyDetail(agencyId);
+    cached = buildAgencyDetail(agencyId).catch((error: unknown) => {
+      agencyDetailCache.delete(agencyId);
+      throw error;
+    });
     agencyDetailCache.set(agencyId, cached);
   }
   return cached;

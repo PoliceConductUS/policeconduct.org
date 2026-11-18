@@ -78,7 +78,7 @@ const donatePageConfiguration: DonatePageConfiguration = {
   pageSubtitle:
     "Your support powers privacy protection and a public record of police experiences nationwide.",
   ein: ORG_EIN,
-  financialReportsPath: "/about/financial-reports",
+  financialReportsPath: "/about/financial-reports/",
   presetAmounts: [
     { key: "amount10", label: "$10" },
     { key: "amount25", label: "$25" },
@@ -668,7 +668,15 @@ const structuredData = buildWebPage({
       });
     });
 
-    setFrequency("monthly");
+    const syncCheckedFrequency = () => {
+      const checkedInput = rootElement.querySelector(
+        'input[name="donation-frequency"]:checked',
+      );
+      setFrequency(checkedInput.value);
+    };
+
+    syncCheckedFrequency();
+    window.addEventListener("pageshow", syncCheckedFrequency);
   }
 </script>
 

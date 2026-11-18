@@ -46,7 +46,6 @@ function router(entries = {}, options = {}) {
 for (const [host, namespace, prefix] of [
   ["www.example.org", "prod-one", "/prod-one/build"],
   ["pr-42.preview.example.org", "pr-42-one", "/pr-42-one/build"],
-  ["sha-123.builds.example.org", "sha-123", "/sha-123/build"],
 ]) {
   test(`${host}: exact redirects win over wildcard entries and keep repeated query values`, async () => {
     const run = router({
@@ -148,6 +147,7 @@ test("unrelated domains and malformed preview hosts cannot read the origin", asy
     "nested.pr-42.preview.example.org",
     "preview.example.org",
     "unrelated.example.org",
+    "sha-123.builds.example.org",
   ]) {
     assert.equal((await run(host, "/current/")).statusCode, 404);
   }
@@ -286,7 +286,6 @@ test("named folders remain one URL segment while override keys use the literal n
 for (const host of [
   "pr-42.preview.example.org",
   "preview.example.org",
-  "sha-123.builds.example.org",
   "unrelated.example.com",
 ]) {
   test(`${host}: robots.txt denies all crawlers instead of serving the build's file`, async () => {

@@ -96,10 +96,9 @@ locals {
     if trimspace(endpoint) != ""
   ])
   # Submission notifications (INS-35) live in their OWN stack —
-  # infrastructure/submission-notifications — because they are all-new
-  # resources and that stack has real Terraform state, while this one has none
-  # (INS-39). This stack only has to know the topic ARN so the forms API can
-  # publish to it; it neither creates nor owns the topic.
+  # infrastructure/submission-notifications — which owns the topic and the S3
+  # event notifications. This stack only has to know the topic ARN so the forms
+  # API can publish to it; it neither creates nor owns the topic.
   normalized_submission_notification_emails = distinct([
     for endpoint in var.submission_notification_email_endpoints : trimspace(endpoint)
     if trimspace(endpoint) != ""
@@ -2437,7 +2436,7 @@ resource "aws_cloudfront_key_value_store" "preview_redirects" {
 resource "aws_cloudfront_function" "preview_router" {
   name    = local.preview_router_function_name
   runtime = "cloudfront-js-2.0"
-  comment = "Route preview/build subdomains to their S3 prefix; apply per-build redirects."
+  comment = "Route preview subdomains to their S3 prefix; apply per-build redirects."
   publish = true
 
   key_value_store_associations = [
@@ -2805,13 +2804,6 @@ resource "github_actions_environment_secret" "sentry_auth_token" {
 #
 # Those resources are NOT here. They live in
 # infrastructure/submission-notifications, which has its own Terraform state.
-#
-# They were originally written into this file, which cannot be applied: this
-# stack has no state at all (INS-39), so `terraform apply` here plans a
-# create-from-scratch of the entire live estate. Everything INS-35 adds is a
-# brand-new resource with nothing to import, so it costs nothing to give it a
-# state file of its own — and buys a reviewable `terraform plan` instead of a
-# hand-run script.
 #
 # What stays here is only the part that modifies resources THIS stack owns: the
 # forms API Lambda environment and its sns:Publish grant, both driven by

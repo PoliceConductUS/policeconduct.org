@@ -103,10 +103,23 @@ const historicalCases = [
   },
 ];
 
+const reportFixtureRows = [
+  {
+    state: "tx",
+    slug: "first-amendment-retaliation-arrest-2c545f",
+    location_path: "/tx/county/place/",
+    incident_date: "2023-12-04",
+    videos: [
+      { id: "original-report-link", url: "https://youtu.be/TKh6X74AEc0" },
+    ],
+  },
+];
+
 const createFixture = async (
   t,
   duplicateRows = retainedAgencies,
   cases = historicalCases,
+  reports = reportFixtureRows,
 ) => {
   const cwd = path.resolve(
     await mkdtemp(path.join(tmpdir(), "redirect-generator-")),
@@ -133,6 +146,10 @@ const createFixture = async (
   await copyFile(
     new URL("../src/lib/video.ts", import.meta.url),
     path.join(cwd, "src/lib/video.ts"),
+  );
+  await copyFile(
+    new URL("../src/lib/pagination.ts", import.meta.url),
+    path.join(cwd, "src/lib/pagination.ts"),
   );
   await copyFile(
     new URL("../src/lib/data/annotation-access.js", import.meta.url),
@@ -163,17 +180,7 @@ const createFixture = async (
         ],
       },
     ],
-    [
-      {
-        state: "tx",
-        slug: "first-amendment-retaliation-arrest-2c545f",
-        location_path: "/tx/county/place/",
-        incident_date: "2023-12-04",
-        videos: [
-          { id: "original-report-link", url: "https://youtu.be/TKh6X74AEc0" },
-        ],
-      },
-    ],
+    reports,
     [{ state: "tx" }, { state: "dc" }, { state: "ak" }],
     [
       { category: "tx", total: 100 },
@@ -186,6 +193,11 @@ const createFixture = async (
     path.join(cwd, "src/lib/db.js"),
     `const responses = ${JSON.stringify(responses)};
      export const withDb = (run) => run({query: async (sql, values) => {
+       if (sql.includes("active_assignments")
+           && (!/join public.location_path lp\\s+on lp.location_path_id = a.location_path_id/.test(sql)
+             || /a\\.state/.test(sql))) {
+         throw new Error("Personnel pagination categories must come from the agency location_path join.");
+       }
        if (sql.includes("from public.personnel where id")) {
          return {rows: [{slug: "john-farmakes-l2v4t3"}]};
        }
@@ -454,9 +466,24 @@ test("Farmakes duplicate redirects to the retained database slug", async (t) => 
   const { redirects } = JSON.parse(
     await readFile(path.join(fixture, "dist/_redirect-map.json"), "utf8"),
   );
+  const matches = redirects.filter(
+    (r) => r.from === "/personnel/john-farmakes-k0l1m2/",
+  );
+  assert.equal(matches.length, 1);
+  assert.equal(matches[0].to, "/personnel/john-farmakes-l2v4t3/");
+});
+
+test("Farmakes duplicate redirect does not depend on legacy report aliases", async (t) => {
+  const fixture = await createFixture(t, retainedAgencies, historicalCases, []);
+  const result = runGenerator(fixture);
+  assert.equal(result.status, 0, result.stderr);
+  const { redirects } = JSON.parse(
+    await readFile(path.join(fixture, "dist/_redirect-map.json"), "utf8"),
+  );
   assert.equal(
-    redirects.find((r) => r.from === "/personnel/john-farmakes-k0l1m2/").to,
-    "/personnel/john-farmakes-l2v4t3/",
+    redirects.filter((r) => r.from === "/personnel/john-farmakes-k0l1m2/")
+      .length,
+    1,
   );
 });
 

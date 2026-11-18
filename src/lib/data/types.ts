@@ -35,7 +35,6 @@ export type AgencyFinderResult = {
   name: string;
   city?: string | null;
   administrativeArea?: string | null;
-  administrativeAreaSlug?: string | null;
   state: string;
   zipCode?: string | null;
   canonicalPath: string;

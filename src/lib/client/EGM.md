@@ -96,7 +96,7 @@ Browser-side modules shipped to the reader's browser. `site.js` is a side-effect
 - The default `data` drops the keys `form-name` and `g-recaptcha-response`; a repeated key becomes an array. `[forms.ts:g-recaptcha-response]`
 - Email status from the response JSON: `verificationPending === true` is `pending`, `false` is `failed`, anything else is `unknown`. `[forms.ts:verificationEmailStatus]`
 - Success detail text precedence: `getSuccessDetail({ result })`, else the trimmed `result.message`, else a fixed sentence about opening the emailed link within 15 minutes. A reference with `result.requestId` is appended when `verificationPending === false`. `[forms.ts:within 15 minutes]`
-- `failure_reason` for `form_verification_email_failed` is limited to `missing_origin`, `missing_email`, `invalid_email`, `send_failed`; anything else is `unknown`. `[forms.ts:missing_origin]`
+- `failure_reason` for `form_verification_email_failed` is limited to `missing_email`, `invalid_email`, `send_failed`; anything else is `unknown`. `[forms.ts:["missing_email", "invalid_email", "send_failed"].includes(reason)]`
 - The inline error text is the error message, or "Unable to submit the form. Please try again." for a non-Error or empty message, with the fallback sentence appended unless the message already names the contact address. It is set through `textContent`. `[forms.ts:Unable to submit the form. Please try again.]`
 - Fixed copy lives in `BLOCKED_SUBMIT_FALLBACK`, `FORM_LOAD_ERROR_MESSAGE` and `createSubmissionSuccessMarkup`. `[forms.ts:BLOCKED_SUBMIT_FALLBACK]`
 - Field names are parsed by one fixed regex in `parseFieldName`; empty segments are discarded. `[forms.ts:parseFieldName]`

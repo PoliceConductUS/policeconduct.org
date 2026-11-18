@@ -11,7 +11,7 @@ Astro dynamic page for the routes `/civil-cases/{slug}/`. It shows one civil cas
 - The `getStaticPaths` query orders by filed date (newest first), then title. `[index.astro:order by filed_date desc, title]`
 - `getStaticPaths` emits one path per case with the single param `slug` and no props. `[index.astro:slug: civilCase.slug,]`
 - The only route param is `slug`. `[index.astro:const { slug } = Astro.params;]`
-- The render reloads the case with `loadCivilCaseDetailBySlug` from `src/lib/data/civil-litigation-detail.js`. `[index.astro:const data = await loadCivilCaseDetailBySlug(String(slug || ""));]`
+- The render reloads the case with `loadCivilCaseDetailBySlug(slug)` from `src/lib/data/civil-litigation-detail.js`. `[index.astro:const data = await loadCivilCaseDetailBySlug(slug);]`
 - The loaded data is used as `civilCase`, `officers`, `agencies` and `coverageLinks`. `[index.astro:const coverageLinks = data.coverageLinks;]`
 - The CourtListener case URL is the first of the primary source URL and the coverage link URLs that matches a CourtListener docket URL pattern. `[index.astro:(url) => url && /^https:\/\/(www\.)?courtlistener\.com\/docket\//i.test(url),]`
 - The page description joins, when present: cause number, court, filed date, up to two officer names and up to two agency names. `[index.astro:const pageDescriptionParts = []`
@@ -57,7 +57,8 @@ Astro dynamic page for the routes `/civil-cases/{slug}/`. It shows one civil cas
 
 ## Invariants
 
-- The render throws when no case is found for the slug. ``[index.astro:throw new Error(`Civil case ${slug} not found.`);]``
+- The render throws when the `slug` param is missing. `[index.astro:Civil case route requires a slug.]`
+- The render throws when no case is found for the slug, or when the loaded case's `slug` is not the `slug` param. `[index.astro:if (!data || data.civilCase.slug !== slug) {]`
 - The render throws when the loaded case has no `filed_date`. ``[index.astro:throw new Error(`Civil case ${data.civilCase.id} is missing filed_date.`);]``
 - `location_name` is asserted non-null whenever `location_path` is present. `[index.astro:{data.civilCase.location_name!}]`
 - Route identity is carried only by the `slug` param; `getStaticPaths` passes no props. `[index.astro:return civilCases.map((civilCase: { slug: string }) => ({]`

@@ -103,7 +103,7 @@ export const loadCivilCasesByState = async (
             a.name,
             split_part(lp.path, '/', 2) as state,
             lp.path as location_path,
-            bpp.path as canonical_path
+            lp.path || a.slug || '/' as canonical_path
           from public.civil_case_personnel cco
           join public.agency_personnel ao on ao.id = cco.agency_personnel_id
           join public.agency a on a.id = ao.agency_id
@@ -133,6 +133,7 @@ export const loadCivilCasesByState = async (
   return [...civilCases]
     .map((civilCase) => ({
       ...civilCase,
+      locationPath: civilCase.location_path,
       officers: (officersByCase[civilCase.id] || [])
         .map(
           (entry: { personnel_id: string }) => officersById[entry.personnel_id],

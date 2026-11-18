@@ -15,7 +15,6 @@ Static Astro page for the route `/civil-cases/suggest-edit/`. It renders one HTM
 - The only import in the page frontmatter is `PageShell`. `[index.astro:import PageShell from "#src/layouts/PageShell.astro";]`
 - The form section carries `data-form-shell="civilLitigationEdit"`. `[index.astro:<section class="py-vh-2" data-form-shell="civilLitigationEdit">]`
 - Form `name="civilLitigationEdit"` with `method="POST"`, class `needs-validation` and `novalidate`. `[index.astro:name="civilLitigationEdit"]`
-- The form declares `data-netlify-honeypot="organization"`. `[index.astro:data-netlify-honeypot="organization"]`
 - Hidden field `form-name` with the value `civilLitigationEdit`. `[index.astro:<input type="hidden" name="form-name" value="civilLitigationEdit" />]`
 - Honeypot text field `organization`. `[index.astro:<input type="text" name="organization" />]`
 - Field `casePath` (text, required), label "Civil litigation path\*". `[index.astro:name="casePath"]`

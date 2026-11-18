@@ -18,7 +18,7 @@ Static Astro page for the route `/legal-notice/data-subject-access-request/`. It
 - The form wrapper is marked for the forms helper. [index.astro:data-form-shell="dataSubjectAccessRequest"]
 - The form is named `dataSubjectAccessRequest`, uses `method="POST"`, the `needs-validation` class and `novalidate`. [index.astro:name="dataSubjectAccessRequest"]
 - A hidden `form-name` input repeats the form name. [index.astro:name="form-name"]
-- A honeypot text input named `organization` sits in a visually hidden wrapper and is named by `data-netlify-honeypot`. [index.astro:data-netlify-honeypot="organization"]
+- A honeypot text input named `organization` sits in a visually hidden wrapper. [index.astro:<input type="text" name="organization" />]
 - Required text field `name` (full name). [index.astro:id="dsarName"]
 - Required email field `email`. [index.astro:id="dsarEmail"]
 - Optional phone field `phone`. [index.astro:id="dsarPhone"]

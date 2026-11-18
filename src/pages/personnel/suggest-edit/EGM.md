@@ -15,7 +15,6 @@ Static Astro page for the route `/personnel/suggest-edit/`. It renders one HTML 
 - Renders `PrefillBootstrap` from `src/components/PrefillBootstrap.astro` before the form. `[index.astro:<PrefillBootstrap />]`
 - The form section carries `data-form-shell="officerEdit"`. `[index.astro:<section class="py-vh-2" data-form-shell="officerEdit">]`
 - Form `name="officerEdit"` with `method="POST"`, class `needs-validation` and `novalidate`. `[index.astro:name="officerEdit"]`
-- The form declares `data-netlify-honeypot="organization"`. `[index.astro:data-netlify-honeypot="organization"]`
 - Hidden field `form-name` with the value `officerEdit`. `[index.astro:<input type="hidden" name="form-name" value="officerEdit" />]`
 - Honeypot text field `organization`. `[index.astro:<input type="text" name="organization" />]`
 - Field `officerPath` (text, required), label "Officer profile path\*", placeholder `/personnel/`. `[index.astro:name="officerPath"]`

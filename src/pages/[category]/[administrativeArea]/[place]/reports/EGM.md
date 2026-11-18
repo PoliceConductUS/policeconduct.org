@@ -6,9 +6,9 @@ Static Astro catch-all page for the route `/[category]/[administrativeArea]/[pla
 
 ## Interface
 
-- Route `/[category]/[administrativeArea]/[place]/reports/[...parts]/` (file `[...parts].astro`); route params: `category`, `administrativeArea`, `place`, plus the rest param `parts`. The page body does not read `Astro.params`. `[[...parts].astro:Astro.props]`
-- `getStaticPaths()` returns `buildReportArchiveStaticPaths(await loadReportSummaries(), "place")` unchanged. `buildReportArchiveStaticPaths` comes from `#src/lib/data/report-archives.js` and `loadReportSummaries` from `#src/lib/data/summaries.js`; the second argument is the archive scope. `[[...parts].astro:return buildReportArchiveStaticPaths(await loadReportSummaries(), "place");]`
-- Props read from `Astro.props`: `breadcrumbs`, `pagePath`, `reports`, `title`. All four come from the paths built by `buildReportArchiveStaticPaths`. `[[...parts].astro:const { breadcrumbs, pagePath, reports, title } = Astro.props;]`
+- Route `/[category]/[administrativeArea]/[place]/reports/[...parts]/` (file `[...parts].astro`); route params: `category`, `administrativeArea`, `place`, plus the rest param `parts`. The page body reads `Astro.url.pathname`, not `Astro.params` or `Astro.props`. `[[...parts].astro:Astro.url.pathname]`
+- `getStaticPaths()` calls `buildReportArchiveStaticPaths(await loadReportSummaries(), "place")` and returns only the `params` of each entry. `buildReportArchiveStaticPaths` comes from `#src/lib/data/report-archives.js` and `loadReportSummaries` from `#src/lib/data/summaries.js`; the second argument is the archive scope. `[[...parts].astro:.map(({ params }) => ({ params }));]`
+- At render time the page calls `buildReportArchiveStaticPaths` again and takes the entry whose `props.pagePath` equals `Astro.url.pathname`; it reads `breadcrumbs`, `pagePath`, `reports` and `title` from that entry. `[[...parts].astro:candidate.props.pagePath === Astro.url.pathname]` `[[...parts].astro:const { breadcrumbs, pagePath, reports, title } = archive.props;]`
 - Renders exactly one component, `ReportArchivePage` (`#src/components/ReportArchivePage.astro`), passing `breadcrumbs`, `pagePath`, `reports` and `title` unchanged. `[[...parts].astro:<ReportArchivePage]`
 - No pagination in this file. No endpoint (`.ts`) file in this directory.
 - Subdirectory: [[year]](./[year]/EGM.md) - year, month and day segments leading to the report detail page and its watch page.
@@ -16,8 +16,8 @@ Static Astro catch-all page for the route `/[category]/[administrativeArea]/[pla
 ## Invariants
 
 - The archive scope argument is the literal `"place"`. `[[...parts].astro:"place"]`
-- Nothing is reloaded by path at render time: page identity and data (`breadcrumbs`, `pagePath`, `reports`, `title`) arrive through `getStaticPaths()` props. `[[...parts].astro:const { breadcrumbs, pagePath, reports, title } = Astro.props;]`
-- The file contains no `throw` of its own. `[[...parts].astro:buildReportArchiveStaticPaths(]`
+- Page identity and data never travel through `getStaticPaths()` props; the render reloads the report summaries and finds the archive by exact path. `[[...parts].astro:candidate.props.pagePath === Astro.url.pathname]`
+- The page throws when no archive has the request path. `[[...parts].astro:No report archive has the path]`
 
 ## Side Effects
 

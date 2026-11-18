@@ -5,7 +5,7 @@
 Three Bash scripts that operate the `bootstrap-policeconduct` Terraform root:
 
 - `apply.sh` prepares the environment (profile, secrets, reCAPTCHA inputs,
-  GitHub identifiers, Lambda dependencies) and then hands off to the repo's
+  Lambda dependencies) and then hands off to the repo's
   reviewed Terraform apply wrapper.
 - `cloudfront_lookup.sh` is a Terraform `external` data-source program that looks
   up existing CloudFront resources by name or alias.
@@ -52,7 +52,6 @@ in the repo root `README.md`).
   - `RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME` to
     `TF_VAR_recaptcha_wif_provider_resource_name` [apply.sh:TF_VAR_recaptcha_wif_provider_resource_name="${RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME}"]
   - `RECAPTCHA_WIF_AUDIENCE` to `TF_VAR_recaptcha_wif_audience` [apply.sh:TF_VAR_recaptcha_wif_audience="${RECAPTCHA_WIF_AUDIENCE}"]
-  - `RECAPTCHA_MIN_SCORE` to `TF_VAR_recaptcha_min_score` [apply.sh:TF_VAR_recaptcha_min_score="${RECAPTCHA_MIN_SCORE}"]
 - Other environment variables set and exported:
   - `TF_VAR_forms_email_resend_api_key_production` and
     `TF_VAR_forms_email_resend_api_key_preview`, each read from its own
@@ -61,28 +60,18 @@ in the repo root `README.md`).
   - `SENTRY_AUTH_TOKEN` and `GITHUB_TOKEN`, loaded by
     `load_parameter_store_secrets` from the sourced repo root
     `scripts/parameter-store-secrets.sh`. [apply.sh:load_parameter_store_secrets SENTRY_AUTH_TOKEN GITHUB_TOKEN]
-  - `TF_VAR_github_org` and `TF_VAR_github_repo`, derived from the `origin`
-    remote URL when either is unset. Recognised URL forms: `git@github.com:`,
-    `https://github.com/`, `ssh://git@github.com/`, `git://github.com/`, with an
-    optional `.git` suffix. A missing or unrecognised remote leaves them unset
-    without error. [apply.sh:set_github_tf_vars_from_origin] [apply.sh:parse_github_repo_path]
-  - `../policeconduct.auto.tfvars` also sets `github_org`, `github_repo` and
-    `recaptcha_min_score`. Terraform gives `*.auto.tfvars` values precedence
-    over `TF_VAR_` environment variables, so the exported
-    `TF_VAR_github_org`, `TF_VAR_github_repo` and `TF_VAR_recaptcha_min_score`
-    do not change the plan. [../policeconduct.auto.tfvars:github_org] [../policeconduct.auto.tfvars:recaptcha_min_score]
+  - The script does not set `github_org`, `github_repo` or
+    `recaptcha_min_score`; `../policeconduct.auto.tfvars` sets them, and
+    Terraform gives `*.auto.tfvars` values precedence over `TF_VAR_`
+    environment variables. [../policeconduct.auto.tfvars:github_org] [../policeconduct.auto.tfvars:recaptcha_min_score]
   - The five reCAPTCHA names printed by repo root `scripts/terraform-outputs.mjs`,
     applied with `eval`. [apply.sh:eval "${recaptcha_env}"]
 - Exit codes: 0 after printing `Bootstrap apply (<phase>) complete.`; 1 for a
   missing reCAPTCHA input, missing `npm`, or an invalid `PHASE`; otherwise the
   non-zero status of whichever helper or subprocess failed. [apply.sh:Bootstrap apply (${PHASE}) complete.] [apply.sh:PHASE must be either 'foundation' or 'full']
-- Two Sentry checks are defined and called but cannot trigger in the current
-  call order: `preflight_explicit_tf_var_secrets` (exit 1 when
-  `SENTRY_AUTH_TOKEN` is set without `TF_VAR_sentry_auth_token`) and
-  `warn_if_sentry_tf_var_missing` (stderr warning when
-  `TF_VAR_sentry_auth_token` is unset). `SENTRY_AUTH_TOKEN` is always loaded
-  from Parameter Store first, and `map_common_env_to_tf_vars` then always sets
-  `TF_VAR_sentry_auth_token` from it. [apply.sh:preflight_explicit_tf_var_secrets] [apply.sh:warn_if_sentry_tf_var_missing] [apply.sh:load_parameter_store_secrets SENTRY_AUTH_TOKEN GITHUB_TOKEN]
+- `SENTRY_AUTH_TOKEN` is always loaded from Parameter Store first, and
+  `map_common_env_to_tf_vars` then always sets `TF_VAR_sentry_auth_token` from
+  it. [apply.sh:load_parameter_store_secrets SENTRY_AUTH_TOKEN GITHUB_TOKEN] [apply.sh:TF_VAR_sentry_auth_token="${SENTRY_AUTH_TOKEN}"]
 
 ### `cloudfront_lookup.sh`
 
@@ -120,7 +109,7 @@ Caller: operators directly. Covered by repo root
   one AWS account hard-coded in `EXPECTED_ACCOUNT`. `TMPDIR=/tmp` is set for the
   `npm ci` subprocess only. [deploy-forms-api.sh:readonly EXPECTED_ACCOUNT] [deploy-forms-api.sh:TMPDIR=/tmp npm ci]
 - Required tools on `PATH`: `aws`, `jq`, `zip` (checked), plus `npm`, `shasum`,
-  `du`, `cut`, `mktemp` and `xargs` (unchecked). [deploy-forms-api.sh:jq not found] [deploy-forms-api.sh:xargs]
+  `du`, `cut` and `mktemp` (unchecked). [deploy-forms-api.sh:jq not found]
 - Exit codes: 0 on success or completed dry run; 1 from `die` (wrong account,
   missing or malformed flag, missing topic, unknown function name, unreadable or
   mismatched notification configuration, missing tool); otherwise the failing
@@ -145,8 +134,7 @@ Caller: operators directly. Covered by repo root
   stops the apply; there is no fallback from one environment to the other. [apply.sh:TF_VAR_forms_email_resend_api_key_production=]
 - reCAPTCHA inputs come only from the `bootstrap-recaptcha` stack's Terraform
   outputs: the five plain names and their five `TF_VAR_` forms are unset before
-  the outputs are read, so `.env` values cannot win. `RECAPTCHA_MIN_SCORE` is not
-  in that unset list. [apply.sh:unset TF_VAR_recaptcha_project_id]
+  the outputs are read, so `.env` values cannot win. [apply.sh:unset TF_VAR_recaptcha_project_id]
 - All five reCAPTCHA Terraform inputs (project id, site key, service account
   email, WIF provider resource name, WIF audience) must be non-empty, otherwise
   the script exits 1 and names each missing input. [apply.sh:preflight_recaptcha_requirements]
@@ -158,8 +146,7 @@ Caller: operators directly. Covered by repo root
 - Terraform is never invoked directly; both phases go through repo root
   `scripts/terraform-reviewed-apply.sh`. [apply.sh:terraform-reviewed-apply.sh]
 - `PHASE` is validated last, after all preflight work and dependency installs. [apply.sh:case "${PHASE}" in]
-- An already-set `TF_VAR_` value is never overwritten by the plain-name mapping
-  or by the git-origin lookup. [apply.sh:-z "${TF_VAR_github_org+x}"]
+- An already-set `TF_VAR_` value is never overwritten by the plain-name mapping. [apply.sh:-z "${TF_VAR_sentry_dsn_production+x}"]
 
 ### `cloudfront_lookup.sh`
 
@@ -209,10 +196,9 @@ Caller: operators directly. Covered by repo root
   `node scripts/terraform-outputs.mjs` (run from the repo root; it runs
   `terraform init` when `infrastructure/bootstrap-recaptcha` is not
   initialised, then `terraform output -json` there),
-  `git -C <repo root> remote get-url origin`,
   `bash scripts/require-terraform-account.sh`, `npm ci` in
   `../lambdas/forms-api`, `npm --prefix ../lambdas/release-api ci`, and
-  `bash scripts/terraform-reviewed-apply.sh`. [apply.sh:git -C "${REPO_ROOT}" remote get-url origin] [apply.sh:npm --prefix "${ROOT_DIR}/lambdas/release-api" ci] [../../../scripts/terraform-outputs.mjs:terraform init failed for]
+  `bash scripts/terraform-reviewed-apply.sh`. [apply.sh:npm --prefix "${ROOT_DIR}/lambdas/release-api" ci] [../../../scripts/terraform-outputs.mjs:terraform init failed for]
 - Writes (replaces) `node_modules` in `../lambdas/forms-api` and
   `../lambdas/release-api`. The forms install is skipped when its `package.json`
   is absent. [apply.sh:prepare_forms_lambda_package]

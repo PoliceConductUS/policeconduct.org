@@ -14,19 +14,12 @@ const location = await loadRequiredLocationByPath(
   `/${Astro.params.category}/${Astro.params.administrativeArea}/`,
   "administrative_area",
 );
-const label = "Places";
 const model = await buildAdministrativeAreaCivicIndex(location);
-const pagePath = `${model.pagePath}places/`;
-const page = {
-  currentPage: 1,
-  data: model.rows,
-  lastPage: 1,
-};
 ---
 
 <CivicChildIndexPage
-  label={label}
+  currentPage={1}
+  label="Places"
   model={model}
-  page={page}
-  pagePath={pagePath}
+  pagePath={`${model.pagePath}places/`}
 />

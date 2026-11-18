@@ -18,7 +18,7 @@ Static Astro page for the route `/verify/`. A visitor arrives from the link in a
 - Resend call: `POST /api/forms/resend-verification` with a JSON body `{ token }`, sent when `#resendLinkButton` is clicked. Only `message` is read from its response. `[index.astro:const response = await fetch("/api/forms/resend-verification", {]`
 - Success view (`renderVerified`): heading `Email Confirmed`, a confirmation line, the submission ID, and the `#verificationActions` block made visible. `[index.astro:heading.textContent = "Email Confirmed";]`
 - `#checkStatusButton` stores `{ submissionId }` for `/status/` with `window.__IPC_PREFILL__.set`, clears the stored result and navigates to `/status/`. `[index.astro:window.__IPC_PREFILL__?.set?.("/status/", {]`
-- Session storage key `ipc_verify_result_v1` holds `{ message, submissionId, token }` after a successful confirmation. `[index.astro:const storedVerificationResultKey = "ipc_verify_result_v1";]`
+- Session storage key `ipc_verify_result_v1` holds `{ submissionId, token }` after a successful confirmation. `[index.astro:const storedVerificationResultKey = "ipc_verify_result_v1";]`
 - Page states and their headings: no token (`Open the Link From Your Email`), in progress (`Email Confirmation`), confirmed (`Email Confirmed`), expired (`Confirmation Link Expired`), failed (`Email Confirmation Failed`), resend done (`New Link Sent`), resend failed (`Could Not Send a New Link`). `[index.astro:response.ok ? "New Link Sent" : "Could Not Send a New Link",]`
 - No loaders and no page-local styles; the file ends with the closing layout tag. `[index.astro:</PageShell>]`
 
@@ -34,7 +34,7 @@ Static Astro page for the route `/verify/`. A visitor arrives from the link in a
 - `resendableToken` is cleared and the button disabled before the resend request, so a second click sends nothing. `[index.astro:resendLinkButton.disabled = true;]`
 - The token and the enabled button are restored only when the resend `fetch` itself throws; after any HTTP response, success or error, the resend block is hidden. `[index.astro:resendableToken = token;]`
 - A server `message` wins over the built-in text whenever it is a non-empty string, for a failed confirm call and for the resend call. `[index.astro:: "We could not confirm your email address with that link.";]`
-- On a successful confirmation the server `message` is only written to session storage; the page shows fixed text and the submission ID. `[index.astro:body.textContent = "Your email address has been confirmed.";]`
+- On a successful confirmation the server `message` is not used; the page shows fixed text and the submission ID. `[index.astro:body.textContent = "Your email address has been confirmed.";]`
 - `#checkStatusButton` does nothing until a submission ID is known. `[index.astro:if (!verifiedSubmissionId) {]`
 - Reads and writes of session storage are wrapped in `try`/`catch`; a storage failure is ignored and a stored value that is not a plain object is treated as missing. `[index.astro:// Ignore storage failures.]`
 - The script exits without binding anything when any of its five elements is missing. `[index.astro:!resendLinkButton]`

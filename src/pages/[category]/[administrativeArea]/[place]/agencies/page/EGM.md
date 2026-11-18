@@ -2,27 +2,24 @@
 
 ## Overview
 
-Static Astro page for the route `/[category]/[administrativeArea]/[place]/agencies/page/[...page]/`. It paginates the rows of the place civic index model and renders each page after the first with the shared `CivicChildIndexPage` component.
+Static Astro page for the route `/[category]/[administrativeArea]/[place]/agencies/page/[...page]/`. It renders each page of the place civic index rows after the first with the shared `CivicChildIndexPage` component.
 
 ## Interface
 
-- Route `/[category]/[administrativeArea]/[place]/agencies/page/[...page]/`; route params: `category`, `administrativeArea`, `place`, plus the rest param `page`. `[[...page].astro:params: path.params,]`
-- `getStaticPaths({ paginate })` enumerates locations with `loadPlaceScopedPaths()`, and for each one builds the model with `buildPlaceCivicIndex(await loadRequiredLocationByPath(path, "place"))`. `[[...page].astro:const paths = await loadPlaceScopedPaths();]`
-- Pagination: `paginate(model.rows, { pageSize: PAGE_SIZE, params: path.params, props })`, with `PAGE_SIZE` imported from `#src/lib/pagination.js`. `[[...page].astro:pageSize: PAGE_SIZE,]`
-- Pages whose `page` param is empty or equal to `"1"` are filtered out, so this file emits only page 2 and later; page 1 is served by `../index.astro`. `[[...page].astro:pageParam !== "1"]`
-- Props set in `getStaticPaths()` for every page: `label: "Agencies"`, `model`, and `pagePath` (`model.pagePath` followed by `agencies/`). Astro adds the `page` prop. `[[...page].astro:label: "Agencies",]`
-- The page body reads `label`, `model`, `page` and `pagePath` from `Astro.props` and passes all four, unchanged, to `CivicChildIndexPage` (`#src/components/CivicChildIndexPage.astro`). `[[...page].astro:const { label, model, page, pagePath } = Astro.props;]`
+- Route `/[category]/[administrativeArea]/[place]/agencies/page/[...page]/`; route params: `category`, `administrativeArea`, `place`, plus the rest param `page`. No props are read. `[[...page].astro:params: { ...path.params, page: String(pageNumber) }]`
+- `getStaticPaths()` enumerates locations with `loadPlaceScopedPaths()`, builds each model with `buildPlaceCivicIndex(await loadRequiredLocationByPath(path, "place"))`, and returns params only: one entry per page number from 2 to `Math.ceil(model.rows.length / PAGE_SIZE)`. `PAGE_SIZE` comes from `#src/lib/pagination.js`. `[[...page].astro:const lastPage = Math.ceil(model.rows.length / PAGE_SIZE);]`
+- The render parses `Astro.params.page` as a number, reloads the location with `loadRequiredLocationByPath(path, "place")`, where `path` is `/${Astro.params.category}/${Astro.params.administrativeArea}/${Astro.params.place}/`, and builds the model with `buildPlaceCivicIndex(location)`. `[[...page].astro:const currentPage = Number(Astro.params.page);]` `[[...page].astro:const model = await buildPlaceCivicIndex(location);]`
+- Renders `CivicChildIndexPage` with `currentPage`, `label="Agencies"`, `model` and a `pagePath` of `model.pagePath` followed by `agencies/`. `[[...page].astro:label="Agencies"]` `[[...page].astro:model.pagePath}agencies/]`
 
 ## Invariants
 
-- The location is loaded by exact path with type `"place"` inside `getStaticPaths()` only. The render does not reload it: `model` and `pagePath` reach the page through `getStaticPaths()` props. `[[...page].astro:const { label, model, page, pagePath } = Astro.props;]`
-- Both shapes of the `page` param are checked: an array is kept only when it is non-empty and its first item is not `"1"`; a string is kept only when it is non-empty and not `"1"`. `[[...page].astro:return pageParam.length > 0 && pageParam[0] !== "1";]`
-- `pagePath` is always the base path `agencies/` under `model.pagePath`, without the page number. `[[...page].astro:model.pagePath}agencies/]`
-- The file contains no `throw` of its own. `[[...page].astro:loadRequiredLocationByPath(]`
+- Route identity and page data never travel through `getStaticPaths()` props; the render reloads the location by exact path. `[[...page].astro:// Enumerates params only.]`
+- The page throws when `page` is not a whole number written without extra characters, or is less than 2; page 1 is served by `../index.astro`. `[[...page].astro:Invalid agencies page number]`
+- `CivicChildIndexPage` throws when `currentPage` is past the last page. `[[...page].astro:currentPage={currentPage}]`
 
 ## Side Effects
 
-- Build-time data loading only, through `loadPlaceScopedPaths`, `loadRequiredLocationByPath` and `buildPlaceCivicIndex`, once per location while static paths are built. No writes, network calls or client script in this file. `[[...page].astro:for (const path of paths) {]`
+- Build-time data loading only, through `loadPlaceScopedPaths`, `loadRequiredLocationByPath` and `buildPlaceCivicIndex`, once per location while static paths are built and again on each render. No writes, network calls or client script in this file. `[[...page].astro:for (const path of paths) {]`
 
 ## Verification
 

@@ -181,6 +181,3 @@ export const metricVisuals = {
     label: metricLabels.settlements,
   },
 } as const satisfies Partial<Record<MetricLabelKey, MetricVisual>>;
-
-export const getMetricVisual = (key: keyof typeof metricVisuals) =>
-  metricVisuals[key];

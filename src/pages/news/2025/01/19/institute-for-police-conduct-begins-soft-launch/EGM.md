@@ -2,7 +2,7 @@
 
 ## Overview
 
-Static news post for the route `/news/2025/01/19/institute-for-police-conduct-begins-soft-launch/`. The directory has `index.astro` (the page) and `_metadata.ts` (the list record). The page writes its title, description, path and heading as literal strings instead of reading them from `newsMeta`; only the structured data reads `newsMeta`. The page passes no `robots` or `lede` prop, calls no data loader, has no form and ships no client script.
+Static news post for the route `/news/2025/01/19/institute-for-police-conduct-begins-soft-launch/`. The directory has `index.astro` (the page) and `_metadata.ts` (the list record). The page takes its title, description, path and heading from `newsMeta`. The page passes no `robots` or `lede` prop, calls no data loader, has no form and ships no client script.
 
 ## Interface
 
@@ -14,11 +14,10 @@ Static news post for the route `/news/2025/01/19/institute-for-police-conduct-be
 - The page renders through the `PageShell` layout. [index.astro:import PageShell from "#src/layouts/PageShell.astro";]
 - The page imports `newsMeta` from its own metadata file. [index.astro:import { newsMeta } from "./_metadata";]
 - `PageShell` prop `structuredData` is a `buildNewsArticle` object built from `siteUrl`, `pageUrl`, `headline`, `description` and `datePublished`. [index.astro:const structuredData = buildNewsArticle({]
-- `PageShell` prop `title` is a literal string. [index.astro:title="A New Chapter for Accountability: Institute for Police Conduct Begins Soft Launch"]
-- `PageShell` prop `description` is a literal string written in the page. [index.astro:description="]
-- `PageShell` props `pagePath` and `canonicalUrl` are the literal route path. [index.astro:canonicalUrl="/news/2025/01/19/institute-for-police-conduct-begins-soft-launch/"]
-- `PageShell` prop `breadcrumbs` has two entries: `News` linking to `/news/`, then `Soft Launch Announcement` marked `current`. [index.astro:label: "Soft Launch Announcement",]
-- `PageShell` prop `heading` is a literal string. [index.astro:heading="A New Chapter for Accountability: Institute for Police Conduct Begins Soft Launch"]
+- `PageShell` props `title` and `heading` are `newsMeta.title`. [index.astro:title={newsMeta.title}]
+- `PageShell` prop `description` is `newsMeta.description`, the same text the structured data uses. [index.astro:description={newsMeta.description}]
+- `PageShell` props `pagePath` and `canonicalUrl` are `newsMeta.href`. [index.astro:canonicalUrl={newsMeta.href}]
+- `PageShell` prop `breadcrumbs` has two entries: `News` linking to `/news/`, then `Soft Launch Announcement` linking to `newsMeta.href` and marked `current`. [index.astro:label: "Soft Launch Announcement",]
 - The `header` slot holds the lead paragraph. [index.astro:Fragment slot="header"]
 - The body lists ways to help, including volunteering and donations. [index.astro:Volunteers:]
 
@@ -27,8 +26,6 @@ Static news post for the route `/news/2025/01/19/institute-for-police-conduct-be
 - The structured-data page URL is `newsMeta.href` resolved against `getSiteUrl(Astro.site)`. [index.astro:pageUrl: new URL(newsMeta.href, siteUrl).toString(),]
 - The structured-data `headline`, `description` and `datePublished` come from `newsMeta`. [index.astro:datePublished: newsMeta.date,]
 - `newsMeta.href` matches this directory path under `src/pages`. [_metadata.ts:/news/2025/01/19/institute-for-police-conduct-begins-soft-launch/]
-- The literal `title` and `heading` in `index.astro` repeat `newsMeta.title` and must be kept in step with it by hand. [index.astro:heading="A New Chapter for Accountability: Institute for Police Conduct Begins Soft Launch"]
-- The literal `pagePath` in `index.astro` repeats `newsMeta.href` and must be kept in step with it by hand. [index.astro:pagePath="/news/2025/01/19/institute-for-police-conduct-begins-soft-launch/"]
 
 ## Side Effects
 

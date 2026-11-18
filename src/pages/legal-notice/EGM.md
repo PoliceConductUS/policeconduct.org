@@ -17,7 +17,7 @@ Static pages under `/legal-notice/`. `index.astro` is the index page that lists 
 - The page renders one card per `documents` entry showing the category badge, the path text, the linked title and the summary. [index.astro:{documents.map((doc) => (]
 - Each card links to `/legal-notice/{slug}/`. [index.astro:href={`/legal-notice/${doc.slug}/`}]
 - The `PrefillBootstrap` component is rendered once in the page. [index.astro:PrefillBootstrap />]
-- The `actions` slot holds a `PrefillNavButton` with `to="/about/contact/"` and a `payload` of `whoami: "Partner"` plus a message about legal policies. [index.astro:message: "I have a question about your legal policies.",]
+- The `actions` slot holds a `PrefillNavButton` with `to="/about/contact/"` and a `payload` of `whoami: "Other"` plus a message about legal policies, so the contact form preselects `Other`. [index.astro:message: "I have a question about your legal policies.",]
 - The `actions` slot also holds a plain link to the data request page. [index.astro:href="/legal-notice/data-subject-access-request/"]
 - Child contract: [acceptable-use](./acceptable-use/EGM.md) - Static `/legal-notice/acceptable-use/` page: the acceptable use policy text.
 - Child contract: [comment-policy](./comment-policy/EGM.md) - Static `/legal-notice/comment-policy/` page: the comment policy text with a short question-and-answer section.

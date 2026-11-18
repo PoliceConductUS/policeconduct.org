@@ -91,7 +91,6 @@ not documented here.
 
 ## Verification
 
-- Run: `npm run test:infra`
-- `redirect.test.mjs` is not part of any root `package.json` script; run it with
-  `node --test infrastructure/bootstrap-iceconduct/scripts/redirect.test.mjs`.
+- Run: `npm run test:infra`, which includes `redirect.test.mjs`.
+  `[../../../package.json:infrastructure/bootstrap-iceconduct/scripts/redirect.test.mjs]`
   `[redirect.test.mjs:maps only the hostname for]`

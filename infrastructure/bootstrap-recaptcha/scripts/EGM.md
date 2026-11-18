@@ -45,7 +45,7 @@ directory in a fixed order, stopping at the first failure.
 - Any failing step aborts the wrapper; later steps never run.
   `[apply.sh:set -euo pipefail]`
 - Order is fixed: state guard, then reviewed apply.
-  `[apply.sh:Refuse an unbound checkout before apply or output synchronization.]`
+  `[apply.sh:Refuse an unbound checkout before apply.]`
 - This wrapper does not run `require-terraform-account.sh`; the AWS account is
   constrained by the stack's provider and backend configuration instead.
   `[../providers.tf:allowed_account_ids]`

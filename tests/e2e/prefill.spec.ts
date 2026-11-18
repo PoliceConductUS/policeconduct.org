@@ -47,7 +47,7 @@ const simpleSenderCases: SenderCase[] = [
     route: "/legal-notice/",
     expectedFields: ["message", "whoami"],
     payload: {
-      whoami: "Partner",
+      whoami: "Other",
       message: "I have a question about your legal policies.",
     },
     locator: { kind: "role", value: "Contact the team" },

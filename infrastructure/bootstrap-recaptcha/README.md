@@ -13,7 +13,7 @@ It manages Google Cloud reCAPTCHA Enterprise resources only:
 ## Existing state is required
 
 The apply wrapper refuses missing, unreadable, empty, or data-only state before
-applying or syncing environment outputs. Bind this checkout to the authoritative
+applying. Bind this checkout to the authoritative
 state before using the wrapper. Do not initialize a fresh local state for an
 existing deployment. This guard does not prove state completeness or identity;
 inspect the plan against the known project and resources before applying.
@@ -62,7 +62,6 @@ The policeconduct stack and the site scripts read this stack's outputs at run ti
 The inputs for this stack are tracked in `recaptcha.auto.tfvars`, which Terraform loads on every plan and apply. Secrets never go in that file.
 
 Before it changes anything, `scripts/apply.sh` writes one plan and refuses it when it destroys or replaces a resource whose address is not listed, one per line, in `TERRAFORM_APPROVED_DESTROYS`. It then asks for `yes` and applies exactly that plan. When live infrastructure already matches, it applies nothing.
-Use `ENV_FILE_NAME=.env` to write directly into your main env file.
 
 ## Authentication Prerequisites (GCP)
 
@@ -126,7 +125,7 @@ gcloud auth application-default print-access-token >/dev/null && echo "ADC OK"
 
 ## Output Wiring
 
-The sync script writes:
+No script writes these values to a file. `scripts/terraform-outputs.mjs` reads them from this stack's Terraform outputs at run time:
 
 - `RECAPTCHA_PROJECT_ID`
 - `RECAPTCHA_SITE_KEY`
@@ -134,4 +133,4 @@ The sync script writes:
 - `RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME`
 - `RECAPTCHA_WIF_AUDIENCE`
 
-These canonical env vars map directly to AWS bootstrap Terraform inputs during apply.
+`infrastructure/bootstrap-policeconduct/scripts/apply.sh` maps them to that stack's Terraform inputs during apply.

@@ -71,8 +71,9 @@ that the user-facing messages in `index.mjs` contain.
 requestId }`, decided before route matching. [index.mjs:method === "POST" && !allowedOrigin]
 - Anything else: 405 `{ error: "Method not allowed." }` with header
   `Allow: GET, POST, OPTIONS`. There is no 404. [index.mjs:"Method not allowed."]
-- Uncaught error in any route: 500 `{ error: <error message or "Internal server
-error">, requestId }`. The raw exception message is returned to the caller. [index.mjs:"Internal server error"]
+- Uncaught error in any route: 500 `{ error: "Internal server error", requestId }`.
+  The exception message goes only to the `forms.request.error` log line and
+  Sentry, never to the caller. [index.mjs:error: "Internal server error",]
 - Request id: `event.requestContext.requestId`, else the `x-amzn-trace-id`
   header, else a random UUID. [index.mjs:function getRequestId]
 
@@ -90,22 +91,24 @@ error">, requestId }`. The raw exception message is returned to the caller. [ind
 
 ### `saveDraft` (`POST /forms/draft`)
 
-- Body: optional `draftId` (used as given; a random UUID when absent) and
-  optional object `data` (anything else becomes `{}`). [index.mjs:payload?.draftId || crypto.randomUUID()]
+- Body: optional `draftId` (a random UUID when absent) and optional object
+  `data` (anything else becomes `{}`). [index.mjs:payload?.draftId || crypto.randomUUID()]
 - Responses: 500 `Missing DRAFTS_BUCKET`; 500 `Missing DRAFTS_KMS_KEY_ID`; 413
   `Draft payload too large.` when the UTF-8 size of the serialised `data`
-  exceeds `MAX_DRAFT_BYTES`; otherwise 200 `{ draftId, updatedAt }`. [index.mjs:"Draft payload too large."] [index.mjs:Missing DRAFTS_KMS_KEY_ID]
+  exceeds `MAX_DRAFT_BYTES`; 400 `Invalid draftId.` when a given `draftId` is
+  not one safe key segment (see Invariants); otherwise 200 `{ draftId, updatedAt }`. [index.mjs:"Draft payload too large."] [index.mjs:Missing DRAFTS_KMS_KEY_ID]
 
 ### `getDraft` (`GET /forms/draft`)
 
 - Query parameter `draftId`. [index.mjs:queryStringParameters?.draftId]
-- Responses: 500 `Missing DRAFTS_BUCKET`; 200 `{}` when there is no `draftId`,
+- Responses: 500 `Missing DRAFTS_BUCKET`; 400 `Invalid draftId.` when the
+  `draftId` is not one safe key segment; 200 `{}` when there is no `draftId`,
   no such object, an empty or unparseable object, a draft that already carries a
   `submissionId`, or a draft whose `updatedAt` is missing or older than the
   active window; otherwise 200 `{ draftId, data, updatedAt }`. Never 404. [index.mjs:async function getDraft] [index.mjs:activeWindowMs]
-- "No such object" is recognised only by an S3 error whose `code` property is
-  `NoSuchKey`; the error `name` is not checked here. Any other S3 read error is
-  rethrown and becomes the handler's 500. [index.mjs:error.code === "NoSuchKey"]
+- "No such object" is an S3 error whose `name` or `code` is `NoSuchKey`
+  (`isNoSuchKey`, shared with `markDraftSubmitted` and `readJsonObject`). Any
+  other S3 read error is rethrown and becomes the handler's 500. [index.mjs:function isNoSuchKey]
 
 ### `submitForm` (`POST /forms/submit`)
 
@@ -124,23 +127,24 @@ error">, requestId }`. The raw exception message is returned to the caller. [ind
   - 500 `Missing SUBMISSIONS_BUCKET`, 500 `Missing SUBMISSIONS_KMS_KEY_ID`. [index.mjs:Missing SUBMISSIONS_KMS_KEY_ID]
   - 400 `Missing required formName.` [index.mjs:"Missing required formName."]
   - 400 `Unsupported formName.` [index.mjs:"Unsupported formName."]
+  - 400 `Invalid draftId.` when a given `draftId` is not one safe key segment. [index.mjs:reason: "invalid_draft_id"]
   - 400 with the reCAPTCHA error: `Missing RECAPTCHA_PROJECT_ID`,
     `Missing RECAPTCHA_SITE_KEY`, `Missing reCAPTCHA token.`,
     `Invalid reCAPTCHA token.`, `Invalid reCAPTCHA action.`,
     `reCAPTCHA risk score too low.` or `Failed to verify reCAPTCHA Enterprise.` [index.mjs:"reCAPTCHA risk score too low."] [index.mjs:"Failed to verify reCAPTCHA Enterprise."]
   - 400 `This form has an unrecognized website release.` [index.mjs:"This form has an unrecognized website release."]
   - 500 (the handler's catch) when the reCAPTCHA client cannot be built, when
-    the release marker lookup fails with anything other than an HTTP 404, or
+    the release marker lookup fails with anything other than an HTTP 404, when
+    the sender address, email API key or HMAC secret is missing
+    (`verificationConfig`, read before the submission object is written), or
     when the submission object write fails. [index.mjs:const client = await getRecaptchaClient();] [index.mjs:if (error.$metadata?.httpStatusCode === 404) return false;]
   - 200 `{ message, requestId, verificationFailureReason, verificationPending:
 false }` when the submission was stored but the confirmation email could not
-    be prepared or sent. Reasons: `missing_origin`, `missing_email`,
-    `invalid_email`, `send_failed`. [index.mjs:function verificationFailureResponse]
-  - 500 with the `verificationConfig` error message when the sender address,
-    email API key or HMAC secret is missing. This happens after the submission
-    object is already stored. [index.mjs:const config = verificationConfig();]
-  - 200 `{ message, verificationPending: true }` on success. The message names a
-    fixed "15 minutes" and the response does not include the submission id. [index.mjs:verificationPending: true]
+    be prepared or sent. Reasons: `missing_email`, `invalid_email`,
+    `send_failed`. [index.mjs:function verificationFailureResponse]
+  - 200 `{ message, verificationPending: true }` on success. The message names
+    the configured link lifetime through `formatApproximateDuration`, and the
+    response does not include the submission id. [index.mjs:verificationPending: true] [index.mjs:open the link within ${formatApproximateDuration(config.ttlMs)}]
 - The emailed confirmation link is `<origin>/verify/?token=<token>`, where
   `<origin>` is the request's allowed `Origin` and the token is URI-encoded. [index.mjs:${origin}/verify/?token=${encodeURIComponent(token)}]
 - Failure message wording (`verificationFailureMessage`): one generic message
@@ -165,7 +169,7 @@ false }` when the submission was stored but the confirmation email could not
 
 - Body: `token` (same format). The replacement is sent only to the address
   stored on the verification record. [index.mjs:async function resendVerificationLink]
-- Responses: 400 `invalid_token`; 400 `missing_origin`; 400 `not_found`; 400
+- Responses: 400 `invalid_token`; 400 `not_found`; 400
   `already_used`; 429 `resend_limit`; 429 `resend_cooldown`; 400 `no_address`;
   502 `send_failed`; 200 `{ message }` on success (the address is not echoed). [index.mjs:reason: "resend_limit"]
 - The link does not have to be expired: an unused link whose secret matches
@@ -173,7 +177,9 @@ false }` when the submission was stored but the confirmation email could not
 
 ### `getSubmissionStatus` (`GET /status/<submissionId>`)
 
-- Always HTTP 200. Returns `{ status, message }` from the stored status object,
+- 400 `{ error: "Invalid submission id." }` when the decoded, trimmed id is not
+  one safe key segment. [index.mjs:"Invalid submission id."]
+- Otherwise HTTP 200. Returns `{ status, message }` from the stored status object,
   or a `pending` payload (`Submission <id> status: pending`) when the bucket is
   not configured, the object is missing or unreadable, or the read throws. An
   empty id gives the same payload without the id (`Submission status:
@@ -288,13 +294,13 @@ payload: { formName, releaseId, data } }`. [index.mjs:${prefix}${receivedDate}/$
   (`external_account`); no static Google key is used, and the audience must end
   with the provider resource name. [index.mjs:function buildRecaptchaWifCredentials] [index.mjs:subject_token_type]
 - The reCAPTCHA client is built once per container and memoised. A failed build
-  (for example a missing workload-identity variable) is memoised too, so every
-  later submit in that container fails the same way. [index.mjs:let recaptchaClientPromise] [index.mjs:if (!recaptchaClientPromise) {]
-- Write order on submit: submission object, then draft marking, then
-  verification record, then email. After the submission object is written,
-  draft-marking and email failures do not produce an error status. The one
-  exception is missing verification configuration, which throws outside the
-  `try` and returns 500. After a send that returns a provider message id (on
+  (for example a missing workload-identity variable) is not kept, so the next
+  submit builds a new client. [index.mjs:let recaptchaClientPromise] [index.mjs:Do not keep a failed client]
+- Write order on submit: verification configuration is read first, then the
+  submission object, draft marking, verification record and email. Missing
+  verification configuration returns 500 before anything is written. After the
+  submission object is written, draft-marking and email failures do not
+  produce an error status. After a send that returns a provider message id (on
   submit and on resend), the verification record is written again with
   `providerMessageId` and `sentAt`; a failure of that write is swallowed with no
   log line and no Sentry capture. [index.mjs:async function recordVerificationSend] [index.mjs:// Swallowed on purpose. See the note above.] [index.mjs:forms.submit.s3_put_attempt] [index.mjs:forms.submit.draft_mark_submitted_failed] [index.mjs:const config = verificationConfig();]
@@ -329,7 +335,9 @@ payload: { formName, releaseId, data } }`. [index.mjs:${prefix}${receivedDate}/$
   submission id, timestamp, bucket and key. [index.mjs:This notification intentionally contains no submission content.]
 - The key in the staff notification and in the receipt's `submissionKey` field
   is the status object key (`<SUBMISSIONS_PREFIX>status/<submissionId>.json`),
-  not the key of the submission object. [index.mjs:${config.prefix}status/${record.submissionId}.json]
+  not the key of the submission object; the notification text still tells the
+  reader to read "the object above". The verification record does not store the
+  submission object key. [index.mjs:${config.prefix}status/${record.submissionId}.json] [index.mjs:Read the]
 - Staff subjects are single-line printable ASCII, at most 100 characters;
   `dataSubjectAccessRequest` subjects carry `[DSAR]`. [index.mjs:function sanitizeSubject] [index.mjs:[DSAR] ]
 - With the default prefixes (`notifications/` and `submissions/`), receipts are
@@ -339,11 +347,14 @@ payload: { formName, releaseId, data } }`. [index.mjs:${prefix}${receivedDate}/$
   `application/json`. [index.mjs:ServerSideEncryption: "aws:kms"]
 - Submitter email addresses are not logged; only the email domain is. Staff
   recipient addresses are not logged; only their count is. [index.mjs:function emailDomain] [index.mjs:recipientCount]
-- `getSubmissionStatus` never returns an error status. [index.mjs:forms.status.pending_fallback]
-- `draftId`, the `/status/` path segment and the `<verificationId>` part of a
-  link token are placed into object keys without character validation; only
-  `releaseId` is validated. [index.mjs:const key = verificationKey(config.verificationPrefix, verificationId);] The `/status/` segment is
-  URI-decoded (the raw text is kept when decoding fails) and trimmed first. [index.mjs:const key = `${prefix}${draftId}.json`] [index.mjs:decodeURIComponent(path.slice("/status/".length))]
+- `getSubmissionStatus` returns an error status only for an id that is not one
+  safe key segment; read failures fall back to `pending`. [index.mjs:forms.status.pending_fallback]
+- `releaseId`, `draftId` and the `/status/` path segment must each be one safe
+  key segment (`isSafeKeySegment`): a non-empty string that is not `.` or `..`
+  and has no slash, backslash or control character. The `/status/` segment is
+  URI-decoded (the raw text is kept when decoding fails) and trimmed first. [index.mjs:function isSafeKeySegment] [index.mjs:decodeURIComponent(path.slice("/status/".length))]
+- The `<verificationId>` part of a link token is placed into an object key
+  without character validation. [index.mjs:const key = verificationKey(config.verificationPrefix, verificationId);]
 
 ## Side Effects
 
@@ -372,7 +383,8 @@ payload: { formName, releaseId, data } }`. [index.mjs:${prefix}${receivedDate}/$
   `../../main.tf` match two of these names,
   `forms.submit.verification_email_failed` and
   `forms.submit.verification_email_not_sent`, so renaming either is a contract
-  change; no filter in that file matches the other names. [../../main.tf:forms.submit.verification_email_failed] [../../main.tf:forms.submit.verification_email_not_sent]
+  change; no filter or alarm in that file matches the other names, including
+  every `forms.notify.*` name. [../../main.tf:forms.submit.verification_email_failed] [../../main.tf:forms.submit.verification_email_not_sent]
 - Log names:
   - Request: `forms.request.received`, `forms.request.origin_rejected`,
     `forms.request.error`. [index.mjs:forms.request.received] [index.mjs:forms.request.error]

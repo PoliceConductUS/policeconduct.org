@@ -18,7 +18,7 @@ Static Astro page for the route `/about/contact/`. It shows the `contact` form. 
 - An information alert above the form explains why the form appears often. [index.astro:alert alert-info rounded-0]
 - The form is named `contact`, uses `method="POST"`, the `needs-validation` class and `novalidate`. [index.astro:name="contact"]
 - A hidden `form-name` input holds `contact`. [index.astro:name="form-name" value="contact"]
-- A honeypot text input named `organization` sits in a visually hidden wrapper and is named by `data-netlify-honeypot`. [index.astro:data-netlify-honeypot="organization"]
+- A honeypot text input named `organization` sits in a visually hidden wrapper. [index.astro:<input type="text" name="organization" />]
 - Required select `whoami` with a disabled empty default and the values `individual`, `police`, `oversight`, `journalist`, `donor`, `partner`, `volunteer`, `profile owner`, `subscriber` and `other`. [index.astro:name="whoami"]
 - Required text field `fullName`. [index.astro:name="fullName"]
 - Required email field `email`. [index.astro:name="email"]

@@ -4,22 +4,24 @@ import test from "node:test";
 import vm from "node:vm";
 
 const terraform = readFileSync(new URL("../main.tf", import.meta.url), "utf8");
-const code = terraform
-  .match(/code\s*=\s*<<-EOF\n([\s\S]*?)\nEOF/)[1]
-  .replace("${jsonencode(var.domain_name)}", JSON.stringify("iceconduct.org"))
-  .replace(
-    "${jsonencode(var.redirect_target_url)}",
-    JSON.stringify(
-      "https://www.policeconduct.org/federal/u-s-immigration-and-customs-enforcement/",
-    ),
-  );
-const context = vm.createContext({});
-vm.runInContext(code, context);
-function redirect(host, uri = "/", querystring = {}) {
-  return context.handler({
-    request: { headers: { host: { value: host } }, uri, querystring },
-  });
+const template = terraform.match(/code\s*=\s*<<-EOF\n([\s\S]*?)\nEOF/)[1];
+const TARGET_EXPRESSION = "${jsonencode(trimspace(var.redirect_target_url))}";
+
+// Render the function the way Terraform does: trimspace, then jsonencode.
+function redirectTo(targetUrl) {
+  const code = template
+    .replace("${jsonencode(var.domain_name)}", JSON.stringify("iceconduct.org"))
+    .replace(TARGET_EXPRESSION, JSON.stringify(targetUrl.trim()));
+  const context = vm.createContext({});
+  vm.runInContext(code, context);
+  return (host, uri = "/", querystring = {}) =>
+    context.handler({
+      request: { headers: { host: { value: host } }, uri, querystring },
+    });
 }
+const redirect = redirectTo(
+  "https://www.policeconduct.org/federal/u-s-immigration-and-customs-enforcement/",
+);
 
 for (const host of [
   "iceconduct.org",
@@ -61,5 +63,25 @@ for (const host of [
 ]) {
   test(`rejects unrelated hostname ${host}`, () => {
     assert.equal(redirect(host).statusCode, 400);
+  });
+}
+test("the function reads the trimmed target, as the variable validation does", () => {
+  assert.ok(template.includes(TARGET_EXPRESSION));
+  assert.ok(!template.includes("${jsonencode(var.redirect_target_url)}"));
+});
+for (const target of [
+  "https://www.policeconduct.org",
+  "  https://www.policeconduct.org  ",
+]) {
+  test(`a host-only target ${JSON.stringify(target)} redirects the root to /`, () => {
+    const run = redirectTo(target);
+    assert.equal(
+      run("iceconduct.org").headers.location.value,
+      "https://policeconduct.org/",
+    );
+    assert.equal(
+      run("www.iceconduct.org", "/about/").headers.location.value,
+      "https://www.policeconduct.org/about/",
+    );
   });
 }

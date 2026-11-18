@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS region for the Secrets Manager secret."
+  description = "AWS region for the AWS provider, which reads the caller account for the workload identity trust."
   type        = string
   default     = "us-east-1"
 }

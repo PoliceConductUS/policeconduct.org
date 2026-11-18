@@ -104,8 +104,8 @@ go through the wrapper in [./scripts/EGM.md](./scripts/EGM.md).
   `acm_validation` records plus the preview record.
   `[main.tf:resource "aws_acm_certificate_validation" "preview_rollout"]`
 - `aws_cloudfront_function.redirect` — runtime `cloudfront-js-2.0`, published,
-  inline code with `var.domain_name` and `var.redirect_target_url` embedded
-  through `jsonencode`. `[main.tf:resource "aws_cloudfront_function" "redirect"]`
+  inline code with `var.domain_name` and the trimmed `var.redirect_target_url`
+  embedded through `jsonencode`. `[main.tf:jsonencode(trimspace(var.redirect_target_url))]` `[main.tf:resource "aws_cloudfront_function" "redirect"]`
 - `aws_cloudfront_distribution.redirect` — enabled, IPv6, `http2and3`, aliases
   `local.domain_aliases`, empty default root object, price class from
   `var.price_class`, one custom origin, the function attached at
@@ -128,8 +128,9 @@ go through the wrapper in [./scripts/EGM.md](./scripts/EGM.md).
   target URL's host with any leading `www.` removed, so each source host maps to
   the same-named host on the target domain.
   `[main.tf:var targetHost = host.slice(0, host.length - source.length) + targetDomain;]`
-- Path: a request for `/` uses the path of `redirect_target_url`; any other
-  request keeps its own URI. `[main.tf:var path = request.uri === '/' ? targetParts[2] : request.uri;]`
+- Path: a request for `/` uses the path of `redirect_target_url`, or `/` when
+  that URL has no path after the host; any other request keeps its own URI.
+  `[main.tf:var path = request.uri === '/' ? targetParts[2] || '/' : request.uri;]`
 - Query string: every key and value, including multi-value entries, is appended
   as `key=value` joined by `&`. `[main.tf:var values = entry.multiValue || [entry];]`
 - Response header `cache-control: public, max-age=3600`.
@@ -141,7 +142,7 @@ go through the wrapper in [./scripts/EGM.md](./scripts/EGM.md).
   directory that has a `variables.tf`, including this one.
   `[../../scripts/terraform-tracked-inputs.test.mjs:existsSync(join(dir, "variables.tf"))]`
 - No root `package.json` script and no other root applies or reads outputs from
-  this stack. `[../../scripts/bootstrap-all.sh:bash infrastructure/bootstrap-recaptcha/scripts/apply.sh]`
+  this stack; `test:infra` runs only its redirect function test. `[../../scripts/bootstrap-all.sh:bash infrastructure/bootstrap-recaptcha/scripts/apply.sh]`
 
 ## Invariants
 
@@ -162,9 +163,10 @@ go through the wrapper in [./scripts/EGM.md](./scripts/EGM.md).
   `[main.tf:locations        = ["US"]]`
 - Caching uses the managed `Managed-CachingDisabled` policy.
   `[main.tf:cache_policy_id        = data.aws_cloudfront_cache_policy.managed_caching_disabled.id]`
-- `redirect_target_url` must start with `https://`; the function additionally
-  assumes it has a path beginning with `/` after the host.
-  `[main.tf:var targetParts = target.match(/^https:\/\/([^/]+)(\/.*)$/);]`
+- `redirect_target_url` must start with `https://` after surrounding whitespace
+  is removed; the function reads the same trimmed value, and the path after the
+  host is optional. `[variables.tf:can(regex("^https://", trimspace(var.redirect_target_url)))]`
+  `[main.tf:var targetParts = target.match(/^https:\/\/([^/]+)(\/.*)?$/);]`
 - The backend refuses any AWS account other than the one listed.
   `[backend.tf:allowed_account_ids]`
 - Tracked inputs live in `iceconduct.auto.tfvars` and must not assign a
@@ -194,8 +196,7 @@ go through the wrapper in [./scripts/EGM.md](./scripts/EGM.md).
 
 ## Verification
 
-- Run: `npm run test:infra`
-- The redirect function is tested by `scripts/redirect.test.mjs`, which no root
-  `package.json` script runs; run it with
-  `node --test infrastructure/bootstrap-iceconduct/scripts/redirect.test.mjs`.
+- Run: `npm run test:infra`, which includes the redirect function test
+  `scripts/redirect.test.mjs`.
+  `[../../package.json:infrastructure/bootstrap-iceconduct/scripts/redirect.test.mjs]`
   `[scripts/redirect.test.mjs:maps only the hostname for]`

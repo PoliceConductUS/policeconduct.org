@@ -22,12 +22,17 @@ export async function getStaticPaths() {
         `
           select
             o.slug,
-            count(distinct ro.review_id) as report_count,
+            count(distinct r.id) as report_count,
             count(distinct cco.civil_case_id) as civil_case_count
           from public.personnel o
           join public.agency_personnel ao
             on ao.personnel_id = o.id
-          left join public.review_personnel ro
+          left join (
+            public.review_personnel ro
+            join public.reviews r on r.id = ro.review_id
+            join public.location_path lp
+              on lp.location_path_id = r.location_path_id
+          )
             on ro.agency_personnel_id = ao.id
           left join public.civil_case_personnel cco
             on cco.agency_personnel_id = ao.id
@@ -166,6 +171,7 @@ const fallbackChart =
   canonicalUrl={pagePath}
   searchable={false}
   breadcrumbs={[
+    { label: "Home", href: "/" },
     { label: "Personnel", href: "/personnel/" },
     { label: officerName, href: `/personnel/${slug}/` },
     { label: topicConfig.label, href: pagePath, current: true },

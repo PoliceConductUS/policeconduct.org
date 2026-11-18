@@ -3,7 +3,7 @@
 // <use href="/icons.svg#<id>"> so glyph markup is stored once instead of being
 // duplicated into every statically rendered page.
 //
-// Runs in the build pipeline (see package.json `build`) so the committed
+// Runs in the build pipeline (see package.json `build:site`) so the committed
 // sprite can never drift from the registry. Safe to run standalone after
 // editing icons: `node scripts/generate-icon-sprite.mjs`.
 

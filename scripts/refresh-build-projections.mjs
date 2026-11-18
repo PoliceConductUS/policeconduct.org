@@ -372,6 +372,19 @@ const reportPayload = ({ report }) => {
   };
 };
 
+const assertUniquePayloadPaths = (rows) => {
+  const rowsByPath = new Map();
+  for (const row of rows) {
+    const existing = rowsByPath.get(row.path);
+    if (existing) {
+      throw new Error(
+        `Build payload path ${row.path} is claimed by ${existing.page_type} ${existing.entity_id} and ${row.page_type} ${row.entity_id}.`,
+      );
+    }
+    rowsByPath.set(row.path, row);
+  }
+};
+
 const insertJsonRow = async (client, row) => {
   await client.query(
     `
@@ -890,6 +903,9 @@ await withDb(async (client) => {
       );
       const incidentDate = normalizeReportDate(row.incident_date);
       const dateParts = getReportDateParts(incidentDate, reportId);
+      if (entries.every((entry) => entry.review_personnel_id == null)) {
+        throw new Error(`Report ${reportId} has no linked personnel.`);
+      }
       const primaryAgency = assertValue(
         agenciesById.get(row.agency_id),
         `Report ${reportId} references agency ${row.agency_id}, but that agency has no build projection.`,
@@ -909,9 +925,6 @@ await withDb(async (client) => {
         }
       }
       const personnel = [...personnelBySlug.values()];
-      if (!personnel.length) {
-        throw new Error(`Report ${reportId} has no linked personnel.`);
-      }
 
       return {
         id: reportId,
@@ -1235,6 +1248,7 @@ await withDb(async (client) => {
       payloadRows.push(reportPayload({ report }));
     }
 
+    assertUniquePayloadPaths(payloadRows);
     for (const row of payloadRows) {
       await insertJsonRow(client, row);
     }

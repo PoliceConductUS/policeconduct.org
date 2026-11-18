@@ -2,21 +2,21 @@
 
 ## Overview
 
-Static Astro page for the route `/[category]/[administrativeArea]/[place]/reports/[year]/[month]/[day]/[slug]/`. It reloads one report by slug, checks required fields, builds schema.org structured data, and renders the report facts, narrative, people involved, related cases and evidence links inside `PageShell`.
+Static Astro page for the route `/[category]/[administrativeArea]/[place]/reports/[year]/[month]/[day]/[slug]/`. It reloads one report by slug, checks that the request path is the report's canonical path, checks required fields, builds schema.org structured data, and renders the report facts, narrative, people involved, related cases and evidence links inside `PageShell`.
 
 ## Interface
 
 - Route `/[category]/[administrativeArea]/[place]/reports/[year]/[month]/[day]/[slug]/`; route params: `category`, `administrativeArea`, `place`, `year`, `month`, `day`, `slug`. No props. `[index.astro:const { day, month, slug, year } = Astro.params;]`
 - `getStaticPaths()` emits one path per entry of `loadReportSummaries()` (`#src/lib/data/summaries.js`). `category`, `administrativeArea` and `place` come from `parseLocationPathParts(report.locationPath, report.id)` (`#src/lib/data/report-paths.js`); `year`, `month`, `day`, `slug` come from the summary. `[index.astro:category: location.state,]`
 - The report is reloaded with `loadReportDetail(slug)` (`#src/lib/report-detail.js`). Only `slug` is used for the load; `year`, `month` and `day` are used to build breadcrumb links. `[index.astro:const data = await loadReportDetail(slug);]`
-- `pagePath` is `data.canonicalPath`; it is passed to `PageShell` as both `pagePath` and `canonicalUrl`. This file does not compare the request path with it. `[index.astro:const pagePath = data.canonicalPath;]`
+- `pagePath` is `data.canonicalPath`; it is passed to `PageShell` as both `pagePath` and `canonicalUrl`. `[index.astro:const pagePath = data.canonicalPath;]`
 - `PageShell` (`#src/layouts/PageShell.astro`) props: `title` (report title plus ` | PoliceConduct.org`), `description` (`metaDescription`), `pagePath`, `canonicalUrl`, `structuredData`, `breadcrumbs`, `eyebrow="Public report"`, `heading` (report title). `[index.astro:eyebrow="Public report"]`
 - Breadcrumbs: Home, then `data.locationBreadcrumbs.state`, `.administrativeArea`, `.place`, `.reports`, then year, month and day links built on `data.locationBreadcrumbs.reports.href`, then the report title. `[index.astro:const reportsBasePath = data.locationBreadcrumbs.reports.href;]`
 - `PrefillBootstrap` renders in the default slot. `[index.astro:<PrefillBootstrap />]`
 - Header slot: an `EntityActionBar` holding one `PrefillNavButton` to `/about/contact/` with payload `{ whoami: "Subscriber", message }`, where the message names `pagePath`. `[index.astro:Please notify me when this report changes:]`
 - Fact list: Incident date (with ` at <time>` when a time is present) and Agency (link to the primary agency) always render. Location, Submitted by, Experience type, Setting, Complaint filed, Case number, Bodycam requested, Charges and Updated render only when their value is present. `[index.astro:<dt>Bodycam requested</dt>]`
-- `ReportNarrative` (`#src/components/ReportNarrative.astro`) receives `description={String(data.report.description!)}` and `facts={data.facts}`. `[index.astro:description={String(data.report.description!)}]`
-- "People involved" renders one line per entry of `data.officers`: a link to `entry.path` with first name, last name and optional suffix, optional title, optional badge, and a link to the agency `canonicalPath`. The code omits the section when there are no officers, but that case cannot be reached because the page throws first when `data.officers` is empty. `[index.astro:<h3>People involved</h3>]`
+- `ReportNarrative` (`#src/components/ReportNarrative.astro`) receives `facts={data.facts}` and `description`: the report description when it is a non-empty string, else `null`, so a missing description renders no narrative. `[index.astro:description={reportDescriptionSource || null}]`
+- "People involved" renders one line per entry of `data.officers`: a link to `entry.path` with first name, last name and optional suffix, optional title, optional badge, and a link to the agency `canonicalPath`. The section always renders, because the page throws first when `data.officers` is empty. `[index.astro:<h3>People involved</h3>]`
 - "Related cases" renders one link per entry of `data.relatedCases` (`civilCase.path`, `civilCase.title`); omitted when empty. `[index.astro:<h3>Related cases</h3>]`
 - "Records and evidence" renders one link per evidence link. A link with a truthy `getVideoEmbedUrl(link.url)` points to `<canonicalPath>watch/<link.id>/`; any other link points to `link.url` with `target="_blank"` and `rel="noopener noreferrer"`. The section is omitted when there are no evidence links. `[index.astro:{evidenceLinks.length ? (]`
 - `ReportDisclaimer` and `RecordDataNotes` (with `recordPath={pagePath}`) render at the end of the page. `[index.astro:<RecordDataNotes recordPath={pagePath} />]`
@@ -26,6 +26,7 @@ Static Astro page for the route `/[category]/[administrativeArea]/[place]/report
 ## Invariants
 
 - Throws `Report <slug> not found.` when `loadReportDetail` returns nothing. `[index.astro:not found.]`
+- Throws when `Astro.url.pathname` is not `data.canonicalPath`, the same check the watch page makes. `[index.astro:if (Astro.url.pathname !== data.canonicalPath) {]`
 - Throws when `data.officers` is empty or its first entry has no agency (`is missing a primary agency.`). `[index.astro:is missing a primary agency.]`
 - Throws when the primary agency has no slug. `[index.astro:primary agency is missing slug.]`
 - Throws when the primary agency has no `canonicalPath`. `[index.astro:primary agency is missing a canonical path.]`

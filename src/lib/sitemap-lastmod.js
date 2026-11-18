@@ -2,7 +2,11 @@ import { currentAssignmentSql } from "./data/annotation-access.js";
 import { withDb } from "./db.js";
 import { US_STATE_TILES } from "./geo/states.js";
 
-const CATEGORY_SLUGS = US_STATE_TILES.map((state) => state.code.toLowerCase());
+const FEDERAL_CATEGORY = "federal";
+const CATEGORY_SLUGS = [
+  ...US_STATE_TILES.map((state) => state.code.toLowerCase()),
+  FEDERAL_CATEGORY,
+];
 
 const parseDate = (value) => {
   if (!value) {
@@ -110,7 +114,7 @@ export const buildSitemapLastmodMap = async () => {
             r.slug,
             r.incident_date,
             lp.path as location_path,
-            split_part(lp.path, '/', 2) as state,
+            lower(split_part(lp.path, '/', 2)) as state,
             r.created_at,
             r.updated_at
           from public.reviews r
@@ -145,7 +149,8 @@ export const buildSitemapLastmodMap = async () => {
               state_lp.path as state_path,
               area_lp.path as administrative_area_path,
               lp.path as place_path,
-              bpp.path as canonical_path,
+              lp.path || a.slug || '/' as canonical_path,
+              a.parent_federal_agency_id is not null as is_federal,
               a.created_at,
               a.updated_at,
               count(distinct ao.personnel_id) filter (
@@ -176,7 +181,7 @@ export const buildSitemapLastmodMap = async () => {
               on cco.agency_personnel_id = ao.id
             left join public.civil_cases c on c.id = cco.civil_case_id
             group by a.id, a.slug, split_part(lp.path, '/', 2),
-              state_lp.path, area_lp.path, lp.path, bpp.path, a.created_at,
+              state_lp.path, area_lp.path, lp.path, a.created_at,
               a.updated_at
           )
           select
@@ -219,6 +224,30 @@ export const buildSitemapLastmodMap = async () => {
         agencyLastmodsByCategory,
         agency.state,
         agency.lastmod,
+      );
+      if (agency.is_federal) {
+        setCategoryLastmod(
+          agencyLastmodsByCategory,
+          FEDERAL_CATEGORY,
+          agency.lastmod,
+        );
+      }
+    }
+
+    const federalAgencyRows = (
+      await client.query(
+        `
+          select greatest(created_at, updated_at) as lastmod
+          from public.federal_agency
+        `,
+      )
+    ).rows;
+
+    for (const federalAgency of federalAgencyRows) {
+      setCategoryLastmod(
+        agencyLastmodsByCategory,
+        FEDERAL_CATEGORY,
+        federalAgency.lastmod,
       );
     }
 
@@ -265,11 +294,13 @@ export const buildSitemapLastmodMap = async () => {
               ao.start_date,
               ao.created_at,
               ao.updated_at,
-              lower(a.state) as agency_state,
+              lower(split_part(lp.path, '/', 2)) as agency_state,
               a.updated_at as agency_updated_at,
               count(*) over (partition by ao.agency_id) as active_personnel_count
             from public.agency_personnel ao
             join public.agency a on a.id = ao.agency_id
+            join public.location_path lp
+              on lp.location_path_id = a.location_path_id
             where ${currentAssignmentSql("ao")}
           ),
           officer_report_counts as (
@@ -351,7 +382,7 @@ export const buildSitemapLastmodMap = async () => {
         `
           select
             c.slug,
-            split_part(lp.path, '/', 2) as state,
+            lower(split_part(lp.path, '/', 2)) as state,
             c.created_at,
             c.updated_at
           from public.civil_cases c

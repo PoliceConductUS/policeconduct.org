@@ -8,9 +8,9 @@ Astro dynamic page for the routes `/personnel/{slug}/{topic}/`. `getStaticPaths`
 
 - Route `/personnel/{slug}/{topic}/`: the page path is built from the two route params. ``[index.astro:const pagePath = `/personnel/${slug}/${topicKey}/`;]``
 - `getStaticPaths` returns an empty list when the environment variable `NO_PERSONNEL` is set to a non-blank value. `[index.astro:if ((process.env.NO_PERSONNEL || "").trim() !== "") {]`
-- `getStaticPaths` runs a SQL query through `withDb` from `src/lib/db.js` that returns each personnel `slug` with a distinct report count and a distinct civil case count. `[index.astro:count(distinct ro.review_id) as report_count,]`
+- `getStaticPaths` runs a SQL query through `withDb` from `src/lib/db.js` that returns each personnel `slug` with a distinct report count and a distinct civil case count. `[index.astro:count(distinct r.id) as report_count,]`
 - The `getStaticPaths` query inner-joins `public.agency_personnel`, so only personnel with at least one agency assignment are enumerated. `[index.astro:join public.agency_personnel ao]`
-- The `getStaticPaths` query left-joins `public.review_personnel` and `public.civil_case_personnel` on the agency assignment id. `[index.astro:left join public.civil_case_personnel cco]`
+- The `getStaticPaths` query left-joins `public.review_personnel` (inner-joined to `public.reviews` and `public.location_path`, the same joins the render uses for reports) and `public.civil_case_personnel` on the agency assignment id, so the report count matches the reports the page lists. `[index.astro:join public.reviews r on r.id = ro.review_id]` `[index.astro:left join public.civil_case_personnel cco]`
 - A `reports` path is emitted only when the report count is above zero. `[index.astro:if (Number(officer.report_count) > 0) {]`
 - A `civil-cases` path is emitted only when the civil case count is above zero. `[index.astro:if (Number(officer.civil_case_count) > 0) {]`
 - Each emitted path has the params `slug` and `topic` and no props. `[index.astro:params: { slug: officer.slug, topic },]`
@@ -29,7 +29,7 @@ Astro dynamic page for the routes `/personnel/{slug}/{topic}/`. `getStaticPaths`
 - The record count is the civil case count for `civil-cases`, the report count for `reports`, and 0 for any other topic. `[index.astro:topicKey === "civil-cases"]`
 - `PageShell` (`src/layouts/PageShell.astro`) receives `title`, `description`, `pagePath`, `canonicalUrl`, `searchable`, `breadcrumbs`, `heading` and `lede`. `[index.astro:canonicalUrl={pagePath}]`
 - `PageShell` prop `searchable` is `false`. `[index.astro:searchable={false}]`
-- `PageShell` prop `breadcrumbs` is Personnel (`/personnel/`), the officer name (`/personnel/{slug}/`), then the current topic label; it has no Home entry. ``[index.astro:{ label: officerName, href: `/personnel/${slug}/` },]``
+- `PageShell` prop `breadcrumbs` is Home (`/`), Personnel (`/personnel/`), the officer name (`/personnel/{slug}/`), then the current topic label. `[index.astro:{ label: "Home", href: "/" },]` ``[index.astro:{ label: officerName, href: `/personnel/${slug}/` },]``
 - The `actions` slot renders `HelpCollectDataButton` (`src/components/HelpCollectDataButton.astro`) with the props `context` (officer name), `sourcePage` (page path) and `topic` (topic label). `[index.astro:<HelpCollectDataButton]`
 - Renders `MetricGrid` (`src/components/MetricGrid.astro`) with the props `metrics` and `columns="four"`. `[index.astro:<MetricGrid metrics={metricCards} columns="four" />]`
 - For `reports`, renders `DataPanel` (`src/components/DataPanel.astro`) with a table of report title and incident date. `[index.astro:<th scope="col">Incident Date</th>]`
@@ -52,7 +52,7 @@ Astro dynamic page for the routes `/personnel/{slug}/{topic}/`. `getStaticPaths`
 ## Side Effects
 
 - `getStaticPaths` reads `process.env.NO_PERSONNEL`. `[index.astro:process.env.NO_PERSONNEL]`
-- `getStaticPaths` reads the database tables `public.personnel`, `public.agency_personnel`, `public.review_personnel` and `public.civil_case_personnel` through `withDb`. `[index.astro:from public.personnel o]`
+- `getStaticPaths` reads the database tables `public.personnel`, `public.agency_personnel`, `public.review_personnel`, `public.reviews`, `public.location_path` and `public.civil_case_personnel` through `withDb`. `[index.astro:from public.personnel o]`
 - Each rendered page reads `public.personnel`, `public.agency_personnel`, `public.reviews`, `public.review_personnel`, `public.location_path`, `public.civil_cases` and `public.civil_case_personnel` through `withDb`. `[index.astro:const data = await withDb(async (client) => {]`
 
 ## Verification

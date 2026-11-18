@@ -5,8 +5,7 @@
 Astro layouts that wrap every page. `SiteLayout.astro` renders the HTML
 document: `<head>` metadata, the masthead, the footer and the shared client
 scripts. `PageShell.astro` wraps `SiteLayout` with the standard page body:
-breadcrumb, page header and content slots. `Layout.astro` is a bare starter
-document with no props.
+breadcrumb, page header and content slots.
 
 Citations use the form `[file:text]`, where `text` appears verbatim in that file
 of this directory.
@@ -66,11 +65,6 @@ of this directory.
   `[SiteLayout.astro:data-release-id={releaseId}]`
 - A skip link targets `#main`. `[SiteLayout.astro:skip-link]`
 
-### `Layout.astro`
-
-- No props; one default slot inside `<body>`; fixed title `Astro Basics`.
-  `[Layout.astro:Astro Basics]`
-
 ## Invariants
 
 - `PageShell` renders the `hero` slot instead of `PageHeader` when that slot is
@@ -120,7 +114,7 @@ of this directory.
 - Through `GoogleAnalytics` and `AnalyticsConsent`, every page using
   `SiteLayout` starts the analytics and consent client code.
   `[SiteLayout.astro:<GoogleAnalytics />]`
-- `Layout.astro` and `PageShell.astro` have no side effects of their own.
+- `PageShell.astro` has no side effects of its own.
   `[PageShell.astro:Astro.slots.has("aside")]`
 
 ## Verification

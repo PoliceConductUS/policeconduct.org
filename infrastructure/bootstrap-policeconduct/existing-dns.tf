@@ -11,7 +11,7 @@ resource "aws_route53_record" "google_mail_dmarc" {
 
 import {
   to = aws_route53_record.google_mail_dmarc
-  id = "Z046401021MODBVBU4TKS__dmarc.policeconduct.org_TXT"
+  id = "${local.route53_zone_id}__dmarc.${var.domain_name}_TXT"
 }
 
 resource "aws_route53_record" "google_mail_dkim" {
@@ -24,7 +24,7 @@ resource "aws_route53_record" "google_mail_dkim" {
 
 import {
   to = aws_route53_record.google_mail_dkim
-  id = "Z046401021MODBVBU4TKS_google._domainkey.policeconduct.org_TXT"
+  id = "${local.route53_zone_id}_google._domainkey.${var.domain_name}_TXT"
 }
 
 resource "aws_route53_record" "google_domain_verification" {
@@ -37,7 +37,7 @@ resource "aws_route53_record" "google_domain_verification" {
 
 import {
   to = aws_route53_record.google_domain_verification
-  id = "Z046401021MODBVBU4TKS_xdvktfq76yak.policeconduct.org_CNAME"
+  id = "${local.route53_zone_id}_xdvktfq76yak.${var.domain_name}_CNAME"
 }
 
 # extra_dns_records must not repeat a record adopted above: two resources would

@@ -23,30 +23,6 @@ bash "${ROOT_DIR}/../../scripts/require-terraform-state.sh" "${ROOT_DIR}"
 DOTENV_FILE="${REPO_ROOT}/.env"
 PHASE="${PHASE:-full}"
 
-parse_github_repo_path() {
-  local origin_url="$1"
-  local repo_path=""
-  case "${origin_url}" in
-    git@github.com:*)
-      repo_path="${origin_url#git@github.com:}"
-      ;;
-    https://github.com/*)
-      repo_path="${origin_url#https://github.com/}"
-      ;;
-    ssh://git@github.com/*)
-      repo_path="${origin_url#ssh://git@github.com/}"
-      ;;
-    git://github.com/*)
-      repo_path="${origin_url#git://github.com/}"
-      ;;
-  esac
-  repo_path="${repo_path%.git}"
-  if [[ "${repo_path}" == */* ]]; then
-    printf "%s\n" "${repo_path}"
-  fi
-  return 0
-}
-
 load_env_file_if_present() {
   local file_path="$1"
   if [[ ! -f "${file_path}" ]]; then
@@ -96,9 +72,6 @@ map_common_env_to_tf_vars() {
   if [[ -n "${RECAPTCHA_WIF_AUDIENCE+x}" ]] && [[ -z "${TF_VAR_recaptcha_wif_audience+x}" ]]; then
     export TF_VAR_recaptcha_wif_audience="${RECAPTCHA_WIF_AUDIENCE}"
   fi
-  if [[ -n "${RECAPTCHA_MIN_SCORE+x}" ]] && [[ -z "${TF_VAR_recaptcha_min_score+x}" ]]; then
-    export TF_VAR_recaptcha_min_score="${RECAPTCHA_MIN_SCORE}"
-  fi
 }
 
 preflight_recaptcha_requirements() {
@@ -124,52 +97,6 @@ preflight_recaptcha_requirements() {
     printf ' - %s\n' "${missing[@]}" >&2
     echo "Run infrastructure/bootstrap-recaptcha/scripts/apply.sh first." >&2
     exit 1
-  fi
-}
-
-set_github_tf_vars_from_origin() {
-  local origin_url repo_path github_org github_repo
-
-  if [[ -n "${TF_VAR_github_org+x}" ]] && [[ -n "${TF_VAR_github_repo+x}" ]]; then
-    return 0
-  fi
-
-  origin_url="$(git -C "${REPO_ROOT}" remote get-url origin 2>/dev/null || true)"
-  if [[ -z "${origin_url}" ]]; then
-    return 0
-  fi
-
-  repo_path="$(parse_github_repo_path "${origin_url}")"
-  if [[ "${repo_path}" != */* ]]; then
-    return 0
-  fi
-
-  github_org="${repo_path%%/*}"
-  github_repo="${repo_path##*/}"
-
-  if [[ -z "${TF_VAR_github_org+x}" ]]; then
-    export TF_VAR_github_org="${github_org}"
-  fi
-  if [[ -z "${TF_VAR_github_repo+x}" ]]; then
-    export TF_VAR_github_repo="${github_repo}"
-  fi
-}
-
-preflight_explicit_tf_var_secrets() {
-  # Prevent silently ignoring a common secret name that Terraform will not read.
-  if [[ -n "${SENTRY_AUTH_TOKEN+x}" ]] \
-    && [[ -z "${TF_VAR_sentry_auth_token+x}" ]]; then
-    echo "Error: SENTRY_AUTH_TOKEN is set, but Terraform reads TF_VAR_sentry_auth_token." >&2
-    echo "Set TF_VAR_sentry_auth_token before apply." >&2
-    exit 1
-  fi
-}
-
-warn_if_sentry_tf_var_missing() {
-  if [[ -z "${TF_VAR_sentry_auth_token+x}" ]]; then
-    echo "Warning: TF_VAR_sentry_auth_token is not set." >&2
-    echo "Warning: Bootstrap will not write GitHub environment secret SENTRY_AUTH_TOKEN." >&2
-    echo "Warning: Deploy/preview workflows will fail at Sentry sourcemap upload." >&2
   fi
 }
 
@@ -284,9 +211,6 @@ recaptcha_env="$(cd "${REPO_ROOT}" && node scripts/terraform-outputs.mjs RECAPTC
 eval "${recaptcha_env}"
 map_common_env_to_tf_vars
 preflight_recaptcha_requirements
-set_github_tf_vars_from_origin
-preflight_explicit_tf_var_secrets
-warn_if_sentry_tf_var_missing
 preflight_account_check
 prepare_forms_lambda_package
 npm --prefix "${ROOT_DIR}/lambdas/release-api" ci --omit=dev --no-audit --no-fund

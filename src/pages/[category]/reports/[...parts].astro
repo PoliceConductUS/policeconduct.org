@@ -4,10 +4,20 @@ import { buildReportArchiveStaticPaths } from "#src/lib/data/report-archives.js"
 import { loadReportSummaries } from "#src/lib/data/summaries.js";
 
 export async function getStaticPaths() {
-  return buildReportArchiveStaticPaths(await loadReportSummaries(), "state");
+  return buildReportArchiveStaticPaths(
+    await loadReportSummaries(),
+    "state",
+  ).map(({ params }) => ({ params }));
 }
 
-const { breadcrumbs, pagePath, reports, title } = Astro.props;
+const archive = buildReportArchiveStaticPaths(
+  await loadReportSummaries(),
+  "state",
+).find((candidate) => candidate.props.pagePath === Astro.url.pathname);
+if (!archive) {
+  throw new Error(`No report archive has the path ${Astro.url.pathname}.`);
+}
+const { breadcrumbs, pagePath, reports, title } = archive.props;
 ---
 
 <ReportArchivePage

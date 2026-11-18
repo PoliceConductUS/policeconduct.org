@@ -158,6 +158,7 @@ The `data/` subfolder holds one JSON data file, `tcole-department-types.json`. N
 - National readings are never achieved percentages: each is a ceiling, or null when the total held exceeds that denominator. `[report.js:nationalCeiling]`
 - A state with no classification row counts as fully unclassified. `[report.js:unclassifiedByCode]`
 - Report-level gaps: a `numerator_universe_unverified` gap when any held agency is unclassified, then a `corpus_count_disputed` gap when a cross-check disagrees. `[report.js:carry no sourced agency type]`
+- The `numerator_universe_unverified` detail names the MN POST source only when `MN` is an unclassified state and the Oregon DPSST source only when `OR` is; with neither, that sentence is left out. `[report.js:unclassifiedStates.includes("MN")]` `[report.js:unclassifiedStates.includes("OR")]`
 - Only cross-checks with an integer count that differs from `measurement.totalHeld` count as disagreement. No count is preferred or corrected. `[report.js:disagreeing]`
 - `jurisdictionsFullyClassified` is the number of classification rows with `numeratorComplete`; `achievedPercentagesReported` counts non-null coverage readings across both universes. `[report.js:jurisdictionsFullyClassified]`
 - The reporting year is taken in UTC. `[report.js:getUTCFullYear]`
@@ -166,11 +167,11 @@ The `data/` subfolder holds one JSON data file, `tcole-department-types.json`. N
 - `num()` renders integers with `en-US` grouping and any non-integer as an em dash. `[report.js:Number.isInteger(value) ? value.toLocaleString]`
 - When no achieved percentage exists the Markdown says so in bold and uses the heading "Why there are no percentages". Otherwise it states the number of achieved percentages in bold and uses the heading "Where percentages come from, and why most readings still are not one". `[report.js:Why there are no percentages]` `[report.js:Where percentages come from, and why most readings still are not one]`
 - `connectedTo` falls back to the text "an unrecorded address". `[report.js:an unrecorded address]`
-- The agency-type section is printed only when a classification row has held agencies, and always ends with a fixed paragraph about the Texas row. `[report.js:NOT_IN_CSLLEA_UNIVERSE]`
+- The agency-type section is printed only when a classification row has held agencies. A fixed paragraph about the Texas row follows only when one of those rows has the code `TX`; its figures are fixed text. `[report.js:NOT_IN_CSLLEA_UNIVERSE]` `[report.js:classified.some((row) => row.code === "TX")]`
 - The by-state table has fixed columns for held, both denominators and both readings. `[report.js:general-purpose denom.]`
 - Named gaps are split into states with nothing held and states with records and an unresolved gap. `[report.js:Nothing held]`
 - Measurement limitations and cross-checks are printed only when non-empty. `[report.js:Measurement limitations]`
-- The Markdown includes a fixed corpus-fingerprint line. `[report.js:Corpus fingerprint]`
+- The Markdown includes a fixed corpus-fingerprint line. Rendering throws when the fingerprint has no `newest_updated_at`. `[report.js:Corpus fingerprint]` `[report.js:fingerprint is missing newest_updated_at]`
 - The report and its parts are frozen (shallow); the caller's `corpusCrossChecks` and `classification` arrays are frozen in place. `[report.js:Object.freeze(classification)]`
 
 ## Side Effects

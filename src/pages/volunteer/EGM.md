@@ -16,7 +16,7 @@ Static Astro page for the route `/volunteer/`. It lists eight volunteer role car
 - Eight role cards, each an `h2.ipc-section-title` with one paragraph: Report Review, Research and Outreach, Data and Product, Legal or Advocacy, Media and Storytelling, Software Engineer, Board Member, Other. `[index.astro:<h2 class="ipc-section-title mb-2">Board Member</h2>]`
 - Form `form[name="volunteer"]`: `method="POST"`, `novalidate`, class `needs-validation`, no `action`. `[index.astro:name="volunteer"]`
 - Hidden field `form-name` with the value `volunteer`. `[index.astro:<input type="hidden" name="form-name" value="volunteer" />]`
-- Honeypot text field `organization`, inside a `honeypot visually-hidden` block and named by `data-netlify-honeypot`. `[index.astro:data-netlify-honeypot="organization"]`
+- Honeypot text field `organization`, inside a `honeypot visually-hidden` block. `[index.astro:<input type="text" name="organization" />]`
 - Required fields: `name` (text), `email` (email), `phone` (tel), `interest` (select) and `consent` (checkbox with the value `Yes`). `[index.astro:id="volunteerConsent"]`
 - Optional fields: `location` (text), `skills` (textarea) and `availability` (textarea). `[index.astro:name="availability"]`
 - `interest` options: an empty default, then `Board Member`, `Data and Product`, `Legal or Advocacy`, `Media and Storytelling`, `Other`, `Report Review`, `Research and Outreach`, `Software Engineer`. `[index.astro:<option value="Software Engineer">Software Engineer</option>]`

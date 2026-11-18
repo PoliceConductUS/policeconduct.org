@@ -84,19 +84,18 @@ file and is not documented here.
 ### Callers
 
 - `scripts/workspace-operator.mjs` (root scripts `workspace:push` and
-  `workspace:pull`) runs
-  `terraform -chdir=infrastructure/intake-workspace output -raw intake_workspace_bucket_name`
-  when the `INTAKE_WORKSPACE_BUCKET` environment variable is not set.
-  `[../../scripts/workspace-operator.mjs:-chdir=infrastructure/intake-workspace]`
-- The same script refuses a bucket that is not tagged
-  `Purpose=intake-workspace`, the tag this root sets.
-  `[../../scripts/workspace-operator.mjs:Bucket must be tagged Purpose=intake-workspace]`
-- The same script also refuses a bucket whose versioning is not `Enabled`,
-  whose four public access block settings are not all true, or whose default
-  encryption is not `AES256`, the settings this root applies.
-  `[../../scripts/workspace-operator.mjs:Bucket default encryption must be AES256]`
-- `scripts/intake-workspace-sync.mjs` repeats the versioning and
-  `Purpose=intake-workspace` tag checks before it transfers anything.
+  `workspace:pull`) runs `terraform output -raw intake_workspace_bucket_name`
+  with `-chdir` set to the absolute path of this directory when the
+  `INTAKE_WORKSPACE_BUCKET` environment variable is not set.
+  `[../../scripts/workspace-operator.mjs:"intake_workspace_bucket_name",]`
+- The same script refuses a bucket whose four public access block settings are
+  not all true or whose default encryption is not `AES256`, the settings this
+  root applies. `[../../scripts/workspace-operator.mjs:Bucket default encryption must be AES256]`
+- `runWorkspace` in `scripts/intake-workspace-sync.mjs`, which the operator
+  script calls, refuses a bucket whose versioning is not `Enabled` or that is
+  not tagged `Purpose=intake-workspace`, the tag this root sets, before it
+  transfers anything.
+  `[../../scripts/intake-workspace-sync.mjs:Workspace bucket versioning must be Enabled]`
   `[../../scripts/intake-workspace-sync.mjs:Bucket is not tagged Purpose=intake-workspace; refusing possible hosting bucket]`
 - No apply wrapper exists for this root; nothing in the repository runs
   `terraform plan` or `terraform apply` against it.

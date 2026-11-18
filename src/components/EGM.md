@@ -24,21 +24,29 @@ of this directory.
 
 ### Whole-page components
 
+- `AgencyCivilCasesPage`: props `currentPage`, `data` (the `AgencyTopicPage`
+  data) and `rows: CivilCaseRow[]`; shows one page of `rows`,
+  `CIVIL_CASES_PAGE_SIZE` rows per page.
+  `[AgencyCivilCasesPage.astro:CIVIL_CASES_PAGE_SIZE]`
 - `AgencyReportsPage`: props `currentPage`, `data` (the `AgencyTopicPage` data
   plus `reportedReports`), `lastPage`, `pageReports`; each report needs `title`
   and a `canonicalPath` or `url`. `[AgencyReportsPage.astro:pageReports]`
-- `AgencyTopicPage`: props `data` (`agencyName`, `agencyPath`,
-  `administrativeArea`, `administrativeAreaSlug`, `categoryLabel`,
-  `categorySlug`, `placeLabel`, `placePath`), `description`, `topicLabel`,
-  `topicSlug`; renders a default slot and builds collection-page structured
-  data for `${data.agencyPath}${topicSlug}/`.
+- `AgencyTopicPage`: props optional `currentPage` (default 1), `data`
+  (`agencyName`, `agencyPath`, `administrativeArea`, `administrativeAreaSlug`,
+  `categoryLabel`, `categorySlug`, `placeLabel`, `placePath`), `description`,
+  `topicLabel`, `topicSlug`; renders a default slot. The page path is
+  `${data.agencyPath}${topicSlug}/` on page 1 and adds `page/${currentPage}/`
+  after it; the structured data uses that path.
   `[AgencyTopicPage.astro:topicSlug]`
+  `[AgencyTopicPage.astro:currentPage > 1 ? `${topicPath}page/${currentPage}/` : topicPath;]`
 - `CivicAgencyHierarchyPage`: props `model: FederalAgencyIndexModel` and
   `site: URL | undefined`; renders a default slot.
   `[CivicAgencyHierarchyPage.astro:FederalAgencyIndexModel]`
-- `CivicChildIndexPage`: props `label`, `model: CivicIndexModel`, `page`
-  (`currentPage`, `data`, `lastPage`), `pagePath`; groups `page.data` rows by
-  first letter. `[CivicChildIndexPage.astro:alphaGroups]`
+- `CivicChildIndexPage`: props `currentPage`, `label`,
+  `model: CivicIndexModel`, `pagePath`; shows `PAGE_SIZE` rows of
+  `model.rows` per page and groups that page's rows by first letter.
+  `[CivicChildIndexPage.astro:alphaGroups]`
+  `[CivicChildIndexPage.astro:model.rows.slice(]`
 - `CivicIndexPage`: props `model: CivicIndexModel` and `site: URL | undefined`;
   renders a default slot and builds prefill payloads for the add-agency,
   add-civil-case and get-updates actions.
@@ -50,12 +58,6 @@ of this directory.
   `records: CivicTopicRecords`; `kind` selects one of `budget`, `civil-cases`,
   `fatal-force-incidents`, `liability-costs`, `outcomes-by-income`; renders a
   default slot. `[CivicScopedOverviewPage.astro:pageConfig]`
-- `FatalForceIncidentsPage`: props `breadcrumbs`, `description`, `pagePath`,
-  `title`; its metric cards and chart rows are fixed placeholder values.
-  `[FatalForceIncidentsPage.astro:chartTitles]`
-- `OutcomesByIncomePage`: props `breadcrumbs`, `description`, `pagePath`,
-  `title`; filter and table labels are fixed lists in the frontmatter.
-  `[OutcomesByIncomePage.astro:chargeCategories]`
 - `ReportArchivePage`: props `breadcrumbs`, `pagePath`,
   `reports: ReportSummary[]`, `title`; derives the location label by removing
   the `Reports for ` prefix from `title`.
@@ -67,9 +69,6 @@ of this directory.
 
 ### Navigation and layout components
 
-- `AlphaNavigation`: props `items` (`letter`, `page`, `endPage`), `basePath`,
-  optional `currentPage` (default 1) and `label`.
-  `[AlphaNavigation.astro:AlphaItem]`
 - `Breadcrumb`: props `items` (`label`, optional `href`, optional `current`)
   and optional `className`; emits `BreadcrumbList` JSON-LD.
   `[Breadcrumb.astro:BreadcrumbItem]`
@@ -90,11 +89,6 @@ of this directory.
 
 ### Metric and statistic components
 
-- `CollectionStatsBand`: props `items` (`label`, `value`, optional
-  `actionLabel`, `description`, `href`, `title`) and optional `variant`
-  (`"default"` or `"compact"`). `[CollectionStatsBand.astro:StatItem]`
-- `EmptyMeasurementState`: props optional `label` (default `--`) and optional
-  `detail`. `[EmptyMeasurementState.astro:detail = ""]`
 - `MetricCard`: prop `metric: MetricCardItem`; maps `accent` to a role and
   treats `--`, `$--` and the empty string as empty values.
   `[MetricCard.astro:roleByAccent]`
@@ -107,9 +101,6 @@ of this directory.
 - `OutcomesByIncomePanel`: props optional `href`, optional `className`,
   optional `variant` (`"summary"` or `"detail"`; default `"summary"`); rows are
   fixed placeholder values. `[OutcomesByIncomePanel.astro:outcomeRows]`
-- `RatingBadge`: prop `rating: number | null`; exposes the labels
-  Outstanding, Good, Adequate, Needs Improvement, Unacceptable and No Rating.
-  `[RatingBadge.astro:getRatingLabel]`
 - `SampleMeasurementChart`: props `ariaLabel`, `rows` (`label`, `value`,
   optional `width`, optional `segments`), optional `legend`.
   `[SampleMeasurementChart.astro:ChartRow]`
@@ -125,14 +116,6 @@ of this directory.
 
 ### Agency, personnel and record components
 
-- `AgencyArrestProfiles`: prop `profiles: AgencyArrestProfile[]`; delegates to
-  `PersonnelArrestProfiles`. `[AgencyArrestProfiles.astro:AgencyArrestProfile]`
-- `AgencyCard`: prop `agency: AgencySummary`; reads `canonicalPath`,
-  `activePersonnelCount`, `reportCount`, `civilCaseCount`, `city`, `state`,
-  `zipCode` and `phoneNumber`; its reports badge links to the state reports
-  page built from `agency.state` in lower case, not to the agency.
-  `[AgencyCard.astro:agency.canonicalPath]`
-  `[AgencyCard.astro:agency.state.toLowerCase()}/reports/]`
 - `AgencyPersonnelList`: prop `employees` (each with optional `entry`,
   `officer`, `reportCount`, `license`, and required `disciplineCount` and
   `personnelDisciplineCount`); renders the whole agency roster grouped by
@@ -145,33 +128,24 @@ of this directory.
 - `LicensingAuthorityRecords`: props are the fields of `AuthorityRecords`:
   `licenses`, `actions`, `discipline`.
   `[LicensingAuthorityRecords.astro:AuthorityRecords]`
-- `LocationMap`: props `points` (`href`, `label`, `lat`, `lng`, optional
-  `count`, `meta`), `title`, optional `bounds`, `description`, `emptyLabel`,
-  `showOnMobile`. `[LocationMap.astro:showOnMobile = false]`
 - `PersonnelArrestProfiles`: prop `profiles: ArrestProfileRecord[]`; named
   slot `introduction`; renders one table per present entry of `dimensions`,
   plus an income table when a `by_income_status` breakdown exists.
   `[PersonnelArrestProfiles.astro:slot name="introduction"]`
 - `PersonnelAssignments`: props `assignmentHistory` (each with `id`, optional
   `title`, `license_id`, `start_date`, `end_date`, and an `agency` with `id`,
-  `name`, `slug`, `location_path`, optional `page_type`), `currentTitle`,
+  `name`, `slug`, `location_path`, optional `page_type`) and
   `licensing: PersonnelLicensing`.
   `[PersonnelAssignments.astro:assignmentHistory]`
-- `PersonnelAssignments` fills the Role cell with `currentTitle` when an
-  assignment has no `title`, and shows the status `Completed`, `Active` or
-  `Status uncertain` from `getAssignmentStatus`.
-  `[PersonnelAssignments.astro:{entry.title || currentTitle}]`
-- `PersonnelCard`: prop `person: PersonnelSummary`; links to
-  `/personnel/${person.slug}/` and `person.agencyCanonicalPath`.
-  `[PersonnelCard.astro:agencyCanonicalPath]`
+- `PersonnelAssignments` leaves the Role cell empty when an assignment has no
+  `title`, and shows the status `Completed`, `Active` or `Status uncertain`
+  from `getAssignmentStatus`. `[PersonnelAssignments.astro:<td>{entry.title}</td>]`
 - `PersonnelDeceasedNotice`: props `message` and optional `source`.
   `[PersonnelDeceasedNotice.astro:message: string]`
 - `PersonnelDiscipline`: prop `records: DisciplineRecord[]`.
   `[PersonnelDiscipline.astro:DisciplineRecord]`
 - `PersonnelEducation`: prop `records: EducationRecord[]`.
   `[PersonnelEducation.astro:EducationRecord]`
-- `PersonnelListCard`: prop `person: PersonnelSummary`; builds a reports link
-  from `person.agencyState`. `[PersonnelListCard.astro:person.agencyState]`
 - `UsaChoroplethMap`: props `stats` (`code`, `count`, optional `href`,
   `hoverLabel`), optional `title`, `subtitle`, `emptyLabel`,
   `interactionLabel`, `federalPanel`, `headerAction`.
@@ -204,12 +178,10 @@ of this directory.
 - `ReportDisclaimer`: no props; fixed text linking to
   `/legal-notice/terms-of-service`.
   `[ReportDisclaimer.astro:/legal-notice/terms-of-service]`
-- `ReportNarrative`: props `description: string` and
+- `ReportNarrative`: props `description: string | null` and
   `facts: ReportDetailFacts`; reads `whatHappened`, `feelings`,
   `desiredOutcome`, `whatElse` and `purpose`.
   `[ReportNarrative.astro:ReportDetailFacts]`
-- `SocialLink`: exports type `SocialPlatform`; props `platform`, `href`,
-  `entityName`. `[SocialLink.astro:export type SocialPlatform]`
 
 ### Action, analytics and prefill components
 
@@ -229,6 +201,11 @@ of this directory.
 
 ### Composition, slots and rendered output
 
+- `AgencyCivilCasesPage` wraps `AgencyTopicPage` with `topicSlug="civil-cases"`,
+  renders columns Case, Cause number, Court, Filed (formatted in UTC) and
+  Outcome inside `TableScroll`, and adds `Pagination` when there is more than
+  one page. `[AgencyCivilCasesPage.astro:topicSlug="civil-cases"]`
+  `[AgencyCivilCasesPage.astro:timeZone: "UTC"]`
 - `AgencyReportsPage` wraps `AgencyTopicPage` with `topicSlug="reports"`, lists
   `pageReports` with `formatShortDate` incident dates, and adds `Pagination`
   when `lastPage > 1`. `[AgencyReportsPage.astro:topicSlug="reports"]`
@@ -236,9 +213,6 @@ of this directory.
   administrative area, place, agency, topic) to `PageShell` and upper-case
   agency names are converted to title case for display.
   `[AgencyTopicPage.astro:agencyDisplayName]`
-- `AgencyArrestProfiles` fills the `introduction` slot of
-  `PersonnelArrestProfiles` with agency-wide wording.
-  `[AgencyArrestProfiles.astro:slot="introduction"]`
 - `CivicAgencyHierarchyPage` composes `HelpCollectDataButton` and a filter
   input in the `actions` slot, `MetricGrid` (five columns),
   `OutcomesByIncomePanel`, `DataPanel` with `SampleMeasurementChart`, and a row
@@ -250,6 +224,10 @@ of this directory.
   `${pagePath}page/${page.currentPage}/` for pages after the first and adds
   `Pagination` when `page.lastPage > 1`.
   `[CivicChildIndexPage.astro:canonicalPath]`
+- `CivicChildIndexPage` and `AgencyCivilCasesPage` throw when `currentPage` is
+  not a whole number from 1 to the last page.
+  `[CivicChildIndexPage.astro:has no page]`
+  `[AgencyCivilCasesPage.astro:has no page]`
 - `CivicIndexPage` renders a `StatStrip` led by a drill `StatCell` built from
   `model.jumpCell`, one `StatCell` per `model.statCells`, a topic row from
   `model.pendingTopics`, an `aside` slot with a link to `/report/new/` and
@@ -262,14 +240,6 @@ of this directory.
 - `CivicScopedRowsTable` renders columns Case, Court, Filed, Connection and
   Agencies inside `TableScroll`, followed by `CivilCaseScopeNote`.
   `[CivicScopedRowsTable.astro:row.connectionType]`
-- `FatalForceIncidentsPage` puts `HelpCollectDataButton` and two buttons
-  (`Share`, `Download report`) with no handler in the `actions` slot, then
-  `MetricGrid` and three `DataPanel` charts.
-  `[FatalForceIncidentsPage.astro:Download report]`
-- `OutcomesByIncomePage` renders a filter form with five selects (`charge`,
-  `outcome`, `measure`, `income-source`, `time-period`), an
-  `OutcomesByIncomePanel` with `variant="detail"`, and a table whose value
-  cells are empty. `[OutcomesByIncomePage.astro:name="income-source"]`
 - `ReportArchivePage` puts `HelpCollectDataButton` in the `actions` slot,
   renders `MetricGrid` with four columns, two sample charts, and one link per
   report with its `incidentDate` and optional `address`.
@@ -278,11 +248,11 @@ of this directory.
   record and embeds the video in an `iframe` whose `src` is
   `getVideoEmbedUrl(video.url)`; previous/next links use
   `${parentPath}watch/${id}/`. `[WatchPage.astro:slot="header"]`
-- `FatalForceIncidentsPage` and `ReportArchivePage` pass `buildCollectionPage`
+- `AgencyTopicPage` and `ReportArchivePage` pass `buildCollectionPage`
   structured data to `PageShell` (`ReportArchivePage` lists one item per
   report), and `CivicIndexPage` and `CivicAgencyHierarchyPage` pass
   `buildWebPage` structured data with `type: "CollectionPage"`.
-  `[FatalForceIncidentsPage.astro:buildCollectionPage]`
+  `[AgencyTopicPage.astro:buildCollectionPage]`
   `[ReportArchivePage.astro:items: reports.map]`
   `[CivicIndexPage.astro:type: "CollectionPage"]`
   `[CivicAgencyHierarchyPage.astro:type: "CollectionPage"]`
@@ -304,10 +274,6 @@ of this directory.
   `browseHref`, a `<select data-jump-select>` of `jumpOptions`, a
   `data-jump-status` live region and a browse link; the select id defaults to
   `civic-jump`. `[StatCell.astro:data-jump-form]`
-- `SocialLink` renders an icon from the `/icons.svg` sprite with the accessible
-  name `${entityName} on ${platform label}`. `[SocialLink.astro:/icons.svg#social-]`
-- `RatingBadge` injects its icon markup with `set:html` from a fixed map of
-  SVG strings. `[RatingBadge.astro:set:html={ratingIcons[ratingLabel]}]`
 - `AiComplaintSummary` splits `summary.summary` into paragraphs on blank lines
   and links to `summary.source.sourcePage`.
   `[AiComplaintSummary.astro:summary.source.sourcePage]`
@@ -332,11 +298,15 @@ of this directory.
   `source_namespace`, `source_record_id` (plus `replacement_value` for
   corrections and `evidence` when defined) to `DataAnnotations`.
   `[RecordDataNotes.astro:source_record_id]`
-- `ReportNarrative` renders `description` as HTML with `set:html` and each
-  remaining fact as plain text. `[ReportNarrative.astro:set:html={description}]`
+- `ReportNarrative` renders `description` as HTML with `set:html` under a
+  "What happened" heading, and omits both when `description` is null; it
+  renders each remaining fact as plain text.
+  `[ReportNarrative.astro:set:html={description}]`
 - `LicenseTimeline` shows the first `initialCount` entries and puts the rest in
-  a `<details>`; undated entries are labelled `Undated` and adverse entries get
-  an "Adverse action" flag. `[LicenseTimeline.astro:Show all {entries.length} license events]`
+  a `<details>`; an entry with no `actionDate` shows no date, and adverse
+  entries get an "Adverse action" flag.
+  `[LicenseTimeline.astro:Show all {entries.length} license events]`
+  `[LicenseTimeline.astro:formatShortDate(entry.actionDate) : null]`
 - `LicensingAuthorityRecords` renders a section nav plus up to three sections:
   a licenses table (type, status, count), a license actions table (action,
   count, latest date) and discipline record cards linking to
@@ -357,11 +327,6 @@ of this directory.
   profile; the year, month, ISO week and day-of-week tables always render, and
   the other dimensions render only when the breakdown key exists.
   `[PersonnelArrestProfiles.astro:Object.hasOwn(profile.breakdowns, key)]`
-- `AgencyCard`, `PersonnelCard` and `PersonnelListCard` render a card with
-  links to the entity, a `tel:` link for the agency phone, and count badges;
-  `PersonnelCard` always shows an `Active` badge.
-  `[AgencyCard.astro:tel:${phoneHref}]`
-  `[PersonnelCard.astro:Active]`
 - `UsaChoroplethMap` renders one SVG path per entry of `USA_STATE_PATHS`,
   seven small-state pills (MA, CT, RI, NJ, DE, MD, DC), an optional header
   action (a `PrefillNavButton` when `prefillPayload` is set), an optional
@@ -371,11 +336,9 @@ of this directory.
 ## Invariants
 
 - `Pagination` renders nothing when `lastPage` is 1 or less;
-  `AlphaNavigation` and `CollectionStatsBand` render nothing when `items` is
-  empty; `DataAnnotations` and `RecordDataNotes` render nothing when there are
-  no entries; `LicenseTimeline` renders nothing when `entries` is empty.
+  `DataAnnotations` and `RecordDataNotes` render nothing when there are no
+  entries; `LicenseTimeline` renders nothing when `entries` is empty.
   `[Pagination.astro:lastPage > 1]`
-  `[CollectionStatsBand.astro:items.length > 0]`
   `[DataAnnotations.astro:entries.length > 0]`
   `[RecordDataNotes.astro:recordAnnotations.length > 0]`
 - `CoverageLinks` keeps its section in the page but sets `hidden` when there
@@ -400,15 +363,15 @@ of this directory.
   `url`. `[AgencyReportsPage.astro:is missing a canonical path.]`
 - `Pagination` throws when `basePath` does not end with `/`.
   `[Pagination.astro:Pagination basePath must end with '/']`
-- `Pagination` and `AlphaNavigation` link page 1 to `basePath` itself and
-  later pages to `${basePath}page/${n}/`.
-  `[Pagination.astro:page/${pageNumber}/]`
-  `[AlphaNavigation.astro:page/${page}/]`
+- `Pagination` links page 1 to `basePath` itself and later pages to
+  `${basePath}page/${n}/`. `[Pagination.astro:page/${pageNumber}/]`
 - `PersonnelArrestProfiles` throws when a profile has a `by_income_status`
   breakdown but no `incomeRows`.
   `[PersonnelArrestProfiles.astro:Missing income comparison for arrest profile]`
-- `PersonnelArrestProfiles` renders nothing when `profiles` is empty.
+- `PersonnelArrestProfiles` renders nothing when `profiles` is empty, and
+  shows `--` for a percentage whose total is zero.
   `[PersonnelArrestProfiles.astro:profiles.length > 0]`
+  `[PersonnelArrestProfiles.astro:total === 0 ? "--"]`
 - `PersonnelAssignments` throws when an assignment's `license_id` is not in
   `licensing.licenses`. `[PersonnelAssignments.astro:references missing license]`
 - `PersonnelAssignments` links an agency name only when
@@ -416,7 +379,9 @@ of this directory.
   `[PersonnelAssignments.astro:requireAgencyCanonicalPath]`
 - `AgencyPersonnelList` takes assignment status from `getAssignmentStatus`, the
   same function the personnel profile uses, and sorts rows by surname with a
-  first-name fallback. `[AgencyPersonnelList.astro:getAssignmentStatus]`
+  first-name fallback using `civicIndexCollator`.
+  `[AgencyPersonnelList.astro:getAssignmentStatus]`
+  `[AgencyPersonnelList.astro:civicIndexCollator.compare(a.sortKey, b.sortKey)]`
 - `AgencyPersonnelList` always renders the "With discipline actions" checkbox;
   it filters on `personnelDisciplineCount`, while the per-row discipline link
   uses `disciplineCount` and appears only for linked rows.
@@ -437,16 +402,11 @@ of this directory.
 - `ReportNarrative` omits the "What happened" section when its visible text
   equals the visible text of `description`.
   `[ReportNarrative.astro:existingText !== visibleText(text)]`
-- `RatingBadge` shows "No Rating" unless `rating` is a finite number;
-  thresholds are 4.5, 3.5, 2.5 and 1.5. `[RatingBadge.astro:Number.isFinite(rating)]`
 - `SampleMeasurementChart` accepts `width` and `segments` but does not render
   them. `[SampleMeasurementChart.astro:intentionally not rendered]`
 - `StatCell` never renders a numeric zero for an unavailable metric; it shows
   `--`, or `$--` when `currency` is set.
   `[StatCell.astro:an unavailable metric never renders a]`
-- `LocationMap` renders the map container only when there are points and
-  `bounds`; otherwise it renders `emptyLabel`.
-  `[LocationMap.astro:points.length && bounds]`
 - `ArrestBeatMap` renders the map container only when `data.beats` is not
   empty. `[ArrestBeatMap.astro:data.beats.length > 0]`
 - `UsaChoroplethMap` fills states on a log scale of `count`, and a state is
@@ -496,9 +456,6 @@ of this directory.
 - `GoogleAnalytics` runs `initializeAnalytics()` from
   `../lib/client/analytics.js` in the browser.
   `[GoogleAnalytics.astro:initializeAnalytics]`
-- `LocationMap` creates a Leaflet map in the browser, requests map tiles from
-  `tile.openstreetmap.org`, and navigates to `point.href` on marker or tooltip
-  activation. `[LocationMap.astro:https://tile.openstreetmap.org/{z}/{x}/{y}.png]`
 - `ArrestBeatMap` creates a Leaflet map in the browser from the `data-beats`
   attribute and repositions labels on `zoomend moveend resize`; it adds no tile
   layer. `[ArrestBeatMap.astro:arrangeLabels]`
@@ -514,14 +471,12 @@ of this directory.
   `[CivicAgencyHierarchyPage.astro:data-civic-hierarchy-filter-input]`
 - `UsaChoroplethMap` toggles the `is-linked-active` class on matching state
   nodes on pointer and focus events. `[UsaChoroplethMap.astro:is-linked-active]`
-- `AlphaNavigation` navigates with `window.location.href` when its select
-  changes. `[AlphaNavigation.astro:window.location.href = this.value]`
-- `ArrestBeatMap` and `LocationMap` import `leaflet/dist/leaflet.css`;
+- `ArrestBeatMap` imports `leaflet/dist/leaflet.css`;
   `AgencyPersonnelList`, `AgencyTopicPage`, `CivicAgencyHierarchyPage`,
   `CivicChildIndexPage`, `CivicIndexPage`, `CivicScopedOverviewPage`,
-  `EntityActionBar`, `FatalForceIncidentsPage`, `PageHeader` and `WatchPage`
-  import `#src/styles/civic-ledger.css`.
-  `[LocationMap.astro:leaflet/dist/leaflet.css]`
+  `EntityActionBar`, `PageHeader` and `WatchPage` import
+  `#src/styles/civic-ledger.css`.
+  `[ArrestBeatMap.astro:leaflet/dist/leaflet.css]`
   `[PageHeader.astro:#src/styles/civic-ledger.css]`
 
 ## Verification

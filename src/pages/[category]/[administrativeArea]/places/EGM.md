@@ -2,7 +2,7 @@
 
 ## Overview
 
-Static Astro page for the route `/[category]/[administrativeArea]/places/`. It lists the child rows of the administrative_area civic index model (label "Places") through the shared `CivicChildIndexPage` component. Later pages live in `./page/`.
+Static Astro page for the route `/[category]/[administrativeArea]/places/`. It shows page 1 of the child rows of the administrative_area civic index model (label "Places") through the shared `CivicChildIndexPage` component. Later pages live in `./page/`.
 
 ## Interface
 
@@ -10,15 +10,12 @@ Static Astro page for the route `/[category]/[administrativeArea]/places/`. It l
 - `getStaticPaths()` returns `loadAdministrativeAreaScopedPaths()` from `#src/lib/data/civic-scoped-routes.js` unchanged. `[index.astro:return loadAdministrativeAreaScopedPaths();]`
 - The location is reloaded on every render with `loadRequiredLocationByPath(path, "administrative_area")`, where `path` is `/${Astro.params.category}/${Astro.params.administrativeArea}/`. `[index.astro:"administrative_area",]`
 - The model is `await buildAdministrativeAreaCivicIndex(location)`. `[index.astro:const model = await buildAdministrativeAreaCivicIndex(location);]`
-- Renders `CivicChildIndexPage` (`#src/components/CivicChildIndexPage.astro`) with props `label="Places"`, `model`, `page` and `pagePath`. `[index.astro:const label = "Places";]`
-- `pagePath` is `model.pagePath` followed by `places/`. `[index.astro:model.pagePath}places/]`
-- `page` is a hand-built object, not an Astro `paginate()` page: `{ currentPage: 1, data: model.rows, lastPage: 1 }`. `[index.astro:data: model.rows,]`
-- Subdirectory: [page](./page/EGM.md) - pages 2 and up of the same list, paginated by `PAGE_SIZE`.
+- Renders `CivicChildIndexPage` (`#src/components/CivicChildIndexPage.astro`) with `currentPage={1}`, `label="Places"`, `model` and a `pagePath` of `model.pagePath` followed by `places/`. `[index.astro:currentPage={1}]` `[index.astro:label="Places"]` `[index.astro:model.pagePath}places/]`
+- Subdirectory: [page](./page/EGM.md) - pages 2 and up of the same list.
 
 ## Invariants
 
-- This page passes every row of `model.rows` in one `page` object and always reports `lastPage: 1`; it does not slice by `PAGE_SIZE` and does not import it. `[index.astro:lastPage: 1,]`
-- `currentPage` is always `1`. `[index.astro:currentPage: 1,]`
+- `CivicChildIndexPage` shows the first `PAGE_SIZE` rows on this page and links to later pages at `places/page/{n}/` when there are more. `[index.astro:currentPage={1}]`
 - Route identity comes only from `Astro.params`; the location type is the literal `"administrative_area"`. `[index.astro:"administrative_area",]`
 - The page contains no `throw` of its own. `[index.astro:loadRequiredLocationByPath(]`
 

@@ -12,7 +12,6 @@ Citations use the form `[path:text]`, where the path is relative to this directo
 - bootstrap-iceconduct: [./bootstrap-iceconduct/EGM.md](./bootstrap-iceconduct/EGM.md) - Terraform root for the iceconduct.org redirect: a Route 53 zone, certificates, and a CloudFront distribution whose function redirects to the matching policeconduct.org host.
 - bootstrap-recaptcha: [./bootstrap-recaptcha/EGM.md](./bootstrap-recaptcha/EGM.md) - Terraform root for Google Cloud reCAPTCHA Enterprise: site keys, an assessor service account, and a workload identity pool with an AWS provider.
 - intake-workspace: [./intake-workspace/EGM.md](./intake-workspace/EGM.md) - Terraform root for the private, versioned intake workspace bucket and its three prefix-scoped operator roles.
-- modules: [./modules/EGM.md](./modules/EGM.md) - Groups Terraform module directories; its one child holds no Terraform configuration.
 - submission-notifications: [./submission-notifications/EGM.md](./submission-notifications/EGM.md) - Terraform root for staff submission notifications: an SNS topic, email subscriptions, and S3 event notifications on the existing submissions buckets.
 
 ## Global Invariants
@@ -35,6 +34,6 @@ Citations use the form `[path:text]`, where the path is relative to this directo
 
 ## System Verification
 
-- Run: `npm run test:infra`
+- Run: `npm run test:infra` (includes the `bootstrap-iceconduct` redirect function test). `[../package.json:infrastructure/bootstrap-iceconduct/scripts/redirect.test.mjs]`
 - Run: `npm run test:lambda` for the Lambda code under `bootstrap-policeconduct/lambdas/`.
-- No root `package.json` script runs the `bootstrap-iceconduct` redirect function test or the `intake-workspace` Terraform test; run them directly with `node --test infrastructure/bootstrap-iceconduct/scripts/redirect.test.mjs` and `terraform -chdir=infrastructure/intake-workspace test`. `[bootstrap-iceconduct/scripts/redirect.test.mjs:maps only the hostname for]` `[intake-workspace/tests/storage.tftest.hcl:run "private_versioned_storage"]`
+- No root `package.json` script runs the `intake-workspace` Terraform test; run it directly with `terraform -chdir=infrastructure/intake-workspace test`. `[intake-workspace/tests/storage.tftest.hcl:run "private_versioned_storage"]`

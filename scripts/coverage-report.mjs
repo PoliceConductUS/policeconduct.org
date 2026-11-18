@@ -136,16 +136,6 @@ const main = async () => {
   });
   const markdown = renderCoverageReportMarkdown(report);
 
-  if (options.out) {
-    await write(options.out, markdown);
-  }
-  if (options.json) {
-    await write(options.json, `${JSON.stringify(report, null, 2)}\n`);
-  }
-  if (!options.out && !options.json) {
-    process.stdout.write(markdown);
-  }
-
   // A report that claims coverage it cannot defend is the failure mode this
   // issue was opened to prevent, so assert it here rather than trusting review.
   //
@@ -170,6 +160,16 @@ const main = async () => {
         );
       }
     }
+  }
+
+  if (options.out) {
+    await write(options.out, markdown);
+  }
+  if (options.json) {
+    await write(options.json, `${JSON.stringify(report, null, 2)}\n`);
+  }
+  if (!options.out && !options.json) {
+    process.stdout.write(markdown);
   }
 
   console.error(

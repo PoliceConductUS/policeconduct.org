@@ -15,7 +15,6 @@ Static Astro page for the route `/agency/new/`. It renders one HTML form named `
 - Renders `PrefillBootstrap` from `src/components/PrefillBootstrap.astro` before the form. `[index.astro:<PrefillBootstrap />]`
 - The form section carries `data-form-shell="agencyNew"`; the client script uses it as the place to show a load error. `[index.astro:<section class="py-vh-2" data-form-shell="agencyNew">]`
 - Form `name="agencyNew"` with `method="POST"`, class `needs-validation` and `novalidate`. `[index.astro:name="agencyNew"]`
-- The form declares `data-netlify-honeypot="organization"`. `[index.astro:data-netlify-honeypot="organization"]`
 - Hidden field `form-name` with the value `agencyNew`. `[index.astro:<input type="hidden" name="form-name" value="agencyNew" />]`
 - Honeypot text field `organization` inside a `honeypot visually-hidden` block. `[index.astro:<input type="text" name="organization" />]`
 - Field `agencyName` (text, required), label "Agency name\*". `[index.astro:name="agencyName"]`

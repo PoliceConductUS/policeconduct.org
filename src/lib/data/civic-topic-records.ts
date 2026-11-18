@@ -149,7 +149,7 @@ const loadCivilCaseRecords = async (
             a.name,
             a.slug,
             lp.path as location_path,
-            bpp.path as canonical_path
+            lp.path || a.slug || '/' as canonical_path
           from public.civil_case_personnel cco
           join public.agency_personnel ao
             on ao.id = cco.agency_personnel_id

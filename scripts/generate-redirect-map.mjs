@@ -3,6 +3,7 @@ import { currentAssignmentSql } from "../src/lib/data/annotation-access.js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { statSync } from "node:fs";
 import path from "node:path";
+import { PAGE_SIZE } from "../src/lib/pagination.ts";
 import { getVideoEmbedUrl } from "../src/lib/video.ts";
 import { withDb } from "../src/lib/db.js";
 import { US_STATE_TILES } from "../src/lib/geo/states.ts";
@@ -18,12 +19,6 @@ const hasBuiltDestination = ({ to }) => {
     throw error;
   }
 };
-
-// Keep in sync with src/lib/pagination.ts PAGE_SIZE. That module can't be
-// imported here (this script runs under plain node, not the Astro/Vite
-// TypeScript resolver), so the value is mirrored as a constant instead.
-const PERSONNEL_PAGE_SIZE = 50;
-const AGENCY_PAGE_SIZE = 50;
 
 const normalizePath = (value) => {
   const trimmed = String(value || "").trim();
@@ -229,7 +224,8 @@ const generatedRedirects = await withDb(async (client) => {
   // Mirrors the per-officer "most recent active assignment" grouping done by
   // loadPersonnelSummaries() (src/lib/data/personnel.ts): for each officer,
   // pick their active (end_date is null) agency assignment with the latest
-  // start_date, then bucket by that agency's state. Reimplemented as SQL
+  // start_date, then bucket by the state segment of that agency's joined
+  // location_path. Reimplemented as SQL
   // here (rather than imported) because personnel.ts pulls in TS modules
   // that resolve via Astro/tsconfig path aliases, which plain node can't
   // resolve when this script runs standalone.
@@ -239,11 +235,12 @@ const generatedRedirects = await withDb(async (client) => {
         with active_assignments as (
           select distinct on (ao.personnel_id)
             ao.personnel_id,
-            lower(a.state) as category
+            lower(split_part(lp.path, '/', 2)) as category
           from public.agency_personnel ao
           join public.agency a on a.id = ao.agency_id
+          join public.location_path lp
+            on lp.location_path_id = a.location_path_id
           where ${currentAssignmentSql("ao")}
-            and a.state is not null
           order by ao.personnel_id, ao.start_date desc
         )
         select category, count(*)::int as total
@@ -342,7 +339,6 @@ const generatedRedirects = await withDb(async (client) => {
       return [];
     }
     return [
-      farmakesRedirect,
       {
         from: normalizePath(`/report/${report.state}/${alias.oldSlug}/`),
         to: buildReportPath(report),
@@ -424,6 +420,7 @@ const generatedRedirects = await withDb(async (client) => {
       source: "agency.parent_federal_agency_id legacy agency route",
     })),
     ...approvedDuplicateRedirects,
+    farmakesRedirect,
     ...civilCaseRows.map((civilCase) => ({
       from: normalizePath(
         `/civil-litigation/${civilCase.state}/${civilCase.slug}/`,
@@ -591,7 +588,7 @@ const generatedRedirects = await withDb(async (client) => {
       (category) => {
         const pageCount = Math.ceil(
           agencyRows.filter(({ state }) => state === category).length /
-            AGENCY_PAGE_SIZE,
+            PAGE_SIZE,
         );
         return Array.from(
           { length: Math.max(0, pageCount - 1) },
@@ -612,7 +609,7 @@ const generatedRedirects = await withDb(async (client) => {
     // category, where N is derived from the personnel count for that
     // category chunked by PAGE_SIZE.
     ...personnelCategoryCounts.flatMap(({ category, total }) => {
-      const pageCount = Math.ceil(Number(total) / PERSONNEL_PAGE_SIZE);
+      const pageCount = Math.ceil(Number(total) / PAGE_SIZE);
       const pages = [];
       for (let page = 2; page <= pageCount; page += 1) {
         pages.push({

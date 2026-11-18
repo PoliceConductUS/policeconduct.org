@@ -26,7 +26,7 @@ Static news post for the route `/news/2026/10/24/explore-connected-police-record
 - The structured-data page URL is `newsMeta.href` resolved against `getSiteUrl(Astro.site)`. [index.astro:pageUrl: new URL(newsMeta.href, siteUrl).toString(),]
 - The structured-data `headline`, `description` and `datePublished` come from `newsMeta`. [index.astro:datePublished: newsMeta.date,]
 - `newsMeta.href` matches this directory path under `src/pages`. [_metadata.ts:/news/2026/10/24/explore-connected-police-records/]
-- The visible date text is written by hand next to the `datetime` attribute and must be kept in step with `newsMeta.date`. [index.astro:October 24, 2026]
+- The visible date text is `newsMeta.date` formatted by `formatNewsDate` from `#src/lib/news.js`, the formatter the news list uses. [index.astro:<time datetime={newsMeta.date}>{formatNewsDate(newsMeta.date)}</time>]
 
 ## Side Effects
 

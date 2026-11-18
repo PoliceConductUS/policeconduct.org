@@ -15,8 +15,8 @@ Static Astro page for the route `/legal-notice/acceptable-use/`: the acceptable 
 - `PageShell` prop `breadcrumbs` has two entries: `Legal Notice` linking to `/legal-notice/`, then `Acceptable Use Policy` marked `current`. [index.astro:{ label: "Acceptable Use Policy", href: pagePath, current: true }]
 - `PageShell` prop `heading` is `ACCEPTABLE USE POLICY`. [index.astro:heading="ACCEPTABLE USE POLICY"]
 - The body is static policy text placed in the default slot; it shows a last-updated date of January 14, 2026. [index.astro:January 14, 2026]
-- The text links to the terms of service page with no trailing slash. [index.astro:href="/legal-notice/terms-of-service"]
-- The text links to the community guidelines page with no trailing slash. [index.astro:href="/legal-notice/community-guidelines"]
+- The text links to the terms of service page. [index.astro:href="/legal-notice/terms-of-service/"]
+- The text links to the community guidelines page. [index.astro:href="/legal-notice/community-guidelines/"]
 - The text links to the site root. [index.astro:href="/"]
 
 ## Invariants

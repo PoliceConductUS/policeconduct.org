@@ -35,7 +35,7 @@ const REQUIRED_SELECTORS = [
 // HTML) produces ~244KB from ~476KB unpurged, so 150KB leaves ample margin. An
 // earlier 250KB value was calibrated to the old in-build purge and wrongly
 // failed the leaner, correct post-build result.
-const MIN_TOTAL_CSS_BYTES = 150_000;
+const MIN_TOTAL_CSS_CHARACTERS = 150_000;
 
 const readAllCss = () => {
   let files;
@@ -52,7 +52,7 @@ const readAllCss = () => {
   const combined = files
     .map((name) => readFileSync(path.join(cssDir, name), "utf8"))
     .join("\n");
-  return { combined, fileCount: files.length, bytes: combined.length };
+  return { combined, fileCount: files.length, characters: combined.length };
 };
 
 const expectedTokens = () => {
@@ -65,12 +65,12 @@ const expectedTokens = () => {
   return [...tokens];
 };
 
-const { combined, fileCount, bytes } = readAllCss();
+const { combined, fileCount, characters } = readAllCss();
 const failures = [];
 
-if (bytes < MIN_TOTAL_CSS_BYTES) {
+if (characters < MIN_TOTAL_CSS_CHARACTERS) {
   failures.push(
-    `Total CSS is ${bytes} bytes across ${fileCount} file(s), below the ${MIN_TOTAL_CSS_BYTES}-byte floor — styles likely stripped.`,
+    `Total CSS is ${characters} characters across ${fileCount} file(s), below the ${MIN_TOTAL_CSS_CHARACTERS}-character floor — styles likely stripped.`,
   );
 }
 
@@ -118,6 +118,6 @@ if (failures.length) {
   // Intentionally do NOT set process.exitCode — this check is non-blocking.
 } else {
   console.log(
-    `Critical CSS validation passed: ${tokens.length} design tokens + ${REQUIRED_SELECTORS.length} component selectors present in ${fileCount} CSS file(s) (${bytes} bytes).`,
+    `Critical CSS validation passed: ${tokens.length} design tokens + ${REQUIRED_SELECTORS.length} component selectors present in ${fileCount} CSS file(s) (${characters} characters).`,
   );
 }

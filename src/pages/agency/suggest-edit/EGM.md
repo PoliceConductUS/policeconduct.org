@@ -15,7 +15,6 @@ Static Astro page for the route `/agency/suggest-edit/`. It renders one HTML for
 - Renders `PrefillBootstrap` from `src/components/PrefillBootstrap.astro` before the form. `[index.astro:<PrefillBootstrap />]`
 - The form section carries `data-form-shell="agencyEdit"`. `[index.astro:<section class="py-vh-2" data-form-shell="agencyEdit">]`
 - Form `name="agencyEdit"` with `method="POST"`, class `needs-validation` and `novalidate`. `[index.astro:name="agencyEdit"]`
-- The form declares `data-netlify-honeypot="organization"`. `[index.astro:data-netlify-honeypot="organization"]`
 - Hidden field `form-name` with the value `agencyEdit`. `[index.astro:<input type="hidden" name="form-name" value="agencyEdit" />]`
 - Honeypot text field `organization`. `[index.astro:<input type="text" name="organization" />]`
 - Field `agencyPath` (text, required), label "Agency profile path\*". `[index.astro:name="agencyPath"]`
