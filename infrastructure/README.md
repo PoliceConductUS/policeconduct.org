@@ -8,7 +8,7 @@ This repo uses five Terraform entrypoints, each with its own state:
 4. `infrastructure/intake-workspace` (private intake workspace bucket and its operator roles)
 5. `infrastructure/submission-notifications` (staff notification topic and the S3 event notifications on the submissions buckets)
 
-`scripts/bootstrap-all.sh` applies only the first and third. Apply the others from their own folders as their READMEs describe.
+`scripts/bootstrap-all.sh` applies only the first and third. Apply the others from their own folders as their READMEs describe. Apply `infrastructure/submission-notifications` before `infrastructure/bootstrap-policeconduct`: its `scripts/apply.sh` reads the topic ARN from that stack's output and refuses to apply without it.
 
 ## Zero-to-Deploy
 

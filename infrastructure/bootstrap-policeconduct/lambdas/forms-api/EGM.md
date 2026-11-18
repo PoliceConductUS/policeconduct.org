@@ -265,8 +265,10 @@ payload: { formName, releaseId, data } }`. [index.mjs:${prefix}${receivedDate}/$
   `{ status, statusChangedAt, verificationId }`. [index.mjs:${prefix}status/${submissionId}.json]
 - Verification record: `<SUBMISSIONS_VERIFY_PREFIX><verificationId>.json`, with
   fields `createdAt`, `email`, `expiresAt`, `formName`, `secretHash`,
-  `resendCount`, `submissionId`, `usedAt`, `verificationId`, `verifiedAt`, and
-  later `lastResentAt`, `providerMessageId`, `sentAt`. [index.mjs:function verificationKey] [index.mjs:providerMessageId]
+  `resendCount`, `submissionId`, `submissionKey` (the submission object key),
+  `usedAt`, `verificationId`, `verifiedAt`, and later `lastResentAt`,
+  `providerMessageId`, `sentAt`. Records written before `submissionKey` existed
+  lack that field. [index.mjs:function verificationKey] [index.mjs:providerMessageId] [index.mjs:submissionKey: key,]
 - Notification receipt:
   `<NOTIFICATION_RECEIPTS_PREFIX><date>/<submissionId>-<eventType>.json` in
   `SUBMISSIONS_BUCKET` (the date is `unknown-date` when no timestamp is given),
@@ -334,10 +336,12 @@ payload: { formName, releaseId, data } }`. [index.mjs:${prefix}${receivedDate}/$
 - Notifications carry no submission content: only event type, form name,
   submission id, timestamp, bucket and key. [index.mjs:This notification intentionally contains no submission content.]
 - The key in the staff notification and in the receipt's `submissionKey` field
-  is the status object key (`<SUBMISSIONS_PREFIX>status/<submissionId>.json`),
-  not the key of the submission object; the notification text still tells the
-  reader to read "the object above". The verification record does not store the
-  submission object key. [index.mjs:${config.prefix}status/${record.submissionId}.json] [index.mjs:Read the]
+  is the submission object key that the verification record stores; the
+  notification text tells the reader to read "the object above". For a record
+  written before `submissionKey` existed, the key is not guessed (the record
+  does not hold the received date): the notification says the key was not
+  recorded and gives the `*/<formName>/<submissionId>.json` pattern to find
+  under the submissions prefix, and the receipt's `submissionKey` is `null`. [index.mjs:typeof record.submissionKey === "string" && record.submissionKey] [index.mjs:not recorded; find */${formName}/${submissionId}.json under the submissions prefix] [index.mjs:Read the]
 - Staff subjects are single-line printable ASCII, at most 100 characters;
   `dataSubjectAccessRequest` subjects carry `[DSAR]`. [index.mjs:function sanitizeSubject] [index.mjs:[DSAR] ]
 - With the default prefixes (`notifications/` and `submissions/`), receipts are
@@ -379,12 +383,16 @@ payload: { formName, releaseId, data } }`. [index.mjs:${prefix}${receivedDate}/$
   `prepare_verification_email`, `send_verification_email`,
   `publish_submission_notification`, `send_submission_notification_email`,
   `write_notification_receipt`. [index.mjs:Sentry.init] [index.mjs:Sentry.flush(2000)] [index.mjs:area: "forms_api"]
-- Structured single-line JSON logs (field `msg`). CloudWatch metric filters in
-  `../../main.tf` match two of these names,
-  `forms.submit.verification_email_failed` and
-  `forms.submit.verification_email_not_sent`, so renaming either is a contract
-  change; no filter or alarm in that file matches the other names, including
-  every `forms.notify.*` name. [../../main.tf:forms.submit.verification_email_failed] [../../main.tf:forms.submit.verification_email_not_sent]
+- Structured single-line JSON logs (field `msg`). CloudWatch metric filters and
+  alarms in `../../main.tf` match these names, per environment, so renaming any
+  of them is a contract change: `forms.submit.verification_email_failed`,
+  `forms.submit.verification_email_not_sent`, and the error-level staff
+  notification lines `forms.notify.nobody_told`, `forms.notify.publish_failed`,
+  `forms.notify.email_failed`, `forms.notify.email_misconfigured` and
+  `forms.notify.receipt_failed`. No filter or alarm matches the other names,
+  including the warn-level `forms.notify.topic_not_configured` and
+  `forms.notify.recipients_not_configured`. A test checks that the alarmed
+  `forms.notify.*` names are exactly the ones logged at error level. [../../main.tf:forms.submit.verification_email_failed] [../../main.tf:forms.submit.verification_email_not_sent] [../../main.tf:{ $.msg = \"forms.notify.${each.key}\" }] [../../main.tf:did not tell anyone about a confirmed submission] [index.test.mjs:every error-level forms.notify line has a CloudWatch alarm]
 - Log names:
   - Request: `forms.request.received`, `forms.request.origin_rejected`,
     `forms.request.error`. [index.mjs:forms.request.received] [index.mjs:forms.request.error]

@@ -18,7 +18,7 @@ Static Astro page for the route `/[category]/[administrativeArea]/outcomes-by-in
 - Route identity comes only from `Astro.params`; nothing is passed through `getStaticPaths()` props. `[index.astro:Astro.params.category]`
 - The location type passed to `loadRequiredLocationByPath` is the literal `"administrative_area"`. `[index.astro:"administrative_area",]`
 - The topic string passed to `loadAdministrativeAreaScopedPathsForTopic` and the `kind` prop are the same literal, `"outcomes-by-income"`. `[index.astro:kind="outcomes-by-income"]`
-- The page contains no `throw` of its own; a missing or wrong-type location is handled inside `loadRequiredLocationByPath`. `[index.astro:loadRequiredLocationByPath(]`
+- The page contains no `throw` of its own; `loadRequiredLocationByPath` throws when no location has that exact path or the location has a different type. `[index.astro:loadRequiredLocationByPath(]`
 
 ## Side Effects
 

@@ -15,6 +15,7 @@ Static Astro page for the route `/[category]/[administrativeArea]/[place]/[agenc
 ## Invariants
 
 - `AgencyCivilCasesPage` shows the first `CIVIL_CASES_PAGE_SIZE` rows on this page and links to later pages at `civil-cases/page/{n}/` when there are more. `[index.astro:currentPage={1}]`
+- The rows and the count in the page description are the distinct cases linked to this agency's own assignment rows (`data.civilCases`). A person's cases from other agencies are not listed. `[index.astro:rows={buildAgencyCivilCaseRows(data)}]`
 - The page contains no `throw` of its own. `[index.astro:loadAgencyDetailByRouteParams(]`
 
 ## Side Effects

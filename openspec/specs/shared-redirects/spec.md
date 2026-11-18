@@ -46,7 +46,7 @@ The coverage checker SHALL recognize generated HTML routes omitted from the site
 
 ### Requirement: Approved duplicate agency URLs retain navigation
 
-The redirect generator SHALL map approved legacy duplicate agency paths to the retained agency identity, resolving the destination from its database-backed location path and slug. Missing retained identities SHALL fail generation.
+Approved legacy duplicate agency and personnel paths SHALL be fixed mappings in the workspace `redirects.json`, outside the public repository. The redirect generator SHALL merge them into the redirect map. A mapping whose destination was not built or is not a final page SHALL fail generation.
 
 #### Scenario: A reader follows an approved duplicate URL
 

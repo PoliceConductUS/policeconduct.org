@@ -14,6 +14,8 @@ type PresetAmountKey =
   | "amount250"
   | "amountOther";
 
+type ClubKey = "sentinel" | "vanguard" | "patron" | "guardian";
+
 type DonatePageConfiguration = {
   pageTitle: string;
   pageSubtitle: string;
@@ -24,17 +26,11 @@ type DonatePageConfiguration = {
 
   stripeLinks: {
     presets: Record<DonationFrequency, Record<PresetAmountKey, string>>;
-    clubs: Record<
-      DonationFrequency,
-      Record<
-        "civilian" | "sentinel" | "vanguard" | "patron" | "guardian",
-        string | null
-      >
-    >;
+    clubs: Record<DonationFrequency, Record<ClubKey, string | null>>;
   };
 
   clubs: Array<{
-    key: "civilian" | "sentinel" | "vanguard" | "patron" | "guardian";
+    key: ClubKey;
     name: string;
     monthlyAmountLabel: string;
     description: string;
@@ -108,14 +104,12 @@ const donatePageConfiguration: DonatePageConfiguration = {
     },
     clubs: {
       monthly: {
-        civilian: "https://donate.stripe.com/5kQ00dcZSe2g8sf6Tx9EI00",
         sentinel: "https://donate.stripe.com/bJe28l6Bu4rGaAn6Tx9EI07",
         vanguard: "https://donate.stripe.com/00w9ANaRKgao37V0v99EI0g",
         patron: "https://donate.stripe.com/14AbIV1ha2jy5g34Lp9EI0e",
         guardian: "https://donate.stripe.com/9B65kxaRK5vKdMzdhV9EI0i",
       },
       oneTime: {
-        civilian: "https://donate.stripe.com/14A6oB1ha2jy6k7a5J9EI06",
         sentinel: "https://donate.stripe.com/6oU5kx3pi4rG37V3Hl9EI08",
         vanguard: "https://donate.stripe.com/aFa6oB4tm2jy23R4Lp9EI0h",
         patron: "https://donate.stripe.com/3cI00de3WbU8bErb9N9EI0f",
@@ -129,11 +123,7 @@ const donatePageConfiguration: DonatePageConfiguration = {
       name: "Sentinel Club",
       monthlyAmountLabel: "$25/mo (or $300/yr)",
       description: "Sustains the national platform and public access.",
-      perks: [
-        "Everything in Civilian Club",
-        "Quarterly regional insights",
-        "Supporter update briefings",
-      ],
+      perks: ["Quarterly regional insights", "Supporter update briefings"],
     },
     {
       key: "vanguard",
@@ -256,11 +246,7 @@ const collectStripeLinks = (
   const clubLinks = donateConfiguration.stripeLinks.clubs;
   (Object.keys(clubLinks) as DonationFrequency[]).forEach((frequency) => {
     const links = clubLinks[frequency];
-    (
-      Object.keys(links) as Array<
-        "civilian" | "sentinel" | "vanguard" | "patron" | "guardian"
-      >
-    ).forEach((clubKey) => {
+    (Object.keys(links) as Array<ClubKey>).forEach((clubKey) => {
       const link = links[clubKey] ?? "";
       entries.push({ key: `clubs.${frequency}.${clubKey}`, url: link });
     });

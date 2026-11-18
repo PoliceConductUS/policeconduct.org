@@ -39,7 +39,7 @@ locals {
   preview_wildcard_domain              = "*.preview.${var.domain_name}"
   distribution_aliases                 = local.include_www ? [var.domain_name, local.www_domain] : [var.domain_name]
   preview_distribution_aliases         = ["preview.${var.domain_name}", local.preview_wildcard_domain]
-  certificate_san_names                = local.include_www ? [local.www_domain, local.preview_wildcard_domain] : [local.preview_wildcard_domain]
+  certificate_san_names                = local.include_www ? [local.www_domain] : []
   origin_id                            = "s3-${local.site_bucket_name}"
   preview_origin_id                    = "s3-${local.preview_bucket_name}"
   forms_api_origin_id                  = "forms-api-prod-url"
@@ -54,7 +54,7 @@ locals {
   manage_hosted_zone                   = local.provided_hosted_zone_id == null
   route53_zone_id                      = local.manage_hosted_zone ? aws_route53_zone.site[0].zone_id : local.provided_hosted_zone_id
   cloudfront_hosted_zone_id            = "Z2FDTNDATAQYW2"
-  acm_validation_domains               = local.include_www ? [var.domain_name, local.preview_wildcard_domain, local.www_domain] : [var.domain_name, local.preview_wildcard_domain]
+  acm_validation_domains               = local.include_www ? [var.domain_name, local.www_domain] : [var.domain_name]
   unmanaged_acm_validation_domains = [
     for domain in local.certificate_san_names : domain
     if !contains(local.acm_validation_domains, domain)
@@ -1740,6 +1740,91 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_verification_email_not
   alarm_description   = "Forms API preview Lambda could not prepare a verification email."
   namespace           = "${var.project_name}/FormsApi"
   metric_name         = aws_cloudwatch_log_metric_filter.forms_api_preview_verification_email_not_sent.metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "preview"
+  }
+}
+
+# The forms API logs these staff-notification failures at error level. Each one
+# gets a metric filter and alarm per environment, like the verification email
+# alarms above. The warn-level configuration lines (topic_not_configured,
+# recipients_not_configured) get no alarm of their own: when they leave nobody
+# told, nobody_told is logged and alarms.
+locals {
+  forms_notify_failure_alarms = {
+    nobody_told         = "did not tell anyone about a confirmed submission"
+    publish_failed      = "failed to publish a submission notification to SNS"
+    email_failed        = "failed to send the staff notification email"
+    email_misconfigured = "is missing staff notification email settings"
+    receipt_failed      = "failed to write a notification receipt"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "forms_api_prod_notify_failed" {
+  for_each = local.forms_notify_failure_alarms
+
+  name           = "${var.project_name}-forms-api-prod-notify-${replace(each.key, "_", "-")}"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_prod.function_name}"
+  pattern        = "{ $.msg = \"forms.notify.${each.key}\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-prod-notify-${replace(each.key, "_", "-")}"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_prod_notify_failed" {
+  for_each = local.forms_notify_failure_alarms
+
+  alarm_name          = "${var.project_name}-forms-api-prod-notify-${replace(each.key, "_", "-")}"
+  alarm_description   = "Forms API prod Lambda ${each.value}."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_prod_notify_failed[each.key].metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "production"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "forms_api_preview_notify_failed" {
+  for_each = local.forms_notify_failure_alarms
+
+  name           = "${var.project_name}-forms-api-preview-notify-${replace(each.key, "_", "-")}"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_preview.function_name}"
+  pattern        = "{ $.msg = \"forms.notify.${each.key}\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-preview-notify-${replace(each.key, "_", "-")}"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_preview_notify_failed" {
+  for_each = local.forms_notify_failure_alarms
+
+  alarm_name          = "${var.project_name}-forms-api-preview-notify-${replace(each.key, "_", "-")}"
+  alarm_description   = "Forms API preview Lambda ${each.value}."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_preview_notify_failed[each.key].metric_transformation[0].name
   statistic           = "Sum"
   period              = 300
   evaluation_periods  = 1

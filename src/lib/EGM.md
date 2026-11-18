@@ -254,7 +254,7 @@ Shared library code for the Astro site. The files directly in this directory pro
 - Civil cases need a slug and a location path row; a case without either gets no key. `[sitemap-lastmod.js:c.slug is not null]`
 - A state page gets the latest of that state's agency, personnel, civil case and report dates; a state with no dates gets no key. `[sitemap-lastmod.js:agencyLastmodsByCategory]`
 - The `/federal/` page gets the latest date of any `public.federal_agency` row and of any agency with a parent federal agency. `[sitemap-lastmod.js:from public.federal_agency]` `[sitemap-lastmod.js:a.parent_federal_agency_id is not null as is_federal]`
-- The root key gets the latest of the personnel collection date and every state page date. `[sitemap-lastmod.js:pathLastmods.get("/personnel/")]`
+- The root key gets the latest of the personnel collection date, every state page date and the `/federal/` date. `[sitemap-lastmod.js:pathLastmods.get("/personnel/")]` `[sitemap-lastmod.js:...CATEGORY_SLUGS.map((category) => pathLastmods.get(]`
 
 ### `structured-data.js`
 

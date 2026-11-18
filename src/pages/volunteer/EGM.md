@@ -43,3 +43,4 @@ Static Astro page for the route `/volunteer/`. It lists eight volunteer role car
 ## Verification
 
 - Run: `npm run test:e2e`
+- Run: `npm run test:client` (its `scripts/public-claims.test.mjs` renders this page and checks its text for unsupported verification claims). [../../../scripts/public-claims.test.mjs:"volunteer",]

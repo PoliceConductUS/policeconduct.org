@@ -87,3 +87,53 @@ test("a CSS purge crash fails with exit 1", async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("CSS purge keeps masthead search option rules that only client JS uses", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "purge-css-masthead-"));
+  try {
+    await mkdir(path.join(root, "scripts"));
+    await mkdir(path.join(root, "dist", "_astro"), { recursive: true });
+    await copyFile(
+      path.join(repoRoot, "scripts", "purge-built-css.mjs"),
+      path.join(root, "scripts", "purge-built-css.mjs"),
+    );
+    await symlink(
+      path.join(repoRoot, "node_modules"),
+      path.join(root, "node_modules"),
+      "dir",
+    );
+    // The shape Astro emits for MastheadSearch.astro: a scoped listbox with
+    // :global() option classes. src/lib/client/site.js creates the options, so
+    // no built page contains the option class names.
+    const css = path.join(root, "dist", "_astro", "site.css");
+    await writeFile(
+      css,
+      [
+        ".masthead-search-listbox:where(.astro-abc123){padding:0}",
+        ".masthead-search-listbox:where(.astro-abc123) .masthead-search-option{display:flex}",
+        ".masthead-search-listbox:where(.astro-abc123) .masthead-search-option.is-active{outline:2px solid}",
+        ".masthead-search-listbox:where(.astro-abc123) .masthead-search-option-title{font-weight:700}",
+        ".masthead-search-listbox:where(.astro-abc123) .masthead-search-option-path{color:gray}",
+        ".unused{color:blue}",
+      ].join(""),
+    );
+    await writeFile(
+      path.join(root, "dist", "index.html"),
+      '<ul class="masthead-search-listbox astro-abc123" role="listbox"></ul>',
+    );
+    const result = spawnSync(
+      process.execPath,
+      [path.join(root, "scripts", "purge-built-css.mjs")],
+      { encoding: "utf8", timeout: 60000 },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const output = await readFile(css, "utf8");
+    assert.match(output, / \.masthead-search-option\{/);
+    assert.match(output, / \.masthead-search-option\.is-active\{/);
+    assert.match(output, / \.masthead-search-option-title\{/);
+    assert.match(output, / \.masthead-search-option-path\{/);
+    assert.doesNotMatch(output, /\.unused\{/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

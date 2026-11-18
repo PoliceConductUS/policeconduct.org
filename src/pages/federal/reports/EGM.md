@@ -21,4 +21,4 @@ Static Astro page for the route `/federal/reports/`. It loads every federal agen
 
 ## Verification
 
-- Run: `npm run test:e2e`
+- Run: `npm run build`

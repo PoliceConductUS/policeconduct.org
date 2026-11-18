@@ -26,4 +26,4 @@ Static Astro page for the route `/data-and-methods/`. It renders four fixed text
 
 ## Verification
 
-- Run: `npm run build`
+- Run: `npm run test:e2e`

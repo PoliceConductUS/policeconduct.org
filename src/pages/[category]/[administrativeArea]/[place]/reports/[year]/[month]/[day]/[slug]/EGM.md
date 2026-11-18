@@ -26,7 +26,7 @@ Static Astro page for the route `/[category]/[administrativeArea]/[place]/report
 ## Invariants
 
 - Throws `Report <slug> not found.` when `loadReportDetail` returns nothing. `[index.astro:not found.]`
-- Throws when `Astro.url.pathname` is not `data.canonicalPath`, the same check the watch page makes. `[index.astro:if (Astro.url.pathname !== data.canonicalPath) {]`
+- Throws when `Astro.url.pathname` is not `data.canonicalPath`. The watch page makes the matching check against `data.canonicalPath` plus `watch/<videoId>/`. `[index.astro:if (Astro.url.pathname !== data.canonicalPath) {]`
 - Throws when `data.officers` is empty or its first entry has no agency (`is missing a primary agency.`). `[index.astro:is missing a primary agency.]`
 - Throws when the primary agency has no slug. `[index.astro:primary agency is missing slug.]`
 - Throws when the primary agency has no `canonicalPath`. `[index.astro:primary agency is missing a canonical path.]`

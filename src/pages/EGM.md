@@ -90,4 +90,5 @@
 
 ## Verification
 
-- Run: `npm run test:e2e`
+- Run: `npm run test:e2e -- tests/e2e/home-map.spec.ts tests/e2e/content-pages-smoke.spec.ts`
+- `home-map.spec.ts` opens `/` and checks that colored map states link to records; `content-pages-smoke.spec.ts` requests a missing URL and expects status 404 and the `Page not found` heading.

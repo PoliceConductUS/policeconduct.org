@@ -15,9 +15,9 @@ Static Astro page for the route `/legal-notice/privacy/`: the privacy policy tex
 - `PageShell` prop `breadcrumbs` has two entries: `Legal Notice` linking to `/legal-notice/`, then `Privacy Policy` marked `current`. [index.astro:{ label: "Privacy Policy", href: pagePath, current: true }]
 - `PageShell` prop `heading` is `PRIVACY POLICY`. [index.astro:heading="PRIVACY POLICY"]
 - The body is static policy text placed in the default slot; it shows a last-updated date of January 14, 2026. [index.astro:January 14, 2026]
-- The frontmatter defines `privacyCategories`, an array of twelve objects with `category`, `examples` and `collected` fields. [index.astro:const privacyCategories = []
+- The frontmatter defines `privacyCategories`, an array of twelve objects with `category`, `collected` and, on all but one, `examples` fields. [index.astro:const privacyCategories = []
 - The page maps over `privacyCategories` and renders one block per entry with the category as a heading. [index.astro:{privacyCategories.map((item) => (]
-- Each block shows `examples`, or the text `Not listed.` when `examples` is empty. [index.astro:{item.examples || "Not listed."}]
+- Each block shows `examples` in a paragraph only when the entry has them; otherwise the paragraph is omitted. [index.astro:{item.examples && <p>{item.examples}</p>}]
 - Each block shows `Collected: YES` or `Collected: NO` from the `collected` boolean. [index.astro:Collected: {item.collected ? "YES" : "NO"}]
 - A table of contents links to in-page section anchors. [index.astro:href="#what-information-do-we-collect"]
 - The key-points summary, the table of contents and all seventeen numbered section headings carry `id` attributes, ending at section 17. [index.astro:<h2 id="how-can-you-review-update-or-delete-the-data-we-collect-from-you">]
@@ -36,7 +36,8 @@ Static Astro page for the route `/legal-notice/privacy/`: the privacy policy tex
 - The structured-data `name` is the same string as the `title` prop. [index.astro:name: "Privacy | PoliceConduct.org",]
 - The structured-data `description` and the `description` prop both use `pageDescription`. [index.astro:description: pageDescription,]
 - The parent breadcrumb points to the legal notices index. [index.astro:{ label: "Legal Notice", href: "/legal-notice/" }]
-- The entry with an empty `examples` string is the one that triggers the `Not listed.` fallback. [index.astro:examples: "",]
+- Every in-page link (`href="#..."`) points at an `id` defined on the page. [index.astro:<a href="#when-and-with-whom-do-we-share-your-personal-information">]
+- `L. Sensitive personal Information` has no `examples`, so its block shows only the heading and the `Collected` line. [index.astro:category: "L. Sensitive personal Information",]
 
 ## Side Effects
 

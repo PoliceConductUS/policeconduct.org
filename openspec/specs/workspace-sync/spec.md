@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Preserve private intake workspace files and their revisions in environment-specific storage, with explicit upload and download commands, recoverable versions, and a workspace-sync choice after hosting deployments.
+Preserve private intake workspace files and their revisions in environment-specific storage, with explicit upload and download commands and recoverable versions.
 
 ## Requirements
 
@@ -29,6 +29,8 @@ The CLI SHALL require direction, bucket and an existing INTAKE_WORKSPACE directo
 - **WHEN** the selected workspace root is a symlink or a remote key contains traversal
 - **THEN** sync fails before any transfer writes.
 
+The board authorized initial upload after bucket creation; sync the configured workspace without special folder-name exclusions. The board approved bucket and initial-transfer spending on 2026-11-14.
+
 ### Requirement: Revision recovery
 
 The CLI SHALL list versions for an exact environment key and restore an explicitly chosen version locally without deleting any S3 version.
@@ -37,27 +39,6 @@ The CLI SHALL list versions for an exact environment key and restore an explicit
 
 - **WHEN** a file is uploaded twice and its first version is restored
 - **THEN** its original bytes are recovered and both remote versions remain available.
-
-### Requirement: Deployment choice
-
-After each successful hosting upload the interactive deployment SHALL ask whether to upload the matching workspace. Noninteractive deployments SHALL require an explicit upload or skip choice before writes and MUST NOT read stdin. All transfers SHALL derive the remote prefix solely from the INTAKE_WORKSPACE leaf folder name, including deployment transfers.
-
-#### Scenario: Decline
-
-- **WHEN** the operator declines
-- **THEN** hosting success remains successful and no workspace transfer runs.
-
-#### Scenario: Failed upload
-
-- **WHEN** hosting upload fails
-- **THEN** no workspace upload or prompt runs.
-
-#### Scenario: Automation
-
-- **WHEN** noninteractive deployment has no explicit choice
-- **THEN** it fails before hosting writes with instructions to choose upload or skip.
-
-The board authorized initial upload after bucket creation; sync the configured workspace without special folder-name exclusions. The board approved bucket and initial-transfer spending on 2026-11-14.
 
 ### Requirement: npm operator commands
 

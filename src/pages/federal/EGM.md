@@ -18,7 +18,8 @@ Static Astro page for the route `/federal/`. It loads every federal agency summa
 
 ## Invariants
 
-- None
+- Each federal agency's civil cases are the cases linked to personnel assignments at its own offices. `[../../lib/data/federal-agencies.ts:where case_assignment.agency_id = a.id]`
+- The civil case total counts each case once, even when the case is linked to more than one federal agency. `[../../lib/data/federal-agencies.ts:civilCases: distinctCivilCaseIds(federalAgencies).length,]`
 
 ## Side Effects
 

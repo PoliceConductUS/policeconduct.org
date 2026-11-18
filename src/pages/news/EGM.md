@@ -41,4 +41,5 @@ Pages under `/news/`. `index.astro` is the first page of the news list. It loads
 
 ## Verification
 
-- Run: `npm run test:e2e`
+- Run: `npm run test:e2e -- tests/e2e/prefill.spec.ts`
+- `prefill.spec.ts` covers the `/news/` notify button and its prefilled contact message.

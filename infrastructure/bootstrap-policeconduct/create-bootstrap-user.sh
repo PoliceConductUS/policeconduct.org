@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Creates (or updates) a least-privilege IAM user that can run the Terraform
-# bootstrap stack. Must be executed using admin-capable AWS credentials.
+# Creates (or updates) an IAM user whose inline policy covers only the GitHub
+# OIDC provider, IAM roles and their inline policies, S3 buckets and objects,
+# and the caller identity. It cannot run the Terraform bootstrap stack, which
+# also manages CloudFront, Lambda, KMS, Route 53, ACM, SES, SNS, CloudWatch and
+# account security services. Apply that stack with the setup admin profile
+# described in infrastructure/README.md. Must be executed using admin-capable
+# AWS credentials.
 
 USER_NAME="${1:-policeconduct-bootstrap-user}"
 POLICY_NAME="${2:-policeconduct-bootstrap-user-inline}"
@@ -75,7 +80,6 @@ Recommended next steps:
 2) Verify identity:
    aws sts get-caller-identity
 
-3) Run bootstrap Terraform:
-   terraform -chdir=infrastructure/bootstrap-policeconduct init
-   terraform -chdir=infrastructure/bootstrap-policeconduct apply
+This user cannot apply the bootstrap stack. Apply it with the setup admin
+profile described in infrastructure/README.md.
 EOF

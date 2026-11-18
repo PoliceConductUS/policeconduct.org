@@ -141,8 +141,12 @@ go through the wrapper in [./scripts/EGM.md](./scripts/EGM.md).
 - `scripts/terraform-tracked-inputs.test.mjs` scans every `infrastructure/`
   directory that has a `variables.tf`, including this one.
   `[../../scripts/terraform-tracked-inputs.test.mjs:existsSync(join(dir, "variables.tf"))]`
-- No root `package.json` script and no other root applies or reads outputs from
-  this stack; `test:infra` runs only its redirect function test. `[../../scripts/bootstrap-all.sh:bash infrastructure/bootstrap-recaptcha/scripts/apply.sh]`
+- No root `package.json` script and no other root applies this stack or reads
+  its outputs; `scripts/bootstrap-all.sh` runs only the `bootstrap-recaptcha`
+  and `bootstrap-policeconduct` wrappers. `test:infra` runs its redirect
+  function test and runs its apply wrapper only against stubbed commands
+  (see [./scripts/EGM.md](./scripts/EGM.md)). `[../../scripts/bootstrap-all.sh:bash infrastructure/bootstrap-recaptcha/scripts/apply.sh]`
+  `[../../scripts/terraform-read-failures.test.mjs:infrastructure/bootstrap-iceconduct/scripts/apply.sh]`
 
 ## Invariants
 

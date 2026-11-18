@@ -17,6 +17,7 @@ Static Astro page for the route `/[category]/[administrativeArea]/[place]/report
 
 ## Invariants
 
+- The render throws `Video <videoId> not found on this record.` (from `requireWatchVideo`) when the report has no evidence link with that id and a truthy `getVideoEmbedUrl`. ``[../../../../../../../../../../lib/video.ts:if (!video) throw new Error(`Video ${id} not found on this record.`);]``
 - `getStaticPaths()` throws `Report <slug> not found.` when `loadReportDetail` returns nothing for a listed report. `[[videoId].astro:if (!detail) throw new Error(]`
 - The render throws `Report <slug> not found.` when the report cannot be reloaded by slug. `[[videoId].astro:if (!data) throw new Error(]`
 - The render throws when the request path differs from `watchPath`, so the URL must equal the report canonical path plus `watch/<videoId>/`. `[[videoId].astro:if (Astro.url.pathname !== watchPath)]`

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { RecaptchaEnterpriseServiceClient } from "@google-cloud/recaptcha-enterprise";
 import { S3Client } from "@aws-sdk/client-s3";
@@ -675,8 +676,8 @@ test("a missing topic is reported, not swallowed", async () => {
       published: false,
       reason: "topic_not_configured",
     });
-    // This log line is what the CloudWatch metric filter and alarm key off. If
-    // it is renamed, the alarm silently stops firing.
+    // A log search finds this state by this exact line. No alarm reads it;
+    // when it leaves nobody told, forms.notify.nobody_told alarms.
     assert.equal(warnings.length, 1);
     assert.equal(
       JSON.parse(warnings[0]).msg,
@@ -707,7 +708,7 @@ test("an unconfigured recipient list is reported, not swallowed", async () => {
 
     assert.equal(result.sent, false);
     assert.equal(result.reason, "recipients_not_configured");
-    // This is the INS-20 state. The alarm keys off this exact string.
+    // This is the INS-20 state. A log search finds it by this exact string.
     assert.equal(
       JSON.parse(warnings.at(-1)).msg,
       "forms.notify.recipients_not_configured",
@@ -1302,7 +1303,7 @@ test("verified events still send staff mail and persist the delivery receipt", a
       formName: "contact",
       submissionId: "test_submission",
       bucket: "test-bucket",
-      key: "submissions/status/test_submission.json",
+      key: "submissions/2026-10-25/contact/test_submission.json",
       kmsKeyId: "test-kms",
       occurredAt: "2026-10-25T12:00:00.000Z",
       requestId: "test_request",
@@ -1532,3 +1533,110 @@ for (const [ttlSeconds, phrase] of [
     assert.match(body.message, new RegExp(`within ${phrase} to confirm`));
   });
 }
+
+test("the staff notification and receipt point at the submission object, not the status object", async (t) => {
+  setEnv(t, {
+    ...RECAPTCHA_TEST_CONFIG,
+    RESEND_API_KEY: "re_test_123",
+    SUBMISSION_NOTIFICATION_RECIPIENTS: "staff@example.org",
+    SUBMISSION_NOTIFICATIONS_TOPIC_ARN: undefined,
+  });
+  mockValidRecaptcha(t);
+  t.mock.method(console, "warn", () => {});
+
+  await withVerificationStore(null, async ({ store, sent }) => {
+    const submit = await handler(
+      apiEvent({
+        method: "POST",
+        path: "/forms/submit",
+        origin: "https://www.policeconduct.org",
+        body: {
+          formName: "contact",
+          releaseId: "prod-temp",
+          recaptchaToken: "test-token",
+          data: { email: "person@example.org" },
+        },
+      }),
+    );
+    assert.equal(submit.statusCode, 200, submit.body);
+
+    const submissionKey = [...store.keys()].find((key) =>
+      /^submissions\/\d{4}-\d{2}-\d{2}\/contact\/[^/]+\.json$/.test(key),
+    );
+    assert.ok(submissionKey, "the submission object is stored");
+    const verificationKey = [...store.keys()].find((key) =>
+      key.startsWith("submissions/verify/"),
+    );
+    assert.equal(store.get(verificationKey).submissionKey, submissionKey);
+
+    const token = decodeURIComponent(
+      /\/verify\/\?token=([^\s]+)/.exec(sent[0].text)[1],
+    );
+    const verify = await handler(verifyEvent("/forms/verify-link", token));
+    assert.equal(verify.statusCode, 200, verify.body);
+
+    const staffMail = sent.find((mail) =>
+      mail.to.includes("staff@example.org"),
+    );
+    assert.ok(staffMail.text.includes(`key:          ${submissionKey}`));
+    assert.ok(!staffMail.text.includes("submissions/status/"));
+    const receiptKey = [...store.keys()].find((key) =>
+      key.startsWith("notifications/"),
+    );
+    assert.equal(store.get(receiptKey).submissionKey, submissionKey);
+  });
+});
+
+test("a verification record written before submissionKey existed notifies staff without guessing a key", async (t) => {
+  setEnv(t, {
+    RESEND_API_KEY: "re_test_123",
+    SUBMISSION_NOTIFICATION_RECIPIENTS: "staff@example.org",
+    SUBMISSION_NOTIFICATIONS_TOPIC_ARN: undefined,
+  });
+  t.mock.method(console, "warn", () => {});
+  const { record, secret } = verificationFixture({});
+  assert.equal("submissionKey" in record, false);
+
+  await withVerificationStore(record, async ({ store, sent }) => {
+    const verify = await handler(
+      verifyEvent("/forms/verify-link", `verif_abc.${secret}`),
+    );
+    assert.equal(verify.statusCode, 200, verify.body);
+
+    const staffMail = sent.find((mail) =>
+      mail.to.includes("staff@example.org"),
+    );
+    assert.ok(
+      staffMail.text.includes(
+        "key:          not recorded; find */reportNew/sub_abc.json under the submissions prefix",
+      ),
+    );
+    assert.ok(!staffMail.text.includes("submissions/status/"));
+    const receiptKey = [...store.keys()].find((key) =>
+      key.startsWith("notifications/"),
+    );
+    assert.equal(store.get(receiptKey).submissionKey, null);
+  });
+});
+
+test("every error-level forms.notify line has a CloudWatch alarm, and no alarm reads a line the code does not log", async () => {
+  const source = await readFile(
+    new URL("./index.mjs", import.meta.url),
+    "utf8",
+  );
+  const mainTf = await readFile(
+    new URL("../../main.tf", import.meta.url),
+    "utf8",
+  );
+  const logged = [
+    ...source.matchAll(
+      /console\.error\(\s*JSON\.stringify\(\{\s*msg:\s*"forms\.notify\.([a-z_]+)"/g,
+    ),
+  ].map((match) => match[1]);
+  const block = /forms_notify_failure_alarms = \{([^}]*)\}/.exec(mainTf);
+  assert.ok(block, "main.tf defines local.forms_notify_failure_alarms");
+  const alarmed = [...block[1].matchAll(/^\s*([a-z_]+)\s*=/gm)].map(
+    (match) => match[1],
+  );
+  assert.deepEqual([...new Set(logged)].sort(), alarmed.sort());
+});

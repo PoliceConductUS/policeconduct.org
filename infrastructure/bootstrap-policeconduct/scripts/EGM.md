@@ -31,7 +31,9 @@ in the repo root `README.md`).
   encryption resources; the bucket policies of the state and forms buckets only,
   not of the site and preview buckets; forms KMS keys and aliases; forms Lambda IAM
   roles and policies; the prod and preview forms Lambda functions, Function URLs
-  and permissions). Any other value prints an error and exits 1. [apply.sh:PHASE="${PHASE:-full}"] [apply.sh:run_foundation_apply] [apply.sh:"aws_s3_bucket_policy.terraform_state_tls_only"]
+  and permissions). Terraform also applies whatever those targets depend on,
+  such as the release-data buckets the forms Lambdas reference. Any other
+  value prints an error and exits 1. [apply.sh:PHASE="${PHASE:-full}"] [apply.sh:run_foundation_apply] [apply.sh:"aws_s3_bucket_policy.terraform_state_tls_only"]
 - `AWS_PROFILE` (environment): used as set; when empty, the last
   `AWS_PROFILE=` line of the repo root `.env` is read with `sed` (the file is not
   sourced at this point), stripped of quotes, and exported. That value is used
@@ -64,10 +66,21 @@ in the repo root `README.md`).
     `recaptcha_min_score`; `../policeconduct.auto.tfvars` sets them, and
     Terraform gives `*.auto.tfvars` values precedence over `TF_VAR_`
     environment variables. [../policeconduct.auto.tfvars:github_org] [../policeconduct.auto.tfvars:recaptcha_min_score]
+  - `TF_VAR_submission_notifications_topic_arn`, read right after `.env` is
+    sourced from the `submission_notifications_topic_arn` output of
+    `infrastructure/submission-notifications` through repo root
+    `scripts/terraform-outputs.mjs`. A plain `SUBMISSION_NOTIFICATIONS_TOPIC_ARN`
+    in the environment is unset first, so the output is always read. When the
+    output cannot be read or is missing or empty, the script prints
+    `Apply infrastructure/submission-notifications first` and exits 1 before
+    any other step. A non-empty `TF_VAR_submission_notifications_topic_arn`
+    already set by the shell or `.env` must equal the output, or the script
+    exits 1. [apply.sh:resolve_submission_notifications_topic_arn] [apply.sh:unset SUBMISSION_NOTIFICATIONS_TOPIC_ARN] [apply.sh:Apply infrastructure/submission-notifications first, then rerun this script.] [apply.sh:does not match the submission_notifications_topic_arn output]
   - The five reCAPTCHA names printed by repo root `scripts/terraform-outputs.mjs`,
     applied with `eval`. [apply.sh:eval "${recaptcha_env}"]
 - Exit codes: 0 after printing `Bootstrap apply (<phase>) complete.`; 1 for a
-  missing reCAPTCHA input, missing `npm`, or an invalid `PHASE`; otherwise the
+  missing or mismatched submission notifications topic ARN, a missing reCAPTCHA
+  input, missing `npm`, or an invalid `PHASE`; otherwise the
   non-zero status of whichever helper or subprocess failed. [apply.sh:Bootstrap apply (${PHASE}) complete.] [apply.sh:PHASE must be either 'foundation' or 'full']
 - `SENTRY_AUTH_TOKEN` is always loaded from Parameter Store first, and
   `map_common_env_to_tf_vars` then always sets `TF_VAR_sentry_auth_token` from

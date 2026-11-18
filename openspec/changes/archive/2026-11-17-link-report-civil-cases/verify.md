@@ -1,6 +1,6 @@
 # Verification
 
-The local report link retains canonical ID `ttcbwuea0vqyjfwtpj89as97` and now references case `ogecfxi5p67286qbmvkfjoa4`. Its copied URL and title are null. The loader joins the current case title and stored slug and renders an ordinary internal link. External evidence and video links retain their existing behavior.
+The local report link on report `first-amendment-retaliation-arrest-2c545f` keeps its canonical ID and now references case `lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025`. Its copied URL and title are null. The loader joins the current case title and stored slug and renders an ordinary internal link. External evidence and video links retain their existing behavior.
 
 Migration `20261113000000_review_links_civil_cases.sql` was tested on an isolated database and applied locally without a reset. Manual intake acquisition and transformation generated exactly one guarded `ReviewLinkUpdate` in mutation `000017`. The CLI applied it; repeating `data up --to 000017` found zero pending entries.
 

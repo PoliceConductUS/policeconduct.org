@@ -28,9 +28,15 @@ variable "service_account_display_name" {
 }
 
 variable "aws_forms_lambda_role_name" {
-  description = "AWS IAM role name used by the forms Lambda functions."
+  description = "AWS IAM role name used by the production forms Lambda."
   type        = string
   default     = "policeconduct-forms-lambda"
+}
+
+variable "aws_forms_lambda_preview_role_name" {
+  description = "AWS IAM role name used by the preview forms Lambda."
+  type        = string
+  default     = "policeconduct-forms-lambda-preview"
 }
 
 variable "workload_identity_pool_id" {

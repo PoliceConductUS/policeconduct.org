@@ -27,7 +27,6 @@ export const metricLabels = {
   outcomesByIncome: "Outcomes by Income",
   overtime: "Overtime",
   personnel: "Personnel",
-  personnelLinked: "Personnel Linked",
   personnelRecords: "Personnel",
   places: "Places",
   racialBreakdownStopsArrests: "Racial Breakdown of Stops or Arrests",

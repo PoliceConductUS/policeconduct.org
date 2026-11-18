@@ -31,3 +31,4 @@ Static Astro page for the route `/legal-notice/disclaimer/`: the site disclaimer
 ## Verification
 
 - Run: `npm run build`
+- Run: `npm run test:client` (its `scripts/public-claims.test.mjs` renders this page and checks its text for unsupported verification claims). [../../../../scripts/public-claims.test.mjs:"legal-notice/disclaimer",]

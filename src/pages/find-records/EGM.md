@@ -32,9 +32,9 @@ Two files serve the record finder. `index.astro` is the static page for the rout
 - Response: `new Response(JSON.stringify(finderGroups), { headers })` with `Content-Type: application/json; charset=utf-8`. No explicit status is set. `[data.json.ts:"Content-Type": "application/json; charset=utf-8",]`
 - Response shape: an array of three groups in this order, each `{ type, label, results }`: `place` / `Places`, `agency` / `Agencies`, `federal-agency` / `Federal agencies`. `[data.json.ts:{ type: "agency", label: "Agencies", results: agencyResults },]`
 - Every result is `{ href, label, meta, searchText }`, all strings. `[data.json.ts:searchText: agency.name,]`
-- Place results come from locations with `level === "place"`: `href` is `place.path`; `label` joins `displayName`, `administrativeArea` and `stateLabel` with commas; `meta` is the agency count with `agency` or `agencies`; `searchText` joins `displayName`, `administrativeArea`, `administrativeAreaSlug`, `state` and `stateLabel` with spaces. `[data.json.ts:.filter((location) => location.level === "place")]`
+- Place results come from locations with `level === "place"`: `href` is `place.path`; `label` joins `displayName`, `administrativeArea` and `stateLabel` with commas; `meta` is the agency count with `agency` or `agencies`, followed by `in the record`; `searchText` joins `displayName`, `administrativeArea`, `administrativeAreaSlug`, `state` and `stateLabel` with spaces. `[data.json.ts:.filter((location) => location.level === "place")]`
 - Agency results: `href` is `agency.canonicalPath`; `label` is `agency.name`; `meta` joins `city`, `administrativeArea` and the state label; `searchText` joins `name`, `city`, `administrativeArea`, `state`, the state label, `zipCode` and `canonicalPath`. `[data.json.ts:href: agency.canonicalPath,]`
-- Federal agency results: `href` is `agency.path`; `label` and `searchText` are `agency.name`; `meta` is `branchCount` with `location` or `locations`. `[data.json.ts:const federalAgencyResults = federalAgencies.map((agency) => ({]`
+- Federal agency results: `href` is `agency.path`; `label` and `searchText` are `agency.name`; `meta` is `branchCount` with `location` or `locations`, followed by `in the record`. `[data.json.ts:const federalAgencyResults = federalAgencies.map((agency) => ({]`
 
 ## Invariants
 

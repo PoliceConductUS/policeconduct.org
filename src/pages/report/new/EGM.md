@@ -97,6 +97,7 @@ Static Astro page for the route `/report/new/`. It renders the report intake for
 - The form `input` listener does the same for inputs and textareas, without sending `report_step_progress`. `[index.astro:form.addEventListener("input", (event) => {]`
 - On `submit` the script awaits `submitJsonForm` with `event`, `form`, `formName`, `onBeforeSubmit`, `validate`, `buildPayload`, `onSuccess`, `recaptchaAction` and `successKind`. `[index.astro:await submitJsonForm({]`
 - `submitJsonForm` receives `formName: "reportNew"`. `[index.astro:formName: "reportNew",]`
+- The form element declares no endpoint; `submitJsonForm` sends the payload to `POST /api/forms/submit`. `[../../../lib/client/forms.ts:const response = await fetch("/api/forms/submit", {]`
 - `onBeforeSubmit` saves the draft first and throws a user-facing error when that save fails. `[index.astro:if (await flushDraftSave()) return;]`
 - `validate` runs the evidence row check. `[index.astro:validate: () => validateRepeatRows(),]`
 - `buildPayload` returns `data` (the filtered form data), `draftId` (or `null`), `formName` and `recaptchaToken`. `[index.astro:draftId: getReportDraftId() || null,]`

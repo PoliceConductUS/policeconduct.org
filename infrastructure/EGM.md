@@ -20,7 +20,9 @@ Citations use the form `[path:text]`, where the path is relative to this directo
 - `submission-notifications` uses an S3 backend with a lock file. `[submission-notifications/versions.tf:use_lockfile]`
 - `intake-workspace` declares no backend and keeps local state in its own directory. `[intake-workspace/README.md:It has independent local Terraform state.]`
 - The three `scripts/apply.sh` wrappers run `terraform plan` and `terraform apply` only through `scripts/terraform-reviewed-apply.sh` in the repository root, which applies the reviewed plan file. Before that, each wrapper reads the existing state with `terraform state pull` through `scripts/require-terraform-state.sh`. `[bootstrap-iceconduct/scripts/apply.sh:require-terraform-state.sh]` `[bootstrap-policeconduct/scripts/apply.sh:terraform-reviewed-apply.sh]` `[bootstrap-iceconduct/scripts/apply.sh:terraform-reviewed-apply.sh]` `[bootstrap-recaptcha/scripts/apply.sh:terraform-reviewed-apply.sh]`
+- The three wrappers then run `scripts/require-terraform-account.sh`, which refuses an AWS caller other than the one account that the root's managed state proves: managed `aws_` resource ARNs, or, for `bootstrap-recaptcha`, the account its workload identity provider trusts. `[bootstrap-policeconduct/scripts/apply.sh:require-terraform-account.sh]` `[bootstrap-iceconduct/scripts/apply.sh:require-terraform-account.sh]` `[bootstrap-recaptcha/scripts/apply.sh:require-terraform-account.sh]` `[../scripts/require-terraform-account.sh:google_iam_workload_identity_pool_provider]`
 - `bootstrap-policeconduct` takes its reCAPTCHA inputs from the `bootstrap-recaptcha` outputs and refuses to apply without them, so `bootstrap-recaptcha` is applied first. `[bootstrap-policeconduct/scripts/apply.sh:preflight_recaptcha_requirements]`
+- `bootstrap-policeconduct` also takes `submission_notifications_topic_arn` from the `submission-notifications` output and refuses to apply without it, so `submission-notifications` is applied before it. `[bootstrap-policeconduct/scripts/apply.sh:resolve_submission_notifications_topic_arn]` `[submission-notifications/outputs.tf:output "submission_notifications_topic_arn"]`
 - `bootstrap-policeconduct/scripts/apply.sh` sources the repository `.env` file first, then runs the Parameter Store audit before it reads any secret from Parameter Store. `[bootstrap-policeconduct/scripts/apply.sh:audit-parameter-store.mjs]` `[bootstrap-policeconduct/scripts/apply.sh:load_parameter_store_secrets SENTRY_AUTH_TOKEN GITHUB_TOKEN]`
 - The intake workspace bucket and its versioning cannot be destroyed by Terraform. `[intake-workspace/main.tf:prevent_destroy = true]`
 
@@ -28,12 +30,13 @@ Citations use the form `[path:text]`, where the path is relative to this directo
 
 - Applying `bootstrap-policeconduct` changes the live site's CloudFront distributions, and its CloudFront Functions go live on apply. `[bootstrap-policeconduct/main.tf:resource "aws_cloudfront_distribution" "site"]` `[bootstrap-policeconduct/main.tf:publish = true]`
 - Applying `bootstrap-iceconduct` changes the redirect distribution for iceconduct.org. `[bootstrap-iceconduct/main.tf:resource "aws_cloudfront_distribution" "redirect"]`
-- Applying `bootstrap-recaptcha` changes Google Cloud resources, including the workload identity provider that the forms Lambda uses. `[bootstrap-recaptcha/main.tf:resource "google_iam_workload_identity_pool_provider" "aws"]`
+- Applying `bootstrap-recaptcha` changes Google Cloud resources, including the workload identity provider that the production and preview forms Lambdas use; that provider admits only those two Lambda roles. `[bootstrap-recaptcha/main.tf:resource "google_iam_workload_identity_pool_provider" "aws"]`
 - Applying `submission-notifications` writes the notification configuration of the existing submissions buckets, for objects created under one prefix. `[submission-notifications/main.tf:filter_prefix = "submissions/status/"]`
 - `intake-workspace` publishes the bucket name that the workspace push and pull commands read. `[intake-workspace/main.tf:output "intake_workspace_bucket_name"]`
 
 ## System Verification
 
 - Run: `npm run test:infra` (includes the `bootstrap-iceconduct` redirect function test). `[../package.json:infrastructure/bootstrap-iceconduct/scripts/redirect.test.mjs]`
-- Run: `npm run test:lambda` for the Lambda code under `bootstrap-policeconduct/lambdas/`.
+- Run: `npm run test:lambda` for the Forms API Lambda in `bootstrap-policeconduct/lambdas/forms-api/`. `[../package.json:infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs]`
+- Run: `npm run test:redirects` for the `bootstrap-policeconduct` CloudFront router and the release API service; `test:lambda` does not cover the release API. `[../package.json:scripts/cloudfront-router.test.mjs]`
 - No root `package.json` script runs the `intake-workspace` Terraform test; run it directly with `terraform -chdir=infrastructure/intake-workspace test`. `[intake-workspace/tests/storage.tftest.hcl:run "private_versioned_storage"]`

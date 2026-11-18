@@ -66,7 +66,6 @@ for (const [name, script, args, builds] of [
           "upload-release.sh",
           "release-files.mjs",
           "terraform-outputs.mjs",
-          "workspace-sync.sh",
         ]) {
           copyFileSync(
             new URL(file, import.meta.url),
@@ -113,7 +112,6 @@ for (const [name, script, args, builds] of [
               // Shell startup files must not replace the fixture command PATH.
               BASH_ENV: "/dev/null",
               ENV: "/dev/null",
-              WORKSPACE_SYNC: "skip",
               PATH: `${join(root, "bin")}:${process.env.PATH}`,
               TEST_NODE: process.execPath,
               CALL_LOG: log,

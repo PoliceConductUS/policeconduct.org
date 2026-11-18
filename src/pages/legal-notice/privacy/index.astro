@@ -3,7 +3,7 @@ import PageShell from "#src/layouts/PageShell.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 const privacyCategories = [
   {
-    category: "A. Identcan ifiers",
+    category: "A. Identifiers",
     examples:
       "Contact details, such as real name, alias, postal address, telephone or mobile contact number, unique personal identifier, online identifier, Internet Protocol address, email address, and account name",
     collected: true,
@@ -69,7 +69,6 @@ const privacyCategories = [
   },
   {
     category: "L. Sensitive personal Information",
-    examples: "",
     collected: false,
   },
 ];
@@ -1143,7 +1142,7 @@ const structuredData = buildWebPage({
       {privacyCategories.map((item) => (
         <div class="mb-3">
           <h4>{item.category}</h4>
-          <p>{item.examples || "Not listed."}</p>
+          {item.examples && <p>{item.examples}</p>}
           <p>Collected: {item.collected ? "YES" : "NO"}</p>
         </div>
       ))}

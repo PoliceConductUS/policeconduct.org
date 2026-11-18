@@ -208,10 +208,11 @@ the final PR head, including documentation-only PRs.
 - [ ] Update the PR description and completion report to the final scope, SHA,
       commands, exit codes, stage outcomes, counts, diagnostic dispositions,
       exceptions, and remaining blockers. Partial success is not full validation.
-- [ ] Retain human review/merge, production release, and personnel publication
-      gates. Merge readiness is not merge permission; merge is not deployment;
-      deployment is not evidence of an authorized public release. Claim deployed
-      only with deployed evidence. Use feature branches and PRs only.
+- [ ] Retain human review and merge. Merge readiness is not merge permission,
+      and merge is not deployment. Production release and personnel publication
+      have no approval gate; apply production changes from `main` after merge.
+      Claim deployed only with deployed evidence. Use feature branches and PRs
+      only.
 
 ## Agent Workflow
 

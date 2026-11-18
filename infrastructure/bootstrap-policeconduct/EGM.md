@@ -23,7 +23,7 @@ Files in this directory:
 | `variables.tf`, `policeconduct.auto.tfvars`              | Input variables and the committed non-secret values                            |
 | `main.tf`                                                | Locals and most resources                                                      |
 | `release.tf`                                             | Release-data buckets, release API Lambda, `intake_news` role, three outputs    |
-| `preview-entrypoints.tf`                                 | Preview certificate, bare `preview.` DNS records, diagnostic preview pages     |
+| `preview-entrypoints.tf`                                 | Preview certificate and validation record, bare `preview.` DNS records, pages  |
 | `existing-dns.tf`                                        | Adopted Google mail and domain-verification DNS records                        |
 | `logs.tf`                                                | Adopted Lambda log groups                                                      |
 | `github-repository-settings.tf`                          | Pull-request merge settings for a fixed list of repositories                   |
@@ -212,7 +212,10 @@ Storage and encryption:
   `aws_s3_bucket_ownership_controls`, `aws_s3_bucket_versioning` and
   `aws_s3_bucket_server_side_encryption_configuration` (AES256 for state, site
   and preview; `aws:kms` for the four forms buckets). The `release_data`
-  buckets have only a public access block. [main.tf:resource "aws_s3_bucket_server_side_encryption_configuration" "forms_drafts"] [release.tf:resource "aws_s3_bucket_public_access_block" "release_data"]
+  buckets (`release.tf`) have the same four resources, with versioning enabled
+  and AES256 encryption, plus a TLS-only bucket policy
+  (`aws_s3_bucket_policy.release_data_tls_only`, a `DenyInsecureTransport`
+  statement like the state bucket's). [main.tf:resource "aws_s3_bucket_server_side_encryption_configuration" "forms_drafts"] [release.tf:resource "aws_s3_bucket_public_access_block" "release_data"] [release.tf:resource "aws_s3_bucket_versioning" "release_data"] [release.tf:resource "aws_s3_bucket_ownership_controls" "release_data"] [release.tf:resource "aws_s3_bucket_server_side_encryption_configuration" "release_data"] [release.tf:resource "aws_s3_bucket_policy" "release_data_tls_only"]
 - `aws_s3_bucket_lifecycle_configuration.preview`: rule
   `expire-noncurrent-preview-versions` (noncurrent versions expire after 7
   days; expired object delete markers are removed; incomplete multipart uploads
@@ -296,15 +299,22 @@ Edge and network:
   `RateLimitApiPerIp` (requests under `/api/`), both answering 429 with a
   `Retry-After` header set from `rate_limit_retry_after_seconds`. [main.tf:value = tostring(var.rate_limit_retry_after_seconds)] [main.tf:RateLimitSitePerIp] [main.tf:RateLimitApiPerIp]
 - `aws_acm_certificate` and `aws_acm_certificate_validation`: `site`
-  (`main.tf`) and `preview` (`preview-entrypoints.tf`). [main.tf:resource "aws_acm_certificate" "site"] [preview-entrypoints.tf:resource "aws_acm_certificate" "preview"]
+  (`main.tf`) and `preview` (`preview-entrypoints.tf`). The `site` certificate
+  covers the apex and, when `www_record_mode` is not `none`, `www.`; it lists no
+  preview name. The `preview` certificate covers `preview.<domain>` and
+  `*.preview.<domain>`. [main.tf:resource "aws_acm_certificate" "site"] [preview-entrypoints.tf:resource "aws_acm_certificate" "preview"] [main.tf:local.include_www ? [local.www_domain] : []]
 - `aws_route53_zone.site` (only when no zone id is supplied). [main.tf:resource "aws_route53_zone" "site"]
 - `aws_route53_record`: `apex_a`, `apex_aaaa`, `www_alias_a`, `www_alias_aaaa`,
   `www_cname`, `preview_wildcard_a`, `preview_wildcard_aaaa`, `acm_validation`,
   `resend_domain_record`, `ses_domain_identity_verification`, `ses_domain_dkim`,
   `ses_mail_from_mx`, `ses_mail_from_spf`, `ses_dmarc`, `extra_standard`,
-  `extra_alias` (`main.tf`); `preview_root` (`preview-entrypoints.tf`);
-  `google_mail_dmarc`, `google_mail_dkim`, `google_domain_verification`
-  (`existing-dns.tf`). [main.tf:resource "aws_route53_record" "extra_standard"] [preview-entrypoints.tf:resource "aws_route53_record" "preview_root"] [existing-dns.tf:resource "aws_route53_record" "google_domain_verification"]
+  `extra_alias` (`main.tf`); `preview_root` and `preview_acm_validation`
+  (`preview-entrypoints.tf`); `google_mail_dmarc`, `google_mail_dkim`,
+  `google_domain_verification` (`existing-dns.tf`). [main.tf:resource "aws_route53_record" "extra_standard"] [preview-entrypoints.tf:resource "aws_route53_record" "preview_root"] [existing-dns.tf:resource "aws_route53_record" "google_domain_verification"]
+- `aws_route53_record.preview_acm_validation` is the one validation record ACM
+  gives `preview.<domain>` and `*.preview.<domain>`. A `moved` block carries it
+  over from `acm_validation["*.preview.policeconduct.org"]`, where it lived while
+  the site certificate listed the wildcard. [preview-entrypoints.tf:resource "aws_route53_record" "preview_acm_validation"] [preview-entrypoints.tf:from = aws_route53_record.acm_validation["*.preview.policeconduct.org"]]
 
 Email:
 
@@ -321,10 +331,20 @@ Monitoring:
   address is configured). [main.tf:resource "aws_sns_topic" "infrastructure_alerts"] [main.tf:infrastructure_alert_emails]
 - `aws_cloudwatch_metric_alarm`, for prod and preview each: `_errors`,
   `_duration_p95`, `_throttles`, `_verification_email_failed`,
-  `_verification_email_not_sent`. [main.tf:resource "aws_cloudwatch_metric_alarm" "forms_api_prod_errors"] [main.tf:forms_api_preview_verification_email_not_sent]
+  `_verification_email_not_sent`, and `_notify_failed` with one instance per
+  key of `local.forms_notify_failure_alarms`. [main.tf:resource "aws_cloudwatch_metric_alarm" "forms_api_prod_errors"] [main.tf:forms_api_preview_verification_email_not_sent] [main.tf:resource "aws_cloudwatch_metric_alarm" "forms_api_preview_notify_failed"]
 - `aws_cloudwatch_log_metric_filter`, for prod and preview each, matching the
   Forms API log messages `forms.submit.verification_email_failed` and
-  `forms.submit.verification_email_not_sent`. [main.tf:forms.submit.verification_email_failed] [main.tf:forms.submit.verification_email_not_sent]
+  `forms.submit.verification_email_not_sent`, and (`_notify_failed`) the
+  error-level staff notification messages `forms.notify.nobody_told`,
+  `forms.notify.publish_failed`, `forms.notify.email_failed`,
+  `forms.notify.email_misconfigured` and `forms.notify.receipt_failed`. Every
+  one of these filters and alarms uses the function's `/aws/lambda/` log group,
+  the `<project_name>/FormsApi` namespace, a 300-second `Sum` of at least 1,
+  missing data as not breaching, and `local.effective_alarm_actions` for alarm
+  and OK. The warn-level `forms.notify.topic_not_configured` and
+  `forms.notify.recipients_not_configured` have no alarm; when they leave
+  nobody told, `forms.notify.nobody_told` is logged. [main.tf:forms.submit.verification_email_failed] [main.tf:forms.submit.verification_email_not_sent] [main.tf:forms_notify_failure_alarms = {] [main.tf:local.effective_alarm_actions]
 
 GitHub:
 
@@ -372,6 +392,9 @@ calls it.
   actions, and `sts:GetCallerIdentity`; they do not cover the CloudFront,
   Lambda, KMS, Route 53, ACM, WAF, SES, SNS, CloudWatch or security-service
   resources this root manages. [bootstrap-user-policy.json:BootstrapS3StateBucket] [bootstrap-user-policy.json:iam:CreateOpenIDConnectProvider] [bootstrap-user-policy.json:sts:GetCallerIdentity]
+- The script's header and printed next steps say the same: the user cannot run
+  this stack, which is applied with the setup admin profile that
+  `infrastructure/README.md` describes. [create-bootstrap-user.sh:It cannot run the Terraform bootstrap stack] [create-bootstrap-user.sh:This user cannot apply the bootstrap stack.] [../README.md:policeconduct-setup-admin]
 
 ## Invariants
 
@@ -389,14 +412,20 @@ calls it.
   a precondition on `aws_route53_record.extra_standard` fails the plan. [main.tf:which existing-dns.tf already manages] [existing-dns.tf:adopted_dns_record_keys]
 - Sensitive inputs are exactly `sentry_auth_token` and the two email provider
   API keys. Secrets never go in `policeconduct.auto.tfvars`. [variables.tf:sensitive] [policeconduct.auto.tfvars:Secrets never go here]
-- Every bucket in `main.tf` blocks all public access and enforces
-  bucket-owner object ownership. [main.tf:BucketOwnerEnforced]
-- The state bucket and the four forms buckets deny any request that is not
-  over TLS. [main.tf:DenyInsecureTransport]
+- Every bucket in `main.tf` and `release.tf` blocks all public access and
+  enforces bucket-owner object ownership. [main.tf:BucketOwnerEnforced] [release.tf:BucketOwnerEnforced]
+- The state bucket, the four forms buckets and the two release-data buckets
+  deny any request that is not over TLS. [main.tf:DenyInsecureTransport] [release.tf:DenyInsecureTransport]
 - The forms buckets deny uploads that are not SSE-KMS or that use any key other
   than the bucket's own. [main.tf:DenyUnencryptedObjectUploads] [main.tf:DenyWrongKmsKey]
 - Production and preview forms Lambdas have separate roles; neither can reach
   the other environment's buckets, keys or logs. [main.tf:The production and preview forms Lambdas each have their own role]
+- The forms roles are named `<project_name>-forms-lambda` and
+  `<project_name>-forms-lambda-preview`. The `bootstrap-recaptcha` workload
+  identity provider admits only the roles that its `aws_forms_lambda_role_name`
+  and `aws_forms_lambda_preview_role_name` variables name (defaults
+  `policeconduct-forms-lambda` and `policeconduct-forms-lambda-preview`), so a
+  change to either role name must be made in both roots. [main.tf:"${var.project_name}-forms-lambda-preview"] [../bootstrap-recaptcha/variables.tf:variable "aws_forms_lambda_preview_role_name"] [../bootstrap-recaptcha/main.tf:Only the forms Lambda roles may exchange AWS credentials in this pool.]
 - Neither forms Lambda role can delete objects; `s3:ListBucket` is granted only
   on that environment's release-data bucket. [main.tf:DistinguishMissingFormReleases]
 - Each forms Lambda gets its own environment's email API key. [main.tf:forms_email_resend_api_key_preview]
@@ -434,9 +463,10 @@ calls it.
   to `/404.html`. [main.tf:api_rate_limited]
 - Both distributions redirect viewers to HTTPS, require TLS 1.2 or later, and
   serve only viewers in the `US` geo whitelist. [main.tf:TLSv1.2_2021] [main.tf:redirect-to-https]
-- The site certificate is replaced create-before-destroy; the preview
-  distribution uses its own certificate so the production certificate is not
-  changed. [main.tf:create_before_destroy] [preview-entrypoints.tf:retain the production certificate unchanged]
+- The site certificate is replaced create-before-destroy, so the production
+  distribution moves to the new certificate before the old one is deleted. The
+  preview distribution uses its own certificate, and the production certificate
+  lists no preview name. [main.tf:create_before_destroy] [preview-entrypoints.tf:The production certificate does not list a]
 - Records declared with `allow_overwrite = false` fail the apply (the Route 53
   create call) instead of taking over an existing record; the plan does not
   check for one. [preview-entrypoints.tf:allow_overwrite = false]
@@ -471,6 +501,15 @@ calls it.
 - Secrets are placed in Lambda environment variables and in Terraform state:
   the email API key, the generated HMAC secret and the Sentry DSN. [main.tf:EMAIL_VERIFICATION_HMAC_SECRET] [main.tf:RESEND_API_KEY]
 - The two Forms API Function URLs are publicly invocable. [main.tf:AllowPublicInvokeViaFunctionUrlProd]
+- An empty `submission_notifications_topic_arn` sets
+  `SUBMISSION_NOTIFICATIONS_TOPIC_ARN` to empty on both forms Lambdas and
+  removes their `sns:Publish` grant. `scripts/apply.sh` therefore sets
+  `TF_VAR_submission_notifications_topic_arn` from the
+  `infrastructure/submission-notifications` output and refuses to apply when
+  that output is missing or empty, or when a value already set differs from it.
+  `policeconduct.auto.tfvars` does not set it, so a `terraform apply` run
+  outside `scripts/apply.sh` still gets the empty default unless the operator
+  sets the variable. [main.tf:trimspace(var.submission_notifications_topic_arn)] [variables.tf:default only because this stack must still plan before the other one has] [scripts/apply.sh:resolve_submission_notifications_topic_arn]
 - Public DNS: publishes the apex, optional `www`, `preview.` and `*.preview.`
   records, ACM validation records, SES and email-provider records, the adopted
   Google records and any `extra_dns_records`. [main.tf:preview_wildcard_domain] [preview-entrypoints.tf:preview_root]

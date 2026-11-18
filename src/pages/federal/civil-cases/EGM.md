@@ -13,7 +13,7 @@ Static Astro page for the route `/federal/civil-cases/`. It loads every federal 
 
 ## Invariants
 
-- None
+- The civil case total counts each case once, even when the case is linked to more than one federal agency. `[../../../lib/data/federal-agencies.ts:civilCases: distinctCivilCaseIds(federalAgencies).length,]`
 
 ## Side Effects
 

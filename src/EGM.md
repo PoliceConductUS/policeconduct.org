@@ -17,7 +17,7 @@ Citations use the form `[path:text]`, where the path is relative to this directo
 ## Global Invariants
 
 - Database access goes through `withDb` in `lib/db.js`, which needs `DATABASE_URL`. `[lib/db.js:withDb]` `[lib/db.js:DATABASE_URL]`
-- List pages use the shared page size of 50, except the civil-case list, which uses its own page size of 25. `[lib/pagination.ts:PAGE_SIZE = 50]` `[lib/data/civil-cases.ts:CIVIL_CASES_PAGE_SIZE = 25]`
+- List pages use the shared page size of 50, except the civil-case lists (the site-wide list and each agency's list), which use their own page size of 25. `[lib/pagination.ts:PAGE_SIZE = 50]` `[lib/data/civil-cases.ts:CIVIL_CASES_PAGE_SIZE = 25]` `[components/AgencyCivilCasesPage.astro:rows.length / CIVIL_CASES_PAGE_SIZE]`
 - `PageShell` renders inside `SiteLayout`, so a page that uses `PageShell` gets the document head, masthead and footer from one place. `[layouts/PageShell.astro:import SiteLayout]`
 - Setting `NO_PERSONNEL` at build time leaves person-owned data annotations out. `[lib/data/data-annotations.ts:process.env.NO_PERSONNEL]`
 - `NO_PERSONNEL` also makes the personnel detail route and the personnel topic route build no pages, and makes `CoverageLinks` render personnel names as plain text instead of links. `[pages/personnel/[slug]/index.astro:process.env.NO_PERSONNEL]` `[pages/personnel/[slug]/[topic]/index.astro:process.env.NO_PERSONNEL]` `[components/CoverageLinks.astro:process.env.NO_PERSONNEL]`

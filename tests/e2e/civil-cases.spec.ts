@@ -102,3 +102,94 @@ test("renders complaint summaries with a compact source link", async ({
     await client.end();
   }
 });
+
+test("agency and place civil-case counts use only that agency's personnel links", async ({
+  page,
+}) => {
+  const { Client } = await import("pg");
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  let agency: { path: string; own_count: number; place_count: number };
+  try {
+    // An agency whose personnel also have cases linked only to their
+    // assignments at other agencies. Those cases must not count here.
+    const { rows } = await client.query<{
+      path: string;
+      own_count: number;
+      place_count: number;
+    }>(`
+      with own as (
+        select ao.agency_id, count(distinct cco.civil_case_id)::int as n
+        from public.civil_case_personnel cco
+        join public.agency_personnel ao on ao.id = cco.agency_personnel_id
+        group by ao.agency_id
+      )
+      select
+        bpp.path,
+        own.n as own_count,
+        (
+          select count(distinct place_cco.civil_case_id)::int
+          from public.agency place_agency
+          join public.location_path place_lp
+            on place_lp.location_path_id = place_agency.location_path_id
+          join public.agency_personnel place_ao
+            on place_ao.agency_id = place_agency.id
+          join public.civil_case_personnel place_cco
+            on place_cco.agency_personnel_id = place_ao.id
+          where place_lp.path like lp.path || '%'
+        ) as place_count
+      from own
+      join public.agency a on a.id = own.agency_id
+      join public.location_path lp on lp.location_path_id = a.location_path_id
+      join public.build_page_payload bpp
+        on bpp.page_type = 'agency' and bpp.entity_id = a.id
+      where exists (
+        select 1
+        from public.civil_case_personnel cco
+        join public.agency_personnel case_ao
+          on case_ao.id = cco.agency_personnel_id
+        join public.agency_personnel target_ao
+          on target_ao.personnel_id = case_ao.personnel_id
+         and target_ao.agency_id = a.id
+        where case_ao.agency_id <> a.id
+          and not exists (
+            select 1
+            from public.civil_case_personnel own_cco
+            join public.agency_personnel own_ao
+              on own_ao.id = own_cco.agency_personnel_id
+            where own_cco.civil_case_id = cco.civil_case_id
+              and own_ao.agency_id = a.id
+          )
+      )
+      order by a.id
+      limit 1
+    `);
+    expect(rows).toHaveLength(1);
+    agency = rows[0];
+  } finally {
+    await client.end();
+  }
+
+  const ownCount = agency.own_count.toLocaleString("en-US");
+  await page.goto(agency.path);
+  await expect(
+    page
+      .getByRole("region", { name: /record totals$/ })
+      .locator(".stat-cell")
+      .filter({ has: page.getByText("Civil Cases", { exact: true }) })
+      .locator(".ledger-value"),
+  ).toHaveText(ownCount);
+
+  await page.goto(`${agency.path}civil-cases/`);
+  await expect(
+    page.getByText(
+      `${ownCount} civil cases tied to this agency's personnel records.`,
+    ),
+  ).toBeVisible();
+
+  const placePath = `${agency.path.split("/").slice(0, 4).join("/")}/`;
+  await page.goto(`${placePath}civil-cases/`);
+  await expect(page.locator(".list-count")).toContainText(
+    `${agency.place_count.toLocaleString("en-US")} cases`,
+  );
+});

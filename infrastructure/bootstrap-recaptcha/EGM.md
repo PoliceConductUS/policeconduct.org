@@ -5,8 +5,9 @@
 A standalone Terraform root that manages the Google Cloud reCAPTCHA Enterprise
 resources used by the site's forms: the enabled API, two score-based web site
 keys (one current, one imported legacy key), a Google service account for
-assessments, and a Workload Identity Pool with an AWS provider so AWS principals
-can impersonate that service account without a stored key. The only AWS call is
+assessments, and a Workload Identity Pool with an AWS provider so the
+production and preview forms Lambda roles, and no other AWS principal, can
+impersonate that service account without a stored key. The only AWS call is
 a caller-identity lookup that supplies the AWS account ID for the federation
 trust. State lives in an S3 backend. Applies go through the wrapper in
 [./scripts/EGM.md](./scripts/EGM.md).
@@ -30,8 +31,12 @@ trust. State lives in an S3 backend. Applies go through the wrapper in
 - `service_account_display_name` (string, default
   `policeconduct reCAPTCHA assessor`).
   `[variables.tf:variable "service_account_display_name"]`
-- `aws_forms_lambda_role_name` (string, default `policeconduct-forms-lambda`).
+- `aws_forms_lambda_role_name` (string, default `policeconduct-forms-lambda`) —
+  role of the production forms Lambda.
   `[variables.tf:variable "aws_forms_lambda_role_name"]`
+- `aws_forms_lambda_preview_role_name` (string, default
+  `policeconduct-forms-lambda-preview`) — role of the preview forms Lambda.
+  `[variables.tf:variable "aws_forms_lambda_preview_role_name"]`
 - `workload_identity_pool_id` (string, default `policeconduct-aws-pool`).
   `[variables.tf:variable "workload_identity_pool_id"]`
 - `workload_identity_pool_display_name` (string, default
@@ -98,9 +103,13 @@ trust. State lives in an S3 backend. Applies go through the wrapper in
 - `local.site_key` — last `/`-separated segment of
   `google_recaptcha_enterprise_key.site.name`.
   `[main.tf:reverse(split("/", google_recaptcha_enterprise_key.site.name)),]`
-- `local.forms_lambda_role_arn` — an IAM role ARN built from the caller account
-  and `var.aws_forms_lambda_role_name`. It is defined but not referenced by any
-  resource or output in this root. `[main.tf:forms_lambda_role_arn = ]`
+- `local.forms_lambda_assumed_role_arns` — map from each forms role name to
+  `arn:aws:sts::<caller account>:assumed-role/<role name>`, the value the
+  provider's `attribute.aws_role` mapping gives a Lambda running as that role.
+  `[main.tf:role_name => "arn:aws:sts::${data.aws_caller_identity.current.account_id}:assumed-role/${role_name}"]`
+- `local.forms_lambda_principal_sets` — map from each forms role name to the
+  pool's `principalSet` for that `attribute.aws_role` value.
+  `[main.tf:/attribute.aws_role/${assumed_role_arn}]`
 - `data.aws_caller_identity.current` — supplies the AWS account ID.
   `[main.tf:data "aws_caller_identity" "current" {}]`
 
@@ -120,14 +129,20 @@ trust. State lives in an S3 backend. Applies go through the wrapper in
 - `google_iam_workload_identity_pool.aws`.
   `[main.tf:resource "google_iam_workload_identity_pool" "aws"]`
 - `google_iam_workload_identity_pool_provider.aws` — AWS provider block bound to
-  the caller's AWS account ID.
+  the caller's AWS account ID. It writes out Google's default AWS attribute
+  mapping, where `attribute.aws_role` is the assumed-role ARN without the
+  session name, and its attribute condition admits only the two values in
+  `local.forms_lambda_assumed_role_arns`.
   `[main.tf:resource "google_iam_workload_identity_pool_provider" "aws"]`
-- `google_service_account_iam_member.recaptcha_assessor_wif_user` — grants
-  `roles/iam.workloadIdentityUser` on the service account to every principal in
-  the pool. `[main.tf:resource "google_service_account_iam_member" "recaptcha_assessor_wif_user"]`
-- `google_service_account_iam_member.recaptcha_assessor_token_creator` — grants
-  `roles/iam.serviceAccountTokenCreator` on the service account to every
-  principal in the pool.
+  `[main.tf:assertion.arn.extract('assumed-role/{role_name}/')]`
+  `[main.tf:attribute_condition = "attribute.aws_role in ${jsonencode(values(local.forms_lambda_assumed_role_arns))}"]`
+- `google_service_account_iam_member.recaptcha_assessor_wif_user` — `for_each`
+  over `local.forms_lambda_principal_sets`; grants
+  `roles/iam.workloadIdentityUser` on the service account to each forms role's
+  principal set. `[main.tf:resource "google_service_account_iam_member" "recaptcha_assessor_wif_user"]`
+- `google_service_account_iam_member.recaptcha_assessor_token_creator` — the same
+  `for_each`; grants `roles/iam.serviceAccountTokenCreator` on the service
+  account to each forms role's principal set.
   `[main.tf:resource "google_service_account_iam_member" "recaptcha_assessor_token_creator"]`
 - `google_recaptcha_enterprise_key.legacy_site` — via `google-beta.legacy`;
   display name `PoliceConduct.org`, no labels, integration type `SCORE`, one
@@ -170,8 +185,14 @@ trust. State lives in an S3 backend. Applies go through the wrapper in
   `[main.tf:depends_on = [google_project_service.required]`
 - Both service-account IAM grants wait for the project role grant and the pool
   provider. `[main.tf:google_iam_workload_identity_pool_provider.aws,]`
-- Both service-account IAM grants name the whole pool (`/*`), not a single AWS
-  role. `[main.tf:principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.aws.name}/*]`
+- Only the production and preview forms Lambda roles can exchange AWS
+  credentials in the pool, and the service-account IAM grants name only those
+  roles' principal sets, never the whole pool.
+  `[main.tf:Only the forms Lambda roles may exchange AWS credentials in this pool.]`
+  `[main.tf:member             = each.value]`
+- An apply through the wrapper refuses an AWS caller other than the account
+  the workload identity provider in state trusts.
+  `[scripts/apply.sh:require-terraform-account.sh]`
 - Tracked inputs live in `recaptcha.auto.tfvars` and must not hold secrets.
   `[recaptcha.auto.tfvars:Secrets never go here]`
 - State must already exist before an apply through the wrapper.
@@ -185,8 +206,8 @@ trust. State lives in an S3 backend. Applies go through the wrapper in
   member). `[main.tf:service = each.value]`
 - Changes project-level IAM by adding one member binding for the assessor
   service account. `[main.tf:role    = "roles/recaptchaenterprise.agent"]`
-- Lets every principal in the AWS workload identity pool impersonate and mint
-  tokens for the assessor service account.
+- Lets the two forms Lambda roles impersonate and mint tokens for the assessor
+  service account.
   `[main.tf:role               = "roles/iam.serviceAccountTokenCreator"]`
 - Calls AWS STS `GetCallerIdentity`; creates no AWS resources.
   `[main.tf:account_id = data.aws_caller_identity.current.account_id]`

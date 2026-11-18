@@ -7,7 +7,11 @@ module. Components receive already-loaded data through props; a small number
 load data themselves at build time (listed under Side Effects). Several
 components ship a client `<script>` that enhances server-rendered markup in the
 browser. Whole-page components (`*Page.astro`) wrap their output in
-`#src/layouts/PageShell.astro`.
+`#src/layouts/PageShell.astro`, directly or through another whole-page
+component: `AgencyCivilCasesPage` and `AgencyReportsPage` through
+`AgencyTopicPage`, and `CivicScopedIndexPage` through
+`CivicScopedOverviewPage`. `[AgencyReportsPage.astro:<AgencyTopicPage]`
+`[CivicScopedIndexPage.astro:CivicScopedOverviewPage]`
 
 Citations use the form `[file:text]`, where `text` appears verbatim in that file
 of this directory.
@@ -156,10 +160,16 @@ of this directory.
 - `AiComplaintSummary`: prop `summary: AiComplaintSummary`.
   `[AiComplaintSummary.astro:summary: AiComplaintSummary]`
 - `CivicScopedRowsTable`: prop `records: CivicTopicRecords`; renders a table
-  only when `records.kind` is `civil-cases`.
-  `[CivicScopedRowsTable.astro:renderTable]`
+  only when `records.kind` is `civil-cases` and `records.rows` is not empty,
+  headed by `records.totalCount` cases.
+  `[CivicScopedRowsTable.astro:renderTable && !empty]`
+  `[CivicScopedRowsTable.astro:records.totalCount.toLocaleString("en-US")]`
 - `CivilCaseScopeNote`: no props; fixed note about civil case count scopes.
-  `[CivilCaseScopeNote.astro:About these civil case counts]`
+  It says each count is of separate cases; a person's count covers every
+  agency where they worked; an agency's count covers only cases tied to
+  people's jobs at that agency; a city, county or state count covers the
+  agencies located there. `[CivilCaseScopeNote.astro:About these civil case counts]`
+  `[CivilCaseScopeNote.astro:cases of the agencies located there]`
 - `ComplaintSummaryUnavailable`: prop
   `unavailability: ComplaintSummaryUnavailability | null`; the message depends
   on `reason` (`missing_copy`, `available_unsummarized`, or anything else).
@@ -206,8 +216,15 @@ of this directory.
   Outcome inside `TableScroll`, and adds `Pagination` when there is more than
   one page. `[AgencyCivilCasesPage.astro:topicSlug="civil-cases"]`
   `[AgencyCivilCasesPage.astro:timeZone: "UTC"]`
+- `AgencyCivilCasesPage` describes the page with the total count of `rows` as
+  civil cases tied to the agency's personnel records, and ends with a fixed
+  note that a pending case is an allegation and a dismissal is not a statement
+  that no misconduct occurred.
+  `[AgencyCivilCasesPage.astro:civil cases tied to this agency's personnel records.]`
+  `[AgencyCivilCasesPage.astro:A pending case is an allegation, not a]`
 - `AgencyReportsPage` wraps `AgencyTopicPage` with `topicSlug="reports"`, lists
-  `pageReports` with `formatShortDate` incident dates, and adds `Pagination`
+  `pageReports` with a `formatShortDate` incident date when the report has
+  one, and adds `Pagination`
   when `lastPage > 1`. `[AgencyReportsPage.astro:topicSlug="reports"]`
 - `AgencyTopicPage` passes a six-item breadcrumb trail (Home, category,
   administrative area, place, agency, topic) to `PageShell` and upper-case
@@ -237,9 +254,9 @@ of this directory.
 - `CivicScopedOverviewPage` renders its slot only when `records` has rows;
   otherwise it renders one empty topic `StatCell` with a help-collect link from
   `buildHelpCollectHref`. `[CivicScopedOverviewPage.astro:hasRows]`
-- `CivicScopedRowsTable` renders columns Case, Court, Filed, Connection and
-  Agencies inside `TableScroll`, followed by `CivilCaseScopeNote`.
-  `[CivicScopedRowsTable.astro:row.connectionType]`
+- `CivicScopedRowsTable` renders columns Case, Court, Filed and Agencies
+  inside `TableScroll`, followed by `CivilCaseScopeNote`.
+  `[CivicScopedRowsTable.astro:<th scope="col">Agencies</th>]`
 - `ReportArchivePage` puts `HelpCollectDataButton` in the `actions` slot,
   renders `MetricGrid` with four columns, two sample charts, and one link per
   report with its `incidentDate` and optional `address`.

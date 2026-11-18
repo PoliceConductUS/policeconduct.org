@@ -26,6 +26,8 @@ Astro dynamic page for the routes `/federal/{slug}/`, one per federal agency. It
 - The render throws when no federal agency is found for the slug. ``[index.astro:throw new Error(`Federal agency ${slug} was not found`);]``
 - Route identity is carried only by the `slug` param; `getStaticPaths` passes no props. `[index.astro:return federalAgencies.map((agency) => ({]`
 - The record path given to `RecordDataNotes` comes from the built model, not from the route param. `[index.astro:recordPath={model.pagePath}]`
+- An office's civil cases are the cases linked to personnel assignments at that office. `[../../../lib/data/federal-agencies.ts:where case_assignment.agency_id = child_agency.id]`
+- The agency's civil case total counts each case once, even when the case is linked to more than one of its offices. `[../../../lib/data/federal-agencies.ts:civilCaseCount: civilCaseIds.length,]`
 
 ## Side Effects
 

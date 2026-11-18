@@ -30,3 +30,4 @@ Static Astro page for the route `/legal-notice/comment-policy/`: the comment pol
 ## Verification
 
 - Run: `npm run build`
+- Run: `npm run test:client` (its `scripts/public-claims.test.mjs` renders this page and checks its text for unsupported verification claims). [../../../../scripts/public-claims.test.mjs:"legal-notice/comment-policy",]

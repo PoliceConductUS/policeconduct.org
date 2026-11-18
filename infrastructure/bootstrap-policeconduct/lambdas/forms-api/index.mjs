@@ -722,7 +722,9 @@ function submissionNotificationBody({
     `submissionId: ${submissionId}`,
     `occurredAt:   ${occurredAt}`,
     `bucket:       ${bucket}`,
-    `key:          ${key}`,
+    key
+      ? `key:          ${key}`
+      : `key:          not recorded; find */${formName}/${submissionId}.json under the submissions prefix`,
   ];
 
   if (CLOCKED_FORM_NAMES.has(formName)) {
@@ -749,9 +751,10 @@ function submissionNotificationBody({
  * Deliberately non-fatal: by the time this runs the submission is already
  * durably stored, and failing the request would only push the submitter to
  * resubmit and create a duplicate record. A failure here is surfaced through
- * the `forms.notify.*` log lines (no CloudWatch metric filter or alarm reads
- * them yet) and through the independent S3 event notification on the bucket,
- * which fires whether or not this code path ran.
+ * the `forms.notify.publish_failed` log line, which a CloudWatch metric filter
+ * and alarm read (infrastructure/bootstrap-policeconduct/main.tf), and through
+ * the independent S3 event notification on the bucket, which fires whether or
+ * not this code path ran.
  */
 async function publishSubmissionNotification({
   eventType,
@@ -768,8 +771,9 @@ async function publishSubmissionNotification({
 
   if (!topicArn) {
     // This is the INS-20 state: a submission lands and nobody is told. It is
-    // logged at warn with its own message so a search or a future alarm can
-    // find it. No metric filter reads this message yet.
+    // logged at warn with its own message so a search can find it. No alarm
+    // reads this line; when it leaves nobody told, forms.notify.nobody_told
+    // alarms.
     console.warn(
       JSON.stringify({
         msg: "forms.notify.topic_not_configured",
@@ -888,7 +892,8 @@ async function sendSubmissionNotificationEmail({
 
   if (recipients.length === 0) {
     // The INS-20 state, stated out loud: a submission landed and there is
-    // nobody to tell. Logged with its own message; no alarm reads it yet.
+    // nobody to tell. Logged with its own message. No alarm reads this line;
+    // when it leaves nobody told, forms.notify.nobody_told alarms.
     console.warn(
       JSON.stringify({
         msg: "forms.notify.recipients_not_configured",
@@ -1099,8 +1104,9 @@ async function writeNotificationReceipt({
  * Every step is non-fatal. By the time this runs the submission is durably
  * stored; failing the request would only push the submitter to resubmit and
  * create a duplicate record about a named person. Failures surface through the
- * `forms.notify.*` log lines and the receipt. No CloudWatch metric filter or
- * alarm reads those log lines yet.
+ * `forms.notify.*` log lines and the receipt. A CloudWatch metric filter and
+ * alarm read each error-level line: nobody_told, publish_failed, email_failed,
+ * email_misconfigured and receipt_failed (infrastructure/bootstrap-policeconduct/main.tf).
  */
 async function notifySubmissionEvent({
   eventType,
@@ -1138,7 +1144,7 @@ async function notifySubmissionEvent({
 
   // Nothing reached a human. This is the condition the whole issue exists to
   // prevent, so it gets its own log line rather than being inferred from the
-  // absence of a success line. No alarm reads this log line yet.
+  // absence of a success line. A CloudWatch alarm reads this log line.
   if (!sns.published && !email.sent) {
     console.error(
       JSON.stringify({
@@ -1682,12 +1688,18 @@ async function verifySubmissionLink(event, requestId) {
   await saveSubmissionStatus(record.submissionId, "in_review", verificationId);
 
   // Notify staff after the verified record and review status are persisted.
+  // A record written before submissionKey was stored has no key. Its received
+  // date is not on the record, so the key is not guessed: the notification says
+  // the key was not recorded and how to find the object.
   await notifySubmissionEvent({
     eventType: "verified",
     formName: record.formName || "unknown",
     submissionId: record.submissionId,
     bucket: config.bucket,
-    key: `${config.prefix}status/${record.submissionId}.json`,
+    key:
+      typeof record.submissionKey === "string" && record.submissionKey
+        ? record.submissionKey
+        : null,
     kmsKeyId: config.kmsKeyId,
     occurredAt: verifiedAt,
     requestId,
@@ -2152,6 +2164,10 @@ async function submitForm(event, requestId) {
     ),
     resendCount: 0,
     submissionId,
+    // The staff notification points at this object once the email address is
+    // confirmed. Store the key itself: it holds the received date, which is not
+    // recoverable from the verification record's own timestamps.
+    submissionKey: key,
     usedAt: null,
     verificationId,
     verifiedAt: null,

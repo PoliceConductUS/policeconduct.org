@@ -100,6 +100,29 @@ preflight_recaptcha_requirements() {
   fi
 }
 
+# The submission-notifications root owns the topic. Its output is the only
+# source of the ARN: an empty value would clear SUBMISSION_NOTIFICATIONS_TOPIC_ARN
+# on both forms Lambdas and remove their sns:Publish grant. A value already set
+# in the shell or .env must equal the output.
+resolve_submission_notifications_topic_arn() {
+  local preset="${TF_VAR_submission_notifications_topic_arn-}"
+  local topic_env
+  unset SUBMISSION_NOTIFICATIONS_TOPIC_ARN
+  if ! topic_env="$(cd "${REPO_ROOT}" && node scripts/terraform-outputs.mjs SUBMISSION_NOTIFICATIONS_TOPIC_ARN)"; then
+    echo "Error: refusing apply: could not read the submission_notifications_topic_arn output of infrastructure/submission-notifications." >&2
+    echo "Apply infrastructure/submission-notifications first, then rerun this script." >&2
+    exit 1
+  fi
+  eval "${topic_env}"
+  if [[ -n "${preset}" && "${preset}" != "${SUBMISSION_NOTIFICATIONS_TOPIC_ARN}" ]]; then
+    echo "Error: refusing apply: TF_VAR_submission_notifications_topic_arn does not match the submission_notifications_topic_arn output of infrastructure/submission-notifications." >&2
+    echo "Remove TF_VAR_submission_notifications_topic_arn from the shell and .env; this script reads the output." >&2
+    exit 1
+  fi
+  export TF_VAR_submission_notifications_topic_arn="${SUBMISSION_NOTIFICATIONS_TOPIC_ARN}"
+  unset SUBMISSION_NOTIFICATIONS_TOPIC_ARN
+}
+
 preflight_account_check() {
   bash "${REPO_ROOT}/scripts/require-terraform-account.sh" "${ROOT_DIR}"
 }
@@ -190,6 +213,7 @@ run_foundation_apply() {
 }
 
 load_dotenv_if_present
+resolve_submission_notifications_topic_arn
 # Every /policeconduct.org/ parameter must be a SecureString.
 node "${REPO_ROOT}/scripts/audit-parameter-store.mjs"
 # Secrets come only from Parameter Store. Drop any Terraform copy the .env files

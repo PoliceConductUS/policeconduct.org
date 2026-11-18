@@ -13,7 +13,7 @@ Static Astro page for the route `/help-center/`. It renders fixed guidance on wr
 - Structured data: one object from `buildWebPage({ siteUrl, pageUrl, name, description })`, with `siteUrl` from `getSiteUrl(Astro.site)` (both from `#src/lib/structured-data.js`). `[index.astro:const structuredData = buildWebPage({]`
 - Breadcrumbs: `Home` (`/`) then `Help Center` (current). `[index.astro:{ label: "Help Center", href: pagePath, current: true },]`
 - Body: an audience card, then six `section.py-vh-2` blocks: the first holds only an alert, and the other five are numbered and use `ipc-section-title` (`h2`) and `ipc-subsection-title` (`h3`) headings. `[index.astro:<div class="alert alert-light border-dark rounded-0 mb-0">]`
-- The last section is a two-column quick-links table (`Goal`, `Recommended action`) with four rows; it contains no links. `[index.astro:<th scope="col">Recommended action</th>]`
+- The last section is a two-column quick-links table (`Goal`, `Recommended action`) with three rows (`Preserve evidence`, `Fix a mistake`, `Report doxing`); it contains no links. `[index.astro:<th scope="col">Recommended action</th>]`
 - The layout and the structured-data helpers are the only imports: no components from `src/components/`, no loaders, no forms, no client scripts and no page-local styles. `[index.astro:import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";]`
 
 ## Invariants
@@ -28,3 +28,4 @@ Static Astro page for the route `/help-center/`. It renders fixed guidance on wr
 ## Verification
 
 - Run: `npm run build`
+- Run: `npm run test:e2e` (`tests/e2e/content-pages-smoke.spec.ts` loads this page and checks its `h1`). [../../../tests/e2e/content-pages-smoke.spec.ts:path: "/help-center/",]
