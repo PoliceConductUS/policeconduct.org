@@ -108,10 +108,15 @@ import PrefillNavButton from "#src/components/PrefillNavButton.astro";
             novalidate
           >
             <input type="hidden" name="form-name" value="volunteer" />
-            <div class="honeypot visually-hidden">
+            <div class="honeypot visually-hidden" aria-hidden="true">
               <label>
                 Organization
-                <input type="text" name="organization" />
+                <input
+                  type="text"
+                  name="organization"
+                  tabindex="-1"
+                  autocomplete="off"
+                />
               </label>
             </div>
             <div class="form-floating mb-3">
