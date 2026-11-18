@@ -5,7 +5,8 @@
 # Usage: deploy.sh <environment> [--skip-build] [--dry-run]
 #   <environment>  prod, preview, or any other environment that has Terraform outputs.
 #   --skip-build   Upload the completed build already in dist/ and .release/.
-#   --dry-run      Show the upload destinations without changing anything.
+#   --dry-run      Show the upload destinations without uploading. It still builds
+#                  unless --skip-build is also given.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

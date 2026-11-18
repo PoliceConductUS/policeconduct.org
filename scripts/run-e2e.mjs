@@ -211,11 +211,14 @@ try {
 
   const exitCode = await new Promise((resolve) => {
     playwright.once("exit", (code, signal) => {
+      // A run a signal stopped did not finish, so it must not count as a pass.
       if (signal) {
         console.error(`Playwright exited with ${signal}`);
+        resolve(1);
+        return;
       }
 
-      resolve(code || 0);
+      resolve(code ?? 1);
     });
   });
 
