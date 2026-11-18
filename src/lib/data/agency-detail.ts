@@ -6,7 +6,10 @@ import { isEndedAssignment, isCurrentAssignment } from "./assignment-status.js";
 import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
 import { normalizeLicenseStatus, normalizeLicenseType } from "./licensing.js";
-import { requireAgencyCanonicalPath } from "./location-paths.js";
+import {
+  requireAgencyCanonicalPath,
+  requireAgencyStateSlug,
+} from "./location-paths.js";
 
 type PersonnelLinkedCivilCaseRow = {
   civil_case_id: string;
@@ -592,7 +595,7 @@ const buildAgencyDetail = async (agencyId: string) => {
     "slug",
     agencyRequiredId,
   );
-  const categorySlug = agencyState.toLowerCase();
+  const categorySlug = requireAgencyStateSlug(data.agency);
   const categoryMeta = US_STATE_TILES.find(
     (entry) => entry.code.toLowerCase() === categorySlug,
   );

@@ -265,11 +265,13 @@ export const buildSitemapLastmodMap = async () => {
               ao.start_date,
               ao.created_at,
               ao.updated_at,
-              lower(a.state) as agency_state,
+              split_part(lp.path, '/', 2) as agency_state,
               a.updated_at as agency_updated_at,
               count(*) over (partition by ao.agency_id) as active_personnel_count
             from public.agency_personnel ao
             join public.agency a on a.id = ao.agency_id
+            join public.location_path lp
+              on lp.location_path_id = a.location_path_id
             where ${currentAssignmentSql("ao")}
           ),
           officer_report_counts as (

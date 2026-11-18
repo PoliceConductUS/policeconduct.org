@@ -28,6 +28,18 @@ export const buildAgencyCanonicalPath = (agency: AgencyLocationInput) => {
   return `${locationPath}${agencySlug}/`;
 };
 
+export const requireAgencyStateSlug = (agency: AgencyLocationInput) => {
+  const [stateSlug] = (getAgencyLocationPath(agency) || "")
+    .split("/")
+    .filter(Boolean);
+  if (!stateSlug) {
+    throw new Error(
+      `Agency ${agency.id || agency.slug || "unknown"} is missing a location_path_id-backed state`,
+    );
+  }
+  return stateSlug;
+};
+
 export const requireAgencyCanonicalPath = (agency: AgencyLocationInput) => {
   const canonicalPath = buildAgencyCanonicalPath(agency);
   if (!canonicalPath) {

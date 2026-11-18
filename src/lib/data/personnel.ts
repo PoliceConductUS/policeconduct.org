@@ -1,7 +1,10 @@
 import { currentAssignmentSql } from "#src/lib/data/annotation-access.js";
 import { withDb } from "#src/lib/db.js";
 import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
-import { requireAgencyCanonicalPath } from "./location-paths.js";
+import {
+  requireAgencyCanonicalPath,
+  requireAgencyStateSlug,
+} from "./location-paths.js";
 import type { PersonnelSummary } from "./types.js";
 
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
@@ -170,7 +173,7 @@ export const loadPersonnelSummaries = async (
         nameSuffix: officer.suffix || null,
         title: eligibleAssignment?.title || null,
         agencyName: agency.name,
-        agencyState: String(agency.state || "").toLowerCase(),
+        agencyState: requireAgencyStateSlug(agency),
         agencyCanonicalPath: requireAgencyCanonicalPath(agency),
         reportCount: Number(
           reportCountsByOfficer[officer.id]?.report_count || 0,
