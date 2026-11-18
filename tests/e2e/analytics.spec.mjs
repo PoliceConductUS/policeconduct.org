@@ -69,9 +69,12 @@ async function visitSite(page, baseURL, url, options = {}) {
       requested.hostname === "preview.example.org" ||
       requested.origin === new URL(baseURL).origin
     ) {
+      // The dev server resets an idle keep-alive connection that is reused
+      // while it renders a slow page for the other worker. maxRetries resends
+      // only after that reset (ECONNRESET), never after an HTTP error.
       const response = await page.request.fetch(
         new URL(requested.pathname + requested.search, baseURL).href,
-        { method: request.method() },
+        { method: request.method(), maxRetries: 3 },
       );
       await route.fulfill({ response });
       return;
