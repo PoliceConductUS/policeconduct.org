@@ -336,20 +336,30 @@ independent from external services.
 
 ### Preview Deploy
 
-Set `PR_NUMBER`, `S3_BUCKET_PREVIEW`, `RELEASE_DATA_BUCKET_PREVIEW`, and
-`KVS_ARN_PREVIEW`, then run `npm run deploy:preview`. The build uses the
-PR's preview URL and generates a unique release ID. To retry an upload,
-use `npm run deploy:preview:sync` with the same completed build.
+One command deploys to any environment: `npm run deploy -- <environment>`.
+The environment is `prod`, `preview`, or any other environment that has
+Terraform outputs. Add `--skip-build` to upload the completed build already on
+disk, and `--dry-run` to see the upload destinations without publishing.
+
+Set `PR_NUMBER` or `PREVIEW_NAME`, then run `npm run deploy -- preview`. The
+build uses that preview URL and the current commit as its release ID. To retry
+an upload with the same completed build, run
+`npm run deploy -- preview --skip-build`. Bucket and redirect store names come
+from Terraform outputs.
+
+Every host except the production hosts answers `/robots.txt` with a deny-all
+file from the CloudFront router, so the same build can be served on a preview
+host and in production.
 
 ### Production Deploy
 
 Before production release, require an error-free full final build and sitemap
 verification for the release artifact. Record these separately from PR merge
-evidence. Set `S3_BUCKET`, `RELEASE_DATA_BUCKET`, and `KVS_ARN` in the
-deployment environment. The bootstrap environment sync supplies these values.
+evidence. Bucket and redirect store names come from Terraform outputs. Run it
+from `main`:
 
 ```bash
-npm run deploy:prod
+npm run deploy -- prod
 ```
 
 A release keeps all public originals under `builds/<release-id>/static/`.
@@ -357,7 +367,7 @@ The separate private bucket holds the roster and page records under
 `builds/<release-id>/data/`. Uploads can resume. Promotion checks for the
 completed release, loads its redirects, then selects it in CloudFront.
 To promote a completed local build without rebuilding, run
-`npm run deploy:prod -- --skip-build`. To see the upload destinations before
+`npm run deploy -- prod --skip-build`. To see the upload destinations before
 publishing, add `--dry-run`. To switch back to a previously uploaded release,
 run `bash scripts/promote.sh <production-release-id>` with the same environment.
 
@@ -454,7 +464,7 @@ Use `npm run analytics:pull`, `npm run analytics:compare`, and `npm run analytic
 
 ## Deployment folders
 
-Run `npm run deploy:preview` with `PR_NUMBER` or `PREVIEW_NAME` to build and upload to the preview bucket. Run `npm run deploy:prod` from main to upload to the site bucket and mirror the completed main build to bare preview. Both require a clean repository (no staged, unstaged or untracked changes) and use the full current Git commit as the folder. Uploading an existing build also requires its recorded commit and folder to match the current commit.
+Run `npm run deploy -- preview` with `PR_NUMBER` or `PREVIEW_NAME` to build and upload to the preview bucket. Run `npm run deploy -- prod` from main to upload to the site bucket and mirror the completed main build to bare preview. Both require a clean repository (no staged, unstaged or untracked changes) and use the full current Git commit as the folder. Uploading an existing build also requires its recorded commit and folder to match the current commit.
 
 Hosting stores originals at `<folder>/build/` and published replacements at `<folder>/override/`. Uploading a build leaves its overrides intact. Private records remain in the private release-data bucket.
 

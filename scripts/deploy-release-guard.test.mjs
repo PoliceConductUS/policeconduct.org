@@ -37,15 +37,10 @@ function initializeRepository(dir) {
 }
 
 for (const [name, script, args, builds] of [
-  ["preview sync", "deploy-preview-sync.sh", [], false],
-  ["preview build", "deploy-preview.sh", [], true],
-  ["production build", "deploy-prod.sh", [], true],
-  [
-    "production existing build",
-    "deploy-prod.sh",
-    ["--skip-build"],
-    false,
-  ],
+  ["preview sync", "deploy.sh", ["preview", "--skip-build"], false],
+  ["preview build", "deploy.sh", ["preview"], true],
+  ["production build", "deploy.sh", ["prod"], true],
+  ["production existing build", "deploy.sh", ["prod", "--skip-build"], false],
 ]) {
   for (const fails of [true, false]) {
     test(`${name}: ${fails ? "failed coverage stops publishing" : "coverage precedes publishing"}`, () => {
@@ -57,10 +52,6 @@ for (const [name, script, args, builds] of [
         mkdirSync(join(root, "bin"));
         mkdirSync(join(root, "dist"));
         writeFileSync(join(root, "dist/index.html"), "fixture");
-        writeFileSync(
-          join(root, "dist/robots.txt"),
-          "User-agent: *\nDisallow: /\n",
-        );
         mkdirSync(join(root, ".release/data"), { recursive: true });
         writeFileSync(join(root, ".release/data/index.json"), "{}");
         writeFileSync(
@@ -71,13 +62,11 @@ for (const [name, script, args, builds] of [
         const preview = name.startsWith("preview");
         let releaseId;
         for (const file of [
-          "deploy-preview.sh",
+          "deploy.sh",
           "upload-release.sh",
           "release-files.mjs",
           "terraform-outputs.mjs",
-          "deploy-preview-sync.sh",
           "workspace-sync.sh",
-          "deploy-prod.sh",
         ]) {
           copyFileSync(
             new URL(file, import.meta.url),
@@ -282,11 +271,8 @@ test("successful builds bind matching folder IDs to the site and private roster;
         readFileSync(join(dir, ".release/data/dynamic.json"), "utf8"),
         id,
       );
-      if (pr)
-        assert.equal(
-          readFileSync(join(dir, "dist/robots.txt"), "utf8"),
-          "User-agent: *\nDisallow: /\n",
-        );
+      // The router denies crawlers on non-production hosts; the build never does.
+      assert.equal(existsSync(join(dir, "dist/robots.txt")), false);
       const check = () =>
         spawnSync(
           process.execPath,

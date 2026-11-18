@@ -58,6 +58,20 @@ async function handler(event) {
     return redirect("https://" + canonicalHost + uri, request.querystring);
   }
 
+  // One build serves every host, so only the production hosts may be crawled.
+  // Every other host answers with a deny-all file instead of the build's own.
+  if (uri === "/robots.txt" && host !== apexHost && host !== canonicalHost) {
+    return {
+      statusCode: 200,
+      statusDescription: "OK",
+      headers: {
+        "content-type": { value: "text/plain; charset=utf-8" },
+        "cache-control": { value: "no-store" },
+      },
+      body: { encoding: "text", data: "User-agent: *\nDisallow: /\n" },
+    };
+  }
+
   const missing = { statusCode: 404, statusDescription: "Not Found" };
   let pathForValidation;
   try {

@@ -196,7 +196,7 @@ change with rollback. Do not run an untargeted Terraform apply for email repairs
 
 - `RESEND_API_KEY`: send-only key the forms Lambda uses to send email. Each environment has its own key, at `/policeconduct.org/production/secrets/RESEND_API_KEY` and `/policeconduct.org/preview/secrets/RESEND_API_KEY`. `apply.sh` stops if either is missing; one environment never uses the other's key
 - `RESEND_API_KEY_FULL_ACCESS`: full-access key used only by `scripts/bootstrap-resend-domain.mjs` for Resend Domains API calls. The script reads it from Parameter Store on every run and ignores any value in the environment
-- `SENTRY_AUTH_TOKEN`: written to the GitHub `production` environment only, with `SENTRY_ORG` and `SENTRY_PROJECT`. `npm run deploy:prod` also reads it from Parameter Store so the production release build uploads its sourcemaps to Sentry
+- `SENTRY_AUTH_TOKEN`: written to the GitHub `production` environment only, with `SENTRY_ORG` and `SENTRY_PROJECT`. `npm run deploy -- prod` also reads it from Parameter Store so the production release build uploads its sourcemaps to Sentry
 - `GITHUB_TOKEN`: used by the Terraform GitHub provider
 
 To add or change a shared secret, run `npm run secret:set -- <NAME> < <file>`. For a secret that differs by environment, name the environment first: `npm run secret:set -- preview RESEND_API_KEY < <file>`. The command reads the value from standard input and always stores it as a SecureString.

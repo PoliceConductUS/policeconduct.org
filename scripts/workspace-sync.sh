@@ -4,7 +4,7 @@ set -euo pipefail
 stage="${1:?stage required}"
 environment="${2:?environment required}"
 case "$stage" in preflight|after) ;; *) echo 'Invalid workspace sync stage' >&2; exit 2 ;; esac
-case "$environment" in preview|production) ;; *) echo 'Invalid deployment environment' >&2; exit 2 ;; esac
+[[ "$environment" =~ ^[a-z][a-z0-9-]*$ ]] || { echo 'Invalid deployment environment' >&2; exit 2; }
 choice="${WORKSPACE_SYNC:-}"
 case "$choice" in
   upload|skip) ;;

@@ -80,13 +80,12 @@ and never read stdin. Upload requires `INTAKE_WORKSPACE` and
 nonzero exit; no hosting rollback is attempted.
 
 ```sh
-WORKSPACE_SYNC=skip npm run deploy:preview
-WORKSPACE_SYNC=upload npm run deploy:preview:sync
-WORKSPACE_SYNC=skip npm run deploy:prod -- --skip-build
+WORKSPACE_SYNC=skip npm run deploy -- preview
+WORKSPACE_SYNC=upload npm run deploy -- preview --skip-build
+WORKSPACE_SYNC=skip npm run deploy -- prod --skip-build
 ```
 
-The actual upload sites are `deploy-preview-sync.sh` (also called by
-`deploy-preview.sh`) and `deploy-prod.sh`. Only the separate workspace push uses the configured workspace leaf name as its remote prefix; hosting destinations are unchanged. The prompt happens immediately after
+The actual upload site is `deploy.sh`, for every environment. Only the separate workspace push uses the configured workspace leaf name as its remote prefix; hosting destinations are unchanged. The prompt happens immediately after
 the S3 hosting upload. Failed hosting uploads and production dry-runs do not
 prompt or upload workspaces. A no-content-change production run does not perform
 a hosting upload and therefore does not prompt. Hosting promotion and preview

@@ -7,7 +7,7 @@ import { resolveTerraformEnv } from "./terraform-outputs.mjs";
 if (existsSync(".env")) process.loadEnvFile(".env");
 resolveTerraformEnv(["RECAPTCHA_SITE_KEY"]);
 
-// scripts/deploy-prod.sh asks for this on a production release. The auth
+// scripts/deploy.sh asks for this on a production release. The auth
 // token is a secret, so it comes from Parameter Store and nowhere else.
 if (process.env.SENTRY_SOURCEMAPS === "upload") {
   resolveTerraformEnv(["SENTRY_ORG", "SENTRY_PROJECT"]);
@@ -69,8 +69,6 @@ writeFileSync(
   JSON.stringify({ commit, branch, pr: pr || null }),
 );
 execFileSync("npm", ["run", "build:site"], options);
-if (pr || process.env.PREVIEW_NAME)
-  writeFileSync("dist/robots.txt", "User-agent: *\nDisallow: /\n");
 execFileSync(process.execPath, ["scripts/write-release-news.mjs"], options);
 execFileSync(
   process.execPath,
