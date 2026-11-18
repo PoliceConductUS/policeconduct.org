@@ -193,7 +193,7 @@ const topicMetricsFor = (
         ...metricVisuals.agencies,
         detail: "Assignment history coverage is not projected yet",
         key: "assignments",
-        value: "$--",
+        value: "--",
       },
       {
         ...metricVisuals.reports,
@@ -205,7 +205,7 @@ const topicMetricsFor = (
         ...metricVisuals.latestPersonnelUpdate,
         detail: "Personnel update recency is not projected yet",
         key: "latestPersonnelUpdate",
-        value: "$--",
+        value: "--",
       },
     ];
   }
@@ -235,7 +235,7 @@ const topicMetricsFor = (
         ...metricVisuals.latestRecordedYear,
         detail: "Report recency is not projected yet",
         key: "latestRecordedYear",
-        value: "$--",
+        value: "--",
       },
     ];
   }
@@ -253,13 +253,13 @@ const topicMetricsFor = (
         ...metricVisuals.caseTypes,
         detail: "Case type coverage is not projected yet",
         key: "caseTypes",
-        value: "$--",
+        value: "--",
       },
       {
         ...metricVisuals.caseOutcomes,
         detail: "Outcome coverage is not projected yet",
         key: "caseOutcomes",
-        value: "$--",
+        value: "--",
       },
       {
         ...metricVisuals.reports,
@@ -271,7 +271,7 @@ const topicMetricsFor = (
         ...metricVisuals.latestCaseActivity,
         detail: "Case activity recency is not projected yet",
         key: "latestCaseActivity",
-        value: "$--",
+        value: "--",
       },
     ];
   }
@@ -309,7 +309,7 @@ const topicMetricsFor = (
         detail:
           "Direct federal-agency fiscal-year coverage is not projected yet",
         key: "latestFiscalYear",
-        value: "$--",
+        value: "--",
       },
     ];
   }
@@ -350,7 +350,7 @@ const topicMetricsFor = (
       detail:
         "Direct federal-agency liability-cost recency is not projected yet",
       key: "latestRecordedYear",
-      value: "$--",
+      value: "--",
     },
   ];
 };
