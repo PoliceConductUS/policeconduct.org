@@ -16,6 +16,22 @@ test.describe("home map", () => {
     }
   });
 
+  test("shows a focused state's counts without hovering", async ({ page }) => {
+    await page.goto("/");
+
+    const stateLink = page.locator(
+      '[data-usa-map] [data-map-link-type="state"][data-state-id="tx"]',
+    );
+    const readout = page.locator("[data-usa-map-readout]");
+    await expect(readout).toHaveText("");
+    await stateLink.focus();
+    await expect(readout).toHaveText(/^Texas: /);
+    await expect(stateLink).toHaveAttribute(
+      "aria-label",
+      `View ${await readout.textContent()}`,
+    );
+  });
+
   test("clicks a colored state and navigates to records", async ({ page }) => {
     await page.goto("/");
 

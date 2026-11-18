@@ -5,11 +5,24 @@ const environment = import.meta.env.PUBLIC_SENTRY_ENVIRONMENT.trim();
 const release =
   (import.meta.env.PUBLIC_SENTRY_RELEASE || "").trim() || undefined;
 const isProduction = environment === "production";
-const feedback = Sentry.feedbackIntegration({
-  autoInject: false,
-});
-let feedbackDialog: Awaited<ReturnType<typeof feedback.createForm>> | null =
-  null;
+type Feedback = ReturnType<typeof Sentry.feedbackIntegration>;
+
+let feedbackPromise: Promise<Feedback> | null = null;
+let feedbackDialog: Awaited<ReturnType<Feedback["createForm"]>> | null = null;
+
+const loadFeedback = () =>
+  (feedbackPromise ??= import("./src/lib/client/sentry-feedback").then(
+    ({ feedbackIntegration }) => {
+      const feedback = feedbackIntegration({ autoInject: false });
+      Sentry.addIntegration(feedback);
+      return feedback;
+    },
+  ));
+
+const loadReplay = () =>
+  import("./src/lib/client/sentry-replay").then(({ replayIntegration }) => {
+    Sentry.addIntegration(replayIntegration());
+  });
 
 declare global {
   interface Window {
@@ -44,8 +57,6 @@ Sentry.init({
     Sentry.consoleLoggingIntegration({
       levels: ["log", "warn", "error"],
     }),
-    feedback,
-    Sentry.replayIntegration(),
     Sentry.browserProfilingIntegration(),
   ],
   profileLifecycle: "trace",
@@ -55,9 +66,21 @@ Sentry.init({
   tracesSampleRate: isProduction ? 0.1 : 1.0,
 });
 
+const whenIdle = (callback: () => void) =>
+  typeof window.requestIdleCallback === "function"
+    ? window.requestIdleCallback(callback)
+    : setTimeout(callback, 1);
+
+if (document.readyState === "complete") {
+  whenIdle(loadReplay);
+} else {
+  window.addEventListener("load", () => whenIdle(loadReplay), { once: true });
+}
+
 window.__IPC_SENTRY_FEEDBACK__ = {
   async open(options) {
     if (!feedbackDialog) {
+      const feedback = await loadFeedback();
       feedbackDialog = await feedback.createForm({
         isEmailRequired: false,
         isNameRequired: false,

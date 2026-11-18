@@ -197,6 +197,31 @@ const faqEntries = [
       "We aim to publish every report, but submissions may be rejected or heavily redacted if they include hate speech, spam, or private information about uninvolved third parties.",
   },
   {
+    question: "Are the counts on agency pages a rating?",
+    answer:
+      "No. Counts show how many records this site has for an agency. They do not rate the agency.",
+  },
+  {
+    question: "Where do personnel listings come from?",
+    answer:
+      "Personnel listings come from state licensing data. A listing shows where someone has worked. It is not an allegation.",
+  },
+  {
+    question: "Is a published report a court finding?",
+    answer:
+      "No. A report is the submitter's account, with any public records linked to it. Publishing it is not a court finding.",
+  },
+  {
+    question: "What does a civil case on this site mean?",
+    answer:
+      "Civil case records come from court dockets. A pending case is an allegation, not a finding. A dismissal is a court outcome, not a statement that no misconduct happened.",
+  },
+  {
+    question: "Why does the same civil case appear on more than one page?",
+    answer:
+      "A civil case is listed on the page of each agency whose personnel it names, and on the state, county, and city pages where those agencies are located. A case that names officers from two agencies appears on both agencies' pages. The list at /civil-cases/ shows each case once.",
+  },
+  {
     question: "Why are you a national nonprofit, and why Delaware?",
     answer:
       "Police conduct is a national issue, and we operate a centralized, secure database for all 50 states. We are incorporated in Delaware as a 501(c)(3) and comply with the solicitation laws of the states where we actively fundraise.",
@@ -1316,6 +1341,145 @@ structuredData.mainEntity = faqEntries.map((entry) => ({
           We aim to publish every report, but submissions may be rejected or
           heavily redacted if they include hate speech, spam, or private
           information about uninvolved third parties.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="ipc-section-title text-uppercase text-muted mb-3">
+    Records on this site
+  </h2>
+  <div class="accordion mb-5" id="faqAccordionRecords">
+    <div class="accordion-item">
+      <h3 class="accordion-header" id="faqRecordCounts">
+        <button
+          class="accordion-button"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#faqRecordCountsPanel"
+          aria-expanded="true"
+          aria-controls="faqRecordCountsPanel"
+        >
+          Are the counts on agency pages a rating?
+        </button>
+      </h3>
+      <div
+        id="faqRecordCountsPanel"
+        class="accordion-collapse collapse show"
+        aria-labelledby="faqRecordCounts"
+        data-bs-parent="#faqAccordionRecords"
+      >
+        <div class="accordion-body">
+          No. Counts show how many records this site has for an agency. They do
+          not rate the agency.
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h3 class="accordion-header" id="faqPersonnelListings">
+        <button
+          class="accordion-button collapsed"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#faqPersonnelListingsPanel"
+          aria-expanded="false"
+          aria-controls="faqPersonnelListingsPanel"
+        >
+          Where do personnel listings come from?
+        </button>
+      </h3>
+      <div
+        id="faqPersonnelListingsPanel"
+        class="accordion-collapse collapse"
+        aria-labelledby="faqPersonnelListings"
+        data-bs-parent="#faqAccordionRecords"
+      >
+        <div class="accordion-body">
+          Personnel listings come from state licensing data. A listing shows
+          where someone has worked. It is not an allegation.
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h3 class="accordion-header" id="faqReportFindings">
+        <button
+          class="accordion-button collapsed"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#faqReportFindingsPanel"
+          aria-expanded="false"
+          aria-controls="faqReportFindingsPanel"
+        >
+          Is a published report a court finding?
+        </button>
+      </h3>
+      <div
+        id="faqReportFindingsPanel"
+        class="accordion-collapse collapse"
+        aria-labelledby="faqReportFindings"
+        data-bs-parent="#faqAccordionRecords"
+      >
+        <div class="accordion-body">
+          No. A report is the submitter's account, with any public records
+          linked to it. Publishing it is not a court finding.
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h3 class="accordion-header" id="faqCivilCaseMeaning">
+        <button
+          class="accordion-button collapsed"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#faqCivilCaseMeaningPanel"
+          aria-expanded="false"
+          aria-controls="faqCivilCaseMeaningPanel"
+        >
+          What does a civil case on this site mean?
+        </button>
+      </h3>
+      <div
+        id="faqCivilCaseMeaningPanel"
+        class="accordion-collapse collapse"
+        aria-labelledby="faqCivilCaseMeaning"
+        data-bs-parent="#faqAccordionRecords"
+      >
+        <div class="accordion-body">
+          Civil case records come from court dockets. A pending case is an
+          allegation, not a finding. A dismissal is a court outcome, not a
+          statement that no misconduct happened.
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h3 class="accordion-header" id="faqCivilCaseRepeats">
+        <button
+          class="accordion-button collapsed"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#faqCivilCaseRepeatsPanel"
+          aria-expanded="false"
+          aria-controls="faqCivilCaseRepeatsPanel"
+        >
+          Why does the same civil case appear on more than one page?
+        </button>
+      </h3>
+      <div
+        id="faqCivilCaseRepeatsPanel"
+        class="accordion-collapse collapse"
+        aria-labelledby="faqCivilCaseRepeats"
+        data-bs-parent="#faqAccordionRecords"
+      >
+        <div class="accordion-body">
+          A civil case is listed on the page of each agency whose personnel it
+          names, and on the state, county, and city pages where those agencies
+          are located. A case that names officers from two agencies appears on
+          both agencies' pages. The <a href="/civil-cases/">civil case list</a>{" "}
+          shows each case once.
         </div>
       </div>
     </div>

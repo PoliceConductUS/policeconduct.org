@@ -1,5 +1,4 @@
 ---
-import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import DataPanel from "#src/components/DataPanel.astro";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
@@ -25,7 +24,6 @@ const structuredData = buildWebPage({
   description: model.description,
   type: "CollectionPage",
 });
-const showCivilCaseScopeNote = model.pagePath.includes("/civil-cases/");
 const isFederalTopicPage =
   /\/(personnel|reports|budget|civil-cases|liability-costs|outcomes-by-income)\/$/.test(
     model.pagePath,
@@ -61,6 +59,11 @@ const sampleRows = [
         placeholder={model.searchPlaceholder}
         data-civic-hierarchy-filter-input
       />
+      <span
+        class="visually-hidden"
+        role="status"
+        data-civic-hierarchy-filter-status
+      ></span>
     </label>
   </Fragment>
 
@@ -185,20 +188,15 @@ const sampleRows = [
                   );
                 })}
                 <td>
-                  <a href={row.href}>View</a>
+                  <a href={row.href}>
+                    View<span class="visually-hidden"> {row.label}</span>
+                  </a>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {showCivilCaseScopeNote ? (
-        <CivilCaseScopeNote>
-          A case counts for an agency when it names someone who has worked
-          there. The case can be about that person's work at another agency, so
-          the same case can count for more than one agency.
-        </CivilCaseScopeNote>
-      ) : null}
     </section>
   )}
   <script is:inline>
@@ -207,15 +205,26 @@ const sampleRows = [
       .forEach((input) => {
         input.addEventListener("input", () => {
           const query = input.value.trim().toLowerCase();
-          document
-            .querySelectorAll("[data-civic-hierarchy-filter-item]")
-            .forEach((item) => {
-              const text =
-                item
-                  .getAttribute("data-civic-hierarchy-filter-text")
-                  ?.toLowerCase() || "";
-              item.hidden = Boolean(query) && !text.includes(query);
-            });
+          const items = document.querySelectorAll(
+            "[data-civic-hierarchy-filter-item]",
+          );
+          let shown = 0;
+          items.forEach((item) => {
+            const text =
+              item
+                .getAttribute("data-civic-hierarchy-filter-text")
+                ?.toLowerCase() || "";
+            item.hidden = Boolean(query) && !text.includes(query);
+            if (!item.hidden) shown += 1;
+          });
+          const status = input
+            .closest("label")
+            ?.querySelector("[data-civic-hierarchy-filter-status]");
+          if (status) {
+            status.textContent = query
+              ? `${shown} of ${items.length} shown`
+              : "";
+          }
         });
       });
   </script>
