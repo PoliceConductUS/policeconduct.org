@@ -1,31 +1,31 @@
 #!/usr/bin/env bash
-# delete-noncurrent-s3-versions.sh — delete all noncurrent object versions
-# and noncurrent delete markers from a versioned S3 bucket.
+# delete-noncurrent-s3-versions.sh — delete the noncurrent object versions and
+# noncurrent delete markers under one commit folder of a versioned S3 bucket.
 #
 # Usage:
-#   ./scripts/delete-noncurrent-s3-versions.sh
-#   ./scripts/delete-noncurrent-s3-versions.sh --dry-run
-#   ./scripts/delete-noncurrent-s3-versions.sh --execute
-#   ./scripts/delete-noncurrent-s3-versions.sh --bucket other-bucket --execute
+#   ./scripts/delete-noncurrent-s3-versions.sh --bucket <name> --folder <commit>
+#   ./scripts/delete-noncurrent-s3-versions.sh --bucket <name> --folder <commit> --execute
 set -euo pipefail
 
-DEFAULT_BUCKET="policeconduct-site-942370948729"
-BUCKET="${DEFAULT_BUCKET}"
+BUCKET=""
+FOLDER=""
 EXECUTE=false
 
 usage() {
   cat <<'EOF'
 Usage:
-  ./scripts/delete-noncurrent-s3-versions.sh [--bucket <name>] [--dry-run|--execute]
+  ./scripts/delete-noncurrent-s3-versions.sh --bucket <name> --folder <commit> [--dry-run|--execute]
 
 Options:
-  --bucket <name>  S3 bucket name. Defaults to policeconduct-site-942370948729.
-  --dry-run        Show what would be deleted without deleting anything.
-  --execute        Delete all noncurrent object versions and delete markers.
-  --help           Show this help message.
+  --bucket <name>    S3 bucket name. Required.
+  --folder <commit>  Commit folder to clean, such as <commit> in the site bucket
+                     or builds/<commit> in the release data bucket. Required.
+  --dry-run          Show what would be deleted without deleting anything.
+  --execute          Delete the noncurrent object versions and delete markers.
+  --help             Show this help message.
 
 Notes:
-  - This script deletes every noncurrent version in the target bucket.
+  - Only keys under <folder>/ are listed or deleted.
   - Current object versions are preserved.
   - Dry run is the default mode.
 EOF
@@ -35,6 +35,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --bucket)
       BUCKET="${2:?--bucket requires a value}"
+      shift 2
+      ;;
+    --folder)
+      FOLDER="${2:?--folder requires a value}"
       shift 2
       ;;
     --dry-run)
@@ -57,6 +61,24 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [[ -z "${BUCKET}" || -z "${FOLDER}" ]]; then
+  echo "ERROR: --bucket and --folder are both required." >&2
+  usage >&2
+  exit 1
+fi
+# The folder becomes a key prefix, so it must name one folder and nothing wider.
+case "/${FOLDER}/" in
+  *//*|*/./*|*/../*|*\\*)
+    echo "ERROR: --folder must be a folder path such as <commit> or builds/<commit>." >&2
+    exit 1
+    ;;
+esac
+if [[ "${FOLDER}" == *[[:cntrl:]]* ]]; then
+  echo "ERROR: --folder must not contain control characters." >&2
+  exit 1
+fi
+PREFIX="${FOLDER}/"
+
 if ! command -v aws >/dev/null 2>&1; then
   echo "ERROR: aws CLI is required." >&2
   exit 1
@@ -72,9 +94,10 @@ TARGETS_FILE="$(mktemp)"
 BATCH_FILE="$(mktemp)"
 trap 'rm -f "${VERSIONS_JSON}" "${TARGETS_FILE}" "${BATCH_FILE}"' EXIT
 
-echo "▶ Listing noncurrent versions in s3://${BUCKET}..."
+echo "▶ Listing noncurrent versions in s3://${BUCKET}/${PREFIX}..."
 aws s3api list-object-versions \
   --bucket "${BUCKET}" \
+  --prefix "${PREFIX}" \
   --output json > "${VERSIONS_JSON}"
 
 jq -r '
@@ -92,7 +115,7 @@ VERSION_COUNT="$(awk -F '\t' '$3 == "version" {count++} END {print count + 0}' "
 DELETE_MARKER_COUNT="$(awk -F '\t' '$3 == "delete-marker" {count++} END {print count + 0}' "${TARGETS_FILE}")"
 
 if [[ "${TOTAL_TARGETS}" == "0" ]]; then
-  echo "✓ No noncurrent versions found in s3://${BUCKET}."
+  echo "✓ No noncurrent versions found in s3://${BUCKET}/${PREFIX}."
   exit 0
 fi
 
@@ -114,7 +137,7 @@ if [[ "${EXECUTE}" != "true" ]]; then
 fi
 
 echo ""
-echo "▶ Deleting noncurrent versions from s3://${BUCKET}..."
+echo "▶ Deleting noncurrent versions from s3://${BUCKET}/${PREFIX}..."
 
 BATCH_SIZE=1000
 DELETED_COUNT=0
@@ -145,4 +168,4 @@ while IFS= read -r start_index; do
   echo "  deleted ${DELETED_COUNT}/${TOTAL_TARGETS}"
 done < <(seq 1 "${BATCH_SIZE}" "${TOTAL_TARGETS}")
 
-echo "✓ Deleted ${DELETED_COUNT} noncurrent entries from s3://${BUCKET}."
+echo "✓ Deleted ${DELETED_COUNT} noncurrent entries from s3://${BUCKET}/${PREFIX}."
