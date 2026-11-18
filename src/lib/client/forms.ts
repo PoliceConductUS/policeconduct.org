@@ -670,6 +670,12 @@ const getSubmitSuccess = ({
       }
       form.dataset.submitLocked = "false";
       setSubmitButtonBusy(submitButton, false);
+      getValidatableFields(form)
+        .find(
+          (field) =>
+            field.tabIndex >= 0 && !field.closest('[aria-hidden="true"]'),
+        )
+        ?.focus();
     });
 
     inlineSuccess.dataset.submitUiBound = "1";
@@ -840,7 +846,9 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
       submitButton.disabled = true;
     }
     inlineSuccess.classList.remove("d-none");
+    inlineSuccess.tabIndex = -1;
     inlineSuccess.scrollIntoView({ behavior: "smooth", block: "center" });
+    inlineSuccess.focus({ preventScroll: true });
     trackFormAnalytics("form_submit_success", formName, {
       response_status: responseStatus ?? response.status,
       verification_email_status: verificationEmailStatus,
