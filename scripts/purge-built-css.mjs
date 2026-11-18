@@ -130,6 +130,9 @@ const main = async () => {
         /^disabled$/,
         /^sticky-top$/,
         /^scrolled$/,
+        // src/lib/client/forms.ts adds this after a failed submit to show
+        // inline field errors and invalid-field borders.
+        /^was-validated$/,
         /-open$/,
       ],
       // greedy keeps any selector containing these anywhere (e.g. compound

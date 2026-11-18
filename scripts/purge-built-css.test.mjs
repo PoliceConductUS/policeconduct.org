@@ -60,3 +60,40 @@ test("CSS purge releases page text while retaining selectors from every page", a
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("CSS purge keeps form validation rules that forms.ts turns on", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "purge-css-validation-"));
+  try {
+    await mkdir(path.join(root, "scripts"));
+    await mkdir(path.join(root, "dist", "_astro"), { recursive: true });
+    await copyFile(
+      path.join(repoRoot, "scripts", "purge-built-css.mjs"),
+      path.join(root, "scripts", "purge-built-css.mjs"),
+    );
+    await symlink(
+      path.join(repoRoot, "node_modules"),
+      path.join(root, "node_modules"),
+      "dir",
+    );
+    const css = path.join(root, "dist", "_astro", "site.css");
+    await writeFile(
+      css,
+      ".was-validated :invalid~.invalid-feedback{display:block}.was-validated .form-control:invalid{border-color:red}",
+    );
+    await writeFile(
+      path.join(root, "dist", "index.html"),
+      '<form><input class="form-control" required><div class="invalid-feedback">Required.</div></form>',
+    );
+    const result = spawnSync(
+      process.execPath,
+      [path.join(root, "scripts", "purge-built-css.mjs")],
+      { encoding: "utf8", timeout: 60000 },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const output = await readFile(css, "utf8");
+    assert.match(output, /\.was-validated :invalid~\.invalid-feedback\{/);
+    assert.match(output, /\.was-validated \.form-control:invalid\{/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
