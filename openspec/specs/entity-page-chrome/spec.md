@@ -65,17 +65,18 @@ disclosure that works without JavaScript.
 
 ### Requirement: Grouped contact identity
 
-The page SHALL render an entity's contact person and contact email visibly
-grouped as one contact identity whenever the two are linked in the data model,
-rather than on unrelated rows.
+The page SHALL group a name and email as one contact identity only when the source explicitly associates them. Independent agency contact-name and contact-email fields SHALL render separately and SHALL NOT imply a person/address pairing.
+
+#### Scenario: Agency page renders independent name and email fields
+
+- **WHEN** an agency has independent contact-name and contact-email fields
+- **THEN** the name and agency email addresses render on separate labelled rows
+- **AND** the site does not infer an association from address spelling or field order
 
 #### Scenario: Agency page renders a contact person with an email
 
-- **WHEN** an agency page renders a contact person whose email is linked in
-  the data model
-- **THEN** the contact name and email render together as one visual group
-- **AND** unrelated links such as the agency phone number or social profiles
-  do not visually separate the name from its email
+- **WHEN** a source explicitly associates a contact person with an email address
+- **THEN** the page groups that verified pair as one contact identity
 
 ### Requirement: Icon social links
 
@@ -136,3 +137,15 @@ covering de-emphasized captions, metadata, glosses, and empty-state values.
 
 - **WHEN** `npm run audit:a11y` runs against generated pages
 - **THEN** no contrast violations are reported for any text tier
+
+### Requirement: Homepage clearly identifies independent ownership
+
+The homepage SHALL display the approved independence statement immediately after its introduction. The existing hero image SHALL span the viewport width, with the introduction, independence statement and calls to action remaining inside the hero over the image.
+
+#### Scenario: Homepage introduction
+
+- **WHEN** a visitor opens the homepage on desktop or mobile
+- **THEN** the hero image spans the viewport without horizontal overflow
+- **AND** the introduction states: “We are independent. PoliceConduct.org is not the police or a government agency. We are not part of, controlled by, or affiliated with any police department or government agency.”
+
+- **AND** the hero text and calls to action sit on a padded, near-opaque white panel so the background image does not impair readability
