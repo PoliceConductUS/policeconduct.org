@@ -192,7 +192,13 @@ const sampleRows = [
           </tbody>
         </table>
       </div>
-      {showCivilCaseScopeNote ? <CivilCaseScopeNote /> : null}
+      {showCivilCaseScopeNote ? (
+        <CivilCaseScopeNote>
+          A case counts for an agency when it names someone who has worked
+          there. The case can be about that person's work at another agency, so
+          the same case can count for more than one agency.
+        </CivilCaseScopeNote>
+      ) : null}
     </section>
   )}
   <script is:inline>

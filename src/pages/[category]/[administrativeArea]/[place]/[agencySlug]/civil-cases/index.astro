@@ -1,5 +1,6 @@
 ---
 import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
+import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import TableScroll from "#src/components/TableScroll.astro";
 import {
   buildAgencyCivilCaseRows,
@@ -66,4 +67,9 @@ const formatDate = (value?: string | null) =>
     finding. A dismissal is a court outcome, not a statement that no misconduct
     occurred.
   </p>
+  <CivilCaseScopeNote>
+    A case is listed when it names someone who has worked at this agency. The
+    case can be about that person's work at another agency, so the same case can
+    appear on more than one agency's page.
+  </CivilCaseScopeNote>
 </AgencyTopicPage>
