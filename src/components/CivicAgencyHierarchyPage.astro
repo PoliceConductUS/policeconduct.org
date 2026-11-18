@@ -185,7 +185,9 @@ const sampleRows = [
                   );
                 })}
                 <td>
-                  <a href={row.href}>View</a>
+                  <a href={row.href}>
+                    View<span class="visually-hidden"> {row.label}</span>
+                  </a>
                 </td>
               </tr>
             ))}
