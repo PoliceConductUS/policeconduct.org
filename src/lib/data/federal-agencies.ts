@@ -355,7 +355,7 @@ const topicMetricsFor = (
   ];
 };
 
-export const loadFederalAgencySummaries = async () => {
+const loadFederalAgencySummaryRows = async (slug: string | null) => {
   const rows = await withDb(async (client) => {
     return (
       await client.query(
@@ -399,9 +399,11 @@ export const loadFederalAgencySummaries = async () => {
               on cco.agency_personnel_id = case_assignment.id
             where target_assignment.agency_id = a.id
           ) civil_case_link on true
+          where $1::text is null or fa.slug = $1
           group by fa.id, fa.name, fa.slug
           order by fa.name
         `,
+        [slug],
       )
     ).rows;
   });
@@ -429,6 +431,9 @@ export const loadFederalAgencySummaries = async () => {
     )
     .sort((left, right) => nameCollator.compare(left.name, right.name));
 };
+
+export const loadFederalAgencySummaries = () =>
+  loadFederalAgencySummaryRows(null);
 
 export const loadFederalAgencyDetailBySlug = async (slug: string) => {
   const row = await withDb(async (client) => {
@@ -536,24 +541,20 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
     },
   );
 
+  const [totals] = await loadFederalAgencySummaryRows(String(row.slug));
+  if (!totals) {
+    throw new Error(`Federal agency ${row.slug} has no summary totals.`);
+  }
+
   return {
     branchCount: branches.length,
     branches,
-    civilCaseCount: branches.reduce(
-      (total, branch) => total + branch.civilCaseCount,
-      0,
-    ),
+    civilCaseCount: totals.civilCaseCount,
     id: String(row.id),
     name: String(row.name),
     path: federalAgencyPath(String(row.slug)),
-    personnelCount: branches.reduce(
-      (total, branch) => total + branch.personnelCount,
-      0,
-    ),
-    reportCount: branches.reduce(
-      (total, branch) => total + branch.reportCount,
-      0,
-    ),
+    personnelCount: totals.personnelCount,
+    reportCount: totals.reportCount,
     slug: String(row.slug),
   } satisfies FederalAgencyDetail;
 };
