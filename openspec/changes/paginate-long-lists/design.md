@@ -4,10 +4,10 @@ The site has no single rule for long lists. Today:
 
 | List                                                         | Route                                  | Rows today                           | Behavior today                                                         |
 | ------------------------------------------------------------ | -------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------- |
-| Counties in a state                                          | `/{state}/counties/`                   | up to 254 (Texas)                    | every row on page 1                                                    |
-| Places in a county                                           | `/{state}/{county}/places/`            | up to 171                            | every row on page 1                                                    |
-| Agencies in a place                                          | `/{state}/{county}/{place}/agencies/`  | up to 40                             | every row on page 1                                                    |
-| Agency civil cases                                           | `<agency>/civil-cases/`                | up to 58                             | every row on page 1                                                    |
+| Counties in a state                                          | `/{state}/counties/`                   | up to 254 (Texas)                    | 50 per page (`PAGE_SIZE`), paginated                                   |
+| Places in a county                                           | `/{state}/{county}/places/`            | up to 171                            | 50 per page (`PAGE_SIZE`), paginated                                   |
+| Agencies in a place                                          | `/{state}/{county}/{place}/agencies/`  | up to 40                             | 50 per page (`PAGE_SIZE`), paginated                                   |
+| Agency civil cases                                           | `<agency>/civil-cases/`                | up to 58                             | 50 per page (`PAGE_SIZE`), paginated                                   |
 | Agency personnel roster                                      | `<agency>/personnel/`                  | up to 6,030 (Texas DPS, 2.1 MB HTML) | every row on page 1, filtered in the browser                           |
 | Area civil cases                                             | `/{state}/civil-cases/`, county, place | up to several hundred                | the 50 most recent from a 200-row query, no pager                      |
 | Global civil cases                                           | `/civil-cases/`                        | 551                                  | 25 per page, paginated                                                 |
@@ -19,9 +19,12 @@ Lists outside this table already comply: the federal agency and branch tables
 people on `/personnel/` appear only in its structured data (JSON-LD), not in a
 visible list; the visible page is the state map.
 
-Commit `74ecc8a` deleted the `/page/{n}/` routes for counties, places, place
-agencies and agency civil cases, because page 1 already showed every row and
-those pages only repeated it. The user approved those 404s with no redirect.
+Counties, places, place agencies and agency civil cases already page at 50
+rows. Page 1 shows the first 50 rows at the base path, and each
+`/page/{n}/` route takes only params from `getStaticPaths()`, reloads the
+location or agency by its exact path, and renders the same component with
+`currentPage`. The component slices the rows for that page and throws for a
+page number past the last page.
 
 `src/lib/pagination.ts` exports `PAGE_SIZE = 50`. `src/components/Pagination.astro`
 renders the pager, `CivicChildIndexPage.astro` already accepts a `page` prop with
@@ -67,10 +70,14 @@ one page with no pager and generates no `/page/{n}/` routes.
 
 Counties, places, place agencies, agency civil cases, global civil cases and
 area civil cases render rows `0–49` on the base path and rows `50(n−1)…50n−1`
-on `/page/{n}/`, using Astro `paginate()` as the reports and news routes do.
-The base page and each later page load their rows from the same loader, so page
-1 and the paged routes cannot drift apart again. Page 2 and later stay
-self-canonical, as today for news and reports.
+on `/page/{n}/`. The paged routes are params-only: `getStaticPaths()` returns
+only `{ params: { ..., page } }` for pages 2 to the last page, never Astro
+`paginate()` props. The render validates the page number, reloads the entity by
+its exact path from the route params, and passes `currentPage` to the same
+component the base page uses, which slices that page's rows. The base page and
+each later page load their rows from the same loader, so page 1 and the paged
+routes cannot drift apart again. Page 2 and later stay self-canonical, as today
+for news and reports.
 
 ### D3. Area civil cases lose their hidden cap
 

@@ -2,17 +2,32 @@
 import Pagination from "#src/components/Pagination.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import type { CivicIndexModel } from "#src/lib/data/civic-index.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
 import "#src/styles/civic-ledger.css";
 
-const { model, page, pagePath, label } = Astro.props as {
+const { currentPage, model, pagePath, label } = Astro.props as {
+  currentPage: number;
   label: string;
   model: CivicIndexModel;
-  page: {
-    currentPage: number;
-    data: CivicIndexModel["rows"];
-    lastPage: number;
-  };
   pagePath: string;
+};
+const lastPage = Math.max(1, Math.ceil(model.rows.length / PAGE_SIZE));
+if (
+  !Number.isInteger(currentPage) ||
+  currentPage < 1 ||
+  currentPage > lastPage
+) {
+  throw new Error(
+    `${pagePath} has no page ${currentPage}; it has ${lastPage} page(s).`,
+  );
+}
+const page = {
+  currentPage,
+  data: model.rows.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  ),
+  lastPage,
 };
 const heading =
   model.breadcrumbs[model.breadcrumbs.length - 1]?.label ||

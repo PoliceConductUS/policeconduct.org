@@ -3,7 +3,14 @@ import PageShell from "#src/layouts/PageShell.astro";
 import { buildCollectionPage, getSiteUrl } from "#src/lib/structured-data.js";
 import "#src/styles/civic-ledger.css";
 
-const { data, topicLabel, topicSlug, description } = Astro.props as {
+const {
+  currentPage = 1,
+  data,
+  topicLabel,
+  topicSlug,
+  description,
+} = Astro.props as {
+  currentPage?: number;
   data: {
     agencyName: string;
     agencyPath: string;
@@ -26,7 +33,9 @@ const toDisplayName = (value: string) =>
         .replace(/\b[a-z]/g, (letter) => letter.toLocaleUpperCase("en-US"))
     : value;
 const agencyDisplayName = toDisplayName(data.agencyName);
-const pagePath = `${data.agencyPath}${topicSlug}/`;
+const topicPath = `${data.agencyPath}${topicSlug}/`;
+const pagePath =
+  currentPage > 1 ? `${topicPath}page/${currentPage}/` : topicPath;
 const siteUrl = getSiteUrl(Astro.site);
 const structuredData = buildCollectionPage({
   siteUrl,
@@ -50,7 +59,7 @@ const structuredData = buildCollectionPage({
     },
     { label: data.placeLabel, href: data.placePath },
     { label: agencyDisplayName, href: data.agencyPath },
-    { label: topicLabel, href: pagePath },
+    { label: topicLabel, href: topicPath },
   ]}
   eyebrow={agencyDisplayName}
   heading={topicLabel}

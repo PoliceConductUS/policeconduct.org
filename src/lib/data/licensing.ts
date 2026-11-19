@@ -181,6 +181,9 @@ const loadAllLicensing = () => {
       }
 
       return { licensesByPersonnel, actionsByLicense };
+    }).catch((error: unknown) => {
+      allLicensingPromise = null;
+      throw error;
     });
   }
   return allLicensingPromise;
@@ -252,6 +255,9 @@ const loadDisciplinedPersonnelSet = (): Promise<Set<string>> => {
         )
       ).rows;
       return new Set<string>(rows.map((row) => row.personnel_id));
+    }).catch((error: unknown) => {
+      disciplinedPersonnelPromise = null;
+      throw error;
     });
   }
   return disciplinedPersonnelPromise;

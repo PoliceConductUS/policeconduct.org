@@ -13,8 +13,9 @@ output "verify_commands" {
     "# 1. Every recipient must read Confirmed. PendingConfirmation means that person has not clicked, and is therefore being told nothing.",
     "aws sns list-subscriptions-by-topic --topic-arn ${aws_sns_topic.submission_notifications.arn} --query 'Subscriptions[].[Endpoint,SubscriptionArn]' --output table",
     "",
-    "# 2. Only the verification-status rule must be present; initial writes must not alert staff.",
+    "# 2. On each submissions bucket, only the verification-status rule must be present; initial writes must not alert staff.",
     "aws s3api get-bucket-notification-configuration --bucket ${data.aws_s3_bucket.submissions.id}",
+    "aws s3api get-bucket-notification-configuration --bucket ${data.aws_s3_bucket.submissions_preview.id}",
     "",
   ])
 }

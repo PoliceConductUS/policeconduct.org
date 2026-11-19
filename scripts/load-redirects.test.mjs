@@ -256,10 +256,7 @@ test("rejects a desired store exceeding 5 MB including other namespaces before w
   assert.equal(writes(result).length, 0);
 });
 
-function deploy(
-  args = [],
-  { unchanged = false, failSync = false, workspaceChoice = "skip" } = {},
-) {
+function deploy(args = [], { unchanged = false, failSync = false } = {}) {
   const dir = mkdtempSync(join(resolve(tmpdir()), "redirect-deploy-"));
   try {
     for (const name of [
@@ -273,7 +270,6 @@ function deploy(
       mkdirSync(join(dir, name));
     for (const name of [
       "deploy.sh",
-      "workspace-sync.sh",
       "upload-release.sh",
       "promote.sh",
       "release-files.mjs",
@@ -374,9 +370,6 @@ printf '%s\\n' '${tool} '"$*" >> "$TEST_LOG"\n${tool === "aws" && failSync ? 'if
           // Shell startup files must not replace the fixture command PATH.
           BASH_ENV: "/dev/null",
           ENV: "/dev/null",
-          WORKSPACE_SYNC: workspaceChoice,
-          INTAKE_WORKSPACE: dir,
-          INTAKE_WORKSPACE_BUCKET: "fixture-workspaces",
           PATH: `${dir}/bin:${process.env.PATH}`,
           TEST_NODE: process.execPath,
           TEST_LOG: log,
@@ -520,36 +513,6 @@ test("shrinks existing values before growing values to stay within capacity duri
   );
   assert.equal(result.status, 0, result.stderr);
 });
-
-for (const args of [
-  ["preview"],
-  ["preview", "--skip-build"],
-  ["prod", "--skip-build"],
-]) {
-  test(`deploy ${args.join(" ")}: accepted workspace upload follows hosting exactly once`, () => {
-    const result = deploy(args, { workspaceChoice: "upload" });
-    assert.equal(result.status, 0, result.stderr);
-    const hosting = result.calls.findIndex((call) =>
-      call.startsWith("aws s3 sync "),
-    );
-    const syncs = result.calls.filter((call) =>
-      call.includes("intake-workspace-sync.mjs sync"),
-    );
-    assert.equal(syncs.length, 1);
-    assert.doesNotMatch(syncs[0], /--environment/);
-    assert.match(
-      syncs[0],
-      /sync --direction upload --bucket fixture-workspaces/,
-    );
-    assert.ok(result.calls.indexOf(syncs[0]) > hosting);
-  });
-  test(`deploy ${args.join(" ")}: missing automated choice prevents hosting upload`, () => {
-    const result = deploy(args, { workspaceChoice: "" });
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /WORKSPACE_SYNC/);
-    assert.deepEqual(result.calls, []);
-  });
-}
 
 test("deploy refuses a missing environment or an unknown argument before any call", () => {
   for (const args of [[], ["--skip-build"], ["prod", "--force"]]) {

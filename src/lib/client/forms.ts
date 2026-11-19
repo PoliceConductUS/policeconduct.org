@@ -866,12 +866,7 @@ export const submitJsonForm = async (options: SubmitJsonFormOptions) => {
         failure_stage: "verification_email",
         failure_reason:
           typeof reason === "string" &&
-          [
-            "missing_origin",
-            "missing_email",
-            "invalid_email",
-            "send_failed",
-          ].includes(reason)
+          ["missing_email", "invalid_email", "send_failed"].includes(reason)
             ? reason
             : "unknown",
       });

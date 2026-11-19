@@ -303,13 +303,6 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
             payload.submissionId.trim()
               ? payload.submissionId.trim()
               : "";
-          const message =
-            payload &&
-            typeof payload.message === "string" &&
-            payload.message.trim()
-              ? payload.message.trim()
-              : "";
-
           if (!submissionId) {
             renderMessage(
               "Email Confirmation Failed",
@@ -320,7 +313,6 @@ import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
 
           verifiedSubmissionId = submissionId;
           writeStoredVerificationResult({
-            message,
             submissionId,
             token,
           });

@@ -102,8 +102,6 @@ async function handler(event) {
       const pointer = "current:" + labels[0];
       if (!(await kvs.exists(pointer))) return missing;
       releaseId = await kvs.get(pointer);
-    } else if (labels[1] === "builds" && /^[a-z0-9-]+$/.test(labels[0])) {
-      releaseId = labels[0];
     } else {
       return missing;
     }

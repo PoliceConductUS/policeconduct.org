@@ -271,6 +271,17 @@ const readWorkingTree = (filePath) =>
     ? readlinkSync(filePath, "utf8")
     : readFileSync(filePath, "utf8");
 
+// A tracked file deleted in the working tree has nothing left to commit.
+const existsInWorkingTree = (filePath) => {
+  try {
+    lstatSync(filePath);
+    return true;
+  } catch (error) {
+    if (error.code === "ENOENT") return false;
+    throw error;
+  }
+};
+
 const collectStaged = () =>
   gitPaths(["diff", "--cached", "--name-only", "--diff-filter=ACMR"]);
 
@@ -312,7 +323,7 @@ const main = () => {
       break;
     }
     case "--tracked":
-      files = gitPaths(["ls-files"]);
+      files = gitPaths(["ls-files"]).filter(existsInWorkingTree);
       read = readWorkingTree;
       break;
     case "--files":

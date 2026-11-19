@@ -130,3 +130,5 @@ The owner stated on 2026-11-18 that this change is released and that its approva
 - [ ] FAIL — implementation corrections required.
 
 Release approval and delta-spec sync remain separate archive gates. Finish the documentation commit, repeat full validation on each final stack head, inspect actual hosted checks and update their PR descriptions. The final delivery report must identify any failure instead of claiming readiness.
+
+Note (2026-11-19): the paragraph above is stale. Releases have no approval gate (owner, 2026-11-17), and the delta specs were synced in `ced973c`; the open work is in `openspec/changes/fix-licensing-authority-annotations/tasks.md` sections 5 and 6.

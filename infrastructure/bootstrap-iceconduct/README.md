@@ -17,9 +17,9 @@ This stack is intentionally independent from `infrastructure/bootstrap-policecon
 It manages only `iceconduct.org` redirect infrastructure:
 
 - Route53 public hosted zone for `iceconduct.org`
-- ACM certificate for `iceconduct.org` and `www.iceconduct.org` (us-east-1)
-- CloudFront distribution with a viewer-request function returning `301`
-- Route53 alias records for apex + `www`
+- ACM certificates (us-east-1). The one the distribution serves covers `iceconduct.org`, `www.iceconduct.org`, `preview.iceconduct.org` and `*.preview.iceconduct.org`
+- CloudFront distribution for the same four names, with a viewer-request function returning `301`
+- Route53 alias records for apex, `www`, `preview` and `*.preview`
 
 ## Usage
 

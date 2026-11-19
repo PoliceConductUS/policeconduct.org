@@ -9,7 +9,10 @@ release_id="$(cat .release/id)"
 case "${release_id}" in
   ""|.|..|*/*|*\\*) echo "Expected a single deployment folder name." >&2; exit 1 ;;
 esac
-[[ "${release_id}" != *[[:cntrl:]]* ]] || exit 1
+[[ "${release_id}" != *[[:cntrl:]]* ]] || {
+  echo "Release ID must not contain control characters." >&2
+  exit 1
+}
 [[ -f .release/data/index.json && -f .release/data/dynamic.json && -f .release/data/alias.json && -f dist/index.html ]] || {
   echo "Incomplete release. Run npm run build first." >&2
   exit 1

@@ -50,19 +50,25 @@ have() {
   command -v "$1" >/dev/null 2>&1
 }
 
+# Bash 3.2 (stock macOS) has no namerefs and treats "${empty[@]}" as unbound
+# under set -u, so the array is read by name through eval.
 append_unique() {
   local array_name="$1"
   local item="$2"
   local existing
-  declare -n target_array="$array_name"
+  local existing_items=()
 
-  for existing in "${target_array[@]}"; do
-    if [[ "$existing" == "$item" ]]; then
-      return
-    fi
-  done
+  eval "existing_items=(\${${array_name}[@]+\"\${${array_name}[@]}\"})"
 
-  target_array+=("$item")
+  if [[ "${#existing_items[@]}" -gt 0 ]]; then
+    for existing in "${existing_items[@]}"; do
+      if [[ "$existing" == "$item" ]]; then
+        return
+      fi
+    done
+  fi
+
+  eval "${array_name}+=(\"\$item\")"
 }
 
 load_homebrew_shellenv() {
@@ -336,11 +342,11 @@ detect_all() {
 print_summary() {
   printf '\nDependency check summary\n'
   printf '========================\n'
-  print_list "Already available" "${INFO_ITEMS[@]}"
-  print_list "Missing and installable" "${INSTALL_ITEMS[@]}"
-  print_list "Install commands that will run" "${INSTALL_COMMANDS[@]}"
-  print_list "Manual follow-up" "${MANUAL_ITEMS[@]}"
-  print_list "Blocking check errors" "${CHECK_ERRORS[@]}"
+  print_list "Already available" ${INFO_ITEMS[@]+"${INFO_ITEMS[@]}"}
+  print_list "Missing and installable" ${INSTALL_ITEMS[@]+"${INSTALL_ITEMS[@]}"}
+  print_list "Install commands that will run" ${INSTALL_COMMANDS[@]+"${INSTALL_COMMANDS[@]}"}
+  print_list "Manual follow-up" ${MANUAL_ITEMS[@]+"${MANUAL_ITEMS[@]}"}
+  print_list "Blocking check errors" ${CHECK_ERRORS[@]+"${CHECK_ERRORS[@]}"}
   printf '\n'
 }
 
@@ -367,7 +373,6 @@ install_brewfile_if_needed() {
 }
 
 install_mise_tools_if_needed() {
-  install_brewfile_if_needed
   have mise || fail "mise is not available after Brewfile installation. Open a new shell and rerun this script."
 
   info "Trusting mise.toml"
@@ -378,8 +383,6 @@ install_mise_tools_if_needed() {
 }
 
 install_npm_dependencies_if_needed() {
-  install_mise_tools_if_needed
-
   if mise exec -- npm ls --depth=0 >/dev/null 2>&1; then
     return
   fi

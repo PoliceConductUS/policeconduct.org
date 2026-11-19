@@ -173,17 +173,9 @@ const main = async () => {
 };
 
 main().catch((error) => {
-  // Non-blocking: purge runs last, after a complete dist exists. If it crashes,
-  // the CSS is simply left unpurged (larger, but fully functional) — better to
-  // ship that than to fail the whole build over an optimization step. Warn
-  // loudly so it gets fixed.
-  const bar = "!".repeat(74);
-  console.warn(`\n${bar}`);
-  console.warn(
-    "!!  POST-BUILD CSS PURGE FAILED  —  shipping UNPURGED css, build continued  !!",
-  );
-  console.warn(bar);
-  console.warn(error instanceof Error ? error.stack : String(error));
-  console.warn(`${bar}\n`);
-  // Intentionally do NOT set process.exitCode.
+  // A crash can leave some CSS files purged and others not, so the build
+  // must stop rather than ship a dist/ nobody checked.
+  console.error("Post-build CSS purge failed:");
+  console.error(error instanceof Error ? error.stack : String(error));
+  process.exitCode = 1;
 });

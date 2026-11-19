@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change publish-source-data-annotations. Update Purpose after archive.
+Show the site's notes on source data (warnings, errors, corrections and excluded records) on record pages, in paged listings and in CSV downloads, each attached to the licensing authority whose data it is about.
 
 ## Requirements
 
@@ -46,13 +46,19 @@ The generated site SHALL provide `/data-annotations/` with pagination and filter
 
 ### Requirement: Complete filtered CSV download
 
-Every annotation listing SHALL offer a CSV download of all matching entries across all pages, generated from the listing's data and filters without a runtime API. Original values SHALL survive serialization, including quotes, commas and newlines.
+Every annotation listing SHALL offer a CSV download of all matching entries across all pages, generated from the listing's data and filters without a runtime API. Original values SHALL survive serialization, including quotes, commas and newlines. Every cell is text: a cell whose text starts with `=`, `+`, `-` or `@` SHALL be written with one `'` added before it, so a spreadsheet does not run it as a formula. That added character is the only change, and removing it restores the original value.
 
 #### Scenario: Export columns preserve source and correction evidence
 
 - **WHEN** any annotation listing is downloaded
 - **THEN** its columns SHALL be `source_provider,source_record_id,record_url,field,reported_value,type,message,replacement_value,evidence`
-- **AND** corrections SHALL include replacement values and supplied evidence; those columns SHALL be empty for annotations without those values
+- **AND** corrections SHALL include replacement values and supplied evidence, except administrative-area corrections, whose internal values and reference evidence keys are omitted as required by "Public annotations omit internal identifiers"; those columns SHALL be empty for annotations without those values
+
+#### Scenario: A cell starts with a formula character
+
+- **WHEN** a reported value, message or other cell starts with `=`, `+`, `-` or `@`
+- **THEN** the CSV cell SHALL hold that text with one `'` added before it
+- **AND** a cell that starts with any other character SHALL be unchanged apart from CSV quoting
 
 #### Scenario: Download exceeds visible page
 
@@ -61,18 +67,27 @@ Every annotation listing SHALL offer a CSV download of all matching entries acro
 
 ### Requirement: Licensing authority annotation subpage
 
-Each licensing-authority page SHALL link to a paginated annotations subpage listing findings originating from that authority's data. Source ownership SHALL use explicit source-to-authority metadata. The subpage SHALL share the central index's entries, type filtering and full-result CSV downloads. Membership SHALL NOT depend on a person's current employer or merely holding a license from that authority.
-
-#### Scenario: Authority data spans record types
-
-- **WHEN** an authority supplies personnel, employment and license records with annotations
-- **THEN** its subpage SHALL include findings from all those records
-- **AND** annotations contributed by unrelated providers SHALL not be attributed to that authority
+Each licensing-authority page SHALL link to a paginated annotations subpage listing the findings attached to that authority, as "Annotations attach to one licensing authority" defines. The subpage SHALL share the central index's entries, type filtering and full-result CSV downloads.
 
 #### Scenario: Authority without findings
 
 - **WHEN** an authority has no annotations in the current build
 - **THEN** its subpage SHALL display an empty result state and its CSV SHALL contain the header without fabricated entries
+
+### Requirement: Annotations attach to one licensing authority
+
+Every annotation SHALL be attached to exactly one licensing authority, the source of its data; sources are not separate records yet, so the licensing authority stands for the source. An authority's subpage SHALL list every annotation attached to it, whatever its subject kind. No authority SHALL claim a source namespace. Listings and CSV downloads SHALL show the attached authority's name as the source provider.
+
+#### Scenario: Authority data spans record types
+
+- **WHEN** an authority supplies personnel, employment and license records with annotations
+- **THEN** its subpage SHALL include findings from all those records
+- **AND** annotations attached to another authority SHALL NOT appear on it
+
+#### Scenario: Attachment is not inferred
+
+- **WHEN** an annotation names a source namespace, or its subject is a person employed by an agency or holding a license from an authority
+- **THEN** none of those facts SHALL decide which authority the annotation is attached to
 
 ### Requirement: Publish applied correction provenance
 
@@ -86,7 +101,7 @@ Profiles, central and authority listings, type filters and CSV downloads SHALL i
 
 ### Requirement: Preserve findings for agencies without public pages
 
-Annotations SHALL NOT change agency-page eligibility. When an agency has no current personnel assignment and therefore no public page, its stored findings SHALL remain in the central and source-authority annotation listings and CSV exports. Each finding SHALL retain the affected agency label, source ID, public value and explanation, and link to the explicitly mapped source authority's annotation page.
+Annotations SHALL NOT change agency-page eligibility. When an agency has no current personnel assignment and therefore no public page, its stored findings SHALL remain in the central and source-authority annotation listings and CSV exports. Each finding SHALL retain the affected agency label, source ID, public value and explanation, and link to the first page of the annotation listing of the licensing authority it is attached to.
 
 #### Scenario: Fallback destination is an authority annotation index
 
@@ -95,31 +110,15 @@ Annotations SHALL NOT change agency-page eligibility. When an agency has no curr
 
 #### Scenario: Required annotation destination is missing
 
-- **WHEN** source authority ownership is missing or ambiguous, or an eligible agency lacks its required page
+- **WHEN** an annotation is attached to no licensing authority, or an eligible agency lacks its required page
 - **THEN** collection SHALL fail rather than discard the finding or invent a record URL
 
 #### Scenario: Agency without personnel has a source finding
 
-- **GIVEN** an agency with no current personnel assignment and a stored TCOLE annotation
+- **GIVEN** an agency with no current personnel assignment and a stored annotation attached to the Texas Commission on Law Enforcement (TCOLE)
 - **WHEN** annotation pages are generated
 - **THEN** the finding appears in the central and TCOLE listings and downloads
 - **AND** no agency page is created merely because the finding exists
-
-### Requirement: Display source contact emails without inferred pairings
-
-Agency pages SHALL display each semicolon-separated contact email address as a separate mailto link and structured-data email value. Contact names SHALL appear separately from email addresses. The site MUST NOT infer name/email pairings from independent source fields.
-
-#### Scenario: One name and multiple addresses
-
-- **WHEN** an agency has a contact name and two semicolon-separated email addresses
-- **THEN** the page displays the name separately and two individual email links
-- **AND** the organization structured data contains both addresses individually
-
-#### Scenario: Empty members in an annotated source value
-
-- **WHEN** a source email field has empty members between or after semicolons
-- **THEN** the site creates no empty mailto links or structured-data recipients
-- **AND** the original source value and intake annotation remain available
 
 ### Requirement: Public annotations omit internal identifiers
 
@@ -133,7 +132,7 @@ The index, record notes and CSV SHALL show source record IDs but SHALL NOT expos
 
 ### Requirement: Annotation listings remain discoverable without search indexing
 
-The footer SHALL link to Data notes under Data & Methods. Global and licensing-authority annotation listings, including source filters, type filters and pagination, SHALL use `noindex,follow`, SHALL be excluded from on-site search, and SHALL be omitted from the sitemap.
+The footer SHALL link to Data notes under Data and methods. Global and licensing-authority annotation listings, including source filters, type filters and pagination, SHALL use `noindex,follow`, SHALL be excluded from on-site search, and SHALL be omitted from the sitemap.
 
 #### Scenario: Browse annotations from the footer
 
@@ -142,13 +141,19 @@ The footer SHALL link to Data notes under Data & Methods. Global and licensing-a
 
 ### Requirement: Annotations preserve the personnel publication switch
 
-When `NO_PERSONNEL` is set, public annotation collections and CSV exports SHALL omit explicitly typed personnel exclusions even when a licensing authority owns the finding. Agency exclusions SHALL remain visible.
+When the `NO_PERSONNEL` environment variable is set (it hides personnel pages), public annotation collections and CSV exports SHALL omit every annotation whose subject resolves through its parent records to a person, and every exclusion whose excluded record's kind resolves to a person, even when the annotation is attached to a licensing authority. Agency exclusions SHALL remain visible.
 
 #### Scenario: Authority owns mixed exclusion findings
 
 - **WHEN** personnel publication is disabled and an authority owns agency and personnel exclusions
 - **THEN** its public findings SHALL include the agency exclusions and omit the personnel exclusions
 - **AND** annotation listing routes are excluded from search indexes and the sitemap
+
+#### Scenario: License exclusion filed on an authority
+
+- **WHEN** personnel publication is disabled and a `License` exclusion is filed on an authority
+- **THEN** the exclusion is omitted from listings and CSV
+- **AND** the same holds for `Personnel`, `AgencyPersonnel`, `Discipline`, `PersonnelEducation` and any other kind whose parent chain ends at `Personnel`
 
 ### Requirement: Preserve findings for locations without public pages
 
@@ -158,3 +163,12 @@ Location findings SHALL link to the exact database path only when that path is i
 
 - **WHEN** an annotated location has no location build payload
 - **THEN** its findings remain in the index and export with a link to the complete data-note index instead of a missing location page
+
+### Requirement: Only active annotations are published
+
+Record pages, listings and CSV downloads SHALL include only annotations whose status is `active`. Resolved annotations SHALL remain stored and SHALL NOT appear publicly.
+
+#### Scenario: An annotation is resolved
+
+- **WHEN** an annotation's status changes from `active` to `resolved`
+- **THEN** the next build omits it from record pages, listings and CSV

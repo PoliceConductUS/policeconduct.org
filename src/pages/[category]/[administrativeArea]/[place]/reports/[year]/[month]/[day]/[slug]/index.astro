@@ -376,39 +376,33 @@ const structuredData = {
   <div class="civic-section civic-section--last">
     <article class="detail-body">
       <ReportNarrative
-        description={String(data.report.description!)}
+        description={reportDescriptionSource || null}
         facts={facts}
       />
 
-      {officers.length ? (
-        <>
-          <h3>People involved</h3>
-          {officers.map((entry) => (
-            <p>
-              <a href={entry.path}>
-                {entry.officer!.first_name} {entry.officer!.last_name}
-                {entry.officer!.suffix ? ` ${entry.officer!.suffix}` : ""}
-              </a>
-              {entry.agencyOfficer.title
-                ? ` — ${entry.agencyOfficer.title}`
-                : ""}
-              {entry.badge ? ` — Badge ${entry.badge}` : ""}
-              {" · "}
-              <a
-                href={
-                  (
-                    entry.agency as typeof entry.agency & {
-                      canonicalPath: string;
-                    }
-                  ).canonicalPath
+      <h3>People involved</h3>
+      {officers.map((entry) => (
+        <p>
+          <a href={entry.path}>
+            {entry.officer!.first_name} {entry.officer!.last_name}
+            {entry.officer!.suffix ? ` ${entry.officer!.suffix}` : ""}
+          </a>
+          {entry.agencyOfficer.title ? ` — ${entry.agencyOfficer.title}` : ""}
+          {entry.badge ? ` — Badge ${entry.badge}` : ""}
+          {" · "}
+          <a
+            href={
+              (
+                entry.agency as typeof entry.agency & {
+                  canonicalPath: string;
                 }
-              >
-                {entry.agency!.name}
-              </a>
-            </p>
-          ))}
-        </>
-      ) : null}
+              ).canonicalPath
+            }
+          >
+            {entry.agency!.name}
+          </a>
+        </p>
+      ))}
 
       {data.relatedCases.length ? (
         <>

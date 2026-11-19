@@ -27,7 +27,6 @@ export const metricLabels = {
   outcomesByIncome: "Outcomes by Income",
   overtime: "Overtime",
   personnel: "Personnel",
-  personnelLinked: "Personnel Linked",
   personnelRecords: "Personnel",
   places: "Places",
   racialBreakdownStopsArrests: "Racial Breakdown of Stops or Arrests",
@@ -181,6 +180,3 @@ export const metricVisuals = {
     label: metricLabels.settlements,
   },
 } as const satisfies Partial<Record<MetricLabelKey, MetricVisual>>;
-
-export const getMetricVisual = (key: keyof typeof metricVisuals) =>
-  metricVisuals[key];

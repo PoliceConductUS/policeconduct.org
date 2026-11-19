@@ -1,8 +1,17 @@
-# Verification
+## Verification
 
-- Reconciled against main 9c53457 using existing host Git credentials. Connector setup was unnecessary and its request was withdrawn.
-- Base branch ins89/selective-revert retains expired-link recovery and providerMessageId/sentAt, restores 15-minute verification defaults and unrelated prior behavior, and removes the reporting additions. Its Lambda suite passed 32/32.
-- Notification change is stacked on that base. Final Lambda suite passed 35/35, including suppression across all forms with SNS and staff email configured and preservation of verified-event delivery and receipts.
-- Full npm test passed redirects, media, Lambda, CSS, personal-data, and coverage stages. Browser tests could not start because mise could not write its trusted-config link outside the sandbox; full suite is not green.
-- OpenSpec strict validation and formatting passed. ESLint: no errors, one existing unused-disable warning. Diff whitespace check passed. Personal-data scan: 0 findings.
-- No production sends or deployment performed. Only the board user may manually merge into main.
+### PR #29 (merged 2026-10-25, `b1e12ad`)
+
+- Forms API Lambda unit suite passed, including the tests that received and unexpected events do not notify staff and that verified events still do. Browser tests did not run, so the full suite was not green at merge.
+
+### Final head (task 1.5)
+
+- Commit: [SHA]. Branch: [branch]. Runtime: Node [version from `mise.toml`]; `npm ci` matched the lockfile.
+- `npm run validate`: exit [code]. Stages: [each stage and result]. Tests: [counts]. Skipped: [each skip and reason, or none].
+- Warnings and hints: [each one and its disposition, or none].
+- CI for this head: [status and link].
+
+### Production (tasks 2.1-2.4)
+
+- 2026-11-18: `infrastructure/submission-notifications` and `infrastructure/bootstrap-policeconduct` applied; both forms Lambdas have `SUBMISSION_NOTIFICATIONS_TOPIC_ARN` set.
+- [Bucket notification configuration, synthetic preview result, and the task 2.4 deploy.]

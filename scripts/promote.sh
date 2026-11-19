@@ -8,11 +8,17 @@ namespace="${2:-prod}"
 : "${RELEASE_DATA_BUCKET:?RELEASE_DATA_BUCKET is required}"
 : "${KVS_ARN:?KVS_ARN is required}"
 : "${CLOUDFRONT_DIST_ID:?CLOUDFRONT_DIST_ID is required}"
-[[ "${namespace}" == prod || "${namespace}" =~ ^[a-z0-9-]+$ ]] || exit 1
+[[ "${namespace}" == prod || "${namespace}" =~ ^[a-z0-9-]+$ ]] || {
+  echo "Expected namespace prod or a label of lowercase letters, digits and hyphens." >&2
+  exit 1
+}
 case "${release_id}" in
   ""|.|..|*/*|*\\*) echo "Expected a single deployment folder name." >&2; exit 1 ;;
 esac
-[[ "${release_id}" != *[[:cntrl:]]* ]] || exit 1
+[[ "${release_id}" != *[[:cntrl:]]* ]] || {
+  echo "Release ID must not contain control characters." >&2
+  exit 1
+}
 prefix="${release_id}"
 aws s3api head-object --bucket "${RELEASE_DATA_BUCKET}" --key "builds/${prefix}/data/dynamic.json" >/dev/null
 aws s3api head-object --bucket "${S3_BUCKET}" --key "${prefix}/build/index.html" >/dev/null

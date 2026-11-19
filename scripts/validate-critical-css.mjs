@@ -35,7 +35,7 @@ const REQUIRED_SELECTORS = [
 // HTML) produces ~244KB from ~476KB unpurged, so 150KB leaves ample margin. An
 // earlier 250KB value was calibrated to the old in-build purge and wrongly
 // failed the leaner, correct post-build result.
-const MIN_TOTAL_CSS_BYTES = 150_000;
+const MIN_TOTAL_CSS_CHARACTERS = 150_000;
 
 const readAllCss = () => {
   let files;
@@ -52,7 +52,7 @@ const readAllCss = () => {
   const combined = files
     .map((name) => readFileSync(path.join(cssDir, name), "utf8"))
     .join("\n");
-  return { combined, fileCount: files.length, bytes: combined.length };
+  return { combined, fileCount: files.length, characters: combined.length };
 };
 
 const expectedTokens = () => {
@@ -65,12 +65,12 @@ const expectedTokens = () => {
   return [...tokens];
 };
 
-const { combined, fileCount, bytes } = readAllCss();
+const { combined, fileCount, characters } = readAllCss();
 const failures = [];
 
-if (bytes < MIN_TOTAL_CSS_BYTES) {
+if (characters < MIN_TOTAL_CSS_CHARACTERS) {
   failures.push(
-    `Total CSS is ${bytes} bytes across ${fileCount} file(s), below the ${MIN_TOTAL_CSS_BYTES}-byte floor — styles likely stripped.`,
+    `Total CSS is ${characters} characters across ${fileCount} file(s), below the ${MIN_TOTAL_CSS_CHARACTERS}-character floor — styles likely stripped.`,
   );
 }
 
@@ -87,8 +87,14 @@ if (missingTokens.length) {
   );
 }
 
+// Match the whole class name, so `.masthead-search-option-title` does not
+// count as `.masthead-search-option`.
+const selectorPresent = (selector) =>
+  new RegExp(
+    `${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w-])`,
+  ).test(combined);
 const missingSelectors = REQUIRED_SELECTORS.filter(
-  (selector) => !combined.includes(selector),
+  (selector) => !selectorPresent(selector),
 );
 if (missingSelectors.length) {
   failures.push(
@@ -97,27 +103,18 @@ if (missingSelectors.length) {
 }
 
 if (failures.length) {
-  // Advisory only — NEVER fail the build. The build already produced a complete
-  // dist (this runs last, after pages/search/redirects), so failing here would
-  // only block a deploy of otherwise-finished output. Print an unmissable
-  // banner so a real regression is caught by eye, and let the build continue.
-  const bar = "!".repeat(74);
-  console.warn(`\n${bar}`);
-  console.warn(
-    "!!  CRITICAL CSS WARNING  —  build NOT failed, review before deploying  !!",
-  );
-  console.warn(bar);
+  // Blocking: a missing token or selector means the built site renders
+  // differently from `astro dev`, so the build must stop before deploy.
+  console.error("Critical CSS validation failed:");
   for (const failure of failures) {
-    console.warn(`  - ${failure}`);
+    console.error(`  - ${failure}`);
   }
-  console.warn(
-    "\n  If styling looks wrong, compare dist/_astro CSS against `astro dev`\n" +
-      "  output (dev renders the same purge, so differences point at the cause).",
+  console.error(
+    "Compare dist/_astro CSS against `astro dev` output to find what stripped these styles.",
   );
-  console.warn(`${bar}\n`);
-  // Intentionally do NOT set process.exitCode — this check is non-blocking.
+  process.exitCode = 1;
 } else {
   console.log(
-    `Critical CSS validation passed: ${tokens.length} design tokens + ${REQUIRED_SELECTORS.length} component selectors present in ${fileCount} CSS file(s) (${bytes} bytes).`,
+    `Critical CSS validation passed: ${tokens.length} design tokens + ${REQUIRED_SELECTORS.length} component selectors present in ${fileCount} CSS file(s) (${characters} characters).`,
   );
 }
