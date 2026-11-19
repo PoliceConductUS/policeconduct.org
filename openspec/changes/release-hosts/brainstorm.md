@@ -48,6 +48,13 @@ Option C. Release hosts are aliases of the production distribution, which alread
 - Robots: no new rule. The existing `/robots.txt` deny-all answer covers release hosts and bare hosts. Production builds already declare `www` as the canonical URL.
 - The Terraform apply runs from `main` after the PR merges, with the existing `scripts/apply.sh`. No approval gate is added.
 
+Owner answers, 2026-11-19:
+
+- Forms: the production forms API accepts only the apex, `www` and `*.release.policeconduct.org` origins. The preview forms API accepts only `*.preview.policeconduct.org` origins (design.md, Decision 8).
+- Analytics and Sentry are off on release hosts, decided by the host name at runtime in the browser (design.md, Decision 9).
+- `<commit>.release` serves only the latest version of a commit. Versions are not separately addressable.
+- Production deploys no longer mirror to preview. The copies the old `current:main` mirror left in the preview site bucket and the preview release data bucket are deleted (design.md, Decision 5).
+
 ## Open Questions
 
 Listed in design.md, "Open Questions".
