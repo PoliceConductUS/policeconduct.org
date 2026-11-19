@@ -53,9 +53,8 @@ test-results/
 .deploy-cache/
 rollback.json
 
-# Entity images (per-type subfolders under public/img) are sourced at build
-# time from ENTITY_IMAGES_DIR, not committed. Keep each folder's `default.*`
-# fallback tracked. Other committed assets in public/img are unaffected.
+# Entity images (per-type subfolders under public/img) are not committed.
+# Keep each folder's `default.*` fallback tracked. Other committed assets in public/img are unaffected.
 /public/img/personnel/*
 /public/img/report/*
 /public/img/state/*
@@ -73,4 +72,9 @@ rollback.json
 
 # code coverage
 coverage/
+# src/lib/coverage is source code, not a coverage report.
+!src/lib/coverage/
 *.lcov
+
+# Goldfish review reports (local only)
+/.egm-reviews/

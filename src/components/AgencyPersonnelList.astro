@@ -1,6 +1,7 @@
 ---
 import "#src/styles/civic-ledger.css";
 import { getAssignmentStatus } from "#src/lib/data/assignment-status.js";
+import { civicIndexCollator } from "#src/lib/data/civic-index.js";
 
 // The full agency roster on one page — a scannable research surface, not a bare
 // phone book. Every officer shows a quiet context line (status · rank · tenure ·
@@ -110,8 +111,8 @@ const rows: RosterRow[] = employees.map((employee) => {
 });
 rows.sort(
   (a, b) =>
-    a.sortKey.localeCompare(b.sortKey, "en") ||
-    a.label.localeCompare(b.label, "en"),
+    civicIndexCollator.compare(a.sortKey, b.sortKey) ||
+    civicIndexCollator.compare(a.label, b.label),
 );
 
 const total = rows.length;
@@ -127,7 +128,7 @@ for (const row of rows) {
   alphaGroups.set(row.letter, group);
 }
 const groups = [...alphaGroups.entries()].sort(([a], [b]) =>
-  a.localeCompare(b, "en"),
+  civicIndexCollator.compare(a, b),
 );
 const groupId = (letter: string) =>
   letter === "#" ? "roster-hash" : `roster-${letter.toLowerCase()}`;

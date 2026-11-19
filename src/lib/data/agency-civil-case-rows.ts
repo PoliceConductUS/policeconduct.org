@@ -10,7 +10,6 @@ export type CivilCaseRow = {
   court?: string | null;
   outcome: string;
   caseUrl: string;
-  type: "Direct" | "Personnel-linked" | "Direct + personnel-linked";
   personnel: CivilCasePersonnelRef[];
   personnelNames: string[];
 };
@@ -26,10 +25,6 @@ type CivilCaseOfficer = {
   id?: string | null;
   last_name?: string | null;
   slug?: string | null;
-};
-
-type CivilCaseOfficerLink = {
-  officer: CivilCaseOfficer;
 };
 
 const getOfficerName = (officer: CivilCaseOfficer) =>
@@ -96,41 +91,6 @@ export const buildAgencyCivilCaseRows = (
       court: caseItem.court,
       outcome: getOutcomeLabel(caseItem),
       caseUrl: caseItem.caseUrl,
-      type: "Direct",
-      personnel,
-      personnelNames: personnel.map((person) => person.name),
-    });
-  }
-
-  for (const caseItem of data.personnelLinkedCivilCases) {
-    const existing = casesById.get(caseItem.id);
-    const personnel = uniquePersonnel(
-      (caseItem.links || [])
-        .map((link: CivilCaseOfficerLink) => getPersonnelRef(link.officer))
-        .filter(isPersonnelRef),
-    );
-
-    if (existing) {
-      existing.type = "Direct + personnel-linked";
-      existing.personnel = uniquePersonnel([
-        ...existing.personnel,
-        ...personnel,
-      ]);
-      existing.personnelNames = existing.personnel.map((person) => person.name);
-      continue;
-    }
-
-    casesById.set(caseItem.id, {
-      id: caseItem.id,
-      slug: caseItem.slug,
-      title: caseItem.title,
-      cause_number: caseItem.cause_number,
-      filed_date: caseItem.filed_date,
-      date_terminated: caseItem.date_terminated,
-      court: caseItem.court,
-      outcome: getOutcomeLabel(caseItem),
-      caseUrl: caseItem.caseUrl,
-      type: "Personnel-linked",
       personnel,
       personnelNames: personnel.map((person) => person.name),
     });

@@ -31,7 +31,10 @@ export async function stagePersonnelPhotos() {
       );
     }
     return result;
-  })();
+  })().catch((error) => {
+    photos = undefined;
+    throw error;
+  });
   return photos;
 }
 

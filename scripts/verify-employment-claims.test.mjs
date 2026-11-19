@@ -108,6 +108,12 @@ const serve = async (t, handler) => {
   return `http://127.0.0.1:${server.address().port}`;
 };
 
+test("CLI rejects an unknown flag with a usage error", async () => {
+  const result = await runCli(scriptPath, ["--dist", "dist", "--dsit", "x"]);
+  assert.equal(result.code, 2, result.output);
+  assert.match(result.output, /Unknown argument --dsit\. Usage:/);
+});
+
 test("CLI checks the selected host even when sitemap URLs name another origin", async (t) => {
   let foreignHits = 0;
   const foreign = await serve(t, (req, res) => {

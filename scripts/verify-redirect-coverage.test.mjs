@@ -25,6 +25,7 @@ async function check(
     redirects = [],
     absences = [],
     htmlRoutes = [],
+    redirectMap,
   } = {},
 ) {
   const cwd = await mkdtemp(path.join(tmpdir(), "route-coverage-"));
@@ -32,10 +33,12 @@ async function check(
   await mkdir(path.join(cwd, "dist"));
   await writeFile(path.join(cwd, "prior.xml"), sitemap(prior));
   await writeFile(path.join(cwd, "dist/sitemap-index.xml"), sitemap(current));
-  await writeFile(
-    path.join(cwd, "dist/_redirect-map.json"),
-    JSON.stringify({ redirects }),
-  );
+  if (redirectMap !== null) {
+    await writeFile(
+      path.join(cwd, "dist/_redirect-map.json"),
+      redirectMap ?? JSON.stringify({ redirects }),
+    );
+  }
   for (const route of htmlRoutes) {
     const routeDir = path.join(cwd, "dist", route.replace(/^\/+/, ""));
     await mkdir(routeDir, { recursive: true });
@@ -180,6 +183,20 @@ test("a malformed absence list fails even when all prior routes exist", async (t
   const result = await check(t, { prior: ["/"], absences: "{" });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /JSON/);
+});
+
+test("a missing redirect map fails even when all prior routes exist", async (t) => {
+  const result = await check(t, { prior: ["/"], redirectMap: null });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /ENOENT/);
+});
+
+test("a malformed redirect map fails even when all prior routes exist", async (t) => {
+  for (const redirectMap of ["{", JSON.stringify({ redirects: {} })]) {
+    const result = await check(t, { prior: ["/"], redirectMap });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /JSON|redirects array/);
+  }
 });
 
 test("retired pagination is covered by its terminal wildcard redirect", async (t) => {

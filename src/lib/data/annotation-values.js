@@ -1,4 +1,5 @@
 import contract from "./annotation-contract.json" with { type: "json" };
+import { PAGE_SIZE } from "../pagination.ts";
 
 /** @typedef {{field:string,value:unknown,type:'warning'|'error'|'correction',message:string,source_namespace:string,source_record_id:string,replacement_value?:unknown,evidence?:Record<string,unknown>[]}} DataAnnotation */
 /** @typedef {DataAnnotation & {canonical_id:string,entity_kind:string,record_url:string,record_label:string,source_provider:string}} AnnotationEntry */
@@ -131,10 +132,10 @@ export function paginateAnnotations(entries, page) {
   if (
     !Number.isSafeInteger(page) ||
     page < 1 ||
-    page > Math.max(1, Math.ceil(entries.length / 50))
+    page > Math.max(1, Math.ceil(entries.length / PAGE_SIZE))
   )
     throw new Error("Invalid annotation page.");
-  return entries.slice((page - 1) * 50, page * 50);
+  return entries.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 }
 
 /** @param {AnnotationEntry[]} entries */

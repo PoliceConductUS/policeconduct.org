@@ -121,7 +121,11 @@ async function loadCoverage() {
   });
 }
 let cached: ReturnType<typeof loadCoverage> | undefined;
-export const loadReleaseCoverage = () => (cached ??= loadCoverage());
+export const loadReleaseCoverage = () =>
+  (cached ??= loadCoverage().catch((error: unknown) => {
+    cached = undefined;
+    throw error;
+  }));
 async function forDestination(type: "agencies" | "personnel", id: string) {
   const data = await loadReleaseCoverage();
   const links = Array.from(

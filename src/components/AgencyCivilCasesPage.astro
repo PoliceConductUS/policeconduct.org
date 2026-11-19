@@ -1,0 +1,82 @@
+---
+import type { ComponentProps } from "astro/types";
+import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
+import Pagination from "#src/components/Pagination.astro";
+import TableScroll from "#src/components/TableScroll.astro";
+import type { CivilCaseRow } from "#src/lib/data/agency-civil-case-rows.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
+
+const { currentPage, data, rows } = Astro.props as {
+  currentPage: number;
+  data: ComponentProps<typeof AgencyTopicPage>["data"];
+  rows: CivilCaseRow[];
+};
+
+const lastPage = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+if (
+  !Number.isInteger(currentPage) ||
+  currentPage < 1 ||
+  currentPage > lastPage
+) {
+  throw new Error(
+    `${data.agencyPath}civil-cases/ has no page ${currentPage}; it has ${lastPage} page(s).`,
+  );
+}
+const pageRows = rows.slice(
+  (currentPage - 1) * PAGE_SIZE,
+  currentPage * PAGE_SIZE,
+);
+const formatDate = (value?: string | null) =>
+  value
+    ? new Date(value).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      })
+    : "";
+---
+
+<AgencyTopicPage
+  currentPage={currentPage}
+  data={data}
+  topicLabel="Civil Cases"
+  topicSlug="civil-cases"
+  description={`${rows.length.toLocaleString("en-US")} civil cases tied to this agency's personnel records.`}
+>
+  <TableScroll>
+    <table class="record-table">
+      <thead>
+        <tr>
+          <th scope="col">Case</th>
+          <th scope="col">Cause number</th>
+          <th scope="col">Court</th>
+          <th scope="col">Filed</th>
+          <th scope="col">Outcome</th>
+        </tr>
+      </thead>
+      <tbody>
+        {pageRows.map((row) => (
+          <tr>
+            <td>
+              <a class="row-link" href={row.caseUrl}>
+                {row.title}
+              </a>
+            </td>
+            <td class="muted">{row.cause_number || ""}</td>
+            <td>{row.court || ""}</td>
+            <td>{formatDate(row.filed_date)}</td>
+            <td>{row.outcome}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </TableScroll>
+  {lastPage > 1 ? (
+    <Pagination
+      basePath={`${data.agencyPath}civil-cases/`}
+      currentPage={currentPage}
+      lastPage={lastPage}
+    />
+  ) : null}
+</AgencyTopicPage>

@@ -26,7 +26,7 @@ const dimensions = [
   ["by_source_district", "District source codes"],
 ] as const;
 const percentage = (count: number, total: number) =>
-  total === 0 ? "—" : `${((count / total) * 100).toFixed(1)}%`;
+  total === 0 ? "--" : `${((count / total) * 100).toFixed(1)}%`;
 const collator = new Intl.Collator("en", { numeric: true });
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const rowsFor = (

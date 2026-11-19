@@ -121,6 +121,9 @@ export const loadLocationBuildPayloads = async () => {
     ).rows;
 
     return rows.map((row) => row.payload);
+  }).catch((error: unknown) => {
+    locationPayloadCache = null;
+    throw error;
   });
 
   return locationPayloadCache;
@@ -140,6 +143,9 @@ export const loadReportSummaryBuildPayloads = async () => {
     ).rows;
 
     return rows.map((row) => row.payload);
+  }).catch((error: unknown) => {
+    reportSummaryPayloadCache = null;
+    throw error;
   });
 
   return reportSummaryPayloadCache;

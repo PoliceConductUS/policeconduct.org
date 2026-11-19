@@ -108,6 +108,33 @@ for (const [target, expectedStatus] of [
   });
 }
 
+test("--tracked skips a tracked file deleted from the working tree", () => {
+  const directory = mkdtempSync(join(tmpdir(), "personal-data-scan-"));
+  try {
+    const run = (...args) => {
+      const result = spawnSync("git", args, {
+        cwd: directory,
+        encoding: "utf8",
+      });
+      assert.equal(result.status, 0, result.stderr);
+    };
+    writeFileSync(join(directory, "kept.txt"), "kept\n");
+    writeFileSync(join(directory, "deleted.txt"), "deleted\n");
+    run("init", "-q");
+    run("add", ".");
+    rmSync(join(directory, "deleted.txt"));
+    const result = spawnSync(
+      process.execPath,
+      [join(ROOT, "scripts/scan-personal-data.mjs"), "--tracked"],
+      { cwd: directory, encoding: "utf8" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /1 file\(s\) checked, 0 findings\./);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("the CLI fails when a requested file cannot be read", () => {
   const result = spawnSync(
     process.execPath,

@@ -1,5 +1,4 @@
 ---
-import type { GetStaticPathsOptions, GetStaticPathsResult, Page } from "astro";
 import AgencyReportsPage from "#src/components/AgencyReportsPage.astro";
 import { timeBuildStep } from "#src/lib/build-timing.js";
 import {
@@ -8,48 +7,46 @@ import {
 } from "#src/lib/data/agency-detail.js";
 import { PAGE_SIZE } from "#src/lib/pagination.js";
 
-export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
+// Enumerates params only. The render reloads the agency by its route params
+// and pages its reports.
+export async function getStaticPaths() {
   return timeBuildStep("agency reports pagination static paths", async () => {
     const agencyPaths = await loadAgencyLocationStaticPathsForTopic("reports");
-    const pages: GetStaticPathsResult = [];
+    const pages: {
+      params: (typeof agencyPaths)[number]["params"] & { page: string };
+    }[] = [];
 
     for (const agencyPath of agencyPaths) {
       const data = await loadAgencyDetailByRouteParams(agencyPath.params);
-      paginate(data.reportedReports, {
-        pageSize: PAGE_SIZE,
-        params: agencyPath.params,
-      })
-        .filter((page) => {
-          const pageParam = page.params?.page;
-          if (Array.isArray(pageParam)) {
-            return pageParam.length > 0 && pageParam[0] !== "1";
-          }
-          return (
-            typeof pageParam === "string" &&
-            pageParam.length > 0 &&
-            pageParam !== "1"
-          );
-        })
-        .forEach((page) => pages.push(page));
+      const lastPage = Math.ceil(data.reportedReports.length / PAGE_SIZE);
+      for (let pageNumber = 2; pageNumber <= lastPage; pageNumber += 1) {
+        pages.push({
+          params: { ...agencyPath.params, page: String(pageNumber) },
+        });
+      }
     }
 
     return pages;
   });
 }
 
-const { page } = Astro.props as {
-  page: Page<
-    Awaited<
-      ReturnType<typeof loadAgencyDetailByRouteParams>
-    >["reportedReports"][number]
-  >;
-};
+const currentPage = Number(Astro.params.page);
+if (String(currentPage) !== Astro.params.page || currentPage < 2) {
+  throw new Error(`Invalid reports page number ${Astro.params.page}.`);
+}
 const data = await loadAgencyDetailByRouteParams(Astro.params);
+const lastPage = Math.ceil(data.reportedReports.length / PAGE_SIZE);
+if (currentPage > lastPage) {
+  throw new Error(
+    `Reports page ${currentPage} is past the last page ${lastPage}.`,
+  );
+}
+const start = (currentPage - 1) * PAGE_SIZE;
 ---
 
 <AgencyReportsPage
-  currentPage={page.currentPage}
+  currentPage={currentPage}
   data={data}
-  lastPage={page.lastPage}
-  pageReports={page.data}
+  lastPage={lastPage}
+  pageReports={data.reportedReports.slice(start, start + PAGE_SIZE)}
 />

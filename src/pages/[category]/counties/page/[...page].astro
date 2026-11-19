@@ -1,0 +1,47 @@
+---
+import CivicChildIndexPage from "#src/components/CivicChildIndexPage.astro";
+import { buildStateCivicIndex } from "#src/lib/data/civic-index.js";
+import {
+  loadRequiredLocationByPath,
+  loadStateScopedPaths,
+} from "#src/lib/data/civic-scoped-routes.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
+
+// Enumerates params only. The render reloads the location by its exact path
+// and pages its rows, so route identity never travels through props.
+export async function getStaticPaths() {
+  const paths = await loadStateScopedPaths();
+  const pages: {
+    params: (typeof paths)[number]["params"] & { page: string };
+  }[] = [];
+
+  for (const path of paths) {
+    const model = await buildStateCivicIndex(
+      await loadRequiredLocationByPath(`/${path.params.category}/`, "state"),
+    );
+    const lastPage = Math.ceil(model.rows.length / PAGE_SIZE);
+    for (let pageNumber = 2; pageNumber <= lastPage; pageNumber += 1) {
+      pages.push({ params: { ...path.params, page: String(pageNumber) } });
+    }
+  }
+
+  return pages;
+}
+
+const currentPage = Number(Astro.params.page);
+if (String(currentPage) !== Astro.params.page || currentPage < 2) {
+  throw new Error(`Invalid counties page number ${Astro.params.page}.`);
+}
+const location = await loadRequiredLocationByPath(
+  `/${Astro.params.category}/`,
+  "state",
+);
+const model = await buildStateCivicIndex(location);
+---
+
+<CivicChildIndexPage
+  currentPage={currentPage}
+  label="Counties"
+  model={model}
+  pagePath={`${model.pagePath}counties/`}
+/>

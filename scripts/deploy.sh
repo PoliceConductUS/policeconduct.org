@@ -68,10 +68,6 @@ else
   site_url="https://${namespace}.${environment}.policeconduct.org"
 fi
 
-if [[ "${dry_run}" == false ]]; then
-  bash scripts/workspace-sync.sh preflight "${environment}"
-fi
-
 if [[ "${skip_build}" == false ]]; then
   if [[ "${environment}" == prod ]]; then
     if [[ "$(git branch --show-current)" != main ]]; then
@@ -90,7 +86,6 @@ args=()
 if [[ "${dry_run}" == true ]]; then args+=(--dry-run); fi
 CLOUDFRONT_DIST_ID="${distribution}" bash scripts/upload-release.sh "${namespace}" "${bucket}" "${data_bucket}" "${store}" ${args[@]+"${args[@]}"}
 
-if [[ "${dry_run}" == false ]]; then
-  bash scripts/workspace-sync.sh after "${environment}"
-  if [[ "${environment}" != prod ]]; then echo "Published ${site_url}"; fi
+if [[ "${dry_run}" == false && "${environment}" != prod ]]; then
+  echo "Published ${site_url}"
 fi

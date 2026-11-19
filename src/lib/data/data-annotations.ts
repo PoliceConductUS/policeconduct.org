@@ -248,6 +248,9 @@ export async function collectDataAnnotations(
 }
 let collected: Promise<AnnotationEntry[]> | undefined;
 export function loadDataAnnotations() {
-  collected ??= withDb(collectDataAnnotations);
+  collected ??= withDb(collectDataAnnotations).catch((error: unknown) => {
+    collected = undefined;
+    throw error;
+  });
   return collected;
 }
