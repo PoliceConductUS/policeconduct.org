@@ -66,7 +66,6 @@ for (const [name, script, args, builds] of [
           "upload-release.sh",
           "release-files.mjs",
           "terraform-outputs.mjs",
-          "workspace-sync.sh",
         ]) {
           copyFileSync(
             new URL(file, import.meta.url),
@@ -113,7 +112,6 @@ for (const [name, script, args, builds] of [
               // Shell startup files must not replace the fixture command PATH.
               BASH_ENV: "/dev/null",
               ENV: "/dev/null",
-              WORKSPACE_SYNC: "skip",
               PATH: `${join(root, "bin")}:${process.env.PATH}`,
               TEST_NODE: process.execPath,
               CALL_LOG: log,
@@ -346,7 +344,6 @@ process.stdout.write(JSON.stringify(data));`,
       CALL_LOG: log,
       PR_NUMBER: "12",
       KVS_ARN_PREVIEW: "preview-kvs",
-      S3_BUCKET_PREVIEW: "preview",
     };
     const run = spawnSync(
       process.execPath,
@@ -369,6 +366,27 @@ process.stdout.write(JSON.stringify(data));`,
     );
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("promote.sh explains each guard failure on standard error", () => {
+  const env = {
+    ...process.env,
+    S3_BUCKET: "fixture-site",
+    RELEASE_DATA_BUCKET: "fixture-data",
+    KVS_ARN: "fixture-kvs",
+    CLOUDFRONT_DIST_ID: "fixture-dist",
+  };
+  for (const [args, message] of [
+    [["fixture", "Bad Label"], /Expected namespace prod or a label/],
+    [["fix\tture"], /Release ID must not contain control characters\./],
+  ]) {
+    const run = spawnSync("bash", [resolve("scripts/promote.sh"), ...args], {
+      encoding: "utf8",
+      env,
+    });
+    assert.equal(run.status, 1);
+    assert.match(run.stderr, message);
   }
 });
 

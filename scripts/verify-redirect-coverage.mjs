@@ -69,22 +69,20 @@ const loadSitemapPaths = async (source) => {
   return paths;
 };
 
+// A missing or unreadable map must fail: read as empty, every retired URL
+// would look uncovered for the wrong reason, or a broken build would pass.
 const loadRedirects = async () => {
-  try {
-    const raw = await readFile(
-      path.join(DIST_DIR, "_redirect-map.json"),
-      "utf8",
-    );
-    const { redirects: list } = JSON.parse(raw);
-    const map = new Map();
-    for (const entry of list) {
-      if (entry && entry.from && entry.to)
-        map.set(toPath(entry.from), toPath(entry.to));
-    }
-    return map;
-  } catch {
-    return new Map();
+  const mapPath = path.join(DIST_DIR, "_redirect-map.json");
+  const { redirects: list } = JSON.parse(await readFile(mapPath, "utf8"));
+  if (!Array.isArray(list)) {
+    throw new Error(`${mapPath} must contain a redirects array.`);
   }
+  const map = new Map();
+  for (const entry of list) {
+    if (entry && entry.from && entry.to)
+      map.set(toPath(entry.from), toPath(entry.to));
+  }
+  return map;
 };
 
 const hasGeneratedRoute = async (route) => {

@@ -59,7 +59,7 @@ variable "sentry_project" {
 }
 
 variable "sentry_auth_token" {
-  description = "Sentry auth token stored as SENTRY_AUTH_TOKEN GitHub environment secret for both production and preview. Leave null/empty to skip managing this secret."
+  description = "Sentry auth token stored as SENTRY_AUTH_TOKEN GitHub environment secret for production only. Leave null/empty to skip managing this secret."
   type        = string
   default     = null
   sensitive   = true
@@ -375,9 +375,10 @@ variable "submission_notification_email_endpoints" {
     commitment (INS-16), so at least one of these addresses has to belong to
     someone who reads it on that cadence.
 
-    Leaving this empty disables the whole notification path rather than creating
-    a topic nobody is subscribed to. That is deliberate: a topic with zero
-    subscribers is what INS-20 found, and it reads as working.
+    The forms API sends the staff email to these addresses through Resend
+    (SUBMISSION_NOTIFICATION_RECIPIENTS). Leaving this empty does not turn off
+    the SNS publish: the forms API sends no staff email and logs
+    forms.notify.recipients_not_configured for each submission.
 
     Notifications carry no submission content -- only form type, submission id
     and S3 key.

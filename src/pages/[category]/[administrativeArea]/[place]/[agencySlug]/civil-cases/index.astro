@@ -1,10 +1,6 @@
 ---
-import AgencyTopicPage from "#src/components/AgencyTopicPage.astro";
-import TableScroll from "#src/components/TableScroll.astro";
-import {
-  buildAgencyCivilCaseRows,
-  type CivilCaseRow,
-} from "#src/lib/data/agency-civil-case-rows.js";
+import AgencyCivilCasesPage from "#src/components/AgencyCivilCasesPage.astro";
+import { buildAgencyCivilCaseRows } from "#src/lib/data/agency-civil-case-rows.js";
 import {
   loadAgencyDetailByRouteParams,
   loadAgencyLocationStaticPathsForTopic,
@@ -15,50 +11,10 @@ export async function getStaticPaths() {
 }
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
-const rows = buildAgencyCivilCaseRows(data);
-const formatDate = (value?: string | null) =>
-  value
-    ? new Date(value).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        timeZone: "UTC",
-      })
-    : "";
 ---
 
-<AgencyTopicPage
+<AgencyCivilCasesPage
+  currentPage={1}
   data={data}
-  topicLabel="Civil Cases"
-  topicSlug="civil-cases"
-  description={`${rows.length.toLocaleString("en-US")} civil cases that name this agency's personnel.`}
->
-  <TableScroll>
-    <table class="record-table">
-      <thead>
-        <tr>
-          <th scope="col">Case</th>
-          <th scope="col">Cause number</th>
-          <th scope="col">Court</th>
-          <th scope="col">Filed</th>
-          <th scope="col">Outcome</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row: CivilCaseRow) => (
-          <tr>
-            <td>
-              <a class="row-link" href={row.caseUrl}>
-                {row.title!}
-              </a>
-            </td>
-            <td class="muted">{row.cause_number || ""}</td>
-            <td>{row.court || ""}</td>
-            <td>{formatDate(row.filed_date)}</td>
-            <td>{row.outcome}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </TableScroll>
-</AgencyTopicPage>
+  rows={buildAgencyCivilCaseRows(data)}
+/>

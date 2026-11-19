@@ -208,9 +208,9 @@ export const loadReportDetail = async (
           select
             r.*,
             lp.path as location_path,
-            split_part(lp.path, '/', 2) as state_or_territory_slug,
-            split_part(lp.path, '/', 3) as administrative_area_slug,
-            split_part(lp.path, '/', 4) as place_slug,
+            nullif(split_part(lp.path, '/', 2), '') as state_or_territory_slug,
+            nullif(split_part(lp.path, '/', 3), '') as administrative_area_slug,
+            nullif(split_part(lp.path, '/', 4), '') as place_slug,
             state_lp.display_name as state_or_territory_name,
             area_lp.display_name as administrative_area_name,
             lp.display_name as place_name
@@ -255,23 +255,57 @@ export const loadReportDetail = async (
         [report.id],
       )
     ).rows;
-    const officers = (await client.query("select * from public.personnel"))
-      .rows;
+    const officers = (
+      await client.query(
+        `
+          select o.*
+          from public.personnel o
+          where o.id in (
+            select ap.personnel_id
+            from public.agency_personnel ap
+            join public.review_personnel rp
+              on rp.agency_personnel_id = ap.id
+            where rp.review_id = $1
+          )
+        `,
+        [report.id],
+      )
+    ).rows;
     const agencies = (
       await client.query(
         `
-          select a.*, lp.path as location_path, bpp.path as canonical_path
+          select
+            a.*,
+            lp.path as location_path,
+            lp.path || a.slug || '/' as canonical_path
           from public.agency a
           join public.location_path lp
             on lp.location_path_id = a.location_path_id
           join public.build_page_payload bpp
             on bpp.page_type = 'agency'
            and bpp.entity_id = a.id
+          where a.id in (
+            select ap.agency_id
+            from public.agency_personnel ap
+            join public.review_personnel rp
+              on rp.agency_personnel_id = ap.id
+            where rp.review_id = $1
+          )
         `,
+        [report.id],
       )
     ).rows;
     const agencyOfficers = (
-      await client.query("select * from public.agency_personnel")
+      await client.query(
+        `
+          select ap.*
+          from public.agency_personnel ap
+          join public.review_personnel rp
+            on rp.agency_personnel_id = ap.id
+          where rp.review_id = $1
+        `,
+        [report.id],
+      )
     ).rows;
     return {
       report,

@@ -1,8 +1,12 @@
 import { execFile } from "node:child_process";
 import { promisify, parseArgs } from "node:util";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { runWorkspace } from "./intake-workspace-sync.mjs";
 const exec = promisify(execFile);
+// Absolute, so the command works from any working directory.
+const terraformDir = fileURLToPath(
+  new URL("../infrastructure/intake-workspace", import.meta.url),
+);
 export async function operator(args, dependencies = {}) {
   const env = dependencies.env ?? process.env;
   const run = dependencies.exec ?? exec;
@@ -22,7 +26,7 @@ export async function operator(args, dependencies = {}) {
     env.INTAKE_WORKSPACE_BUCKET?.trim() ||
     (
       await run("terraform", [
-        "-chdir=infrastructure/intake-workspace",
+        `-chdir=${terraformDir}`,
         "output",
         "-raw",
         "intake_workspace_bucket_name",
@@ -46,16 +50,7 @@ export async function operator(args, dependencies = {}) {
         ])
       ).stdout,
     );
-  const versioning = await aws("get-bucket-versioning");
-  if (versioning.Status !== "Enabled")
-    throw Error("Workspace bucket versioning must be Enabled");
-  const tags = await aws("get-bucket-tagging");
-  if (
-    !tags.TagSet?.some(
-      (t) => t.Key === "Purpose" && t.Value === "intake-workspace",
-    )
-  )
-    throw Error("Bucket must be tagged Purpose=intake-workspace");
+  // runWorkspace checks versioning and the Purpose tag itself.
   const access = (await aws("get-public-access-block"))
     .PublicAccessBlockConfiguration;
   if (
@@ -76,7 +71,7 @@ export async function operator(args, dependencies = {}) {
     )
   )
     throw Error("Bucket default encryption must be AES256");
-  const summary = `Storage validation passed: ${bucket}; versioning Enabled; public access blocked; AES256 encryption.\n`;
+  const summary = `Storage validation passed: ${bucket}; public access blocked; AES256 encryption.\n`;
   report?.(summary);
   const result = await (dependencies.workspace ?? runWorkspace)(
     {

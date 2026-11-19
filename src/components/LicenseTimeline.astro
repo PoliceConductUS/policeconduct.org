@@ -13,7 +13,7 @@ const hidden = entries.slice(initialCount);
 
 const renderEntry = (entry: LicenseTimelineEntry) => ({
   ...entry,
-  dateLabel: entry.actionDate ? formatShortDate(entry.actionDate) : "Undated",
+  dateLabel: entry.actionDate ? formatShortDate(entry.actionDate) : null,
 });
 ---
 
@@ -31,7 +31,9 @@ const renderEntry = (entry: LicenseTimelineEntry) => ({
           <span class="license-timeline-marker" aria-hidden="true" />
           <div class="license-timeline-body">
             <div class="license-timeline-head">
-              <span class="license-timeline-date">{entry.dateLabel}</span>
+              {entry.dateLabel ? (
+                <span class="license-timeline-date">{entry.dateLabel}</span>
+              ) : null}
               {entry.isAdverse ? (
                 <span class="license-timeline-flag">Adverse action</span>
               ) : null}
@@ -62,9 +64,11 @@ const renderEntry = (entry: LicenseTimelineEntry) => ({
                   <span class="license-timeline-marker" aria-hidden="true" />
                   <div class="license-timeline-body">
                     <div class="license-timeline-head">
-                      <span class="license-timeline-date">
-                        {entry.dateLabel}
-                      </span>
+                      {entry.dateLabel ? (
+                        <span class="license-timeline-date">
+                          {entry.dateLabel}
+                        </span>
+                      ) : null}
                       {entry.isAdverse ? (
                         <span class="license-timeline-flag">
                           Adverse action

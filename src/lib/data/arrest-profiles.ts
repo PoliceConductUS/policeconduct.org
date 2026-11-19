@@ -101,6 +101,9 @@ export const loadArrestProfilesForPersonnel = async (
       map.set(row.personnel_id, profiles);
     }
     return map;
+  }).catch((error: unknown) => {
+    profilesByPersonnel = undefined;
+    throw error;
   });
   return (await profilesByPersonnel).get(personnelId) ?? [];
 };
@@ -142,6 +145,9 @@ export const loadArrestProfilesForAgency = async (
       map.set(row.agency_id, profiles);
     }
     return map;
+  }).catch((error: unknown) => {
+    profilesByAgency = undefined;
+    throw error;
   });
   return (await profilesByAgency).get(agencyId) ?? [];
 };

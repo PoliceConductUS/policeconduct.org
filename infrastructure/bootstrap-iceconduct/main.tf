@@ -64,11 +64,11 @@ function handler(event) {
   if (host !== source && !host.endsWith(suffix)) {
     return { statusCode: 400, statusDescription: 'Bad Request' };
   }
-  var target = ${jsonencode(var.redirect_target_url)};
-  var targetParts = target.match(/^https:\/\/([^/]+)(\/.*)$/);
+  var target = ${jsonencode(trimspace(var.redirect_target_url))};
+  var targetParts = target.match(/^https:\/\/([^/]+)(\/.*)?$/);
   var targetDomain = targetParts[1].replace(/^www\./, '');
   var targetHost = host.slice(0, host.length - source.length) + targetDomain;
-  var path = request.uri === '/' ? targetParts[2] : request.uri;
+  var path = request.uri === '/' ? targetParts[2] || '/' : request.uri;
   var query = [];
   Object.keys(request.querystring).forEach(function (key) {
     var entry = request.querystring[key];
@@ -187,7 +187,6 @@ resource "aws_route53_record" "www_aaaa" {
   }
 }
 
-# ACM uses the same validation record for preview and its wildcard.
 resource "aws_route53_record" "preview_a" {
   for_each = toset(local.preview_domains)
   zone_id  = aws_route53_zone.site.zone_id
@@ -223,6 +222,7 @@ resource "aws_acm_certificate" "preview_rollout" {
   lifecycle { create_before_destroy = true }
 }
 
+# ACM uses the same validation record for preview and its wildcard.
 resource "aws_route53_record" "preview_rollout_validation" {
   allow_overwrite = false
   zone_id         = aws_route53_zone.site.zone_id

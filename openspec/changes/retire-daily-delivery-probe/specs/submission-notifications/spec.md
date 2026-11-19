@@ -1,25 +1,16 @@
 ## ADDED Requirements
 
-### Requirement: No scheduled monitoring
+### Requirement: Notification root has no scheduled monitoring
 
-The notification stack SHALL contain no scheduled checks or resources dedicated to monitoring. Actual verified-submission notifications SHALL remain.
+The `infrastructure/submission-notifications` Terraform root SHALL contain no scheduled checks and no resources whose only purpose is monitoring. It SHALL keep the staff notification SNS topic, its topic policy, its email subscriptions, and one S3 notification rule on each submissions bucket, filtered on `submissions/status/`.
 
-#### Scenario: Removal is deployed
+#### Scenario: Root is planned from main
 
-- **WHEN** the approved removal plan is applied
-- **THEN** the monitor, schedule, monitoring role, alert topic, and monitoring alarms are absent
-- **AND** verified-submission notifications remain configured
+- **WHEN** `terraform -chdir=infrastructure/submission-notifications plan` runs from `main`
+- **THEN** the configuration and state contain no Lambda function, EventBridge rule, IAM role, alert topic, CloudWatch metric filter, or CloudWatch alarm
 
-### Requirement: Staff alerts require verification
+#### Scenario: Bucket rules are read
 
-Staff notifications SHALL occur only after successful email verification.
-
-#### Scenario: Unverified request is stored
-
-- **WHEN** an initial request is stored
-- **THEN** only the submitter verification email is sent
-
-#### Scenario: Verification succeeds
-
-- **WHEN** the submitter verifies their email
-- **THEN** staff notification and its verification-status S3 backstop run
+- **WHEN** the bucket notification configuration of each submissions bucket is read
+- **THEN** it has exactly one rule, filtered on `submissions/status/`
+- **AND** no rule matches initial submission writes

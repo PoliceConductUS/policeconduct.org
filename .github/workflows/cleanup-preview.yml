@@ -37,8 +37,7 @@ jobs:
           # only (infrastructure/bootstrap-policeconduct/providers.tf).
           aws-region: us-east-1
 
-      - name: Remove the closed preview and its release routes
+      - name: Remove the closed preview's host selection
         env:
-          S3_BUCKET_PREVIEW: ${{ vars.S3_BUCKET }}
           KVS_ARN_PREVIEW: ${{ vars.KVS_ARN_PREVIEW }}
         run: node scripts/cleanup-preview.mjs

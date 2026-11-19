@@ -39,8 +39,11 @@ export async function getStaticPaths() {
 }
 
 const { slug } = Astro.params;
-const data = await loadCivilCaseDetailBySlug(String(slug || ""));
-if (!data) {
+if (!slug) {
+  throw new Error("Civil case route requires a slug.");
+}
+const data = await loadCivilCaseDetailBySlug(slug);
+if (!data || data.civilCase.slug !== slug) {
   throw new Error(`Civil case ${slug} not found.`);
 }
 const caseTitle = data.civilCase.title;

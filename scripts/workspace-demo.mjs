@@ -1,6 +1,6 @@
 /** Local non-sensitive fixture demonstration. Never contacts AWS or a database. */
 import { createServer } from "node:http";
-import { mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { pathToFileURL } from "node:url";
@@ -8,7 +8,6 @@ import { runWorkspace } from "./intake-workspace-sync.mjs";
 async function demonstrate() {
   const root = await mkdtemp(path.join(os.tmpdir(), "intake-sync-demo-"));
   const workspace = path.join(root, "workspace");
-  const { mkdir } = await import("node:fs/promises");
   await mkdir(workspace);
   const file = path.join(workspace, "evidence.txt");
   const revisions = [];

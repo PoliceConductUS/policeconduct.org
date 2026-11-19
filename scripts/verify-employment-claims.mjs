@@ -107,6 +107,10 @@ const parseArgs = (argv) => {
     else if (flag === "--seed") args.seed = Number.parseInt(argv[++i], 10);
     else if (flag === "--concurrency")
       args.concurrency = Number.parseInt(argv[++i], 10);
+    else {
+      args.unknown = flag;
+      break;
+    }
   }
   return args;
 };
@@ -213,6 +217,13 @@ const collectHostPages = async (host, sample, seed) => {
 
 const main = async () => {
   const args = parseArgs(process.argv.slice(2));
+  if (args.unknown) {
+    console.error(
+      `Unknown argument ${args.unknown}. Usage: verify-employment-claims.mjs ` +
+        "(--dist <dir> | --host <url>) [--sample <n>] [--seed <n>] [--concurrency <n>]",
+    );
+    process.exit(2);
+  }
   if (!args.dist && !args.host) {
     console.error("Pass --dist <dir> or --host <url>.");
     process.exit(2);

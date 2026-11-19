@@ -155,13 +155,9 @@ deploy_one() {
   fi
 }
 
-IFS=',' read -ra _fns <<< "$FUNCTIONS"
+# The validation loop above already rejected any other name.
 for fn in "${_fns[@]}"; do
-  case "$(echo "$fn" | xargs)" in
-    "$PREVIEW_FN") deploy_one "$PREVIEW_FN" ;;
-    "$PROD_FN")    deploy_one "$PROD_FN" ;;
-    *) die "unknown function '$fn'. Expected $PREVIEW_FN or $PROD_FN." ;;
-  esac
+  deploy_one "$fn"
 done
 
 # -------------------------------------------------------------- verification --

@@ -78,6 +78,8 @@ Run reCAPTCHA bootstrap first so WIF outputs are available to this stack:
 bash infrastructure/bootstrap-recaptcha/scripts/apply.sh
 ```
 
+Apply `infrastructure/submission-notifications` before this stack, as its README describes. `scripts/apply.sh` reads `submission_notifications_topic_arn` from that stack's output and refuses to apply when the output is missing or empty, or when `TF_VAR_submission_notifications_topic_arn` is already set to a different value.
+
 Then run this stack:
 
 ```bash

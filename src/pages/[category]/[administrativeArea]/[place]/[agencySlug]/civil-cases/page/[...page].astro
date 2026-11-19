@@ -1,0 +1,51 @@
+---
+import AgencyCivilCasesPage from "#src/components/AgencyCivilCasesPage.astro";
+import { buildAgencyCivilCaseRows } from "#src/lib/data/agency-civil-case-rows.js";
+import { timeBuildStep } from "#src/lib/build-timing.js";
+import {
+  loadAgencyDetailByRouteParams,
+  loadAgencyLocationStaticPathsForTopic,
+} from "#src/lib/data/agency-detail.js";
+import { PAGE_SIZE } from "#src/lib/pagination.js";
+
+// Enumerates params only. The render reloads the agency by its route params
+// and pages its civil cases.
+export async function getStaticPaths() {
+  return timeBuildStep(
+    "agency civil case pagination static paths",
+    async () => {
+      const agencyPaths =
+        await loadAgencyLocationStaticPathsForTopic("civil-cases");
+      const pages: {
+        params: (typeof agencyPaths)[number]["params"] & { page: string };
+      }[] = [];
+
+      for (const agencyPath of agencyPaths) {
+        const data = await loadAgencyDetailByRouteParams(agencyPath.params);
+        const lastPage = Math.ceil(
+          buildAgencyCivilCaseRows(data).length / PAGE_SIZE,
+        );
+        for (let pageNumber = 2; pageNumber <= lastPage; pageNumber += 1) {
+          pages.push({
+            params: { ...agencyPath.params, page: String(pageNumber) },
+          });
+        }
+      }
+
+      return pages;
+    },
+  );
+}
+
+const currentPage = Number(Astro.params.page);
+if (String(currentPage) !== Astro.params.page || currentPage < 2) {
+  throw new Error(`Invalid civil cases page number ${Astro.params.page}.`);
+}
+const data = await loadAgencyDetailByRouteParams(Astro.params);
+---
+
+<AgencyCivilCasesPage
+  currentPage={currentPage}
+  data={data}
+  rows={buildAgencyCivilCaseRows(data)}
+/>

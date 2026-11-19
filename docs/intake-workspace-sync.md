@@ -45,7 +45,7 @@ Run from this website checkout using Node 26 and AWS CLI v2. Set
 `INTAKE_WORKSPACE` to the **existing directory to transfer**. Relative paths resolve from the current working
 directory. Select credentials for the matching workspace operator role. Bucket
 purpose and Enabled versioning are checked before transfer. The CLI does not use
-`INTAKE_WORKSPACE_TEST`; deployment environment choices remain explicit.
+`INTAKE_WORKSPACE_TEST`.
 
 These are additive file copies, **not atomic snapshots or bidirectional merges**.
 Push and pull use AWS `s3 sync`, which skips files based on size and timestamps.
@@ -63,40 +63,16 @@ rolled back. Destination-only files are never deleted. Empty directories are
 not represented in S3. Ensure sufficient disk space for the local backup.
 
 Stop intake writers during sync and ensure no other operator writes the selected
-prefix. Keep the workspace that produced a hosting build unchanged until its
-optional upload completes. This command does not generate data, create IDs, parse
+prefix. This command does not generate data, create IDs, parse
 or rewrite envelopes, or access a database. Evidence and stable-ID mappings are
 copied byte-for-byte. Push skips symlinks; unsafe remote object paths fail before local writes. No folder names are specially excluded; local pre-download backups preserve the entire original workspace. No workspace files are copied into `dist/` or a hosting bucket.
-
-## Hosting deployment
-
-Hosting uploads transfer the website build to the hosting bucket. They do not
-include intake workspace files. After that upload succeeds, a separate optional
-prompt offers to push `INTAKE_WORKSPACE` to the private workspace bucket. Answering no preserves hosting success. Set
-`WORKSPACE_SYNC=upload` or `WORKSPACE_SYNC=skip` to make an explicit decision in
-automation. Missing or invalid noninteractive decisions fail before hosting writes
-and never read stdin. Upload requires `INTAKE_WORKSPACE` and
-`INTAKE_WORKSPACE_BUCKET`. A workspace failure is reported separately with a
-nonzero exit; no hosting rollback is attempted.
-
-```sh
-WORKSPACE_SYNC=skip npm run deploy -- preview
-WORKSPACE_SYNC=upload npm run deploy -- preview --skip-build
-WORKSPACE_SYNC=skip npm run deploy -- prod --skip-build
-```
-
-The actual upload site is `deploy.sh`, for every environment. Only the separate workspace push uses the configured workspace leaf name as its remote prefix; hosting destinations are unchanged. The prompt happens immediately after
-the S3 hosting upload. Failed hosting uploads and production dry-runs do not
-prompt or upload workspaces. A no-content-change production run does not perform
-a hosting upload and therefore does not prompt. Hosting promotion and preview
-cleanup do not upload build files and do not invoke workspace sync.
 
 ## Local review and validation
 
 ```sh
 node scripts/workspace-demo.mjs
 # Open http://127.0.0.1:8154 and run the fixture recovery.
-node --test scripts/intake-workspace-sync.test.mjs scripts/workspace-sync.test.mjs
+node --test scripts/intake-workspace-sync.test.mjs
 TMPDIR=/tmp terraform -chdir=infrastructure/intake-workspace init -backend=false
 TMPDIR=/tmp terraform -chdir=infrastructure/intake-workspace validate
 TMPDIR=/tmp terraform -chdir=infrastructure/intake-workspace test -verbose

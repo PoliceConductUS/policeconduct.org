@@ -600,7 +600,7 @@ export async function runCli(
       !["compare", "apply", "pull", "push"].includes(args[0])
     )
       fail(
-        "Usage: npm run analytics:compare, analytics:pull, or analytics:push",
+        "Usage: npm run analytics:compare, analytics:apply, analytics:pull, or analytics:push",
       );
     if (!env.GOOGLE_ANALYTICS_ACCESS_TOKEN?.trim())
       fail(

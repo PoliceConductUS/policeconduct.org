@@ -1,8 +1,17 @@
 # Release news verification
 
-## Implementation under test
+## Heads under test
 
-The website implementation is in commit `3cf5673` on `feat/publish-source-data-annotations`. The Intake implementation is on `chore/agent-guardrails`. Both used the existing project worktree. Two pre-existing local website files remain outside the implementation commit.
+Fill in each row at the final head (task 7.9). The sections below record earlier runs: the website at commit `3cf5673` on `feat/publish-source-data-annotations` and Intake on `chore/agent-guardrails`. They do not carry their own dates or SHAs and must be rerun at the final heads.
+
+| Repository | Branch                      | Full SHA | Node    | `npm ci` | `npm run validate` exit | CI run and status |
+| ---------- | --------------------------- | -------- | ------- | -------- | ----------------------- | ----------------- |
+| Website    | `ddl-openspec`              | —        | 26.13.1 | —        | —                       | —                 |
+| Intake     | `main` at the merged commit | —        | —       | —        | —                       | —                 |
+
+## Deployment folders (6.1, 6.2)
+
+At the final head, run `node --test scripts/deploy-release-guard.test.mjs scripts/manage-release.test.mjs scripts/cloudfront-router.test.mjs`. Record the counts for clean-repo rejection, the full-commit folder, main-only site upload, `current:main` selection, invalidation on promotion and refusal to delete the live folder. Not yet recorded.
 
 ## Website
 
@@ -15,7 +24,7 @@ A clean install with Node 26.13.1 installed 511 packages. Every installed versio
 | Database contract                           | 31 public tables passed                                           |
 | OpenSpec                                    | 40 items passed                                                   |
 | Personal-data scan                          | Zero findings, including a separate check of every changed file   |
-| Node suites                                 | 358 tests passed, zero skips                                      |
+| Node suites                                 | Passed, zero skips; record the final count (task 7.9)             |
 | Playwright                                  | 216 tests passed, zero skips, including the served Pagefind index |
 | Infrastructure                              | Terraform format and validation passed locally                    |
 
@@ -37,7 +46,7 @@ A clean install on Node 24.21.0 matched all 394 installed dependency versions to
 
 ## Rollout and archive
 
-Task 4.2 remains open. At the authorized website rollout, verify the full release and sitemap, check the snapshot against the selected production release, test both public hosts for private-data denial, and confirm that CloudFront refreshes previously cached pages. Enable the Intake schedule after these checks. Local tests do not exercise actual publisher access, production credentials, IAM or CloudFront propagation.
+Task 4.2 remains open. Its checklist in tasks.md (API/router agreement, private-path 404s on both hosts, cache refresh of an original and an override, form `releaseId`) runs after 6.4. Enable the Intake schedule after these checks. Local tests do not exercise actual publisher access, production credentials, IAM or CloudFront propagation.
 
 The release-page-updates delta remains in the active change pending rollout. The implementation has local validation evidence. No remote CI run or production deployment was requested or performed.
 
@@ -45,7 +54,7 @@ The release-page-updates delta remains in the active change pending rollout. The
 
 The local import rehearsal used a private release with three chained publisher URL keys, one unrelated record-kind mapping, two officer assignments and a 50-click homepage placement. All three Google source keys resolved to one canonical article. Importing a single-copy release and importing the original again produced zero new mutations. An ordinary four-page Astro build matched Daily’s renderer for each displayed URL, source identity, title, date, summary and assignment. The homepage showed the preferred original, the agency showed the story once and the two profiles showed their respective supporting copies. The alias file was present in private release data.
 
-The website's complete local validation passed with 359 Node tests, 216 browser tests and zero skips. Astro checked 352 files with zero errors, warnings or hints. The database contract passed for 31 tables. The news change also passed strict OpenSpec validation. A clean install on Node 26.13.1 matched all 511 installed versions to the lockfile. The deployment fixtures include the private alias file for preview and production. The production rollout remains a separate step.
+The website's complete local validation passed with 216 browser tests and zero skips; the Node count is recorded once, from the final run (task 7.9). Astro checked 352 files with zero errors, warnings or hints. The database contract passed for 31 tables. The news change also passed strict OpenSpec validation. A clean install on Node 26.13.1 matched all 511 installed versions to the lockfile. The deployment fixtures include the private alias file for preview and production. The production rollout remains a separate step.
 
 ### Files changed for publisher URL aliases
 
@@ -56,12 +65,12 @@ The website's complete local validation passed with 359 Node tests, 216 browser 
 
 ## Five daily terms and the seven-day wait
 
-Intake’s daily worker selected five of six supplied query/profile rows in descending impression order in an isolated run using the live SerpApi News tab. All five searches returned zero past-week links. Repeating the run against its saved test state issued zero search requests. The pilot used local roster records and sample traffic. It did not exercise production Search Console, publication or the full roster sweep.
+Superseded by 'Daily Google All discovery'. The Google All run did not repeat the five-term selection. The daily Action selected five of six supplied query/profile rows in descending impression order in an isolated run using the live SerpApi News tab. All five searches returned zero past-week links. Repeating the run against its saved test state issued zero search requests. The pilot used local roster records and sample traffic. It did not exercise production Search Console, publication or the full roster sweep.
 
-The daily worker integration tests exercise the free allowance, resuming pagination, multiple profiles for one term, the Chicago day boundary, empty responses and eligibility exactly 168 hours after the first successful page across a release change. The homepage test verifies the original pair clicks still contribute during cooldown.
+The daily Action's integration tests exercise the free allowance, resuming pagination, multiple profiles for one term, the Chicago day boundary, empty responses and eligibility exactly 168 hours after the first successful page across a release change. The homepage test verifies the original pair clicks still contribute during cooldown.
 
 ## Daily Google All discovery
 
-The daily worker now sends the original traffic term and the release roster’s quoted agency name and state. Its HTTP integration test covers a profile with two agencies, a repeated assignment, grouped OR alternatives, a single organic query, pagination and term history. The article test skips a blocked URL and an empty body before linking the following readable story.
+The daily Action now sends the original traffic term and the release roster’s quoted agency name and state. Its HTTP integration test covers a profile with two agencies, a repeated assignment, grouped OR alternatives, a single organic query, pagination and term history. The article test skips a blocked URL and an empty body before linking the following readable story.
 
 A live isolated run with one supplied traffic row returned seven organic links on page one and zero on the next. None qualified. An immediate rerun issued zero provider searches. The run wrote no production pages.

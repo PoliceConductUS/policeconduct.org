@@ -24,7 +24,6 @@ export type CivicTopicPersonnelRef = {
 
 export type CivicCivilCaseRecord = {
   agencies: CivicTopicAgencyRef[];
-  connectionType: "Direct" | "Officer transfer" | "Direct + officer transfer";
   court?: string | null;
   dateTerminated?: string | null;
   filedDate: string;
@@ -84,20 +83,12 @@ const loadCivilCaseRecords = async (
         where ${scopedAgencyPredicate}
       ),
       scoped_cases as (
-        select
-          cco.civil_case_id as id,
-          bool_or(case_ao.agency_id = target_ao.agency_id)
-            as has_direct_connection,
-          bool_or(case_ao.agency_id <> target_ao.agency_id)
-            as has_officer_transfer_connection
+        select distinct cco.civil_case_id as id
         from public.civil_case_personnel cco
-        join public.agency_personnel case_ao
-          on case_ao.id = cco.agency_personnel_id
-        join public.agency_personnel target_ao
-          on target_ao.personnel_id = case_ao.personnel_id
+        join public.agency_personnel ao
+          on ao.id = cco.agency_personnel_id
         join scoped_agencies scoped_agency
-          on scoped_agency.id = target_ao.agency_id
-        group by cco.civil_case_id
+          on scoped_agency.id = ao.agency_id
       )
     `;
     const totalCount = Number(
@@ -122,9 +113,7 @@ const loadCivilCaseRecords = async (
             c.title,
             c.court,
             c.filed_date,
-            c.date_terminated,
-            scoped_case.has_direct_connection,
-            scoped_case.has_officer_transfer_connection
+            c.date_terminated
           from scoped_cases scoped_case
           join public.civil_cases c
             on c.id = scoped_case.id
@@ -149,7 +138,7 @@ const loadCivilCaseRecords = async (
             a.name,
             a.slug,
             lp.path as location_path,
-            bpp.path as canonical_path
+            lp.path || a.slug || '/' as canonical_path
           from public.civil_case_personnel cco
           join public.agency_personnel ao
             on ao.id = cco.agency_personnel_id
@@ -202,8 +191,6 @@ const loadCivilCaseRecords = async (
       court: string | null;
       filed_date: string;
       date_terminated: string | null;
-      has_direct_connection: boolean;
-      has_officer_transfer_connection: boolean;
     }): CivicCivilCaseRecord => {
       const id = requireText(civilCase.id, "id", "unknown");
       const title = requireText(civilCase.title, "title", id);
@@ -253,20 +240,8 @@ const loadCivilCaseRecords = async (
           };
         },
       );
-      const hasDirectConnection = Boolean(civilCase.has_direct_connection);
-      const hasOfficerTransferConnection = Boolean(
-        civilCase.has_officer_transfer_connection,
-      );
-      const connectionType =
-        hasDirectConnection && hasOfficerTransferConnection
-          ? "Direct + officer transfer"
-          : hasOfficerTransferConnection
-            ? "Officer transfer"
-            : "Direct";
-
       return {
         agencies,
-        connectionType,
         court: civilCase.court || null,
         dateTerminated: civilCase.date_terminated || null,
         filedDate: requireText(civilCase.filed_date, "filed_date", id),
@@ -275,7 +250,6 @@ const loadCivilCaseRecords = async (
         personnel,
         searchText: [
           title,
-          connectionType,
           civilCase.court,
           ...agencies.map((agency: CivicTopicAgencyRef) => agency.name),
           ...personnel.map((person: CivicTopicPersonnelRef) => person.name),

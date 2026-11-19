@@ -23,10 +23,10 @@ The site SHALL generate watch pages for supported videos linked to reports and c
 
 ### Requirement: Legacy watch paths lead to corresponding videos
 
-The redirect generator SHALL derive legacy report and civil-case watch redirects from stored parent slugs and link IDs. Existing approved report slug aliases MAY identify legacy parent paths. Redirects SHALL preserve the stored video ID and target the corresponding watch page.
+The redirect generator SHALL derive legacy report and civil-case watch redirects from stored parent slugs and link IDs. Watch paths under retired report slugs SHALL be fixed mappings in the workspace `redirects.json`. Redirects SHALL preserve the stored video ID and target the corresponding watch page.
 
 #### Scenario: Existing parent slug alias has a video
 
-- **WHEN** a legacy report slug alias resolves to a report containing a supported video
+- **WHEN** a retired report slug has a workspace mapping for a supported video
 - **THEN** the old watch path redirects to the canonical report watch path with the same stored video ID
 - **AND** it does not redirect to the ordinary report page or a replacement video ID

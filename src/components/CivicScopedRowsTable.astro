@@ -39,7 +39,6 @@ const formatDate = (value: string) =>
             <th scope="col">Case</th>
             <th scope="col">Court</th>
             <th scope="col">Filed</th>
-            <th scope="col">Connection</th>
             <th scope="col">Agencies</th>
           </tr>
         </thead>
@@ -53,7 +52,6 @@ const formatDate = (value: string) =>
               </td>
               <td>{row.court || ""}</td>
               <td>{formatDate(row.filedDate)}</td>
-              <td>{row.connectionType}</td>
               <td>
                 {row.agencies.map((agency, index) => (
                   <>

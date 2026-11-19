@@ -2,7 +2,8 @@
 
 data "aws_caller_identity" "current" {}
 
-# Fail at plan time rather than applying into the wrong account.
+# Warn at plan and apply time when the caller is in the wrong account. A check
+# block reports a failed assertion as a warning; it does not stop the run.
 check "correct_account" {
   assert {
     condition     = data.aws_caller_identity.current.account_id == var.aws_account_id

@@ -113,11 +113,8 @@ const collectJsonLdFindings = (html, route) => {
 
 const ensureRobotsAndSitemap = async () => {
   const robotsPath = path.join(DIST_DIR, "robots.txt");
+  // ensureFreshBuild already guarantees robots.txt and a sitemap exist.
   const robots = await readText(robotsPath);
-  if (!robots) {
-    addError("Missing dist/robots.txt.");
-    return;
-  }
   if (!/User-agent:\s*\*/i.test(robots)) {
     addError("robots.txt missing 'User-agent: *'.");
   }
@@ -131,16 +128,6 @@ const ensureRobotsAndSitemap = async () => {
   if (!sitemapUrls.includes(`${CANONICAL_HOST}/sitemap-index.xml`)) {
     addError(
       `robots.txt sitemap line should point to ${CANONICAL_HOST}/sitemap-index.xml.`,
-    );
-  }
-
-  const hasSitemapIndex = await readText(
-    path.join(DIST_DIR, "sitemap-index.xml"),
-  );
-  const hasSitemap = await readText(path.join(DIST_DIR, "sitemap.xml"));
-  if (!hasSitemapIndex && !hasSitemap) {
-    addError(
-      "Missing sitemap output (dist/sitemap-index.xml or dist/sitemap.xml).",
     );
   }
 };
@@ -180,11 +167,8 @@ const ensureFreshBuild = async () => {
 };
 
 const auditHtml = async () => {
+  // ensureFreshBuild already guarantees dist/ has HTML files.
   const routes = await collectHtmlRoutes(DIST_DIR);
-  if (routes.length === 0) {
-    addError("No HTML files found in dist/. Run build first.");
-    return;
-  }
 
   const { allRoutes, effectiveMax, missingRequiredRoutes, selectedRoutes } =
     buildAuditRouteSelection({
@@ -482,15 +466,13 @@ const main = async () => {
     addError("dist/ does not exist. Run npm run build first.");
   } else {
     const freshBuildOk = await ensureFreshBuild();
+    // A false result has always recorded its error.
     if (!freshBuildOk) {
-      if (errors.length) {
-        console.error("SEO audit failed:");
-        for (const e of errors) {
-          console.error(`- ${e}`);
-        }
-        process.exit(1);
+      console.error("SEO audit failed:");
+      for (const e of errors) {
+        console.error(`- ${e}`);
       }
-      return;
+      process.exit(1);
     }
     await ensureRobotsAndSitemap();
     await auditHtml();

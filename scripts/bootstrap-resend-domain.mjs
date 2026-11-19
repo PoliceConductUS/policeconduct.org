@@ -2,6 +2,7 @@
 
 import { execFileSync } from "node:child_process";
 import process from "node:process";
+import { pathToFileURL } from "node:url";
 
 const API_KEY_PARAMETER =
   "/policeconduct.org/default/secrets/RESEND_API_KEY_FULL_ACCESS";
@@ -300,7 +301,7 @@ async function main() {
   );
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   main().catch((error) => {
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`${message}\n`);

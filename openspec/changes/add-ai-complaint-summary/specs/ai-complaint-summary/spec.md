@@ -1,71 +1,80 @@
 ## ADDED Requirements
 
-### Requirement: Provenance-bearing complaint summary
+### Requirement: Stored AI complaint summary
 
-The system SHALL store AI complaint summaries independently of claims_summary. Only nonblank summary text and an HTTP(S) complaint link (`source.sourcePage`) are required. Other retained provenance metadata is optional; its absence SHALL NOT gate persistence or rendering.
+The website SHALL render the AI complaint summary that intake stores in `public.civil_cases.ai_complaint_summary`, separately from `claims_summary`. The website SHALL check only that the summary text is not blank and that each stored link has a nonblank label and an HTTP(S) URL; it SHALL fail the build on a stored value that does not pass. Other stored fields belong to intake's contract; their absence SHALL NOT stop rendering. The website SHALL NOT write, change or add to the summary text.
 
 #### Scenario: Summary without extra metadata
 
-- **WHEN** a summary contains text and a complaint link but no hashes, verification flags, model details, dates, paragraph support, limitations, or procedural context
-- **THEN** intake accepts it and the website renders it
+- **WHEN** a stored summary has text and one link but no hashes, model details, dates, paragraph support, limitations or procedural context
+- **THEN** the website renders it
 
-#### Scenario: Source-bounded rendering
+#### Scenario: Summary rendering
 
-- **WHEN** a complete summary is loaded
-- **THEN** the page displays an AI label, attributed complaint narrative and a compact complaint link; detailed metadata and procedural context remain internal
+- **WHEN** a valid summary is loaded
+- **THEN** the page shows the heading "AI-generated summary of the complaint", the stored text unchanged, and the stored links; other stored fields are not shown
 
-#### Scenario: No summary
+#### Scenario: Unreadable stored summary
 
-- **WHEN** the summary field is null
-- **THEN** an honest unavailable-summary message links to /donate/ and legacy claims_summary is not relabeled
+- **WHEN** a stored summary has blank text, or a link with a blank label or a non-HTTP(S) URL
+- **THEN** the build fails with an error that names the field
 
-### Requirement: Honest unavailable-summary states
+### Requirement: Labelled summary links
 
-The system SHALL distinguish confirmed missing complaint copies from retrieval, authentication, and generation failures and pending processing. Unassessed null metadata SHALL NOT imply a complaint copy is missing. Recorded unavailability SHALL include a reason, source URL, check timestamp, and internal detail. A completed summary and unavailability metadata SHALL NOT coexist.
+The page SHALL show every link intake stores with a summary or an unavailability record, in stored order, each with its stored label. The website SHALL NOT assume a fixed number of links or supply its own link labels.
 
-#### Scenario: Confirmed missing copy
+#### Scenario: Summary with two links
 
-- **WHEN** sourced unavailability records a missing complaint copy
-- **THEN** the page says we do not have a copy and links to /donate/ to support obtaining court records and making them available free on CourtListener, without promising this particular purchase
+- **WHEN** a summary is stored with two links, each with its own label
+- **THEN** the page shows both links with those labels, in stored order
 
-#### Scenario: Pending, failed, or unassessed
+### Requirement: Unavailable-summary states
 
-- **WHEN** no summary exists but the copy is not confirmed missing
-- **THEN** the page states a complaint-based summary is not yet available without claiming the complaint is missing, and offers the same donation navigation
+The website SHALL accept these stored reasons in `public.civil_cases.complaint_summary_unavailability`: `missing_copy`, `pending`, `retrieval_failed`, `authentication_failed`, `generation_failed` and `available_unsummarized`, and SHALL fail the build on any other reason or on a case with both a summary and an unavailability record. For a recorded reason, the page SHALL show intake's stored message, its stored links and the donation line.
+
+#### Scenario: Recorded reason
+
+- **WHEN** no summary exists and the unavailability record has any allowed reason
+- **THEN** the page shows the stored message and stored links, and links to /donate/ to support buying court records and making them available free on CourtListener, without promising this particular purchase
+- **AND** legacy `claims_summary` is not relabeled
+
+#### Scenario: Complaint available but not summarized
+
+- **WHEN** the unavailability record has reason `available_unsummarized`
+- **THEN** the page shows the stored message, the stored links and the donation line
+
+### Requirement: Unknown summary state
+
+When both `ai_complaint_summary` and `complaint_summary_unavailability` are null, the summary state is unknown. The page SHALL NOT show a complaint summary section, a state message or the donation line for that case, and SHALL NOT imply the complaint is missing.
+
+#### Scenario: No summary and no recorded reason
+
+- **WHEN** both columns are null
+- **THEN** the case page has no complaint summary section
 
 ### Requirement: Direct summary opening
 
-The page SHALL begin with the AI summary heading and attributed complaint narrative, without an additional introductory disclaimer.
+The complaint summary section SHALL begin with its heading followed directly by the stored text, with no lead-in disclaimer.
 
 #### Scenario: Reading a generated summary
 
-- **WHEN** a sourced AI complaint summary renders
-- **THEN** no introductory “The following summarizes” disclaimer appears before the narrative
+- **WHEN** a stored AI complaint summary renders
+- **THEN** no introductory "The following summarizes" disclaimer appears before the text
 
 ### Requirement: Concise complaint presentation
 
-The page SHALL omit disclaimer prose, retrieval/model/confidence details, page references, hashes and procedural-context sections. Full provenance and procedural records SHALL remain stored and validated internally.
+The page SHALL omit disclaimer prose, retrieval, model and confidence details, page references, hashes and procedural-context sections.
 
-#### Scenario: Opening a sourced summary
+#### Scenario: Opening a stored summary
 
 - **WHEN** the summary renders
-- **THEN** readers see the narrative and a compact complaint link without the internal verification display
+- **THEN** readers see the text and the stored links without the internal provenance fields
 
 ### Requirement: Consistent case section spacing
 
-Case detail pages SHALL separate summary, personnel, agencies and related links with consistent section gaps and avoid doubled padding between header actions and facts.
+Case detail pages SHALL set no top padding on the facts section (`.civic-section--facts`) and a 1.6rem gap between summary, personnel, agency and related-link sections (`.detail-body--sections`).
 
-#### Scenario: Reading a case with no summary
+#### Scenario: Reading a case page
 
-- **WHEN** the page displays the donation message and related entities
-- **THEN** each content section has a visible gap before the next heading and the facts sit below the header without redundant top padding
-
-### Requirement: Available complaint without a reliable summary
-
-The system SHALL retain an `available_unsummarized` disposition with the complaint document URL when a copy is available but automated review cannot produce a reliable summary. This disposition SHALL NOT be treated as a completed AI summary or require user review.
-
-#### Scenario: Complaint cannot be summarized reliably
-
-- **WHEN** a retained complaint cannot be summarized reliably
-- **THEN** the case page states "The complaint is available, but we were unable to summarize it." and links to the complaint document
-- **AND** the disposition is applied through the final intake run after summary calculation is complete
+- **WHEN** a case detail page renders
+- **THEN** the computed `row-gap` of `.detail-body--sections` is 1.6rem and the computed `padding-top` of `.civic-section--facts` is 0

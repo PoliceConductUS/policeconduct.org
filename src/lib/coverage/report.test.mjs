@@ -440,3 +440,70 @@ test("state counts fold case and whitespace so one state cannot split into two r
   assert.match(grouping, /upper\(btrim\(state\)\)/);
   assert.match(grouping, /group by upper\(btrim\(state\)\)/);
 });
+
+test("the untyped-source explanation names only the states it describes", async () => {
+  const virginiaOnly = universeGap(
+    await build({ stateRows: [{ code: "VA", held: 5 }] }),
+  );
+  assert.doesNotMatch(virginiaOnly.detail, /MN POST|DPSST/);
+  const minnesota = universeGap(
+    await build({ stateRows: [{ code: "MN", held: 394 }] }),
+  );
+  assert.match(minnesota.detail, /MN POST's productions/);
+  assert.doesNotMatch(minnesota.detail, /DPSST/);
+  const both = universeGap(
+    await build({
+      stateRows: [
+        { code: "MN", held: 394 },
+        { code: "OR", held: 10 },
+      ],
+    }),
+  );
+  assert.match(both.detail, /MN POST's productions.*, and Oregon's DPSST/);
+});
+
+test("the Texas reading note appears only with a classified Texas row", async () => {
+  const withoutTexas = renderCoverageReportMarkdown(
+    await build(
+      { stateRows: [{ code: "MN", held: 394 }] },
+      {
+        classification: [
+          classifiedState({
+            code: "MN",
+            held: 394,
+            generalPurposeHeld: 300,
+            allAgencyHeld: 390,
+          }),
+        ],
+      },
+    ),
+  );
+  assert.doesNotMatch(withoutTexas, /Read the Texas row/);
+  const withTexas = renderCoverageReportMarkdown(
+    await build(
+      { stateRows: [{ code: "TX", held: 2883 }] },
+      {
+        classification: [
+          classifiedState({
+            code: "TX",
+            held: 2883,
+            generalPurposeHeld: 1000,
+            allAgencyHeld: 1900,
+          }),
+        ],
+      },
+    ),
+  );
+  assert.match(withTexas, /Read the Texas row/);
+});
+
+test("a fingerprint without a newest updated_at fails the render", async () => {
+  const report = await build({
+    stateRows: [{ code: "VA", held: 5 }],
+    fingerprint: { rows: 0, newest_updated_at: null, oldest_created_at: null },
+  });
+  assert.throws(
+    () => renderCoverageReportMarkdown(report),
+    /missing newest_updated_at/,
+  );
+});

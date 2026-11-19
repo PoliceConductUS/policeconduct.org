@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const repoRoot = resolve(new URL("..", import.meta.url).pathname);
+const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const ignoredDirs = new Set([
   ".astro",
   ".cache",
@@ -61,6 +62,7 @@ function run(command, args, options = {}) {
   return {
     ok: result.status === 0,
     output: `${result.stdout ?? ""}${result.stderr ?? ""}`,
+    stdout: result.stdout ?? "",
     status: result.status ?? 1,
   };
 }
@@ -103,29 +105,21 @@ function packageLabel(packageRoot) {
 }
 
 function readPackage(packageRoot) {
-  return JSON.parse(
-    Buffer.from(
-      spawnSync(
-        "node",
-        [
-          "-e",
-          "process.stdout.write(require('fs').readFileSync('package.json'))",
-        ],
-        {
-          cwd: packageRoot,
-        },
-      ).stdout,
-    ).toString("utf8"),
-  );
+  return JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
 }
 
-function restorePackageFiles(packageRoot) {
+function packageFiles(packageRoot) {
   const files = ["package.json"];
   if (existsSync(join(packageRoot, "package-lock.json"))) {
     files.push("package-lock.json");
   }
+  return files;
+}
 
-  run("git", ["restore", "--", ...files], { cwd: packageRoot });
+function restorePackageFiles(packageRoot) {
+  run("git", ["restore", "--", ...packageFiles(packageRoot)], {
+    cwd: packageRoot,
+  });
   run("npm", ["install"], { cwd: packageRoot });
 }
 
@@ -141,12 +135,9 @@ function validatePackage(packageRoot, logPath) {
 }
 
 function commitPackage(packageRoot, packageName, packageVersion, logPath) {
-  const files = ["package.json"];
-  if (existsSync(join(packageRoot, "package-lock.json"))) {
-    files.push("package-lock.json");
-  }
-
-  const add = run("git", ["add", ...files], { cwd: packageRoot });
+  const add = run("git", ["add", ...packageFiles(packageRoot)], {
+    cwd: packageRoot,
+  });
   if (!add.ok) return add;
 
   const label = packageLabel(packageRoot);
@@ -174,7 +165,8 @@ function updatePackageRoot(packageRoot, options) {
     return { failed: 1, succeeded: 0 };
   }
 
-  const upgrades = JSON.parse(list.output || "{}");
+  // stderr can carry npm warnings, so only stdout is the JSON listing.
+  const upgrades = JSON.parse(list.stdout || "{}");
   const entries = Object.entries(upgrades);
   if (entries.length === 0) {
     console.log("No package updates found.");
@@ -237,13 +229,9 @@ function updatePackageRoot(packageRoot, options) {
     );
     if (!commit.ok) {
       logLine(logPath, `Commit failed for ${prefix}\n${commit.output}`);
-      run(
-        "git",
-        ["restore", "--staged", "--", "package.json", "package-lock.json"],
-        {
-          cwd: packageRoot,
-        },
-      );
+      run("git", ["restore", "--staged", "--", ...packageFiles(packageRoot)], {
+        cwd: packageRoot,
+      });
       restorePackageFiles(packageRoot);
       failed += 1;
       continue;
@@ -261,7 +249,6 @@ function main() {
     ? findPackageRoots(repoRoot)
     : [resolve(repoRoot, options.root)];
 
-  mkdirSync(resolve(repoRoot, ".cache"), { recursive: true });
   writeFileSync(resolve(repoRoot, options.log), "", { flag: "a" });
 
   let failed = 0;

@@ -11,9 +11,6 @@ export type CivilCaseCoverageLink = {
   id: string;
   title: string;
   url: string;
-  source_name?: string | null;
-  published_at?: string | null;
-  notes?: string | null;
 };
 
 export type CivilCaseDetailOfficer = {
@@ -144,7 +141,7 @@ export const loadCivilCaseDetail = async (
             split_part(lp.path, '/', 2) as state,
             area_lp.display_name as administrative_area,
             lp.path as location_path,
-            bpp.path as canonical_path
+            lp.path || agency.slug || '/' as canonical_path
           from public.civil_case_personnel civil_case_officer
           join public.agency_personnel agency_officer
             on agency_officer.id = civil_case_officer.agency_personnel_id

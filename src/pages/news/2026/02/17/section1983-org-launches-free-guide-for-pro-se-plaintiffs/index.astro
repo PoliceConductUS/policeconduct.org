@@ -15,20 +15,20 @@ const structuredData = buildNewsArticle({
 ---
 
 <PageShell
-  title="Section1983.org Launches Free Legal Guide for Pro Se Civil Rights Plaintiffs"
-  description="The Institute for Police Conduct releases Section1983.org, a free comprehensive resource for people representing themselves in federal civil rights lawsuits."
-  pagePath="/news/2026/02/17/section1983-org-launches-free-guide-for-pro-se-plaintiffs/"
-  canonicalUrl="/news/2026/02/17/section1983-org-launches-free-guide-for-pro-se-plaintiffs/"
+  title={newsMeta.title}
+  description={newsMeta.description}
+  pagePath={newsMeta.href}
+  canonicalUrl={newsMeta.href}
   structuredData={structuredData}
   breadcrumbs={[
     { label: "News", href: "/news/" },
     {
       label: "Section1983.org Launch",
-      href: "/news/2026/02/17/section1983-org-launches-free-guide-for-pro-se-plaintiffs/",
+      href: newsMeta.href,
       current: true,
     },
   ]}
-  heading="Section1983.org Launches Free Legal Guide for Pro Se Civil Rights Plaintiffs"
+  heading={newsMeta.title}
 >
   <Fragment slot="header">
     <p class="lead text-muted mb-0">

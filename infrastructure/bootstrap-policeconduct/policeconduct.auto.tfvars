@@ -1,6 +1,7 @@
 # Desired inputs for this stack. Terraform loads this file on every plan and apply,
 # so every checkout and worktree plans against the same values.
-# Secrets never go here: tokens and API keys come from the git-ignored .env files.
+# Secrets never go here: scripts/apply.sh reads tokens and API keys from AWS
+# Systems Manager Parameter Store.
 
 project_name = "policeconduct"
 aws_region   = "us-east-1"
