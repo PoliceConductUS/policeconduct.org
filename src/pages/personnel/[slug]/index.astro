@@ -206,11 +206,7 @@ if (!currentAgency) {
   );
 }
 const currentAgencyPrefillName = currentAgency.name.toLocaleUpperCase("en-US");
-const isPlaceholderPersonnel =
-  data.officer.slug === "unknown-personnel-935d1d" ||
-  (data.officer.first_name === "Unknown" &&
-    data.officer.last_name === "Personnel");
-if (!isPlaceholderPersonnel && !currentTitle) {
+if (!currentTitle) {
   throw new Error(
     `Personnel ${data.officer.slug} is missing required title on agency_personnel ${currentAssignment.id}`,
   );

@@ -1,6 +1,6 @@
 ## Why
 
-Visitors looking at an agency want to know whether anyone who works or worked there has been part of a civil case. The civil-case count rule now credits an agency only with cases tied to its own staff records, so cases from a staff member's job at another agency vanish from the agency page; 87 agencies lose every case. A separate, clearly labelled view restores that information without crediting the agency with cases it was not part of.
+Visitors looking at an agency want to know whether anyone who works or worked there has been part of a civil case. The civil-case count rule now credits an agency only with cases tied to its own staff records, so cases from a staff member's job at another agency no longer appear on the agency page. In the local data (2026-11-17), 87 agencies have no own cases but have cases from staff members' other jobs. A separately labeled view restores that information without crediting the agency with cases it was not part of.
 
 ## What Changes
 
@@ -14,7 +14,7 @@ Visitors looking at an agency want to know whether anyone who works or worked th
 **Agency civil-cases page**
 
 - From: lists only the agency's own cases; the page exists only when the agency has own cases.
-- To: lists the agency's own cases, then a second paginated table for cases from staff members' other jobs; the page exists when either list has rows.
+- To: lists the agency's own cases under their own heading, then a second table for cases from staff members' other jobs; one page control serves both lists (page N shows page N of each list); the page exists when either list has rows.
 - Reason: the full list belongs on the dedicated page.
 - Impact: some agencies with zero own cases gain a civil-cases page again.
 
@@ -26,11 +26,11 @@ Visitors looking at an agency want to know whether anyone who works or worked th
 
 ### Modified Capabilities
 
-- (none) — `civil-case-content` "Civil case counts follow personnel assignments" is unchanged; the new view is additional and never changes that count.
+- `civil-case-content`: "Civil case counts follow personnel assignments" now limits the own-assignment rule to the agency's count, tile and own list, and allows one separate "Cases from staff members' other jobs" section that never adds to that count.
 
 ## Impact
 
-- Code: `src/lib/data/agency-detail.ts` (new query and rows), `src/lib/data/agency-civil-case-rows.ts`, `src/pages/[category]/[administrativeArea]/[place]/[agencySlug]/index.astro`, `src/pages/[category]/[administrativeArea]/[place]/[agencySlug]/civil-cases/**`, `src/components/AgencyCivilCasesPage.astro` (or a sibling component), their EGM.md contracts, and e2e specs.
-- Data: read-only use of `public.civil_case_personnel`, `public.agency_personnel`, `public.agency`, `public.location_path`, `public.personnel`, `public.civil_cases`. No schema change.
-- Public trust: labels must state that the cases are tied to the person's job at another agency, not to this agency, with no conduct or verification claims. Evidence: e2e checks that compare the section's rows and count with SQL, and that the own-case count is unchanged.
+- Code: `src/lib/data/agency-detail.ts`, `src/lib/data/agency-civil-case-rows.ts`, new `src/lib/data/agency-civil-case-rows.test.mjs`, `package.json` (`test:data`), `src/lib/sitemap-lastmod.js`, `src/lib/format.js`, the agency `index.astro`, `civil-cases/index.astro`, `civil-cases/page/[...page].astro`, `src/components/AgencyCivilCasesPage.astro`, new `src/components/AgencyStaffOtherJobCases.astro`, `tests/e2e/civil-cases.spec.ts`, the EGM.md contracts listed in plan Task 5, and `AGENTS.md` (the civil-case Agency bullet: "These cases may appear only in the separate 'Cases from staff members' other jobs' section, with its own count, never summed.").
+- Data: read-only use of `public.civil_case_personnel`, `public.agency_personnel`, `public.agency`, `public.location_path`, `public.personnel`, `public.civil_cases`, `public.build_page_payload`. No schema change.
+- Public trust: labels must state that the cases are tied to the person's job at another agency, not to this agency. No section copy that claims verification, accuracy, fault, misconduct, or that this agency was a party (spec "Other-jobs labels describe the link without judgment"). Evidence: e2e checks that compare the section's rows and count with SQL, and that the own-case count is unchanged.
 - Backward compatibility: no breaking changes.

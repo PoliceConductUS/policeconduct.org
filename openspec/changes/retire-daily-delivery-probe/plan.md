@@ -1,6 +1,6 @@
 # Plan
 
-1. Remove the monitor and all dedicated resources and configuration.
-2. Verify actual notification code still passes its tests.
-3. Review the Terraform deletion plan and update PR #30.
-4. Obtain manual merge/deployment approval and human preview receipt evidence.
+1. Remove the daily delivery probe in code and Terraform, keep verified-submission notifications, run scoped checks, and merge (done: PR #30).
+2. Clean up what PR #30 left: the probe's log group and `.gitignore` line, unreachable forms API branches, and stale approval and caller text in the notification docs (tasks.md section 2).
+3. Apply both Terraform roots from `main` and check the result in AWS (tasks.md section 3).
+4. Validate the final head, finish the retrospective, and archive after `notify-staff-after-verification` (tasks.md section 4).

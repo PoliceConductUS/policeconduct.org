@@ -15,9 +15,20 @@ An agency profile page SHALL show, in a section separate from the agency's own c
 - **WHEN** a civil case is linked both to an assignment at Agency A and to the same or another person's assignment at Agency B
 - **THEN** the case appears only in Agency A's own civil-case list, not in the other-jobs section
 
+#### Scenario: Profile block with no other-jobs cases
+
+- **WHEN** Agency A has 0 other-jobs cases
+- **THEN** the profile shows no other-jobs block
+
+#### Scenario: Profile block size
+
+- **WHEN** Agency A has 1 or more other-jobs cases
+- **THEN** the block shows at most 6 rows, the same limit as "Recent civil cases"
+- **AND** below the rows a "View all cases from staff members' other jobs" link goes to the other-jobs section of the agency civil-cases page
+
 ### Requirement: The other-jobs count is separate from the agency's own count
 
-The other-jobs section SHALL show its own count of distinct cases. The agency's own civil-case count, tile value and list MUST be unchanged by this section, and no page MUST show a number that adds the two counts together.
+The other-jobs section SHALL show its own count of distinct cases. The agency's own civil-case count, tile value and list MUST be unchanged by this section. Pages MUST NOT show a number that is the sum of the own count and the other-jobs count.
 
 #### Scenario: Both counts on one agency page
 
@@ -28,7 +39,7 @@ The other-jobs section SHALL show its own count of distinct cases. The agency's 
 
 ### Requirement: Each other-jobs case appears once with every linked staff member
 
-Each case in the other-jobs section SHALL appear on exactly one row. The row MUST list every person who has an assignment at this agency and is linked to the case through an assignment at another agency, each with the agency the case is tied to and whether the person is current or former staff at this agency. A person with any current assignment at this agency MUST be shown as current staff.
+Each case in the other-jobs section SHALL appear on exactly one row. The row MUST list every person who has an assignment at this agency and is linked to the case through an assignment at another agency, each with every agency the case is tied to for that person (each person listed once).
 
 #### Scenario: Two staff members share one case
 
@@ -36,14 +47,34 @@ Each case in the other-jobs section SHALL appear on exactly one row. The row MUS
 - **THEN** the case appears once in Agency A's other-jobs section
 - **AND** that row names both people, each "while at" Agency B
 
+#### Scenario: One person linked through two other agencies
+
+- **WHEN** one person is linked to a case through assignments at Agency B and Agency C
+- **THEN** the row names that person once, "while at" Agency B, Agency C
+
 #### Scenario: The case agency has no page
 
 - **WHEN** the agency a case is tied to has no agency page
 - **THEN** that agency's name is shown without a link
 
+### Requirement: Staff status follows the agency personnel list rule
+
+Each person's status at this agency MUST come from the same rule the agency personnel list uses (`getAssignmentStatus`). A person is **current staff** when any of their assignments at this agency is current, otherwise **former staff** when any of their assignments at this agency has ended, otherwise their status is **unknown**. Current staff show "(current staff)", former staff show "(former staff)", and people with unknown status show no status text.
+
+#### Scenario: Current and former assignments at this agency
+
+- **WHEN** a person has one ended and one current assignment at Agency A
+- **THEN** their name on the case row shows "(current staff)"
+
+#### Scenario: Assignment dates do not support a status
+
+- **WHEN** a person's only assignment at Agency A has a future start date or an unreadable end date
+- **THEN** their name appears on the case row with no "(current staff)" or "(former staff)" text
+- **AND** the row sorts with the rows that have no current staff member
+
 ### Requirement: Other-jobs rows are ordered by current staff first
 
-Rows SHALL be ordered with rows that include at least one current staff member first, then rows with only former staff; within each group by filed date, newest first, then title.
+Rows that include at least one current staff member SHALL come first; all other rows (former or unknown status only) follow; within each group by filed date, newest first, then title.
 
 #### Scenario: Mixed current and former rows
 
@@ -52,24 +83,35 @@ Rows SHALL be ordered with rows that include at least one current staff member f
 
 ### Requirement: Other-jobs labels describe the link without judgment
 
-The section SHALL use the heading "Cases from staff members' other jobs" and a sentence stating that the cases are tied to a staff member's job at another agency, not to this agency. The section MUST NOT state or imply conduct, fault, accuracy or verification.
+The section SHALL use the heading "Cases from staff members' other jobs" and a sentence stating that the cases are tied to a staff member's job at another agency, not to this agency. The section's heading, explanation sentence and count text MUST NOT state or imply that the records were verified, confirmed or fact-checked, that they are accurate, that anyone was at fault or committed misconduct, or that this agency was a party to, a defendant in, or sued in the case.
 
 #### Scenario: Section copy
 
 - **WHEN** the other-jobs section renders
 - **THEN** it shows the heading and the explanation sentence
-- **AND** no text in the section uses words that claim the records were verified or that the agency was a party
+- **AND** the heading, explanation sentence and count text contain none of the claims listed in this requirement
 
 ### Requirement: The agency civil-cases page includes the other-jobs list
 
-The agency civil-cases page SHALL list the agency's own cases first and then the other-jobs cases in a separate table with its own heading, count and pagination using the civil-case page size. The page SHALL exist when either list has rows. Page N MUST show page N of each list, and a list with fewer pages MUST show no rows for that section on later pages. The render MUST reload the agency by route params and fail on a page number past the last page of both lists.
+The agency civil-cases page SHALL list the agency's own cases first, under the heading "Cases tied to this agency's personnel records", and then the other-jobs cases in a separate table with its own heading and count, using the civil-case page size. The page SHALL exist when either list has rows. The other-jobs section SHALL carry an in-page anchor that the profile's "View all" link targets.
 
 #### Scenario: Agency with only other-jobs cases
 
 - **WHEN** Agency A has no own cases and 4 other-jobs cases
 - **THEN** Agency A has a civil-cases page
-- **AND** its own-cases section shows its empty state
+- **AND** the page states "0 civil cases tied to this agency's personnel records."
+- **AND** no own-cases table is shown
 - **AND** the other-jobs table lists the 4 cases
+
+### Requirement: One page control serves both civil-case lists
+
+The agency civil-cases page SHALL use one page control for both lists: page N shows page N of each list. The render MUST reload the agency by route params and fail on a page number past the last page of both lists.
+
+#### Scenario: Page with rows in only one list
+
+- **WHEN** Agency A has rows in both lists, and on page N one list has rows and the other has already ended
+- **THEN** the list that ended shows its heading and the line "No more cases in this list." with no table
+- **AND** the other list shows its rows for page N
 
 #### Scenario: Page past the end
 

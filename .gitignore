@@ -75,3 +75,6 @@ coverage/
 # src/lib/coverage is source code, not a coverage report.
 !src/lib/coverage/
 *.lcov
+
+# Goldfish review reports (local only)
+/.egm-reviews/

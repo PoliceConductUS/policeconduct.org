@@ -33,3 +33,7 @@ This change defines the operating model for the future PoliceConduct data platfo
 - Defines the contract that future pipeline-repo work must implement
 - Defines how this site will later adopt publish read models and delta builds
 - Does not change application code, infrastructure code, or runtime behavior in this change
+
+## Withdrawn (2026-11-19)
+
+Withdrawn by the owner after the round-1 Goldfish review. Its work is covered by the intake repository (ADRs 0001-0037: ingestion, retention, idempotency, lineage, source contracts) and by the release and preview changes. Archived without copying its specs; any remaining gap belongs in an intake ADR.

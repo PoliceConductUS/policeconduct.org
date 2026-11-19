@@ -14,8 +14,8 @@ Save the data and template instructions for each changed page part. Apply the co
 
 ## Key decisions
 
-Use an uncapped, resumable local browser sweep in agency source order and a separate visitor-driven Intake Action. The first qualifying article ends a targeted search, including a cached match. Update URL and paragraph evidence where needed. A preferred copy updates the same article ID. The same renderer can update any part of an original page.
+Use an uncapped, resumable local browser sweep in agency source order and a separate visitor-driven Intake Action. (Superseded: the full sweep is outside this change; see proposal.md.) The first qualifying article ends a targeted search, including a cached match. Update URL and paragraph evidence where needed. A preferred copy updates the same article ID. The same renderer can update any part of an original page.
 
 ## Open questions
 
-The design distinguishes agreed behavior from proposed interfaces and remaining publication decisions. Implementation awaits design approval.
+Resolved in design.md.

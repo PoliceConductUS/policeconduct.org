@@ -115,8 +115,7 @@ Astro dynamic page for the routes `/personnel/{slug}/`. It shows one person's pr
 - The render throws when the person has no headline assignment. ``[index.astro:`Personnel ${data.officer.slug} is missing required agency assignment history.`,]``
 - The render throws when the headline assignment's agency is missing. ``[index.astro:`Personnel ${data.officer.slug} assignment ${currentAssignment.id} is missing required agency ${currentAssignment.agency_id}.`,]``
 - `requireAgencyCanonicalPath` runs for the headline agency only when its `page_type` is `agency`, the only case where the page links to it; it throws when that agency has no `location_path_id`-backed canonical path. `[index.astro:? requireAgencyCanonicalPath(currentAgency)]`
-- The render throws when the headline assignment has no title, unless the person is the placeholder record. `[index.astro:if (!isPlaceholderPersonnel && !currentTitle) {]`
-- The placeholder record is the slug `unknown-personnel-935d1d`, or first name "Unknown" with last name "Personnel". `[index.astro:data.officer.slug === "unknown-personnel-935d1d" ||]`
+- The render throws when the headline assignment has no title. `[index.astro:if (!currentTitle) {]`
 - The headline assignment comes from `selectHeadlineAssignment`: the last open assignment (no end date and no uncertain start date) when one exists; otherwise, when any assignment has an uncertain status, the last entry of the start-date-sorted history; otherwise the assignment with the latest end date. `[../../../lib/data/assignment-status.js:? entries.at(-1)]`
 - `worksFor` is a present-tense employment claim and is emitted only for an assignment still recorded as open. ``[index.astro:// `worksFor` is a present-tense employment assertion, so it is emitted only]``
 - The default portrait is never included in structured data. `[index.astro:const hasPersonnelPhoto = Boolean(personnelPhoto);]`
