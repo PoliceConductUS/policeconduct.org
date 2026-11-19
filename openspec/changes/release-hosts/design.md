@@ -20,12 +20,14 @@ The deploy model this change builds on is described in `openspec/changes/atomic-
 - Redirect bare `release.<domain>` and bare `preview.<domain>` to `www`.
 - Keep release hosts and bare hosts out of search engines with the existing robots rule.
 - Keep production certificate changes safe for the live site.
+- Accept form submissions from release hosts on the production forms API, and split the allowed origins between the production and preview forms APIs.
+- Turn off analytics and Sentry on release hosts.
+- Delete the copies of production releases that the `current:main` mirror left in the preview buckets.
 
 **Non-Goals:**
 
-- A host for a specific version (`<commit>-<n>.release`). See Open Questions.
+- A host for a specific version (`<commit>-<n>.release`). `<commit>.release` serves only the highest version of the commit. Versions are not separately addressable (owner, 2026-11-19).
 - Release hosts for previews or for non-commit folders such as `prod-temp`.
-- Changing the forms API, analytics, or Sentry for release hosts. See Open Questions.
 - Changing preview hosts, `noindex.js`, or the preview certificate.
 - Slug changes or redirect maps for slugs.
 - Any approval gate.
@@ -97,7 +99,7 @@ Each commit's keys end in exactly one key that holds its release ID, at its shor
 
 **Router lookup.** The router reads `release:<first 7 of label>`. While the value is `ambiguous`, it reads one more character, up to the label's length. A label shorter than the unique prefix of its commit ends on `ambiguous` and returns 404, as the owner asked. A missing key returns 404 (unknown commit).
 
-**Which version.** For each commit, the known release is the one with the highest version. A bare-commit release ID counts as version 0, so `<commit>-1` replaces it. Promotion does not change this: promoting an earlier release to `www` with `npm run deploy:promote` leaves `<commit>.release` on the highest version. The release host always shows the newest build of that commit, whichever release `www` shows.
+**Which version.** For each commit, the known release is the one with the highest version. A bare-commit release ID counts as version 0, so `<commit>-1` replaces it. Promotion does not change this: promoting an earlier release to `www` with `npm run deploy:promote` leaves `<commit>.release` on the highest version. The release host always shows the newest build of that commit, whichever release `www` shows. An earlier version of a commit has no host of its own: no `<commit>-<n>.release` name exists, and the router's label pattern (`^[0-9a-f]{7,40}$`) has no `-`, so such a label returns 404 (owner, 2026-11-19).
 
 **Writer.** A new script, `scripts/load-release-hosts.mjs <kvs-arn> <release-id>...`, requires `S3_BUCKET` and `RELEASE_DATA_BUCKET`. It:
 
@@ -129,11 +131,26 @@ Alternatives: see brainstorm.md (a key for every prefix length; a Lambda@Edge bu
 
 `noindex.js` still runs on the preview distribution, so the bare preview 301 carries `X-Robots-Tag: noindex, nofollow`. The bare release 301 does not. Neither page has content to index.
 
-### 5. Production deploys stop copying to the preview host
+### 5. Production deploys no longer mirror to the preview host
 
-Bare `preview.` no longer serves `current:main`, so the copy has no reader. `scripts/upload-release.sh` drops the nested call with namespace `main` and the four `_PREVIEW` checks for `prod`. `scripts/deploy.sh` stops resolving `S3_BUCKET_PREVIEW`, `RELEASE_DATA_BUCKET_PREVIEW`, `KVS_ARN_PREVIEW` and `CLOUDFRONT_DIST_PREVIEW` for `prod`. A production deploy then needs only production outputs, which `scripts/terraform-outputs.mjs` already provides. The `current:main` key is deleted from the preview store by hand after the router no longer reads it.
+Production deploys no longer mirror to preview. Bare `preview.` no longer serves `current:main`, so the copy has no reader. `scripts/upload-release.sh` drops the nested call with namespace `main` and the four `_PREVIEW` checks for `prod`. `scripts/deploy.sh` stops resolving `S3_BUCKET_PREVIEW`, `RELEASE_DATA_BUCKET_PREVIEW`, `KVS_ARN_PREVIEW` and `CLOUDFRONT_DIST_PREVIEW` for `prod`. A production deploy then needs only production outputs, which `scripts/terraform-outputs.mjs` already provides. The `current:main` key is deleted from the preview store by hand after the router no longer reads it.
 
-Interaction with `atomic-sha-deploys`: its design has `build-release.mjs` list `<commit>-*` folders in both site buckets for `prod`, and it keeps preview folders the `current:main` mirror uploaded. Whichever change merges second updates those lines: with no mirror, a production build lists only the production site bucket.
+**Deleting the old copies.** Each earlier production deploy uploaded its release to the preview site bucket (`<release-id>/build/`) and the preview release data bucket (`builds/<release-id>/data/`). After this change nothing serves or reads them, and the owner asked to delete them (2026-11-19). The cleanup is a one-time set of documented commands, run by hand from `main` after `current:main` is deleted (Migration Plan step 6). No script is added to the repo for a task that runs once.
+
+A preview-bucket folder is a mirror copy when all of these hold:
+
+- its name matches the release ID pattern `^[0-9a-f]{40}(-[1-9][0-9]*)?$`;
+- the production site bucket has a folder with the same name (the mirror uploaded exactly the production release ID);
+- no `current:<label>` key in the preview store names it (an open PR whose head commit is also a released commit keeps its folder).
+
+Both preview buckets are versioned, and they differ in how old versions go away:
+
+- Preview site bucket: `aws_s3_bucket_lifecycle_configuration.preview` expires noncurrent versions after 7 days. An `aws s3 rm` leaves a delete marker, so a mistaken delete can be undone for 7 days, and then the space is freed.
+- Preview release data bucket: `aws_s3_bucket_versioning.release_data` is enabled and no lifecycle rule expires noncurrent versions. An `aws s3 rm` would hide the copy but keep every version forever. The cleanup therefore deletes every object version and delete marker under `builds/<release-id>/`, by version ID. These deletes are final.
+
+The commands write the candidate list to a file outside the repo and print every object that will be deleted, with a count per bucket: `aws s3 ls --recursive --summarize` for each site-bucket prefix and every `key` and `versionId` under each release-data prefix. The dry run is `aws s3 rm --recursive --dryrun` for each site-bucket prefix and the exact `aws s3api delete-object --version-id` commands printed, not run, for the release data bucket. Only after the operator reads that output do the same commands run for real. They never touch the production buckets or any KVS key. The operator records the candidate count, object counts and the dry-run and delete exit codes in `verify.md`. The list holds only commit SHAs, so it may be recorded. The commands are in plan.md, Task 8 Step 5.
+
+Interaction with `atomic-sha-deploys`: its design has `build-release.mjs` list `<commit>-*` folders in both site buckets for `prod`, and it keeps preview folders the `current:main` mirror uploaded. Whichever change merges second updates those lines: with no mirror, and with the mirror copies deleted, a production build lists only the production site bucket.
 
 ### 6. Certificate and DNS (`main.tf`)
 
@@ -167,9 +184,48 @@ The expected plan:
 
 - replace `aws_acm_certificate.site` and `aws_acm_certificate_validation.site` (create before destroy);
 - create one `aws_route53_record.acm_validation` entry (`*.release.<domain>`) and four release DNS records;
-- update in place `aws_cloudfront_distribution.site` (aliases and certificate ARN), `aws_cloudfront_function.index_rewrite` and `aws_cloudfront_function.preview_router` (router code).
+- update in place `aws_cloudfront_distribution.site` (aliases and certificate ARN), `aws_cloudfront_function.index_rewrite` and `aws_cloudfront_function.preview_router` (router code);
+- update in place `aws_lambda_function.forms_api_prod` and `aws_lambda_function.forms_api_preview` (new `FORMS_ORIGIN_ENVIRONMENT` variable and new code hash, Decision 8).
 
 Any other destroy or replace means an input is wrong. The wrapper stops, and the operator does not widen the list to get past it.
+
+### 8. Forms API origins per environment
+
+The owner's rule (2026-11-19): the production forms API accepts only the apex, `www` and `*.release.policeconduct.org` origins. The preview forms API accepts only `*.preview.policeconduct.org` origins.
+
+Today both Lambdas run the same `lambdas/forms-api/index.mjs`, and `isAllowedOrigin` accepts the same set in both: `https` with host `policeconduct.org`, `www.policeconduct.org`, or `PREVIEW_ORIGIN_HOST_RE` (`pr-<digits>.preview.policeconduct.org`). Nothing in the Lambda says which environment it serves; `main.tf` sets no origin setting. A release host is an alias of the production distribution, whose `/api/*` behavior goes to `forms_api_prod`, so today a form on a release host gets 403.
+
+Change:
+
+- `main.tf` adds `FORMS_ORIGIN_ENVIRONMENT = "production"` to `aws_lambda_function.forms_api_prod` and `FORMS_ORIGIN_ENVIRONMENT = "preview"` to `aws_lambda_function.forms_api_preview`.
+- `isAllowedOrigin` reads `FORMS_ORIGIN_ENVIRONMENT` on each call, like the Lambda's other settings, and keeps the `https`-only rule and the hostname lower-casing:
+  - `production`: host is `policeconduct.org`, `www.policeconduct.org`, or matches `^[a-z0-9-]+\.release\.policeconduct\.org$`;
+  - `preview`: host matches `^[a-z0-9-]+\.preview\.policeconduct\.org$`.
+- A missing or other value throws `Missing or unknown FORMS_ORIGIN_ENVIRONMENT`, as `verificationConfig` throws for a missing `SUBMISSIONS_BUCKET`. There is no default rule set; a misconfigured Lambda fails every request instead of accepting the wrong origins.
+- `PREVIEW_ORIGIN_HOST_RE` is replaced by the two patterns above.
+
+`*` is one DNS label, as in the certificate wildcards. The bare `release.` and `preview.` hosts match neither pattern; they only redirect (Decision 4), so no form runs there. A suffix such as `x.release.policeconduct.org.evil.example` matches neither, because both patterns are anchored.
+
+What changes for visitors:
+
+- Release hosts can submit forms to the production forms API. The submission carries the release ID of the page, and the Lambda's existing release check finds it in the production release data bucket. The email confirmation link uses the request origin (`${origin}/verify/`), so a visitor who submits on a release host gets a link back to that release host, which calls the same production forms API.
+- The production forms API stops accepting `pr-<N>.preview` origins. Preview pages never call it: the preview distribution sends `/api/*` to `forms_api_preview`.
+- The preview forms API stops accepting the apex and `www`. Production pages never call it.
+- The preview forms API accepts any one-label `*.preview` host, not only `pr-<N>`. `atomic-sha-deploys` narrows which preview hosts the router serves; the forms rule follows the owner's wording.
+
+Alternative: one shared allow-list in both Lambdas with the release names added. Rejected: the owner asked for separate sets, and a shared list lets a preview page write to production storage.
+
+### 9. Analytics and Sentry are off on release hosts
+
+The owner's rule (2026-11-19): analytics and Sentry are off on release hosts, decided by the host name at runtime in the browser. Release hosts serve the production build, so the build cannot tell them apart from `www`.
+
+Analytics: `src/lib/client/analytics.js` already loads Google Analytics only when `isProduction()` is true, which requires `https:` and a host of exactly `policeconduct.org` or `www.policeconduct.org`. `initializeAnalytics` and `trackAnalytics` both check it. A release host fails that check, so no code change is needed. An e2e test pins it (tasks.md 6.4).
+
+Sentry: `sentry.client.config.ts` calls `Sentry.init` on every host, and sets `window.__IPC_SENTRY_FEEDBACK__`. Change: when `window.location.hostname` ends with `.release.policeconduct.org`, the file returns before `Sentry.init` and does not set `window.__IPC_SENTRY_FEEDBACK__`. Every other host keeps today's behavior, including `www`, the apex, previews and local builds. The host check is a small exported function in a new file, `src/lib/client/release-host.js` (`isReleaseHost(hostname)`), so it can be unit tested without loading Sentry.
+
+The "Report a site issue" links in `SiteLayout.astro` already fall back: when `window.__IPC_SENTRY_FEEDBACK__` is missing, the click handler does not call `preventDefault`, and the link opens its `href`, `/about/contact/`. No layout change is needed.
+
+The forms client (`src/lib/client/forms.ts`) calls `Sentry.captureException`. With no `Sentry.init`, the SDK has no client and the call sends nothing; it does not throw. A test checks that a form error on a release host sends no Sentry request.
 
 ## Risks / Trade-offs
 
@@ -180,22 +236,23 @@ Any other destroy or replace means an input is wrong. The wrapper stops, and the
 - [A key write fails after promotion] → `www` already serves the new release. Rerun `npm run deploy -- prod --skip-build`; every step repeats safely.
 - [Concurrent production deploys race on `release:` keys] → The first batch uses the ETag read before listing, so the second writer fails and is rerun.
 - [The certificate replacement fails validation] → `create_before_destroy` keeps the old certificate on the distribution until the new one is issued. The apply stops with the site unchanged.
-- [Release hosts serve production builds, which send production analytics and Sentry events] → See Open Questions.
+- [Release hosts serve production builds, which would send production analytics and Sentry events] → Analytics already loads only on the apex and `www`; Sentry skips `init` on release hosts (Decision 9).
+- [Errors on release hosts are not reported] → Accepted by the owner. A visitor can still use "Report a site issue", which opens `/about/contact/`.
+- [The forms API Lambda is applied without `FORMS_ORIGIN_ENVIRONMENT`] → It throws on every request instead of accepting the wrong origins. The variable and the code ship in the same apply.
+- [A preview-bucket cleanup deletes a folder that is still used] → The candidate list excludes every folder a `current:<label>` key names, and a dry run with a full listing runs first. Only preview buckets are touched.
 
 ## Migration Plan
 
 1. Merge the PR. Work from the `main` folder.
 2. Backfill: list the folders in the production site bucket whose names match `^[0-9a-f]{40}(-[1-9][0-9]*)?$`, and run `node scripts/load-release-hosts.mjs "$KVS_ARN" <id>...` with `S3_BUCKET` and `RELEASE_DATA_BUCKET` set. The script skips nothing silently: it stops on an incomplete folder, and the operator leaves that folder out and records why. The old router never reads `release:` keys, so this is safe before the apply.
 3. Apply Terraform (Decision 7).
-4. Check: `https://<7-char commit>.release.policeconduct.org/` serves that release; `https://<full commit>.release.policeconduct.org/robots.txt` is deny-all; an unknown commit returns 404; `https://release.policeconduct.org/x?y=1` and `https://preview.policeconduct.org/x?y=1` return 301 to `https://www.policeconduct.org/x?y=1`; `www` still serves `current`.
+4. Check: `https://<7-char commit>.release.policeconduct.org/` serves that release; `https://<full commit>.release.policeconduct.org/robots.txt` is deny-all; an unknown commit returns 404; `https://release.policeconduct.org/x?y=1` and `https://preview.policeconduct.org/x?y=1` return 301 to `https://www.policeconduct.org/x?y=1`; `www` still serves `current`. Forms: an `OPTIONS` request to `https://www.policeconduct.org/api/forms/submit` with `Origin: https://<7-char commit>.release.policeconduct.org` returns 204, and with `Origin: https://pr-<N>.preview.policeconduct.org` returns 403; the same request to `https://pr-<N>.preview.policeconduct.org/api/forms/submit` returns 204 for its own origin and 403 for `https://www.policeconduct.org`.
 5. Delete `current:main` from the preview store (`aws cloudfront-keyvaluestore update-keys` with the store ETag).
-6. The next `npm run deploy -- prod` writes its own key.
+6. Delete the mirror copies from the preview buckets (Decision 5): build the candidate list, print the listing, run the dry run, read it, then delete. Record the counts and exit codes in `verify.md`.
+7. The next `npm run deploy -- prod` writes its own key.
 
-Rollback: revert the PR and apply again. The old router ignores `release:` keys, so they can stay. Reverting restores the `current:main` branch, so `current:main` must be put back (pointing at the current production release, after a production deploy re-mirrors it) before bare `preview.` serves again.
+Rollback: revert the PR and apply again. The old router ignores `release:` keys, so they can stay. Reverting restores the `current:main` branch, so `current:main` must be put back (pointing at the current production release, after a production deploy re-mirrors it) before bare `preview.` serves again. The deleted preview-bucket copies are not restored; the next production deploy after the revert mirrors its own release again. Reverting also restores the shared forms origin list.
 
 ## Open Questions
 
-1. **Forms on release hosts.** The production forms API accepts only the apex, `www` and `pr-<N>.preview` origins (`lambdas/forms-api/index.mjs`, `isAllowedOrigin`). As designed, a form submitted from a release host is refused. Should release hosts accept submissions (owner Q12 saves forms from older releases), or stay refused?
-2. **Analytics and Sentry.** A release host serves the production build, with the production GA measurement ID and Sentry DSN. Visits to release hosts would count in production analytics. Is that acceptable, or should those events be filtered by hostname?
-3. **Version hosts.** Should a specific version be reachable, for example `<commit>-2.release.policeconduct.org`? The design serves only the highest version.
-4. **Preview-bucket copies of releases.** The `current:main` mirror left one copy of each production release in the preview site and release data buckets. They are not releases and no host serves them after this change. Keep them, or delete them once `current:main` is gone?
+1. **Preview-store keys of the mirror copies.** When the mirror ran `promote.sh` against the preview store, it also loaded `r:<release-id>:` redirect keys (and any `o:<release-id>:` markers) for each production release. The owner's answer covers the two preview buckets, so the cleanup in Decision 5 leaves those keys. Nothing reads them after the copies are gone, but they use preview-store space. Delete them in the same cleanup, or keep them?

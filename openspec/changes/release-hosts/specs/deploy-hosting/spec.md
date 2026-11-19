@@ -64,6 +64,11 @@ When a commit has more than one release, `<commit>.release.<domain>` SHALL serve
 - **THEN** `www` serves `<commit>-1`
 - **AND** `<commit>.release.<domain>` still serves `<commit>-2`
 
+#### Scenario: A version is not separately addressable
+
+- **WHEN** a request arrives for `<commit>-1.release.<domain>`
+- **THEN** the router returns 404 without reading a `release:` key
+
 ### Requirement: Production deploys write release lookup keys
 
 After a production deploy promotes its release, it SHALL write that release's `release:` keys to the production KVS with `scripts/load-release-hosts.mjs`. Each released commit SHALL have keys from its 7-character prefix to its shortest unshared prefix, which holds the release ID; shorter keys hold `ambiguous`. The writer SHALL change only `release:` keys and SHALL stop before writing on a malformed ID, an incomplete release, or a full store.
@@ -126,13 +131,89 @@ The router SHALL answer every request for bare `preview.<domain>` and bare `rele
 
 ### Requirement: Production deploys write only production resources
 
-A production deploy SHALL upload to, promote in, and write keys to the production site bucket, release data bucket, KVS and distribution only. It SHALL NOT upload to the preview buckets or write any key in the preview KVS.
+A production deploy SHALL upload to, promote in, and write keys to the production site bucket, release data bucket, KVS and distribution only. It SHALL NOT upload to the preview buckets or write any key in the preview KVS. The copies of production releases that earlier production deploys uploaded to the preview site bucket and the preview release data bucket SHALL be deleted once, after a dry run that lists every object to delete.
 
 #### Scenario: Production deploy
 
 - **WHEN** `npm run deploy -- prod` runs
 - **THEN** no command writes to the preview site bucket, the preview release data bucket, or the preview KVS
 - **AND** the deploy does not require any `_PREVIEW` Terraform output
+
+#### Scenario: Mirror copies deleted from the preview buckets
+
+- **WHEN** the one-time cleanup has run
+- **THEN** neither preview bucket holds a folder whose name matches the release ID pattern and is also a folder in the production site bucket, unless a `current:<label>` key in the preview store names it
+- **AND** no object in a production bucket and no KVS key was changed
+
+#### Scenario: Cleanup dry run
+
+- **WHEN** the operator runs the cleanup
+- **THEN** a listing of every object to delete and an `aws s3 rm --dryrun` for each prefix run before any object is deleted
+
+### Requirement: Each forms API accepts only its own environment's origins
+
+The production forms API SHALL accept only `https` origins whose host is `policeconduct.org`, `www.policeconduct.org`, or one label followed by `.release.policeconduct.org`. The preview forms API SHALL accept only `https` origins whose host is one label followed by `.preview.policeconduct.org`. Each Lambda SHALL take its environment from `FORMS_ORIGIN_ENVIRONMENT` (`production` or `preview`) and SHALL fail every request when the value is missing or unknown, with no default origin set.
+
+#### Scenario: Release host submits to the production forms API
+
+- **WHEN** the production forms API receives a request with `Origin: https://<commit>.release.policeconduct.org`
+- **THEN** the origin is allowed and the response carries CORS headers for that origin
+
+#### Scenario: Apex and www on the production forms API
+
+- **WHEN** the production forms API receives a request with `Origin: https://policeconduct.org` or `Origin: https://www.policeconduct.org`
+- **THEN** the origin is allowed
+
+#### Scenario: Preview origin on the production forms API
+
+- **WHEN** the production forms API receives a `POST` or `OPTIONS` request with `Origin: https://pr-42.preview.policeconduct.org`
+- **THEN** it returns 403 `Origin not allowed.` with no CORS headers
+
+#### Scenario: Preview origin on the preview forms API
+
+- **WHEN** the preview forms API receives a request with `Origin: https://pr-42.preview.policeconduct.org`
+- **THEN** the origin is allowed
+
+#### Scenario: Production or release origin on the preview forms API
+
+- **WHEN** the preview forms API receives a `POST` or `OPTIONS` request with an origin whose host is `policeconduct.org`, `www.policeconduct.org`, or `<commit>.release.policeconduct.org`
+- **THEN** it returns 403 `Origin not allowed.` with no CORS headers
+
+#### Scenario: Bare and look-alike hosts
+
+- **WHEN** either forms API receives an origin whose host is `release.policeconduct.org`, `preview.policeconduct.org`, `a.b.release.policeconduct.org`, `abc1234.release.policeconduct.org.evil.example`, or `pr-1.preview.policeconduct.org.evil.example`, or whose scheme is `http`
+- **THEN** it returns 403 for `POST` and `OPTIONS`
+
+#### Scenario: Missing environment setting
+
+- **WHEN** `FORMS_ORIGIN_ENVIRONMENT` is unset or holds a value other than `production` or `preview`
+- **THEN** the handler throws `Missing or unknown FORMS_ORIGIN_ENVIRONMENT` and allows no origin
+
+### Requirement: Analytics and Sentry are off on release hosts
+
+On a page whose host ends with `.release.policeconduct.org`, the browser SHALL NOT load Google Analytics, SHALL NOT send any analytics event, SHALL NOT call `Sentry.init`, and SHALL NOT set `window.__IPC_SENTRY_FEEDBACK__`. The choice SHALL be made from the page host at runtime. The apex, `www`, preview hosts and local builds SHALL keep their current analytics and Sentry behavior.
+
+#### Scenario: Analytics on a release host
+
+- **WHEN** a page loads on `https://<commit>.release.policeconduct.org`
+- **THEN** no request goes to `www.googletagmanager.com`
+- **AND** `window.__IPC_ANALYTICS__.track` pushes no command to `window.dataLayer`
+
+#### Scenario: Sentry on a release host
+
+- **WHEN** a page loads on `https://<commit>.release.policeconduct.org`, or a form error on that page calls `Sentry.captureException`
+- **THEN** no request goes to the Sentry ingest host
+- **AND** `window.__IPC_SENTRY_FEEDBACK__` is undefined
+
+#### Scenario: Report a site issue on a release host
+
+- **WHEN** a visitor clicks "Report a site issue" on a release host
+- **THEN** the browser opens `/about/contact/` on that host
+
+#### Scenario: Sentry on www
+
+- **WHEN** a page loads on `https://www.policeconduct.org`
+- **THEN** `Sentry.init` runs and `window.__IPC_SENTRY_FEEDBACK__` is set, as before
 
 ### Requirement: Release hosts have a certificate and DNS
 
