@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change publish-source-data-annotations. Update Purpose after archive.
+Measure how people use the site in Google Analytics without collecting private visitor data, and keep the Analytics property settings versioned in the repository.
 
 ## Requirements
 
@@ -46,13 +46,19 @@ The site SHALL track current masthead links, completed search outcomes and selec
 
 ### Requirement: Analytics settings support the measurement contract
 
-Analytics SHALL redact sensitive URL parameters, avoid automatic raw-search, history-update, outbound-link and download collection that bypasses the URL allowlist, expose bounded form reporting fields, exclude verified test traffic, and retain event data for fourteen months.
+Analytics SHALL redact sensitive URL parameters, avoid automatic raw-search, history-update, outbound-link and download collection that bypasses the URL allowlist, expose bounded form reporting fields, limit collection to production HTTPS hosts, leave the internal-traffic filter inactive so team production visits remain included, and retain event data for fourteen months.
 
 #### Scenario: Administrator reviews reporting settings
 
-- **WHEN** the approved settings are saved
-- **THEN** donation key events remain enabled, form dimensions are registered, and the configured event retention is fourteen months
-- **AND** the generic submission-receipt event remains unmarked as a key event
+- **WHEN** the versioned settings are saved
+- **THEN** donation key events and the per-form key events remain enabled, form dimensions are registered, and the configured event retention is fourteen months
+- **AND** the generic submission-receipt event `form_submit_success` remains unmarked as a key event
+
+#### Scenario: The generic submission event is marked in the Analytics UI
+
+- **WHEN** `form_submit_success` is marked as a key event in the Analytics UI
+- **THEN** `analytics:compare` reports the drift
+- **AND** `analytics:push` un-marks it
 
 ### Requirement: Managed Analytics settings are versioned and repeatable
 
@@ -83,3 +89,36 @@ The repository SHALL version the existing property and web stream's managed sett
 
 - **WHEN** the managed configuration is compared or applied
 - **THEN** the manual internal-traffic settings remain unchanged and production visits from the team remain included
+
+### Requirement: Analytics settings can be pulled and pushed
+
+`analytics:pull` SHALL read every page of the managed collections and singleton settings, validate the result, and atomically replace `config/analytics.json`. A failed read SHALL leave the local file unchanged. Pull output SHALL be reviewed as a git diff before commit; the committed file remains the source of the managed settings. Pull SHALL keep every `unmarkedKeyEvents` entry, even when that event is marked remotely. `analytics:push` SHALL behave exactly as `analytics:apply`.
+
+#### Scenario: Pull reads every page and writes atomically
+
+- **WHEN** Google returns a continuation token
+- **THEN** pull reads all pages before writing, and a following compare reports no differences
+
+#### Scenario: Pull read fails
+
+- **WHEN** any Google read fails
+- **THEN** pull exits 2 and `config/analytics.json` is unchanged
+
+#### Scenario: Pull keeps an unmarked key event
+
+- **WHEN** `form_submit_success` is listed in `unmarkedKeyEvents` and is marked remotely
+- **THEN** pull keeps it in `unmarkedKeyEvents`, and a following compare reports the drift
+
+### Requirement: Google signals and manual observations
+
+Google signals state SHALL be a managed singleton updated with an explicit update mask. `config/analytics-manual.json` SHALL record dated manual observations for settings the Admin API cannot change and SHALL never be applied.
+
+#### Scenario: Google signals differ
+
+- **WHEN** the managed Google signals state differs from the property
+- **THEN** push updates only that state, with an update mask naming only the managed field, and reads it back
+
+#### Scenario: Manual evidence file
+
+- **WHEN** push runs
+- **THEN** it does not read or apply `config/analytics-manual.json`
