@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Release ID pattern: `^[0-9a-f]{40}(-[1-9][0-9]*)?$`. A bare 40-hex ID is version 0.
+- Release ID pattern: `^[0-9a-f]{40}$`. The release ID is the full commit; a rebuild of the same commit goes to the same folder.
 - Release host label pattern: `^[0-9a-f]{7,40}$` (the `Host` header is already lower-cased).
 - KVS key: `release:<prefix>`; value: a release ID or the literal `ambiguous`.
 - KVS limits: 5 MB per store, key ≤ 512 bytes, value ≤ 1 KB, `update-keys` batches ≤ 50 changes.
@@ -26,7 +26,6 @@
 
 - A label longer than the unique prefix whose later characters differ from the release (for example `abcdef12` when the release is `abcdef13…`) must return 404, not the neighbour's release → Task 1 test "label differing after the found prefix returns 404".
 - A `release:` value that is not a release ID (for example `prod-temp`, or a hand-edited key) must return 404, not rewrite into an arbitrary folder → Task 1 test "non-release value returns 404".
-- Backfilling an older version after a newer one must not move the release host backwards → Task 2 test "older version does not replace newer".
 - A production deploy whose key write fails must be resumable with `--skip-build` and write the same keys → Task 2 test "rerun writes nothing" plus Task 3 ordering test.
 - `/robots.txt` on bare hosts must be deny-all, not a 301 to the crawlable `www` file → Task 1 test "robots.txt on bare hosts is deny-all".
 - A forms API with a missing or misspelled `FORMS_ORIGIN_ENVIRONMENT` must allow no origin, not fall back to either set → Task 5 test "unknown environment allows no origin".
@@ -52,28 +51,28 @@
 
 ```js
 test("full SHA serves its release", async () => {
-  const run = router({ "release:abcdef1": A + "-2" });
+  const run = router({ "release:abcdef1": A });
   assert.equal(
     (await run(A + ".release.example.org", "/")).uri,
-    `/${A}-2/build/index.html`,
+    `/${A}/build/index.html`,
   );
 });
 test("unique short SHA serves its release", async () => {
-  const run = router({ "release:abcdef1": A + "-1" });
+  const run = router({ "release:abcdef1": A });
   assert.equal(
     (await run("abcdef1.release.example.org", "/x/")).uri,
-    `/${A}-1/build/x/index.html`,
+    `/${A}/build/x/index.html`,
   );
 });
 test("prefix ambiguous at 7 resolves at 8", async () => {
   const run = router({
     "release:abcdef1": "ambiguous",
-    "release:abcdef10": A + "-1",
-    "release:abcdef11": B + "-1",
+    "release:abcdef10": A,
+    "release:abcdef11": B,
   });
   assert.equal(
     (await run("abcdef11.release.example.org", "/")).uri,
-    `/${B}-1/build/index.html`,
+    `/${B}/build/index.html`,
   );
 });
 test("ambiguous short SHA returns 404", async () => {
@@ -103,7 +102,7 @@ test("non-release value returns 404", async () => {
 });
 ```
 
-Also add: labels `abcdef` (6), 41 hex characters, and `abcdefg` return 404 with a `kvs.exists` spy showing no `release:` key read; `ABCDEF1.release.example.org` serves the release (the router lower-cases the `Host` header); `r:<A>-1:/old/` gives a 301 and `o:<A>-1:/index.html` gives `/<A>-1/override/index.html` on a release host; for hosts `release.example.org` and `preview.example.org`, `run(host, "/x/", { y: { value: "1", multiValue: [{ value: "1" }, { value: "2" }] } })` returns 301 with location `https://www.example.org/x/?y=1&y=2` and no KVS read; "robots.txt on bare hosts is deny-all" (add both bare hosts and `abcdef1.release.example.org` to the existing robots host loop). Delete the "bare preview selects latest main" test.
+Also add: labels `abcdef` (6), 41 hex characters, `abcdefg`, and a label containing `-` (`abcdef1-1`) return 404 with a `kvs.exists` spy showing no `release:` key read; `ABCDEF1.release.example.org` serves the release (the router lower-cases the `Host` header); `r:<A>:/old/` gives a 301 and `o:<A>:/index.html` gives `/<A>/override/index.html` on a release host; for hosts `release.example.org` and `preview.example.org`, `run(host, "/x/", { y: { value: "1", multiValue: [{ value: "1" }, { value: "2" }] } })` returns 301 with location `https://www.example.org/x/?y=1&y=2` and no KVS read; "robots.txt on bare hosts is deny-all" (add both bare hosts and `abcdef1.release.example.org` to the existing robots host loop). Delete the "bare preview selects latest main" test.
 
 - [ ] **Step 2: Run to verify failure**
 
@@ -144,26 +143,19 @@ git commit -m "feat: serve releases at commit release hosts and redirect bare ho
 - [ ] **Step 1: Write the failing tests.** Unit tests for `releaseHostKeys` and CLI tests with the fake `aws` from `scripts/load-redirects.test.mjs` (copy its harness; extend the fake to answer `s3api head-object` from a `present` list in the state file, failing when absent).
 
 ```js
+assert.deepEqual([...releaseHostKeys([A])], [["release:abcdef1", A]]);
 assert.deepEqual(
-  [...releaseHostKeys([A + "-1"])],
-  [["release:abcdef1", A + "-1"]],
-);
-assert.deepEqual(
-  new Map(releaseHostKeys([A + "-1", B + "-1"])),
+  new Map(releaseHostKeys([A, B])),
   new Map([
     ["release:abcdef1", "ambiguous"],
-    ["release:abcdef10", A + "-1"],
-    ["release:abcdef11", B + "-1"],
+    ["release:abcdef10", A],
+    ["release:abcdef11", B],
   ]),
 );
-assert.equal(releaseHostKeys([A, A + "-1"]).get("release:abcdef1"), A + "-1"); // bare is version 0
-assert.equal(
-  releaseHostKeys([A + "-3", A + "-2"]).get("release:abcdef1"),
-  A + "-3",
-);
+assert.deepEqual([...releaseHostKeys([A, A])], [["release:abcdef1", A]]);
 ```
 
-CLI tests: "first release writes one key"; "shared prefix rewrites the older chain" (initial store holds `release:abcdef1 = A-1`, run with `B-1`, store ends as the map above); "older version does not replace newer" (store holds `A-3`, run with `A-2`, no `update-keys` call); "malformed ID stops" (`prod-temp`, `A-0`, `A-01`, 39 hex → error, no `update-keys`); "incomplete release stops" (missing `builds/<id>/data/dynamic.json` → error, no `update-keys`); "store over 5 MB stops" (initial items near 5 MB → error mentioning 5 MB, no `update-keys`); "rerun writes nothing"; "only release: keys change" (`current`, `r:…`, `o:…` items untouched); "stale ETag fails" (fake bumps ETag between `describe` and `update-keys` → non-zero exit).
+CLI tests: "first release writes one key"; "shared prefix rewrites the older chain" (initial store holds `release:abcdef1 = A`, run with `B`, store ends as the map above); "malformed ID stops" (`prod-temp`, `A-1`, 39 hex, 41 hex → error, no `update-keys`); "incomplete release stops" (missing `builds/<id>/data/dynamic.json` → error, no `update-keys`); "store over 5 MB stops" (initial items near 5 MB → error mentioning 5 MB, no `update-keys`); "rerun writes nothing"; "only release: keys change" (`current`, `r:…`, `o:…` items untouched); "stale ETag fails" (fake bumps ETag between `describe` and `update-keys` → non-zero exit).
 
 - [ ] **Step 2: Run to verify failure**
 
@@ -404,7 +396,7 @@ git commit -m "feat: turn off Sentry on release hosts and pin analytics off ther
 ```bash
 eval "$(node scripts/terraform-outputs.mjs S3_BUCKET S3_BUCKET_PREVIEW RELEASE_DATA_BUCKET_PREVIEW KVS_ARN_PREVIEW)"
 work="$(mktemp -d)"
-id_re='^[0-9a-f]{40}(-[1-9][0-9]*)?$'
+id_re='^[0-9a-f]{40}$'
 folders() { # <bucket> <prefix>: release-ID folder names directly under <prefix>
   aws s3api list-objects-v2 --bucket "$1" --prefix "$2" --delimiter / \
     --query 'CommonPrefixes[].Prefix' --output text \

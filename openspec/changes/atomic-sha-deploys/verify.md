@@ -2,7 +2,7 @@
 
 ## Route coverage adjustment
 
-Scope: the approved route coverage rule change only. This does not verify the versioned release ID, preview, or lifecycle work in `tasks.md` sections 2-6.
+Scope: the approved route coverage rule change only. This does not verify the rebuild, preview, or lifecycle work in `tasks.md` sections 2-6.
 
 - Ten executable fixture tests pass, exercising the actual checker with local sitemaps and redirect maps. Before implementation, the accounted intake-gap test failed because the checker rejected the missing profile.
 - Covered: exact absence accounting, unaccounted gaps, child/other-path gaps, returning profiles, valid redirects, invalid destinations, redirect chains, invalid entries, missing lists, and malformed JSON.

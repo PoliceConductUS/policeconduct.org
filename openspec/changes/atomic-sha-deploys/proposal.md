@@ -15,10 +15,10 @@ Builds already land in per-commit folders and go live when a CloudFront KeyValue
 
 ## What Changes
 
-**Versioned release IDs**
+**Rebuilding a commit replaces its folder**
 
-- From: the release ID is the full commit. A second deploy of the same commit against newer data silently keeps the old pages.
-- To: the release ID is `<full commit>-<version>`. The version is `1` for the first release of a commit and the next unused number after that. Redeploying a commit against newer data makes a new release folder. The upload claims its folder first and stops if another build already holds it.
+- From: the release ID is the full commit. A second deploy of the same commit against newer data silently keeps the old pages, because uploads use `--no-overwrite`.
+- To: the release ID is still the full commit. A rebuild of the same commit uploads into the same folder and replaces its files; files the new build no longer produces are removed. `dynamic.json` is still uploaded last. The build records the data version it read in `.release/source.json` and in the uploaded release record `builds/<commit>/source.json`.
 
 **Previews are PR builds only**
 
@@ -58,7 +58,7 @@ Builds already land in per-commit folders and go live when a CloudFront KeyValue
 
 ## Impact
 
-- `scripts/build-release.mjs`, `scripts/release-files.mjs`, `scripts/upload-release.sh`: versioned release ID and the folder claim.
+- `scripts/build-release.mjs`, `scripts/upload-release.sh`: record the data version and replace the folder's files on a rebuild.
 - `scripts/deploy.sh`, `infrastructure/bootstrap-policeconduct/functions/router.js`: PR-only preview labels.
 - `scripts/manage-release.mjs`, `scripts/cleanup-preview.mjs`, `.github/workflows/cleanup-preview.yml`, `package.json` (`deploy:delete`): lifecycle.
 - `README.md` deploy section, `infrastructure/bootstrap-policeconduct/functions/noindex.js` header comment: documentation.
