@@ -1,0 +1,35 @@
+# Partner Page: Nonprofit
+
+## Overview
+
+Static Astro page for the route `/partner/nonprofit/`, describing partnership work with nonprofits and advocacy coalitions. It has one file, `index.astro`. It passes no `robots` prop, calls no data loader, has no form and has no page-specific client script.
+
+## Interface
+
+- Route `/partner/nonprofit/`, a static page with no `getStaticPaths`. [index.astro:const pagePath = "/partner/nonprofit/";]
+- The page renders through the `PageShell` layout. [index.astro:import PageShell from "#src/layouts/PageShell.astro";]
+- `PageShell` prop `title` is `Partnerships for Nonprofits and Advocacy Coalitions | PoliceConduct.org`. [index.astro:title="Partnerships for Nonprofits and Advocacy Coalitions | PoliceConduct.org"]
+- `PageShell` props `description`, `pagePath` and `canonicalUrl` come from the `pageDescription` and `pagePath` constants. [index.astro:canonicalUrl={pagePath}]
+- `PageShell` prop `structuredData` is a `buildWebPage` object built from `siteUrl`, `pageUrl`, `name` and `description`. [index.astro:const structuredData = buildWebPage({]
+- `PageShell` prop `breadcrumbs` has two entries: `Partner` linking to `/partner/`, then `Nonprofit` marked `current`. [index.astro:{ label: "Nonprofit", href: pagePath, current: true }]
+- `PageShell` prop `heading` is `For Nonprofits and Advocacy Coalitions`, and a `lede` string is passed. [index.astro:heading="For Nonprofits and Advocacy Coalitions"]
+- The `PrefillBootstrap` component is rendered at the top of the default slot. [index.astro:PrefillBootstrap />]
+- The body opens with a summary card of what the project can do now. [index.astro:What we can do now]
+- The body has sections on how the project can help, who is a good fit, what help is available now and what partnership looks like. [index.astro:What partnership looks like]
+- The page ends with one `PrefillNavButton` labelled `Request the partnership proposal` with `to="/about/contact/"`. [index.astro:Request the partnership proposal]
+- The button `payload` sets `whoami` to `Partner` and a page-specific `message`. [index.astro:whoami: "Partner",]
+- The payload `message` is the literal `I am interested in a scoped nonprofit partnership proposal.` [index.astro:"I am interested in a scoped nonprofit partnership proposal.",]
+
+## Invariants
+
+- The site URL comes from `getSiteUrl(Astro.site)` and the page URL is `pagePath` resolved against it. [index.astro:const pageUrl = new URL(pagePath, siteUrl).toString();]
+- The structured-data `name` is the same string as the `title` prop. [index.astro:name: "Partnerships for Nonprofits and Advocacy Coalitions | PoliceConduct.org",]
+- The parent breadcrumb points to the partner index. [index.astro:{ label: "Partner", href: "/partner/" }]
+
+## Side Effects
+
+- None
+
+## Verification
+
+- Run: `npm run test:e2e`

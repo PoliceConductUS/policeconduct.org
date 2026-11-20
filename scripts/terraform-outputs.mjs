@@ -12,6 +12,7 @@ const repoRoot = path.resolve(
 
 const policeconduct = "bootstrap-policeconduct";
 const recaptcha = "bootstrap-recaptcha";
+const submissionNotifications = "submission-notifications";
 
 // Environment name -> the stack and output that hold its value.
 export const TERRAFORM_ENV = {
@@ -43,6 +44,10 @@ export const TERRAFORM_ENV = {
     "recaptcha_wif_provider_resource_name",
   ],
   RECAPTCHA_WIF_AUDIENCE: [recaptcha, "recaptcha_wif_audience"],
+  SUBMISSION_NOTIFICATIONS_TOPIC_ARN: [
+    submissionNotifications,
+    "submission_notifications_topic_arn",
+  ],
 };
 
 function terraform(stackDir, args, env) {

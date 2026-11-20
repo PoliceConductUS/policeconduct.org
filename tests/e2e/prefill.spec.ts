@@ -47,7 +47,7 @@ const simpleSenderCases: SenderCase[] = [
     route: "/legal-notice/",
     expectedFields: ["message", "whoami"],
     payload: {
-      whoami: "Partner",
+      whoami: "Other",
       message: "I have a question about your legal policies.",
     },
     locator: { kind: "role", value: "Contact the team" },
@@ -176,10 +176,10 @@ test.beforeAll(async () => {
       join public.personnel p on p.id = ap.personnel_id
       join public.agency a on a.id = ap.agency_id
       join public.location_path lp on lp.location_path_id = a.location_path_id
-      where c.id = $1 and p.slug = $2 and a.slug = $3
+      where c.slug = $1 and p.slug = $2 and a.slug = $3
     `,
       [
-        "ogecfxi5p67286qbmvkfjoa4",
+        "lotts-v-city-of-irving-et-al-3-25-cv-03329-s-bn-n-d-tex-2025",
         "james-markham-v-7635c7",
         "irving-police-department-049f9a",
       ],

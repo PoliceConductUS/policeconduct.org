@@ -59,12 +59,20 @@ const numeratorUniverseGap = ({ unclassifiedHeld, unclassifiedStates }) => {
     return null;
   }
   const where = unclassifiedStates.join(", ");
+  const sourceGaps = [
+    unclassifiedStates.includes("MN") &&
+      "MN POST's productions key agencies by name only and publish no type column",
+    unclassifiedStates.includes("OR") &&
+      "Oregon's DPSST loader emits an agency's name, address, contact and status but no type field",
+  ].filter(Boolean);
   return Object.freeze({
     kind: GAP_KIND.NUMERATOR_UNIVERSE_UNVERIFIED,
     scope: "national",
     detail:
       `${unclassifiedHeld.toLocaleString("en-US")} held agencies, in ${where}, carry no sourced agency type, so they cannot be placed in the BJS universes the denominators are drawn from. ` +
-      "These states' sources enumerate entities that employ licensed peace officers without saying what kind of entity each one is: MN POST's productions key agencies by name only and publish no type column, and Oregon's DPSST loader emits an agency's name, address, contact and status but no type field. " +
+      (sourceGaps.length
+        ? `These states' sources enumerate entities that employ licensed peace officers without saying what kind of entity each one is: ${sourceGaps.join(", and ")}. `
+        : "") +
       "No percentage is reported for these jurisdictions or for the national total; ceilings are reported instead. Sourced types support classification, but distinct-agency matching and denominator eligibility still require verification before a comparison can be treated as achieved coverage.",
     unblockedBy:
       "Obtain a per-agency type for these states — a state roster that publishes one, or an authoritative national roster with types (INS-31). Name matching is not a substitute: it was tested on INS-79 and, beyond leaving most records unclassified, an unconstrained name join silently gave 22 Minnesota and Oregon agencies a Texas classification.",
@@ -509,8 +517,14 @@ export const renderCoverageReportMarkdown = (report) => {
     `- Jurisdictions where we hold more than the denominator counts: **${report.summary.universeMismatches}**`,
   );
   push();
+  const newestUpdatedAt = report.measurement.fingerprint.newest_updated_at;
+  if (!newestUpdatedAt) {
+    throw new Error(
+      "Coverage report fingerprint is missing newest_updated_at; the measured store holds no agency rows.",
+    );
+  }
   push(
-    `Corpus fingerprint: ${num(report.measurement.fingerprint.rows)} rows, newest \`updated_at\` ${report.measurement.fingerprint.newest_updated_at ?? "unknown"}. Quote these counts only with this fingerprint attached — the development database is shared and is reset without notice.`,
+    `Corpus fingerprint: ${num(report.measurement.fingerprint.rows)} rows, newest \`updated_at\` ${newestUpdatedAt}. Quote these counts only with this fingerprint attached — the development database is shared and is reset without notice.`,
   );
   push();
 
@@ -606,6 +620,8 @@ export const renderCoverageReportMarkdown = (report) => {
       );
     }
     push();
+  }
+  if (classified.some((row) => row.code === "TX")) {
     push(
       "Read the Texas row against that state's denominators — 1,041 general-purpose and 1,935" +
         " all-agency. The corpus looked like 2.8x the state's general-purpose count because" +
@@ -673,8 +689,7 @@ export const renderCoverageReportMarkdown = (report) => {
   push(
     nothingHeld
       .map(
-        (state) =>
-          `${state.code} (${num(state.allAgency.denominator?.value)})`,
+        (state) => `${state.code} (${num(state.allAgency.denominator?.value)})`,
       )
       .join(", ") || "None.",
   );

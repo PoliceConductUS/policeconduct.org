@@ -462,6 +462,8 @@ const validate = async () => {
           where namespace.nspname = 'public'
             and table_class.relname = any($1)
             and index_info.indisunique
+            -- A partial index enforces uniqueness only for some rows.
+            and index_info.indpred is null
           group by table_class.relname, index_class.relname
         `,
         [tableNames],

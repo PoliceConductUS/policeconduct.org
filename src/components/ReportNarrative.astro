@@ -1,6 +1,6 @@
 ---
 import type { ReportDetailFacts } from "#src/lib/report-detail.js";
-type Props = { description: string; facts: ReportDetailFacts };
+type Props = { description: string | null; facts: ReportDetailFacts };
 const { description, facts } = Astro.props;
 // Intake may already include these answers in the authored HTML. Compare
 // visible text but keep the original description and answers untouched.
@@ -15,7 +15,7 @@ const visibleText = (value: string) =>
     .replace(/&gt;/g, ">")
     .replace(/\s+/g, " ")
     .trim();
-const existingText = visibleText(description);
+const existingText = description ? visibleText(description) : "";
 const sections = [
   { label: "What happened", text: facts.whatHappened },
   { label: "How it felt", text: facts.feelings },
@@ -28,11 +28,15 @@ const sections = [
 );
 ---
 
-<h2>What happened</h2>
-<div set:html={description} />
+{description ? (
+  <>
+    <h2>What happened</h2>
+    <div set:html={description} />
+  </>
+) : null}
 {sections.map(({ label, text }) => (
   <section>
-    {label !== "What happened" ? <h2>{label}</h2> : null}
+    {label !== "What happened" || !description ? <h2>{label}</h2> : null}
     {label === "How it felt" ? (
       <p>This is the person’s account of how the experience felt.</p>
     ) : null}

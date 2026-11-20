@@ -21,6 +21,7 @@ type AgencySummaryRow = {
 };
 type AgencyFinderRow = {
   entity_id: string;
+  canonical_path: string;
   payload: {
     agency?: {
       id: string;
@@ -29,7 +30,6 @@ type AgencyFinderRow = {
       administrativeArea: string;
       city: string | null;
       postalCode: string | null;
-      path: string;
     };
   };
 };
@@ -74,25 +74,14 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
              on ro.agency_personnel_id = ao.id
            group by ao.agency_id
          ),
-         civil_case_agency_cases as (
-           select direct_ao.agency_id, cco.civil_case_id
-           from public.agency_personnel direct_ao
-           join public.civil_case_personnel cco
-             on cco.agency_personnel_id = direct_ao.id
-           union
-           select target_ao.agency_id, cco.civil_case_id
-           from public.agency_personnel target_ao
-           join public.agency_personnel case_ao
-             on case_ao.personnel_id = target_ao.personnel_id
-           join public.civil_case_personnel cco
-             on cco.agency_personnel_id = case_ao.id
-         ),
          civil_case_counts as (
            select
-             agency_id,
-             count(distinct civil_case_id) as civil_case_count
-           from civil_case_agency_cases
-           group by agency_id
+             ao.agency_id,
+             count(distinct cco.civil_case_id) as civil_case_count
+           from public.agency_personnel ao
+           join public.civil_case_personnel cco
+             on cco.agency_personnel_id = ao.id
+           group by ao.agency_id
          )
          select
            a.id,
@@ -103,7 +92,7 @@ export const loadAgencySummaries = async (): Promise<AgencySummary[]> => {
            lp.display_name as city,
            split_part(lp.path, '/', 4) as location_place_slug,
            lp.path as location_path,
-           bpp.path as canonical_path,
+           lp.path || a.slug || '/' as canonical_path,
            a.address,
            a.zip_code,
            a.slug,
@@ -187,10 +176,15 @@ export const loadAgencyFinderResults = async (): Promise<
     return (
       await client.query(
         `select
-           entity_id,
-           payload
-         from public.build_page_payload
-         where page_type = 'agency'`,
+           bpp.entity_id,
+           bpp.payload,
+           lp.path || a.slug || '/' as canonical_path
+         from public.build_page_payload bpp
+         join public.agency a
+           on a.id = bpp.entity_id
+         join public.location_path lp
+           on lp.location_path_id = a.location_path_id
+         where bpp.page_type = 'agency'`,
       )
     ).rows;
   });
@@ -208,10 +202,12 @@ export const loadAgencyFinderResults = async (): Promise<
         "location administrative_area",
         id,
       ),
-      administrativeAreaSlug: null,
       city: payload?.city || null,
       zipCode: payload?.postalCode || null,
-      canonicalPath: requireText(payload?.path, "canonicalPath", id),
+      canonicalPath: requireAgencyCanonicalPath({
+        id,
+        canonical_path: agency.canonical_path,
+      }),
     };
   });
 
@@ -229,7 +225,9 @@ export const loadAgencyFinderResults = async (): Promise<
 export const resolveAgencyByStateSlug = async (state: string, slug: string) => {
   const agencies = await loadAgencySummaries();
   return agencies.find(
-    (agency) => agency.state.toLowerCase() === state && agency.slug === slug,
+    (agency) =>
+      agency.state.toLowerCase() === state.toLowerCase() &&
+      agency.slug === slug,
   );
 };
 

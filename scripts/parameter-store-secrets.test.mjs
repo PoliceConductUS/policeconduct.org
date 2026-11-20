@@ -28,8 +28,9 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 if [[ "$name" == "$FAIL_NAME" ]]; then echo "ParameterNotFound" >&2; exit 254; fi
-if [[ "$name" == "$EMPTY_NAME" ]]; then exit 0; fi
-printf 'stored:%s' "$name"
+if [[ "$name" == "$EMPTY_NAME" ]]; then printf 'SecureString\\t'; exit 0; fi
+if [[ "$name" == "$STRING_NAME" ]]; then printf 'String\\tstored:%s' "$name"; exit 0; fi
+printf 'SecureString\\tstored:%s' "$name"
 `,
     { mode: 0o755 },
   );
@@ -51,6 +52,7 @@ printf 'stored:%s' "$name"
         CALL_LOG: callLog,
         FAIL_NAME: "",
         EMPTY_NAME: "",
+        STRING_NAME: "",
         ...overrides,
       },
     },
@@ -63,7 +65,7 @@ test("each named secret is read decrypted and exported", (t) => {
   assert.equal(result.status, 0, result.stderr);
   assert.equal(
     result.stdout,
-    "RESEND_API_KEY=stored:/policeconduct/secrets/RESEND_API_KEY\nGITHUB_TOKEN=stored:/policeconduct/secrets/GITHUB_TOKEN\n",
+    "RESEND_API_KEY=stored:/policeconduct.org/default/secrets/RESEND_API_KEY\nGITHUB_TOKEN=stored:/policeconduct.org/default/secrets/GITHUB_TOKEN\n",
   );
   const lines = calls.trim().split("\n");
   assert.equal(lines.length, 2);
@@ -74,6 +76,18 @@ test("each named secret is read decrypted and exported", (t) => {
   }
 });
 
+test("a secret stored as a plain String stops the caller and is named", (t) => {
+  const { result } = run(t, ["RESEND_API_KEY", "GITHUB_TOKEN"], {
+    STRING_NAME: "/policeconduct.org/default/secrets/GITHUB_TOKEN",
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /\/policeconduct\.org\/default\/secrets\/GITHUB_TOKEN in Parameter Store must be a SecureString, but its type is 'String'/,
+  );
+  assert.equal(result.stdout, "");
+});
+
 test("the stored value replaces a value already in the environment", (t) => {
   const { result } = run(t, ["SENTRY_AUTH_TOKEN"], {
     SENTRY_AUTH_TOKEN: "stale-local-copy",
@@ -81,25 +95,70 @@ test("the stored value replaces a value already in the environment", (t) => {
   assert.equal(result.status, 0, result.stderr);
   assert.equal(
     result.stdout,
-    "SENTRY_AUTH_TOKEN=stored:/policeconduct/secrets/SENTRY_AUTH_TOKEN\n",
+    "SENTRY_AUTH_TOKEN=stored:/policeconduct.org/default/secrets/SENTRY_AUTH_TOKEN\n",
   );
 });
 
 test("a parameter that cannot be read stops the caller and is named", (t) => {
   const { result } = run(t, ["RESEND_API_KEY", "GITHUB_TOKEN"], {
-    FAIL_NAME: "/policeconduct/secrets/GITHUB_TOKEN",
+    FAIL_NAME: "/policeconduct.org/default/secrets/GITHUB_TOKEN",
   });
   assert.equal(result.status, 1);
   assert.match(
     result.stderr,
-    /could not read \/policeconduct\/secrets\/GITHUB_TOKEN/,
+    /could not read \/policeconduct\.org\/default\/secrets\/GITHUB_TOKEN/,
   );
   assert.equal(result.stdout, "");
 });
 
+test("an environment's secret is read by its full parameter name", (t) => {
+  const dir = mkdtempSync(join(resolve(tmpdir()), "parameter-store-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const bin = join(dir, "bin");
+  mkdirSync(bin);
+  writeFileSync(
+    join(bin, "aws"),
+    `#!/usr/bin/env bash
+if [[ "$*" == *"--name /policeconduct.org/preview/secrets/RESEND_API_KEY "* ]]; then
+  printf 'SecureString\\tpreview-value\\n'
+else
+  echo "ParameterNotFound" >&2; exit 254
+fi
+`,
+    { mode: 0o755 },
+  );
+  const read = (parameter) =>
+    spawnSync(
+      "bash",
+      [
+        "-c",
+        `set -euo pipefail; source "${library}"; value="$(read_parameter_store_secret ${parameter})"; printf '%s' "$value"`,
+      ],
+      {
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          BASH_ENV: "/dev/null",
+          PATH: `${bin}:${process.env.PATH}`,
+        },
+      },
+    );
+  const found = read("/policeconduct.org/preview/secrets/RESEND_API_KEY");
+  assert.equal(found.status, 0, found.stderr);
+  assert.equal(found.stdout, "preview-value");
+  // No fallback: a missing environment key fails and prints nothing.
+  const missing = read("/policeconduct.org/production/secrets/RESEND_API_KEY");
+  assert.equal(missing.status, 1);
+  assert.match(
+    missing.stderr,
+    /could not read \/policeconduct\.org\/production\/secrets\/RESEND_API_KEY/,
+  );
+  assert.equal(missing.stdout, "");
+});
+
 test("an empty parameter stops the caller", (t) => {
   const { result } = run(t, ["RESEND_API_KEY"], {
-    EMPTY_NAME: "/policeconduct/secrets/RESEND_API_KEY",
+    EMPTY_NAME: "/policeconduct.org/default/secrets/RESEND_API_KEY",
   });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /is empty/);

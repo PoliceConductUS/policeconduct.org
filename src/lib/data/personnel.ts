@@ -84,7 +84,7 @@ export const loadPersonnelSummaries = async (
         ? (
             await client.query(
               `
-                select a.*, lp.path as location_path, bpp.path as canonical_path
+                select a.*, lp.path as location_path, lp.path || a.slug || '/' as canonical_path
                 from public.agency a
                 join public.location_path lp
                   on lp.location_path_id = a.location_path_id

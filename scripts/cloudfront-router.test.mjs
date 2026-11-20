@@ -46,7 +46,6 @@ function router(entries = {}, options = {}) {
 for (const [host, namespace, prefix] of [
   ["www.example.org", "prod-one", "/prod-one/build"],
   ["pr-42.preview.example.org", "pr-42-one", "/pr-42-one/build"],
-  ["sha-123.builds.example.org", "sha-123", "/sha-123/build"],
 ]) {
   test(`${host}: exact redirects win over wildcard entries and keep repeated query values`, async () => {
     const run = router({
@@ -148,6 +147,7 @@ test("unrelated domains and malformed preview hosts cannot read the origin", asy
     "nested.pr-42.preview.example.org",
     "preview.example.org",
     "unrelated.example.org",
+    "sha-123.builds.example.org",
   ]) {
     assert.equal((await run(host, "/current/")).statusCode, 404);
   }
@@ -281,4 +281,30 @@ test("named folders remain one URL segment while override keys use the literal n
     (await run("www.example.org", "/")).uri,
     "/release%201%23%252F/override/index.html",
   );
+});
+
+for (const host of [
+  "pr-42.preview.example.org",
+  "preview.example.org",
+  "unrelated.example.com",
+]) {
+  test(`${host}: robots.txt denies all crawlers instead of serving the build's file`, async () => {
+    const response = await router()(host, "/robots.txt");
+    assert.equal(response.statusCode, 200);
+    assert.equal(
+      response.headers["content-type"].value.startsWith("text/plain"),
+      true,
+    );
+    assert.equal(response.body.data, "User-agent: *\nDisallow: /\n");
+  });
+}
+
+test("production hosts serve the build's own robots.txt", async () => {
+  const canonical = await router()("www.example.org", "/robots.txt");
+  assert.equal(canonical.uri, "/prod-one/build/robots.txt");
+  const apex = await router({}, { canonicalHost: "example.org" })(
+    "example.org",
+    "/robots.txt",
+  );
+  assert.equal(apex.uri, "/prod-one/build/robots.txt");
 });

@@ -14,9 +14,15 @@ import {
 
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
 
+// A civil case linked to several agencies counts once in any total.
+const distinctCivilCaseIds = (items: { civilCaseIds: string[] }[]) => [
+  ...new Set(items.flatMap((item) => item.civilCaseIds)),
+];
+
 export type FederalAgencySummary = {
   branchCount: number;
   civilCaseCount: number;
+  civilCaseIds: string[];
   id: string;
   name: string;
   path: string;
@@ -30,6 +36,7 @@ export type FederalAgencyBranch = {
   administrativeArea?: string | null;
   city?: string | null;
   civilCaseCount: number;
+  civilCaseIds: string[];
   id: string;
   name: string;
   path: string;
@@ -367,7 +374,11 @@ export const loadFederalAgencySummaries = async () => {
             count(distinct a.id) as branch_count,
             count(distinct active_assignment.personnel_id) as personnel_count,
             count(distinct report_officer.review_id) as report_count,
-            count(distinct civil_case_link.civil_case_id) as civil_case_count
+            coalesce(
+              array_agg(distinct civil_case_link.civil_case_id)
+                filter (where civil_case_link.civil_case_id is not null),
+              '{}'
+            ) as civil_case_ids
           from public.federal_agency fa
           left join public.agency a
             on a.parent_federal_agency_id = fa.id
@@ -386,18 +397,10 @@ export const loadFederalAgencySummaries = async () => {
             on report_officer.agency_personnel_id = report_assignment.id
           left join lateral (
             select cco.civil_case_id
-            from public.agency_personnel direct_assignment
-            join public.civil_case_personnel cco
-              on cco.agency_personnel_id = direct_assignment.id
-            where direct_assignment.agency_id = a.id
-            union
-            select cco.civil_case_id
-            from public.agency_personnel target_assignment
-            join public.agency_personnel case_assignment
-              on case_assignment.personnel_id = target_assignment.personnel_id
+            from public.agency_personnel case_assignment
             join public.civil_case_personnel cco
               on cco.agency_personnel_id = case_assignment.id
-            where target_assignment.agency_id = a.id
+            where case_assignment.agency_id = a.id
           ) civil_case_link on true
           group by fa.id, fa.name, fa.slug
           order by fa.name
@@ -413,12 +416,13 @@ export const loadFederalAgencySummaries = async () => {
         name: string;
         slug: string;
         branch_count: string | number;
-        civil_case_count: string | number;
+        civil_case_ids: string[];
         personnel_count: string | number;
         report_count: string | number;
       }): FederalAgencySummary => ({
         branchCount: Number(row.branch_count || 0),
-        civilCaseCount: Number(row.civil_case_count || 0),
+        civilCaseCount: row.civil_case_ids.length,
+        civilCaseIds: row.civil_case_ids,
         id: String(row.id),
         name: String(row.name),
         path: federalAgencyPath(String(row.slug)),
@@ -444,14 +448,16 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
                 jsonb_build_object(
                   'id', a.id,
                   'name', a.name,
-                  'path', bpp.path,
+                  'path', case
+                    when bpp.entity_id is not null then lp.path || a.slug || '/'
+                  end,
                   'address', a.address,
                   'city', lp.display_name,
                   'state', split_part(lp.path, '/', 2),
                   'administrativeArea', area_lp.display_name,
                   'personnelCount', coalesce(branch_counts.personnel_count, 0),
                   'reportCount', coalesce(branch_counts.report_count, 0),
-                  'civilCaseCount', coalesce(branch_counts.civil_case_count, 0)
+                  'civilCaseIds', branch_counts.civil_case_ids
                 )
                 order by split_part(lp.path, '/', 2), lp.display_name, a.name
               ) filter (where a.id is not null),
@@ -477,7 +483,11 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
             select
               count(distinct active_assignment.personnel_id) as personnel_count,
               count(distinct report_officer.review_id) as report_count,
-              count(distinct civil_case_link.civil_case_id) as civil_case_count
+              coalesce(
+                array_agg(distinct civil_case_link.civil_case_id)
+                  filter (where civil_case_link.civil_case_id is not null),
+                '{}'
+              ) as civil_case_ids
             from public.agency child_agency
             left join public.agency_personnel active_assignment
               on active_assignment.agency_id = child_agency.id
@@ -488,18 +498,10 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
               on report_officer.agency_personnel_id = report_assignment.id
             left join lateral (
               select cco.civil_case_id
-              from public.agency_personnel direct_assignment
-              join public.civil_case_personnel cco
-                on cco.agency_personnel_id = direct_assignment.id
-              where direct_assignment.agency_id = child_agency.id
-              union
-              select cco.civil_case_id
-              from public.agency_personnel target_assignment
-              join public.agency_personnel case_assignment
-                on case_assignment.personnel_id = target_assignment.personnel_id
+              from public.agency_personnel case_assignment
               join public.civil_case_personnel cco
                 on cco.agency_personnel_id = case_assignment.id
-              where target_assignment.agency_id = child_agency.id
+              where case_assignment.agency_id = child_agency.id
             ) civil_case_link on true
             where child_agency.id = a.id
           ) branch_counts on true
@@ -525,7 +527,8 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
         address: branch.address || null,
         administrativeArea: branch.administrativeArea || null,
         city: branch.city || null,
-        civilCaseCount: Number(branch.civilCaseCount || 0),
+        civilCaseCount: branch.civilCaseIds.length,
+        civilCaseIds: branch.civilCaseIds,
         id: String(branch.id),
         name: String(branch.name),
         path: String(branch.path),
@@ -536,13 +539,13 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
     },
   );
 
+  const civilCaseIds = distinctCivilCaseIds(branches);
+
   return {
     branchCount: branches.length,
     branches,
-    civilCaseCount: branches.reduce(
-      (total, branch) => total + branch.civilCaseCount,
-      0,
-    ),
+    civilCaseCount: civilCaseIds.length,
+    civilCaseIds,
     id: String(row.id),
     name: String(row.name),
     path: federalAgencyPath(String(row.slug)),
@@ -564,11 +567,15 @@ export const buildFederalCivicIndex = (
   const pagePath = "/federal/";
   const totals = federalAgencies.reduce(
     (accumulator, agency) => ({
-      civilCases: accumulator.civilCases + agency.civilCaseCount,
+      ...accumulator,
       personnel: accumulator.personnel + agency.personnelCount,
       reports: accumulator.reports + agency.reportCount,
     }),
-    { civilCases: 0, personnel: 0, reports: 0 },
+    {
+      civilCases: distinctCivilCaseIds(federalAgencies).length,
+      personnel: 0,
+      reports: 0,
+    },
   );
   const count = (value: number) => value.toLocaleString("en-US");
   const rows = federalAgencies
@@ -677,12 +684,17 @@ export const buildFederalAgencyIndexModel = (
   }));
   const totals = federalAgencies.reduce(
     (accumulator, agency) => ({
-      civilCases: accumulator.civilCases + agency.civilCaseCount,
+      ...accumulator,
       leafAgencies: accumulator.leafAgencies + agency.branchCount,
       personnel: accumulator.personnel + agency.personnelCount,
       reports: accumulator.reports + agency.reportCount,
     }),
-    { civilCases: 0, leafAgencies: 0, personnel: 0, reports: 0 },
+    {
+      civilCases: distinctCivilCaseIds(federalAgencies).length,
+      leafAgencies: 0,
+      personnel: 0,
+      reports: 0,
+    },
   );
 
   return {
@@ -858,12 +870,17 @@ export const buildFederalAgencyTopicIndexModel = (
   }));
   const totals = federalAgencies.reduce(
     (accumulator, agency) => ({
-      civilCases: accumulator.civilCases + agency.civilCaseCount,
+      ...accumulator,
       leafAgencies: accumulator.leafAgencies + agency.branchCount,
       personnel: accumulator.personnel + agency.personnelCount,
       reports: accumulator.reports + agency.reportCount,
     }),
-    { civilCases: 0, leafAgencies: 0, personnel: 0, reports: 0 },
+    {
+      civilCases: distinctCivilCaseIds(federalAgencies).length,
+      leafAgencies: 0,
+      personnel: 0,
+      reports: 0,
+    },
   );
 
   return {

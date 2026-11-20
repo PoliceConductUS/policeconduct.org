@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
+  existsSync,
   mkdtempSync,
   mkdirSync,
   copyFileSync,
@@ -36,15 +37,10 @@ function initializeRepository(dir) {
 }
 
 for (const [name, script, args, builds] of [
-  ["preview sync", "deploy-preview-sync.sh", [], false],
-  ["preview build", "deploy-preview.sh", [], true],
-  ["production build", "deploy-incremental.sh", [], true],
-  [
-    "production existing build",
-    "deploy-incremental.sh",
-    ["--skip-build"],
-    false,
-  ],
+  ["preview sync", "deploy.sh", ["preview", "--skip-build"], false],
+  ["preview build", "deploy.sh", ["preview"], true],
+  ["production build", "deploy.sh", ["prod"], true],
+  ["production existing build", "deploy.sh", ["prod", "--skip-build"], false],
 ]) {
   for (const fails of [true, false]) {
     test(`${name}: ${fails ? "failed coverage stops publishing" : "coverage precedes publishing"}`, () => {
@@ -56,10 +52,6 @@ for (const [name, script, args, builds] of [
         mkdirSync(join(root, "bin"));
         mkdirSync(join(root, "dist"));
         writeFileSync(join(root, "dist/index.html"), "fixture");
-        writeFileSync(
-          join(root, "dist/robots.txt"),
-          "User-agent: *\nDisallow: /\n",
-        );
         mkdirSync(join(root, ".release/data"), { recursive: true });
         writeFileSync(join(root, ".release/data/index.json"), "{}");
         writeFileSync(
@@ -70,13 +62,10 @@ for (const [name, script, args, builds] of [
         const preview = name.startsWith("preview");
         let releaseId;
         for (const file of [
-          "deploy-preview.sh",
+          "deploy.sh",
           "upload-release.sh",
           "release-files.mjs",
           "terraform-outputs.mjs",
-          "deploy-preview-sync.sh",
-          "workspace-sync.sh",
-          "deploy-incremental.sh",
         ]) {
           copyFileSync(
             new URL(file, import.meta.url),
@@ -123,7 +112,6 @@ for (const [name, script, args, builds] of [
               // Shell startup files must not replace the fixture command PATH.
               BASH_ENV: "/dev/null",
               ENV: "/dev/null",
-              WORKSPACE_SYNC: "skip",
               PATH: `${join(root, "bin")}:${process.env.PATH}`,
               TEST_NODE: process.execPath,
               CALL_LOG: log,
@@ -281,11 +269,8 @@ test("successful builds bind matching folder IDs to the site and private roster;
         readFileSync(join(dir, ".release/data/dynamic.json"), "utf8"),
         id,
       );
-      if (pr)
-        assert.equal(
-          readFileSync(join(dir, "dist/robots.txt"), "utf8"),
-          "User-agent: *\nDisallow: /\n",
-        );
+      // The router denies crawlers on non-production hosts; the build never does.
+      assert.equal(existsSync(join(dir, "dist/robots.txt")), false);
       const check = () =>
         spawnSync(
           process.execPath,
@@ -359,7 +344,6 @@ process.stdout.write(JSON.stringify(data));`,
       CALL_LOG: log,
       PR_NUMBER: "12",
       KVS_ARN_PREVIEW: "preview-kvs",
-      S3_BUCKET_PREVIEW: "preview",
     };
     const run = spawnSync(
       process.execPath,
@@ -382,6 +366,27 @@ process.stdout.write(JSON.stringify(data));`,
     );
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("promote.sh explains each guard failure on standard error", () => {
+  const env = {
+    ...process.env,
+    S3_BUCKET: "fixture-site",
+    RELEASE_DATA_BUCKET: "fixture-data",
+    KVS_ARN: "fixture-kvs",
+    CLOUDFRONT_DIST_ID: "fixture-dist",
+  };
+  for (const [args, message] of [
+    [["fixture", "Bad Label"], /Expected namespace prod or a label/],
+    [["fix\tture"], /Release ID must not contain control characters\./],
+  ]) {
+    const run = spawnSync("bash", [resolve("scripts/promote.sh"), ...args], {
+      encoding: "utf8",
+      env,
+    });
+    assert.equal(run.status, 1);
+    assert.match(run.stderr, message);
   }
 });
 
@@ -408,35 +413,34 @@ test("a production release build is given the Sentry token from Parameter Store,
     );
     writeFileSync(
       join(dir, "bin/aws"),
-      '#!/bin/sh\necho "aws $*" >> "$AWS_LOG"\nprintf "stored-token\\n"\n',
+      '#!/bin/sh\necho "aws $*" >> "$AWS_LOG"\nprintf "%s\\tstored-token\\n" "${PARAMETER_TYPE:-SecureString}"\n',
       { mode: 0o755 },
     );
     initializeRepository(dir);
     const awsLog = join(dir, "calls");
     // Both logs sit under paths the fixture repository ignores.
     const buildEnvLog = join(dir, "bin", "build-env");
-    const build = (extra) => {
+    const run = (extra) => {
       writeFileSync(awsLog, "");
-      const result = spawnSync(
-        process.execPath,
-        ["scripts/build-release.mjs"],
-        {
-          cwd: dir,
-          encoding: "utf8",
-          env: {
-            ...process.env,
-            PATH: join(dir, "bin") + ":" + process.env.PATH,
-            RELEASE_ID: "",
-            RECAPTCHA_SITE_KEY: "fixture-site-key",
-            SENTRY_ORG: "fixture-org",
-            SENTRY_PROJECT: "fixture-project",
-            SENTRY_AUTH_TOKEN: "",
-            AWS_LOG: awsLog,
-            BUILD_ENV_LOG: buildEnvLog,
-            ...extra,
-          },
+      return spawnSync(process.execPath, ["scripts/build-release.mjs"], {
+        cwd: dir,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          PATH: join(dir, "bin") + ":" + process.env.PATH,
+          RELEASE_ID: "",
+          RECAPTCHA_SITE_KEY: "fixture-site-key",
+          SENTRY_ORG: "fixture-org",
+          SENTRY_PROJECT: "fixture-project",
+          SENTRY_AUTH_TOKEN: "",
+          AWS_LOG: awsLog,
+          BUILD_ENV_LOG: buildEnvLog,
+          ...extra,
         },
-      );
+      });
+    };
+    const build = (extra) => {
+      const result = run(extra);
       assert.equal(result.status, 0, result.stderr);
       return {
         buildEnv: readFileSync(buildEnvLog, "utf8"),
@@ -456,8 +460,21 @@ test("a production release build is given the Sentry token from Parameter Store,
     );
     assert.match(
       production.aws,
-      /^aws ssm get-parameter .*--name \/policeconduct\/secrets\/SENTRY_AUTH_TOKEN --with-decryption/,
+      /^aws ssm get-parameter .*--name \/policeconduct\.org\/default\/secrets\/SENTRY_AUTH_TOKEN --with-decryption/,
     );
+
+    rmSync(join(dir, "dist"), { recursive: true, force: true });
+    rmSync(buildEnvLog);
+    const plain = run({
+      SENTRY_SOURCEMAPS: "upload",
+      PARAMETER_TYPE: "String",
+    });
+    assert.notEqual(plain.status, 0);
+    assert.match(
+      plain.stderr,
+      /SENTRY_AUTH_TOKEN in Parameter Store must be a SecureString, but its type is 'String'/,
+    );
+    assert.equal(existsSync(buildEnvLog), false);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

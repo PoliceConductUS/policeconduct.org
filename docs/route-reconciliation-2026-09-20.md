@@ -72,8 +72,7 @@ Follow-up review found that the legacy Spenser Stockwell profile has a plausible
 Spencer Paul Stockwell match at Minnesota State Patrol. The exact first/last-name
 comparison missed this spelling difference. The old URL was removed from the 404
 list and added to identity review: `/personnel/spenser-stockwell-h7i8j9/` → candidate
-`/personnel/spencer-stockwell-fssojg/`. Current personnel ID:
-`i74ss56e0bo9ia76fgfssojg`. No identity merge has been applied.
+`/personnel/spencer-stockwell-fssojg/`. No identity merge has been applied.
 
 The original 106 count was preliminary unmatched URL records, not proof that 106
 people are absent. Two are “Unknown Personnel” records. The original breakdown

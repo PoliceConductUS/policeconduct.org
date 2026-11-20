@@ -208,10 +208,11 @@ the final PR head, including documentation-only PRs.
 - [ ] Update the PR description and completion report to the final scope, SHA,
       commands, exit codes, stage outcomes, counts, diagnostic dispositions,
       exceptions, and remaining blockers. Partial success is not full validation.
-- [ ] Retain human review/merge, production release, and personnel publication
-      gates. Merge readiness is not merge permission; merge is not deployment;
-      deployment is not evidence of an authorized public release. Claim deployed
-      only with deployed evidence. Use feature branches and PRs only.
+- [ ] Retain human review and merge. Merge readiness is not merge permission,
+      and merge is not deployment. Production release and personnel publication
+      have no approval gate; apply production changes from `main` after merge.
+      Claim deployed only with deployed evidence. Use feature branches and PRs
+      only.
 
 ## Agent Workflow
 
@@ -336,20 +337,30 @@ independent from external services.
 
 ### Preview Deploy
 
-Set `PR_NUMBER`, `S3_BUCKET_PREVIEW`, `RELEASE_DATA_BUCKET_PREVIEW`, and
-`KVS_ARN_PREVIEW`, then run `npm run deploy:preview`. The build uses the
-PR's preview URL and generates a unique release ID. To retry an upload,
-use `npm run deploy:preview:sync` with the same completed build.
+One command deploys to any environment: `npm run deploy -- <environment>`.
+The environment is `prod`, `preview`, or any other environment that has
+Terraform outputs. Add `--skip-build` to upload the completed build already on
+disk, and `--dry-run` to see the upload destinations without publishing.
+
+Set `PR_NUMBER` or `PREVIEW_NAME`, then run `npm run deploy -- preview`. The
+build uses that preview URL and the current commit as its release ID. To retry
+an upload with the same completed build, run
+`npm run deploy -- preview --skip-build`. Bucket and redirect store names come
+from Terraform outputs.
+
+Every host except the production hosts answers `/robots.txt` with a deny-all
+file from the CloudFront router, so the same build can be served on a preview
+host and in production.
 
 ### Production Deploy
 
 Before production release, require an error-free full final build and sitemap
 verification for the release artifact. Record these separately from PR merge
-evidence. Set `S3_BUCKET`, `RELEASE_DATA_BUCKET`, and `KVS_ARN` in the
-deployment environment. The bootstrap environment sync supplies these values.
+evidence. Bucket and redirect store names come from Terraform outputs. Run it
+from `main`:
 
 ```bash
-npm run deploy:prod
+npm run deploy -- prod
 ```
 
 A release keeps all public originals under `builds/<release-id>/static/`.
@@ -357,7 +368,7 @@ The separate private bucket holds the roster and page records under
 `builds/<release-id>/data/`. Uploads can resume. Promotion checks for the
 completed release, loads its redirects, then selects it in CloudFront.
 To promote a completed local build without rebuilding, run
-`npm run deploy:prod -- --skip-build`. To see the upload destinations before
+`npm run deploy -- prod --skip-build`. To see the upload destinations before
 publishing, add `--dry-run`. To switch back to a previously uploaded release,
 run `bash scripts/promote.sh <production-release-id>` with the same environment.
 
@@ -399,7 +410,7 @@ See `infrastructure/README.md` and `infrastructure/bootstrap-policeconduct/READM
 ## Environment Variables
 
 - **Inputs** for each stack are tracked in its `*.auto.tfvars` file.
-- **Secrets** live only in AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`.
+- **Secrets** live only in AWS Systems Manager Parameter Store, as SecureString parameters. A secret every environment shares is named `/policeconduct.org/default/secrets/<NAME>`. A secret that differs by environment is named `/policeconduct.org/<environment>/secrets/<NAME>`, where the environment is `production` or `preview`.
 - **Deployed resource names** (buckets, CloudFront IDs, redirect stores, the preview forms API URL, the reCAPTCHA site key) are Terraform outputs. Scripts read them at run time through `scripts/terraform-outputs.mjs`; nothing copies them into a file. A value already set in the environment is kept, which is how CI passes them in.
 - **Machine settings** go in the git-ignored `.env` at the repo root: `AWS_PROFILE`, `DATABASE_URL`, `INTAKE_WORKSPACE`, and the public `PUBLIC_GA_MEASUREMENT_ID`, `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT`.
 
@@ -454,7 +465,7 @@ Use `npm run analytics:pull`, `npm run analytics:compare`, and `npm run analytic
 
 ## Deployment folders
 
-Run `npm run deploy:preview` with `PR_NUMBER` or `PREVIEW_NAME` to build and upload to the preview bucket. Run `npm run deploy:prod` from main to upload to the site bucket and mirror the completed main build to bare preview. Both require a clean repository (no staged, unstaged or untracked changes) and use the full current Git commit as the folder. Uploading an existing build also requires its recorded commit and folder to match the current commit.
+Run `npm run deploy -- preview` with `PR_NUMBER` or `PREVIEW_NAME` to build and upload to the preview bucket. Run `npm run deploy -- prod` from main to upload to the site bucket and mirror the completed main build to bare preview. Both require a clean repository (no staged, unstaged or untracked changes) and use the full current Git commit as the folder. Uploading an existing build also requires its recorded commit and folder to match the current commit.
 
 Hosting stores originals at `<folder>/build/` and published replacements at `<folder>/override/`. Uploading a build leaves its overrides intact. Private records remain in the private release-data bucket.
 

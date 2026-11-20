@@ -1,10 +1,10 @@
 const formatDate = (value, options) => {
   if (!value) {
-    return "Unknown";
+    throw new Error("Cannot format a missing date.");
   }
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return "Unknown";
+    throw new Error(`Cannot format invalid date ${String(value)}.`);
   }
   return new Intl.DateTimeFormat("en-US", options).format(date);
 };

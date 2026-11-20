@@ -3,6 +3,8 @@ import RecordDataNotes from "#src/components/RecordDataNotes.astro";
 import "#src/styles/civic-ledger.css";
 import { contactEmailsForDisplay } from "#src/lib/contact-emails.js";
 import { agencyStatusPresentation } from "#src/lib/agency-status";
+import ArrestBeatMap from "#src/components/ArrestBeatMap.astro";
+import { loadArrestProfilesForAgency } from "#src/lib/data/arrest-profiles.js";
 import CoverageLinks from "#src/components/CoverageLinks.astro";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
@@ -30,10 +32,9 @@ export async function getStaticPaths() {
 
 type AgencyDetail = Awaited<ReturnType<typeof loadAgencyDetailByRouteParams>>;
 type CivilCaseRecord = AgencyDetail["civilCases"][number];
-type PersonnelLinkedCivilCaseRecord =
-  AgencyDetail["personnelLinkedCivilCases"][number];
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
+const arrestProfiles = await loadArrestProfilesForAgency(data.agency.id);
 
 const {
   agencyName,
@@ -62,7 +63,6 @@ const pageDescription = [
 ]
   .filter(Boolean)
   .join(" ");
-const civilCaseTotal = counts.civilCases + counts.personnelLinkedCivilCases;
 const addressAvailable =
   data.agency.address ||
   data.agency.city ||
@@ -86,18 +86,10 @@ const contactPoints = data.agencyPhones.map(
   }),
 );
 const agencyPrefillName = agencyName.toLocaleUpperCase("en-US");
-const civilLitigationRecords = [
-  ...civilCases.map((record: CivilCaseRecord) => ({
-    ...record,
-    caseUrl: `/civil-cases/${record.slug}/`,
-  })),
-  ...data.personnelLinkedCivilCases.map(
-    (record: PersonnelLinkedCivilCaseRecord) => ({
-      ...record,
-      caseUrl: `/civil-cases/${record.slug}/`,
-    }),
-  ),
-];
+const civilLitigationRecords = civilCases.map((record: CivilCaseRecord) => ({
+  ...record,
+  caseUrl: `/civil-cases/${record.slug}/`,
+}));
 const civilLitigationSummary = civilLitigationRecords
   .map((record) => {
     const segments = [
@@ -205,13 +197,28 @@ const volunteerHref = buildHelpCollectHref(
   agencySlugSegment,
 );
 // The headline personnel count is currently-serving officers; note any former
-// officers still on record (browsable via the roster's status filter).
+// officers still on record (browsable via the roster's status filter). With
+// no current officers but former ones on record, say so plainly and link the
+// former count to the roster instead of asking for help collecting data.
 const personnelMeta =
   counts.formerPersonnel > 0
     ? `${formatCount(counts.formerPersonnel)} former on record`
-    : counts.currentPersonnel > 0
-      ? "Currently serving"
-      : null;
+    : "Currently serving";
+const personnelCell =
+  counts.currentPersonnel > 0
+    ? {
+        value: formatCount(counts.currentPersonnel),
+        meta: personnelMeta,
+        href: `${agencyPath}personnel/`,
+        helpCollectHref: volunteerHref,
+      }
+    : counts.formerPersonnel > 0
+      ? {
+          gloss: "No current personnel on record.",
+          helpCollectHref: `${agencyPath}personnel/`,
+          helpCollectLabel: `See ${formatCount(counts.formerPersonnel)} former on record →`,
+        }
+      : { helpCollectHref: volunteerHref };
 
 type RecentItem = {
   href: string;
@@ -220,24 +227,19 @@ type RecentItem = {
   sortDate: number;
 };
 
-const recentCaseItems: RecentItem[] = civilLitigationRecords
-  .filter(
-    (record, index, records) =>
-      records.findIndex((entry) => entry.slug === record.slug) === index,
-  )
-  .map((record) => ({
-    href: record.caseUrl,
-    title: record.title || "Civil case",
-    meta: [
-      "Civil case",
-      record.court || null,
-      record.filed_date ? `Filed ${formatDate(record.filed_date)}` : null,
-      record.outcome || null,
-    ]
-      .filter(Boolean)
-      .join(" · "),
-    sortDate: record.filed_date ? new Date(record.filed_date).getTime() : 0,
-  }));
+const recentCaseItems: RecentItem[] = civilLitigationRecords.map((record) => ({
+  href: record.caseUrl,
+  title: record.title || "Civil case",
+  meta: [
+    "Civil case",
+    record.court || null,
+    record.filed_date ? `Filed ${formatDate(record.filed_date)}` : null,
+    record.outcome || null,
+  ]
+    .filter(Boolean)
+    .join(" · "),
+  sortDate: record.filed_date ? new Date(record.filed_date).getTime() : 0,
+}));
 const recentReportItems: RecentItem[] = data.reportedReports.map(
   (report: { incidentDate: string; title?: string; url: string }) => ({
     href: report.url,
@@ -461,15 +463,8 @@ const structuredData = {
   <StatStrip ariaLabel={`${agencyDisplayName} record totals`} columns="five">
     <StatCell
       label="Personnel"
-      value={
-        counts.currentPersonnel > 0
-          ? formatCount(counts.currentPersonnel)
-          : null
-      }
-      meta={personnelMeta || undefined}
-      href={counts.personnel > 0 ? `${agencyPath}personnel/` : undefined}
       actionLabel="View personnel →"
-      helpCollectHref={volunteerHref}
+      {...personnelCell}
     />
     <StatCell
       label="Reports"
@@ -482,9 +477,9 @@ const structuredData = {
     />
     <StatCell
       label="Civil Cases"
-      value={civilCaseTotal > 0 ? formatCount(civilCaseTotal) : null}
+      value={counts.civilCases > 0 ? formatCount(counts.civilCases) : null}
       meta="Court records"
-      href={civilCaseTotal > 0 ? `${agencyPath}civil-cases/` : undefined}
+      href={counts.civilCases > 0 ? `${agencyPath}civil-cases/` : undefined}
       actionLabel="View civil cases →"
       role="civil"
       helpCollectHref={volunteerHref}
@@ -510,6 +505,20 @@ const structuredData = {
       </a>
       {" linked to this agency’s personnel."}
     </p>
+  )}
+
+  {arrestProfiles.map(
+    (profile) =>
+      profile.beatMap && (
+        <ArrestBeatMap
+          data={profile.beatMap}
+          agencyName={profile.agency.name}
+          firstMonth={profile.coverage.firstMonth}
+          lastMonth={profile.coverage.lastMonth}
+          source={profile.coverage.source}
+          scope="agency"
+        />
+      ),
   )}
 
   {recentReports.length ? (

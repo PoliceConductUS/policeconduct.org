@@ -44,6 +44,7 @@ const base = `${authority.statePath}licensing-authority/data-annotations/`;
   title={`${authority.name}: data notes`}
   heading={`${authority.name}: data notes`}
   pagePath={annotationHref(base, view.parts)}
+  canonicalUrl={annotationHref(base, view.parts)}
   breadcrumbs={[
     { label: authority.stateName, href: authority.statePath },
     {

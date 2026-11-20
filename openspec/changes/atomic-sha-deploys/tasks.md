@@ -1,77 +1,53 @@
-## 0. Phasing (prod and build routing stay separate)
+## 1. Shipped baseline (recorded, not new work)
 
-- **Phase A (DONE — prod UNTOUCHED):** preview builds + per-build redirects +
-  noindex on the existing preview distribution only. Implemented and validated:
-  the redirect-aware `router.js` and `noindex.js` are wired into
-  `aws_cloudfront_distribution.preview` via a new `aws_cloudfront_key_value_store`
-  (`terraform validate` passes); `scripts/load-preview-redirects.mjs` +
-  `deploy-preview.sh` load each build's `redirects.json` into the KVS namespace
-  `r:pr-<N>:<from>`. CI automation is in place: `.github/workflows/deploy-preview.yml`
-  (PR → restore pinned intake DB dump → build → deploy preview → comment URL) and
-  `.github/workflows/cleanup-preview.yml` (PR close → remove folder + prune KVS).
-  The apex/www `site` distribution, `index_rewrite`, and root-bucket deploy are not
-  changed; folder layout stays the existing `/<label>/`. Remaining to run in AWS:
-  `terraform apply`, wire the CI secrets/vars, and stand up the intake dump side
-  (design.md §7); then a preview deploy confirms 301s + `X-Robots-Tag` on a
-  `*.preview` host.
-- **Phase B (deferred — touches apex):** unify prod onto `builds/<sha>/` with a
-  KVS `current` pointer and `scripts/promote.sh` — tasks 1.2, 1.3, 1.4, 2.1.
-- **Phase C (deferred — build speed):** incremental rendering + sharded CI —
-  sections 3, 4 (non-preview parts), 6.3.
+The deploy model in design.md "Current deploy model" shipped with earlier work, including `publish-release-news`. Previews are published by hand with `npm run deploy -- preview`. `.github/workflows/cleanup-preview.yml` deletes the closed PR's `current:pr-<N>` pointer only (`scripts/cleanup-preview.mjs`); it does not delete folders or redirect keys.
 
-Router/noindex under `infrastructure/.../functions/` are written to the Phase A
-shape. Phase A still needs Terraform on the **preview** distribution (KVS +
-attach the redirect-aware router and the noindex function) and a preview deploy
-that loads `redirects.json` into the KVS — see design.md.
+- [x] 1.1 Router (`infrastructure/bootstrap-policeconduct/functions/router.js`, rendered by `local.shared_router_code` into both distributions): canonical host uses `current`; `preview.<domain>` uses `current:main`; `<label>.preview.<domain>` uses `current:<label>` with label `^[a-z0-9-]+$`; per-release redirects `r:<release>:<path>` plus `/*` prefix keys; override selection by `o:<release>:<path>`; 404 for reserved paths, traversal, unknown hosts and missing pointers. Tests: `scripts/cloudfront-router.test.mjs`.
+- [x] 1.2 `functions/noindex.js` (viewer-response, preview distribution only) sets `X-Robots-Tag: noindex, nofollow` on every preview response; the router answers `/robots.txt` with deny-all on every non-production host.
+- [x] 1.3 `scripts/promote.sh <release-id> [label]`: checks `builds/<id>/data/dynamic.json` in the release data bucket and `<id>/build/index.html` in the site bucket; loads `<id>/build/_redirect-map.json` into `r:<id>:`; copies `<id>/build/404.html` to the bucket root; updates `current` or `current:<label>` with the ETag guard; invalidates `/*`. Promoting an earlier release is `npm run deploy:promote` (`scripts/manage-release.mjs promote`) with that release ID.
+- [x] 1.4 Redirects: `scripts/generate-redirect-map.mjs` writes `dist/_redirect-map.json` from the database and the intake workspace redirects (tests: `scripts/generate-redirect-map.test.mjs`); `promote.sh` loads it into `r:<id>:`.
+- [x] 1.5 KVS size guard: `scripts/load-redirects.mjs` rejects keys over 512 B, values over 1 KB, and a store total over 5 MB including other namespaces.
+- [x] 1.6 Redirect-coverage guard (`scripts/verify-redirect-coverage.mjs`, `npm run validate:redirects`), run by `npm run deploy -- <environment>` (with or without `--skip-build` and `--dry-run`): every URL in the prior sitemap must be a route in this build, redirect to a route that is not itself a redirect source, or have an exact path and reason in `route-absences.json`. Fails closed for unaccounted gaps. Runs after the build (when built) and before `scripts/upload-release.sh` checks the output and writes to S3. `PRIOR_SITEMAP=skip` bypasses it for a first deploy. Tests: `scripts/verify-redirect-coverage.test.mjs`, `scripts/deploy-release-guard.test.mjs`.
 
-## 1. CloudFront router function + KeyValueStore
+## 2. Rebuilding a commit against newer data
 
-- [x] 1.1 Create `infrastructure/.../functions/router.js` (cloudfront-js-2.0): one folder namespace `builds/<id>/`; folder selection = KVS `current` for apex, first DNS label (`<id>.builds.<domain>`) otherwise; validate the label `^[a-z0-9-]+$` (traversal/arbitrary-prefix gate); per-build redirect application from KVS (`r:<id>:<path>`) on ALL hosts; index rewrite. See design.md §1.
-- [ ] 1.2 Terraform: add `aws_cloudfront_key_value_store` and `aws_cloudfront_function.router` with the KVS association; attach as viewer-request on the default behavior; retire `index_rewrite` and `preview_router`.
-- [ ] 1.3 Confirm the rewritten URI (with folder prefix) is the cache key so a pointer flip needs no invalidation; keep the default cache policy.
-- [ ] 1.4 One bucket, one namespace `builds/<id>/` for both PR (`pr-<n>`) and prod (`<sha>`) builds; prefix PR ids `pr-<n>` so decimal PR numbers and hex shas never collide; fold the separate preview bucket/distribution into the single distribution; update origin/OAC + bucket policy.
-- [x] 1.5 Add a `viewer-response` CloudFront Function `noindex.js` that sets `X-Robots-Tag: noindex, nofollow` when the host is `*.builds.<domain>` (apex stays indexable); build-once means this cannot live in the HTML. See design.md §1.
+- [ ] 2.1 Record the data version. `scripts/build-release.mjs` adds `dataVersion` (the data version the build read) to `.release/source.json`, beside `commit`, `branch` and `pr`. `scripts/upload-release.sh` uploads `.release/source.json` to `builds/<commit>/source.json` in the release data bucket, before `dynamic.json`. The value's source waits on the open question in design.md; do not start this task until the owner decides it. Files: Modify `scripts/build-release.mjs`, `scripts/upload-release.sh`. Tests: add a case to `scripts/deploy-release-guard.test.mjs`: `.release/source.json` and the uploaded `builds/<commit>/source.json` carry the data version, and the upload writes `source.json` before `dynamic.json`. Pass: the case passes.
+- [ ] 2.2 Replace the folder's files on a rebuild. In `scripts/upload-release.sh`, drop `--no-overwrite` and add `--delete` to the `dist/` sync into `<commit>/build/` and the `.release/data/` sync into `builds/<commit>/data/` (which still excludes `dynamic.json`). Keep `dynamic.json` uploaded last. Files: Modify `scripts/upload-release.sh`. Tests: add a case to `scripts/deploy-release-guard.test.mjs` with the fake AWS command: a second deploy of the same commit replaces a changed file and removes a file the new build lacks, in both the build folder and the data folder, and `dynamic.json` is the last upload. Pass: the case passes.
+- [ ] 2.3 Checkpoint: run `npm run test:redirects`; record command, commit and exit code in `verify.md`.
 
-## 2. Promotion + redirects
+## 3. Previews are PR builds only
 
-- [x] 2.1 Add `scripts/promote.sh <sha>`: verify `builds/<sha>/index.html` exists, then `cloudfront-keyvaluestore update-keys` `current=<sha>` with the ETag if-match. Rollback = promote previous sha.
-- [x] 2.2 Redirects (chosen): `builds/<id>/redirects.json` is the per-build source of truth; at each build publish load its entries into the KVS under a per-build namespace `r:<id>:<from> = <to>` (batched); the router applies them on ALL hosts (apex + `*.builds.`). Prune a build's namespace when it is expired.
-- [ ] 2.3 KVS size guard: fail publish if total keys would exceed KVS limits (≤5 MB total, value ≤1 KB, key ≤512 B) — small/stable map × retained builds stays well under. If it ever exceeds, switch to the Lambda@Edge fallback reading the per-build `redirects.json` (edge-memory cached), per design.md §1.
-- [x] 2.4 Redirect-coverage guard (`scripts/verify-redirect-coverage.mjs`, `npm run validate:redirects`, wired into `deploy-preview-sync.sh` and `deploy-incremental.sh`, including standalone preview sync and production `--skip-build`): every URL in the prior sitemap (previous build if `PRIOR_SITEMAP` set, else the prod URL; `skip` to bypass) must be a route in this build, redirect to a route that is not itself a redirect source (single hop → no chains/cycles/redirect-to-404), OR have an exact path and reason in `route-absences.json` permitting a normal 404 without implying permanent removal. Fails closed for unaccounted gaps. Unit-tested. Runs after build/output existence checks and before S3 writes, redirect publication, or invalidation.
-- [x] 2.5 Redirect generator (`scripts/generate-redirects-from-sitemap.mjs`): from the prior sitemap (previous build, default prod) diff the URLs no longer routes, resolve each via its unique slug (agency/personnel/civil_cases/reviews `slug` are unique) to its current canonical path, and emit the committed append-only static redirect file. Needs the prod/prev sitemaps to run.
+- [ ] 3.1 `scripts/deploy.sh`: for any environment other than `prod`, require `PR_NUMBER` and use label `pr-<PR_NUMBER>`; remove `PREVIEW_NAME`. Files: Modify `scripts/deploy.sh`. Tests: add a case to `scripts/deploy-release-guard.test.mjs` that `PREVIEW_NAME` alone stops the deploy. Pass: the case passes.
+- [ ] 3.2 `infrastructure/bootstrap-policeconduct/functions/router.js`: serve `<label>.preview.<domain>` only when the label matches `^pr-[1-9][0-9]*$`. Files: Modify `router.js`. Tests: in `scripts/cloudfront-router.test.mjs`, add "a non-PR preview label returns 404 even with a pointer" and update any test that uses another label. Pass: `npm run test:redirects` passes.
+- [ ] 3.3 Checkpoint: run `npm run test:redirects`; record command, commit and exit code in `verify.md`.
 
-## 3. Incremental rendering
+## 4. Lifecycle
 
-- [ ] 3.1 Extend `refresh-build-projections.mjs` to project EVERY page type into `build_page_payload` with a `content_hash` — critically the personnel pages (153k) that currently render from live DB queries — plus any other page type not yet projected.
-- [ ] 3.2 Emit a full `_manifest.json` ({clean-path: content_hash}) into `dist/` on every build; upload it into `builds/<sha>/`.
-- [ ] 3.3 Build orchestration: fetch `builds/<prev-sha>/_manifest.json`, diff to produce the changed-path set (changed hash, new, deleted); write `changed-paths.json`.
-- [ ] 3.4 Teach each `getStaticPaths` to filter to the changed set when `BUILD_CHANGED_PATHS` is set; full build when unset (first build / forced).
-- [ ] 3.5 Publish step: `s3 sync builds/<prev-sha>/ builds/<sha>/`, overlay changed pages, apply deletions, write the new manifest, then promote.
-- [ ] 3.6 Correctness guard: periodic (nightly/weekly) forced full build to detect drift; verify a full build and an incremental build of the same commit produce identical output.
+- [ ] 4.1 `scripts/cleanup-preview.mjs`: after deleting `current:pr-<N>`, read the release ID it named; if no other key starting with `current` in the preview store names it, delete `<release-id>/` from the preview site bucket and `builds/<release-id>/` from the preview release data bucket. Do not delete KVS keys. Files: Modify `scripts/cleanup-preview.mjs`; Modify `.github/workflows/cleanup-preview.yml` to pass the preview bucket names. Tests: Create `scripts/cleanup-preview.test.mjs` with a fake AWS command for "unshared folder is deleted" and "folder named by another pointer is kept"; add it to `test:redirects` in `package.json`. Pass: both cases pass.
+- [ ] 4.2 `scripts/manage-release.mjs delete` (`npm run deploy:delete -- <release-id>`): remove the production folder deletion. The operation works on the preview store only: it removes `r:<release-id>:` and `o:<release-id>:` keys and refuses when any `current*` key in the preview store names the release. It deletes no S3 objects. Files: Modify `scripts/manage-release.mjs`. Tests: update `scripts/manage-release.test.mjs` for "keys removed when no pointer names the release", "refuses when a pointer names it", and "no S3 delete is called". Pass: the cases pass.
+- [ ] 4.3 Checkpoint: run `npm run test:redirects`; record command, commit and exit code in `verify.md`.
 
-## 4. Sharded + cached CI (GitHub Actions)
+## 5. Documentation
 
-- [ ] 4.1 Add a build workflow with a matrix over a shard key (`hash(canonicalPath) % N`); each shard runs `astro build` for its slice and uploads to `builds/<sha>/`.
-- [ ] 4.2 A final job writes `_manifest.json`, loads redirects, and (on main) calls `promote.sh`; PR builds sync to `builds/pr-<N>/` and comment the `pr-<N>.builds.<domain>` URL.
-- [ ] 4.3 Cache `~/.npm` + `node_modules` (lockfile key) and the Vite/Astro build cache across runs; use a larger runner class for the render jobs.
-- [ ] 4.4 Combine §3 + §4: on incremental runs, shards carry only the changed set; cold/full builds fan out across all shards.
-- [ ] 4.5 Scope AWS creds so only the promote job can write the KVS `current` pointer.
-
-## 5. Lifecycle + cleanup
-
-- [ ] 5.1 S3 lifecycle: keep the last N promoted `builds/<sha>/` for rollback and expire older ones; expire `builds/pr-*` on PR close/merge.
-- [ ] 5.2 Deployment docs: promote/rollback runbook; how the pointer, folders, and redirects relate.
-
-## 7. Cross-repo build pipeline (intake → website) — Phase C
-
-- [ ] 7.1 Intake CI: provision Postgres, apply migrations, run ingestion, `pg_dump` to `s3://<db-bucket>/dumps/db-<version>.dump` (immutable; version = hash(migrations + sources)); write `latest.yaml` (version, dump key, published_at, intake shas); `repository_dispatch` to the website.
-- [ ] 7.2 Website CI: read `latest.yaml` ONCE at job start, resolve + record `<db_version>` (optional `db_version` input pins/rolls back; default latest); `pg_restore` the pinned dump into a fresh Postgres before building.
-- [ ] 7.3 Build id = `short_hash(website_sha + db_version)` so a data-only change yields a new immutable `builds/<build-id>/`; write `build-info.json {website_sha, db_version}` into the folder.
-- [ ] 7.4 DB dumps: immutable + retained (lifecycle keeps last N; never expire the dump `latest.yaml` points to). Rebuild/rollback = re-run with the same `website_sha` + `db_version`.
+- [ ] 5.1 `README.md` deploy section: replace `builds/<release-id>/static/` with `<release-id>/build/`; describe that the release ID is the commit and that a rebuild of the same commit replaces its folder, preview = open PR only, release folders kept forever, preview folders removed at PR close, and `npm run deploy:delete -- <release-id>` as preview-store key removal. Use the terms preview, release and promote. Pass: the README names no `static/` folder and no production folder deletion.
+- [ ] 5.2 `infrastructure/bootstrap-policeconduct/functions/noindex.js` header comment: point to `openspec/specs/deploy-hosting/spec.md` instead of this change's `design.md`. Pass: the comment names no path under `openspec/changes/`.
 
 ## 6. Verify
 
-- [ ] 6.1 Apex serves the pointed-to build; flipping `current` serves the new build with no invalidation and no stale HTML.
-- [ ] 6.2 `pr-<N>.builds.policeconduct.org` serves `builds/pr-<N>/`; a bad host label is rejected; per-build redirects resolve to 301s on apex AND `*.builds.` hosts (no 404s for mapped legacy URLs); `*.builds.` responses carry `X-Robots-Tag: noindex` while apex does not; index rewrite works for `/`, `/x/`, `/x`.
-- [ ] 6.3 Incremental build of a small data change re-renders only affected pages and matches a full build byte-for-byte on the changed set; wall-clock is minutes.
-- [ ] 6.4 Rollback (promote previous sha) is instant and correct.
+- [ ] 6.1 Production serves the promoted release after promotion; the invalidation removes stale HTML.
+- [ ] 6.2 `pr-<N>.preview.policeconduct.org` serves the release `current:pr-<N>` names; a non-PR label returns 404; redirects return 301 on the canonical and preview hosts; preview responses carry `X-Robots-Tag: noindex, nofollow` and the canonical host does not; the index rewrite works for `/`, `/x/`, `/x`.
+- [ ] 6.3 Promoting an earlier release serves it, restores its 404 page, and serves its own overrides.
+- [ ] 6.4 Deploying the same commit twice leaves one folder `<commit>` that equals the second build: changed files are replaced, files the second build lacks are gone, and `builds/<commit>/source.json` names the second build's data version.
+- [ ] 6.5 Closing a PR removes its pointer and its unshared preview folder; no production release folder is deleted.
+- [ ] 6.6 Before archiving, confirm `publish-release-news` no longer states release-folder rules ("Named deployment folders"), so `deploy-hosting` is the one release capability (owner decision Q13).
+- [ ] 6.7 Run `npm run validate` on the final head; record commit, command, exit code and test counts in `verify.md`.
+
+## Deferred until a change adds CI publication
+
+These items are not part of this change. They stay recorded here, unnumbered as work, per `fix-pr-checks`. Builds and deploys run locally today.
+
+- 4.1 (deferred) A build workflow with a matrix over a shard key; each shard builds its slice.
+- 4.2 (deferred) A final job loads redirects and runs `npm run deploy -- <environment> --skip-build`; on `main` it promotes the release.
+- 4.3 (deferred) Cache `~/.npm`, `node_modules` and the Vite/Astro build cache across runs.
+- 4.5 (deferred) Scope AWS credentials so only the deploy job can write KVS pointers.
+- 7.x (deferred) The intake database handoff for CI builds. That is intake's work; a CI build would read the intake data the same way a local build does.
