@@ -8,7 +8,7 @@ The deploy model this change builds on is described in `openspec/changes/atomic-
 - The router picks a release ID from a KVS pointer: `current` for the apex and `www`, `current:main` for bare `preview.<domain>`, `current:<label>` for `<label>.preview.<domain>`. It answers 301 from `r:<release-id>:` keys, serves `<release-id>/override/<path>` when `o:<release-id>:<path>` exists, and otherwise rewrites the request to `<release-id>/build/<path>`.
 - Before host routing, the router answers `/robots.txt` with `User-agent: *` / `Disallow: /` on every host except the apex and `www` (`router.js`, "only the production hosts may be crawled").
 - `scripts/deploy.sh prod` builds on `main`, then `scripts/upload-release.sh` uploads to the production buckets. For `prod` it first runs itself again with namespace `main` against the preview buckets and store (the `current:main` mirror), then runs `scripts/promote.sh`, which loads `r:<release-id>:`, copies `404.html` to the bucket root, moves `current`, and invalidates `/*`.
-- The release ID is the full commit today (`scripts/build-release.mjs`). `atomic-sha-deploys` changes it to `<full commit>-<version>` (owner Q4). Production release folders named by a bare commit already exist and are kept (owner Q7). The production bucket also holds the migration folder `prod-temp`.
+- The release ID is the full 40-character commit (`scripts/build-release.mjs`). A rebuild of the same commit against newer data goes to the same folder and records the data version it read (`atomic-sha-deploys`, owner, 2026-11-20). Production release folders already exist and are kept (owner Q7). The production bucket also holds the migration folder `prod-temp`.
 - CloudFront Functions can read the KVS only with `get` and `exists` on one key at a time. One KVS store holds at most 5 MB of keys and values. Keys are at most 512 bytes and values at most 1 KB.
 
 ## Goals / Non-Goals
@@ -16,7 +16,6 @@ The deploy model this change builds on is described in `openspec/changes/atomic-
 **Goals:**
 
 - Serve each release at `<commit>.release.<domain>`, by full or short SHA.
-- Pick one release when a commit has several versions, and say which.
 - Redirect bare `release.<domain>` and bare `preview.<domain>` to `www`.
 - Keep release hosts and bare hosts out of search engines with the existing robots rule.
 - Keep production certificate changes safe for the live site.
@@ -26,7 +25,6 @@ The deploy model this change builds on is described in `openspec/changes/atomic-
 
 **Non-Goals:**
 
-- A host for a specific version (`<commit>-<n>.release`). `<commit>.release` serves only the highest version of the commit. Versions are not separately addressable (owner, 2026-11-19).
 - Release hosts for previews or for non-commit folders such as `prod-temp`.
 - Changing preview hosts, `noindex.js`, or the preview certificate.
 - Slug changes or redirect maps for slugs.
@@ -60,7 +58,7 @@ Order in `handler`, with the new steps marked:
 The `Host` header is already lower-cased, so an upper-case SHA in the URL works.
 
 ```js
-const releaseIdPattern = /^[0-9a-f]{40}(-[1-9][0-9]*)?$/;
+const releaseIdPattern = /^[0-9a-f]{40}$/;
 
 async function releaseForCommit(label) {
   for (let length = 7; length <= label.length; length += 1) {
@@ -85,7 +83,7 @@ A CloudFront Function cannot list keys, so the deploy writes the answer for ever
 
 **Key format.** `release:<prefix>`, where `<prefix>` is 7 to 40 lowercase hex characters. The value is a release ID, or the literal marker `ambiguous`. `ambiguous` can never be a release ID, so the router cannot mistake it for one. The `release:` namespace does not overlap `current`, `current:`, `r:` or `o:`.
 
-**Key set.** The keys are a pure function of the set of known releases, one release per commit:
+**Key set.** The keys are a pure function of the set of released commits. Each commit has one release, whose ID is the commit:
 
 ```text
 for each released commit C, with release ID id(C):
@@ -99,14 +97,14 @@ Each commit's keys end in exactly one key that holds its release ID, at its shor
 
 **Router lookup.** The router reads `release:<first 7 of label>`. While the value is `ambiguous`, it reads one more character, up to the label's length. A label shorter than the unique prefix of its commit ends on `ambiguous` and returns 404, as the owner asked. A missing key returns 404 (unknown commit).
 
-**Which version.** For each commit, the known release is the one with the highest version. A bare-commit release ID counts as version 0, so `<commit>-1` replaces it. Promotion does not change this: promoting an earlier release to `www` with `npm run deploy:promote` leaves `<commit>.release` on the highest version. The release host always shows the newest build of that commit, whichever release `www` shows. An earlier version of a commit has no host of its own: no `<commit>-<n>.release` name exists, and the router's label pattern (`^[0-9a-f]{7,40}$`) has no `-`, so such a label returns 404 (owner, 2026-11-19).
+**Rebuilds.** `<commit>.release` serves the `<commit>` folder, whatever its latest build is. A rebuild of the same commit replaces the folder's files and does not change any `release:` key. Promotion does not change which release a release host serves.
 
 **Writer.** A new script, `scripts/load-release-hosts.mjs <kvs-arn> <release-id>...`, requires `S3_BUCKET` and `RELEASE_DATA_BUCKET`. It:
 
-1. validates every argument against `^[0-9a-f]{40}(-[1-9][0-9]*)?$` and stops on the first bad one;
+1. validates every argument against `^[0-9a-f]{40}$` and stops on the first bad one;
 2. checks each release is complete, with the same two objects `promote.sh` checks (`builds/<id>/data/dynamic.json` and `<id>/build/index.html`), and stops if not;
 3. reads the store ETag, then lists every key (paged, like `scripts/load-redirects.mjs`);
-4. rebuilds the known releases from the values of the existing `release:` keys that are release IDs (every commit's chain ends in its ID, so none is lost), adds the arguments, and keeps the highest version per commit;
+4. rebuilds the known releases from the values of the existing `release:` keys that are release IDs (every commit's chain ends in its ID, so none is lost), and adds the arguments;
 5. computes the desired `release:` key set, and diffs it against the existing `release:` keys;
 6. stops before writing when the whole store after the change would exceed 5 MB;
 7. writes the deletes, then the puts, in batches of 50, with the ETag from step 3 on the first batch and a fresh ETag on later batches. A concurrent writer makes the first batch fail; the deploy is rerun. A rerun with nothing to change writes nothing.
@@ -115,7 +113,7 @@ The script writes only `release:` keys and never reads or changes `current`, `r:
 
 **When it runs.**
 
-- `scripts/upload-release.sh`, namespace `prod` only, after `scripts/promote.sh` succeeds: `node scripts/load-release-hosts.mjs "${store}" "${release_id}"`. Running after promotion means the release's `r:` redirects are loaded before its release host can serve. If this step fails, `npm run deploy -- prod --skip-build` resumes: uploads skip existing files, promotion is repeatable, and the key writer is idempotent.
+- `scripts/upload-release.sh`, namespace `prod` only, after `scripts/promote.sh` succeeds: `node scripts/load-release-hosts.mjs "${store}" "${release_id}"`. Running after promotion means the release's `r:` redirects are loaded before its release host can serve. If this step fails, `npm run deploy -- prod --skip-build` resumes: uploads send only files that differ, promotion is repeatable, and the key writer is idempotent.
 - Once, by hand, for the release folders that already exist (backfill, see Migration Plan).
 - Not from `promote.sh` or `manage-release.mjs`: promotion changes which release `www` serves, not which releases exist.
 
@@ -139,7 +137,7 @@ Production deploys no longer mirror to preview. Bare `preview.` no longer serves
 
 A preview-bucket folder is a mirror copy when all of these hold:
 
-- its name matches the release ID pattern `^[0-9a-f]{40}(-[1-9][0-9]*)?$`;
+- its name matches the release ID pattern `^[0-9a-f]{40}$`;
 - the production site bucket has a folder with the same name (the mirror uploaded exactly the production release ID);
 - no `current:<label>` key in the preview store names it (an open PR whose head commit is also a released commit keeps its folder).
 
@@ -150,7 +148,7 @@ Both preview buckets are versioned, and they differ in how old versions go away:
 
 The commands write the candidate list to a file outside the repo and print every object that will be deleted, with a count per bucket: `aws s3 ls --recursive --summarize` for each site-bucket prefix and every `key` and `versionId` under each release-data prefix. The dry run is `aws s3 rm --recursive --dryrun` for each site-bucket prefix and the exact `aws s3api delete-object --version-id` commands printed, not run, for the release data bucket. Only after the operator reads that output do the same commands run for real. They never touch the production buckets or any KVS key. The operator records the candidate count, object counts and the dry-run and delete exit codes in `verify.md`. The list holds only commit SHAs, so it may be recorded. The commands are in plan.md, Task 8 Step 5.
 
-Interaction with `atomic-sha-deploys`: its design has `build-release.mjs` list `<commit>-*` folders in both site buckets for `prod`, and it keeps preview folders the `current:main` mirror uploaded. Whichever change merges second updates those lines: with no mirror, and with the mirror copies deleted, a production build lists only the production site bucket.
+Interaction with `atomic-sha-deploys`: its design has `upload-release.sh` replace folder files in every bucket a `prod` deploy writes, including the preview buckets, and it keeps preview folders the `current:main` mirror uploaded. Whichever change merges second updates those lines: with no mirror, and with the mirror copies deleted, a production deploy writes only the production buckets.
 
 ### 6. Certificate and DNS (`main.tf`)
 
@@ -244,7 +242,7 @@ The forms client (`src/lib/client/forms.ts`) calls `Sentry.captureException`. Wi
 ## Migration Plan
 
 1. Merge the PR. Work from the `main` folder.
-2. Backfill: list the folders in the production site bucket whose names match `^[0-9a-f]{40}(-[1-9][0-9]*)?$`, and run `node scripts/load-release-hosts.mjs "$KVS_ARN" <id>...` with `S3_BUCKET` and `RELEASE_DATA_BUCKET` set. The script skips nothing silently: it stops on an incomplete folder, and the operator leaves that folder out and records why. The old router never reads `release:` keys, so this is safe before the apply.
+2. Backfill: list the folders in the production site bucket whose names match `^[0-9a-f]{40}$`, and run `node scripts/load-release-hosts.mjs "$KVS_ARN" <id>...` with `S3_BUCKET` and `RELEASE_DATA_BUCKET` set. The script skips nothing silently: it stops on an incomplete folder, and the operator leaves that folder out and records why. The old router never reads `release:` keys, so this is safe before the apply.
 3. Apply Terraform (Decision 7).
 4. Check: `https://<7-char commit>.release.policeconduct.org/` serves that release; `https://<full commit>.release.policeconduct.org/robots.txt` is deny-all; an unknown commit returns 404; `https://release.policeconduct.org/x?y=1` and `https://preview.policeconduct.org/x?y=1` return 301 to `https://www.policeconduct.org/x?y=1`; `www` still serves `current`. Forms: an `OPTIONS` request to `https://www.policeconduct.org/api/forms/submit` with `Origin: https://<7-char commit>.release.policeconduct.org` returns 204, and with `Origin: https://pr-<N>.preview.policeconduct.org` returns 403; the same request to `https://pr-<N>.preview.policeconduct.org/api/forms/submit` returns 204 for its own origin and 403 for `https://www.policeconduct.org`.
 5. Delete `current:main` from the preview store (`aws cloudfront-keyvaluestore update-keys` with the store ETag).

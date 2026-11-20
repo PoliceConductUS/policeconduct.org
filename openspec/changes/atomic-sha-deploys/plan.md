@@ -1,10 +1,10 @@
 # Plan
 
-This change records the shipped deploy model and adds four deltas: versioned release IDs, PR-only previews, the release and preview lifecycle, and the route coverage requirement on `shared-redirects`. The route coverage work below is done. Tasks are in `tasks.md`.
+This change records the shipped deploy model and adds four deltas: rebuilding a commit into its same folder, PR-only previews, the release and preview lifecycle, and the route coverage requirement on `shared-redirects`. The route coverage work below is done. Tasks are in `tasks.md`.
 
 ## Remaining work
 
-1. Versioned release IDs (tasks 2.x): `scripts/build-release.mjs` picks `<commit>-<version>`; `scripts/release-files.mjs` checks it; `scripts/upload-release.sh` claims the folder with a create-only write before any sync. Tests extend `scripts/deploy-release-guard.test.mjs` with the fake AWS command; no cloud calls.
+1. Rebuilding a commit (tasks 2.x): `scripts/build-release.mjs` records the data version the build read in `.release/source.json`; `scripts/upload-release.sh` uploads it as `builds/<commit>/source.json` and syncs with `--delete` instead of `--no-overwrite`, so the folder equals the latest build, with `dynamic.json` still last. Task 2.1 waits on the owner's answer to the data version open question in design.md. Tests extend `scripts/deploy-release-guard.test.mjs` with the fake AWS command; no cloud calls.
 2. PR-only previews (tasks 3.x): `scripts/deploy.sh` requires `PR_NUMBER`; `router.js` accepts only `pr-<N>` preview labels. Tests extend `scripts/cloudfront-router.test.mjs` and `scripts/deploy-release-guard.test.mjs`.
 3. Lifecycle (tasks 4.x): `scripts/cleanup-preview.mjs` removes an unshared preview folder at PR close; `scripts/manage-release.mjs delete` removes only preview-store keys and never deletes a folder. New `scripts/cleanup-preview.test.mjs`; updated `scripts/manage-release.test.mjs`.
 4. Documentation (tasks 5.x): `README.md` deploy section and the `noindex.js` header comment.
