@@ -22,14 +22,14 @@ This change starts from the deploy model already in the repository:
 
 Router behavior is tested in `scripts/cloudfront-router.test.mjs`; deploy ordering in `scripts/deploy-release-guard.test.mjs`.
 
-Immutability covers `<release-id>/build/` only. `<release-id>/override/` and `o:<release-id>:` keys are a per-release overlay that the release API changes after promotion. Promotion invalidates `/*` because the error page and overrides change outside the cache key. Known limitation: each bucket has one root `404.html`, so in the preview bucket the most recently promoted label sets the error page for every preview host.
+A build folder `<release-id>/build/` changes only when the same commit is rebuilt and uploaded again (see Rebuilding a commit). `<release-id>/override/` and `o:<release-id>:` keys are a per-release overlay that the release API changes after promotion. Promotion invalidates `/*` because the error page and overrides change outside the cache key. Known limitation: each bucket has one root `404.html`, so in the preview bucket the most recently promoted label sets the error page for every preview host.
 
 The bare `preview.<domain>` host and the `current:main` mirror are baseline behavior. The release-hosts proposal (PR #58) replaces them with `<commit>.release.<domain>` hosts and redirects bare `preview.` and `release.` to `www`. This change does not specify release hosts.
 
 ## Goals
 
 - Record the shipped deploy model as the baseline, in the project's terms.
-- Let a commit be redeployed against newer data (versioned release ID).
+- Let a commit be redeployed against newer data into its same release folder, and record the data version the build read.
 - Serve previews only for open PRs.
 - Keep every release folder; remove a preview folder when its PR closes.
 - Document that overrides stay with their release.
@@ -44,15 +44,21 @@ The bare `preview.<domain>` host and the `current:main` mirror are baseline beha
 - The intake database handoff (intake's work).
 - Redirects for changed slugs. Published slugs never change.
 
-## Versioned release IDs
+## Rebuilding a commit against newer data
 
-The release ID is `<full commit>-<version>`, where `<version>` is a positive whole number.
+The release ID stays the full 40-character commit. A rebuild of the same commit against newer data goes to the same folder.
 
-- `scripts/build-release.mjs` picks the version before the build starts, because every page embeds the release ID (`data-release-id` in `src/layouts/SiteLayout.astro`). It lists `<commit>-*` folders in every site bucket the deploy writes (for `prod`, the production and preview site buckets) and takes the next unused number, starting at `1`. It writes the ID to `.release/id` and records `commit` and `version` in `.release/source.json`.
-- `scripts/release-files.mjs --verify` accepts the ID only when its commit part equals the current commit and its version matches `.release/source.json`.
-- `scripts/upload-release.sh` claims the folder before any other write: it writes `<release-id>/release.json` (the contents of `.release/source.json`) with a create-only S3 write. If the object already exists with different contents, the upload stops. If it matches, the upload resumes, so `npm run deploy -- <environment> --skip-build` can finish an interrupted upload.
-- Release folders named by a bare commit already exist. They are kept (see Lifecycle) and stay promotable; the router and `promote.sh` accept any single-segment folder name.
-- The router, `promote.sh`, `load-redirects.mjs`, and the release API need no change: they already treat the release ID as an opaque folder name.
+- `scripts/build-release.mjs` records the data version the build read in `.release/source.json`, beside `commit`, `branch` and `pr`, as `dataVersion`.
+- `scripts/upload-release.sh` uploads `.release/source.json` to `builds/<commit>/source.json` in the release data bucket, before `dynamic.json`. That file is the uploaded release record: it names the commit and the data version of the build the folder holds.
+- `scripts/upload-release.sh` replaces the folder's files instead of skipping existing ones. It syncs `dist/` to `<commit>/build/` and `.release/data/` to `builds/<commit>/data/` without `--no-overwrite` and with `--delete`, so changed files are replaced and files the new build no longer produces are removed. The folder then equals the latest build.
+- `dynamic.json` is still uploaded last as the completion marker. The data sync excludes it, so `--delete` does not remove it; the last step replaces it.
+- A rerun with `--skip-build` resumes an interrupted upload: sync uploads only files that differ.
+- The same rules apply to every bucket the deploy writes (for `prod`, the production and the preview site and release data buckets).
+- `scripts/release-files.mjs --verify` keeps its check that the release ID and `.release/source.json` `commit` equal the current commit.
+- The router, `promote.sh`, `load-redirects.mjs` and the release API need no change.
+- Existing release folders are already named by the bare commit. Nothing is migrated.
+
+Open question: which value identifies the data version — owner to decide.
 
 ## Previews are PR builds only
 
@@ -76,15 +82,16 @@ Each KVS store holds at most 5 MB of keys and values: the `current*` pointers, `
 
 - One distribution vs two: two kept. Previews need their own certificate, bucket, KVS and `noindex.js`.
 - Pointer promotion vs overwriting the bucket root: pointer kept. Rolling back is promoting an earlier release.
-- Data version in the release ID (a hash of the data inputs) vs a counter: counter chosen. The build has no single data version to hash, and a counter keeps the ID short and ordered.
+- A new folder per rebuild (a version or data version in the release ID) vs the same folder: same folder chosen (owner decision). The release ID stays the commit, and the build records the data version it read.
 - Copying overrides on promotion: not done. Each release renders its own content from data.
 
 ## Risks and mitigations
 
 - KVS propagation: a pointer change reaches edge locations over time; the `/*` invalidation follows it.
-- Partial deploy: a production deploy can stop after the preview mirror is promoted but before production is. Rerunning with `--skip-build` resumes, because the folder claim matches and uploads skip existing files.
+- Partial deploy: a production deploy can stop after the preview mirror is promoted but before production is. Rerunning with `--skip-build` resumes, because sync uploads only files that differ.
+- Rewriting a served folder is not atomic: when a commit that `www` serves is rebuilt, the upload rewrites the folder `www` is reading. Visitors can see a mix of old and new files during the upload, and cached pages stay old until the `/*` invalidation after promotion. Mitigation: promotion invalidates `/*` once the upload is complete.
 - Preview store failure: a full or failing preview store stops a production deploy, because `upload-release.sh` promotes the preview mirror first. The deploy fails loudly; fix the preview store and rerun.
-- Concurrent deploys: two builds of the same commit can pick the same version; the folder claim lets only one upload. Pointer updates use the KVS ETag; the second writer fails and must rerun.
+- Concurrent deploys: two deploys of the same commit write the same folder, and it can hold a mix of both builds until the last one finishes. Run one deploy of a commit at a time; rerun the deploy to make the folder equal one build. Pointer updates use the KVS ETag; the second writer fails and must rerun.
 - KVS capacity: see Capacity.
 
 ## Route absence accounting

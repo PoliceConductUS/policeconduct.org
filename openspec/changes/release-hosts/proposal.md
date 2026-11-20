@@ -7,7 +7,7 @@ A release can only be seen while it is promoted to `www`. Nobody can open an ear
 **Release hosts**
 
 - From: a release folder in the production site bucket is reachable only while `current` names it.
-- To: `<commit>.release.policeconduct.org` serves the release of that commit. `<commit>` is a full SHA or a short SHA of 7 to 40 hex characters. A short SHA serves the one matching release; an unknown or ambiguous one returns 404. When a commit has several versioned releases, the highest version serves. Versions are not separately addressable: there is no `<commit>-<n>.release` host.
+- To: `<commit>.release.policeconduct.org` serves the release of that commit. `<commit>` is a full SHA or a short SHA of 7 to 40 hex characters. A short SHA serves the one matching release; an unknown or ambiguous one returns 404. A rebuild of the same commit goes to the same folder, so the release host shows its latest build.
 - Impact: non-breaking. New hosts on the production distribution.
 
 **Release lookup keys**
