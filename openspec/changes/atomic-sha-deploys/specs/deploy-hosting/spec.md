@@ -1,13 +1,13 @@
 ## ADDED Requirements
 
-### Requirement: Releases use versioned folders
+### Requirement: Each commit has one release folder
 
-The system SHALL store each release in its own folder named by its release ID, `<full commit>-<version>`. The version SHALL be `1` for the first release of a commit and the next unused number after that. A deploy SHALL claim its folder before writing any other file.
+The system SHALL store each release in one folder named by its release ID, the full 40-character commit. A rebuild of the same commit SHALL upload into the same folder and SHALL leave the folder equal to the latest build. Each build SHALL record the data version it read.
 
 #### Scenario: Folder layout
 
 - **WHEN** a release uploads
-- **THEN** site files go to `<release-id>/build/` and release data to `builds/<release-id>/data/`
+- **THEN** site files go to `<commit>/build/` and release data to `builds/<commit>/data/`
 - **AND** `dynamic.json` is uploaded last
 
 #### Scenario: Unclean tree or other branch
@@ -15,26 +15,29 @@ The system SHALL store each release in its own folder named by its release ID, `
 - **WHEN** the working tree has uncommitted or untracked changes, or a `prod` deploy runs from a branch other than `main`
 - **THEN** the deploy stops before building
 
-#### Scenario: First release of a commit
+#### Scenario: Release ID is the commit
 
-- **WHEN** a commit with no release folder is deployed
-- **THEN** its release ID is `<full commit>-1`
+- **WHEN** a commit is deployed
+- **THEN** its release ID is the full 40-character commit
 
 #### Scenario: Redeploying a commit against newer data
 
-- **WHEN** a commit that already has release `<full commit>-<n>` is deployed again
-- **THEN** the new build gets release ID `<full commit>-<n+1>` in a new folder
-- **AND** the earlier release folder is left unchanged
+- **WHEN** a commit that already has a release folder is deployed again
+- **THEN** the new build uploads into the same `<commit>/build/` and `builds/<commit>/data/` folders
+- **AND** files the new build changed are replaced
+- **AND** files the new build no longer produces are removed
+- **AND** `dynamic.json` is uploaded last
 
-#### Scenario: Folder already claimed by another build
+#### Scenario: Data version recorded
 
-- **WHEN** the upload finds `<release-id>/release.json` already written by a different build
-- **THEN** the deploy stops before writing any other file
+- **WHEN** a release builds and uploads
+- **THEN** `.release/source.json` records the data version the build read
+- **AND** the uploaded release record `builds/<commit>/source.json` carries the same data version
 
 #### Scenario: Resuming an interrupted upload
 
 - **WHEN** `npm run deploy -- <environment> --skip-build` reruns with the same build
-- **THEN** the claim matches and the upload continues from the files already written
+- **THEN** the upload sends only files that differ and ends with the folder equal to that build
 
 ### Requirement: Promotion moves a pointer
 

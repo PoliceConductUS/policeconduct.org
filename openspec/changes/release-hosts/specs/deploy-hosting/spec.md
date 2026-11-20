@@ -44,39 +44,30 @@ The production distribution SHALL serve `<commit>.release.<domain>`, where `<com
 - **WHEN** `/robots.txt` is requested on any `*.release.<domain>` host
 - **THEN** the router returns the deny-all `robots.txt`
 
-### Requirement: A release host serves the highest version of its commit
+### Requirement: A release host serves its commit's folder
 
-When a commit has more than one release, `<commit>.release.<domain>` SHALL serve the release with the highest version. A release ID that is a bare commit SHALL count as version 0. Promoting a release SHALL NOT change which release a release host serves.
-
-#### Scenario: Commit redeployed against newer data
-
-- **WHEN** a commit has releases `<commit>-1` and `<commit>-2`
-- **THEN** `<commit>.release.<domain>` serves `<commit>-2`
-
-#### Scenario: Bare-commit release followed by a versioned release
-
-- **WHEN** a commit has releases `<commit>` and `<commit>-1`
-- **THEN** `<commit>.release.<domain>` serves `<commit>-1`
+`<commit>.release.<domain>` SHALL serve the `<commit>` release folder, whatever its latest build is. Promoting a release SHALL NOT change which release a release host serves.
 
 #### Scenario: Earlier release promoted to www
 
-- **WHEN** `npm run deploy:promote -- <commit>-1` runs while `<commit>-2` exists
-- **THEN** `www` serves `<commit>-1`
-- **AND** `<commit>.release.<domain>` still serves `<commit>-2`
+- **WHEN** `npm run deploy:promote -- <earlier commit>` runs
+- **THEN** `www` serves the earlier release
+- **AND** each `<commit>.release.<domain>` still serves its own commit's folder
 
-#### Scenario: A version is not separately addressable
+#### Scenario: Commit rebuilt against newer data
 
-- **WHEN** a request arrives for `<commit>-1.release.<domain>`
-- **THEN** the router returns 404 without reading a `release:` key
+- **WHEN** a production deploy rebuilds a commit that already has a release folder
+- **THEN** `<commit>.release.<domain>` serves the new build after the `/*` invalidation
+- **AND** no `release:` key changes
 
 ### Requirement: Production deploys write release lookup keys
 
 After a production deploy promotes its release, it SHALL write that release's `release:` keys to the production KVS with `scripts/load-release-hosts.mjs`. Each released commit SHALL have keys from its 7-character prefix to its shortest unshared prefix, which holds the release ID; shorter keys hold `ambiguous`. The writer SHALL change only `release:` keys and SHALL stop before writing on a malformed ID, an incomplete release, or a full store.
 
-#### Scenario: First release of a commit with a unique prefix
+#### Scenario: Release of a commit with a unique prefix
 
-- **WHEN** a production deploy promotes `<commit>-1` and no other released commit shares its first 7 characters
-- **THEN** the store holds `release:<first 7>` = `<commit>-1`
+- **WHEN** a production deploy promotes `<commit>` and no other released commit shares its first 7 characters
+- **THEN** the store holds `release:<first 7>` = `<commit>`
 
 #### Scenario: New commit shares a prefix with an older release
 

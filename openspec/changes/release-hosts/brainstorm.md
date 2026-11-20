@@ -6,7 +6,7 @@ The brainstorm took place with the owner on 2026-11-18 and 2026-11-19 (`.egm-rev
 
 - A **release** is a published build of a commit on `main`. It is a folder in the production site bucket. Not every `main` commit is released.
 - `<commit>.release.policeconduct.org` serves the build of that release. `<commit>` is 7 to 40 lowercase hex characters. A short SHA serves the one release whose commit starts with it. An unknown or ambiguous short SHA returns 404.
-- A commit can be released more than once against newer data (versioned release ID `<full commit>-<version>`, owner Q4, specified in `atomic-sha-deploys`). `<commit>.release` serves the release with the highest version of that commit.
+- The release ID is the full commit. A commit rebuilt against newer data goes to the same folder, and the build records the data version it read (specified in `atomic-sha-deploys`). `<commit>.release` serves the `<commit>` folder, whatever its latest build is.
 - Releases are kept forever (owner Q7), so their release hosts keep working.
 - Bare `release.policeconduct.org` and bare `preview.policeconduct.org` return a 301 to `https://www.policeconduct.org` with the same path and query string, like the apex redirect. Today bare `preview.` serves the `current:main` copy of the latest production release; that ends.
 - Previews are open PRs only (`pr-<N>.preview.policeconduct.org`). A preview is not a release.
@@ -43,7 +43,7 @@ Option C. Release hosts are aliases of the production distribution, which alread
 
 - Release hosts live on the production CloudFront distribution and read the production KVS (`site_redirects`).
 - The production certificate adds `release.<domain>` and `*.release.<domain>`. The certificate is replaced with `create_before_destroy`, as it already is for SAN changes.
-- `<commit>.release` serves the highest version of the commit. A bare-commit folder (the release IDs before versioning) counts as version 0. Promoting an earlier release to `www` does not change which release a release host serves.
+- `<commit>.release` serves the `<commit>` folder. Promoting an earlier release to `www` does not change which release a release host serves.
 - Lookup keys are written only by a production deploy, after `promote.sh` succeeds, and by a one-time backfill for existing release folders. The writer refuses a release that is not complete.
 - Robots: no new rule. The existing `/robots.txt` deny-all answer covers release hosts and bare hosts. Production builds already declare `www` as the canonical URL.
 - The Terraform apply runs from `main` after the PR merges, with the existing `scripts/apply.sh`. No approval gate is added.
@@ -52,7 +52,6 @@ Owner answers, 2026-11-19:
 
 - Forms: the production forms API accepts only the apex, `www` and `*.release.policeconduct.org` origins. The preview forms API accepts only `*.preview.policeconduct.org` origins (design.md, Decision 8).
 - Analytics and Sentry are off on release hosts, decided by the host name at runtime in the browser (design.md, Decision 9).
-- `<commit>.release` serves only the latest version of a commit. Versions are not separately addressable.
 - Production deploys no longer mirror to preview. The copies the old `current:main` mirror left in the preview site bucket and the preview release data bucket are deleted (design.md, Decision 5).
 
 ## Open Questions

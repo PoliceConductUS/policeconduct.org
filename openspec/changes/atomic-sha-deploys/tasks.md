@@ -9,12 +9,11 @@ The deploy model in design.md "Current deploy model" shipped with earlier work, 
 - [x] 1.5 KVS size guard: `scripts/load-redirects.mjs` rejects keys over 512 B, values over 1 KB, and a store total over 5 MB including other namespaces.
 - [x] 1.6 Redirect-coverage guard (`scripts/verify-redirect-coverage.mjs`, `npm run validate:redirects`), run by `npm run deploy -- <environment>` (with or without `--skip-build` and `--dry-run`): every URL in the prior sitemap must be a route in this build, redirect to a route that is not itself a redirect source, or have an exact path and reason in `route-absences.json`. Fails closed for unaccounted gaps. Runs after the build (when built) and before `scripts/upload-release.sh` checks the output and writes to S3. `PRIOR_SITEMAP=skip` bypasses it for a first deploy. Tests: `scripts/verify-redirect-coverage.test.mjs`, `scripts/deploy-release-guard.test.mjs`.
 
-## 2. Versioned release IDs
+## 2. Rebuilding a commit against newer data
 
-- [ ] 2.1 `scripts/build-release.mjs`: before the build, list `<commit>-*` folders in every site bucket the deploy writes (production and preview site buckets for `prod`; the preview site bucket otherwise) and pick the next unused version, starting at `1`. Set `RELEASE_ID=<commit>-<version>`, write it to `.release/id`, and add `version` to `.release/source.json`. Replace the "folder must equal the current commit hash" check with "commit part must equal the current commit". Files: Modify `scripts/build-release.mjs`. Tests: add cases to `scripts/deploy-release-guard.test.mjs` for "first release gets `-1`", "existing `-1` and `-2` give `-3`", and "a release ID with another commit is rejected". Pass: the three cases pass.
-- [ ] 2.2 `scripts/release-files.mjs --verify`: accept the release ID only when its commit part equals the current commit and its version equals `.release/source.json` `version`. Files: Modify `scripts/release-files.mjs`. Tests: add a mismatch case to `scripts/deploy-release-guard.test.mjs`. Pass: a mismatched version stops the upload before any AWS call.
-- [ ] 2.3 `scripts/upload-release.sh`: before any sync, write `<release-id>/release.json` (the contents of `.release/source.json`) with a create-only S3 write (`aws s3api put-object --if-none-match '*'`). If it already exists, read it; stop when it differs, continue when it matches. Do this for every bucket the deploy writes. Files: Modify `scripts/upload-release.sh`. Tests: add cases to `scripts/deploy-release-guard.test.mjs` with the fake AWS command for "claim taken by another build stops before any sync" and "matching claim resumes". Pass: both cases pass.
-- [ ] 2.4 Checkpoint: run `npm run test:redirects`; record command, commit and exit code in `verify.md`.
+- [ ] 2.1 Record the data version. `scripts/build-release.mjs` adds `dataVersion` (the data version the build read) to `.release/source.json`, beside `commit`, `branch` and `pr`. `scripts/upload-release.sh` uploads `.release/source.json` to `builds/<commit>/source.json` in the release data bucket, before `dynamic.json`. The value's source waits on the open question in design.md; do not start this task until the owner decides it. Files: Modify `scripts/build-release.mjs`, `scripts/upload-release.sh`. Tests: add a case to `scripts/deploy-release-guard.test.mjs`: `.release/source.json` and the uploaded `builds/<commit>/source.json` carry the data version, and the upload writes `source.json` before `dynamic.json`. Pass: the case passes.
+- [ ] 2.2 Replace the folder's files on a rebuild. In `scripts/upload-release.sh`, drop `--no-overwrite` and add `--delete` to the `dist/` sync into `<commit>/build/` and the `.release/data/` sync into `builds/<commit>/data/` (which still excludes `dynamic.json`). Keep `dynamic.json` uploaded last. Files: Modify `scripts/upload-release.sh`. Tests: add a case to `scripts/deploy-release-guard.test.mjs` with the fake AWS command: a second deploy of the same commit replaces a changed file and removes a file the new build lacks, in both the build folder and the data folder, and `dynamic.json` is the last upload. Pass: the case passes.
+- [ ] 2.3 Checkpoint: run `npm run test:redirects`; record command, commit and exit code in `verify.md`.
 
 ## 3. Previews are PR builds only
 
@@ -30,7 +29,7 @@ The deploy model in design.md "Current deploy model" shipped with earlier work, 
 
 ## 5. Documentation
 
-- [ ] 5.1 `README.md` deploy section: replace `builds/<release-id>/static/` with `<release-id>/build/`; describe the versioned release ID, preview = open PR only, release folders kept forever, preview folders removed at PR close, and `npm run deploy:delete -- <release-id>` as preview-store key removal. Use the terms preview, release and promote. Pass: the README names no `static/` folder and no production folder deletion.
+- [ ] 5.1 `README.md` deploy section: replace `builds/<release-id>/static/` with `<release-id>/build/`; describe that the release ID is the commit and that a rebuild of the same commit replaces its folder, preview = open PR only, release folders kept forever, preview folders removed at PR close, and `npm run deploy:delete -- <release-id>` as preview-store key removal. Use the terms preview, release and promote. Pass: the README names no `static/` folder and no production folder deletion.
 - [ ] 5.2 `infrastructure/bootstrap-policeconduct/functions/noindex.js` header comment: point to `openspec/specs/deploy-hosting/spec.md` instead of this change's `design.md`. Pass: the comment names no path under `openspec/changes/`.
 
 ## 6. Verify
@@ -38,7 +37,7 @@ The deploy model in design.md "Current deploy model" shipped with earlier work, 
 - [ ] 6.1 Production serves the promoted release after promotion; the invalidation removes stale HTML.
 - [ ] 6.2 `pr-<N>.preview.policeconduct.org` serves the release `current:pr-<N>` names; a non-PR label returns 404; redirects return 301 on the canonical and preview hosts; preview responses carry `X-Robots-Tag: noindex, nofollow` and the canonical host does not; the index rewrite works for `/`, `/x/`, `/x`.
 - [ ] 6.3 Promoting an earlier release serves it, restores its 404 page, and serves its own overrides.
-- [ ] 6.4 Deploying the same commit twice gives two release folders (`-1`, `-2`); the first is unchanged.
+- [ ] 6.4 Deploying the same commit twice leaves one folder `<commit>` that equals the second build: changed files are replaced, files the second build lacks are gone, and `builds/<commit>/source.json` names the second build's data version.
 - [ ] 6.5 Closing a PR removes its pointer and its unshared preview folder; no production release folder is deleted.
 - [ ] 6.6 Before archiving, confirm `publish-release-news` no longer states release-folder rules ("Named deployment folders"), so `deploy-hosting` is the one release capability (owner decision Q13).
 - [ ] 6.7 Run `npm run validate` on the final head; record commit, command, exit code and test counts in `verify.md`.

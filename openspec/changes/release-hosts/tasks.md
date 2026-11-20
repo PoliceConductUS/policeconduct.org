@@ -1,12 +1,12 @@
 ## 1. Router
 
-- [ ] 1.1 Add router tests in `scripts/cloudfront-router.test.mjs` first: full SHA, unique short SHA, ambiguous at 7 resolved at 8, ambiguous at the label's full length (404), unknown commit (404), key value whose commit does not start with the label (404), non-release value such as `prod-temp` (404), labels of 6 and 41 characters, non-hex labels and a versioned label `<commit>-1` (404, no `release:` read), upper-case host, versioned release ID, redirects and overrides in the release's namespace, `/robots.txt` deny-all on a release host and both bare hosts, 301 with path and repeated query values for bare `release.` and bare `preview.` with no KVS read. Remove the test "bare preview selects latest main and accepts a named folder".
+- [ ] 1.1 Add router tests in `scripts/cloudfront-router.test.mjs` first: full SHA, unique short SHA, ambiguous at 7 resolved at 8, ambiguous at the label's full length (404), unknown commit (404), key value whose commit does not start with the label (404), non-release value such as `prod-temp` (404), labels of 6 and 41 characters, non-hex labels, including a label containing `-` such as `<commit>-1` (404, no `release:` read), upper-case host, redirects and overrides in the release's namespace, `/robots.txt` deny-all on a release host and both bare hosts, 301 with path and repeated query values for bare `release.` and bare `preview.` with no KVS read. Remove the test "bare preview selects latest main and accepts a named folder".
 - [ ] 1.2 In `infrastructure/bootstrap-policeconduct/functions/router.js`, add the bare-host 301 after the robots answer, remove the `current:main` branch, and add `releaseForCommit` and the `<label>.release.<apex>` branch (design.md, Decision 2). Keep the file free of `${...}` other than the two template placeholders.
 - [ ] 1.3 Run `node --test scripts/cloudfront-router.test.mjs`.
 
 ## 2. Release lookup keys
 
-- [ ] 2.1 Write `scripts/load-release-hosts.test.mjs` first, with a fake `aws` on `PATH` as in `scripts/load-redirects.test.mjs`: first release, shared 7-character prefix (both chains rewritten), new version replaces the value, older version does not, bare-commit release replaced by `-1`, malformed ID stops, incomplete release stops (no `update-keys` call), store over 5 MB stops, rerun writes nothing, only `release:` keys change, stale ETag fails.
+- [ ] 2.1 Write `scripts/load-release-hosts.test.mjs` first, with a fake `aws` on `PATH` as in `scripts/load-redirects.test.mjs`: first release, shared 7-character prefix (both chains rewritten), rerun for a rebuilt commit changes no key, malformed ID (including `<commit>-1`) stops, incomplete release stops (no `update-keys` call), store over 5 MB stops, rerun writes nothing, only `release:` keys change, stale ETag fails.
 - [ ] 2.2 Write `scripts/load-release-hosts.mjs` (design.md, Decision 3).
 - [ ] 2.3 Add the new test file to `test:redirects` in `package.json`.
 - [ ] 2.4 Run `node --test scripts/load-release-hosts.test.mjs`.
@@ -65,7 +65,7 @@
 
 ## 9. Rollout (from `main` after merge, no approval gate)
 
-- [ ] 9.1 Backfill `release:` keys for every complete release folder in the production site bucket whose name matches `^[0-9a-f]{40}(-[1-9][0-9]*)?$`; record any folder left out and why.
+- [ ] 9.1 Backfill `release:` keys for every complete release folder in the production site bucket whose name matches `^[0-9a-f]{40}$`; record any folder left out and why.
 - [ ] 9.2 Apply with `bash infrastructure/bootstrap-policeconduct/scripts/apply.sh` and `TERRAFORM_APPROVED_DESTROYS` set to `aws_acm_certificate.site` and `aws_acm_certificate_validation.site`. Stop if the plan destroys anything else.
 - [ ] 9.3 Check live: a short and a full SHA serve their release; an unknown SHA returns 404; `/robots.txt` on a release host is deny-all; bare `release.` and `preview.` return 301 to `www` with path and query; `www` and `pr-<N>.preview` are unchanged; the forms `OPTIONS` checks in design.md Migration Plan step 4 give 204 and 403 as listed; a release-host page loads no Google tag and makes no Sentry request.
 - [ ] 9.4 Delete `current:main` from the preview store.
