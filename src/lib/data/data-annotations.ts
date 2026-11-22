@@ -39,22 +39,6 @@ function required(value: unknown, field: string): string {
 export async function collectDataAnnotations(
   client: PoolClient,
 ): Promise<AnnotationEntry[]> {
-  const authorities = (
-    await client.query<{
-      id: string;
-      name: string;
-      source_namespaces: string[];
-    }>("select id, name, source_namespaces from public.licensing_authority")
-  ).rows;
-  const providers = new Map<string, { id: string; name: string }>();
-  for (const authority of authorities)
-    for (const namespace of authority.source_namespaces) {
-      if (providers.has(namespace))
-        throw new Error(
-          `Multiple licensing authorities claim source ${namespace}.`,
-        );
-      providers.set(namespace, authority);
-    }
   const owners = new Map<string, Promise<Owner | null>>();
   async function owner(
     kind: string,
@@ -205,19 +189,6 @@ export async function collectDataAnnotations(
       // Keep findings discoverable without creating pages for thin locations.
       if (!rows[0].eligible) recordUrl = "/data-annotations/";
     }
-    if (recordUrl === null) {
-      const provider = providers.get(annotation.source_namespace);
-      if (!provider)
-        throw new Error(
-          `No source authority for ${kind}:${id} from ${annotation.source_namespace}.`,
-        );
-      const authority = await owner("LicensingAuthority", provider.id);
-      if (!authority?.url)
-        throw new Error(
-          `Source authority ${provider.id} requires a public page.`,
-        );
-      recordUrl = `${authority.url}data-annotations/`;
-    }
     entries.push({
       ...annotation,
       canonical_id: id,
@@ -227,9 +198,7 @@ export async function collectDataAnnotations(
         ...annotation,
         record_label: target.label,
       }),
-      source_provider:
-        providers.get(annotation.source_namespace)?.name ??
-        annotation.source_namespace,
+      source_provider: annotation.source_namespace,
     });
   }
   const order = (entry: AnnotationEntry) =>

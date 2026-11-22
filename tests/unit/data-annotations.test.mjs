@@ -137,7 +137,7 @@ test("database DATE objects retain their calendar date for display", () => {
   assert.equal(end, "2024-06-14");
 });
 
-test("authority views include directly owned manual exclusions without claiming other manual records", () => {
+test("authority views list only annotations whose record is that authority", () => {
   const entries = [
     {
       source_namespace: "provider",
@@ -160,10 +160,7 @@ test("authority views include directly owned manual exclusions without claiming 
       canonical_id: "board",
     },
   ];
-  assert.deepEqual(
-    authorityAnnotations(entries, ["provider"], "board"),
-    entries.slice(0, 2),
-  );
+  assert.deepEqual(authorityAnnotations(entries, "board"), entries.slice(1, 2));
 });
 
 test("native annotation records preserve manual, source, and generated findings", () => {

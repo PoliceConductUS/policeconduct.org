@@ -7,12 +7,12 @@ Static Astro catch-all page for the route `/[category]/licensing-authority/data-
 ## Interface
 
 - Route `/[category]/licensing-authority/data-annotations/[...parts]/` (file `[...parts].astro`); route params `category` and the rest param `parts`. No props are read. `[[...parts].astro:Astro.params.parts]`
-- `getStaticPaths()` loads all entries with `loadDataAnnotations()` (`#src/lib/data/data-annotations.js`), then for each path from `loadStateAuthorityPaths()` loads the authority with `loadStateAuthority("/<category>/")` and its namespaces with `loadAuthorityNamespaces(authority.id)` (all from `#src/lib/data/licensing-authority.js`). `[[...parts].astro:const namespaces = await loadAuthorityNamespaces(authority.id);]`
-- One path is emitted per view from `annotationPages(entries, namespaces, authority.id)` (`#src/lib/data/annotation-views.js`); `parts` is the view's `parts`, or `undefined` when that is empty. `[[...parts].astro:return annotationPages(entries, namespaces, authority.id).map(]`
-- Render: reloads the authority by path with `loadStateAuthority`, reloads namespaces and entries, and picks the view whose `parts` equals `Astro.params.parts` (or the empty string). `[[...parts].astro:(view) => view.parts === (Astro.params.parts || ""),]`
+- `getStaticPaths()` loads all entries with `loadDataAnnotations()` (`#src/lib/data/data-annotations.js`), then for each path from `loadStateAuthorityPaths()` loads the authority with `loadStateAuthority("/<category>/")` (all from `#src/lib/data/licensing-authority.js`). `[[...parts].astro:annotationPages(entries, authority.id)]`
+- One path is emitted per view from `annotationPages(entries, authority.id)` (`#src/lib/data/annotation-views.js`); `parts` is the view's `parts`, or `undefined` when that is empty. `[[...parts].astro:return annotationPages(entries, authority.id).map(]`
+- Render: reloads the authority by path with `loadStateAuthority`, reloads the entries, and picks the view whose `parts` equals `Astro.params.parts` (or the empty string). `[[...parts].astro:(view) => view.parts === (Astro.params.parts || ""),]`
 - `base` is `<authority.statePath>licensing-authority/data-annotations/`. `[[...parts].astro:authority.statePath}licensing-authority/data-annotations/]`
 - `PageShell` (`#src/layouts/PageShell.astro`) props: `robots="noindex,follow"`, `searchable={false}`, `title` and `heading` (`<authority.name>: data notes`), `pagePath` and `canonicalUrl` (both `annotationHref(base, view.parts)`), and `breadcrumbs` (state, authority, `Data notes`). `[[...parts].astro:pagePath={annotationHref(base, view.parts)}]` `[[...parts].astro:canonicalUrl={annotationHref(base, view.parts)}]`
-- `DataAnnotationIndex` (`#src/components/DataAnnotationIndex.astro`) props: `base`, `view`, and `filters={annotationFilters(entries, namespaces, authority.id)}`. `[[...parts].astro:filters={annotationFilters(entries, namespaces, authority.id)}]`
+- `DataAnnotationIndex` (`#src/components/DataAnnotationIndex.astro`) props: `base`, `view`, and `filters={annotationFilters(entries, authority.id)}`. `[[...parts].astro:filters={annotationFilters(entries, authority.id)}]`
 - Pagination, if any, is whatever `annotationPages` encodes in `parts`; this file adds none of its own.
 - Subdirectory: [[...parts]](./[...parts]/EGM.md) - `data.csv` endpoint that downloads the notes of one filter as CSV.
 
@@ -25,7 +25,7 @@ Static Astro catch-all page for the route `/[category]/licensing-authority/data-
 
 ## Side Effects
 
-- Build-time data loading only, through `loadDataAnnotations`, `loadStateAuthorityPaths`, `loadStateAuthority` and `loadAuthorityNamespaces`. No writes, network calls or client script in this file. `[[...parts].astro:const entries = await loadDataAnnotations();]`
+- Build-time data loading only, through `loadDataAnnotations`, `loadStateAuthorityPaths` and `loadStateAuthority`. No writes, network calls or client script in this file. `[[...parts].astro:const entries = await loadDataAnnotations();]`
 
 ## Verification
 
