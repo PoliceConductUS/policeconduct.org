@@ -193,6 +193,7 @@ Exercise daily discovery and the ordinary build. For the website, test empty and
 ## Decisions
 
 - Forms send `dataVersion` from the page beside `releaseId`. A missing `dataVersion` is saved and logged, like a missing `releaseId`.
+- An override page keeps its release's `data-data-version`. The daily job stores the data it used to render the override, and intake later acquires the same data and imports it into the database, so a later build carries it under a new data version. No separate override version is recorded (owner, 2026-11-22).
 - Form release IDs are known when `builds/<release-id>/data/dynamic.json` exists in that environment's release-data bucket. A submission with an unknown or missing release ID is still saved, and the mismatch is logged.
 - Routing uses KVS `o:` markers, and `publish-page` invalidates the paths.
 - Page data and evidence are stored in the private release-data bucket.
