@@ -102,7 +102,7 @@ Each commit's keys end in exactly one key that holds its release ID, at its shor
 **Writer.** A new script, `scripts/load-release-hosts.mjs <kvs-arn> <release-id>...`, requires `S3_BUCKET` and `RELEASE_DATA_BUCKET`. It:
 
 1. validates every argument against `^[0-9a-f]{40}$` and stops on the first bad one;
-2. checks each release is complete, with the same two objects `promote.sh` checks (`builds/<id>/data/dynamic.json` and `<id>/build/index.html`), and stops if not;
+2. checks each release is complete, with the same two objects `promote.sh` checks (`builds/<id>/build/release.json` and `<id>/build/index.html`; `atomic-sha-deploys` task 2.7), and stops if not. It never reads `builds/<id>/data/`, which belongs to the daily job;
 3. reads the store ETag, then lists every key (paged, like `scripts/load-redirects.mjs`);
 4. rebuilds the known releases from the values of the existing `release:` keys that are release IDs (every commit's chain ends in its ID, so none is lost), and adds the arguments;
 5. computes the desired `release:` key set, and diffs it against the existing `release:` keys;
@@ -133,7 +133,7 @@ Alternatives: see brainstorm.md (a key for every prefix length; a Lambda@Edge bu
 
 Production deploys no longer mirror to preview. Bare `preview.` no longer serves `current:main`, so the copy has no reader. `scripts/upload-release.sh` drops the nested call with namespace `main` and the four `_PREVIEW` checks for `prod`. `scripts/deploy.sh` stops resolving `S3_BUCKET_PREVIEW`, `RELEASE_DATA_BUCKET_PREVIEW`, `KVS_ARN_PREVIEW` and `CLOUDFRONT_DIST_PREVIEW` for `prod`. A production deploy then needs only production outputs, which `scripts/terraform-outputs.mjs` already provides. The `current:main` key is deleted from the preview store by hand after the router no longer reads it.
 
-**Deleting the old copies.** Each earlier production deploy uploaded its release to the preview site bucket (`<release-id>/build/`) and the preview release data bucket (`builds/<release-id>/data/`). After this change nothing serves or reads them, and the owner asked to delete them (2026-11-19). The cleanup is a one-time set of documented commands, run by hand from `main` after `current:main` is deleted (Migration Plan step 6). No script is added to the repo for a task that runs once.
+**Deleting the old copies.** Each earlier production deploy uploaded its release to the preview site bucket (`<release-id>/build/`) and the preview release data bucket (`builds/<release-id>/`). The daily job publishes only to production, so the preview release data bucket holds no daily output. After this change nothing serves or reads them, and the owner asked to delete them (2026-11-19). The cleanup is a one-time set of documented commands, run by hand from `main` after `current:main` is deleted (Migration Plan step 6). No script is added to the repo for a task that runs once.
 
 A preview-bucket folder is a mirror copy when all of these hold:
 
@@ -206,7 +206,7 @@ Change:
 
 What changes for visitors:
 
-- Release hosts can submit forms to the production forms API. The submission carries the release ID of the page, and the Lambda's existing release check finds it in the production release data bucket. The email confirmation link uses the request origin (`${origin}/verify/`), so a visitor who submits on a release host gets a link back to that release host, which calls the same production forms API.
+- Release hosts can submit forms to the production forms API. The submission carries the release ID of the page, and the Lambda's release check finds `builds/<release-id>/build/release.json` in the production release data bucket (`publish-release-news` task 7.11). The email confirmation link uses the request origin (`${origin}/verify/`), so a visitor who submits on a release host gets a link back to that release host, which calls the same production forms API.
 - The production forms API stops accepting `pr-<N>.preview` origins. Preview pages never call it: the preview distribution sends `/api/*` to `forms_api_preview`.
 - The preview forms API stops accepting the apex and `www`. Production pages never call it.
 - The preview forms API accepts any one-label `*.preview` host, not only `pr-<N>`. `atomic-sha-deploys` narrows which preview hosts the router serves; the forms rule follows the owner's wording.
@@ -242,7 +242,7 @@ The forms client (`src/lib/client/forms.ts`) calls `Sentry.captureException`. Wi
 ## Migration Plan
 
 1. Merge the PR. Work from the `main` folder.
-2. Backfill: list the folders in the production site bucket whose names match `^[0-9a-f]{40}$`, and run `node scripts/load-release-hosts.mjs "$KVS_ARN" <id>...` with `S3_BUCKET` and `RELEASE_DATA_BUCKET` set. The script skips nothing silently: it stops on an incomplete folder, and the operator leaves that folder out and records why. The old router never reads `release:` keys, so this is safe before the apply.
+2. Backfill: list the folders in the production site bucket whose names match `^[0-9a-f]{40}$`, and run `node scripts/load-release-hosts.mjs "$KVS_ARN" <id>...` with `S3_BUCKET` and `RELEASE_DATA_BUCKET` set. The script skips nothing silently: it stops on an incomplete folder, and the operator leaves that folder out and records why. A folder uploaded before `atomic-sha-deploys` task 2.6 has no `builds/<id>/build/release.json`, so it is incomplete under the new check (owner open question in `atomic-sha-deploys` task 2.7). The old router never reads `release:` keys, so this is safe before the apply.
 3. Apply Terraform (Decision 7).
 4. Check: `https://<7-char commit>.release.policeconduct.org/` serves that release; `https://<full commit>.release.policeconduct.org/robots.txt` is deny-all; an unknown commit returns 404; `https://release.policeconduct.org/x?y=1` and `https://preview.policeconduct.org/x?y=1` return 301 to `https://www.policeconduct.org/x?y=1`; `www` still serves `current`. Forms: an `OPTIONS` request to `https://www.policeconduct.org/api/forms/submit` with `Origin: https://<7-char commit>.release.policeconduct.org` returns 204, and with `Origin: https://pr-<N>.preview.policeconduct.org` returns 403; the same request to `https://pr-<N>.preview.policeconduct.org/api/forms/submit` returns 204 for its own origin and 403 for `https://www.policeconduct.org`.
 5. Delete `current:main` from the preview store (`aws cloudfront-keyvaluestore update-keys` with the store ETag).

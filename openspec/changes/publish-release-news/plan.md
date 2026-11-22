@@ -2,7 +2,7 @@
 
 **Goal** — Publish current, sourced coverage on the relevant profiles, agency pages and homepage between builds. An ordinary build must reproduce the imported result.
 
-**Architecture** — Intake discovers and records the evidence. The daily Action updates a selected website release using its original HTML and private saved page data. A separate Intake import maps source identities to canonical database records. The website owns rendering, hosting and originating-form attribution.
+**Architecture** — Intake discovers and records the evidence. The daily Action updates a selected website release using its original HTML as its only source from the build, plus its own private saved page data under `builds/<release-id>/data/`. The build uploads no data (design.md "Build and daily storage"). A separate Intake import maps source identities to canonical database records. The website owns rendering, hosting and originating-form attribution.
 
 **Stack** — Intake’s TypeScript sources and mutation pipeline, Search Console, SerpApi, GitHub Actions, PostgreSQL, Astro, S3, CloudFront and the existing forms Lambda.
 
@@ -24,7 +24,7 @@ Use the [design](design.md), [acceptance scenarios](specs/release-page-updates/s
 
 - [x] In the website’s `src/lib/data/coverage.ts`, load the occurrence for the corresponding assignment. In `src/components/CoverageLinks.astro`, render its source fields and summary. Use the exact built profile and agency paths. Group by article ID for agency listings and use an assignment-supported copy.
 - [x] In `src/pages/index.astro`, render the imported homepage placement order using preferred-source fields. Run the section 1 example through an ordinary build. Assert the two supporting URLs on the respective profiles, one entry on the agency, and the preferred URL on the homepage.
-- [x] Add news targets and reusable item templates in the original markup, including pages with zero articles. Produce the private release roster at `builds/<release-id>/data/dynamic.json` and baseline page records from the underlying database rows. Check empty and populated pages, a build with personnel disabled, and preservation of original article, relationship and assignment identities.
+- [x] Add news targets and reusable item templates in the original markup, including pages with zero articles. Produce the private release roster at `builds/<release-id>/data/dynamic.json` and baseline page records from the underlying database rows. Check empty and populated pages, a build with personnel disabled, and preservation of original article, relationship and assignment identities. (Superseded in part: the build no longer uploads the roster or page records; `atomic-sha-deploys` task 2.6 removes them.)
 
 ## 4. Route complete releases and attribute form submissions
 
@@ -55,7 +55,7 @@ Use the [design](design.md), [acceptance scenarios](specs/release-page-updates/s
 ## 8. Publisher URL identities
 
 - [x] Use namespaced, normalized publisher URL identities on Daily occurrences. Resolve equivalent article references across searches, publication and ranking. Preserve relationship identities.
-- [x] Save confirmed duplicate-to-target URL pairs under `CoverageLink` in private `data/alias.json`.
+- [x] Save confirmed duplicate-to-target URL pairs under `CoverageLink` in private `builds/<release-id>/data/alias.json`. (Superseded in part: the build no longer seeds `alias.json`; only Daily writes it, task 7.13.)
 - [x] Check destination-specific HTML source IDs after publication and an ordinary rebuild.
 
 ## 9. Deployment folders and cutover
@@ -75,6 +75,7 @@ Probe URL table (step 3 of 6.4). `<id>` is the folder `current` names.
 | `https://policeconduct.org`         | a personnel profile from the roster    | 200                           |
 | `https://policeconduct.org`         | a retired path in `_redirect-map.json` | 301 to its target             |
 | `https://policeconduct.org`         | `/builds/<id>/data/dynamic.json`       | 404                           |
+| `https://policeconduct.org`         | `/builds/<id>/build/release.json`      | 404                           |
 | `https://policeconduct.org`         | `/<id>/build/index.html`               | 404                           |
 | `https://policeconduct.org`         | `/<id>/override/index.html`            | 404                           |
 | `https://policeconduct.org`         | `/com/serpapi/landing-page-search/`    | 404                           |
@@ -85,4 +86,4 @@ Legacy-prefix allow-list (step 4 of 6.4). Delete only root objects written by th
 
 ## 10. Work outside this change folder
 
-- [ ] Tasks 7.1–7.9 in tasks.md: the Intake news-discovery change, the `atomic-sha-deploys` superseded note, the README key paths, Forms API mismatch handling, the `dataVersion` field and the Forms API version field, the same-commit upload guard, the `main` preview-name check, roster-path officer links, keeping release folders, and the final-head verification record.
+- [ ] Tasks 7.1–7.13 in tasks.md: the Intake news-discovery change, the `atomic-sha-deploys` superseded note, the README key paths, Forms API mismatch handling, the `dataVersion` field and the Forms API version field, the same-commit upload guard, the `main` preview-name check, roster-path officer links, keeping release folders, the final-head verification record, the release API snapshot without a roster, the Forms API check on `builds/<release-id>/build/release.json`, the `intake_news` IAM split, and the Intake daily job reading only the original page (Intake work). Deploy-side tasks (stop uploading data, upload `release.json` last, `promote.sh`) are `atomic-sha-deploys` tasks 2.3, 2.4, 2.6 and 2.7.

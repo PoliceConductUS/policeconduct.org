@@ -6,8 +6,8 @@
 
 ## 2. Release lookup keys
 
-- [ ] 2.1 Write `scripts/load-release-hosts.test.mjs` first, with a fake `aws` on `PATH` as in `scripts/load-redirects.test.mjs`: first release, shared 7-character prefix (both chains rewritten), rerun for a rebuilt commit changes no key, malformed ID (including `<commit>-1`) stops, incomplete release stops (no `update-keys` call), store over 5 MB stops, rerun writes nothing, only `release:` keys change, stale ETag fails.
-- [ ] 2.2 Write `scripts/load-release-hosts.mjs` (design.md, Decision 3).
+- [ ] 2.1 Write `scripts/load-release-hosts.test.mjs` first, with a fake `aws` on `PATH` as in `scripts/load-redirects.test.mjs`: first release, shared 7-character prefix (both chains rewritten), rerun for a rebuilt commit changes no key, malformed ID (including `<commit>-1`) stops, incomplete release stops when `builds/<id>/build/release.json` or `<id>/build/index.html` is missing (no `update-keys` call), a release with only the old `builds/<id>/data/dynamic.json` stops, no call reads `builds/<id>/data/`, store over 5 MB stops, rerun writes nothing, only `release:` keys change, stale ETag fails.
+- [ ] 2.2 Write `scripts/load-release-hosts.mjs` (design.md, Decision 3). Its completeness check uses the same marker as `scripts/promote.sh` after `atomic-sha-deploys` task 2.7: `builds/<id>/build/release.json`.
 - [ ] 2.3 Add the new test file to `test:redirects` in `package.json`.
 - [ ] 2.4 Run `node --test scripts/load-release-hosts.test.mjs`.
 
@@ -65,7 +65,7 @@
 
 ## 9. Rollout (from `main` after merge, no approval gate)
 
-- [ ] 9.1 Backfill `release:` keys for every complete release folder in the production site bucket whose name matches `^[0-9a-f]{40}$`; record any folder left out and why.
+- [ ] 9.1 Backfill `release:` keys for every complete release folder in the production site bucket whose name matches `^[0-9a-f]{40}$` (complete = `builds/<id>/build/release.json` and `<id>/build/index.html` exist); record any folder left out and why, including folders uploaded before `atomic-sha-deploys` task 2.6 that have no `release.json`.
 - [ ] 9.2 Apply with `bash infrastructure/bootstrap-policeconduct/scripts/apply.sh` and `TERRAFORM_APPROVED_DESTROYS` set to `aws_acm_certificate.site` and `aws_acm_certificate_validation.site`. Stop if the plan destroys anything else.
 - [ ] 9.3 Check live: a short and a full SHA serve their release; an unknown SHA returns 404; `/robots.txt` on a release host is deny-all; bare `release.` and `preview.` return 301 to `www` with path and query; `www` and `pr-<N>.preview` are unchanged; the forms `OPTIONS` checks in design.md Migration Plan step 4 give 204 and 403 as listed; a release-host page loads no Google tag and makes no Sentry request.
 - [ ] 9.4 Delete `current:main` from the preview store.

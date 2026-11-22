@@ -2,13 +2,18 @@
 
 ### Requirement: Each commit has one release folder
 
-The system SHALL store each release in one folder named by its release ID, the full 40-character commit. A rebuild of the same commit SHALL upload into the same folder and SHALL leave the folder equal to the latest build. Each build SHALL record the data version it read.
+The system SHALL store each release in one folder named by its release ID, the full 40-character commit. A build SHALL write only the build-owned prefixes `<commit>/build/` in the site bucket and `builds/<commit>/build/` in the release data bucket. A rebuild of the same commit SHALL leave those two prefixes equal to the latest build. The build SHALL NOT upload the data it read. Each build SHALL record the data version it read.
 
 #### Scenario: Folder layout
 
 - **WHEN** a release uploads
-- **THEN** site files go to `<commit>/build/` and release data to `builds/<commit>/data/`
-- **AND** `dynamic.json` is uploaded last
+- **THEN** site files go to `<commit>/build/` and build artifacts for the daily job go to `builds/<commit>/build/`
+- **AND** `builds/<commit>/build/release.json`, holding `commit`, `branch`, `pr` and `dataVersion`, is uploaded last as the completion marker
+
+#### Scenario: The build uploads no data
+
+- **WHEN** a release uploads
+- **THEN** no page data, roster or alias file is uploaded to any bucket
 
 #### Scenario: Unclean tree or other branch
 
@@ -23,17 +28,17 @@ The system SHALL store each release in one folder named by its release ID, the f
 #### Scenario: Redeploying a commit against newer data
 
 - **WHEN** a commit that already has a release folder is deployed again
-- **THEN** the new build uploads into the same `<commit>/build/` and `builds/<commit>/data/` folders
+- **THEN** the new build uploads into the same `<commit>/build/` and `builds/<commit>/build/` prefixes
 - **AND** files the new build changed are replaced
-- **AND** files the new build no longer produces are removed
-- **AND** `dynamic.json` is uploaded last
+- **AND** files the new build no longer produces are removed from those two prefixes only
+- **AND** `release.json` is uploaded last
 
 #### Scenario: Data version recorded
 
 - **WHEN** a release builds
 - **THEN** the build reads the data version once: the `version` of the one row in `public.data_mutation_applied` that no row names as `previous_version`
 - **AND** every built page renders it as `data-data-version` on `<html>`, next to `data-release-id`
-- **AND** `.release/source.json` records the same value as `dataVersion`
+- **AND** `.release/source.json` and `builds/<commit>/build/release.json` record the same value as `dataVersion`
 
 #### Scenario: Data version cannot be read
 
@@ -44,6 +49,16 @@ The system SHALL store each release in one folder named by its release ID, the f
 
 - **WHEN** `npm run deploy -- <environment> --skip-build` reruns with the same build
 - **THEN** the upload sends only files that differ and ends with the folder equal to that build
+
+### Requirement: A rebuild never touches daily output
+
+A build or rebuild SHALL NOT write, delete or read `<commit>/override/` in the site bucket or `builds/<commit>/data/` in the release data bucket. Those prefixes belong to the daily job.
+
+#### Scenario: A rebuild leaves daily output alone
+
+- **WHEN** a commit whose `<commit>/override/` and `builds/<commit>/data/` hold daily job output is deployed again
+- **THEN** every object under those two prefixes is unchanged
+- **AND** no deploy command writes, deletes or reads them
 
 ### Requirement: Promotion moves a pointer
 
@@ -64,7 +79,7 @@ Promoting a release SHALL check that the release is complete, load its redirect 
 
 #### Scenario: Incomplete release
 
-- **WHEN** `builds/<release-id>/data/dynamic.json` or `<release-id>/build/index.html` is missing
+- **WHEN** `builds/<release-id>/build/release.json` or `<release-id>/build/index.html` is missing
 - **THEN** promotion stops before any redirect load or pointer change
 
 ### Requirement: The router serves the promoted release per host

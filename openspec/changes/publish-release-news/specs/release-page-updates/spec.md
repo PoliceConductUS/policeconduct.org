@@ -2,7 +2,13 @@
 
 ### Requirement: Regenerate a page from its original release and saved parts
 
-The publisher SHALL merge new data into the selected release's saved object, apply every keyed part to the original release HTML and publish a complete replacement at the corresponding path. Each entry SHALL identify its target, a template taken from the original page, and its rendering data.
+The publisher SHALL merge new data into the selected release's saved object, apply every keyed part to the original release HTML and publish a complete replacement at the corresponding path. The original page SHALL be its only source from the build. Each entry SHALL identify its target, a template taken from the original page, and its rendering data.
+
+#### Scenario: First update to a page
+
+- **WHEN** the daily Action updates a page that has no saved object under `builds/<release-id>/data/`
+- **THEN** it reads the baseline from the news items in the original page `<release-id>/build<path>index.html`
+- **AND** the published page contains those items and the new article once each
 
 #### Scenario: Second update changes a different part
 
@@ -45,7 +51,12 @@ The news-discovery GitHub Action SHALL be scheduled for 7:00 a.m. every day in `
 
 ### Requirement: Persist the identity assigned by the daily Action
 
-Daily SHALL use each occurrence’s normalized publisher URL as its source ID in the `com/serpapi/landing-page-search` namespace. Daily SHALL write confirmed duplicate-to-target source IDs under `CoverageLink` in the release’s private `data/alias.json`.
+Daily SHALL use each occurrence’s normalized publisher URL as its source ID in the `com/serpapi/landing-page-search` namespace. Daily SHALL write confirmed duplicate-to-target source IDs under `CoverageLink` in the release’s private `builds/<release-id>/data/alias.json`. The build SHALL NOT write it.
+
+#### Scenario: The release has no aliases yet
+
+- **WHEN** `builds/<release-id>/data/alias.json` does not exist
+- **THEN** Daily starts from `{"CoverageLink":{}}` and writes the file when it saves the release
 
 #### Scenario: Two record kinds use the same source ID
 
@@ -88,7 +99,7 @@ The website SHALL embed its release identity in each built form and submit it as
 
 #### Scenario: A form from an older release submits
 
-- **WHEN** a form whose `releaseId` names no folder with `builds/<release-id>/data/dynamic.json` in that environment submits
+- **WHEN** a form whose `releaseId` names no folder with `builds/<release-id>/build/release.json` in that environment submits
 - **THEN** the Forms API saves the submission, logs the release mismatch, and the stored record carries the Forms API version that processed it
 
 #### Scenario: A form from a page without a release ID submits
@@ -174,7 +185,7 @@ News the daily Action adds SHALL be durable only after the manual `workspace:pul
 #### Scenario: Main is promoted before the import
 
 - **WHEN** a newer release is promoted before the daily Action's news is imported into the database
-- **THEN** the newer release shows only the coverage in its build-time baseline, and the news returns in a release built after the import
+- **THEN** the newer release shows only the coverage in its original pages, and the news returns in a release built after the import
 
 #### Scenario: The pinned release is no longer current
 
@@ -207,3 +218,19 @@ The release-api `release-snapshot` operation SHALL report the release that the p
 
 - **WHEN** `release-snapshot` is called
 - **THEN** its `releaseId` equals the KVS `current` value that the production router uses
+- **AND** it returns the build artifact location `builds/<release-id>/build/` in the release data bucket and no roster
+
+### Requirement: The daily Action writes only its own prefixes
+
+The daily Action SHALL write only `<release-id>/override/`, `builds/<release-id>/data/` and `com/serpapi/landing-page-search/`. It SHALL read the build's output from `<release-id>/build/` and `builds/<release-id>/build/` and SHALL NOT write either. The `intake_news` role SHALL deny writes to `builds/*/build/*` and `*/build/*`.
+
+#### Scenario: The daily Action tries to write a build prefix
+
+- **WHEN** the `intake_news` role puts an object under `builds/<release-id>/build/` or `<release-id>/build/`
+- **THEN** the write is denied
+
+#### Scenario: The daily Action needs the roster
+
+- **WHEN** the daily Action needs profile paths, names or assignments for a release
+- **THEN** it reads them from the original pages in `<release-id>/build/`
+- **AND** it reads no build-written roster

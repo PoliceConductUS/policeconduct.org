@@ -40,7 +40,7 @@ A clean install on Node 24.21.0 matched all 394 installed dependency versions to
 - The hosted discovery tests read paginated Search Console input, ignored generic landing pages, checked the free allowance and ten-new-URL boundary, and stopped on the first qualifying result. A cached hit required zero new URLs. A cited old original disqualified its current reprint.
 - Two matched queries with 28 and 22 clicks produced one homepage story with 50 clicks. Tests covered the top-25 cutoff, shared stories across profiles, later ranking changes, missing position observations and the seven complete reporting days on either side of first visibility.
 - A synthetic article with two officer-specific copies and one preferred original went through the standard Intake import. A second import generated no changes. Historical release and namespace cases exercised persistent article and relationship identities.
-- Four actual Astro pages were compared with the publisher's output using the release roster and saved page data. Each profile displayed its supported copy. The agency displayed the article once and the homepage used the preferred source. IDs, dates, titles, summaries and order matched. The personnel-disabled build retained both assignment labels without links to absent profiles.
+- (Earlier layout: this run used the build-written roster and page data, which the build no longer uploads; see design.md "Build and daily storage". Rerun at the final head under task 7.13.) Four actual Astro pages were compared with the publisher's output using the release roster and saved page data. Each profile displayed its supported copy. The agency displayed the article once and the homepage used the preferred source. IDs, dates, titles, summaries and order matched. The personnel-disabled build retained both assignment labels without links to absent profiles.
 - Publisher, forms and routing tests exercised complete regeneration, escaped HTML, overlapping writes, a fresh runner after partial publication, cache refresh, old forms and separate preview releases. Private fixture body text and assignment notes were absent from rendered output.
 - The workflow specifies 7 a.m. in `America/Chicago`. Local timezone checks covered both clock changes. Provider responses, inference and AWS operations used test services or fixtures.
 
@@ -51,6 +51,8 @@ Task 4.2 remains open. Its checklist in tasks.md (API/router agreement, private-
 The release-page-updates delta remains in the active change pending rollout. The implementation has local validation evidence. No remote CI run or production deployment was requested or performed.
 
 ## Publisher URL aliases
+
+Earlier layout: these runs used a build-seeded `alias.json`. Only Daily writes `alias.json` now (design.md "Build and daily storage"). Rerun at the final head under task 7.13.
 
 The local import rehearsal used a private release with three chained publisher URL keys, one unrelated record-kind mapping, two officer assignments and a 50-click homepage placement. All three Google source keys resolved to one canonical article. Importing a single-copy release and importing the original again produced zero new mutations. An ordinary four-page Astro build matched Daily’s renderer for each displayed URL, source identity, title, date, summary and assignment. The homepage showed the preferred original, the agency showed the story once and the two profiles showed their respective supporting copies. The alias file was present in private release data.
 

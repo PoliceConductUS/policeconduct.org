@@ -19,12 +19,14 @@ Intake owns discovery, evidence, ranking and search-position behavior. Their req
 - **Source checkpoint**: the Intake publication checkpoint record in private storage.
 - **The release-api**: the `release_api` Lambda in `infrastructure/bootstrap-policeconduct/release.tf`, with operations `release-snapshot` and `publish-page`.
 - **The page publisher**: Intake `publication.ts`.
+- **Original page**: the page the build wrote at `<release-id>/build<path>index.html`. It is the daily Action's only source for a release.
+- **Roster**: in this design, the personnel profile paths, names, agency names, states and assignments that Daily reads from the original pages. The build uploads no roster file.
 
 ## Discovery and evidence
 
 Schedule the daily Action for 7:00 a.m. each day in `America/Chicago`. It writes discovery evidence, structured release data and full HTML overrides. It writes its results to the selected website release. It does not depend on Intake's database-reset source imports.
 
-The daily Action reads organic Google Search impressions, clicks and average position grouped by query and landing page. For the latest seven finalized Search Console reporting days, advance the Search Analytics request’s startRow through successive pages until a request returns no rows. Finish reading all available rows before ranking any pairs or starting article searches. Keep a pair only when its exact landing path identifies an individual personnel profile in the production release snapshot. Apply this filter before ordering by impressions or aggregating homepage clicks. The personnel directory (`/personnel/`), state pages such as `/tx/`, and agency pages are outside that input.
+The daily Action reads organic Google Search impressions, clicks and average position grouped by query and landing page. For the latest seven finalized Search Console reporting days, advance the Search Analytics request’s startRow through successive pages until a request returns no rows. Finish reading all available rows before ranking any pairs or starting article searches. Keep a pair only when its exact landing path has an original individual personnel profile page in the `current` release. Apply this filter before ordering by impressions or aggregating homepage clicks. The personnel directory (`/personnel/`), state pages such as `/tx/`, and agency pages are outside that input.
 
 Search the eligible pairs in descending order of impressions using the quoted original reported term, at least one quoted roster-name variation, and the quoted agency name and stored state from the profile’s assignments. For multiple distinct agency/state pairs, use one grouped OR query. When the same query appears for two profiles, each pair has its own impression and click counts.
 
@@ -46,7 +48,7 @@ Normalize Unicode and whitespace and ignore capitalization and punctuation for h
 
 Daily identifies each publisher occurrence with the source namespace `com/serpapi/landing-page-search` and the normalized publisher URL as its source ID. Keep the publisher's actual link for readers. Record each occurrence's source pair in private JSON. References may use any source pair belonging to that story. The displayed article carries the source pair of the displayed occurrence in HTML. Each article-to-assignment relationship retains its own persistent source identity.
 
-Daily writes `builds/<release-id>/data/alias.json` in private release storage. The outer keys are Intake record kinds. Inside `CoverageLink`, a duplicate’s normalized publisher URL maps to another normalized publisher URL for the same story within the `com/serpapi/landing-page-search` namespace. Daily preserves mappings for other kinds, and resolves article aliases within `CoverageLink`.
+Daily writes `builds/<release-id>/data/alias.json` in private release storage. The build never writes it. The outer keys are Intake record kinds. Inside `CoverageLink`, a duplicate’s normalized publisher URL maps to another normalized publisher URL for the same story within the `com/serpapi/landing-page-search` namespace. Daily preserves mappings for other kinds, and resolves article aliases within `CoverageLink`.
 
 ```json
 {
@@ -56,7 +58,7 @@ Daily writes `builds/<release-id>/data/alias.json` in private release storage. T
 }
 ```
 
-This entry groups the two URL source IDs. A release without aliases starts with `{"CoverageLink":{}}`. Daily merges confirmed aliases when saving the release.
+This entry groups the two URL source IDs. When a release has no `alias.json` yet, Daily starts from `{"CoverageLink":{}}`. Daily merges confirmed aliases when saving the release.
 
 Daily follows URL aliases when updating saved articles and preserves their source identities across searches.
 
@@ -66,22 +68,34 @@ An article links to an officer’s assignment at an agency (`AgencyPersonnel`). 
 
 For an officer’s page, use a source occurrence that supports the officer’s association. If the preferred copy omits the supporting passage, link to the evidence-bearing occurrence and use that occurrence’s source metadata and full body for its entry. If corrected extraction removes the last support for an already published news association, flag the association for manual correction. Preserve associations independently supported elsewhere. If a copy overlaps two already established article IDs, retain both and report the ambiguity for resolution.
 
-## Release and page object
+## Build and daily storage
+
+Owner decision, 2026-11-22: a rebuild of a commit cannot and will not overwrite anything the daily Action generated. The build and the daily Action therefore write to separate prefixes. Neither writes the other's prefix.
 
 A release folder is named by the full Git commit hash (`<release-id>`); "folder" and "release ID" mean the same value.
 
-| Artifact                     | Bucket                 | Key                                                         |
-| ---------------------------- | ---------------------- | ----------------------------------------------------------- |
-| Original page                | site                   | `<release-id>/build<path>index.html`                        |
-| Override page                | site                   | `<release-id>/override<path>index.html`                     |
-| Saved page data              | release-data (private) | `builds/<release-id>/data<path>index.json`                  |
-| Roster and completion marker | release-data           | `builds/<release-id>/data/dynamic.json`                     |
-| Article aliases              | release-data           | `builds/<release-id>/data/alias.json`                       |
-| Discovery evidence           | release-data (prod)    | `com/serpapi/landing-page-search/…`, shared across releases |
+| Artifact                    | Bucket                 | Key                                                         | Writer       |
+| --------------------------- | ---------------------- | ----------------------------------------------------------- | ------------ |
+| Original page               | site                   | `<release-id>/build<path>index.html`                        | build        |
+| Override page               | site                   | `<release-id>/override<path>index.html`                     | daily Action |
+| Build artifacts for Daily   | release-data (private) | `builds/<release-id>/build/…`                               | build        |
+| Release record (completion) | release-data (private) | `builds/<release-id>/build/release.json`                    | build, last  |
+| Saved page data             | release-data (private) | `builds/<release-id>/data<path>index.json`                  | daily Action |
+| Article aliases             | release-data (private) | `builds/<release-id>/data/alias.json`                       | daily Action |
+| Discovery evidence          | release-data (prod)    | `com/serpapi/landing-page-search/…`, shared across releases | daily Action |
 
-Build-time data supplies agency, personnel and path identities.
+- The build does not upload the data it read. It uploads no page data, no roster and no aliases.
+- `builds/<release-id>/build/` holds only build-specific artifacts meant for the daily Action, plus `release.json`. `release.json` is `{commit, branch, pr, dataVersion}` and is uploaded last, as the completion marker. Today it is the only file there. Templates stay in the original page (`fromOriginal`). A later change may add other build artifacts, such as templates, to this prefix.
+- A rebuild of the same commit replaces `<release-id>/build/` and `builds/<release-id>/build/` only (`atomic-sha-deploys` design.md "Build and daily storage"). It never writes, deletes or reads `<release-id>/override/` or `builds/<release-id>/data/`.
+- The daily Action reads `<release-id>/build/` and `builds/<release-id>/build/`. It writes only `<release-id>/override/`, `builds/<release-id>/data/` and its evidence prefix. IAM denies it writes to both build prefixes.
+- The daily Action reads the roster from the original pages. The site adds no substitute file. If an original page lacks a value that Daily or the Intake import needs, that gap goes to the owner; this change adds no site-side data file to fill it.
+- Release folders uploaded before this change have the old build-written `builds/<release-id>/data/dynamic.json`, page data and `alias.json`, and no `release.json`. Nothing deletes those files. The build never writes `builds/<release-id>/data/` again.
 
-Saved records, including page data and assignment-relationship notes, and extracted article bodies are private to the services that discover, render and import coverage. Article-level notes (`coverage_links.notes`) are public and render on the page, as before this change. Production and preview serve the rendered pages with their source links and summaries, and the HTML carries the source IDs in `data-source-namespace` and `data-source-id`. Visitors cannot retrieve the underlying records or extracted bodies through either host.
+## Release and page object
+
+The original pages supply agency, personnel and path identities.
+
+Saved records, including Daily's page data and assignment-relationship notes, and extracted article bodies are private to the services that discover, render and import coverage. Article-level notes (`coverage_links.notes`) are public and render on the page, as before this change. Production and preview serve the rendered pages with their source links and summaries, and the HTML carries the source IDs in `data-source-namespace` and `data-source-id`. Visitors cannot retrieve the underlying records or extracted bodies through either host.
 
 The [alternatives in the concept brief](brainstorm.md) explain the choice to retain structured data and regenerate from the original. Each saved page object is keyed by page part. Each entry identifies its target, a template taken from the original page, and its rendering data. These field names and the `fromOriginal` template form are the implemented contract.
 
@@ -95,16 +109,16 @@ The [alternatives in the concept brief](brainstorm.md) explain the choice to ret
 }
 ```
 
-The page publisher supplies the targeting and template instructions. Article fields supply values for the template. Render source titles and summaries as text using the same escaping as the ordinary Astro view. News is the first consumer. The original build provides an insertion target and item markup even on a page with zero stories. Each target's saved news data covers all its applicable articles, including coverage already present at build time. The build writes a baseline object for every built agency and personnel page, including empty ones, so a missing saved object is an error rather than an empty baseline. This costs one small private object per page per release. At build time, obtain the underlying coverage-link and coverage-link-agency-personnel rows from the same database as the ordinary loader. Preserve the normalized URL, original record and relationship IDs, agency-personnel ID, confidence and any relationship notes in the structured records. The current view of officer names and slugs alone cannot supply those values. Page destinations refer to the same stable identities. News is the only implemented part; the object shape allows other parts later.
+The page publisher supplies the targeting and template instructions. Article fields supply values for the template. Render source titles and summaries as text using the same escaping as the ordinary Astro view. News is the first consumer. The original build provides an insertion target and item markup even on a page with zero stories. Each target's saved news data covers all its applicable articles, including coverage already present in the original page. The build writes no saved page object. Daily writes the first saved object for a page when it first updates that page. Until then, the baseline is the news items rendered in the original page, read through their template hooks, including `data-source-namespace` and `data-source-id`. Page destinations refer to the same stable identities. News is the only implemented part; the object shape allows other parts later.
 
-1. Pin the release and canonical path. Load the complete saved page object. For an initial news update, include the release's existing coverage in the baseline.
+1. Pin the release and canonical path. Load Daily's saved page object from `builds/<release-id>/data<path>index.json`. When none exists, read the baseline from the news items in the original page.
 2. Merge Action-created articles and their relationship records using each record’s persisted namespace and source ID. Retain previously saved parts, including unrelated ones. Persist that object. Keep the targeted search at its current acquisition position until publication completes for every destination.
 3. Read a fresh copy of this release's original HTML. Resolve each entry's target and template relative to the original. Render the complete object. Agency and personnel pages retain the existing newest-first ordering. The homepage uses the seven-day organic-click ranking.
 4. Write the full HTML under `override/` and make the updated page visible at its canonical URL. On retry after a data write, render from the saved data even if the article itself is already recorded. If a write to the officer page succeeds and the agency page fails, the next acquisition resumes the same search. Retain its matched article’s namespace and source ID, release and full destination list in the existing source checkpoint. Replay all destinations from their latest saved data, including pages already written. Advance only when the full set has been rendered and made visible. A concurrent update must reread and merge the latest data before publishing; a stale HTML write must not become the final served version. When the checkpoint's pinned release is no longer `current`, `publish-page` rejects it. The daily Action then closes that checkpoint, re-pins to `current` and re-derives its destinations from the new release.
 
 For example, if the original page contains A and two runs find B and C, the regenerated page contains all three once. A later change to another part retains that news list. Full-page regeneration reads the original HTML and all current entries each time.
 
-News that the daily Action adds lives only in the private page data of the release it published to until an operator runs the manual `workspace:pull` and Intake import. A new release builds its baseline from the database. Promoting a newer release before that import therefore drops the unimported news from `www` until the import lands and a later release is built. This loss is accepted.
+News that the daily Action adds lives only in the private page data of the release it published to until an operator runs the manual `workspace:pull` and Intake import. A new release's original pages come from the database. Promoting a newer release before that import therefore drops the unimported news from `www` until the import lands and a later release is built. This loss is accepted.
 
 ## Search position after publication
 
@@ -118,11 +132,11 @@ Search Console records organic clicks for each (personnel landing page, search t
 
 Each build embeds its commit-hash release ID in every form. The shared submission helper includes `releaseId` after invoking the ordinary or custom payload builder. The environment-specific Forms API keeps it in the stored submission. A form opened before deployment retains its original value. Preview and production use the same commit-hash release ID; their buckets, KVS pointers and Forms APIs keep them separate.
 
-The Forms API saves every submission. When the `releaseId` is missing or names no folder with `builds/<release-id>/data/dynamic.json` in that environment's release-data bucket, the API still saves the submission and logs the mismatch. Every saved submission carries a field that records the Forms API version that processed it.
+The Forms API saves every submission. When the `releaseId` is missing or names no folder with `builds/<release-id>/build/release.json` in that environment's release-data bucket, the API still saves the submission and logs the mismatch. Every saved submission carries a field that records the Forms API version that processed it.
 
 Each page also carries the data version it was built from in `data-data-version` on `<html>` (see `atomic-sha-deploys` design.md "Data version"). The shared submission helper sends it as `dataVersion` beside `releaseId`, and the Forms API stores it with the submission. When `dataVersion` is missing, the API still saves the submission and logs the mismatch. The API does not check the value against a list, because no list of data versions exists.
 
-The release-api and the public router must agree on which release the production host serves. The API returns that release ID together with its built roster. For a request within a selected release, route to the full override when published for that path and otherwise use the original. Refresh the canonical page on first publication and on subsequent override changes, including when the previously cached response came from the original. Preserve separate production and preview routing. Production stays on the selected release throughout publication.
+The release-api and the public router must agree on which release the production host serves. The API returns that release ID together with the location of its build artifacts. It returns no roster. For a request within a selected release, route to the full override when published for that path and otherwise use the original. Refresh the canonical page on first publication and on subsequent override changes, including when the previously cached response came from the original. Preserve separate production and preview routing. Production stays on the selected release throughout publication.
 
 The daily Action publishes to the selected production release. Its evidence is shared across releases (see the storage table). Daily publishes only to production. The bare preview host serves the same commit's original pages without Daily's updates.
 
@@ -130,7 +144,7 @@ The daily Action publishes to the selected production release. Its evidence is s
 
 This section is the cross-repository contract between the website and Intake.
 
-- **`release-snapshot`** returns `{releaseId, roster:{bucket, key:"builds/<release-id>/data/dynamic.json"}}` for KVS `current`.
+- **`release-snapshot`** returns `{releaseId, artifacts:{bucket, prefix:"builds/<release-id>/build/"}}` for KVS `current`. It returns no roster.
 - **`publish-page {releaseId, path}`**:
   - rejects a release other than `current`;
   - requires a canonical path that starts and ends with `/` and has no `\*%?#`, whitespace or dot segments;
@@ -138,21 +152,21 @@ This section is the cross-repository contract between the website and Intake.
   - only then writes `o:<release-id>:<path>index.html`;
   - invalidates `<path>`, `<path>index.html`, `/<release-id>/override<path>index.html` and `/<release-id>/build<path>index.html`, plus the path without its trailing slash when the path is not `/`;
   - returns `{invalidationId}`.
-- **`dynamic.json`** has the shape `{agencies, personnel, assignments, coveragePaths}`. `coveragePaths` lists the pages with build-time coverage.
-- **The `intake_news` role** trusts only the Intake `main` branch through GitHub OIDC. It has production access only, cannot write `dynamic.json`, and may call `GetInvalidation`.
+- **`release.json`** at `builds/<release-id>/build/release.json` has the shape `{commit, branch, pr, dataVersion}`. The build uploads it last. Its presence marks a complete release.
+- **The `intake_news` role** trusts only the Intake `main` branch through GitHub OIDC. It has production access only. It may read `<release-id>/build/*`, `<release-id>/override/*`, `builds/*/build/*`, `builds/*/data/*` and its evidence prefix. It may write `*/override/*`, `builds/*/data/*` and its evidence prefix. It is denied writes to `builds/*/build/*` and `*/build/*`. It may call `GetInvalidation`.
 - **Template hooks:**
   - `data-news-title|publisher|date|summary|notes|officers`, plus `data-source-namespace` and `data-source-id`;
   - the first insertion clears `hidden`;
   - officers render as `<a>` with the roster path, or as `<span>` when personnel pages are disabled.
 - **Homepage payload:** the homepage `ranking` payload is part of this contract. The homepage shows `placement_count` stories, at most 25, set by Intake.
-- **`alias.json`** is seeded at build time. The build fails with "Publisher URL belongs to multiple articles" on a conflict, and Daily merges later aliases.
+- **`alias.json`** is written only by Daily. When it does not exist, Daily starts from `{"CoverageLink":{}}`. The build neither seeds nor checks it.
 - **Blocked prefixes:** the router returns 404 for `/builds`, `/data`, `/evidence`, `/news-discovery`, `/com/serpapi/landing-page-search` and direct `/<release-id>/build|override/` paths.
 
 ## Deployment folders
 
 Build and deploy scripts require a clean repository and use its full current Git commit hash. Upload rejects an artifact from another commit. Promotion requires an explicit folder argument, including migration folders such as `prod-temp`. Hosting uses `<release-id>/build/` and `<release-id>/override/`; existing private records stay in private release storage. Build source metadata records the branch and commit and participates in the completion inventory. Only main builds can upload to the production site bucket. PR builds upload to preview. Main deployment also uploads to preview and selects `current:main`, which serves the bare preview host with the preview API and noindex response headers. The release-hosts proposal in PR #58 replaces the bare preview host with a redirect to `www`.
 
-Promotion checks the release-completion marker (`dynamic.json`) and `build/index.html`, selects the existing KVS pointer and invalidates CloudFront. Release folders are kept forever. Only PR preview folders are deleted, when the PR closes. Closing a PR removes its host pointer and deletes its preview folder unless another preview pointer still selects that folder.
+Promotion checks the release-completion marker (`builds/<release-id>/build/release.json`) and `build/index.html`, selects the existing KVS pointer and invalidates CloudFront. Release folders are kept forever. Only PR preview folders are deleted, when the PR closes. Closing a PR removes its host pointer and deletes its preview folder unless another preview pointer still selects that folder.
 
 ### Production cutover status
 
@@ -184,6 +198,7 @@ The owner's cutover plan copies the whole bucket content into a placeholder or c
 - **Invalidation volume.** At most five paths per page and five terms per day.
 - **Writer freshness.** Enforced by conditional writes and the workflow concurrency group.
 - **Shared preview 404 page.** Promoting any preview label replaces the shared preview `404.html`.
+- **Original page as the only source.** Daily can use only what the original page carries. A value the page lacks is a gap for the owner, not a new site file.
 - **Unimported news.** News the daily Action adds is lost from `www` when a newer release is promoted before the manual import (see "Release and page object").
 
 ## Review and rollout
@@ -194,9 +209,10 @@ Exercise daily discovery and the ordinary build. For the website, test empty and
 
 - Forms send `dataVersion` from the page beside `releaseId`. A missing `dataVersion` is saved and logged, like a missing `releaseId`.
 - An override page keeps its release's `data-data-version`. The daily job stores the data it used to render the override, and intake later acquires the same data and imports it into the database, so a later build carries it under a new data version. No separate override version is recorded (owner, 2026-11-22).
-- Form release IDs are known when `builds/<release-id>/data/dynamic.json` exists in that environment's release-data bucket. A submission with an unknown or missing release ID is still saved, and the mismatch is logged.
+- Form release IDs are known when `builds/<release-id>/build/release.json` exists in that environment's release-data bucket. A submission with an unknown or missing release ID is still saved, and the mismatch is logged.
 - Routing uses KVS `o:` markers, and `publish-page` invalidates the paths.
-- Page data and evidence are stored in the private release-data bucket.
+- Daily's page data, aliases and evidence are stored in the private release-data bucket, under prefixes only Daily writes. The build uploads no data (owner, 2026-11-22).
+- The daily Action rebuilds an override from the original page as its only source, for now (owner, 2026-11-22).
 - Templates use `fromOriginal`.
 - Rank ties follow `release-news.ts:79-86` and `coverage.ts:142-147`.
 - The inference service works with any provider, including a local one. `NEWS_INFERENCE_URL`, `NEWS_INFERENCE_MODEL` and `NEWS_INFERENCE_API_KEY` select it through configuration; no provider is hard-wired. Task 4.2 needs these values set.

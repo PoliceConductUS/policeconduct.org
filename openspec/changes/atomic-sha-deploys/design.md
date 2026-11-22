@@ -5,7 +5,7 @@
 - **Preview**: a build of an open PR, served at `pr-<N>.preview.<domain>`. Not a release.
 - **Release**: a published build of a commit on `main`, stored as a folder in the production site bucket. Not every `main` commit is released.
 - **Promote**: move the `current` pointer so `www` and the apex serve a chosen release.
-- **Release data bucket**: the private bucket that holds `builds/<release-id>/data/` (the roster and page records for that release).
+- **Release data bucket**: the private bucket that holds `builds/<release-id>/build/` (build-owned: the completion marker `release.json` and any build artifacts for the daily job) and `builds/<release-id>/data/` (daily job only).
 - **Override**: a page the release API publishes into `<release-id>/override/` after the release is promoted.
 
 ## Current deploy model (baseline, shipped)
@@ -13,8 +13,8 @@
 This change starts from the deploy model already in the repository:
 
 - `npm run deploy -- <environment> [--skip-build] [--dry-run]` (`scripts/deploy.sh`) builds the current commit, runs `npm run validate:redirects`, and calls `scripts/upload-release.sh`.
-- The release ID is the full current commit of a clean working tree (`scripts/build-release.mjs`). Site files go to `<site bucket>/<release-id>/build/`. Release data goes to `<release data bucket>/builds/<release-id>/data/`, with `dynamic.json` uploaded last as the completion marker. Uploads use `--no-overwrite`.
-- `scripts/promote.sh <release-id> [label]` checks the completion marker and `<release-id>/build/index.html`, loads `<release-id>/build/_redirect-map.json` into the `r:<release-id>:` namespace (`scripts/load-redirects.mjs`), copies the release's `404.html` to the bucket root, moves the pointer with the KVS ETag guard, and invalidates `/*`.
+- The release ID is the full current commit of a clean working tree (`scripts/build-release.mjs`). Site files go to `<site bucket>/<release-id>/build/`. Today the build also uploads its page data, roster and aliases to `<release data bucket>/builds/<release-id>/data/`, with `dynamic.json` uploaded last as the completion marker, and uploads use `--no-overwrite`. This change replaces that (see "Build and daily storage").
+- `scripts/promote.sh <release-id> [label]` checks the completion marker (today `builds/<release-id>/data/dynamic.json`; `builds/<release-id>/build/release.json` after task 2.7) and `<release-id>/build/index.html`, loads `<release-id>/build/_redirect-map.json` into the `r:<release-id>:` namespace (`scripts/load-redirects.mjs`), copies the release's `404.html` to the bucket root, moves the pointer with the KVS ETag guard, and invalidates `/*`.
 - Pointers: `current` (production), `current:main` (bare `preview.<domain>`), `current:<label>` (`<label>.preview.<domain>`). A production deploy also uploads the release to the preview bucket and points `current:main` at it.
 - Two CloudFront distributions (`site`, `preview`), each with its own site bucket, release data bucket and KVS (`site_redirects`, `preview_redirects`). Both run the same router source (`infrastructure/bootstrap-policeconduct/functions/router.js`, rendered by `local.shared_router_code` in `infrastructure/bootstrap-policeconduct/main.tf`). The preview distribution also runs `functions/noindex.js` on viewer-response.
 - The release API writes `<release-id>/override/*` objects and `o:<release-id>:<path>` keys; the router serves the override when its key exists for the promoted release.
@@ -48,14 +48,31 @@ The bare `preview.<domain>` host and the `current:main` mirror are baseline beha
 
 The release ID stays the full 40-character commit. A rebuild of the same commit against newer data goes to the same folder.
 
-- The build records the data version it read (see "Data version" below). Every page carries it, and `.release/source.json` records it as `dataVersion`, beside `commit`, `branch` and `pr`. The pages and `.release/source.json` are the record of which data a folder holds. No separate `source.json` is uploaded to the release data bucket.
-- `scripts/upload-release.sh` replaces the folder's files instead of skipping existing ones. It syncs `dist/` to `<commit>/build/` and `.release/data/` to `builds/<commit>/data/` without `--no-overwrite` and with `--delete`, so changed files are replaced and files the new build no longer produces are removed. The folder then equals the latest build.
-- `dynamic.json` is still uploaded last as the completion marker. The data sync excludes it, so `--delete` does not remove it; the last step replaces it.
+- The build records the data version it read (see "Data version" below). Every page carries it, and `.release/source.json` records it as `dataVersion`, beside `commit`, `branch` and `pr`. `scripts/build-release.mjs` writes the same four values to `.release/build/release.json`, which is uploaded last as the completion marker (see "Build and daily storage").
+- `scripts/upload-release.sh` replaces the build-owned files instead of skipping existing ones. It syncs `dist/` to `<commit>/build/` and `.release/build/` to `builds/<commit>/build/` without `--no-overwrite` and with `--delete`, so changed files are replaced and files the new build no longer produces are removed. Those two prefixes then equal the latest build.
+- `--delete` applies only to those two build-owned prefixes. No deploy command names `<commit>/override/` or `builds/<commit>/data/`.
+- `release.json` is uploaded last. The `.release/build/` sync excludes it, so `--delete` does not remove it; the last step replaces it.
 - A rerun with `--skip-build` resumes an interrupted upload: sync uploads only files that differ.
 - The same rules apply to every bucket the deploy writes (for `prod`, the production and the preview site and release data buckets).
-- `scripts/release-files.mjs --verify` keeps its check that the release ID and `.release/source.json` `commit` equal the current commit.
-- The router, `promote.sh`, `load-redirects.mjs` and the release API need no change.
+- `scripts/release-files.mjs --verify` keeps its check that the release ID and `.release/source.json` `commit` equal the current commit. Its completion inventory covers `dist/` and `.release/build/`.
+- `promote.sh` checks `builds/<id>/build/release.json` (task 2.7). The router, `load-redirects.mjs` and the release API routing need no change.
 - Existing release folders are already named by the bare commit. Nothing is migrated.
+
+## Build and daily storage
+
+Owner decision, 2026-11-22: a rebuild of a commit cannot and will not overwrite anything the daily job generated. The build does not upload the data it used; the daily job has no access to it and rebuilds pages from the original page.
+
+| Bucket       | Prefix                   | Owner     | Rebuild                        |
+| ------------ | ------------------------ | --------- | ------------------------------ |
+| site         | `<commit>/build/`        | build     | replaced, `--delete`           |
+| site         | `<commit>/override/`     | daily job | never written, deleted or read |
+| release data | `builds/<commit>/build/` | build     | replaced, `--delete`           |
+| release data | `builds/<commit>/data/`  | daily job | never written, deleted or read |
+
+- `builds/<commit>/build/` holds only build-specific artifacts meant for the daily job, plus `release.json`. Today `release.json` is the only file. A later change may add artifacts such as templates there.
+- `release.json` is `{commit, branch, pr, dataVersion}`. It is uploaded last. Its presence marks a complete release for `promote.sh`, the Forms API release check (`publish-release-news` task 7.11) and `scripts/load-release-hosts.mjs` (`release-hosts`).
+- The build writes no page data, roster or aliases anywhere. `scripts/write-release-news.mjs` is deleted (task 2.6). If the daily job needs a roster or page list, it derives it from the original pages (`publish-release-news` task 7.13). The site adds no substitute.
+- Release folders uploaded before this change have `builds/<commit>/data/dynamic.json` and no `release.json`. Nothing deletes or rewrites their files. Under the new check they are not complete, so `promote.sh` refuses them until they have a `release.json` (open question for the owner; see tasks.md 2.7).
 
 ## Data version
 
@@ -79,8 +96,8 @@ The router looks up `o:<release-id>:<path>` for the promoted release only. A new
 
 ## Lifecycle
 
-- Release folders in the production site bucket and their release data are kept forever. `scripts/manage-release.mjs` no longer deletes a production release folder.
-- When a PR closes, `scripts/cleanup-preview.mjs` deletes `current:pr-<N>` from the preview store. Then, if no other preview pointer names that release ID, it deletes `<release-id>/` from the preview site bucket and `builds/<release-id>/` from the preview release data bucket. A preview folder that a production release also uploaded (the `current:main` mirror) is kept while any pointer names it.
+- Release folders in the production site bucket and their release data (`builds/<release-id>/build/` and `builds/<release-id>/data/`) are kept forever. `scripts/manage-release.mjs` no longer deletes a production release folder.
+- When a PR closes, `scripts/cleanup-preview.mjs` deletes `current:pr-<N>` from the preview store. Then, if no other preview pointer names that release ID, it deletes `<release-id>/` from the preview site bucket and `builds/<release-id>/` from the preview release data bucket. The daily job publishes only to production, so this deletes no daily output. A preview folder that a production release also uploaded (the `current:main` mirror) is kept while any pointer names it.
 - KVS keys are removed by hand. `npm run deploy:delete -- <release-id>` removes `r:<release-id>:` and `o:<release-id>:` keys from the preview store, and refuses when any preview pointer names the release.
 
 ## Capacity
@@ -100,6 +117,7 @@ Each KVS store holds at most 5 MB of keys and values: the `current*` pointers, `
 - Partial deploy: a production deploy can stop after the preview mirror is promoted but before production is. Rerunning with `--skip-build` resumes, because sync uploads only files that differ.
 - Rewriting a served folder is not atomic: when a commit that `www` serves is rebuilt, the upload rewrites the folder `www` is reading. Visitors can see a mix of old and new files during the upload, and cached pages stay old until the `/*` invalidation after promotion. Mitigation: promotion invalidates `/*` once the upload is complete.
 - Preview store failure: a full or failing preview store stops a production deploy, because `upload-release.sh` promotes the preview mirror first. The deploy fails loudly; fix the preview store and rerun.
+- Daily output on a rebuild: a rebuild never touches `<commit>/override/` or `builds/<commit>/data/`. An override built from the old original stays served for its path until the daily job republishes it from the new original.
 - Concurrent deploys: two deploys of the same commit write the same folder, and it can hold a mix of both builds until the last one finishes. Run one deploy of a commit at a time; rerun the deploy to make the folder equal one build. Pointer updates use the KVS ETag; the second writer fails and must rerun.
 - KVS capacity: see Capacity.
 

@@ -87,7 +87,7 @@ After a production deploy promotes its release, it SHALL write that release's `r
 
 #### Scenario: Incomplete release
 
-- **WHEN** `builds/<release-id>/data/dynamic.json` or `<release-id>/build/index.html` is missing
+- **WHEN** `builds/<release-id>/build/release.json` or `<release-id>/build/index.html` is missing
 - **THEN** the writer stops before changing any key
 
 #### Scenario: Store would overflow

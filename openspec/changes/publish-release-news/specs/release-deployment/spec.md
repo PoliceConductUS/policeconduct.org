@@ -26,7 +26,7 @@ Only builds from `main` SHALL create releases in the production site bucket or s
 
 ### Requirement: Promote a complete release
 
-Promotion SHALL select only a release whose `builds/<release-id>/data/dynamic.json` and `<release-id>/build/index.html` exist, and SHALL invalidate CloudFront.
+Promotion SHALL select only a release whose `builds/<release-id>/build/release.json` and `<release-id>/build/index.html` exist, and SHALL invalidate CloudFront.
 
 #### Scenario: A release is promoted
 
