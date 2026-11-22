@@ -8,15 +8,14 @@ import { PAGE_SIZE } from "#src/lib/pagination.js";
 const types = ["", "warning", "error", "correction"];
 export function annotationFilters(
   entries: AnnotationEntry[],
-  namespaces?: string[],
   authorityId?: string,
 ) {
   const eligible =
-    namespaces === undefined
+    authorityId === undefined
       ? entries
-      : authorityAnnotations(entries, namespaces, authorityId);
+      : authorityAnnotations(entries, authorityId);
   const providers =
-    namespaces === undefined
+    authorityId === undefined
       ? ["", ...new Set(eligible.map((entry) => entry.source_namespace))]
       : [""];
   return providers.flatMap((provider) =>
@@ -38,10 +37,9 @@ export function annotationFilters(
 }
 export function annotationPages(
   entries: AnnotationEntry[],
-  namespaces?: string[],
   authorityId?: string,
 ) {
-  return annotationFilters(entries, namespaces, authorityId).flatMap((filter) =>
+  return annotationFilters(entries, authorityId).flatMap((filter) =>
     Array.from(
       { length: Math.max(1, Math.ceil(filter.entries.length / PAGE_SIZE)) },
       (_, index) => ({

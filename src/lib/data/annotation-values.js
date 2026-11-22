@@ -2,7 +2,7 @@ import contract from "./annotation-contract.json" with { type: "json" };
 import { PAGE_SIZE } from "../pagination.ts";
 
 /** @typedef {{field:string,value:unknown,type:'warning'|'error'|'correction',message:string,source_namespace:string,source_record_id:string,replacement_value?:unknown,evidence?:Record<string,unknown>[]}} DataAnnotation */
-/** @typedef {DataAnnotation & {canonical_id:string,entity_kind:string,record_url:string,record_label:string,source_provider:string}} AnnotationEntry */
+/** @typedef {DataAnnotation & {canonical_id:string,entity_kind:string,record_url:string|null,record_label:string,source_provider:string}} AnnotationEntry */
 
 // Validate the exact JSON Schema exported by intake, including recursive JSON values.
 function matches(value, schema, root) {
@@ -203,12 +203,11 @@ export function isReportedDate(value) {
 }
 
 /** @param {AnnotationEntry[]} entries */
-export function authorityAnnotations(entries, namespaces, authorityId) {
+export function authorityAnnotations(entries, authorityId) {
   return entries.filter(
     (entry) =>
-      namespaces.includes(entry.source_namespace) ||
-      (entry.entity_kind === "LicensingAuthority" &&
-        entry.canonical_id === authorityId),
+      entry.entity_kind === "LicensingAuthority" &&
+      entry.canonical_id === authorityId,
   );
 }
 
