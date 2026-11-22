@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { withDb } from "../../src/lib/db.js";
 
-test("a retained reversed-date assignment does not claim current or former employment", async ({
+test("a retained reversed-date assignment shows stored dates without a derived employment status", async ({
   page,
 }) => {
   const rows = await withDb(
@@ -21,13 +21,15 @@ test("a retained reversed-date assignment does not claim current or former emplo
   expect(rows).toHaveLength(1);
   const response = await page.goto(`/personnel/${rows[0].slug}/`);
   expect(response?.status()).toBe(200);
-  await expect(page.getByText("Recorded agency", { exact: true })).toHaveCount(
-    1,
-  );
-  await expect(
-    page.getByText("Status uncertain", { exact: true }).first(),
-  ).toBeVisible();
-  await expect(page.getByText("Completed", { exact: true })).toHaveCount(0);
+  for (const label of [
+    "Recorded agency",
+    "Most recent agency",
+    "Current agency",
+    "Status uncertain",
+    "Completed",
+  ]) {
+    await expect(page.getByText(label, { exact: true })).toHaveCount(0);
+  }
   const schemas = await page
     .locator('script[type="application/ld+json"]')
     .allTextContents();
@@ -43,8 +45,9 @@ test("a retained reversed-date assignment does not claim current or former emplo
       .getAttribute("data-prefill-payload");
     expect(payload).not.toBeNull();
     const fields = JSON.parse(payload!);
-    expect(fields.currentAgency ?? fields.currentEmployer).toBe("");
-    expect(fields.pastEmployers).toBe("");
+    expect(fields).not.toHaveProperty("currentAgency");
+    expect(fields).not.toHaveProperty("currentEmployer");
+    expect(fields).not.toHaveProperty("pastEmployers");
   }
 });
 

@@ -1,4 +1,4 @@
-import { parseSourceValues, reportedDate } from "./data/annotation-values.js";
+import { storedDate } from "./data/annotation-values.js";
 export const groupBy = (rows, key) =>
   rows.reduce((acc, row) => {
     const value = row?.[key];
@@ -25,14 +25,11 @@ export const mapBy = (rows, key) =>
  */
 export const normalizeAgencyHistory = (entries) =>
   entries
-    .map((entry) => {
-      const evidence = parseSourceValues(entry.data_source_values);
-      return {
-        ...entry,
-        start_date: reportedDate(entry.start_date, evidence.start_date),
-        end_date: reportedDate(entry.end_date, evidence.end_date),
-      };
-    })
+    .map((entry) => ({
+      ...entry,
+      start_date: storedDate(entry.start_date),
+      end_date: storedDate(entry.end_date),
+    }))
     .sort((a, b) => {
       const aDate = a.start_date ? new Date(a.start_date) : new Date(0);
       const bDate = b.start_date ? new Date(b.start_date) : new Date(0);

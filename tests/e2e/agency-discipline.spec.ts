@@ -137,9 +137,7 @@ test("discipline filter includes personnel without agency-linked records and res
   await expect(page.locator("[data-roster-item]:visible")).toHaveCount(3);
 });
 
-test("discipline filter combines with status and name filters", async ({
-  page,
-}) => {
+test("discipline filter combines with the name filter", async ({ page }) => {
   await page.setContent(
     await renderComponent("AgencyPersonnelList", {
       employees: Array.from({ length: 16 }, (_, index) => ({
@@ -154,13 +152,12 @@ test("discipline filter combines with status and name filters", async ({
       })),
     }),
   );
+  await expect(page.locator("[data-facet]")).toHaveCount(0);
   await page.getByRole("checkbox", { name: "With discipline actions" }).check();
   await expect(page.locator("[data-roster-item]:visible")).toHaveCount(2);
-  await page.getByRole("button", { name: "Current", exact: true }).click();
-  await expect(page.locator("[data-roster-item]:visible")).toHaveCount(1);
   await page.getByRole("searchbox").fill("Person 1");
+  await expect(page.locator("[data-roster-item]:visible")).toHaveCount(1);
+  await page.getByRole("searchbox").fill("Person 2");
   await expect(page.locator("[data-roster-item]:visible")).toHaveCount(0);
   await expect(page.locator("[data-roster-empty]")).toBeVisible();
-  await page.getByRole("button", { name: "Former", exact: true }).click();
-  await expect(page.locator("[data-roster-item]:visible")).toHaveCount(1);
 });

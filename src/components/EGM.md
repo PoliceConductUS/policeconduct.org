@@ -35,8 +35,8 @@ of this directory.
   plus `reportedReports`), `lastPage`, `pageReports`; each report needs `title`
   and a `canonicalPath` or `url`. `[AgencyReportsPage.astro:pageReports]`
 - `AgencyTopicPage`: props optional `currentPage` (default 1), `data`
-  (`agencyName`, `agencyPath`, `administrativeArea`, `administrativeAreaSlug`,
-  `categoryLabel`, `categorySlug`, `placeLabel`, `placePath`), `description`,
+  (`agencyName`, `agencyPath`, `administrativeArea`, `administrativeAreaPath`,
+  `categoryLabel`, `categoryPath`, `placeLabel`, `placePath`), `description`,
   `topicLabel`, `topicSlug`; renders a default slot. The page path is
   `${data.agencyPath}${topicSlug}/` on page 1 and adds `page/${currentPage}/`
   after it; the structured data uses that path.
@@ -101,9 +101,6 @@ of this directory.
 - `MetricGrid`: props `metrics: MetricCardItem[]` and optional `columns`
   (`"auto"`, `"four"`, `"five"`; default `"auto"`).
   `[MetricGrid.astro:columns = "auto"]`
-- `OutcomesByIncomePanel`: props optional `href`, optional `className`,
-  optional `variant` (`"summary"` or `"detail"`; default `"summary"`); rows are
-  fixed placeholder values. `[OutcomesByIncomePanel.astro:outcomeRows]`
 - `SampleMeasurementChart`: props `ariaLabel`, `rows` (`label`, `value`,
   optional `width`, optional `segments`), optional `legend`.
   `[SampleMeasurementChart.astro:ChartRow]`
@@ -120,20 +117,19 @@ of this directory.
 ### Agency, personnel and record components
 
 - `AgencyPersonnelList`: prop `employees` (each with optional `entry`,
-  `officer`, `reportCount`, `license`, and required `disciplineCount` and
+  `officer`, `reportCount`, and required `disciplineCount` and
   `personnelDisciplineCount`); renders the whole agency roster grouped by
   first letter. `[AgencyPersonnelList.astro:EmployeeLike]`
 - `ArrestBeatMap`: props `data: BeatMap`, `agencyName`, `firstMonth`,
-  `lastMonth`, `source`, `scope` (`"agency"` or `"personnel"`).
-  `[ArrestBeatMap.astro:scope: "agency" | "personnel"]`
+  `lastMonth`, `source`; it labels the counts as agency arrests.
+  `[ArrestBeatMap.astro:Agency arrests]`
 - `LicenseTimeline`: props `entries: LicenseTimelineEntry[]` and optional
   `initialCount` (default 8). `[LicenseTimeline.astro:initialCount = 8]`
 - `LicensingAuthorityRecords`: props are the fields of `AuthorityRecords`:
   `licenses`, `actions`, `discipline`.
   `[LicensingAuthorityRecords.astro:AuthorityRecords]`
 - `PersonnelArrestProfiles`: prop `profiles: ArrestProfileRecord[]`; named
-  slot `introduction`; renders one table per present entry of `dimensions`,
-  plus an income table when a `by_income_status` breakdown exists.
+  slot `introduction`; renders one table per present entry of `dimensions`.
   `[PersonnelArrestProfiles.astro:slot name="introduction"]`
 - `PersonnelAssignments`: props `assignmentHistory` (each with `id`, optional
   `title`, `license_id`, `start_date`, `end_date`, and an `agency` with `id`,
@@ -141,10 +137,11 @@ of this directory.
   `licensing: PersonnelLicensing`.
   `[PersonnelAssignments.astro:assignmentHistory]`
 - `PersonnelAssignments` leaves the Role cell empty when an assignment has no
-  `title`, and shows the status `Completed`, `Active` or `Status uncertain`
-  from `getAssignmentStatus`. `[PersonnelAssignments.astro:<td>{entry.title}</td>]`
-- `PersonnelDeceasedNotice`: props `message` and optional `source`.
-  `[PersonnelDeceasedNotice.astro:message: string]`
+  `title`; it shows no derived employment status.
+  `[PersonnelAssignments.astro:<td>{entry.title}</td>]`
+- `PersonnelDeceasedNotice`: props `message` (the stored `deceased_message`,
+  or `null`) and optional `source`; it renders the message only when present
+  and never generates one. `[PersonnelDeceasedNotice.astro:message: string | null]`
 - `PersonnelDiscipline`: prop `records: DisciplineRecord[]`.
   `[PersonnelDiscipline.astro:DisciplineRecord]`
 - `PersonnelEducation`: prop `records: EducationRecord[]`.
@@ -218,12 +215,12 @@ of this directory.
   one, and adds `Pagination`
   when `lastPage > 1`. `[AgencyReportsPage.astro:topicSlug="reports"]`
 - `AgencyTopicPage` passes a six-item breadcrumb trail (Home, category,
-  administrative area, place, agency, topic) to `PageShell` and upper-case
-  agency names are converted to title case for display.
-  `[AgencyTopicPage.astro:agencyDisplayName]`
+  administrative area, place, agency, topic) to `PageShell`; the category and
+  administrative-area links are the stored parent `location_path` paths, and
+  the agency name is shown as stored. `[AgencyTopicPage.astro:data.categoryPath]`
 - `CivicAgencyHierarchyPage` composes `HelpCollectDataButton` and a filter
   input in the `actions` slot, `MetricGrid` (five columns),
-  `OutcomesByIncomePanel`, `DataPanel` with `SampleMeasurementChart`, and a row
+  `DataPanel` with `SampleMeasurementChart`, and a row
   table; with `model.isFieldOfficesTable` it uses `TableScroll` and renders no
   section when `model.rows` is empty; otherwise it adds a `View` column.
   `[CivicAgencyHierarchyPage.astro:model.isFieldOfficesTable]`
@@ -267,9 +264,6 @@ of this directory.
   `MetricCardButton` otherwise; both render an `<a>`.
   `[MetricCard.astro:action.kind === "link"]`
 - `MetricGrid` renders one `MetricCard` per metric. `[MetricGrid.astro:<MetricCard metric={metric} />]`
-- `OutcomesByIncomePanel` renders `SampleMeasurementChart` with the legend
-  Dismissed, Plea deal, Other outcomes, and a "View details" link only when
-  `href` is set. `[OutcomesByIncomePanel.astro:View details]`
 - `HelpCollectDataButton` renders a `PrefillNavButton` to `/volunteer/` with a
   payload of `interest`, `skills`, `source_page`, `context` and `topic`.
   `[HelpCollectDataButton.astro:source_page: sourcePage]`
@@ -310,8 +304,8 @@ of this directory.
   renders each remaining fact as plain text.
   `[ReportNarrative.astro:set:html={description}]`
 - `LicenseTimeline` shows the first `initialCount` entries and puts the rest in
-  a `<details>`; an entry with no `actionDate` shows no date, and adverse
-  entries get an "Adverse action" flag.
+  a `<details>`; an entry with no `actionDate` shows no date. Every entry is
+  styled the same; the site does not classify actions.
   `[LicenseTimeline.astro:Show all {entries.length} license events]`
   `[LicenseTimeline.astro:formatShortDate(entry.actionDate) : null]`
 - `LicensingAuthorityRecords` renders a section nav plus up to three sections:
@@ -326,8 +320,8 @@ of this directory.
 - `PersonnelEducation` renders one card per record (name, completion date,
   credits, sponsor, instructor) under controls that start `hidden`.
   `[PersonnelEducation.astro:data-education-controls hidden]`
-- `PersonnelAssignments` renders columns Agency, Role, License, Start Date,
-  End Date and Status; a null `end_date` shows `Present`; `DataAnnotations` is
+- `PersonnelAssignments` renders columns Agency, Role, License, Start Date and
+  End Date; a null date shows an empty cell; `DataAnnotations` is
   rendered for the `start_date` and `end_date` fields.
   `[PersonnelAssignments.astro:field="end_date"]`
 - `PersonnelArrestProfiles` renders one `<article data-arrest-profile-id>` per
@@ -357,44 +351,36 @@ of this directory.
 - `DataAnnotationIndex` does not link the record label when the entry field is
   `excluded_records`. `[DataAnnotationIndex.astro:excluded_records]`
 - `AgencyPersonnelList` renders a name without a link when the officer has no
-  `slug`, and labels a record with no name `Unnamed record`.
-  `[AgencyPersonnelList.astro:Unnamed record]`
-- `CivicAgencyHierarchyPage` renders the linked `OutcomesByIncomePanel` summary
-  only when the page is not a federal topic page, and on an
-  `/outcomes-by-income/` page it renders an unlinked `OutcomesByIncomePanel`
-  in place of the `model.charts` panels; `MetricGrid` renders only when
-  `model.metrics` is not empty.
-  `[CivicAgencyHierarchyPage.astro:isFederalTopicPage]`
-  `[CivicAgencyHierarchyPage.astro:isOutcomesByIncomePage ? (]`
+  `slug`; names and titles are shown as stored.
+  `[AgencyPersonnelList.astro:roster-name--inert]`
+- `CivicAgencyHierarchyPage` renders no chart panel on an
+  `/outcomes-by-income/` page and the `model.charts` panels elsewhere;
+  `MetricGrid` renders only when `model.metrics` is not empty.
+  `[CivicAgencyHierarchyPage.astro:isOutcomesByIncomePage]`
 - `AgencyReportsPage` throws when a report has neither `canonicalPath` nor
   `url`. `[AgencyReportsPage.astro:is missing a canonical path.]`
 - `Pagination` throws when `basePath` does not end with `/`.
   `[Pagination.astro:Pagination basePath must end with '/']`
 - `Pagination` links page 1 to `basePath` itself and later pages to
   `${basePath}page/${n}/`. `[Pagination.astro:page/${pageNumber}/]`
-- `PersonnelArrestProfiles` throws when a profile has a `by_income_status`
-  breakdown but no `incomeRows`.
-  `[PersonnelArrestProfiles.astro:Missing income comparison for arrest profile]`
-- `PersonnelArrestProfiles` renders nothing when `profiles` is empty, and
-  shows `--` for a percentage whose total is zero.
+- `PersonnelArrestProfiles` renders nothing when `profiles` is empty.
   `[PersonnelArrestProfiles.astro:profiles.length > 0]`
-  `[PersonnelArrestProfiles.astro:total === 0 ? "--"]`
 - `PersonnelAssignments` throws when an assignment's `license_id` is not in
   `licensing.licenses`. `[PersonnelAssignments.astro:references missing license]`
 - `PersonnelAssignments` links an agency name only when
   `entry.agency.page_type` is `agency`, using `requireAgencyCanonicalPath`.
   `[PersonnelAssignments.astro:requireAgencyCanonicalPath]`
-- `AgencyPersonnelList` takes assignment status from `getAssignmentStatus`, the
-  same function the personnel profile uses, and sorts rows by surname with a
-  first-name fallback using `civicIndexCollator`.
-  `[AgencyPersonnelList.astro:getAssignmentStatus]`
+- `AgencyPersonnelList` shows each row's stored title and its stored start and
+  end years; it derives no current, former or uncertain status. It sorts rows
+  by surname with a first-name fallback using `civicIndexCollator`.
+  `[AgencyPersonnelList.astro:const tenure =]`
   `[AgencyPersonnelList.astro:civicIndexCollator.compare(a.sortKey, b.sortKey)]`
 - `AgencyPersonnelList` always renders the "With discipline actions" checkbox;
   it filters on `personnelDisciplineCount`, while the per-row discipline link
   uses `disciplineCount` and appears only for linked rows.
   `[AgencyPersonnelList.astro:data-discipline-count={row.personnelDisciplineCount}]`
   `[AgencyPersonnelList.astro:row.disciplineCount > 0 && row.href]`
-- `AgencyPersonnelList` shows the search, facet and jump tools only when the
+- `AgencyPersonnelList` shows the search and jump tools only when the
   roster has 15 or more rows. `[AgencyPersonnelList.astro:showTools = total >= 15]`
 - `Breadcrumb` adds a `Home` item when the trail does not start with it, marks
   the last item current when none is flagged, and emits JSON-LD only when the
@@ -466,8 +452,8 @@ of this directory.
 - `ArrestBeatMap` creates a Leaflet map in the browser from the `data-beats`
   attribute and repositions labels on `zoomend moveend resize`; it adds no tile
   layer. `[ArrestBeatMap.astro:arrangeLabels]`
-- `AgencyPersonnelList` filters roster items in the browser by name, status
-  facet and discipline checkbox, and rewrites the summary text.
+- `AgencyPersonnelList` filters roster items in the browser by name and
+  discipline checkbox, and rewrites the summary text.
   `[AgencyPersonnelList.astro:data-roster-input]`
 - `LicensingAuthorityRecords` filters and pages discipline records in the
   browser, 10 per page. `[LicensingAuthorityRecords.astro:data-discipline-browser]`

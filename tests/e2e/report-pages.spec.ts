@@ -146,9 +146,10 @@ test.describe("report detail page", () => {
     await expect(
       factList.locator("dt").filter({ hasText: "Incident date" }),
     ).toHaveCount(1);
+    // The database records no single report agency, so none is shown.
     await expect(
       factList.locator("dt").filter({ hasText: "Agency" }),
-    ).toHaveCount(1);
+    ).toHaveCount(0);
 
     // Known-absent optional facts (this dev fixture has no stored charges,
     // case number, or setting) render no row at all -- no placeholder, no

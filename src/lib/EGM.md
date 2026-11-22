@@ -16,9 +16,8 @@ Shared library code for the Astro site. The files directly in this directory pro
 
 ### `agency-status.ts`
 
-- `agencyStatusPresentation(status, date)` returns `{ label, dateLabel, prominence, summary }`. `label` is `Active` or `Inactive` for those words in any case, the raw status for any other non-empty value, and null for a null or empty status. `[agency-status.ts:agencyStatusPresentation]`
+- `agencyStatusPresentation(status, date)` returns `{ label, dateLabel, summary }`. `label` is the stored status unchanged, or null. `[agency-status.ts:label: status]`
 - `dateLabel` is null for a null or empty date, else the date read as UTC midnight and written as a long `en-US` date. `[agency-status.ts:T00:00:00Z]`
-- `prominence` is `notice` when the label exists and is not `Active`, otherwise `compact`. `[agency-status.ts:prominence]`
 - `summary` joins `Status: <label>.` and `Status date: <dateLabel>.`, each only when present; it is empty when both are missing. `[agency-status.ts:Status date:]`
 
 ### `build-timing.ts`
@@ -33,7 +32,7 @@ Shared library code for the Astro site. The files directly in this directory pro
 
 - `groupBy(rows, key)` returns a plain object from each distinct `row[key]` to the rows that have it, in input order. `[data.js:groupBy]`
 - `mapBy(rows, key)` returns a plain object from `row[key]` to the row. `[data.js:mapBy]`
-- `normalizeAgencyHistory(entries)` returns a new array in which each entry's `start_date` and `end_date` are replaced through `reportedDate` using evidence from `parseSourceValues(entry.data_source_values)`, sorted by start date ascending. `[data.js:normalizeAgencyHistory]`
+- `normalizeAgencyHistory(entries)` returns a new array in which each entry's `start_date` and `end_date` are passed through `storedDate` (calendar formatting of a stored `Date` only; no evidence substitution), sorted by start date ascending. `[data.js:normalizeAgencyHistory]`
 
 ### `db.js`
 
@@ -133,7 +132,7 @@ Shared library code for the Astro site. The files directly in this directory pro
 - `buildDataset(siteUrl, options = {})` returns a `Dataset` node with a fixed name, description, keywords, license URL, spatial coverage and measurement technique; `options.pageUrl` sets its `url`, which otherwise is the site root URL. `[structured-data.js:buildDataset]` `[structured-data.js:options.pageUrl || new URL("/", siteUrl).toString()]`
 - `buildNewsArticle({ siteUrl, pageUrl, headline, description, datePublished, dateModified, image })` returns a `NewsArticle` node with `@context`; the organization is both publisher and author. `[structured-data.js:buildNewsArticle]`
 - `buildContentPageNode({ siteUrl, id, pageUrl, name, description, mainEntityId, type = "WebPage", dateModified })` returns a page node that references the site and its main entity by `@id`. `[structured-data.js:buildContentPageNode]`
-- `buildPersonNode({ siteUrl, path, url, name, image, mainEntityOfPageId, deathDate, worksForId })` returns a `Person` node whose `@id` ends in `#person`. `[structured-data.js:buildPersonNode]`
+- `buildPersonNode({ siteUrl, path, url, name, image, mainEntityOfPageId, deathDate })` returns a `Person` node whose `@id` ends in `#person`. `[structured-data.js:buildPersonNode]`
 - `buildGovernmentOrganizationNode({ siteUrl, path, url, name, mainEntityOfPageId, address, email, contactPoint, sameAs, areaServed })` returns a `GovernmentOrganization` node whose `@id` ends in `#organization`. `[structured-data.js:buildGovernmentOrganizationNode]`
 - `buildCollectionPage({ siteUrl, pageUrl, name, description, items })` returns a `CollectionPage` node with `@context` and, when items remain, an `ItemList` of `ListItem` entries. `[structured-data.js:buildCollectionPage]`
 - `buildItemList(items)` returns null for a missing or empty list, otherwise an `ItemList` holding the items unchanged. `[structured-data.js:buildItemList]`
@@ -150,7 +149,7 @@ Shared library code for the Astro site. The files directly in this directory pro
 
 ### `agency-status.ts`, `build-timing.ts`
 
-- Only the exact words active and inactive (any case, no trimming) are normalised; any other status is shown verbatim with `notice` prominence. `[agency-status.ts:toLowerCase]`
+- No status is normalised or ranked; every stored status is shown verbatim with the same styling. `[agency-status.ts:label: status]`
 - Status dates are read and written in UTC; the date string is not validated and nothing is thrown. `[agency-status.ts:timeZone: "UTC"]`
 - Route timing is on only when `ROUTE_TIMING` is non-empty after trim, checked on every call. `[build-timing.ts:shouldLogRouteTiming]`
 - The timing line is written in a `finally` block, so it appears whether the callback resolves or rejects. `[build-timing.ts:elapsedMs]`
@@ -160,7 +159,7 @@ Shared library code for the Astro site. The files directly in this directory pro
 - Contact fields are split only on `;` and `,`; there is no format check, de-duplication or sorting, and addresses are not assigned to people. `[contact-emails.js:address.length > 0]`
 - `groupBy` skips rows whose key value is falsy. `[data.js:if (!value)]`
 - `mapBy` skips nothing; a later row with the same key replaces the earlier one. `[data.js:export const mapBy]`
-- `normalizeAgencyHistory` sorts by start date ascending and treats a missing start date as the epoch; errors from `parseSourceValues` and `reportedDate` propagate. `[data.js:new Date(0)]`
+- `normalizeAgencyHistory` sorts by start date ascending and treats a missing start date as the epoch; errors from `storedDate` propagate. `[data.js:new Date(0)]`
 
 ### `db.js`
 
@@ -212,10 +211,10 @@ Shared library code for the Astro site. The files directly in this directory pro
 
 - Fact values are kept only when they are non-blank strings; anything else becomes null. `[report-detail.ts:nullableText]`
 - The report is looked up by exact slug; a missing report returns null and runs no further queries. `[report-detail.ts:where r.slug = $1]`
-- State and area slugs come from the stored location path, not from computed slugs. An empty path segment is read as null. `[report-detail.ts:nullif(split_part(lp.path, '/', 2), '')]`
+- State and area breadcrumb links are the stored `path` of the parent `location_path` rows, not parsed from the report's path. `[report-detail.ts:state_lp.path as state_or_territory_path]`
 - Throws when the report row has no id. `[report-detail.ts:Missing id for report row]`
 - Throws when the report has no stored location path. `[report-detail.ts:is missing location_path.path.]`
-- Throws when the state or area segment of the location path is missing or empty. `[report-detail.ts:is missing state_or_territory_slug.]` `[report-detail.ts:is missing administrative_area_slug.]`
+- Throws when the report location has no parent state or administrative-area `location_path` row; breadcrumb links use those rows' stored paths. `[report-detail.ts:is missing state_or_territory_path.]` `[report-detail.ts:is missing administrative_area_path.]`
 - Every `assertValue` check, including the name, personnel slug and evidence-link title and url checks, rejects only null or undefined; an empty string passes. The link id and the civil case id, title and slug are first passed through `nullableText`, so a blank value there does throw. `[report-detail.ts:value === null || value === undefined]`
 - Throws when the state name is missing. `[report-detail.ts:is missing state_or_territory_name.]`
 - Throws when the area name is missing. `[report-detail.ts:is missing administrative_area_name.]`
@@ -235,7 +234,6 @@ Shared library code for the Astro site. The files directly in this directory pro
 - `ratingOverall` is `Number(rating_overall)`, or null when that is not a number. A null `rating_overall` therefore becomes 0, not null. `[report-detail.ts:numericRating]`
 - Errors thrown by `requireAgencyCanonicalPath` (an agency without location-path-backed URL fields) and by `buildReportCanonicalPath` (a missing slug, a location path that does not end in `/`, or an unusable incident date) are not caught. `[report-detail.ts:requireAgencyCanonicalPath(agency)]` `[report-detail.ts:buildReportCanonicalPath({]`
 - `badge` is the badge number, or null when it is empty. `[report-detail.ts:badge_number]`
-- `place_slug` is selected but not validated or used. `[report-detail.ts:as place_slug]`
 
 ### `sitemap-lastmod.js`
 
@@ -250,7 +248,7 @@ Shared library code for the Astro site. The files directly in this directory pro
 - An agency date is the latest of its own dates and those of its agency-personnel rows, personnel, linked reports and linked civil cases. `[sitemap-lastmod.js:max_civil_case_updated_at]`
 - Agencies need a place, area and state location row and an `agency` page payload row. `[sitemap-lastmod.js:bpp.page_type = 'agency']`
 - A personnel detail key needs a slug and at least one agency-personnel row. `[sitemap-lastmod.js:personnelDetailRows]`
-- The personnel collection uses one current assignment per person, chosen by latest start date. `[sitemap-lastmod.js:recency_rank = 1]`
+- The personnel collection uses every assignment row of each person; the site does not choose one. `[sitemap-lastmod.js:with assignments as (]`
 - A civil case date is the later of its updated and created dates. `[sitemap-lastmod.js:civilCaseRows]`
 - Civil cases need a slug and a location path row; a case without either gets no key. `[sitemap-lastmod.js:c.slug is not null]`
 - A state page gets the latest of that state's agency, personnel, civil case and report dates; a state with no dates gets no key. `[sitemap-lastmod.js:agencyLastmodsByCategory]`
@@ -300,7 +298,6 @@ Shared library code for the Astro site. The files directly in this directory pro
 - `sitemap-lastmod.js` reads `public.civil_case_personnel`. `[sitemap-lastmod.js:public.civil_case_personnel]`
 - `sitemap-lastmod.js` reads `public.civil_cases`. `[sitemap-lastmod.js:public.civil_cases]`
 - `sitemap-lastmod.js` reads `public.federal_agency`. `[sitemap-lastmod.js:public.federal_agency]`
-- `sitemap-lastmod.js` builds two queries with the SQL fragment from `currentAssignmentSql`. `[sitemap-lastmod.js:currentAssignmentSql]`
 - `personnel-photos.js` reads `public.personnel_photo` through `withDb`. `[personnel-photos.js:public.personnel_photo]`
 
 ### Environment, files and processes
@@ -321,7 +318,7 @@ Shared library code for the Astro site. The files directly in this directory pro
 
 - `agency-status.ts` has no imports, input, output or module state. `[agency-status.ts:export const agencyStatusPresentation]`
 - `contact-emails.js` has no imports, input, output or module state. `[contact-emails.js:export const contactEmailsForDisplay]`
-- `data.js` does not change its inputs and has no input, output or module state. `[data.js:parseSourceValues]`
+- `data.js` does not change its inputs and has no input, output or module state. `[data.js:storedDate]`
 - `format.js` has no imports, input, output or module state. `[format.js:value instanceof Date]`
 - `icons.ts` is static data and types. `[icons.ts:chevron-down]`
 - `metric-vocabulary.ts` is static data and types. `[metric-vocabulary.ts:as const]`

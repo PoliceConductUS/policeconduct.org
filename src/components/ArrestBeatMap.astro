@@ -7,9 +7,8 @@ interface Props {
   firstMonth: string;
   lastMonth: string;
   source: string;
-  scope: "agency" | "personnel";
 }
-const { data, agencyName, firstMonth, lastMonth, source, scope } = Astro.props;
+const { data, agencyName, firstMonth, lastMonth, source } = Astro.props;
 ---
 
 <section
@@ -18,8 +17,7 @@ const { data, agencyName, firstMonth, lastMonth, source, scope } = Astro.props;
 >
   <h2>Arrests by patrol beat</h2>
   <p>
-    {agencyName} · {firstMonth} to {lastMonth} ·{" "}
-    {scope === "agency" ? "Agency arrests" : "This personnel member’s arrests"}
+    {agencyName} · {firstMonth} to {lastMonth} · Agency arrests
   </p>
   <p>
     <strong>{data.total.toLocaleString("en-US")} recorded arrests</strong> ·{" "}

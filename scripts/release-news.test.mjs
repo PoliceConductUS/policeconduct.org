@@ -49,18 +49,17 @@ const officers = new Map(
     { slug: id, first_name: id, last_name: null },
   ]),
 );
-test("an ordinary build preserves each assignment's source and uses the preferred source on the homepage", () => {
+test("coverage always shows the stored preferred copy and keeps each assignment's source", () => {
   const link = selectCoverageLink(
     article,
     [article.relationships[1]],
     officers,
   );
-  assert.equal(link.url, alternate);
-  assert.equal(link.title, "Local copy");
-  assert.equal(link.summary, "Local summary");
+  assert.equal(link.url, preferred);
+  assert.equal(link.title, "Original");
+  assert.equal(link.summary, "Original summary");
   assert.equal(link.officers[0].sourceId, "beta");
-  assert.equal(link.sourceId, alternate);
-  assert.equal(selectCoverageLink(article, [], officers).sourceId, preferred);
+  assert.equal(link.sourceId, preferred);
   assert.ok(!JSON.stringify(link).includes("private note"));
   assert.equal(
     selectCoverageLink(article, article.relationships, officers).url,
@@ -88,6 +87,10 @@ test("release aliases contain only confirmed Daily source IDs with one target pe
     CoverageLink: { [alternate]: preferred, [copy]: preferred },
   });
   assert.deepEqual(releaseAliases([]), { CoverageLink: {} });
+  assert.deepEqual(
+    releaseAliases([{ ...articleWithCopies, sourceId: "not-an-occurrence" }]),
+    { CoverageLink: {} },
+  );
   assert.throws(
     () =>
       releaseAliases([

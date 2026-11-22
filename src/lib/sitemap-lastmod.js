@@ -1,4 +1,3 @@
-import { currentAssignmentSql } from "./data/annotation-access.js";
 import { withDb } from "./db.js";
 import { US_STATE_TILES } from "./geo/states.js";
 
@@ -153,9 +152,6 @@ export const buildSitemapLastmodMap = async () => {
               a.parent_federal_agency_id is not null as is_federal,
               a.created_at,
               a.updated_at,
-              count(distinct ao.personnel_id) filter (
-                where ${currentAssignmentSql("ao")}
-              ) as active_personnel_count,
               count(distinct ro.review_id) as report_count,
               max(ao.updated_at) as max_assignment_updated_at,
               max(o.updated_at) as max_officer_updated_at,
@@ -287,21 +283,17 @@ export const buildSitemapLastmodMap = async () => {
     const personnelCollectionRows = (
       await client.query(
         `
-          with active_assignments as (
+          with assignments as (
             select
-              ao.id,
               ao.personnel_id,
-              ao.start_date,
               ao.created_at,
               ao.updated_at,
               lower(split_part(lp.path, '/', 2)) as agency_state,
-              a.updated_at as agency_updated_at,
-              count(*) over (partition by ao.agency_id) as active_personnel_count
+              a.updated_at as agency_updated_at
             from public.agency_personnel ao
             join public.agency a on a.id = ao.agency_id
             join public.location_path lp
               on lp.location_path_id = a.location_path_id
-            where ${currentAssignmentSql("ao")}
           ),
           officer_report_counts as (
             select
@@ -321,44 +313,28 @@ export const buildSitemapLastmodMap = async () => {
             join public.civil_case_personnel cco on cco.agency_personnel_id = ao.id
             join public.civil_cases c on c.id = cco.civil_case_id
             group by ao.personnel_id
-          ),
-          ranked_active_assignments as (
-            select
-              aa.*,
-              coalesce(orc.report_count, 0) as report_count,
-              row_number() over (
-                partition by aa.personnel_id
-                order by aa.start_date desc nulls last, aa.created_at desc, aa.id desc
-              ) as recency_rank
-            from active_assignments aa
-            left join officer_report_counts orc on orc.personnel_id = aa.personnel_id
-          ),
-          selected_assignments as (
-            select *
-            from ranked_active_assignments
-            where recency_rank = 1
           )
           select
             o.slug,
-            selected_assignments.agency_state as state,
+            assignments.agency_state as state,
             greatest(
               o.updated_at,
               o.created_at,
-              selected_assignments.updated_at,
-              selected_assignments.created_at,
-              selected_assignments.agency_updated_at,
+              assignments.updated_at,
+              assignments.created_at,
+              assignments.agency_updated_at,
               coalesce(officer_report_counts.max_report_updated_at, o.updated_at),
               coalesce(
                 officer_civil_case_updates.max_civil_case_updated_at,
                 o.updated_at
               )
             ) as lastmod
-          from selected_assignments
-          join public.personnel o on o.id = selected_assignments.personnel_id
+          from assignments
+          join public.personnel o on o.id = assignments.personnel_id
           left join officer_report_counts
-            on officer_report_counts.personnel_id = selected_assignments.personnel_id
+            on officer_report_counts.personnel_id = assignments.personnel_id
           left join officer_civil_case_updates
-            on officer_civil_case_updates.personnel_id = selected_assignments.personnel_id
+            on officer_civil_case_updates.personnel_id = assignments.personnel_id
           where o.slug is not null
         `,
         [],

@@ -8,7 +8,7 @@ export type CivilCaseRow = {
   filed_date?: string | null;
   date_terminated?: string | null;
   court?: string | null;
-  outcome: string;
+  outcome?: string | null;
   caseUrl: string;
   personnel: CivilCasePersonnelRef[];
   personnelNames: string[];
@@ -52,20 +52,6 @@ const uniquePersonnel = (personnel: CivilCasePersonnelRef[]) => {
   return [...byId.values()];
 };
 
-// Prefer the recorded disposition. Absent one, a case with no termination date
-// is still in litigation ("Ongoing"); a terminated case whose disposition we
-// never captured has missing data, shown as the neutral "--" placeholder
-// (never a fabricated "Unknown").
-const getOutcomeLabel = (caseItem: {
-  outcome?: string | null;
-  date_terminated?: string | null;
-}) => {
-  const text =
-    typeof caseItem.outcome === "string" ? caseItem.outcome.trim() : "";
-  if (text) return text;
-  return caseItem.date_terminated ? "--" : "Ongoing";
-};
-
 const isPersonnelRef = (
   person: CivilCasePersonnelRef | null,
 ): person is CivilCasePersonnelRef => Boolean(person);
@@ -89,7 +75,7 @@ export const buildAgencyCivilCaseRows = (
       filed_date: caseItem.filed_date,
       date_terminated: caseItem.date_terminated,
       court: caseItem.court,
-      outcome: getOutcomeLabel(caseItem),
+      outcome: caseItem.outcome,
       caseUrl: caseItem.caseUrl,
       personnel,
       personnelNames: personnel.map((person) => person.name),

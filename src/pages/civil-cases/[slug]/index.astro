@@ -54,12 +54,6 @@ if (!data.civilCase.filed_date) {
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(casePath, siteUrl).toString();
 const coverageLinks = data.coverageLinks;
-const courtListenerCaseUrl = [
-  data.civilCase.primary_source_url,
-  ...coverageLinks.map((link) => link.url),
-].find(
-  (url) => url && /^https:\/\/(www\.)?courtlistener\.com\/docket\//i.test(url),
-);
 const caseMetaItems = [
   data.civilCase.primary_source_url
     ? {
@@ -308,13 +302,9 @@ const structuredData = {
       <h2>Case notifications</h2>
       <ul>
         <li>
-          {courtListenerCaseUrl ? (
-            <a href={courtListenerCaseUrl}>Open this case on CourtListener</a>
-          ) : (
-            <a href="https://www.courtlistener.com/">
-              Find this case on CourtListener
-            </a>
-          )}{" "}
+          <a href="https://www.courtlistener.com/">
+            Find this case on CourtListener
+          </a>{" "}
           to set up notifications.{" "}
           <a href="https://www.courtlistener.com/help/alerts/">
             Learn about CourtListener alerts →

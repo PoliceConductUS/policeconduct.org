@@ -5,7 +5,6 @@ import {
   annotationRecordLabel,
   type AnnotationEntry,
 } from "./annotation-values.js";
-import { currentAssignmentSql } from "./annotation-access.js";
 import type { PoolClient } from "pg";
 
 type Row = Record<string, unknown>;
@@ -110,14 +109,6 @@ export async function collectDataAnnotations(
         url: `/civil-cases/${required(row.slug, "slug")}/`,
         label: required(row.title, "title"),
       };
-    if (kind === "Agency") {
-      const { rows } = await client.query<{ eligible: boolean }>(
-        `select exists(select 1 from public.agency_personnel ap where ap.agency_id=$1 and ${currentAssignmentSql("ap")}) as eligible`,
-        [id],
-      );
-      if (!rows[0].eligible)
-        return { url: null, label: required(row.name, "name") };
-    }
     if (kind === "Agency" || kind === "Review") {
       const pageType = kind === "Agency" ? "agency" : "report_summary";
       const paths = (
@@ -126,8 +117,14 @@ export async function collectDataAnnotations(
           [id, pageType],
         )
       ).rows;
-      if (paths.length !== 1)
-        throw new Error(`Expected one public page for ${kind}:${id}.`);
+      if (paths.length > 1)
+        throw new Error(`Expected at most one public page for ${kind}:${id}.`);
+      const label =
+        kind === "Agency"
+          ? required(row.name, "name")
+          : required(row.title, "title");
+      // A record without a built page has no link.
+      if (!paths.length) return { url: null, label };
       if (kind === "Agency") {
         const location = await owner(
           "LocationPath",
@@ -137,22 +134,15 @@ export async function collectDataAnnotations(
           throw new Error(`Agency ${id} requires a location path.`);
         return {
           url: `${location.url}${required(row.slug, "slug")}/`,
-          label: required(row.name, "name"),
+          label,
         };
       }
-      return { url: paths[0].path, label: required(row.title, "title") };
+      return { url: paths[0].path, label };
     }
-    if (kind === "CoverageLink") {
-      const links = (
-        await client.query<{ agency_personnel_id: string }>(
-          "select agency_personnel_id from public.coverage_link_agency_personnel where coverage_link_id=$1 order by agency_personnel_id",
-          [id],
-        )
-      ).rows;
-      if (!links.length)
-        throw new Error(`Coverage link ${id} has no public record owner.`);
-      return owner("AgencyPersonnel", links[0].agency_personnel_id);
-    }
+    // A coverage link has no page of its own and the database records no
+    // single display record for it, so its notes carry no record link.
+    if (kind === "CoverageLink")
+      return { url: null, label: required(row.title, "title") };
     throw new Error(`No public annotation owner for ${kind}:${id}.`);
   }
   const entries: AnnotationEntry[] = [];
@@ -186,8 +176,8 @@ export async function collectDataAnnotations(
         "select exists(select 1 from public.build_page_payload where page_type='location' and path=$1) as eligible",
         [recordUrl],
       );
-      // Keep findings discoverable without creating pages for thin locations.
-      if (!rows[0].eligible) recordUrl = "/data-annotations/";
+      // A location without a built page has no link.
+      if (!rows[0].eligible) recordUrl = null;
     }
     entries.push({
       ...annotation,

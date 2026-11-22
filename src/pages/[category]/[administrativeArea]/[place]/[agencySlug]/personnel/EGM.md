@@ -9,7 +9,7 @@ Static Astro page for the route `/[category]/[administrativeArea]/[place]/[agenc
 - Route `/[category]/[administrativeArea]/[place]/[agencySlug]/personnel/`; route params: `category`, `administrativeArea`, `place`, `agencySlug`. No props are read. `[index.astro:Astro.params]`
 - `getStaticPaths()` returns `loadAgencyLocationStaticPathsForTopic("personnel")` from `#src/lib/data/agency-detail.js` unchanged. `[index.astro:return loadAgencyLocationStaticPathsForTopic("personnel");]`
 - The agency is reloaded on every render with `loadAgencyDetailByRouteParams(Astro.params)`; `employees` is taken from the result. `[index.astro:const { employees } = data;]`
-- `AgencyTopicPage` props: `data`, `topicLabel="Personnel"`, `topicSlug="personnel"`, and a fixed `description`. `[index.astro:description="Current and former officers linked to this agency, from state licensing data."]`
+- `AgencyTopicPage` props: `data`, `topicLabel="Personnel"`, `topicSlug="personnel"`, and a fixed `description`. `[index.astro:description="Personnel linked to this agency."]`
 - Slot content: `AgencyPersonnelList` (`#src/components/AgencyPersonnelList.astro`) with `employees={employees}`, followed by a `civic-limit-note` paragraph. `[index.astro:<AgencyPersonnelList employees={employees} />]`
 - No pagination in this file: the whole `employees` list is passed to `AgencyPersonnelList`.
 

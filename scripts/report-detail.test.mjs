@@ -58,9 +58,8 @@ const reportRow = {
   slug: "stored-report-slug",
   incident_date: "2025-01-02",
   location_path: "/tx/area/place/",
-  state_or_territory_slug: "tx",
-  administrative_area_slug: "area",
-  place_slug: "place",
+  state_or_territory_path: "/tx/",
+  administrative_area_path: "/tx/area/",
   state_or_territory_name: "Texas",
   administrative_area_name: "Area",
   place_name: "Place",
@@ -72,8 +71,9 @@ function serveReport(t, links, report = reportRow) {
     async query(sql, parameters) {
       if (sql.includes("from public.reviews r")) {
         assert.deepEqual(parameters, ["stored-report-slug"]);
-        assert.match(sql, /nullif\(split_part\(lp\.path, '\/', 2\), ''\)/);
-        assert.match(sql, /nullif\(split_part\(lp\.path, '\/', 3\), ''\)/);
+        assert.match(sql, /state_lp\.path as state_or_territory_path/);
+        assert.match(sql, /area_lp\.path as administrative_area_path/);
+        assert.doesNotMatch(sql, /split_part/);
         return { rows: [report] };
       }
       if (sql.includes("from public.review_links")) {
@@ -199,8 +199,15 @@ test("report officers resolve agency paths from the agency location join", async
   assert.equal(detail.officers[0].path, "/personnel/stored-personnel-slug/");
 });
 
+test("report breadcrumbs use the stored parent location paths", async (t) => {
+  serveReport(t, []);
+  const detail = await loadReportDetail("stored-report-slug");
+  assert.equal(detail.locationBreadcrumbs.state.href, "/tx/");
+  assert.equal(detail.locationBreadcrumbs.administrativeArea.href, "/tx/area/");
+});
+
 test("an incomplete report location path fails loudly", async (t) => {
-  for (const field of ["state_or_territory_slug", "administrative_area_slug"]) {
+  for (const field of ["state_or_territory_path", "administrative_area_path"]) {
     serveReport(t, [], { ...reportRow, [field]: null });
     await assert.rejects(
       loadReportDetail("stored-report-slug"),

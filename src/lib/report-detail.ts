@@ -208,9 +208,8 @@ export const loadReportDetail = async (
           select
             r.*,
             lp.path as location_path,
-            nullif(split_part(lp.path, '/', 2), '') as state_or_territory_slug,
-            nullif(split_part(lp.path, '/', 3), '') as administrative_area_slug,
-            nullif(split_part(lp.path, '/', 4), '') as place_slug,
+            state_lp.path as state_or_territory_path,
+            area_lp.path as administrative_area_path,
             state_lp.display_name as state_or_territory_name,
             area_lp.display_name as administrative_area_name,
             lp.display_name as place_name
@@ -325,13 +324,13 @@ export const loadReportDetail = async (
     data.report.location_path,
     `Report ${reportId} is missing location_path.path.`,
   );
-  const stateSlug = assertValue(
-    data.report.state_or_territory_slug,
-    `Report ${reportId} is missing state_or_territory_slug.`,
+  const statePath = assertValue(
+    data.report.state_or_territory_path,
+    `Report ${reportId} is missing state_or_territory_path.`,
   );
-  const administrativeAreaSlug = assertValue(
-    data.report.administrative_area_slug,
-    `Report ${reportId} is missing administrative_area_slug.`,
+  const administrativeAreaPath = assertValue(
+    data.report.administrative_area_path,
+    `Report ${reportId} is missing administrative_area_path.`,
   );
   const stateName = assertValue(
     data.report.state_or_territory_name,
@@ -360,11 +359,11 @@ export const loadReportDetail = async (
     locationBreadcrumbs: {
       state: {
         label: String(stateName),
-        href: `/${stateSlug}/`,
+        href: String(statePath),
       },
       administrativeArea: {
         label: String(administrativeAreaName),
-        href: `/${stateSlug}/${administrativeAreaSlug}/`,
+        href: String(administrativeAreaPath),
       },
       place: {
         label: String(placeName),

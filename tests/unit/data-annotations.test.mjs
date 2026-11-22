@@ -12,7 +12,7 @@ import {
   annotationsCsv,
   annotationValue,
   isReportedDate,
-  reportedDate,
+  storedDate,
   paginateAnnotations,
 } from "../../src/lib/data/annotation-values.js";
 const annotation = {
@@ -73,25 +73,9 @@ test("CSV quotes source text and losslessly encodes non-string values", () => {
   );
   assert.equal(annotationValue(null), "null");
 });
-test("source evidence distinguishes invalid dates from corrected nulls", () => {
-  assert.equal(
-    reportedDate(null, {
-      value: "invalid",
-      effective_value: "invalid",
-      source_namespace: "provider.a",
-      source_record_id: "one",
-    }),
-    "invalid",
-  );
-  assert.equal(
-    reportedDate(null, {
-      value: "invalid",
-      effective_value: null,
-      source_namespace: "provider.a",
-      source_record_id: "one",
-    }),
-    null,
-  );
+test("stored dates are shown as stored, never replaced by source evidence", () => {
+  assert.equal(storedDate(null), null);
+  assert.equal(storedDate("2024-06-17"), "2024-06-17");
 });
 
 test("calendar overflow is not formatted as a valid source date", () => {
@@ -99,7 +83,7 @@ test("calendar overflow is not formatted as a valid source date", () => {
   assert.equal(isReportedDate("2020-02-29"), true);
 });
 
-test("history preserves invalid end-date evidence instead of claiming current employment", () => {
+test("history shows the stored end date, not the source evidence value", () => {
   const moduleUrl = new URL("../../src/lib/data.js", import.meta.url).href;
   const row = {
     id: "synthetic",
@@ -127,12 +111,12 @@ test("history preserves invalid end-date evidence instead of claiming current em
     },
   );
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(JSON.parse(result.stdout)[0].end_date, "not a date");
+  assert.equal(JSON.parse(result.stdout)[0].end_date, null);
 });
 
 test("database DATE objects retain their calendar date for display", () => {
-  const start = reportedDate(new Date(2024, 5, 17));
-  const end = reportedDate(new Date(2024, 5, 14));
+  const start = storedDate(new Date(2024, 5, 17));
+  const end = storedDate(new Date(2024, 5, 14));
   assert.equal(start, "2024-06-17");
   assert.equal(end, "2024-06-14");
 });
@@ -236,7 +220,7 @@ test("schema validation honors the explicit isolated database connection", () =>
   assert.match(result.stderr, /ECONNREFUSED 127\.0\.0\.1:1/);
 });
 
-test("exclusions display their original subject and explicit duplicate reason", () => {
+test("exclusions display their original subject and the note label for their type", () => {
   const entry = {
     ...annotation,
     type: "warning",
@@ -246,14 +230,7 @@ test("exclusions display their original subject and explicit duplicate reason", 
     record_label: "Licensing Board",
   };
   assert.equal(annotationRecordLabel(entry), "Excluded Agency");
-  assert.equal(annotationNoteLabel(entry), "Excluded duplicate");
-  assert.equal(
-    annotationNoteLabel({
-      ...entry,
-      message: "Explicitly excluded Agency: Administrative placeholder",
-    }),
-    "Excluded record",
-  );
+  assert.equal(annotationNoteLabel(entry), "Our warning");
   assert.equal(
     annotationRecordLabel({
       ...entry,
@@ -263,7 +240,7 @@ test("exclusions display their original subject and explicit duplicate reason", 
   );
 });
 
-test("public notes describe administrative corrections without internal identifiers", () => {
+test("public notes show the stored field and message without internal identifier values", () => {
   const view = annotationDisplay({
     ...annotation,
     field: "location_path_id",
@@ -272,7 +249,7 @@ test("public notes describe administrative corrections without internal identifi
     replacement_value: "canonical-location",
     message: "Retained Saltillo to match the source mailing locality.",
   });
-  assert.equal(view.field, "Administrative area");
+  assert.equal(view.field, "location_path_id");
   assert.equal(view.showValues, false);
   assert.equal(
     view.message,
@@ -280,20 +257,15 @@ test("public notes describe administrative corrections without internal identifi
   );
   assert.ok(!JSON.stringify(view).includes("canonical-location"));
 });
-test("public duplicate explanations keep source attribution without canonical target IDs", () => {
+test("stored annotation messages are shown verbatim", () => {
   const entry = {
     ...annotation,
     field: "excluded_records",
     value: { kind: "Agency", key: "source-123", name: "Dallas PD" },
-    message:
-      "Explicitly excluded Agency: User-retired duplicate page. Official existing agency: canonical-target / existing-slug.",
+    message: "Explicitly excluded Agency: User-retired duplicate page.",
   };
-  assert.equal(
-    annotationDisplay(entry).message,
-    "Excluded duplicate of an existing record.",
-  );
+  assert.equal(annotationDisplay(entry).message, entry.message);
   assert.equal(annotationDisplay(entry).value.key, "source-123");
-  assert.ok(!annotationsCsv([entry]).includes("canonical-target"));
 });
 test("reference values and internal evidence identifiers are absent from public exports", () => {
   const entry = {

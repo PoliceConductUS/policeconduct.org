@@ -67,8 +67,8 @@
 - Home: state context reports do not make a state clickable; only those four coverage counts do. `[index.astro:// state clickable on the home map. Only record coverage counts do.]`
 - Home: a state with a zero count has no `href` and the hover label `<state name>: no entries yet`. `[index.astro:: undefined;]`
 - Home: state payloads are matched to `US_STATE_TILES` by lower-cased state code, using only payloads with `level === "state"`. `[index.astro:.filter((location) => location.level === "state")]`
-- Home: when a state has exactly one child, the map links to that child's `nextPath` if it has one, else to the state's own `path`. `[index.astro:? onlyChild?.nextPath || stateLocation?.path || undefined]`
-- Home: the hover label names the only child (`nextLabel` or `label`, plus `nextDetail` in brackets) when its `nextPath` differs from the state path; otherwise it lists the four counts. `[index.astro:? onlyChild?.nextPath && onlyChild.nextPath !== stateLocation?.path]`
+- Home: a state with a total count above zero links to its own `path`; the page takes no one-child shortcut. `[index.astro:const href = totalCount > 0 ? stateLocation?.path : undefined;]`
+- Home: the hover label lists the state's four recorded counts, including zeros. `[index.astro:hoverLabel:]`
 - Home: the video embed URL is asserted non-null. `[index.astro:embedUrl: getVideoEmbedUrl("https://www.youtube.com/watch?v=xA6z1L-MG_k")!,]`
 - Home: the video `iframe` is lazy-loaded with `referrerpolicy="strict-origin-when-cross-origin"`. `[index.astro:referrerpolicy="strict-origin-when-cross-origin"]`
 - Home: `AOS.init` runs once per document, guarded by `data-aos-init` on the root element, with `once: true` and animations disabled for visitors who prefer reduced motion. `[index.astro:window.matchMedia("(prefers-reduced-motion: reduce)").matches,]`

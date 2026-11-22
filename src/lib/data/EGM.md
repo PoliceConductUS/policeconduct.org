@@ -6,7 +6,7 @@ Build-time data layer for the Astro site. The files here read the Postgres datab
 
 - Database loaders: `agencies.ts`, `agency-detail.ts`, `arrest-profiles.ts`, `build-payloads.ts`, `civic-topic-records.ts`, `civil-cases.ts`, `civil-litigation-detail.ts`, `coverage.ts`, `data-annotations.ts`, `federal-agencies.ts`, `licensing-authority.ts`, `licensing.ts`, `personnel-education.ts`, `personnel.ts`.
 - Loaders that only reuse another loader in this directory: `civic-scoped-routes.ts`, `reports.ts`, `summaries.ts`.
-- Pure functions with no input or output: `agency-civil-case-rows.ts`, `ai-complaint-summary.ts`, `annotation-access.js`, `annotation-values.js`, `annotation-views.ts`, `arrest-beats.ts`, `arrest-income.js`, `assignment-status.js`, `civic-index.ts`, `location-paths.ts`, `release-news.ts`, `report-archives.ts`, `report-paths.ts`.
+- Pure functions with no input or output: `agency-civil-case-rows.ts`, `ai-complaint-summary.ts`, `annotation-access.js`, `annotation-values.js`, `annotation-views.ts`, `arrest-beats.ts`, `assignment-status.js`, `civic-index.ts`, `location-paths.ts`, `release-news.ts`, `report-archives.ts`, `report-paths.ts`.
 - Static data and types: `annotation-contract.json`, `personnel-topic-config.ts`, `types.ts`.
 
 Citations have the form `[file:text]`. `file` is relative to this directory and `text` appears verbatim in that file. All SQL in this directory is `select` only. Test files (`*.test.*`) are not documented here.
@@ -15,12 +15,6 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 ### agencies.ts
 
-- `loadAgencySummaries(): Promise<AgencySummary[]>` runs one query and returns one summary per agency with fields `id`, `name`, `state`, `slug`, `administrativeArea`, `administrativeAreaSlug`, `city`, `placeSlug`, `address`, `zipCode`, `phoneNumber`, `canonicalPath`, `activePersonnelCount`, `reportCount`, `civilCaseCount`. [agencies.ts:loadAgencySummaries]
-- `loadAgencySummaries` reads `public.agency` inner-joined to `public.location_path` and to `public.build_page_payload` (`page_type = 'agency'`), left-joined to the parent `public.location_path` row at level `administrative_area`. [agencies.ts:area_lp.level = 'administrative_area']
-- `loadAgencySummaries` takes the earliest-created phone per agency from `public.agency_phone_numbers`. [agencies.ts:first_phone]
-- `loadAgencySummaries` counts distinct current personnel from `public.agency_personnel` using `currentAssignmentSql()`. [agencies.ts:active_personnel_counts]
-- `loadAgencySummaries` counts distinct reports from `public.agency_personnel` joined to `public.review_personnel`. [agencies.ts:report_counts]
-- `loadAgencySummaries` counts distinct civil cases from `public.civil_case_personnel` linked to the agency's own assignment rows only. A person's cases from assignments at other agencies do not count. [agencies.ts:count(distinct cco.civil_case_id) as civil_case_count]
 - `loadAgencyFinderResults(): Promise<AgencyFinderResult[]>` reads `entity_id, payload` from `public.build_page_payload` where `page_type = 'agency'`, inner-joined to `public.agency` and `public.location_path`. It takes `id` from `entity_id` (falling back to `payload.agency.id`) and maps `payload.agency` to `name`, `state`, `administrativeArea`, `city` and `zipCode` (from `postalCode`). `canonicalPath` is the joined `location_path.path` plus the agency slug. [agencies.ts:requireText(agency.entity_id || payload?.id, "id", "unknown")] [agencies.ts:lp.path || a.slug || '/' as canonical_path,]
 
 ### agency-civil-case-rows.ts
@@ -41,22 +35,20 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - `loadAgencyDetailByRouteParams(params)` builds the location path and agency path from `category`, `administrativeArea`, `place`, `agencySlug`, finds the agency id in `public.agency` joined to `public.location_path` by exact path and slug, then returns `loadAgencyDetail(agencyId)`. [agency-detail.ts:loadAgencyDetailByRouteParams]
 - `loadAgencyDetail(agencyId)` returns the full agency detail object (raw rows plus derived fields listed below). [agency-detail.ts:loadAgencyDetail]
 - `loadAgencyDetail` reads the agency row from `public.agency` with `public.location_path` (own and parent) and `public.build_page_payload`, where `a.id = $1`. [agency-detail.ts:a.status_date::text as status_date]
-- `loadAgencyDetail` reads phones from `public.agency_phone_numbers`, with rows described as fax sorted last. [agency-detail.ts:description ilike 'fax']
-- `loadAgencyDetail` reads all assignment rows from `public.agency_personnel` for the agency. [agency-detail.ts:select * from public.agency_personnel where agency_id = $1]
+- `loadAgencyDetail` reads every phone row from `public.agency_phone_numbers`, ordered by `created_at`, then `id`. [agency-detail.ts:order by created_at asc, id asc]
+- `loadAgencyDetail` reads all assignment rows from `public.agency_personnel` for the agency, ordered by `id`. [agency-detail.ts:select * from public.agency_personnel where agency_id = $1 order by id]
 - `loadAgencyDetail` reads the parent federal agency (`id`, `name`, `slug`) from `public.federal_agency`. [agency-detail.ts:public.federal_agency]
 - `loadAgencyDetail` reads the linked people from `public.personnel`. [agency-detail.ts:select * from public.personnel where id = any($1)]
 - `loadAgencyDetail` counts distinct reports per person from `public.review_personnel` joined to `public.agency_personnel`, across all of that person's assignments. [agency-detail.ts:count(distinct ro.review_id) as report_count]
 - `loadAgencyDetail` counts discipline rows per person from `public.discipline`. [agency-detail.ts:discipline_count]
 - `loadAgencyDetail` reads agency-scoped discipline links from `public.discipline_agency_personnel` joined to `public.agency_personnel`. [agency-detail.ts:public.discipline_agency_personnel]
-- `loadAgencyDetail` reads one license per person from `public.license` joined to `public.authority_license`, active first, then most recently first awarded. [agency-detail.ts:public.authority_license]
 - `loadAgencyDetail` reads `public.review_personnel` for the agency's assignment ids and keeps the distinct report ids. [agency-detail.ts:select * from public.review_personnel where agency_personnel_id = any($1)]
 - `loadAgencyDetail` reads the agency's civil case ids from its own `public.agency_personnel` rows joined to `public.civil_case_personnel`. These are the only cases on the agency page. [agency-detail.ts:select distinct cco.civil_case_id]
 - `loadAgencyDetail` reads those cases from `public.civil_cases`. [agency-detail.ts:order by filed_date desc, title asc, cause_number asc]
 - `loadAgencyDetail` reads every person linked to those cases, from any agency. [agency-detail.ts:select cco.civil_case_id, ao.personnel_id, ao.title]
 - `loadAgencyDetail` also calls `loadCoverageLinksForAgency(agencyId)` and `loadReportSummaryBuildPayloads()`. [agency-detail.ts:loadCoverageLinksForAgency]
-- Derived fields returned by `loadAgencyDetail`: `employees`, `currentEmployees`, `formerEmployees`, `civilCases`, `reportedReports`, `coverageLinks`, `agencyName`, `agencyState`, `agencySlug`, `categorySlug`, `categoryLabel`, `categoryPath`, `agencyPath`, `canonicalAgencyPath`, `administrativeArea`, `administrativeAreaSlug`, `placeLabel`, `placeSlug`, `placePath`, and `counts` (`civilCases`, `reports`, `discipline`, `personnel`, `currentPersonnel`, `formerPersonnel`, `coverage`). [agency-detail.ts:formerPersonnel]
-- Each `employees` item has `entry`, `officer`, `reportCount`, `personnelDisciplineCount`, `disciplineCount`, `rating` (always `null`) and `license`. [agency-detail.ts:rating: null as number | null]
-- Assignment rows pass through `normalizeAgencyHistory` (defined outside this directory in `src/lib/data.js`) before they become `employees`. [agency-detail.ts:normalizeAgencyHistory(data.agencyOfficers)]
+- Derived fields returned by `loadAgencyDetail`: `employees`, `civilCases`, `reportedReports`, `coverageLinks`, `agencyName`, `agencyState` (the stored `agency.state`), `agencySlug`, `categoryLabel`, `categoryPath`, `agencyPath`, `canonicalAgencyPath`, `administrativeArea`, `administrativeAreaPath`, `placeLabel`, `placePath`, and `counts` (`civilCases`, `reports`, `discipline`, `personnel`, `coverage`). [agency-detail.ts:administrativeAreaPath]
+- Each `employees` item has `entry` (the stored `agency_personnel` row), `officer`, `reportCount`, `personnelDisciplineCount`, `disciplineCount` and `rating` (always `null`). [agency-detail.ts:rating: null as number | null]
 - Each `civilCases` item is the case row plus `caseUrl` and `officers` (the linked person rows, each with the assignment `title`). [agency-detail.ts:officers: officerLinks.filter(Boolean)]
 - Each `reportedReports` item is the report summary payload plus `url` and `officers`. [agency-detail.ts:url: report.canonicalPath]
 
@@ -86,18 +78,17 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 - JSDoc types `DataAnnotation` and `AnnotationEntry` (a `DataAnnotation` plus `canonical_id`, `entity_kind`, `record_url` (a string, or `null` when the record has no public page), `record_label`, `source_provider`). They are not runtime exports. [annotation-values.js:AnnotationEntry]
 - `parseAnnotations(value)` checks that the value is an array whose entries match `contract.annotation` and returns the same array. [annotation-values.js:parseAnnotations]
-- `parseSourceValues(value)` checks the value against `contract.sourceValues` and returns it unchanged. [annotation-values.js:parseSourceValues]
 - `annotationValue(value)` returns a string as it is and passes anything else through `JSON.stringify`. [annotation-values.js:annotationValue]
 - `annotationDisplay(entry)` returns `{ field, showValues, value?, replacement_value?, message, evidence? }` for public display. [annotation-values.js:annotationDisplay]
 - `filterAnnotations(entries, provider = "", type = "")` keeps entries whose `source_namespace` equals `provider` and whose `type` equals `type`, when each is given. [annotation-values.js:filterAnnotations]
 - `paginateAnnotations(entries, page)` returns the `PAGE_SIZE`-entry slice for a 1-based page. [annotation-values.js:paginateAnnotations] [annotation-values.js:page * PAGE_SIZE]
 - `annotationsCsv(entries)` returns CSV text with the columns `source_provider`, `source_record_id`, `record_url`, `field`, `reported_value`, `type`, `message`, `replacement_value`, `evidence`. [annotation-values.js:reported_value]
-- `reportedDate(stored, evidence)` returns `YYYY-MM-DD` from the local calendar fields of a `Date`, or `evidence.effective_value` when `stored` is `null` and evidence is given, or `stored`. [annotation-values.js:reportedDate]
+- `storedDate(stored)` returns `YYYY-MM-DD` from the local calendar fields of a `Date`, or `stored` unchanged. It never substitutes `data_source_values` evidence. [annotation-values.js:storedDate]
 - `isReportedDate(value)` is true only for a `YYYY-MM-DD` string that is a real calendar date. [annotation-values.js:isReportedDate]
 - `authorityAnnotations(entries, authorityId)` keeps entries whose `entity_kind` is `LicensingAuthority` with `canonical_id` equal to `authorityId`; the site never assigns a note to an authority by its source. [annotation-values.js:authorityAnnotations]
 - `annotationFromRecord(record)` projects a stored annotation row to a `DataAnnotation` and validates it with `parseAnnotations`. [annotation-values.js:annotationFromRecord]
 - `annotationRecordLabel(entry)` returns the excluded record's `name` (or its `kind` and `key`) for the field `excluded_records`, otherwise `entry.record_label`. [annotation-values.js:annotationRecordLabel]
-- `annotationNoteLabel(entry)` returns `Excluded duplicate`, `Excluded record`, `Our warning`, `Data error` or `Our correction`. [annotation-values.js:annotationNoteLabel]
+- `annotationNoteLabel(entry)` returns `Our warning`, `Data error` or `Our correction` from the stored `type`. [annotation-values.js:annotationNoteLabel]
 
 ### annotation-views.ts
 
@@ -111,14 +102,9 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - Type `BeatMap`: `beats` (each boundary plus `count` and `anchor`), `total`, `unmapped`. [arrest-beats.ts:BeatMap]
 - `buildBeatMap(boundaries, counts, total): BeatMap` validates boundaries and counts and adds an interior label point and a count to each boundary. [arrest-beats.ts:buildBeatMap]
 
-### arrest-income.js
-
-- JSDoc type `IncomeEvidence`: `cells` (`month`, `incomeTract`, `incomeStatus`, `arrests`) and `residential_income_by_tract`. It is not a runtime export. [arrest-income.js:IncomeEvidence]
-- `incomeRows(personnel, agency, firstMonth, lastMonth)` returns exactly seven `{ label, count, agencyCount }` rows: six income ranges from `Under $25,000` to `$150,000 or more`, then `Unknown`. [arrest-income.js:incomeRows]
-
 ### arrest-profiles.ts
 
-- Type `ArrestProfileRecord`: `id`, `agency` (`name`, `href`), `coverage` (`agency`, `source`, `firstMonth`, `lastMonth`, `totalArrests`, `chargeRows`, `distinctChargeRecords`), `breakdowns`, optional `beatMap`, optional `incomeRows`, `updatedAt`. [arrest-profiles.ts:ArrestProfileRecord]
+- Type `ArrestProfileRecord`: `id`, `agency` (`name`, `href`), `coverage` (`agency`, `source`, `firstMonth`, `lastMonth`, `totalArrests`, `chargeRows`, `distinctChargeRecords`), `breakdowns`, optional `beatMap`, `updatedAt`. [arrest-profiles.ts:ArrestProfileRecord]
 - Type `ArrestProfile`: `ArrestProfileRecord` plus `assignmentId`. [arrest-profiles.ts:assignmentId]
 - Type `AgencyArrestProfile`: `ArrestProfileRecord` plus `agencyId`. [arrest-profiles.ts:AgencyArrestProfile]
 - `loadArrestProfilesForPersonnel(personnelId): Promise<ArrestProfile[]>` reads every row of `public.arrest_profile` joined to `public.agency_personnel`, `public.agency` and `public.location_path`, groups by person in memory, and returns that person's profiles or `[]`. [arrest-profiles.ts:from public.arrest_profile profile]
@@ -126,10 +112,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 ### assignment-status.js
 
-- `getAssignmentStatus(assignment, options = {})` returns `{ isCurrent, isEnded, isUnknown, endDate, endDateInvalid, endDateImplausible }`. `options.now` replaces the system clock. [assignment-status.js:getAssignmentStatus]
-- `isCurrentAssignment(assignment, options)` returns the `isCurrent` flag. [assignment-status.js:isCurrentAssignment]
-- `isEndedAssignment(assignment, options)` returns the `isEnded` flag. [assignment-status.js:isEndedAssignment]
-- `selectHeadlineAssignment(history, options)` picks one assignment from a history and returns its status fields plus `assignment`, `isCurrent` and `hasUncertainHistory`. [assignment-status.js:selectHeadlineAssignment]
+- `formatAssignmentDate(value)` formats a valid `YYYY-MM-DD` date as a short `en-US` date in UTC and returns any other value unchanged. The file has no other export: it does not compute current, former or uncertain employment. [assignment-status.js:formatAssignmentDate]
 - `formatAssignmentDate(value)` formats a valid reported date as, for example, "Jan 5, 2024" in UTC, and returns any other value unchanged. [assignment-status.js:formatAssignmentDate]
 
 ### build-payloads.ts
@@ -153,7 +136,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - Type `CivicIndexModel`: `breadcrumbs`, `columns`, `coverage`, `description`, `drilldownLabel`, `indexLabel`, `jumpCell`, `jurisdictionLabel`, `level`, `map`, `pagePath`, `pendingTopics`, `rows`, `statCells`, `title`. [civic-index.ts:export type CivicIndexModel]
 - `buildHelpCollectHref(pagePath, scope, entitySlug)` returns a `/volunteer/` link with `source`, `scope` and the scope-named query values. [civic-index.ts:export const buildHelpCollectHref]
 - `hasCivicScopedTopicData(coverage, kind)` is true for `"reports"` when `coverage.reports > 0`, true for `"civil-cases"` when `coverage.civilCases > 0`, and false for every other kind. [civic-index.ts:export const hasCivicScopedTopicData]
-- `buildStatCells({ coverage, pagePath, scope, entitySlug })` returns stat cells in the order agencies (left out for `place`), personnel, reports, civil cases. [civic-index.ts:export const buildStatCells]
+- `buildStatCells({ coverage, pagePath, scope })` returns stat cells in the order agencies (left out for `place`), personnel, reports, civil cases. Each cell shows the recorded count, including 0; reports and civil cases link to their topic page only when the count is above zero. [civic-index.ts:export const buildStatCells]
 - `buildPendingTopics(pagePath, scope, entitySlug)` always returns four topics: `budget`, `liability-costs`, `fatal-force-incidents`, `outcomes-by-income`. [civic-index.ts:export const buildPendingTopics]
 - `buildStateCivicIndex(state)` is async and resolves to the state-level `CivicIndexModel` built from a location payload's `children`. [civic-index.ts:export const buildStateCivicIndex = async]
 - `buildAdministrativeAreaCivicIndex(area)` is async and resolves to the county-level model built from `children`. [civic-index.ts:export const buildAdministrativeAreaCivicIndex = async]
@@ -176,7 +159,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - Type `CivicCivilCaseRecord`: `agencies`, `court`, `dateTerminated`, `filedDate`, `href`, `id`, `personnel`, `searchText`, `title`. [civic-topic-records.ts:export type CivicCivilCaseRecord]
 - Type `CivicTopicRecords`: for `civil-cases`, `rows` of `CivicCivilCaseRecord` and a numeric `totalCount`; for the other kinds, empty `rows` and `totalCount: null`. Both have `emptyLabel`, `kind`, `title`. [civic-topic-records.ts:export type CivicTopicRecords]
 - `loadCivicTopicRecords(model, kind)` returns the records for a civic page. Only `civil-cases` reads the database. [civic-topic-records.ts:export const loadCivicTopicRecords]
-- For `civil-cases` it selects agencies from `public.agency` joined to `public.location_path` whose path starts with `model.pagePath`. [civic-topic-records.ts:lp.path like $1 || '%']
+- For `civil-cases` it selects agencies whose `location_path_id` is a descendant, in the `public.location_path_closure` projection, of the location whose path is `model.pagePath`. [civic-topic-records.ts:where scope_location.path = $1]
 - For `civil-cases` it selects distinct cases from `public.civil_case_personnel` joined to `public.agency_personnel` rows of the scoped agencies. [civic-topic-records.ts:select distinct cco.civil_case_id as id]
 - For `civil-cases` it reads up to 200 cases from `public.civil_cases`, ordered by `filed_date desc, title asc, cause_number asc`. [civic-topic-records.ts:limit 200]
 - For `civil-cases` it reads each case's agencies through `public.agency`, `public.location_path` and `public.build_page_payload`. [civic-topic-records.ts:bpp.page_type = 'agency']
@@ -223,10 +206,8 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - `loadDataAnnotations()` returns the result of `collectDataAnnotations` run through `withDb`. [data-annotations.ts:export function loadDataAnnotations()]
 - `collectDataAnnotations` reads the active rows of `public.data_annotation`. [data-annotations.ts:select * from public.data_annotation where status = 'active' order by id]
 - `collectDataAnnotations` reads each owner row from the table and primary key named for its kind in `annotation-contract.json`. [data-annotations.ts:select * from ${descriptor.table} where ${descriptor.primaryKey} = $1]
-- `collectDataAnnotations` checks `public.agency_personnel` for a current assignment at an agency. [data-annotations.ts:select exists(select 1 from public.agency_personnel ap where ap.agency_id=$1]
 - `collectDataAnnotations` reads the public page path from `public.build_page_payload` for page types `agency` and `report_summary`. [data-annotations.ts:select path from public.build_page_payload where entity_id=$1 and page_type=$2]
 - `collectDataAnnotations` checks `public.build_page_payload` for a location page at an exact path. [data-annotations.ts:where page_type='location' and path=$1]
-- `collectDataAnnotations` reads `public.coverage_link_agency_personnel` to find the owner of a coverage link. [data-annotations.ts:from public.coverage_link_agency_personnel where coverage_link_id=$1 order by agency_personnel_id]
 
 ### federal-agencies.ts
 
@@ -260,12 +241,9 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 - Type `LicensingAuthority`: `id`, `name`, `abbreviation`, `website`, `href`. [licensing.ts:export type LicensingAuthority]
 - Type `License`: `id`, `licenseType`, `status`, `firstAwarded`, `authority`. [licensing.ts:export type License]
-- Type `LicenseTimelineEntry`: `id`, `action`, `actionDate`, `status`, `licenseId`, `licenseType`, `isAdverse`. [licensing.ts:export type LicenseTimelineEntry]
+- Type `LicenseTimelineEntry`: `id`, `action`, `actionDate`, `status`, `licenseId`, `licenseType`. [licensing.ts:export type LicenseTimelineEntry]
 - Type `PersonnelLicensing`: `licenses`, `timeline`. [licensing.ts:export type PersonnelLicensing]
 - Type `DisciplineRecord`: `id`, `action`, `effectiveDate`, `expirationDate`, `caseNumber`, `documentUrl`, `allegation`, `violation`, `finding`, `chiefAction`, `sanction`, `authority`, `agencies`. [licensing.ts:export type DisciplineRecord]
-- `normalizeLicenseStatus(value)` returns `null` for blank input, `Active`, `Inactive`, `Expired` or `Deceased` for those words in any case, and the trimmed text otherwise. [licensing.ts:export const normalizeLicenseStatus]
-- `normalizeLicenseType(value)` returns the trimmed string, or `""`. [licensing.ts:export const normalizeLicenseType]
-- `isAdverseLicenseAction(action)` is true when the action text matches any pattern in `ADVERSE_ACTION_PATTERNS` (reprimand, hold, noncompliant, non-compliant, out of compliance, suspend, revok, surrender, denied, probation, cancelled for cause). [licensing.ts:export const isAdverseLicenseAction]
 - `loadLicensingForPersonnel(personnelId)` returns the person's licenses and action timeline from one full load of `public.license`, `public.authority_license`, `public.licensing_authority` and `public.location_path`. [licensing.ts:left join public.licensing_authority la]
 - `loadLicensingForPersonnel` reads every row of `public.license_action`. [licensing.ts:from public.license_action]
 - `loadDisciplineForPersonnel(personnelId)` returns the person's rows from `public.discipline` with the authority from `public.licensing_authority` and `public.location_path`. [licensing.ts:where d.personnel_id = $1]
@@ -289,12 +267,8 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 ### personnel.ts
 
-- `loadPersonnelSummaries(options: { agencyId? } = {}): Promise<PersonnelSummary[]>` returns one summary per person with a current assignment. [personnel.ts:export const loadPersonnelSummaries]
-- `loadPersonnelSummaries` reads current assignments from `public.agency_personnel` using `currentAssignmentSql("ao")`, limited to one agency when `agencyId` is given. [personnel.ts:select * from public.agency_personnel ao]
-- `loadPersonnelSummaries` reads the people from `public.personnel`. [personnel.ts:select * from public.personnel where id = any($1)]
-- `loadPersonnelSummaries` reads the agencies from `public.agency` joined to `public.location_path` and `public.build_page_payload`; `canonical_path` is the joined location path plus the agency slug. [personnel.ts:lp.path || a.slug || '/' as canonical_path]
-- `loadPersonnelSummaries` counts distinct reports per person from `public.review_personnel`. [personnel.ts:from public.review_personnel ro]
-- `loadPersonnelSummaries` counts distinct civil cases per person from `public.civil_case_personnel`. [personnel.ts:from public.civil_case_personnel cco]
+- `loadPersonnelSummaries(): Promise<PersonnelSummary[]>` returns one summary (`id`, `slug`, `lastName`, `firstName`, `nameSuffix`) per listed person. The selection rule is unchanged: a person is listed when their latest-started open assignment (`currentAssignmentSql`) is at an agency with an `agency` build page. Nothing from that assignment is shown. [personnel.ts:with latest_open_assignment as (]
+- `loadPersonnelCountsByStatePath()` returns a map from a state `location_path.path` to the number of distinct people with any `public.agency_personnel` row at an agency located within that state, through `public.location_path_closure`. A person with assignments in two states counts in both. [personnel.ts:export const loadPersonnelCountsByStatePath]
 
 ### release-news.ts
 
@@ -304,9 +278,9 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - Type `ReleaseArticle`: a `SourceReference` plus `preferredUrl`, `normalizedUrl`, `notes`, `occurrences`, `relationships`. [release-news.ts:export type ReleaseArticle]
 - Type `Officer`: `slug`, `first_name`, `last_name`. [release-news.ts:export type Officer]
 - Type `Ranking`: `windowEnd`, `placements`. [release-news.ts:export type Ranking]
-- `selectCoverageLink(article, assignments, officers)` picks one occurrence of an article and returns `id`, `namespace`, `sourceId`, `url`, `title`, `source_name`, `published_at`, `summary`, `notes`, `officers`. [release-news.ts:export function selectCoverageLink]
+- `selectCoverageLink(article, assignments, officers)` returns the article's stored preferred copy (`article.occurrences[article.preferredUrl]`, the `coverage_links.url` row) as `id`, `namespace`, `sourceId`, `url`, `title`, `source_name`, `published_at`, `summary`, `notes`, plus `officers` from the assignments. It does not choose among occurrences. [release-news.ts:export function selectCoverageLink]
 - Type `CoverageLink`: the return type of `selectCoverageLink`. [release-news.ts:export type CoverageLink]
-- `releaseAliases(articles)` returns `{ CoverageLink }`, a map from a source id to the source id that replaces it. [release-news.ts:export function releaseAliases]
+- `releaseAliases(articles)` returns `{ CoverageLink }`, a map from an occurrence source id to the article's own recorded source id. An article whose own source id is not among its occurrences gets no aliases. [release-news.ts:export function releaseAliases]
 - `pageNews(articles, ranking?)` returns `{ news: { target, template, data } }` for the page-part template `coverage-item`. [release-news.ts:export function pageNews]
 
 ### report-archives.ts
@@ -328,14 +302,12 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 ### summaries.ts
 
-- Re-exports `loadAgencySummaries` from `agencies.ts`. [summaries.ts:loadAgencySummaries]
 - Re-exports `loadPersonnelSummaries` from `personnel.ts`. [summaries.ts:loadPersonnelSummaries]
 - Re-exports `loadReportSummaries` from `reports.ts`. [summaries.ts:loadReportSummaries]
 
 ### types.ts
 
 - Type `PersonnelSummary`: `id`, `slug`, `lastName`, `firstName`, `title`, `reportCount`, `civilCaseCount`, `agencyName`, `agencyState`, `agencyCanonicalPath`, and optional `nameSuffix`. [types.ts:export type PersonnelSummary]
-- Type `AgencySummary`: `id`, `slug`, `name`, `state`, `canonicalPath`, `activePersonnelCount`, `reportCount`, `civilCaseCount`, and optional `administrativeArea`, `administrativeAreaSlug`, `city`, `placeSlug`, `address`, `zipCode`, `phoneNumber`. [types.ts:export type AgencySummary]
 - Type `AgencyFinderResult`: `id`, `name`, `state`, `canonicalPath`, and optional `city`, `administrativeArea`, `zipCode`. [types.ts:export type AgencyFinderResult]
 - Type `ReportSummary`: `id`, `slug`, `state`, `locationPath`, `canonicalPath`, `year`, `month`, `day`, `administrativeAreaName`, `administrativeAreaSlug`, `placeName`, `placeSlug`, `stateName`, `title`, `incidentDate`, `agencySlug`, `agencyName`, `agencyCanonicalPath`, and optional `address`, `latitude`, `longitude`, `ratingOverall`, `personnelSlugs`, `personnel`. [types.ts:export type ReportSummary]
 
@@ -343,29 +315,25 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 ### Across files
 
-- An agency's public URL is the `canonicalPath` or `canonical_path` when one is supplied; otherwise it is the location path followed by the slug. `loadAgencySummaries`, `loadAgencyFinderResults`, `loadAgencyDetail`, `loadAgencyLocationStaticPaths`, `loadAgencyLocationStaticPathsForTopic`, `loadCivicTopicRecords`, `loadCivilCaseDetail` and `loadPersonnelSummaries` select `canonical_path` as the joined `location_path.path` plus the agency slug. `requireAgencyCanonicalPath` throws `Agency {id} is missing required location_path_id-backed URL fields` when neither can be built. [location-paths.ts:is missing required location_path_id-backed URL fields]
+- An agency's public URL is the `canonicalPath` or `canonical_path` when one is supplied; otherwise it is the location path followed by the slug. `loadAgencyFinderResults`, `loadAgencyDetail`, `loadAgencyLocationStaticPaths`, `loadAgencyLocationStaticPathsForTopic`, `loadCivicTopicRecords`, `loadCivilCaseDetail` select `canonical_path` as the joined `location_path.path` plus the agency slug. `requireAgencyCanonicalPath` throws `Agency {id} is missing required location_path_id-backed URL fields` when neither can be built. [location-paths.ts:is missing required location_path_id-backed URL fields]
 - No loader takes an agency path from `public.build_page_payload`. The branch links of `loadFederalAgencyDetailBySlug` are the joined `location_path.path` plus the agency slug when the branch has an agency page row, and `null` otherwise. [federal-agencies.ts:when bpp.entity_id is not null then lp.path || a.slug || '/']
-- Loaders that inner-join `public.build_page_payload` with `page_type = 'agency'` leave out agencies that have no such row, with no error. This applies to `loadAgencySummaries`, `loadAgencyFinderResults`, `loadAgencyLocationStaticPaths`, `loadAgencyLocationStaticPathsForTopic`, `loadPersonnelSummaries`, `loadCivilCaseDetail`, and the agencies `loadCivicTopicRecords` lists on each case; its case scope does not join `public.build_page_payload`, so such an agency's cases still count. [agencies.ts:bpp.entity_id = a.id] [civic-topic-records.ts:with scoped_agencies as (]
-- `loadCivicTopicRecords`, `loadAgencySummaries`, `loadAgencyDetail` and the federal loaders count distinct cases linked through `public.civil_case_personnel` to the `public.agency_personnel` rows of the agencies in scope only; a person's assignments at other agencies add nothing. `loadPersonnelSummaries` is the person-level count: it covers every assignment of that person. [civic-topic-records.ts:on scoped_agency.id = ao.agency_id] [personnel.ts:from public.civil_case_personnel cco]
+- Loaders that inner-join `public.build_page_payload` with `page_type = 'agency'` leave out agencies that have no such row, with no error. This applies to `loadAgencyFinderResults`, `loadAgencyLocationStaticPaths`, `loadAgencyLocationStaticPathsForTopic`, `loadCivilCaseDetail`, and the agencies `loadCivicTopicRecords` lists on each case; its case scope does not join `public.build_page_payload`, so such an agency's cases still count. [agencies.ts:bpp.entity_id = a.id] [civic-topic-records.ts:with scoped_agencies as (]
+- `loadCivicTopicRecords`, `loadAgencyDetail` and the federal loaders count distinct cases linked through `public.civil_case_personnel` to the `public.agency_personnel` rows of the agencies in scope only; a person's assignments at other agencies add nothing. [civic-topic-records.ts:on scoped_agency.id = ao.agency_id]
 - A state licensing authority must sit on a location with `level` equal to `state` and a path of exactly one segment. `licensing-authority.ts` and `licensing.ts` check both conditions. [licensing-authority.ts:Expected exactly one state licensing authority at]
 - `data-annotations.ts` checks only that the authority's location path has exactly one segment; it does not check `level`. [data-annotations.ts:requires a state path.]
 - These loads cache a promise for the life of the process and drop it when it rejects, so the next call loads again: `loadLocationBuildPayloads`, `loadReportSummaryBuildPayloads`, `loadArrestProfilesForPersonnel`, `loadArrestProfilesForAgency`, `loadReleaseCoverage`, `loadDataAnnotations`, the full licensing load, and the two "has rows" sets for discipline and education. [build-payloads.ts:locationPayloadCache = null;] [licensing.ts:allLicensingPromise = null;] [personnel-education.ts:educatedPersonnelPromise = null;]
 
 ### agencies.ts
 
-- Throws `Agency {id} is missing required {field}` when a required field is blank. In `loadAgencySummaries` the fields are `id`, `name`, `state`, `slug`, `location administrative_area`, `location administrative_area_slug`, `location place_slug`. [agencies.ts:location administrative_area_slug]
-- `loadAgencySummaries` also passes `canonical_path` (the joined location path plus slug) to `requireAgencyCanonicalPath`, which throws when it is blank. [agencies.ts:canonicalPath: requireAgencyCanonicalPath({]
-- In `loadAgencyFinderResults` the required fields are `id`, `name`, `state` and `location administrative_area`; `canonical_path` goes to `requireAgencyCanonicalPath`, which throws when it is blank. [agencies.ts:"location administrative_area",]
-- `city`, `address`, `zipCode` and `phoneNumber` become `null` when empty. [agencies.ts:agency.phone_number || null]
-- Both loaders sort by `name`, then `id`, with `Intl.Collator("en", { sensitivity: "base" })`. [agencies.ts:sensitivity: "base"]
-- `administrativeAreaSlug` and `placeSlug` are lower-cased; `state` is not.
-- Neither loader caches; each `resolve*` call runs the full summary query again. [agencies.ts:const agencies = await loadAgencySummaries();]
+- Throws `Agency {id} is missing required {field}` when a required field is blank. In `loadAgencyFinderResults` the required fields are `id`, `name`, `state`, `location administrative_area` and `canonicalPath`. [agencies.ts:"location administrative_area",]
+- `city` and `zipCode` become `null` when empty. [agencies.ts:payload?.postalCode || null]
+- Results sort by `name`, then `id`, with `Intl.Collator("en", { sensitivity: "base" })`. [agencies.ts:sensitivity: "base"]
 
 ### agency-civil-case-rows.ts
 
 - A case's personnel list has no duplicates by `id`. [agency-civil-case-rows.ts:uniquePersonnel]
 - A person is listed only when `id`, `slug` and name are all present; others are dropped with no error. The link is `/personnel/{slug}/`. [agency-civil-case-rows.ts:/personnel/${slug}/]
-- The outcome label is the trimmed `outcome`; when it is empty the label is `--` for a terminated case and `Ongoing` otherwise. [agency-civil-case-rows.ts:"Ongoing"]
+- `outcome` is the stored `civil_cases.outcome`, unchanged; the site does not derive an ongoing or closed status. [agency-civil-case-rows.ts:outcome: caseItem.outcome]
 - Rows are sorted by `filed_date` descending (a missing date sorts last), then by `title` with a numeric, base-sensitivity collator. [agency-civil-case-rows.ts:numeric: true]
 - The file throws no errors. [agency-civil-case-rows.ts:casesById]
 
@@ -374,15 +342,14 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - `requireAgencyText` throws `Agency {id} is missing required {field}` for a blank value. [agency-detail.ts:is missing required]
 - `loadAgencyLocationStaticPaths` and `loadAgencyLocationStaticPathsForTopic` require `id` and `path`. [agency-detail.ts:requireAgencyText(agency.canonical_path, "path", agencyId)]
 - `loadAgencyDetailByRouteParams` requires `route category`, `route administrativeArea`, `route place` and `route agencySlug`. [agency-detail.ts:"route administrativeArea"]
-- `loadAgencyDetail` requires `id`, `name`, `state`, `slug`, `administrative_area`, `administrative_area_slug`, `city`, `place_slug` and `location_path`. [agency-detail.ts:"administrative_area_slug"]
+- `loadAgencyDetail` requires `id`, `name`, `state`, `slug`, `state display_name`, `state path`, `administrative_area`, `administrative_area path`, `city` and `location_path`; the state and administrative-area values come from the parent `public.location_path` rows. [agency-detail.ts:"administrative_area path"]
 - Throws `Agency {id} has malformed canonical path {path}.` unless the path has exactly four segments. [agency-detail.ts:has malformed canonical path]
 - Throws `Agency route {path} did not resolve.` when no agency matches the route's location path and slug. [agency-detail.ts:did not resolve.]
 - Throws `Agency route {path} resolved to {other}.` when the loaded agency's path differs from the route path. [agency-detail.ts:resolved to]
 - Throws `Agency {id} was not found with a location_path and an agency build projection.` when no agency row matches the id. [agency-detail.ts:was not found with a location_path and an agency build projection.]
 - `agencyPath` and `canonicalAgencyPath` are the same value. [agency-detail.ts:const agencyPath = canonicalAgencyPath]
-- `categoryLabel` is the state name from `US_STATE_TILES`, or the upper-cased state code when no tile matches. [agency-detail.ts:agencyState.toUpperCase()]
+- `categoryLabel` is the state `location_path.display_name` and `categoryPath` is its stored `path`. [agency-detail.ts:"state display_name"]
 - Employees are sorted by last name, first name, start date, end date, then `personnel_id`. [agency-detail.ts:comparePersonnelEntry]
-- `currentEmployees` passes `isCurrentAssignment` and `formerEmployees` passes `isEndedAssignment`; an employee can be in neither list. [agency-detail.ts:isCurrentAssignment(employee.entry)]
 - `reportCount` and `personnelDisciplineCount` cover all of a person's agencies; `disciplineCount` and `counts.discipline` cover this agency only. [agency-detail.ts:personnelDisciplineCount]
 - A report id with no build projection is skipped with a warning; it does not throw. Remaining reports sort by `incidentDate` descending. [agency-detail.ts:has no build projection; skipping.]
 - Results are cached per agency id only when `process.env.NODE_ENV` is `production`; a rejected promise is removed from the cache. [agency-detail.ts:agencyDetailCache.delete(agencyId);]
@@ -406,13 +373,12 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 ### annotation-values.js
 
 - `parseAnnotations` throws `Stored data annotations do not satisfy the intake contract.` [annotation-values.js:Stored data annotations do not satisfy the intake contract.]
-- `parseSourceValues` throws `Stored source evidence does not satisfy the intake contract.` [annotation-values.js:Stored source evidence does not satisfy the intake contract.]
 - The built-in schema checker throws `Unsupported generated annotation schema.` for a schema form it does not handle. It checks `minLength` against the trimmed string, requires finite numbers, and does not implement `enum`. [annotation-values.js:Unsupported generated annotation schema.]
 - `paginateAnnotations` throws `Invalid annotation page.` when the page is not a whole number between 1 and the last page. Page 1 of an empty list is valid. [annotation-values.js:Invalid annotation page.]
-- `reportedDate` throws `Invalid database date.` for an invalid `Date`. [annotation-values.js:Invalid database date.]
-- A field is an internal reference when it is `id` or ends in `_id` and does not start with `source_`. For those fields `annotationDisplay` hides the values and renames the field (`location_path_id` becomes `Administrative area`; any other drops its `_id` ending and shows underscores as spaces). [annotation-values.js:internalReferenceField]
+- `storedDate` throws `Invalid database date.` for an invalid `Date`. [annotation-values.js:Invalid database date.]
+- A field is an internal reference when it is `id` or ends in `_id` and does not start with `source_`. For those fields `annotationDisplay` hides the values; the field name itself is shown as stored. [annotation-values.js:internalReferenceField]
 - `annotationDisplay` removes internal-reference keys from the evidence of every entry, whatever the entry's own field is. [annotation-values.js:.filter(([key]) => !internalReferenceField(key))]
-- `annotationDisplay` replaces the message with `Excluded duplicate of an existing record.` for a duplicate in `excluded_records`. [annotation-values.js:Excluded duplicate of an existing record.]
+- `annotationDisplay` shows the stored message unchanged. [annotation-values.js:message: entry.message]
 - `annotationDisplay` replaces the message with `Applied an explicit administrative correction.` for a reference field whose message is the conditional source correction text. [annotation-values.js:Applied an explicit administrative correction.]
 - `annotationsCsv` quotes every data cell, joins lines with CRLF, and fills `replacement_value` only for corrections whose values are shown. [annotation-values.js:annotationsCsv]
 
@@ -435,30 +401,20 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - Throws `Arrest beat boundary has no interior label point` when no interior span is found. [arrest-beats.ts:has no interior label point]
 - Beats keep the input order; a boundary with no count gets 0. [arrest-beats.ts:count: counts[beat.code] ?? 0]
 
-### arrest-income.js
-
-- Only cells whose `incomeStatus` is `matched` are placed in an income range; all others count as `Unknown`. [arrest-income.js:"matched"]
-- Throws `Matched arrest is missing a valid neighborhood income estimate` when a matched cell has no tract or no finite, non-negative estimate. [arrest-income.js:Matched arrest is missing a valid neighborhood income estimate]
-- Cells outside the inclusive `firstMonth` to `lastMonth` window are skipped for both the personnel and the agency counts. [arrest-income.js:function counts]
-
 ### arrest-profiles.ts
 
 - Each of the two queries runs at most once per process unless it rejects, in which case the next call runs it again; one invalid row fails the load for every person or agency. [arrest-profiles.ts:profilesByPersonnel ??=]
 - A personnel profile that has `by_income_status` or `by_arrest_beat` must have exactly one agency profile with the same source that covers its months, or the loader throws `Expected one agency comparison for arrest profile {id}; found {n}`. [arrest-profiles.ts:Expected one agency comparison for arrest profile]
 - Throws `Income counts do not cover all arrests in profile {id}` when the income rows do not add up to `totalArrests`. [arrest-profiles.ts:Income counts do not cover all arrests in profile]
 - A personnel profile's beat map uses boundaries from the agency profile and counts from the personnel profile. [arrest-profiles.ts:arrest_beat_boundaries]
-- An agency profile has a `beatMap` only when its breakdowns have `by_arrest_beat`, and never has `incomeRows`. [arrest-profiles.ts:beatMap: Object.hasOwn(row.breakdowns, "by_arrest_beat")]
+- An agency profile has a `beatMap` only when its breakdowns have `by_arrest_beat`. A personnel profile never has a `beatMap`: the database records no link from a personnel profile to an agency profile. [arrest-profiles.ts:beatMap: Object.hasOwn(row.breakdowns, "by_arrest_beat")]
 - `agency.href` in both loaders is the agency's location path followed by its slug, built by `requireAgencyCanonicalPath`. [arrest-profiles.ts:href: requireAgencyCanonicalPath(row)]
 - Profiles for one person are ordered by `coverage.firstMonth`, then `id`. [arrest-profiles.ts:order by assignment.personnel_id]
 - Profiles for one agency are ordered by `coverage.firstMonth`, then `id`. [arrest-profiles.ts:order by profile.agency_id]
 
 ### assignment-status.js
 
-- An assignment is current when it exists, has no end date (stored or in evidence), and its start date is not invalid or in the future. [assignment-status.js:getAssignmentStatus]
-- An assignment is ended when its end date is valid and before today (UTC), its start date is not uncertain, and the end date is not before the start date. Otherwise it is unknown. [assignment-status.js:toISOString().slice(0, 10)]
 - A valid end date of today or later sets `endDateImplausible` and does not count as ended. [assignment-status.js:endDateImplausible]
-- `selectHeadlineAssignment` picks the last current entry; if none and any entry is unknown, the last entry in input order; otherwise the entry with the latest end date; `null` for an empty history. [assignment-status.js:hasUncertainHistory]
-- The file throws nothing itself; `reportedDate` can throw for an invalid `Date`. [assignment-status.js:./annotation-values.js]
 
 ### build-payloads.ts
 
@@ -528,21 +484,21 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - Throws `Annotation owner requires {field}.` for a blank `subject_kind`, `subject_id`, parent key, `slug`, `path`, `display_name`, `name`, `title` or `location_path_id`. [data-annotations.ts:Annotation owner requires]
 - Throws `Unknown annotation owner kind {kind}.` when the kind is not in `annotation-contract.json`. [data-annotations.ts:Unknown annotation owner kind]
 - Throws `Missing annotation owner {kind}:{id}.` when the owner row does not exist. [data-annotations.ts:Missing annotation owner]
-- Child kinds resolve to a parent kind through a fixed map of 18 entries (for example `LicenseAction` to `License`, `AgencyPhoneNumber` to `Agency`). [data-annotations.ts:CoverageLinkAgencyPersonnel: ["AgencyPersonnel", "agency_personnel_id"]]
+- Child kinds resolve to a parent kind through a fixed map of 18 entries (for example `LicenseAction` to `License`, `AgencyPhoneNumber` to `Agency`). Junction kinds (`AgencyPersonnel`, `DisciplineAgencyPersonnel`, `CoverageLinkAgencyPersonnel`, `CivilCasePersonnel`, `ReviewPersonnel`) still resolve to one fixed side; this is a site-chosen owner pending a database display-record column. [data-annotations.ts:CoverageLinkAgencyPersonnel: ["AgencyPersonnel", "agency_personnel_id"]]
 - A `Personnel` owner links to `/personnel/{slug}/`. [data-annotations.ts:/personnel/]
 - A `FederalAgency` owner links to `/federal/{slug}/`. [data-annotations.ts:/federal/${required(row.slug, "slug")}/]
 - A `CivilCase` owner links to `/civil-cases/{slug}/`. [data-annotations.ts:/civil-cases/${required(row.slug, "slug")}/]
 - A `LocationPath` owner links to its `path` and is labelled with its `display_name`. [data-annotations.ts:url: required(row.path, "path")]
 - A `LicensingAuthority` owner must sit on a one-segment state path, or the loader throws `Authority {id} requires a state path.` [data-annotations.ts:requires a state path.]
-- An `Agency` with no current assignment has no record URL. [data-annotations.ts:return { url: null, label: required(row.name, "name") }]
-- An `Agency` with a current assignment, and every `Review`, must have exactly one public page, or the loader throws `Expected one public page for {kind}:{id}.` [data-annotations.ts:Expected one public page for]
+- An `Agency` or `Review` with no row in `public.build_page_payload` has no record URL; it is labelled with its `name` or `title`. [data-annotations.ts:if (!paths.length) return { url: null, label };]
+- An `Agency` or `Review` with more than one public page throws `Expected at most one public page for {kind}:{id}.` [data-annotations.ts:Expected at most one public page for]
 - That `Agency` owner links to its location path followed by its slug, not to the path stored in `public.build_page_payload`. [data-annotations.ts:${location.url}${required(row.slug, "slug")}/]
 - A `Review` owner links to the path stored in `public.build_page_payload`. [data-annotations.ts:url: paths[0].path, label: required(row.title, "title")]
 - Throws `Agency {id} requires a location path.` [data-annotations.ts:requires a location path.]
-- Throws `Coverage link {id} has no public record owner.` [data-annotations.ts:has no public record owner.]
+- A `CoverageLink` owner has no record URL and is labelled with its `title`: it has no page, and the database records no single display record for it. [data-annotations.ts:if (kind === "CoverageLink")]
 - Throws `No public annotation owner for {kind}:{id}.` for any other root kind. [data-annotations.ts:No public annotation owner for]
 - When `NO_PERSONNEL` is set, annotations owned by a person are left out, and so are `excluded_records` annotations whose value has the kind `Personnel`. [data-annotations.ts:annotation.field === "excluded_records"]
-- An annotation on a location with no location page links to `/data-annotations/`. [data-annotations.ts:Keep findings discoverable without creating pages for thin locations.]
+- An annotation on a location with no location page in `public.build_page_payload` has no record URL. [data-annotations.ts:A location without a built page has no link.]
 - An annotation whose record has no public page keeps `record_url` `null`; it is listed in the index without a link. [data-annotations.ts:record_url: recordUrl]
 - Throws `Source authority {id} requires a public page.` [data-annotations.ts:requires a public page.]
 - Entries are sorted by `source_namespace`, `entity_kind`, `canonical_id`, `field`, `type`, `source_record_id`, `message` in code-unit order. [data-annotations.ts:].join("\u0000")]
@@ -552,7 +508,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 - `loadFederalAgencyDetailBySlug` returns `null` for an unknown slug. [federal-agencies.ts:if (!row) return null]
 - Throws `Federal agency {slug} has linked agency {id} without a required canonical path.` when a child agency has no agency page payload. [federal-agencies.ts:without a required canonical path.]
-- A child agency is included only when it has at least one current assignment. [federal-agencies.ts:and ${currentAssignmentSql("assignment")}]
+- A child agency is included only when it has at least one current assignment (a selection rule kept as is). Branch personnel counts cover every assignment row of the branch. [federal-agencies.ts:and ${currentAssignmentSql("assignment")}]
 - Every federal agency's `path` is `/federal/{slug}/`. [federal-agencies.ts:const federalAgencyPath]
 - A child agency's civil cases are the cases linked to its own assignment rows. The two loaders count people and reports differently: summaries count distinct people and reports across all child agencies, while the detail adds up per-child counts. Civil cases count once in a federal agency total and in the all-federal totals, through the union of `civilCaseIds`. [federal-agencies.ts:const distinctCivilCaseIds]
 - Summaries are sorted by name with `Intl.Collator("en", { sensitivity: "base" })`; branches are ordered by state, city, then name. [federal-agencies.ts:order by split_part(lp.path, '/', 2), lp.display_name, a.name]
@@ -590,17 +546,10 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 ### personnel.ts
 
-- A person is left out, with no error, when there is no `public.personnel` row. [personnel.ts:if (!officer) {]
-- A person is left out when there is no assignment without an end date. [personnel.ts:if (activeAssignments.length === 0)]
-- The summary's `title` and agency come from the last open assignment in the order returned by `normalizeAgencyHistory` (defined outside this directory in `src/lib/data.js`). [personnel.ts:activeAssignments[activeAssignments.length - 1]]
-- A person is left out when the agency of the chosen assignment was not loaded. [personnel.ts:if (!agency) {]
-- Report and civil case counts cover every assignment of the person, not only the current one or the requested agency. [personnel.ts:from public.review_personnel ro]
 - Summaries are sorted by last name, first name, suffix, then `id` with `Intl.Collator("en", { sensitivity: "base" })`. [personnel.ts:const nameCollator]
-- `agencyState` is lower-cased; missing counts are 0. [personnel.ts:agencyState: String(agency.state || "").toLowerCase()]
 
 ### release-news.ts
 
-- `selectCoverageLink` throws `No supporting occurrence for {url}` when an assignment's occurrence is not on the article. [release-news.ts:No supporting occurrence for]
 - `selectCoverageLink` throws `No preferred occurrence for {url}`. [release-news.ts:No preferred occurrence for]
 - `selectCoverageLink` throws `Unknown assignment {id}` when an assignment is not in the `officers` map. [release-news.ts:Unknown assignment]
 - The preferred URL's occurrence is used when there are no assignments or when a supporting occurrence is at the preferred URL. Otherwise candidates are ranked: cited publisher first, then lowest `domainRank`, then earliest `publishedAt`, then `url`. [release-news.ts:(a.domainRank ?? Infinity) - (b.domainRank ?? Infinity)]
@@ -615,12 +564,12 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 ### report-archives.ts
 
 - Each report creates archive entries at four levels: no date, year, year and month, and full date. [report-archives.ts:[date.year, date.month, date.day]]
-- `pagePath` is `/{state}/reports/` for the state scope, `/{state}/{administrativeArea}/reports/` for the county scope, and the report's location path plus `reports/` for the place scope, followed by the date parts. [report-archives.ts:const pathFor]
+- `pagePath` is `/{state}/reports/` for the state scope, `/{state}/{administrativeAreaSlug}/reports/` (projection fields) for the county scope, and the report's location path plus `reports/` for the place scope, followed by the date parts. [report-archives.ts:const pathFor]
 - The title is `Reports for {location}` with the date parts added when present. [report-archives.ts:Reports for ${locationLabel}]
 - Breadcrumbs start at `Home`. [report-archives.ts:{ label: "Home", href: "/" }]
 - Every archive's breadcrumbs include a `Reports` crumb for its scope, so the archive with no date parts ends with a crumb for its own page. A dated archive adds the year and month crumbs above it and leaves out its own, deepest date part. [report-archives.ts:items.push({ label: "Reports", href: reportsPath });]
 - Each archive keeps reports in input order; archives with no reports are removed. [report-archives.ts:.filter((archive) => archive.reports.length)]
-- Every report needs a complete date and a three-segment location path for every scope, because the helpers in `report-paths.ts` throw otherwise. [report-archives.ts:parseLocationPathParts]
+- Every report needs a complete date. Scope membership, route params and page paths use the `state`, `administrativeAreaSlug` and `placeSlug` fields the build projection recorded for the report; the file does not parse the report's location path. [report-archives.ts:report.administrativeAreaSlug !== params.administrativeArea]
 
 ### report-paths.ts
 
@@ -647,7 +596,6 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - Console output: `loadAgencyDetail` writes one `console.warn` for each report id that has no build projection. No other file logs. [agency-detail.ts:console.warn]
 - File access: no file reads or writes files at run time. `annotation-values.js` and `data-annotations.ts` import `annotation-contract.json` as a JSON module. [annotation-values.js:with { type: "json" }]
 - Network: no file makes a network call other than the database connection. `ai-complaint-summary.ts` and `release-news.ts` only parse URLs. [release-news.ts:new URL(]
-- System clock: `getAssignmentStatus` reads the current time when `options.now` is not given. [assignment-status.js:new Date()]
 - Process-wide cache in `build-payloads.ts`: location payloads. [build-payloads.ts:locationPayloadCache]
 - Process-wide cache in `build-payloads.ts`: report summary payloads. [build-payloads.ts:reportSummaryPayloadCache]
 - Process-wide caches in `arrest-profiles.ts`: profiles by person and by agency. [arrest-profiles.ts:profilesByAgency]
@@ -656,13 +604,13 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - Process-wide caches in `licensing.ts`: all licensing, and the set of disciplined people. [licensing.ts:let disciplinedPersonnelPromise]
 - Process-wide cache in `personnel-education.ts`: the set of people with education rows. [personnel-education.ts:let educatedPersonnelPromise]
 - Process-wide cache in `agency-detail.ts`: agency details by id, in production only. [agency-detail.ts:agencyDetailCache.set]
-- These files have no side effects at all: `agency-civil-case-rows.ts`, `ai-complaint-summary.ts`, `annotation-access.js`, `annotation-values.js`, `annotation-views.ts`, `arrest-beats.ts`, `arrest-income.js`, `civic-index.ts`, `location-paths.ts`, `personnel-topic-config.ts`, `release-news.ts`, `report-archives.ts`, `report-paths.ts`, `types.ts`. [location-paths.ts:const trimText]
+- These files have no side effects at all: `agency-civil-case-rows.ts`, `ai-complaint-summary.ts`, `annotation-access.js`, `annotation-values.js`, `annotation-views.ts`, `arrest-beats.ts`, `civic-index.ts`, `location-paths.ts`, `personnel-topic-config.ts`, `release-news.ts`, `report-archives.ts`, `report-paths.ts`, `types.ts`. [location-paths.ts:const trimText]
 
 ## Verification
 
 Commands are defined in the repository root `package.json`.
 
-- Run: `npm run test:data`. It runs `src/lib/data/assignment-status.test.mjs` (covers `assignment-status.js`) and `scripts/release-news.test.mjs` (covers `release-news.ts`). `scripts/verify-employment-claims.test.mjs` does not import from this directory.
+- Run: `npm run test:data`. It runs `src/lib/data/assignment-status.test.mjs` (covers `assignment-status.js`) and `scripts/release-news.test.mjs` (covers `release-news.ts`).
 - In the same group, `scripts/report-detail.test.mjs` loads `src/lib/report-detail.ts`, which imports `location-paths.ts` and `report-paths.ts` from this directory. [../../../scripts/report-detail.test.mjs:"./data/location-paths.js", "./data/report-paths.js"]
 - Run: `npm test`. It runs every test group. The groups that reference files in this directory are:
   - `test:data`, as above.
@@ -670,4 +618,4 @@ Commands are defined in the repository root `package.json`.
   - `test:client`: `scripts/ai-complaint-summary.test.mjs` covers `ai-complaint-summary.ts`.
   - `test:redirects`: `scripts/generate-redirect-map.test.mjs` references `annotation-access.js`.
   - `test:personal-data`: `scripts/scan-personal-data.test.mjs` references `summaries.ts`.
-  - `test:e2e`: Playwright specs under `tests/e2e/` reference `agency-detail`, `annotation-access.js`, `annotation-values.js`, `arrest-beats`, `arrest-income.js`, `arrest-profiles`, `build-payloads`, `data-annotations`, `federal-agencies`, `licensing`, `licensing-authority` and `personnel-education`.
+  - `test:e2e`: Playwright specs under `tests/e2e/` reference `agency-detail`, `annotation-access.js`, `annotation-values.js`, `arrest-beats`, `arrest-profiles`, `build-payloads`, `data-annotations`, `federal-agencies`, `licensing`, `licensing-authority` and `personnel-education`.

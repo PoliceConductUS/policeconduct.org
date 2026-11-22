@@ -13,7 +13,6 @@ Astro dynamic page for the routes `/civil-cases/{slug}/`. It shows one civil cas
 - The only route param is `slug`. `[index.astro:const { slug } = Astro.params;]`
 - The render reloads the case with `loadCivilCaseDetailBySlug(slug)` from `src/lib/data/civil-litigation-detail.js`. `[index.astro:const data = await loadCivilCaseDetailBySlug(slug);]`
 - The loaded data is used as `civilCase`, `officers`, `agencies` and `coverageLinks`. `[index.astro:const coverageLinks = data.coverageLinks;]`
-- The CourtListener case URL is the first of the primary source URL and the coverage link URLs that matches a CourtListener docket URL pattern. `[index.astro:(url) => url && /^https:\/\/(www\.)?courtlistener\.com\/docket\//i.test(url),]`
 - The page description joins, when present: cause number, court, filed date, up to two officer names and up to two agency names. `[index.astro:const pageDescriptionParts = []`
 - The description adds ", and others" when there are more than two officers. ``[index.astro:? `Officers: ${formatLabelList(officerNames.slice(0, 2))}${officerNames.length > 2 ? ", and others" : ""}.`]``
 - The description adds ", and others" when there are more than two agencies. ``[index.astro:? `Agencies: ${formatLabelList(agencyNames.slice(0, 2))}${agencyNames.length > 2 ? ", and others" : ""}.`]``
@@ -47,8 +46,7 @@ Astro dynamic page for the routes `/civil-cases/{slug}/`. It shows one civil cas
 - The "Related links" section renders only when there are coverage links. `[index.astro:<h2>Related links</h2>]`
 - A coverage link that `getVideoEmbedUrl` (from `src/lib/video.js`) accepts links to the internal watch page `/civil-cases/{slug}/watch/{link.id}/`. ``[index.astro:? `${casePath}watch/${link.id}/`]``
 - Any other coverage link goes to its own URL in a new tab with `rel="noopener noreferrer"`. `[index.astro:getVideoEmbedUrl(link.url) ? undefined : "noopener noreferrer"]`
-- The aside "Case notifications" links to the matched CourtListener case URL when one was found. `[index.astro:<a href={courtListenerCaseUrl}>Open this case on CourtListener</a>]`
-- When no CourtListener case URL was found, the aside links to the CourtListener home page. `[index.astro:<a href="https://www.courtlistener.com/">]`
+- The aside "Case notifications" links to the CourtListener home page; the page does not pick a case URL by pattern. `[index.astro:<a href="https://www.courtlistener.com/">]`
 - The aside links to the CourtListener alerts help page. `[index.astro:<a href="https://www.courtlistener.com/help/alerts/">]`
 - The aside links to `/civil-cases/suggest-edit/`. `[index.astro:<a href="/civil-cases/suggest-edit/">Suggest an edit →</a>]`
 - Renders `RecordDataNotes` (`src/components/RecordDataNotes.astro`) with `recordPath` set to the case path. `[index.astro:<RecordDataNotes recordPath={casePath} />]`

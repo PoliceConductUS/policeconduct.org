@@ -189,9 +189,16 @@ test("death notice links the optional source and omits an absent source", async 
   );
   await expect(page.getByRole("link")).toHaveCount(0);
   await expect(page.locator("body")).toContainText("Recorded death notice");
+  await page.setContent(
+    await renderComponent("PersonnelDeceasedNotice", {
+      message: null,
+      source: null,
+    }),
+  );
+  await expect(page.locator("body")).toHaveText("Status: Deceased.");
 });
 
-test("recorded name and former agency label retain exact license relationship", async ({
+test("recorded name and assignment rows retain exact license relationship", async ({
   page,
 }) => {
   const {
@@ -216,9 +223,7 @@ test("recorded name and former agency label retain exact license relationship", 
       .filter(Boolean)
       .join(" "),
   );
-  await expect(page.locator(".personnel-current-line")).toContainText(
-    "Most recent agency:",
-  );
+  await expect(page.locator(".personnel-current-line")).toHaveCount(0);
   const { rows: assignments } = await client.query(
     `select a.id, a.license_id, al.name from public.agency_personnel a join public.license l on l.id=a.license_id join public.authority_license al on al.id=l.authority_license_id where a.personnel_id=$1`,
     [person.id],
@@ -337,12 +342,7 @@ test("every live arrest profile renders exactly its stored breakdowns and bucket
     expect(rendered).toHaveLength(batch.length);
     for (const row of batch) {
       const actual = rendered.find((item) => item.id === row.id)!;
-      expect(
-        actual.tables
-          .filter((table) => table.key !== "by_income_range")
-          .map((table) => table.key)
-          .sort(),
-      ).toEqual(
+      expect(actual.tables.map((table) => table.key).sort()).toEqual(
         Object.keys(row.breakdowns)
           .filter(
             (key) =>

@@ -36,54 +36,14 @@ export type Officer = {
 type Placement = SourceReference & { position: number; clicks: number };
 export type Ranking = { windowEnd: string; placements: Placement[] };
 
-// Intake compares publisher attribution using the normalized coverage URL (ADR 0028).
-function publisherAddress(address: string) {
-  const url = new URL(address);
-  const host = url.hostname.toLowerCase().replace(/^www\./, "");
-  const query = new URLSearchParams(
-    [...url.searchParams].filter(
-      ([key]) => !/^(utm_|fbclid$|gclid$|mc_|igshid$|si$)/i.test(key),
-    ),
-  );
-  query.sort();
-  return (
-    host +
-    url.pathname.replace(/\/+$/, "") +
-    (query.size ? "?" + query.toString() : "")
-  );
-}
-
 export function selectCoverageLink(
   article: ReleaseArticle,
   assignments: Relationship[],
   officers: Map<string, Officer>,
 ) {
-  const candidates = assignments.map(({ occurrenceUrl }) => {
-    const occurrence =
-      article.occurrences[occurrenceUrl ?? article.preferredUrl];
-    if (!occurrence)
-      throw new Error(`No supporting occurrence for ${occurrenceUrl}`);
-    return occurrence;
-  });
-  const cited = new Set(
-    candidates.flatMap((copy) =>
-      copy.publisherAttribution && copy.publisherAttribution !== copy.url
-        ? [publisherAddress(copy.publisherAttribution)]
-        : [],
-    ),
-  );
-  const occurrence =
-    !candidates.length ||
-    candidates.some(({ url }) => url === article.preferredUrl)
-      ? article.occurrences[article.preferredUrl]
-      : candidates.sort(
-          (a, b) =>
-            Number(cited.has(publisherAddress(b.url))) -
-              Number(cited.has(publisherAddress(a.url))) ||
-            (a.domainRank ?? Infinity) - (b.domainRank ?? Infinity) ||
-            (a.publishedAt ?? "9999").localeCompare(b.publishedAt ?? "9999") ||
-            a.url.localeCompare(b.url),
-        )[0];
+  // The coverage_links row's own url names the copy shown; the site does not
+  // choose among occurrences.
+  const occurrence = article.occurrences[article.preferredUrl];
   if (!occurrence)
     throw new Error(`No preferred occurrence for ${article.preferredUrl}`);
   return {
@@ -131,18 +91,20 @@ export function releaseAliases(articles: Iterable<ReleaseArticle>) {
       keys.add(occurrence.sourceId);
     }
     if (!keys.size) continue;
+    // Only the article's own recorded source ID is an alias target; the site
+    // does not choose one among its occurrences.
     const target =
       article.namespace === "com/serpapi/landing-page-search" &&
       article.sourceId &&
       keys.has(article.sourceId)
         ? article.sourceId
-        : [...keys].sort()[0]!;
+        : null;
     for (const key of keys) {
       const owner = owners.get(key);
       if (owner && owner !== article)
         throw new Error("Publisher URL belongs to multiple articles: " + key);
       owners.set(key, article);
-      if (key !== target) aliases[key] = target;
+      if (target !== null && key !== target) aliases[key] = target;
     }
   }
   return { CoverageLink: aliases };

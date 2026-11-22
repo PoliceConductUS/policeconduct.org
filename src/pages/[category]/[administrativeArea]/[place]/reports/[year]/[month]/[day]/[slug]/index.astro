@@ -50,21 +50,6 @@ if (data.canonicalPath !== routePath) {
     `Report ${slug} route ${routePath} does not match its stored path ${data.canonicalPath}.`,
   );
 }
-const primaryAgency = data.officers[0]?.agency;
-if (!primaryAgency) {
-  throw new Error(`Report ${slug} is missing a primary agency.`);
-}
-const primaryAgencySlug = primaryAgency.slug as string | null;
-if (!primaryAgencySlug) {
-  throw new Error(`Report ${slug} primary agency is missing slug.`);
-}
-const primaryAgencyName = String(primaryAgency.name ?? "");
-const primaryAgencyPath = String(
-  (primaryAgency as { canonicalPath?: string }).canonicalPath || "",
-);
-if (!primaryAgencyPath) {
-  throw new Error(`Report ${slug} primary agency is missing a canonical path.`);
-}
 const facts = data.facts;
 // Native <input type="time"> submits 24-hour "HH:MM"; render it the way a
 // reader expects to see a clock time. Absent/unrecognized values render
@@ -314,12 +299,6 @@ const structuredData = {
           <dd>{reportAddress}</dd>
         </div>
       ) : null}
-      <div>
-        <dt>Agency</dt>
-        <dd>
-          <a href={primaryAgencyPath}>{primaryAgencyName}</a>
-        </dd>
-      </div>
       {facts.submitterRelationship ? (
         <div>
           <dt>Submitted by</dt>

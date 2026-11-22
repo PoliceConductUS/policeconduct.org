@@ -2,7 +2,6 @@
 import DataPanel from "#src/components/DataPanel.astro";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
-import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import TableScroll from "#src/components/TableScroll.astro";
 import PageShell from "#src/layouts/PageShell.astro";
@@ -24,12 +23,7 @@ const structuredData = buildWebPage({
   description: model.description,
   type: "CollectionPage",
 });
-const isFederalTopicPage =
-  /\/(personnel|reports|budget|civil-cases|liability-costs|outcomes-by-income)\/$/.test(
-    model.pagePath,
-  );
 const isOutcomesByIncomePage = model.pagePath.includes("/outcomes-by-income/");
-const outcomesByIncomeHref = `${model.pagePath}outcomes-by-income/`;
 const sampleRows = [
   { label: "Current", value: "--", width: 62 },
   { label: "Previous", value: "--", width: 46 },
@@ -89,21 +83,16 @@ const sampleRows = [
   ) : null}
 
   <div class="entity-chart-grid">
-    {!isFederalTopicPage ? (
-      <OutcomesByIncomePanel href={outcomesByIncomeHref} />
-    ) : null}
-    {isOutcomesByIncomePage ? (
-      <OutcomesByIncomePanel />
-    ) : (
-      model.charts.map((chartTitle) => (
-        <DataPanel title={chartTitle} description="Records for this view">
-          <SampleMeasurementChart
-            ariaLabel={`Sample ${chartTitle} chart`}
-            rows={sampleRows}
-          />
-        </DataPanel>
-      ))
-    )}
+    {isOutcomesByIncomePage
+      ? null
+      : model.charts.map((chartTitle) => (
+          <DataPanel title={chartTitle} description="Records for this view">
+            <SampleMeasurementChart
+              ariaLabel={`Sample ${chartTitle} chart`}
+              rows={sampleRows}
+            />
+          </DataPanel>
+        ))}
   </div>
 
   {model.isFieldOfficesTable ? (

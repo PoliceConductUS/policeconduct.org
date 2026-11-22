@@ -39,7 +39,6 @@ const arrestProfiles = await loadArrestProfilesForAgency(data.agency.id);
 const {
   agencyName,
   agencyState,
-  categorySlug,
   categoryLabel,
   agencyPath,
   administrativeArea,
@@ -55,7 +54,7 @@ const status = agencyStatusPresentation(
   data.agency.status,
   data.agency.status_date,
 );
-const pageTitle = `${agencyName}${status.prominence === "notice" ? ` — ${status.label}` : ""} | PoliceConduct.org`;
+const pageTitle = `${agencyName} | PoliceConduct.org`;
 const pageDescription = [
   `${agencyName} agency profile.`,
   status.summary,
@@ -110,7 +109,6 @@ const reportNewPrefillPayload = JSON.stringify({
   },
 } satisfies ReportNewPrefill);
 const addCivilCasePrefillPayload = JSON.stringify({
-  jurisdiction: categorySlug,
   defendants: agencyPrefillName,
   summary: `${agencyPrefillName} agency profile: ${agencyPath}`,
   links: [
@@ -125,7 +123,6 @@ const addCivilCasePrefillPayload = JSON.stringify({
 const suggestEditPrefillPayload = JSON.stringify({
   agencyPath,
   agencyName: agencyPrefillName,
-  jurisdiction: categorySlug,
   departmentHead: data.agency.contact_name || "",
   civilLitigation: civilLitigationSummary,
 });
@@ -150,17 +147,6 @@ const federalAgency = data.federalAgency
       path: `/federal/${data.federalAgency.slug}/`,
     }
   : null;
-const toDisplayName = (value: string) =>
-  value === value.toUpperCase()
-    ? value
-        .toLocaleLowerCase("en-US")
-        .replace(/\b[a-z]/g, (letter) => letter.toLocaleUpperCase("en-US"))
-    : value;
-const agencyDisplayName = toDisplayName(agencyName);
-const cityDisplayName = data.agency.city
-  ? toDisplayName(data.agency.city)
-  : null;
-
 const formatCount = (value: number) => value.toLocaleString("en-US");
 const formatDate = (value: string | Date) =>
   new Date(value).toLocaleDateString("en-US", {
@@ -173,9 +159,7 @@ const formatDate = (value: string | Date) =>
 const addressLine = [
   data.agency.address,
   [
-    [cityDisplayName, (agencyState || "").toUpperCase()]
-      .filter(Boolean)
-      .join(", "),
+    [data.agency.city, agencyState].filter(Boolean).join(", "),
     data.agency.zip_code || "",
   ]
     .filter(Boolean)
@@ -196,29 +180,14 @@ const volunteerHref = buildHelpCollectHref(
   "agency",
   agencySlugSegment,
 );
-// The headline personnel count is currently-serving officers; note any former
-// officers still on record (browsable via the roster's status filter). With
-// no current officers but former ones on record, say so plainly and link the
-// former count to the roster instead of asking for help collecting data.
-const personnelMeta =
-  counts.formerPersonnel > 0
-    ? `${formatCount(counts.formerPersonnel)} former on record`
-    : "Currently serving";
 const personnelCell =
-  counts.currentPersonnel > 0
+  counts.personnel > 0
     ? {
-        value: formatCount(counts.currentPersonnel),
-        meta: personnelMeta,
+        value: formatCount(counts.personnel),
         href: `${agencyPath}personnel/`,
         helpCollectHref: volunteerHref,
       }
-    : counts.formerPersonnel > 0
-      ? {
-          gloss: "No current personnel on record.",
-          helpCollectHref: `${agencyPath}personnel/`,
-          helpCollectLabel: `See ${formatCount(counts.formerPersonnel)} former on record →`,
-        }
-      : { helpCollectHref: volunteerHref };
+    : { helpCollectHref: volunteerHref };
 
 type RecentItem = {
   href: string;
@@ -302,29 +271,24 @@ const structuredData = {
   structuredData={structuredData}
   breadcrumbs={[
     { label: "Home", href: "/" },
-    { label: categoryLabel, href: `/${categorySlug}/` },
+    { label: categoryLabel, href: data.categoryPath },
     {
       label: administrativeArea,
-      href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+      href: data.administrativeAreaPath,
     },
     {
       label: placeLabel,
       href: placePath,
     },
-    { label: agencyDisplayName, href: agencyPath },
+    { label: agencyName, href: agencyPath },
   ]}
   eyebrow="Department profile"
-  heading={agencyDisplayName}
+  heading={agencyName}
 >
   <PrefillBootstrap />
   <Fragment slot="header">
     {status.label || status.dateLabel ? (
-      <div
-        class:list={[
-          "agency-status",
-          { "agency-status--notice": status.prominence === "notice" },
-        ]}
-      >
+      <div class="agency-status">
         {status.label ? (
           <p>
             <strong>Status: {status.label}</strong>
@@ -352,22 +316,17 @@ const structuredData = {
         <p class="entity-contact-links">
           {data.agencyPhones.map(
             (phone: { phone_number: string; description?: string | null }) => {
-              const label = (phone.description || "").trim();
-              const showLabel = label && label.toLowerCase() !== "phone";
-              // A fax number is not something to dial from a phone.
-              if (label.toLowerCase() === "fax") {
-                return <span>{`${label}: ${phone.phone_number}`}</span>;
-              }
+              const label = phone.description;
               return (
                 <a
                   href={`tel:${phone.phone_number}`}
                   aria-label={
-                    showLabel
+                    label
                       ? `${label}: ${phone.phone_number}`
                       : phone.phone_number
                   }
                 >
-                  {showLabel
+                  {label
                     ? `${label}: ${phone.phone_number}`
                     : phone.phone_number}
                 </a>
@@ -378,7 +337,7 @@ const structuredData = {
       ) : null}
       {data.agency.contact_name ? (
         <p class="entity-contact-person">
-          Contact name: {toDisplayName(data.agency.contact_name)}
+          Contact name: {data.agency.contact_name}
         </p>
       ) : null}
       {contactEmails.length ? (
@@ -460,7 +419,7 @@ const structuredData = {
     </ul>
   </aside>
 
-  <StatStrip ariaLabel={`${agencyDisplayName} record totals`} columns="five">
+  <StatStrip ariaLabel={`${agencyName} record totals`} columns="five">
     <StatCell
       label="Personnel"
       actionLabel="View personnel →"
@@ -516,7 +475,6 @@ const structuredData = {
           firstMonth={profile.coverage.firstMonth}
           lastMonth={profile.coverage.lastMonth}
           source={profile.coverage.source}
-          scope="agency"
         />
       ),
   )}
@@ -573,11 +531,5 @@ const structuredData = {
   .agency-status p {
     margin: 0;
     color: inherit;
-  }
-
-  .agency-status--notice {
-    padding: 0.75rem 1rem;
-    background: var(--ipc-color-ink);
-    color: var(--ipc-color-paper-raised);
   }
 </style>

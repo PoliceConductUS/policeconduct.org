@@ -68,8 +68,6 @@ const fullName = (row: {
   suffix?: string | null;
 }) => [row.first_name, row.last_name, row.suffix].filter(Boolean).join(" ");
 
-const scopedAgencyPredicate = "lp.path like $1 || '%'";
-
 const loadCivilCaseRecords = async (
   model: CivicIndexModel,
 ): Promise<CivicTopicRecords> => {
@@ -78,9 +76,11 @@ const loadCivilCaseRecords = async (
       with scoped_agencies as (
         select a.id
         from public.agency a
-        join public.location_path lp
-          on lp.location_path_id = a.location_path_id
-        where ${scopedAgencyPredicate}
+        join public.location_path_closure closure
+          on closure.descendant_location_path_id = a.location_path_id
+        join public.location_path scope_location
+          on scope_location.location_path_id = closure.ancestor_location_path_id
+        where scope_location.path = $1
       ),
       scoped_cases as (
         select distinct cco.civil_case_id as id

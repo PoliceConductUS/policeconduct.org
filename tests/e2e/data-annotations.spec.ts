@@ -80,7 +80,7 @@ test("agency findings without a public agency page stay in the index without a r
       const entries = await collectDataAnnotations(client);
       const unlisted = (
         await client.query(
-          `select a.id, count(*)::int as count from public.agency a join public.data_annotation da on da.subject_kind='Agency' and da.subject_id=a.id and da.status='active' where not exists (select 1 from public.agency_personnel ap where ap.agency_id=a.id and ${currentAssignmentSql("ap")}) group by a.id`,
+          `select a.id, count(*)::int as count from public.agency a join public.data_annotation da on da.subject_kind='Agency' and da.subject_id=a.id and da.status='active' where not exists (select 1 from public.build_page_payload p where p.page_type='agency' and p.entity_id=a.id) group by a.id`,
         )
       ).rows;
       for (const agency of unlisted) {
@@ -194,12 +194,10 @@ test("active native annotations render in the public index and CSV", async ({
     (entry) => entry.field === "location_path_id",
   );
   expect(locations.length).toBeGreaterThan(0);
-  expect(exported).not.toContain("location_path_id");
-  expect(exported).toContain("Administrative area");
+  expect(exported).toContain("location_path_id");
   for (const entry of locations) {
     expect(exported).not.toContain(String(entry.replacement_value));
   }
-  await expect(page.locator("main")).not.toContainText("location_path_id");
 });
 
 const renderAnnotationFixture = async (
@@ -562,7 +560,7 @@ test("canonical record pages explicitly render their collected source notes", as
   }
 });
 
-test("location findings link only to built location pages or the complete data-note index", async () => {
+test("location findings link only to built location pages and otherwise carry no link", async () => {
   const { collectDataAnnotations } =
     await import("../../src/lib/data/data-annotations");
   await withDb(async (client) => {
@@ -581,13 +579,9 @@ test("location findings link only to built location pages or the complete data-n
       ).rows.map((row) => row.path),
     );
     for (const entry of locations) {
-      expect(
-        entry.record_url === "/data-annotations/" ||
-          paths.has(entry.record_url),
-      ).toBe(true);
+      expect(entry.record_url === null || paths.has(entry.record_url)).toBe(
+        true,
+      );
     }
-    expect(
-      locations.some((entry) => entry.record_url === "/data-annotations/"),
-    ).toBe(true);
   });
 });

@@ -10,14 +10,14 @@ Static Astro page for the route `/personnel/`. It shows a count of listed person
 - Loads personnel summaries with `loadPersonnelSummaries()` from `src/lib/data/summaries.js`. `[index.astro:const personnelRows = await loadPersonnelSummaries();]`
 - Loads federal agency summaries with `loadFederalAgencySummaries()` from `src/lib/data/federal-agencies.js`. `[index.astro:const federalAgencies = await loadFederalAgencySummaries();]`
 - Builds one stat per entry of `US_STATE_TILES` (from `src/lib/geo/states.js`): the state code, a count and a link. `[index.astro:const stateStats = US_STATE_TILES.map((state) => {]`
-- A state's count is the number of personnel rows whose `agencyState`, upper-cased, equals the state code. `[index.astro:(person) => person.agencyState?.toUpperCase() === state.code,]`
+- A state's count comes from `loadPersonnelCountsByStatePath()`: distinct people with any assignment at an agency located within the state, through `public.location_path_closure`; a person with assignments in two states counts in both. `[index.astro:personnelCountsByStatePath.get(]`
 - A state's link is `/{lowercase state code}/`. ``[index.astro:href: `/${state.code.toLowerCase()}/`,]``
 - The header slot shows the total personnel count. `[index.astro:{totalPersonnel} personnel]`
 - The header slot shows the number of states with at least one person. `[index.astro:{statesWithPersonnel} states covered]`
 - Structured data is built with `buildWebPage` from `src/lib/structured-data.js` as a `CollectionPage` named "Personnel". `[index.astro:type: "CollectionPage",]`
 - The structured data item list covers only the first 25 personnel rows. `[index.astro:const personnelItems = personnelRows.slice(0, 25).map((person, index) => ({]`
 - Each item is a `Person` with a name built from `firstName`, `lastName` and optional `nameSuffix`, and the URL `/personnel/{slug}/`. ``[index.astro:url: new URL(`/personnel/${person.slug}/`, siteUrl).toString(),]``
-- A `Person` item gets `worksFor` (a `GovernmentOrganization` with the agency name) only when the row has `agencyName`. `[index.astro:"@type": "GovernmentOrganization",]`
+- A `Person` item has `name` and `url` only; it carries no `worksFor`. ``[index.astro:url: new URL(`/personnel/${person.slug}/`, siteUrl).toString(),]``
 - The item list from `buildItemList` is attached as `mainEntity` only when it is not empty. `[index.astro:structuredData.mainEntity = personnelItemList;]`
 - `PageShell` (`src/layouts/PageShell.astro`) receives `title`, `description`, `pagePath`, `canonicalUrl`, `structuredData`, `breadcrumbs`, `heading` and `lede`. `[index.astro:canonicalUrl={pagePath}]`
 - `PageShell` prop `title` is "Personnel". `[index.astro:title="Personnel"]`

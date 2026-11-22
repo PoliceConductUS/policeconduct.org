@@ -1,5 +1,4 @@
 import { buildBeatMap, type BeatMap } from "./arrest-beats.js";
-import { incomeRows, type IncomeEvidence } from "./arrest-income.js";
 import { withDb } from "#src/lib/db.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
 
@@ -21,7 +20,6 @@ export type ArrestProfileRecord = {
       Record<string, number>
     >;
   beatMap?: BeatMap;
-  incomeRows?: { label: string; count: number; agencyCount: number }[];
   updatedAt: string;
 };
 export type ArrestProfile = ArrestProfileRecord & { assignmentId: string };
@@ -45,49 +43,7 @@ export const loadArrestProfilesForPersonnel = async (
     const map = new Map<string, ArrestProfile[]>();
     for (const row of rows) {
       const profiles = map.get(row.personnel_id) ?? [];
-      let income;
-      let beatMap;
-      if (
-        Object.hasOwn(row.breakdowns, "by_income_status") ||
-        Object.hasOwn(row.breakdowns, "by_arrest_beat")
-      ) {
-        const candidates = (
-          await loadArrestProfilesForAgency(row.agency_id)
-        ).filter(
-          (agency) =>
-            agency.coverage.source === row.coverage.source &&
-            agency.coverage.firstMonth <= row.coverage.firstMonth &&
-            agency.coverage.lastMonth >= row.coverage.lastMonth,
-        );
-        if (candidates.length !== 1)
-          throw new Error(
-            `Expected one agency comparison for arrest profile ${row.id}; found ${candidates.length}`,
-          );
-        if (Object.hasOwn(row.breakdowns, "by_arrest_beat"))
-          beatMap = buildBeatMap(
-            candidates[0].breakdowns.arrest_beat_boundaries,
-            row.breakdowns.by_arrest_beat,
-            row.coverage.totalArrests,
-          );
-        if (Object.hasOwn(row.breakdowns, "by_income_status")) {
-          income = incomeRows(
-            row.breakdowns,
-            candidates[0].breakdowns as unknown as IncomeEvidence,
-            row.coverage.firstMonth,
-            row.coverage.lastMonth,
-          );
-          if (
-            income.reduce((sum, item) => sum + item.count, 0) !==
-            row.coverage.totalArrests
-          )
-            throw new Error(
-              `Income counts do not cover all arrests in profile ${row.id}`,
-            );
-        }
-      }
       profiles.push({
-        beatMap,
-        incomeRows: income,
         id: row.id,
         assignmentId: row.agency_personnel_id,
         agency: {

@@ -72,10 +72,6 @@ const createFixture = async (
     new URL("../src/lib/pagination.ts", import.meta.url),
     path.join(cwd, "src/lib/pagination.ts"),
   );
-  await copyFile(
-    new URL("../src/lib/data/annotation-access.js", import.meta.url),
-    path.join(cwd, "src/lib/data/annotation-access.js"),
-  );
   await writeFile(path.join(cwd, "package.json"), '{"type":"module"}');
   await writeFile(
     path.join(cwd, "src/lib/geo/states.ts"),
@@ -103,22 +99,13 @@ const createFixture = async (
     ],
     reports,
     [{ state: "tx" }, { state: "dc" }, { state: "ak" }],
-    [
-      { category: "tx", total: 100 },
-      { category: "ak", total: 100 },
-    ],
     [{ slug: "multi-agency-officer" }, { slug: "unbuilt-officer" }],
   ];
   await writeFile(
     path.join(cwd, "src/lib/db.js"),
     `const responses = ${JSON.stringify(responses)};
      export const withDb = (run) => run({query: async (sql) => {
-       if (sql.includes("active_assignments")
-           && (!/join public.location_path lp\\s+on lp.location_path_id = a.location_path_id/.test(sql)
-             || /a\\.state/.test(sql))) {
-         throw new Error("Personnel pagination categories must come from the agency location_path join.");
-       }
-       if (responses.length >= 6 && (!sql.includes("lp.location_path_id = a.location_path_id")
+       if (responses.length >= 5 && (!sql.includes("lp.location_path_id = a.location_path_id")
            || !sql.includes("lp.path || a.slug || '/' as canonical_path")
            || !sql.includes("bpp.entity_id = a.id") || /bpp\\.path|payload->/.test(sql))) {
          throw new Error("Agency route identity must use the agency location join and stored slug; projections only select eligibility.");
@@ -185,7 +172,6 @@ test("category redirects require built destinations without hiding missing entit
   );
   for (const from of [
     "/personnel/ak/",
-    "/personnel/ak/page/2/",
     "/personnel/ak/page/*",
     "/civil-litigation/ak/",
     "/civil-litigation/ak/page/*",
@@ -200,7 +186,6 @@ test("category redirects require built destinations without hiding missing entit
   }
   for (const from of [
     "/personnel/tx/",
-    "/personnel/tx/page/2/",
     "/personnel/tx/page/*",
     "/personnel/federal/",
     "/civil-litigation/tx/",

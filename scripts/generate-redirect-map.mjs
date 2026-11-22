@@ -1,5 +1,4 @@
 import { mergeWorkspaceRedirects } from "./workspace-redirects.mjs";
-import { currentAssignmentSql } from "../src/lib/data/annotation-access.js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { statSync } from "node:fs";
 import path from "node:path";
@@ -127,36 +126,6 @@ const generatedRedirects = await withDb(async (client) => {
           on lp.location_path_id = a.location_path_id
         where split_part(lp.path, '/', 2) is not null
         order by lower(split_part(lp.path, '/', 2))
-      `,
-    )
-  ).rows;
-
-  // Mirrors the per-officer "most recent active assignment" grouping done by
-  // loadPersonnelSummaries() (src/lib/data/personnel.ts): for each officer,
-  // pick their active (end_date is null) agency assignment with the latest
-  // start_date, then bucket by the state segment of that agency's joined
-  // location_path. Reimplemented as SQL
-  // here (rather than imported) because personnel.ts pulls in TS modules
-  // that resolve via Astro/tsconfig path aliases, which plain node can't
-  // resolve when this script runs standalone.
-  const personnelCategoryCounts = (
-    await client.query(
-      `
-        with active_assignments as (
-          select distinct on (ao.personnel_id)
-            ao.personnel_id,
-            lower(split_part(lp.path, '/', 2)) as category
-          from public.agency_personnel ao
-          join public.agency a on a.id = ao.agency_id
-          join public.location_path lp
-            on lp.location_path_id = a.location_path_id
-          where ${currentAssignmentSql("ao")}
-          order by ao.personnel_id, ao.start_date desc
-        )
-        select category, count(*)::int as total
-        from active_assignments
-        group by category
-        order by category
       `,
     )
   ).rows;
@@ -413,19 +382,6 @@ const generatedRedirects = await withDb(async (client) => {
     // generated a redirect stub for every pagination page 2..N per
     // category, where N is derived from the personnel count for that
     // category chunked by PAGE_SIZE.
-    ...personnelCategoryCounts.flatMap(({ category, total }) => {
-      const pageCount = Math.ceil(Number(total) / PAGE_SIZE);
-      const pages = [];
-      for (let page = 2; page <= pageCount; page += 1) {
-        pages.push({
-          from: normalizePath(`/personnel/${category}/page/${page}/`),
-          to: normalizePath(`/${category}/`),
-          status: 301,
-          source: "personnel pagination route retired",
-        });
-      }
-      return pages.filter(hasBuiltDestination);
-    }),
     ...multiAgencyPersonnelRows
       .map(({ slug }) => ({
         from: normalizePath(`/personnel/${slug}/agencies/`),

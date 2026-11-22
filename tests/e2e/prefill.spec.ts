@@ -195,8 +195,6 @@ test.beforeAll(async () => {
       if ("civilLitigation" in entry.payload) {
         entry.payload.civilLitigation = `${record.title} — ${record.cause_number} — ${record.court} — /civil-cases/${record.slug}/`;
       }
-      if ("currentAgencyCity" in entry.payload)
-        entry.payload.currentAgencyCity = record.city;
     }
   } finally {
     await client.end();
@@ -207,10 +205,9 @@ const profileSenderCases: SenderCase[] = [
   {
     name: "submit report",
     route: "/personnel/james-markham-v-7635c7/",
-    expectedFields: ["officer.department", "officer.name"],
+    expectedFields: ["officer.name"],
     payload: {
       officer: {
-        department: "IRVING POLICE DEPARTMENT",
         name: "James Markham V",
       },
     },
@@ -220,12 +217,10 @@ const profileSenderCases: SenderCase[] = [
   {
     name: "add civil case",
     route: "/personnel/james-markham-v-7635c7/",
-    expectedFields: ["defendants", "jurisdiction", "links", "summary"],
+    expectedFields: ["defendants", "links", "summary"],
     payload: {
-      jurisdiction: "tx",
-      defendants: "James Markham V\nIRVING POLICE DEPARTMENT",
-      summary:
-        "James Markham V profile: /personnel/james-markham-v-7635c7/\nCurrent agency: IRVING POLICE DEPARTMENT",
+      defendants: "James Markham V",
+      summary: "James Markham V profile: /personnel/james-markham-v-7635c7/",
       links:
         "/personnel/james-markham-v-7635c7/\n/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
     },
@@ -236,14 +231,9 @@ const profileSenderCases: SenderCase[] = [
     name: "submit past employer",
     route: "/personnel/james-markham-v-7635c7/",
     expectedFields: [
-      "badgeNumber",
       "civilLitigation",
-      "currentAgency",
-      "currentAgencyCity",
-      "currentAgencyState",
       "firstName",
       "lastName",
-      "pastEmployers",
       "reportLinks",
       "suffix",
     ],
@@ -251,11 +241,6 @@ const profileSenderCases: SenderCase[] = [
       firstName: "James",
       lastName: "Markham",
       suffix: "V",
-      badgeNumber: "",
-      currentAgency: "IRVING POLICE DEPARTMENT",
-      currentAgencyCity: "",
-      currentAgencyState: "TX",
-      pastEmployers: "",
       civilLitigation: "",
       reportLinks:
         "/tx/dallas-county/irving/reports/2023/12/04/first-amendment-retaliation-arrest-2c545f/",
@@ -266,20 +251,10 @@ const profileSenderCases: SenderCase[] = [
   {
     name: "suggest edit",
     route: "/personnel/james-markham-v-7635c7/",
-    expectedFields: [
-      "badgeNumber",
-      "civilLitigation",
-      "currentEmployer",
-      "officerName",
-      "officerPath",
-      "pastEmployers",
-    ],
+    expectedFields: ["civilLitigation", "officerName", "officerPath"],
     payload: {
       officerPath: "/personnel/james-markham-v-7635c7/",
       officerName: "James Markham V",
-      badgeNumber: "",
-      currentEmployer: "IRVING POLICE DEPARTMENT",
-      pastEmployers: "",
       civilLitigation: "",
     },
     locator: { kind: "role", value: "Suggest edit" },
@@ -324,9 +299,8 @@ const profileSenderCases: SenderCase[] = [
   {
     name: "add civil case",
     route: "/tx/dallas-county/irving/irving-police-department-049f9a/",
-    expectedFields: ["defendants", "jurisdiction", "links", "summary"],
+    expectedFields: ["defendants", "links", "summary"],
     payload: {
-      jurisdiction: "tx",
       defendants: "IRVING POLICE DEPARTMENT",
       summary:
         "IRVING POLICE DEPARTMENT agency profile: /tx/dallas-county/irving/irving-police-department-049f9a/",
@@ -357,7 +331,6 @@ const profileSenderCases: SenderCase[] = [
       "agencyPath",
       "civilLitigation",
       "departmentHead",
-      "jurisdiction",
     ],
     locator: { kind: "role", value: "Suggest edit" },
     targetPath: "/agency/suggest-edit/",

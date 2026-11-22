@@ -12,21 +12,14 @@ import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
-import {
-  selectHeadlineAssignment,
-  getAssignmentStatus,
-  formatAssignmentDate,
-} from "#src/lib/data/assignment-status.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
-import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
+import { metricVisuals } from "#src/lib/metric-vocabulary.js";
 import { getPersonnelPhotoById } from "#src/lib/personnel-photos.js";
-import { requireAgencyCanonicalPath } from "#src/lib/data/location-paths.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import LicenseTimeline from "#src/components/LicenseTimeline.astro";
 import PersonnelDiscipline from "#src/components/PersonnelDiscipline.astro";
 import PersonnelDeceasedNotice from "#src/components/PersonnelDeceasedNotice.astro";
-import ArrestBeatMap from "#src/components/ArrestBeatMap.astro";
 import PersonnelArrestProfiles from "#src/components/PersonnelArrestProfiles.astro";
 import { loadArrestProfilesForPersonnel } from "#src/lib/data/arrest-profiles.js";
 import PersonnelEducation from "#src/components/PersonnelEducation.astro";
@@ -37,7 +30,6 @@ import {
 import { loadEducationForPersonnel } from "#src/lib/data/personnel-education.js";
 import {
   buildContentPageNode,
-  buildGovernmentOrganizationNode,
   buildPersonNode,
   buildPublisherOrganization,
   buildWebSite,
@@ -178,40 +170,6 @@ const assignmentHistory = history.map((entry) => ({
   ...entry,
   agency: agenciesById[entry.agency_id],
 }));
-// Which assignment this page headlines is decided by `end_date`, never by
-// array position. `history[history.length - 1]` used to win here, which
-// published present-tense employment for assignments our own source records as
-// ended (INS-63 / INS-75).
-const headline = selectHeadlineAssignment(history);
-const currentAssignment = headline.assignment;
-if (!currentAssignment) {
-  throw new Error(
-    `Personnel ${data.officer.slug} is missing required agency assignment history.`,
-  );
-}
-const hasCurrentAssignment = headline.isCurrent;
-const headlineEndDateDisplay =
-  headline.isEnded && headline.endDate
-    ? formatAssignmentDate(headline.endDate)
-    : null;
-const currentBadge = currentAssignment.badge_number || null;
-const currentTitle =
-  typeof currentAssignment.title === "string"
-    ? currentAssignment.title.trim()
-    : "";
-const currentAgency = agenciesById[currentAssignment.agency_id];
-if (!currentAgency) {
-  throw new Error(
-    `Personnel ${data.officer.slug} assignment ${currentAssignment.id} is missing required agency ${currentAssignment.agency_id}.`,
-  );
-}
-const currentAgencyPrefillName = currentAgency.name.toLocaleUpperCase("en-US");
-if (!currentTitle) {
-  throw new Error(
-    `Personnel ${data.officer.slug} is missing required title on agency_personnel ${currentAssignment.id}`,
-  );
-}
-
 const civilCasesWithPaths = data.civilCases.map(
   (caseItem: {
     id: string;
@@ -268,49 +226,15 @@ const deceasedOnDisplay = deceasedOnValue
   ? formatShortDate(String(deceasedOnValue))
   : null;
 const deceasedPublicMessage =
-  (typeof data.officer.deceased_message === "string"
-    ? data.officer.deceased_message.trim()
-    : "") ||
-  (deceasedOnDisplay
-    ? `Reported deceased on ${deceasedOnDisplay}.`
-    : "This individual is reported deceased.");
-const assignmentStatusLabel = hasCurrentAssignment
-  ? "Current agency"
-  : headline.hasUncertainHistory
-    ? "Recorded agency"
-    : "Most recent agency";
-const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${hasCurrentAssignment ? currentAgency.name : `${headline.hasUncertainHistory ? "Recorded" : "Most recent"}: ${currentAgency.name}`} | PoliceConduct.org`;
-const pageDescription = isDeceased
-  ? `${officerName} personnel profile with agency assignments, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
-  : // The snippet is the claim most readers see, so the qualifier and the end
-    // date have to survive into it rather than only appearing on the page.
-    `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency.name}${
-      !hasCurrentAssignment && headlineEndDateDisplay
-        ? ` (assignment ended ${headlineEndDateDisplay})`
-        : ""
-    }, agency assignments, public reports, coverage, and civil litigation records.`;
-const pastEmployerSummary = assignmentHistory
-  .filter((entry) => getAssignmentStatus(entry).isEnded)
-  .map((entry) => ({
-    ...entry,
-  }))
-  .map((entry) => {
-    const segments = [entry.agency.name];
-    const dateRange = [
-      entry.start_date ? formatAssignmentDate(entry.start_date) : null,
-      entry.end_date != null ? formatAssignmentDate(entry.end_date) : null,
-    ]
-      .filter(Boolean)
-      .join(" to ");
-    if (dateRange) {
-      segments.push(dateRange);
-    }
-    if (entry.badge_number) {
-      segments.push(`Badge ${entry.badge_number}`);
-    }
-    return segments.filter(Boolean).join(" — ");
-  })
-  .join("\n");
+  typeof data.officer.deceased_message === "string"
+    ? data.officer.deceased_message
+    : null;
+const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | PoliceConduct.org`;
+const pageDescription = `${officerName} personnel profile with agency assignments, public reports, coverage, and civil litigation records${
+  isDeceased && deceasedOnDisplay
+    ? `; reported deceased on ${deceasedOnDisplay}`
+    : ""
+}.`;
 const civilLitigationSummary = civilCasesWithPaths
   .map((caseItem) => {
     const segments = [
@@ -325,17 +249,13 @@ const civilLitigationSummary = civilCasesWithPaths
 const reportLinksSummary = reportItems.map((report) => report.url).join("\n");
 const reportNewPrefillPayload = JSON.stringify({
   officer: {
-    department: currentAgencyPrefillName,
     name: officerName,
   },
 } satisfies ReportNewPrefill);
 const addCivilCaseHref = "/civil-cases/new/";
 const addCivilCasePrefillPayload = JSON.stringify({
-  jurisdiction: String(currentAgency.state || "").toLowerCase(),
-  defendants: [officerName, currentAgencyPrefillName]
-    .filter(Boolean)
-    .join("\n"),
-  summary: `${officerName} profile: ${officerPath}\n${assignmentStatusLabel}: ${currentAgencyPrefillName}`,
+  defendants: officerName,
+  summary: `${officerName} profile: ${officerPath}`,
   links: [officerPath, ...reportItems.slice(0, 3).map((report) => report.url)]
     .filter(Boolean)
     .join("\n"),
@@ -345,11 +265,6 @@ const pastEmployerPrefillPayload = JSON.stringify({
   firstName: data.officer.first_name || "",
   lastName: data.officer.last_name || "",
   suffix: data.officer.suffix || "",
-  badgeNumber: currentBadge || "",
-  currentAgency: hasCurrentAssignment ? currentAgencyPrefillName : "",
-  currentAgencyCity: hasCurrentAssignment ? currentAgency.city || "" : "",
-  currentAgencyState: hasCurrentAssignment ? currentAgency.state || "" : "",
-  pastEmployers: pastEmployerSummary,
   civilLitigation: civilLitigationSummary,
   reportLinks: reportLinksSummary,
 });
@@ -357,9 +272,6 @@ const suggestEditHref = "/personnel/suggest-edit/";
 const suggestEditPrefillPayload = JSON.stringify({
   officerPath,
   officerName,
-  badgeNumber: currentBadge || "",
-  currentEmployer: hasCurrentAssignment ? currentAgencyPrefillName : "",
-  pastEmployers: pastEmployerSummary,
   civilLitigation: civilLitigationSummary,
 });
 const claimProfileHref = "/about/contact/";
@@ -372,26 +284,9 @@ const personnelPhoto = await getPersonnelPhotoById(data.officer.id);
 const personnelImageSrc = personnelPhoto || "/img/personnel/default.webp";
 const hasPersonnelPhoto = Boolean(personnelPhoto);
 const civilCaseCount = data.civilCases.length;
-const activeCivilCaseCount = civilCasesWithPaths.filter(
-  (caseItem) => !caseItem.date_terminated,
-).length;
 const associatedAgencyCount = new Set(
   assignmentHistory.map((entry) => entry.agency_id),
 ).size;
-const currentAgencyPath =
-  currentAgency.page_type === "agency"
-    ? requireAgencyCanonicalPath(currentAgency)
-    : null;
-const currentAgencyLocation = [currentAgency.city, currentAgency.state]
-  .filter(Boolean)
-  .join(", ");
-const statusLabel = isDeceased
-  ? "Deceased"
-  : hasCurrentAssignment
-    ? "Active"
-    : headline.isEnded && !headline.hasUncertainHistory
-      ? "Former"
-      : "Status uncertain";
 const formatCount = (value: number) =>
   new Intl.NumberFormat("en-US").format(value);
 const unavailableValue = "--";
@@ -425,10 +320,9 @@ const personnelMetricCards: MetricCardItem[] = [
         }
       : {}),
     accent: metricVisuals.civilCases.accent,
-    detail: metricLabels.activeTotal,
     icon: metricVisuals.civilCases.icon,
     label: metricVisuals.civilCases.label,
-    value: `${formatCount(activeCivilCaseCount)} / ${formatCount(civilCaseCount)}`,
+    value: formatCount(civilCaseCount),
   },
   {
     accent: metricVisuals.liabilityCosts.accent,
@@ -471,16 +365,6 @@ const personnelMetricCards: MetricCardItem[] = [
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(officerPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
-const agencyUrl = currentAgencyPath
-  ? new URL(currentAgencyPath, siteUrl).toString()
-  : null;
-const organization = agencyUrl
-  ? buildGovernmentOrganizationNode({
-      siteUrl,
-      url: agencyUrl,
-      name: currentAgency.name,
-    })
-  : null;
 const person = buildPersonNode({
   siteUrl,
   url: pageUrl,
@@ -490,17 +374,6 @@ const person = buildPersonNode({
     : undefined,
   mainEntityOfPageId: profilePageId,
   deathDate: isDeceased ? String(deceasedOnValue) : undefined,
-  // `worksFor` is a present-tense employment assertion, so it is emitted only
-  // for an assignment our source still records as open. For an ended
-  // association the organization node stays in the graph (the page links to
-  // the agency, and that association is real) but no employment edge is made
-  // to it — a crawler that flattens the graph must not be able to read
-  // "currently employed by" off a separation we already hold. Encoding it as
-  // `worksFor` → `OrganizationRole` with an `endDate` was considered and
-  // rejected: consumers routinely flatten the Role wrapper, which would
-  // reintroduce exactly the false claim this fixes.
-  worksForId:
-    organization && hasCurrentAssignment ? organization["@id"] : undefined,
 });
 const structuredData = {
   "@context": "https://schema.org",
@@ -517,7 +390,6 @@ const structuredData = {
       dateModified: String(data.officer.updated_at),
     }),
     buildPublisherOrganization(siteUrl),
-    ...(organization ? [organization] : []),
     person,
   ],
 };
@@ -541,24 +413,6 @@ const structuredData = {
     <div class="personnel-profile-hero">
       <div class="personnel-profile-title">
         <h1 class="ipc-page-title">{officerName}</h1>
-        <p class="personnel-current-line">
-          {assignmentStatusLabel}:{" "}
-          {currentAgencyPath ? (
-            <a href={currentAgencyPath}>{currentAgency.name}</a>
-          ) : (
-            currentAgency.name
-          )}
-          <span aria-hidden="true"> · </span>
-          {currentAgencyLocation}
-          {!hasCurrentAssignment && headlineEndDateDisplay ? (
-            <Fragment>
-              <span aria-hidden="true"> · </span>
-              <span class="personnel-assignment-ended">
-                assignment ended {headlineEndDateDisplay}
-              </span>
-            </Fragment>
-          ) : null}
-        </p>
         <p class="personnel-profile-note">
           Combined career data aggregated across all known agencies.
         </p>
@@ -600,34 +454,6 @@ const structuredData = {
       <aside class="personnel-profile-aside" aria-label="Personnel summary">
         <dl>
           <div>
-            <dt>Status</dt>
-            <dd>
-              <span class="personnel-status-pill">{statusLabel}</span>
-            </dd>
-          </div>
-          {currentBadge ? (
-            <div>
-              <dt>Badge Number</dt>
-              <dd>{currentBadge}</dd>
-            </div>
-          ) : null}
-          <div>
-            <dt>{assignmentStatusLabel}</dt>
-            <dd>
-              {currentAgencyPath ? (
-                <a href={currentAgencyPath}>{currentAgency.name}</a>
-              ) : (
-                currentAgency.name
-              )}
-            </dd>
-          </div>
-          {!hasCurrentAssignment && headlineEndDateDisplay ? (
-            <div>
-              <dt>Assignment ended</dt>
-              <dd>{headlineEndDateDisplay}</dd>
-            </div>
-          ) : null}
-          <div>
             <dt>Updated</dt>
             <dd>{formatShortDate(data.officer.updated_at)}</dd>
           </div>
@@ -640,19 +466,6 @@ const structuredData = {
 
   <div class="personnel-section-grid">
     <PersonnelArrestProfiles profiles={arrestProfiles} />
-    {arrestProfiles.map(
-      (profile) =>
-        profile.beatMap && (
-          <ArrestBeatMap
-            data={profile.beatMap}
-            agencyName={profile.agency.name}
-            firstMonth={profile.coverage.firstMonth}
-            lastMonth={profile.coverage.lastMonth}
-            source={profile.coverage.source}
-            scope="personnel"
-          />
-        ),
-    )}
     <CoverageLinks links={coverageLinks} />
     {licensing.licenses.length ? (
       <section class="personnel-panel personnel-panel-wide">
@@ -1044,20 +857,6 @@ const structuredData = {
     margin: 0;
   }
 
-  .personnel-current-line {
-    color: var(--ipc-color-ink);
-    font-size: 0.95rem;
-    font-weight: 750;
-    line-height: 1.45;
-    margin: 0.7rem 0 0;
-  }
-
-  /* The separation date is part of the employment claim, not a footnote to it,
-     so it keeps the headline's weight instead of being de-emphasised. */
-  .personnel-assignment-ended {
-    white-space: nowrap;
-  }
-
   .personnel-profile-note {
     color: var(--ipc-color-ink-soft);
     font-size: 0.93rem;
@@ -1065,7 +864,6 @@ const structuredData = {
     margin: 0.7rem 0 0;
   }
 
-  .personnel-current-line a,
   .personnel-profile-aside a {
     color: var(--ipc-color-teal);
     font-weight: 750;

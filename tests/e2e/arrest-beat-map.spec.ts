@@ -154,7 +154,7 @@ test("map shows permanent beat names/counts and preserves a no-JavaScript count 
       11,
     );
     const css = await readFile("node_modules/leaflet/dist/leaflet.css", "utf8");
-    const html = `<style>:root{--ipc-color-teal:#006b68;--ipc-color-paper:#fff;--ipc-color-rule:#aaa;--ipc-color-ink:#222} ${css} ${compiled.css.join("\n")}</style>${await container.renderToString(component, { props: { data, agencyName: "Example agency", firstMonth: "2024-01", lastMonth: "2024-12", source: "Example source", scope: "personnel" } })}`;
+    const html = `<style>:root{--ipc-color-teal:#006b68;--ipc-color-paper:#fff;--ipc-color-rule:#aaa;--ipc-color-ink:#222} ${css} ${compiled.css.join("\n")}</style>${await container.renderToString(component, { props: { data, agencyName: "Example agency", firstMonth: "2024-01", lastMonth: "2024-12", source: "Example source" } })}`;
     page.on("pageerror", (error) => {
       throw error;
     });

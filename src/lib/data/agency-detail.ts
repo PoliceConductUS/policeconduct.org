@@ -1,14 +1,8 @@
-import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
+import { groupBy, mapBy } from "#src/lib/data.js";
 import { withDb } from "#src/lib/db.js";
-import { US_STATE_TILES } from "#src/lib/geo/states.js";
-import { isEndedAssignment, isCurrentAssignment } from "./assignment-status.js";
 import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
-import { normalizeLicenseStatus, normalizeLicenseType } from "./licensing.js";
-import {
-  requireAgencyCanonicalPath,
-  requireAgencyStateSlug,
-} from "./location-paths.js";
+import { requireAgencyCanonicalPath } from "./location-paths.js";
 
 export type AgencyScopedTopicKind = "personnel" | "reports" | "civil-cases";
 
@@ -205,17 +199,20 @@ const loadAgencyRows = async (agencyId: string) =>
             a.status_date::text as status_date,
             lp.path || a.slug || '/' as canonical_path,
             lp.path as location_path,
-            split_part(lp.path, '/', 2) as state,
             area_lp.display_name as administrative_area,
-            split_part(lp.path, '/', 3) as location_administrative_area_slug,
-            lp.display_name as city,
-            split_part(lp.path, '/', 4) as location_place_slug
+            area_lp.path as administrative_area_path,
+            state_lp.display_name as state_display_name,
+            state_lp.path as state_path,
+            lp.display_name as city
           from public.agency a
           join public.location_path lp
             on lp.location_path_id = a.location_path_id
           left join public.location_path area_lp
             on area_lp.location_path_id = lp.parent_location_path_id
            and area_lp.level = 'administrative_area'
+          left join public.location_path state_lp
+            on state_lp.location_path_id = area_lp.parent_location_path_id
+           and state_lp.level = 'state'
           join public.build_page_payload bpp
             on bpp.page_type = 'agency'
            and bpp.entity_id = a.id
@@ -233,13 +230,13 @@ const loadAgencyRows = async (agencyId: string) =>
       await client.query(
         `select * from public.agency_phone_numbers
          where agency_id = $1
-         order by (description ilike 'fax') asc, created_at asc, id asc`,
+         order by created_at asc, id asc`,
         [agencyId],
       )
     ).rows;
     const agencyOfficers = (
       await client.query(
-        "select * from public.agency_personnel where agency_id = $1",
+        "select * from public.agency_personnel where agency_id = $1 order by id",
         [agencyId],
       )
     ).rows;
@@ -304,22 +301,6 @@ const loadAgencyRows = async (agencyId: string) =>
         [agencyId],
       )
     ).rows;
-    // Primary license per personnel for the roster context line — prefer an
-    // active license, then the most-recently-awarded.
-    const licenses = officerIds.length
-      ? (
-          await client.query(
-            `select distinct on (l.personnel_id)
-               l.personnel_id, al.name as license_type, l.status
-             from public.license l
-             join public.authority_license al on al.id = l.authority_license_id
-             where l.personnel_id = any($1)
-             order by l.personnel_id, (l.status ilike 'active') desc,
-               l.first_awarded desc nulls last`,
-            [officerIds],
-          )
-        ).rows
-      : [];
     const agencyOfficerIds = agencyOfficers.map(
       (entry: { id: string }) => entry.id,
     );
@@ -391,7 +372,6 @@ const loadAgencyRows = async (agencyId: string) =>
       reportCounts,
       disciplineLinks,
       personnelDisciplineCounts,
-      licenses,
       reportIds,
       civilCases,
       civilCaseOfficers,
@@ -419,30 +399,29 @@ const buildAgencyDetail = async (agencyId: string) => {
     "slug",
     agencyRequiredId,
   );
-  const categorySlug = requireAgencyStateSlug(data.agency);
-  const categoryMeta = US_STATE_TILES.find(
-    (entry) => entry.code.toLowerCase() === categorySlug,
+  const categoryLabel = requireAgencyText(
+    data.agency.state_display_name,
+    "state display_name",
+    agencyRequiredId,
   );
-  const categoryLabel = categoryMeta?.name || agencyState.toUpperCase();
-  const categoryPath = `/${categorySlug}/`;
+  const categoryPath = requireAgencyText(
+    data.agency.state_path,
+    "state path",
+    agencyRequiredId,
+  );
   const administrativeArea = requireAgencyText(
     data.agency.administrative_area,
     "administrative_area",
     agencyRequiredId,
   );
-  const administrativeAreaSlug = requireAgencyText(
-    data.agency.location_administrative_area_slug,
-    "administrative_area_slug",
+  const administrativeAreaPath = requireAgencyText(
+    data.agency.administrative_area_path,
+    "administrative_area path",
     agencyRequiredId,
   );
   const placeLabel = requireAgencyText(
     data.agency.city,
     "city",
-    agencyRequiredId,
-  );
-  const placeSlug = requireAgencyText(
-    data.agency.location_place_slug,
-    "place_slug",
     agencyRequiredId,
   );
   const placePath = requireAgencyText(
@@ -463,7 +442,6 @@ const buildAgencyDetail = async (agencyId: string) => {
     data.disciplineLinks,
     "personnel_id",
   );
-  const licenseByOfficerId = mapBy(data.licenses, "personnel_id");
   const civilCaseOfficersByCase = groupBy(
     data.civilCaseOfficers,
     "civil_case_id",
@@ -523,7 +501,7 @@ const buildAgencyDetail = async (agencyId: string) => {
     );
   };
 
-  const employees = normalizeAgencyHistory(data.agencyOfficers)
+  const employees = data.agencyOfficers
     .map(
       (entry: {
         personnel_id: string;
@@ -534,7 +512,6 @@ const buildAgencyDetail = async (agencyId: string) => {
       }) => {
         const officer = officersById[entry.personnel_id];
         const reportCountRow = reportCountsByOfficerId[entry.personnel_id];
-        const licenseRow = licenseByOfficerId[entry.personnel_id];
         return {
           entry,
           officer,
@@ -547,22 +524,10 @@ const buildAgencyDetail = async (agencyId: string) => {
           // Per-personnel rating came from the dropped officers_stats table;
           // no rating aggregate exists in the current schema.
           rating: null as number | null,
-          license: licenseRow
-            ? {
-                type: normalizeLicenseType(licenseRow.license_type),
-                status: normalizeLicenseStatus(licenseRow.status),
-              }
-            : null,
         };
       },
     )
     .sort(comparePersonnelEntry);
-  const currentEmployees = employees.filter((employee) =>
-    isCurrentAssignment(employee.entry),
-  );
-  const formerEmployees = employees.filter((employee) =>
-    isEndedAssignment(employee.entry),
-  );
 
   const civilCases = data.civilCases.map(
     (record: {
@@ -631,23 +596,19 @@ const buildAgencyDetail = async (agencyId: string) => {
   return {
     ...data,
     employees,
-    currentEmployees,
-    formerEmployees,
     civilCases,
     reportedReports,
     coverageLinks,
     agencyName,
     agencyState,
     agencySlug,
-    categorySlug,
     categoryLabel,
     categoryPath,
     agencyPath,
     canonicalAgencyPath,
     administrativeArea,
-    administrativeAreaSlug,
+    administrativeAreaPath,
     placeLabel,
-    placeSlug,
     placePath,
     counts: {
       civilCases: civilCases.length,
@@ -656,8 +617,6 @@ const buildAgencyDetail = async (agencyId: string) => {
         data.disciplineLinks.map((link) => link.discipline_id),
       ).size,
       personnel: employees.length,
-      currentPersonnel: currentEmployees.length,
-      formerPersonnel: formerEmployees.length,
       coverage: coverageLinks.length,
     },
   };
