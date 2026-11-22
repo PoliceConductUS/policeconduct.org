@@ -120,6 +120,8 @@ Each build embeds its commit-hash release ID in every form. The shared submissio
 
 The Forms API saves every submission. When the `releaseId` is missing or names no folder with `builds/<release-id>/data/dynamic.json` in that environment's release-data bucket, the API still saves the submission and logs the mismatch. Every saved submission carries a field that records the Forms API version that processed it.
 
+Each page also carries the data version it was built from in `data-data-version` on `<html>` (see `atomic-sha-deploys` design.md "Data version"). The shared submission helper sends it as `dataVersion` beside `releaseId`, and the Forms API stores it with the submission. When `dataVersion` is missing, the API still saves the submission and logs the mismatch. The API does not check the value against a list, because no list of data versions exists.
+
 The release-api and the public router must agree on which release the production host serves. The API returns that release ID together with its built roster. For a request within a selected release, route to the full override when published for that path and otherwise use the original. Refresh the canonical page on first publication and on subsequent override changes, including when the previously cached response came from the original. Preserve separate production and preview routing. Production stays on the selected release throughout publication.
 
 The daily Action publishes to the selected production release. Its evidence is shared across releases (see the storage table). Daily publishes only to production. The bare preview host serves the same commit's original pages without Daily's updates.
@@ -190,6 +192,7 @@ Exercise daily discovery and the ordinary build. For the website, test empty and
 
 ## Decisions
 
+- Forms send `dataVersion` from the page beside `releaseId`. A missing `dataVersion` is saved and logged, like a missing `releaseId`.
 - Form release IDs are known when `builds/<release-id>/data/dynamic.json` exists in that environment's release-data bucket. A submission with an unknown or missing release ID is still saved, and the mismatch is logged.
 - Routing uses KVS `o:` markers, and `publish-page` invalidates the paths.
 - Page data and evidence are stored in the private release-data bucket.

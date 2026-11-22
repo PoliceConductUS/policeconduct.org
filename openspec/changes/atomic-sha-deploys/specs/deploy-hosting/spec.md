@@ -30,9 +30,15 @@ The system SHALL store each release in one folder named by its release ID, the f
 
 #### Scenario: Data version recorded
 
-- **WHEN** a release builds and uploads
-- **THEN** `.release/source.json` records the data version the build read
-- **AND** the uploaded release record `builds/<commit>/source.json` carries the same data version
+- **WHEN** a release builds
+- **THEN** the build reads the data version once: the `version` of the one row in `public.data_mutation_applied` that no row names as `previous_version`
+- **AND** every built page renders it as `data-data-version` on `<html>`, next to `data-release-id`
+- **AND** `.release/source.json` records the same value as `dataVersion`
+
+#### Scenario: Data version cannot be read
+
+- **WHEN** `public.data_mutation_applied` is missing, has no row that no other row names as `previous_version`, or has more than one such row
+- **THEN** the build stops with an error and no page is built with a fallback value
 
 #### Scenario: Resuming an interrupted upload
 
