@@ -81,6 +81,8 @@ OpenSpec Usage
 The Site Is A View Of The Database
 
 - The site is a generated view of the database and nothing more. All logic about content and relationships belongs in intake and the database.
+- The site never filters, selects, connects, or otherwise decides anything about the content of a page. Every generated page reflects the current state of the database, without exception. When a page needs a connection or value the database does not hold, intake adds and populates it.
+- Stored text is shown as stored. Do not change its case, trim it, merge spellings, or relabel it.
 - The site never decides what is connected to what. A relationship exists only when a database row or foreign key records it. Do not infer one by matching names, slugs, namespaces, sources, text, dates or geography, and do not pick one row to stand for several (for example `rows[0]`).
 - The site never decides what a record says. Statuses, categories, labels, badges, messages and summaries come from database columns. Do not derive them with rules, regular expressions or text matching, and do not rewrite stored text.
 - The site never moves, re-attaches, hides or adds records by its own rules. When the data does not fit a page, stop and report it so intake or the database can change; do not add a site-side rule.
