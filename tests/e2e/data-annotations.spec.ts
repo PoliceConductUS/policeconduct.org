@@ -455,10 +455,10 @@ test("licensing authority pages list no annotations and link to their paginated 
     (entry) => entry.record_url,
   );
   const [authorityUrl, filed] = [...byAuthority].find(
-    ([, entries]) => entries.length > 50,
+    ([url, entries]) => url !== null && entries.length > 50,
   )!;
   expect(authorityUrl).toMatch(/^\/[a-z-]+\/licensing-authority\/$/);
-  await page.goto(authorityUrl);
+  await page.goto(authorityUrl!);
   await expect(
     page.getByRole("region", { name: "Source data annotations" }),
   ).toHaveCount(0);
