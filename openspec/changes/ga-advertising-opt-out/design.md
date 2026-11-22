@@ -50,6 +50,10 @@ Permissions requested: analytics_storage for Analytics cookies; ad_storage,
 ad_user_data and ad_personalization for Advertising. Google Signals and ads
 personalization use these three permissions. No other permission is requested.
 
+## Selling and sharing
+
+Owner decision (2026-11-22): PoliceConduct.org does not sell personal information and does not share it with other companies for their own use. The site uses outside services, such as Google Analytics, that may collect information about a visitor depending on the visitor's cookie choices and actions, and those companies may sell or share it under their own policies. The privacy and cookie notices say exactly this (tasks.md, Notices item 5). They no longer promise that no selling or sharing happens anywhere.
+
 ## Alternatives considered
 
 - Basic consent mode (load Google only after Allow all). Rejected by the board
