@@ -32,6 +32,13 @@ Promotion SHALL select only a release whose `builds/<release-id>/build/release.j
 
 - **WHEN** a release is promoted
 - **THEN** CloudFront receives a `/*` invalidation
+- **AND** no redirect key is written
+
+#### Scenario: A folder from before the storage split
+
+- **WHEN** a folder has no `builds/<release-id>/build/release.json`, because it was uploaded before the storage split
+- **THEN** promotion stops before changing any pointer
+- **AND** nothing writes a `release.json` for it
 
 ### Requirement: Keep release folders
 

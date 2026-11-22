@@ -36,8 +36,13 @@ The production distribution SHALL serve `<commit>.release.<domain>`, where `<com
 
 #### Scenario: Release host redirect and override
 
-- **WHEN** a release host serves release `<release-id>` and `r:<release-id>:<path>` or `o:<release-id>:<path>` exists
-- **THEN** the router answers with that redirect, or serves `/<release-id>/override/<path>`, as it does for the canonical host
+- **WHEN** a release host serves release `<release-id>` and the request path has a redirect file in `<release-id>/build/`, or `o:<release-id>:<path>` exists
+- **THEN** the response is a 301 from that release's redirect file, or the router serves `/<release-id>/override/<path>`, as for the canonical host
+
+#### Scenario: Folder from before the storage split
+
+- **WHEN** a release folder has no `builds/<release-id>/build/release.json`
+- **THEN** it gets no `release:` key and no release host
 
 #### Scenario: Release host is not crawled
 
@@ -78,7 +83,7 @@ After a production deploy promotes its release, it SHALL write that release's `r
 #### Scenario: Keys are written after promotion
 
 - **WHEN** a production deploy runs
-- **THEN** `release:` keys are written only after `promote.sh` has loaded `r:<release-id>:` and moved `current`
+- **THEN** `release:` keys are written only after the release's redirect files and `release.json` are uploaded and `promote.sh` has moved `current`
 
 #### Scenario: Rerun with nothing to change
 

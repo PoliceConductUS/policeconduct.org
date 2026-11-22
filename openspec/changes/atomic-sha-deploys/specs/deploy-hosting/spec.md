@@ -8,6 +8,7 @@ The system SHALL store each release in one folder named by its release ID, the f
 
 - **WHEN** a release uploads
 - **THEN** site files go to `<commit>/build/` and build artifacts for the daily job go to `builds/<commit>/build/`
+- **AND** redirect objects go to `<commit>/build/` after the site files
 - **AND** `builds/<commit>/build/release.json`, holding `commit`, `branch`, `pr` and `dataVersion`, is uploaded last as the completion marker
 
 #### Scenario: The build uploads no data
@@ -62,7 +63,7 @@ A build or rebuild SHALL NOT write, delete or read `<commit>/override/` in the s
 
 ### Requirement: Promotion moves a pointer
 
-Promoting a release SHALL check that the release is complete, load its redirect map into `r:<release-id>:`, copy its `404.html` to the bucket root, move the host's pointer with the KVS ETag guard, and invalidate `/*`. Every `npm run deploy -- <environment>` SHALL promote the build it uploads, with no approval step.
+Promoting a release SHALL check that the release is complete, copy its `404.html` to the bucket root, move the host's pointer with the KVS ETag guard, and invalidate `/*`. Promotion SHALL NOT write redirect keys. Every `npm run deploy -- <environment>` SHALL promote the build it uploads, with no approval step.
 
 #### Scenario: Promoting a release
 
@@ -80,11 +81,17 @@ Promoting a release SHALL check that the release is complete, load its redirect 
 #### Scenario: Incomplete release
 
 - **WHEN** `builds/<release-id>/build/release.json` or `<release-id>/build/index.html` is missing
-- **THEN** promotion stops before any redirect load or pointer change
+- **THEN** promotion stops before any pointer change
+
+#### Scenario: Release folder from before the storage split
+
+- **WHEN** a release folder was uploaded before this change and has no `builds/<release-id>/build/release.json`
+- **THEN** it cannot be promoted and gets no release host
+- **AND** no tool writes a `release.json` for it
 
 ### Requirement: The router serves the promoted release per host
 
-The shared CloudFront router SHALL pick the release for each request from a KVS pointer for that host and SHALL keep the release folder out of the viewer URL. Redirect lookups SHALL follow `shared-redirects` semantics within the `r:<release-id>:` namespace.
+The shared CloudFront router SHALL pick the release for each request from a KVS pointer for that host and SHALL keep the release folder out of the viewer URL. Redirects SHALL follow `shared-redirects` semantics, served from the release's own redirect files. The router SHALL NOT read `r:` keys.
 
 #### Scenario: Canonical host
 
@@ -107,10 +114,16 @@ The shared CloudFront router SHALL pick the release for each request from a KVS 
 - **WHEN** the host matches no rule, the preview label is not `pr-<N>`, or the decoded path is reserved (`/builds/`, `/data/`, `/<id>/build/`, `/<id>/override/` and the other reserved prefixes) or contains `.` or `..` segments, `\` or `%`
 - **THEN** the router returns 404
 
-#### Scenario: Redirect
+#### Scenario: Retired prefix
 
-- **WHEN** `r:<release-id>:<path>` exists, or an `r:<release-id>:<prefix>/*` key exists for the longest matching prefix
-- **THEN** the router returns a 301 to the stored target with the query string kept
+- **WHEN** the decoded path matches a pattern in `functions/redirect-prefixes.json`
+- **THEN** the router rewrites the request to `/<current>/build/<matched prefix>index.html`
+
+#### Scenario: Redirect object
+
+- **WHEN** the object the router requests carries `x-amz-meta-redirect-location`
+- **THEN** the viewer-response function returns a 301 to that target with the query string kept
+- **AND** the response does not carry `x-amz-meta-redirect-location`
 
 ### Requirement: Overrides stay with their release
 
@@ -133,7 +146,7 @@ The system SHALL keep search engines off every host except the apex and the cano
 
 #### Scenario: Preview distribution response
 
-- **WHEN** any response is served by the preview distribution
+- **WHEN** any response is served by the preview distribution, a redirect included
 - **THEN** it carries `X-Robots-Tag: noindex, nofollow`
 
 #### Scenario: robots.txt on a non-production host
@@ -154,7 +167,7 @@ Release folders and their release data SHALL never be deleted. When a PR closes,
 
 - **WHEN** a PR closes and no other preview pointer names its release ID
 - **THEN** `current:pr-<N>`, `<release-id>/` in the preview site bucket and `builds/<release-id>/` in the preview release data bucket are deleted
-- **AND** its `r:` and `o:` keys stay until removed with `npm run deploy:delete -- <release-id>`
+- **AND** its `o:` keys stay until removed with `npm run deploy:delete -- <release-id>`
 
 #### Scenario: Shared preview folder
 

@@ -19,7 +19,7 @@ The brainstorm took place with the owner on 2026-11-18 and 2026-11-19 (`.egm-rev
 
 - **How**: the deploy writes `release:<p>` for all 34 prefixes of the commit. The router reads one key for the label it receives.
 - **Pros**: one KVS read per request.
-- **Cons**: about 2.3 KB per release. Releases are kept forever, and the same 5 MB store holds every release's `r:` redirect namespace. About 2,000 releases would fill the store with lookup keys alone.
+- **Cons**: about 2.3 KB per release. Releases are kept forever. About 2,000 releases would fill the 5 MB store with lookup keys alone.
 - **Why not chosen**: storage grows 30 times faster than Option C for no visible benefit.
 
 ### Option B: a Lambda@Edge function that lists bucket folders
@@ -37,14 +37,14 @@ The brainstorm took place with the owner on 2026-11-18 and 2026-11-19 (`.egm-rev
 
 ## Agreed Approach
 
-Option C. Release hosts are aliases of the production distribution, which already serves every release folder and holds every release's `r:` redirects and `o:` overrides in its KVS. The shared router gets one new host branch. The production deploy writes the lookup keys after promotion. The production deploy stops copying itself to the preview bucket, because nothing serves `current:main` any more.
+Option C. Release hosts are aliases of the production distribution, which already serves every release folder (with its redirect files) and holds every release's `o:` overrides in its KVS. The shared router gets one new host branch. The production deploy writes the lookup keys after promotion. The production deploy stops copying itself to the preview bucket, because nothing serves `current:main` any more.
 
 ## Key Decisions
 
 - Release hosts live on the production CloudFront distribution and read the production KVS (`site_redirects`).
 - The production certificate adds `release.<domain>` and `*.release.<domain>`. The certificate is replaced with `create_before_destroy`, as it already is for SAN changes.
 - `<commit>.release` serves the `<commit>` folder. Promoting an earlier release to `www` does not change which release a release host serves.
-- Lookup keys are written only by a production deploy, after `promote.sh` succeeds, and by a one-time backfill for existing release folders. The writer refuses a release that is not complete.
+- Lookup keys are written only by a production deploy, after `promote.sh` succeeds, and by a one-time backfill for existing complete release folders. Folders uploaded before the `atomic-sha-deploys` storage split are left out. The writer refuses a release that is not complete.
 - Robots: no new rule. The existing `/robots.txt` deny-all answer covers release hosts and bare hosts. Production builds already declare `www` as the canonical URL.
 - The Terraform apply runs from `main` after the PR merges, with the existing `scripts/apply.sh`. No approval gate is added.
 

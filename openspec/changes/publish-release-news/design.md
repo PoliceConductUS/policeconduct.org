@@ -89,7 +89,7 @@ A release folder is named by the full Git commit hash (`<release-id>`); "folder"
 - A rebuild of the same commit replaces `<release-id>/build/` and `builds/<release-id>/build/` only (`atomic-sha-deploys` design.md "Build and daily storage"). It never writes, deletes or reads `<release-id>/override/` or `builds/<release-id>/data/`.
 - The daily Action reads `<release-id>/build/` and `builds/<release-id>/build/`. It writes only `<release-id>/override/`, `builds/<release-id>/data/` and its evidence prefix. IAM denies it writes to both build prefixes.
 - The daily Action reads the roster from the original pages. The site adds no substitute file. If an original page lacks a value that Daily or the Intake import needs, that gap goes to the owner; this change adds no site-side data file to fill it.
-- Release folders uploaded before this change have the old build-written `builds/<release-id>/data/dynamic.json`, page data and `alias.json`, and no `release.json`. Nothing deletes those files. The build never writes `builds/<release-id>/data/` again.
+- Release folders uploaded before this change have the old build-written `builds/<release-id>/data/dynamic.json`, page data and `alias.json`, and no `release.json`. They are left out (owner decision, 2026-11-22): they cannot be promoted and get no release host. Nothing deletes their files, and nothing writes a `release.json` for them. The build never writes `builds/<release-id>/data/` again.
 
 ## Release and page object
 
@@ -164,9 +164,9 @@ This section is the cross-repository contract between the website and Intake.
 
 ## Deployment folders
 
-Build and deploy scripts require a clean repository and use its full current Git commit hash. Upload rejects an artifact from another commit. Promotion requires an explicit folder argument, including migration folders such as `prod-temp`. Hosting uses `<release-id>/build/` and `<release-id>/override/`; existing private records stay in private release storage. Build source metadata records the branch and commit and participates in the completion inventory. Only main builds can upload to the production site bucket. PR builds upload to preview. Main deployment also uploads to preview and selects `current:main`, which serves the bare preview host with the preview API and noindex response headers. The release-hosts proposal in PR #58 replaces the bare preview host with a redirect to `www`.
+Build and deploy scripts require a clean repository and use its full current Git commit hash. Upload rejects an artifact from another commit. Promotion requires an explicit folder argument. A folder without `builds/<folder>/build/release.json`, such as the migration folder `prod-temp` or any folder uploaded before the storage split, cannot be promoted. Hosting uses `<release-id>/build/` and `<release-id>/override/`; existing private records stay in private release storage. Build source metadata records the branch and commit and participates in the completion inventory. Only main builds can upload to the production site bucket. PR builds upload to preview. Main deployment also uploads to preview and selects `current:main`, which serves the bare preview host with the preview API and noindex response headers. The release-hosts proposal in PR #58 replaces the bare preview host with a redirect to `www`.
 
-Promotion checks the release-completion marker (`builds/<release-id>/build/release.json`) and `build/index.html`, selects the existing KVS pointer and invalidates CloudFront. Release folders are kept forever. Only PR preview folders are deleted, when the PR closes. Closing a PR removes its host pointer and deletes its preview folder unless another preview pointer still selects that folder.
+Promotion checks the release-completion marker (`builds/<release-id>/build/release.json`) and `build/index.html`, selects the existing KVS pointer and invalidates CloudFront. Promotion writes no redirect keys. Each release serves redirects from its own redirect files (`atomic-sha-deploys`, "Redirect files"). Release folders are kept forever. Only PR preview folders are deleted, when the PR closes. Closing a PR removes its host pointer and deletes its preview folder unless another preview pointer still selects that folder.
 
 ### Production cutover status
 
@@ -177,7 +177,7 @@ Production already serves through the `current` pointer. After the `bootstrap-po
 - the site bucket policy that grants only `*/build/*`, `*/override/*` and `404.html`;
 - the Forms API that checks `releaseId`.
 
-The owner's cutover plan copies the whole bucket content into a placeholder or commit folder first, so that folder is `current` as soon as Terraform applies. Task 6.4 confirms which folder `current` names, builds and promotes a main release, probes the routes and removes the legacy root objects. Rollback is promoting the previous release folder.
+The owner's cutover plan copies the whole bucket content into a placeholder or commit folder first, so that folder is `current` as soon as Terraform applies. Task 6.4 confirms which folder `current` names, builds and promotes a main release, probes the routes and removes the legacy root objects. Rollback is promoting the previous release folder when it has a `release.json`. A folder from before the storage split cannot be promoted, so it is no rollback target.
 
 ## Alternatives considered
 
@@ -192,7 +192,7 @@ The owner's cutover plan copies the whole bucket content into a placeholder or c
 
 - **False officer links.** Mitigated by exact roster-name matching plus inference. Corrections are flagged.
 - **SerpApi cost.** Bounded by the account check.
-- **KVS capacity.** `o:` and `r:` keys accumulate per release against 5 MB. This is checked only at promotion. Release folders are kept forever, so key growth has no automatic limit.
+- **KVS capacity.** `o:` keys accumulate per release against 5 MB. Release folders are kept forever, so `o:` key growth has no automatic limit. Redirects are files, not keys (`atomic-sha-deploys`).
 - **ETag contention.** `promote.sh` and `publish-page` both update keys and retry on conflict.
 - **IAM reach.** The `intake_news` role can write `*/override/*` in any folder, but `publish-page` marks only `current`.
 - **Invalidation volume.** At most five paths per page and five terms per day.

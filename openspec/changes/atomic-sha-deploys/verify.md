@@ -26,4 +26,4 @@ Focused verification passed at the time: all 80 redirect tests (including eight 
 
 ## Final verification
 
-Not yet run. Record for the final head: commit SHA, `npm run test:redirects` and `npm run validate` with exit codes and test counts, and `npx openspec validate atomic-sha-deploys`.
+Not yet run. Record for the final head: commit SHA, the redirect cutover steps and `r:` key counts (tasks 6.7 and 7.12), `npm run test:redirects` and `npm run validate` with exit codes and test counts, and `npx openspec validate atomic-sha-deploys`.

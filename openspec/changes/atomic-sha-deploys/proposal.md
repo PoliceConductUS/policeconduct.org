@@ -1,11 +1,12 @@
 ## Why
 
-Builds already land in per-commit folders and go live when a CloudFront KeyValueStore (KVS) pointer moves (see design.md "Current deploy model"). The OpenSpec record still describes an older plan (`builds/<id>/` folders, `<id>.builds.<domain>` hosts, one distribution) and does not use the project's terms. Four gaps remain:
+Builds already land in per-commit folders and go live when a CloudFront KeyValueStore (KVS) pointer moves (see design.md "Current deploy model"). The OpenSpec record still describes an older plan (`builds/<id>/` folders, `<id>.builds.<domain>` hosts, one distribution) and does not use the project's terms. Five gaps remain:
 
 - Redeploying a commit against newer data uploads nothing new. The release ID is the bare commit, uploads use `--no-overwrite`, and promotion only checks that the completion marker exists.
 - Preview hosts accept any label (`PREVIEW_NAME`), but a preview is a build of an open PR only.
 - `npm run deploy:delete` can delete a production release folder, but release folders are kept forever. Closing a PR removes only its pointer, not its preview folder.
 - The route coverage rule shipped under this change has no home in `shared-redirects`.
+- Redirects live in the KVS as `r:<release-id>:` keys. One real build has about 25,668 redirects, about 3 MB of keys. The 5 MB store fits one release, but releases are kept forever.
 
 ## Terms
 
@@ -19,6 +20,13 @@ Builds already land in per-commit folders and go live when a CloudFront KeyValue
 
 - From: the release ID is the full commit. A second deploy of the same commit against newer data silently keeps the old pages, because uploads use `--no-overwrite`.
 - To: the release ID is still the full commit. A rebuild of the same commit replaces only the build-owned prefixes: `<commit>/build/` in the site bucket and `builds/<commit>/build/` in the release data bucket. Files the new build no longer produces are removed from those two prefixes only. A rebuild never writes, deletes or reads `<commit>/override/` or `builds/<commit>/data/`; those belong to the daily job (owner decision, 2026-11-22). The build does not upload the data it read: no page data, no roster, no aliases. It uploads `builds/<commit>/build/release.json` (`{commit, branch, pr, dataVersion}`) last, as the completion marker. The build records the data version it read: the `version` of the last applied entry in intake's `public.data_mutation_applied` ledger. Every page carries it in `data-data-version` on `<html>`, next to `data-release-id`, and `.release/source.json` records it as `dataVersion`.
+- Release folders uploaded before this change have no `builds/<commit>/build/release.json`. They are left out: they cannot be promoted and get no release host. Nothing writes a `release.json` for them (owner decision, 2026-11-22).
+
+**Redirect files replace redirect keys**
+
+- From: `scripts/generate-redirect-map.mjs` writes `dist/_redirect-map.json`. `scripts/promote.sh` loads it into the KVS `r:<release-id>:` namespace with `scripts/load-redirects.mjs`. The router answers 301 from `r:` keys, including `/*` wildcard keys.
+- To: a separate build step after the full site build, `scripts/write-redirect-files.mjs`, writes one redirect file per redirect source into the build output (sources under one retired prefix share one file). Each object carries its target in the S3 metadata header `x-amz-meta-redirect-location`. The objects upload into the build-owned `<commit>/build/` prefix, before `release.json`. A new CloudFront Function on viewer-response turns a response that carries that header into a 301 with `Location` and the query string kept. The router keeps a short fixed list of retired prefix patterns for the `/*` entries. KVS `r:` keys, `load-redirects.mjs` and the KVS redirect capacity check are removed (owner decision, 2026-11-22). The KVS keeps the `current*` pointers, `o:` override keys and the `release:` keys from `release-hosts`.
+- Astro's own `redirects` setting is not used: for static output it writes an HTML page with a meta refresh and status 200, not an HTTP 301.
 
 **Previews are PR builds only**
 
@@ -28,7 +36,7 @@ Builds already land in per-commit folders and go live when a CloudFront KeyValue
 **Keep every release; remove previews when the PR closes**
 
 - From: `npm run deploy:delete` deletes a production release folder, its release data and its KVS keys. `cleanup-preview.mjs` deletes only the closed PR's pointer.
-- To: release folders are never deleted. When a PR closes, its preview pointer and (when no other preview pointer names it) its preview folder and preview release data (`builds/<release-id>/`) are deleted. The daily job publishes only to production, so the preview release data bucket holds no daily output. The removed preview's `r:` and `o:` keys are removed by hand with `npm run deploy:delete -- <release-id>`, which then works on the preview store only.
+- To: release folders are never deleted. When a PR closes, its preview pointer and (when no other preview pointer names it) its preview folder and preview release data (`builds/<release-id>/`) are deleted. The daily job publishes only to production, so the preview release data bucket holds no daily output. The removed preview's `o:` keys are removed by hand with `npm run deploy:delete -- <release-id>`, which then works on the preview store only.
 
 **Overrides stay with their release**
 
@@ -54,15 +62,18 @@ Builds already land in per-commit folders and go live when a CloudFront KeyValue
 
 ### Modified Capabilities
 
-- `shared-redirects`: adds the prior-URL coverage requirement and the deploy coverage gate.
+- `shared-redirects`: adds the prior-URL coverage requirement and the deploy coverage gate. Redirects are served from redirect files in each release folder, not from KVS keys.
 
 ## Impact
 
 - `src/lib/data-version.js` (new), `src/layouts/SiteLayout.astro`, `scripts/build-release.mjs`: read the data version once from the ledger, render it on every page and record it in `.release/source.json` and `.release/build/release.json`.
 - `scripts/write-release-news.mjs` (deleted), `scripts/build-release.mjs`, `scripts/release-files.mjs`, `src/lib/data/release-news.ts`, `src/lib/data/coverage.ts`: the build stops writing page data, the roster and aliases.
 - `scripts/upload-release.sh`: replace only the build-owned prefixes on a rebuild; upload `release.json` last.
-- `scripts/promote.sh`: check `builds/<id>/build/release.json` instead of `builds/<id>/data/dynamic.json`.
-- `scripts/deploy.sh`, `infrastructure/bootstrap-policeconduct/functions/router.js`: PR-only preview labels.
+- `scripts/promote.sh`: check `builds/<id>/build/release.json` instead of `builds/<id>/data/dynamic.json`; stop loading redirects.
+- `scripts/write-redirect-files.mjs` (new), `scripts/redirect-object-key.mjs` (new), `scripts/upload-redirects.mjs` (new), `scripts/load-redirects.mjs` (deleted), `scripts/verify-redirect-coverage.mjs`, `scripts/build-release.mjs`, `scripts/release-files.mjs`, `scripts/upload-release.sh`: redirect files.
+- `infrastructure/bootstrap-policeconduct/functions/router.js`, `functions/redirect-prefixes.json` (new), `functions/viewer-response.js` (new), `functions/noindex.js` (deleted), `main.tf`: no `r:` reads, retired prefix patterns, the viewer-response function on both distributions.
+- `scripts/deploy.sh`, `router.js`: PR-only preview labels.
 - `scripts/manage-release.mjs`, `scripts/cleanup-preview.mjs`, `.github/workflows/cleanup-preview.yml`, `package.json` (`deploy:delete`): lifecycle.
-- `README.md` deploy section, `infrastructure/bootstrap-policeconduct/functions/noindex.js` header comment: documentation.
-- Tests: `src/lib/data-version.test.mjs` (new), `tests/e2e/content-pages-smoke.spec.ts`, `scripts/deploy-release-guard.test.mjs`, `scripts/release-news.test.mjs`, `scripts/cloudfront-router.test.mjs`, `scripts/manage-release.test.mjs`, plus a new test for `scripts/cleanup-preview.mjs`.
+- `README.md` deploy section, `scripts/EGM.md`, `infrastructure/bootstrap-policeconduct/functions/EGM.md`: documentation.
+- Tests: `src/lib/data-version.test.mjs` (new), `tests/e2e/content-pages-smoke.spec.ts`, `scripts/deploy-release-guard.test.mjs`, `scripts/release-news.test.mjs`, `scripts/cloudfront-router.test.mjs`, `scripts/manage-release.test.mjs`, `scripts/verify-redirect-coverage.test.mjs`, plus new tests for `scripts/cleanup-preview.mjs`, `scripts/redirect-object-key.mjs`, `scripts/write-redirect-files.mjs`, `scripts/upload-redirects.mjs` and `functions/viewer-response.js` (`scripts/cloudfront-response.test.mjs`). `scripts/load-redirects.test.mjs` is deleted.
+- Operations: after merge, one Terraform apply, one `npm run deploy -- prod`, then a one-time deletion of every `r:` key in both stores.

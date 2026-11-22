@@ -68,12 +68,22 @@ The site build SHALL read `by_arrest_beat` keys as boundary codes plus the reser
 
 ### Requirement: Personnel map boundaries
 
-A personnel map SHALL use the boundaries of exactly one agency arrest profile from the same source whose months cover the personnel profile's months. If zero or more than one agency profile matches, the site build SHALL stop with an error.
+A personnel map SHALL use the boundaries of the agency arrest profile named by `arrest_profile.agency_arrest_profile_id`, a foreign key that intake sets. The site SHALL NOT match agency profiles by source, months or any other value. If a personnel profile with `by_arrest_beat` has no link, the site build SHALL stop with an error.
 
-#### Scenario: No single agency profile
+#### Scenario: Linked agency profile
 
-- **WHEN** a personnel profile with `by_arrest_beat` matches zero or two agency profiles
+- **WHEN** a personnel profile with `by_arrest_beat` has `agency_arrest_profile_id` set
+- **THEN** its map uses that agency profile's `arrest_beat_boundaries`
+
+#### Scenario: Missing link
+
+- **WHEN** a personnel profile with `by_arrest_beat` has no `agency_arrest_profile_id`
 - **THEN** the site build stops with an error that names the profile
+
+#### Scenario: Unlinked agency profile with matching source and months
+
+- **WHEN** an agency profile has the same source and covering months as a personnel profile but is not the linked profile
+- **THEN** the personnel map does not use it
 
 ### Requirement: Agency totals and scope
 

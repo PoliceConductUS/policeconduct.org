@@ -3,12 +3,12 @@
 The deploy model this change builds on is described in `openspec/changes/atomic-sha-deploys/design.md` ("Current deploy model"). The parts that matter here:
 
 - Two CloudFront distributions run the same router source, `infrastructure/bootstrap-policeconduct/functions/router.js`, rendered by `local.shared_router_code` in `main.tf`.
-  - `aws_cloudfront_distribution.site` (production) has the aliases `local.distribution_aliases` (apex and `www`), the certificate `aws_acm_certificate.site`, the function `aws_cloudfront_function.index_rewrite`, and the KVS `aws_cloudfront_key_value_store.site_redirects`.
-  - `aws_cloudfront_distribution.preview` has the aliases `preview.<domain>` and `*.preview.<domain>`, its own certificate (`preview-entrypoints.tf`), the function `preview_router`, the KVS `preview_redirects`, and `noindex.js` on viewer-response.
-- The router picks a release ID from a KVS pointer: `current` for the apex and `www`, `current:main` for bare `preview.<domain>`, `current:<label>` for `<label>.preview.<domain>`. It answers 301 from `r:<release-id>:` keys, serves `<release-id>/override/<path>` when `o:<release-id>:<path>` exists, and otherwise rewrites the request to `<release-id>/build/<path>`.
+  - `aws_cloudfront_distribution.site` (production) has the aliases `local.distribution_aliases` (apex and `www`), the certificate `aws_acm_certificate.site`, the function `aws_cloudfront_function.index_rewrite`, the viewer-response function `site_response` (`atomic-sha-deploys`), and the KVS `aws_cloudfront_key_value_store.site_redirects`.
+  - `aws_cloudfront_distribution.preview` has the aliases `preview.<domain>` and `*.preview.<domain>`, its own certificate (`preview-entrypoints.tf`), the function `preview_router`, the KVS `preview_redirects`, and the viewer-response function `preview_response`, which adds `X-Robots-Tag: noindex, nofollow` (`atomic-sha-deploys` replaces `noindex.js` with it).
+- The router picks a release ID from a KVS pointer: `current` for the apex and `www`, `current:main` for bare `preview.<domain>`, `current:<label>` for `<label>.preview.<domain>`. It serves `<release-id>/override/<path>` when `o:<release-id>:<path>` exists, and otherwise rewrites the request to `<release-id>/build/<path>`. Redirects are redirect files in the release folder; the viewer-response function turns a file that carries `x-amz-meta-redirect-location` into a 301 (`atomic-sha-deploys`, "Redirect files"). The KVS holds no redirect keys.
 - Before host routing, the router answers `/robots.txt` with `User-agent: *` / `Disallow: /` on every host except the apex and `www` (`router.js`, "only the production hosts may be crawled").
-- `scripts/deploy.sh prod` builds on `main`, then `scripts/upload-release.sh` uploads to the production buckets. For `prod` it first runs itself again with namespace `main` against the preview buckets and store (the `current:main` mirror), then runs `scripts/promote.sh`, which loads `r:<release-id>:`, copies `404.html` to the bucket root, moves `current`, and invalidates `/*`.
-- The release ID is the full 40-character commit (`scripts/build-release.mjs`). A rebuild of the same commit against newer data goes to the same folder and records the data version it read (`atomic-sha-deploys`, owner, 2026-11-20). Production release folders already exist and are kept (owner Q7). The production bucket also holds the migration folder `prod-temp`.
+- `scripts/deploy.sh prod` builds on `main`, then `scripts/upload-release.sh` uploads to the production buckets. For `prod` it first runs itself again with namespace `main` against the preview buckets and store (the `current:main` mirror), then runs `scripts/promote.sh`, which copies `404.html` to the bucket root, moves `current`, and invalidates `/*`.
+- The release ID is the full 40-character commit (`scripts/build-release.mjs`). A rebuild of the same commit against newer data goes to the same folder and records the data version it read (`atomic-sha-deploys`, owner, 2026-11-20). Production release folders already exist and are kept (owner Q7). The production bucket also holds the migration folder `prod-temp`. Folders uploaded before the `atomic-sha-deploys` storage split have no `builds/<id>/build/release.json`. They are left out: they cannot be promoted and get no release host (owner decision, 2026-11-22).
 - CloudFront Functions can read the KVS only with `get` and `exists` on one key at a time. One KVS store holds at most 5 MB of keys and values. Keys are at most 512 bytes and values at most 1 KB.
 
 ## Goals / Non-Goals
@@ -26,7 +26,8 @@ The deploy model this change builds on is described in `openspec/changes/atomic-
 **Non-Goals:**
 
 - Release hosts for previews or for non-commit folders such as `prod-temp`.
-- Changing preview hosts, `noindex.js`, or the preview certificate.
+- Changing preview hosts, the preview viewer-response function, or the preview certificate.
+- Release hosts for folders uploaded before the `atomic-sha-deploys` storage split.
 - Slug changes or redirect maps for slugs.
 - Any approval gate.
 
@@ -34,11 +35,11 @@ The deploy model this change builds on is described in `openspec/changes/atomic-
 
 ### 1. Release hosts are aliases of the production distribution
 
-Every release folder lives in the production site bucket, and every release's `r:` redirects and `o:` override markers live in the production KVS. The production distribution is the only one that can serve them. Its aliases become apex, `www`, `release.<domain>`, and `*.release.<domain>`.
+Every release folder, with its redirect files, lives in the production site bucket, and every release's `o:` override markers live in the production KVS. The production distribution is the only one that can serve them. Its aliases become apex, `www`, `release.<domain>`, and `*.release.<domain>`.
 
-Caching stays correct across hosts. The viewer-request function rewrites the URI to `/<release-id>/build/<path>` (or `/override/`) before the cache lookup, so the cache key holds the release ID. `www` and a release host share cached objects only when they serve the same release, which is the same content. Responses the function generates (301, 404, robots) are not cached.
+Caching stays correct across hosts. The viewer-request function rewrites the URI to `/<release-id>/build/<path>` (or `/override/`) before the cache lookup, so the cache key holds the release ID. `www` and a release host share cached objects only when they serve the same release, which is the same content. Responses the function generates (301, 404, robots) are not cached. A redirect file is cached like a page, under its release ID; the viewer-response function `site_response` turns it into a 301 on every response, cache hits included. So each release host answers with its own release's redirects.
 
-Alternative: a third distribution for release hosts. Rejected: it would need its own copy of the bucket policy, KVS, certificate, and function, and the release keys would have to live in a store beside the `r:` and `o:` keys they work with.
+Alternative: a third distribution for release hosts. Rejected: it would need its own copy of the bucket policy, KVS, certificate, and function, and the release keys would have to live in a store beside the `o:` keys they work with.
 
 ### 2. Router branches
 
@@ -53,7 +54,7 @@ Order in `handler`, with the new steps marked:
    - `<label>.preview.<apex>`: `current:<label>` (unchanged here; `atomic-sha-deploys` narrows the label to `pr-<N>`);
    - **new:** `<label>.release.<apex>` where the label matches `^[0-9a-f]{7,40}$`: the release ID from `releaseForCommit(label)`; 404 when it returns `null`;
    - anything else: 404.
-6. Release ID validation, redirects, override and build rewrite (unchanged).
+6. Release ID validation, the retired prefix rewrite, override and build rewrite (unchanged from `atomic-sha-deploys`).
 
 The `Host` header is already lower-cased, so an upper-case SHA in the URL works.
 
@@ -81,7 +82,7 @@ async function releaseForCommit(label) {
 
 A CloudFront Function cannot list keys, so the deploy writes the answer for every prefix the router may ask about.
 
-**Key format.** `release:<prefix>`, where `<prefix>` is 7 to 40 lowercase hex characters. The value is a release ID, or the literal marker `ambiguous`. `ambiguous` can never be a release ID, so the router cannot mistake it for one. The `release:` namespace does not overlap `current`, `current:`, `r:` or `o:`.
+**Key format.** `release:<prefix>`, where `<prefix>` is 7 to 40 lowercase hex characters. The value is a release ID, or the literal marker `ambiguous`. `ambiguous` can never be a release ID, so the router cannot mistake it for one. The `release:` namespace does not overlap `current`, `current:` or `o:`.
 
 **Key set.** The keys are a pure function of the set of released commits. Each commit has one release, whose ID is the commit:
 
@@ -103,21 +104,21 @@ Each commit's keys end in exactly one key that holds its release ID, at its shor
 
 1. validates every argument against `^[0-9a-f]{40}$` and stops on the first bad one;
 2. checks each release is complete, with the same two objects `promote.sh` checks (`builds/<id>/build/release.json` and `<id>/build/index.html`; `atomic-sha-deploys` task 2.7), and stops if not. It never reads `builds/<id>/data/`, which belongs to the daily job;
-3. reads the store ETag, then lists every key (paged, like `scripts/load-redirects.mjs`);
+3. reads the store ETag, then lists every key (paged, like `scripts/manage-release.mjs`);
 4. rebuilds the known releases from the values of the existing `release:` keys that are release IDs (every commit's chain ends in its ID, so none is lost), and adds the arguments;
 5. computes the desired `release:` key set, and diffs it against the existing `release:` keys;
 6. stops before writing when the whole store after the change would exceed 5 MB;
 7. writes the deletes, then the puts, in batches of 50, with the ETag from step 3 on the first batch and a fresh ETag on later batches. A concurrent writer makes the first batch fail; the deploy is rerun. A rerun with nothing to change writes nothing.
 
-The script writes only `release:` keys and never reads or changes `current`, `r:` or `o:` keys.
+The script writes only `release:` keys and never reads or changes `current` or `o:` keys.
 
 **When it runs.**
 
-- `scripts/upload-release.sh`, namespace `prod` only, after `scripts/promote.sh` succeeds: `node scripts/load-release-hosts.mjs "${store}" "${release_id}"`. Running after promotion means the release's `r:` redirects are loaded before its release host can serve. If this step fails, `npm run deploy -- prod --skip-build` resumes: uploads send only files that differ, promotion is repeatable, and the key writer is idempotent.
+- `scripts/upload-release.sh`, namespace `prod` only, after `scripts/promote.sh` succeeds: `node scripts/load-release-hosts.mjs "${store}" "${release_id}"`. The release's redirect files are uploaded before `release.json`, so they exist before its release host can serve. If this step fails, `npm run deploy -- prod --skip-build` resumes: uploads send only files that differ, promotion is repeatable, and the key writer is idempotent.
 - Once, by hand, for the release folders that already exist (backfill, see Migration Plan).
 - Not from `promote.sh` or `manage-release.mjs`: promotion changes which release `www` serves, not which releases exist.
 
-**Size.** One key is `release:` (8 bytes) plus the prefix (usually 7) plus a value of 40 to about 44 bytes: about 60 bytes per release. 1,000 releases use about 60 KB, about 1.2% of the 5 MB store. Ambiguity adds about 60 bytes per extra shared character, and is rare at 7 hex characters (268 million values). The store stays dominated by the `r:<release-id>:` namespaces, which `atomic-sha-deploys` ("Capacity") already accounts for.
+**Size.** One key is `release:` (8 bytes) plus the prefix (usually 7) plus a value of 40 to about 44 bytes: about 60 bytes per release. 1,000 releases use about 60 KB, about 1.2% of the 5 MB store. Ambiguity adds about 60 bytes per extra shared character, and is rare at 7 hex characters (268 million values). The store holds no redirect keys (`atomic-sha-deploys`, "Redirect files"), only the `current*` pointers, `o:` keys and these `release:` keys.
 
 **Lookups per request.** One `exists` and one `get` for almost every release-host request. A label of an ambiguous prefix adds one pair per extra character, at most 34 pairs for a 40-character label.
 
@@ -127,7 +128,7 @@ Alternatives: see brainstorm.md (a key for every prefix length; a Lambda@Edge bu
 
 `release.<domain>` is an alias of the production distribution, and `preview.<domain>` stays an alias of the preview distribution. The shared router answers both with the same 301 (Decision 2, step 3), so each distribution handles its own bare host. `aws_route53_record.preview_root`, the preview certificate and the preview aliases do not change.
 
-`noindex.js` still runs on the preview distribution, so the bare preview 301 carries `X-Robots-Tag: noindex, nofollow`. The bare release 301 does not. Neither page has content to index.
+`preview_response` still runs on the preview distribution, so the bare preview 301 carries `X-Robots-Tag: noindex, nofollow`. The bare release 301 does not. Neither page has content to index.
 
 ### 5. Production deploys no longer mirror to the preview host
 
@@ -230,7 +231,7 @@ The forms client (`src/lib/client/forms.ts`) calls `Sentry.captureException`. Wi
 - [The new router publishes on apply, before keys exist] → Backfill the keys before the apply (Migration Plan step 2). Until then release hosts return 404, which is safe.
 - [Bare `preview.` stops showing the latest release] → `www` shows the same release; a specific release is at `<commit>.release`.
 - [A missing page on a release host shows the current release's `404.html`] → Known limitation. The production distribution's error page is the single `/404.html` at the bucket root, which `promote.sh` copies from the promoted release. The preview bucket has the same limitation today.
-- [An old release whose `r:<release-id>:` keys were removed serves no redirects on its release host] → Promoting it again reloads its map. Releases from now on keep their keys (`atomic-sha-deploys`, "Capacity").
+- [An old release host must keep its redirects] → Each release serves its own redirect files from its folder, so old release hosts keep their redirects. Folders uploaded before the `atomic-sha-deploys` storage split get no release host.
 - [A key write fails after promotion] → `www` already serves the new release. Rerun `npm run deploy -- prod --skip-build`; every step repeats safely.
 - [Concurrent production deploys race on `release:` keys] → The first batch uses the ETag read before listing, so the second writer fails and is rerun.
 - [The certificate replacement fails validation] → `create_before_destroy` keeps the old certificate on the distribution until the new one is issued. The apply stops with the site unchanged.
@@ -242,9 +243,9 @@ The forms client (`src/lib/client/forms.ts`) calls `Sentry.captureException`. Wi
 ## Migration Plan
 
 1. Merge the PR. Work from the `main` folder.
-2. Backfill: list the folders in the production site bucket whose names match `^[0-9a-f]{40}$`, and run `node scripts/load-release-hosts.mjs "$KVS_ARN" <id>...` with `S3_BUCKET` and `RELEASE_DATA_BUCKET` set. The script skips nothing silently: it stops on an incomplete folder, and the operator leaves that folder out and records why. A folder uploaded before `atomic-sha-deploys` task 2.6 has no `builds/<id>/build/release.json`, so it is incomplete under the new check (owner open question in `atomic-sha-deploys` task 2.7). The old router never reads `release:` keys, so this is safe before the apply.
+2. Backfill: list the folders in the production site bucket whose names match `^[0-9a-f]{40}$`, and run `node scripts/load-release-hosts.mjs "$KVS_ARN" <id>...` with `S3_BUCKET` and `RELEASE_DATA_BUCKET` set. The script skips nothing silently: it stops on an incomplete folder, and the operator leaves that folder out and records why. A folder uploaded before the `atomic-sha-deploys` storage split has no `builds/<id>/build/release.json`. It is left out: not promotable, no release host (owner decision, 2026-11-22). Nothing writes a `release.json` for it. The old router never reads `release:` keys, so this is safe before the apply.
 3. Apply Terraform (Decision 7).
-4. Check: `https://<7-char commit>.release.policeconduct.org/` serves that release; `https://<full commit>.release.policeconduct.org/robots.txt` is deny-all; an unknown commit returns 404; `https://release.policeconduct.org/x?y=1` and `https://preview.policeconduct.org/x?y=1` return 301 to `https://www.policeconduct.org/x?y=1`; `www` still serves `current`. Forms: an `OPTIONS` request to `https://www.policeconduct.org/api/forms/submit` with `Origin: https://<7-char commit>.release.policeconduct.org` returns 204, and with `Origin: https://pr-<N>.preview.policeconduct.org` returns 403; the same request to `https://pr-<N>.preview.policeconduct.org/api/forms/submit` returns 204 for its own origin and 403 for `https://www.policeconduct.org`.
+4. Check: `https://<7-char commit>.release.policeconduct.org/` serves that release, and a retired path of that release returns 301; `https://<full commit>.release.policeconduct.org/robots.txt` is deny-all; an unknown commit returns 404; `https://release.policeconduct.org/x?y=1` and `https://preview.policeconduct.org/x?y=1` return 301 to `https://www.policeconduct.org/x?y=1`; `www` still serves `current`. Forms: an `OPTIONS` request to `https://www.policeconduct.org/api/forms/submit` with `Origin: https://<7-char commit>.release.policeconduct.org` returns 204, and with `Origin: https://pr-<N>.preview.policeconduct.org` returns 403; the same request to `https://pr-<N>.preview.policeconduct.org/api/forms/submit` returns 204 for its own origin and 403 for `https://www.policeconduct.org`.
 5. Delete `current:main` from the preview store (`aws cloudfront-keyvaluestore update-keys` with the store ETag).
 6. Delete the mirror copies from the preview buckets (Decision 5): build the candidate list, print the listing, run the dry run, read it, then delete. Record the counts and exit codes in `verify.md`.
 7. The next `npm run deploy -- prod` writes its own key.
@@ -253,4 +254,4 @@ Rollback: revert the PR and apply again. The old router ignores `release:` keys,
 
 ## Open Questions
 
-1. **Preview-store keys of the mirror copies.** When the mirror ran `promote.sh` against the preview store, it also loaded `r:<release-id>:` redirect keys (and any `o:<release-id>:` markers) for each production release. The owner's answer covers the two preview buckets, so the cleanup in Decision 5 leaves those keys. Nothing reads them after the copies are gone, but they use preview-store space. Delete them in the same cleanup, or keep them?
+None. The preview-store `r:` keys the mirror loaded are deleted with every other `r:` key by the `atomic-sha-deploys` redirect cutover (its plan.md, "Redirect cutover").

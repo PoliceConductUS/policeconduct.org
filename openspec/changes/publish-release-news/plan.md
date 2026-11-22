@@ -69,18 +69,18 @@ Sections 8 and 9 follow 7 to keep the existing numbering.
 
 Probe URL table (step 3 of 6.4). `<id>` is the folder `current` names.
 
-| Host                                | Path                                   | Expected                      |
-| ----------------------------------- | -------------------------------------- | ----------------------------- |
-| `https://policeconduct.org`         | `/`                                    | 200, `data-release-id="<id>"` |
-| `https://policeconduct.org`         | a personnel profile from the roster    | 200                           |
-| `https://policeconduct.org`         | a retired path in `_redirect-map.json` | 301 to its target             |
-| `https://policeconduct.org`         | `/builds/<id>/data/dynamic.json`       | 404                           |
-| `https://policeconduct.org`         | `/builds/<id>/build/release.json`      | 404                           |
-| `https://policeconduct.org`         | `/<id>/build/index.html`               | 404                           |
-| `https://policeconduct.org`         | `/<id>/override/index.html`            | 404                           |
-| `https://policeconduct.org`         | `/com/serpapi/landing-page-search/`    | 404                           |
-| `https://policeconduct.org`         | a path that does not exist             | 404 with the site 404 page    |
-| `https://preview.policeconduct.org` | the same private paths                 | 404                           |
+| Host                                | Path                                        | Expected                                             |
+| ----------------------------------- | ------------------------------------------- | ---------------------------------------------------- |
+| `https://policeconduct.org`         | `/`                                         | 200, `data-release-id="<id>"`                        |
+| `https://policeconduct.org`         | a personnel profile from the roster         | 200                                                  |
+| `https://policeconduct.org`         | a retired path in `.release/redirects.json` | 301 to its target, no `x-amz-meta-redirect-location` |
+| `https://policeconduct.org`         | `/builds/<id>/data/dynamic.json`            | 404                                                  |
+| `https://policeconduct.org`         | `/builds/<id>/build/release.json`           | 404                                                  |
+| `https://policeconduct.org`         | `/<id>/build/index.html`                    | 404                                                  |
+| `https://policeconduct.org`         | `/<id>/override/index.html`                 | 404                                                  |
+| `https://policeconduct.org`         | `/com/serpapi/landing-page-search/`         | 404                                                  |
+| `https://policeconduct.org`         | a path that does not exist                  | 404 with the site 404 page                           |
+| `https://preview.policeconduct.org` | the same private paths                      | 404                                                  |
 
 Legacy-prefix allow-list (step 4 of 6.4). Delete only root objects written by the old root-served layout: root-level files other than `/404.html`, and root-level folders that are not release folders (a full commit hash or the cutover placeholder folder). Record the exact list from `aws s3 ls s3://<site bucket>/` in verify.md before deleting. Never delete `/404.html`, any `*/build/` or `*/override/` prefix, or any release folder.
 
