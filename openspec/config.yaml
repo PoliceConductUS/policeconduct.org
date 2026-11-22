@@ -6,11 +6,13 @@ context: |
   Stack: Astro static site, TypeScript/JavaScript, PostgreSQL/Supabase data contracts, AWS infrastructure managed with Terraform.
   Workflow: OpenSpec with superpowers-bridge, Superpowers, Codex App, trunk-based development, and one worktree folder per stacked task branch.
   Data rules: URLs use database-backed slugs; database entity IDs must come from explicit database or seed values; agency location identity comes from public.agency.location_path_id joined to public.location_path.
+  Site rule: the site is a generated view of the database; it makes no decisions about content or relationships (those belong in intake and the database). Build projections may compute counts and rollups from recorded relationships. See AGENTS.md "The Site Is A View Of The Database".
   Validation rules: Missing required database tables or fields must fail builds; do not add silent fallbacks for required data; required template fields should be treated as required.
 
 rules:
   proposal:
     - Identify affected user-visible behavior, data contracts, validation rules, and downstream consumers.
+    - Name the database table and column that holds each fact or relationship the change shows; put any content or relationship logic in intake and the database, never in the site.
     - Call out whether the change intentionally breaks backward compatibility.
     - Include evidence expectations for any positive-deviance finding or public-trust claim.
   tasks:

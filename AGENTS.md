@@ -78,6 +78,16 @@ OpenSpec Usage
 - Use `/opsx:continue <change-name>`, `/opsx:apply <change-name>`, `/opsx:verify <change-name>`, and `/opsx:archive <change-name>` for the normal bridge lifecycle.
 - Review generated `proposal.md`, `design.md`, `tasks.md`, `plan.md`, `verify.md`, and retrospective artifacts before relying on them.
 
+The Site Is A View Of The Database
+
+- The site is a generated view of the database and nothing more. All logic about content and relationships belongs in intake and the database.
+- The site never decides what is connected to what. A relationship exists only when a database row or foreign key records it. Do not infer one by matching names, slugs, namespaces, sources, text, dates or geography, and do not pick one row to stand for several (for example `rows[0]`).
+- The site never decides what a record says. Statuses, categories, labels, badges, messages and summaries come from database columns. Do not derive them with rules, regular expressions or text matching, and do not rewrite stored text.
+- The site never moves, re-attaches, hides or adds records by its own rules. When the data does not fit a page, stop and report it so intake or the database can change; do not add a site-side rule.
+- The site may read rows, follow recorded relationships, route by database-backed paths, and format values (dates, numbers, sort order, pagination, escaping).
+- Exception: build projections (`scripts/refresh-build-projections.mjs` and the `build_page_payload` rows it writes) may compute counts and rollups from recorded relationships. They follow the scope rules below and add no relationship that the database does not record.
+- When existing site code breaks this rule, remove the logic and move the fact into intake and the database.
+
 Data + Routing Conventions
 
 - URLs use database-backed slugs. Do not compute slugs during build/runtime.
