@@ -5,7 +5,6 @@ import { loadDataAnnotations } from "#src/lib/data/data-annotations.js";
 import {
   loadStateAuthorityPaths,
   loadStateAuthority,
-  loadAuthorityNamespaces,
 } from "#src/lib/data/licensing-authority.js";
 import {
   annotationPages,
@@ -18,20 +17,16 @@ export async function getStaticPaths() {
     await Promise.all(
       (await loadStateAuthorityPaths()).map(async ({ params }) => {
         const authority = await loadStateAuthority(`/${params.category}/`);
-        const namespaces = await loadAuthorityNamespaces(authority.id);
-        return annotationPages(entries, namespaces, authority.id).map(
-          ({ parts }) => ({
-            params: { ...params, parts: parts || undefined },
-          }),
-        );
+        return annotationPages(entries, authority.id).map(({ parts }) => ({
+          params: { ...params, parts: parts || undefined },
+        }));
       }),
     )
   ).flat();
 }
 const authority = await loadStateAuthority(`/${Astro.params.category}/`);
-const namespaces = await loadAuthorityNamespaces(authority.id);
 const entries = await loadDataAnnotations();
-const view = annotationPages(entries, namespaces, authority.id).find(
+const view = annotationPages(entries, authority.id).find(
   (view) => view.parts === (Astro.params.parts || ""),
 );
 if (!view) throw new Error("Unknown authority annotation view.");
@@ -57,6 +52,6 @@ const base = `${authority.statePath}licensing-authority/data-annotations/`;
   <DataAnnotationIndex
     base={base}
     view={view}
-    filters={annotationFilters(entries, namespaces, authority.id)}
+    filters={annotationFilters(entries, authority.id)}
   />
 </PageShell>
