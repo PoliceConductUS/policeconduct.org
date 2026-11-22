@@ -9,7 +9,7 @@ News discovered between builds should reach the relevant personnel and agency pa
 - Show up to 25 distinct homepage stories in the order Intake supplies. Intake orders them by combined seven-day clicks for matched search terms and personnel landing pages.
 - Publish release-specific source HTML and a snapshot of existing agencies, personnel assignments and page paths.
 - Consume page data keyed by replaceable part and serve a complete regenerated document at the existing canonical path.
-- Save every form submission with its originating release ID in production and preview. Log a missing or unknown release ID, and record the Forms API version that processed each submission.
+- Save every form submission with its originating release ID and the page's data version (`dataVersion`) in production and preview. Log a missing or unknown release ID or a missing data version, and record the Forms API version that processed each submission.
 - Use commit-hash release folders in the site buckets. Only `main` builds create releases. Release folders are kept; PR preview folders are deleted when the PR closes.
 - Use normalized publisher URLs as Daily article source IDs. Write confirmed duplicate-to-target URL pairs under `CoverageLink` in private `data/alias.json`. Keep persistent source IDs for assignment links. Carry the originating namespace and source ID in JSON and HTML across searches. design.md "Release API and page-object contract" is the cross-repository contract. Intake owns its source, database and mutation changes.
 

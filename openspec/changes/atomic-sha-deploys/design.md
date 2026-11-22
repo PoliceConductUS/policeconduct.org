@@ -48,8 +48,7 @@ The bare `preview.<domain>` host and the `current:main` mirror are baseline beha
 
 The release ID stays the full 40-character commit. A rebuild of the same commit against newer data goes to the same folder.
 
-- `scripts/build-release.mjs` records the data version the build read in `.release/source.json`, beside `commit`, `branch` and `pr`, as `dataVersion`.
-- `scripts/upload-release.sh` uploads `.release/source.json` to `builds/<commit>/source.json` in the release data bucket, before `dynamic.json`. That file is the uploaded release record: it names the commit and the data version of the build the folder holds.
+- The build records the data version it read (see "Data version" below). Every page carries it, and `.release/source.json` records it as `dataVersion`, beside `commit`, `branch` and `pr`. The pages and `.release/source.json` are the record of which data a folder holds. No separate `source.json` is uploaded to the release data bucket.
 - `scripts/upload-release.sh` replaces the folder's files instead of skipping existing ones. It syncs `dist/` to `<commit>/build/` and `.release/data/` to `builds/<commit>/data/` without `--no-overwrite` and with `--delete`, so changed files are replaced and files the new build no longer produces are removed. The folder then equals the latest build.
 - `dynamic.json` is still uploaded last as the completion marker. The data sync excludes it, so `--delete` does not remove it; the last step replaces it.
 - A rerun with `--skip-build` resumes an interrupted upload: sync uploads only files that differ.
@@ -58,7 +57,17 @@ The release ID stays the full 40-character commit. A rebuild of the same commit 
 - The router, `promote.sh`, `load-redirects.mjs` and the release API need no change.
 - Existing release folders are already named by the bare commit. Nothing is migrated.
 
-Open question: which value identifies the data version — owner to decide.
+## Data version
+
+Owner decision, 2026-11-22. The data version of a build is the `version` of the last applied entry in intake's data-mutation ledger, `public.data_mutation_applied`. Values look like `000015`. Intake does not change; the build reads what is already there.
+
+- The ledger is a chain: each row's `previous_version` names the row before it. The last entry is the one row whose `version` no other row names as `previous_version`.
+- `src/lib/data-version.js` reads the rows with `SELECT version, previous_version FROM public.data_mutation_applied` and passes them to `headVersion(rows)`. `headVersion` returns the `version` of the one row that no row names as `previous_version`.
+- Exactly one such row is expected. Zero rows (including an empty ledger) or more than one row stops the build with an error. A missing table stops the build through the query error. There is no fallback value.
+- The build reads the data version once. `scripts/build-release.mjs` reads it before `npm run build:site`, writes it to `.release/source.json` as `dataVersion`, and passes it to the site build as `DATA_VERSION`, the same way it passes `RELEASE_ID`. `src/lib/data-version.js` uses `DATA_VERSION` when it is set and reads the ledger only when it is not (a plain `npm run build`).
+- `src/layouts/SiteLayout.astro` renders `data-data-version="<version>"` on `<html>`, next to `data-release-id`. Every built page carries both.
+- The version is read at build time. It is never written into code or config.
+- Intake restarts the ledger chain when it resets the chain, so the same version can name different data at different times. A data version identifies data only together with the time of the build. The owner accepted this for simplicity.
 
 ## Previews are PR builds only
 
