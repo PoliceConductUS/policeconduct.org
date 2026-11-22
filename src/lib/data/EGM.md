@@ -86,7 +86,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 ### annotation-values.js
 
-- JSDoc types `DataAnnotation` and `AnnotationEntry` (a `DataAnnotation` plus `canonical_id`, `entity_kind`, `record_url`, `record_label`, `source_provider`). They are not runtime exports. [annotation-values.js:AnnotationEntry]
+- JSDoc types `DataAnnotation` and `AnnotationEntry` (a `DataAnnotation` plus `canonical_id`, `entity_kind`, `record_url` (a string, or `null` when the record has no public page), `record_label`, `source_provider`). They are not runtime exports. [annotation-values.js:AnnotationEntry]
 - `parseAnnotations(value)` checks that the value is an array whose entries match `contract.annotation` and returns the same array. [annotation-values.js:parseAnnotations]
 - `parseSourceValues(value)` checks the value against `contract.sourceValues` and returns it unchanged. [annotation-values.js:parseSourceValues]
 - `annotationValue(value)` returns a string as it is and passes anything else through `JSON.stringify`. [annotation-values.js:annotationValue]
@@ -96,15 +96,15 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - `annotationsCsv(entries)` returns CSV text with the columns `source_provider`, `source_record_id`, `record_url`, `field`, `reported_value`, `type`, `message`, `replacement_value`, `evidence`. [annotation-values.js:reported_value]
 - `reportedDate(stored, evidence)` returns `YYYY-MM-DD` from the local calendar fields of a `Date`, or `evidence.effective_value` when `stored` is `null` and evidence is given, or `stored`. [annotation-values.js:reportedDate]
 - `isReportedDate(value)` is true only for a `YYYY-MM-DD` string that is a real calendar date. [annotation-values.js:isReportedDate]
-- `authorityAnnotations(entries, namespaces, authorityId)` keeps entries whose `source_namespace` is in `namespaces`, or whose `entity_kind` is `LicensingAuthority` with `canonical_id` equal to `authorityId`. [annotation-values.js:authorityAnnotations]
+- `authorityAnnotations(entries, authorityId)` keeps entries whose `entity_kind` is `LicensingAuthority` with `canonical_id` equal to `authorityId`; the site never assigns a note to an authority by its source. [annotation-values.js:authorityAnnotations]
 - `annotationFromRecord(record)` projects a stored annotation row to a `DataAnnotation` and validates it with `parseAnnotations`. [annotation-values.js:annotationFromRecord]
 - `annotationRecordLabel(entry)` returns the excluded record's `name` (or its `kind` and `key`) for the field `excluded_records`, otherwise `entry.record_label`. [annotation-values.js:annotationRecordLabel]
 - `annotationNoteLabel(entry)` returns `Excluded duplicate`, `Excluded record`, `Our warning`, `Data error` or `Our correction`. [annotation-values.js:annotationNoteLabel]
 
 ### annotation-views.ts
 
-- `annotationFilters(entries, namespaces?, authorityId?)` returns one `{ parts, provider, type, entries }` filter for each provider crossed with the types all, `warning`, `error`, `correction`. [annotation-views.ts:annotationFilters]
-- `annotationPages(entries, namespaces?, authorityId?)` returns one `{ parts, provider, type, entries, filterParts, page, pageCount, rows }` object per page of each filter. [annotation-views.ts:annotationPages]
+- `annotationFilters(entries, authorityId?)` returns one `{ parts, provider, type, entries }` filter for each provider crossed with the types all, `warning`, `error`, `correction`. [annotation-views.ts:annotationFilters]
+- `annotationPages(entries, authorityId?)` returns one `{ parts, provider, type, entries, filterParts, page, pageCount, rows }` object per page of each filter. [annotation-views.ts:annotationPages]
 - `annotationHref(base, parts)` returns `base` plus `parts` and a trailing `/`, or `base` when `parts` is empty. [annotation-views.ts:annotationHref]
 
 ### arrest-beats.ts
@@ -223,7 +223,6 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 - `collectDataAnnotations(client: PoolClient): Promise<AnnotationEntry[]>` builds one entry per active annotation whose owner resolves to a public record. It uses the database client passed in. [data-annotations.ts:export async function collectDataAnnotations]
 - `loadDataAnnotations()` returns the result of `collectDataAnnotations` run through `withDb`. [data-annotations.ts:export function loadDataAnnotations()]
-- `collectDataAnnotations` reads `id, name, source_namespaces` from `public.licensing_authority`. [data-annotations.ts:select id, name, source_namespaces from public.licensing_authority]
 - `collectDataAnnotations` reads the active rows of `public.data_annotation`. [data-annotations.ts:select * from public.data_annotation where status = 'active' order by id]
 - `collectDataAnnotations` reads each owner row from the table and primary key named for its kind in `annotation-contract.json`. [data-annotations.ts:select * from ${descriptor.table} where ${descriptor.primaryKey} = $1]
 - `collectDataAnnotations` checks `public.agency_personnel` for a current assignment at an agency. [data-annotations.ts:select exists(select 1 from public.agency_personnel ap where ap.agency_id=$1]
@@ -258,7 +257,6 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - `loadAuthorityRecords(authorityId)` returns license counts by type and status from `public.license` and `public.authority_license`. [licensing-authority.ts:group by al.name, l.status order by al.name, l.status nulls last]
 - `loadAuthorityRecords` returns action counts and latest dates from `public.license_action`. [licensing-authority.ts:from public.license_action a]
 - `loadAuthorityRecords` returns discipline rows from `public.discipline` joined to `public.personnel`. [licensing-authority.ts:from public.discipline d join public.personnel p]
-- `loadAuthorityNamespaces(id)` returns the authority's `source_namespaces`. [licensing-authority.ts:select source_namespaces from public.licensing_authority where id = $1]
 
 ### licensing.ts
 
@@ -423,7 +421,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 ### annotation-views.ts
 
 - Filters are ordered with all providers first, then each provider in first-seen order; inside each, the types are all, `warning`, `error`, `correction`. Filters with no entries are still returned. [annotation-views.ts:"correction"]
-- When `namespaces` is given there is no per-provider breakdown, and the entries are first narrowed with `authorityAnnotations(entries, namespaces, authorityId)`. [annotation-views.ts:authorityAnnotations(entries, namespaces, authorityId)]
+- When `authorityId` is given there is no per-provider breakdown, and the entries are first narrowed with `authorityAnnotations(entries, authorityId)`. [annotation-views.ts:authorityAnnotations(entries, authorityId)]
 - A filter's `parts` is `source/{URL-encoded namespace}`, then `type/{type}`, joined with `/`; each is left out when it is not set. [annotation-views.ts:encodeURIComponent(provider)]
 - Each filter has at least one page. Page 1 has no `page/` segment. [annotation-views.ts:page/]
 - The page count and `paginateAnnotations` both use `PAGE_SIZE` from `src/lib/pagination`. [annotation-views.ts:PAGE_SIZE]
@@ -529,7 +527,6 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 ### data-annotations.ts
 
-- Throws `Multiple licensing authorities claim source {namespace}.` [data-annotations.ts:Multiple licensing authorities claim source]
 - Throws `Annotation owner requires {field}.` for a blank `subject_kind`, `subject_id`, parent key, `slug`, `path`, `display_name`, `name`, `title` or `location_path_id`. [data-annotations.ts:Annotation owner requires]
 - Throws `Unknown annotation owner kind {kind}.` when the kind is not in `annotation-contract.json`. [data-annotations.ts:Unknown annotation owner kind]
 - Throws `Missing annotation owner {kind}:{id}.` when the owner row does not exist. [data-annotations.ts:Missing annotation owner]
@@ -548,10 +545,10 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - Throws `No public annotation owner for {kind}:{id}.` for any other root kind. [data-annotations.ts:No public annotation owner for]
 - When `NO_PERSONNEL` is set, annotations owned by a person are left out, and so are `excluded_records` annotations whose value has the kind `Personnel`. [data-annotations.ts:annotation.field === "excluded_records"]
 - An annotation on a location with no location page links to `/data-annotations/`. [data-annotations.ts:Keep findings discoverable without creating pages for thin locations.]
-- An annotation with no record URL links to its source authority's `data-annotations/` page; the loader throws `No source authority for {kind}:{id} from {namespace}.` when no authority claims the namespace. [data-annotations.ts:No source authority for]
+- An annotation whose record has no public page keeps `record_url` `null`; it is listed in the index without a link. [data-annotations.ts:record_url: recordUrl]
 - Throws `Source authority {id} requires a public page.` [data-annotations.ts:requires a public page.]
 - Entries are sorted by `source_namespace`, `entity_kind`, `canonical_id`, `field`, `type`, `source_record_id`, `message` in code-unit order. [data-annotations.ts:].join("\u0000")]
-- `source_provider` is the authority's name, or the raw namespace when no authority claims it. [data-annotations.ts:providers.get(annotation.source_namespace)?.name ??]
+- `source_provider` is the annotation's `source_namespace`. [data-annotations.ts:source_provider: annotation.source_namespace]
 
 ### federal-agencies.ts
 
@@ -570,7 +567,6 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - `requireStateAuthority` throws `Expected exactly one state licensing authority at {statePath}.` unless there is exactly one row, at that path, at level `state`, on a one-segment path. [licensing-authority.ts:Expected exactly one state licensing authority at]
 - `loadStateAuthorityLink` returns `null` only for zero rows. [licensing-authority.ts:if (!rows.length) return null;]
 - `loadStateAuthorityPaths` checks every authority and throws when two share a state path. [licensing-authority.ts:rows.filter((row) => row.statePath === authority.statePath)]
-- `loadAuthorityNamespaces` throws `Missing licensing authority {id}.` [licensing-authority.ts:Missing licensing authority]
 - `loadAuthorityRecords` sorts licenses and actions with `Intl.Collator("en", { sensitivity: "base" })`; discipline is ordered by effective date descending. An unknown id returns three empty lists. [licensing-authority.ts:new Intl.Collator("en", { sensitivity: "base" })]
 
 ### licensing.ts
