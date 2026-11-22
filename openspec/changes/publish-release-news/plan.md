@@ -85,4 +85,4 @@ Legacy-prefix allow-list (step 4 of 6.4). Delete only root objects written by th
 
 ## 10. Work outside this change folder
 
-- [ ] Tasks 7.1–7.9 in tasks.md: the Intake news-discovery change, the `atomic-sha-deploys` superseded note, the README key paths, Forms API mismatch handling and version field, the same-commit upload guard, the `main` preview-name check, roster-path officer links, keeping release folders, and the final-head verification record.
+- [ ] Tasks 7.1–7.9 in tasks.md: the Intake news-discovery change, the `atomic-sha-deploys` superseded note, the README key paths, Forms API mismatch handling, the `dataVersion` field and the Forms API version field, the same-commit upload guard, the `main` preview-name check, roster-path officer links, keeping release folders, and the final-head verification record.
