@@ -14,7 +14,7 @@ import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
-import { metricVisuals } from "#src/lib/metric-vocabulary.js";
+import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
 import { getPersonnelPhotoById } from "#src/lib/personnel-photos.js";
 import { buildReportCanonicalPath } from "#src/lib/data/report-paths.js";
 import LicenseTimeline from "#src/components/LicenseTimeline.astro";
@@ -284,6 +284,11 @@ const personnelPhoto = await getPersonnelPhotoById(data.officer.id);
 const personnelImageSrc = personnelPhoto || "/img/personnel/default.webp";
 const hasPersonnelPhoto = Boolean(personnelPhoto);
 const civilCaseCount = data.civilCases.length;
+// Count of open civil cases (no date_terminated); moves to an intake database
+// view (supply-site-display-data).
+const activeCivilCaseCount = civilCasesWithPaths.filter(
+  (caseItem) => !caseItem.date_terminated,
+).length;
 const associatedAgencyCount = new Set(
   assignmentHistory.map((entry) => entry.agency_id),
 ).size;
@@ -320,9 +325,10 @@ const personnelMetricCards: MetricCardItem[] = [
         }
       : {}),
     accent: metricVisuals.civilCases.accent,
+    detail: metricLabels.activeTotal,
     icon: metricVisuals.civilCases.icon,
     label: metricVisuals.civilCases.label,
-    value: formatCount(civilCaseCount),
+    value: `${formatCount(activeCivilCaseCount)} / ${formatCount(civilCaseCount)}`,
   },
   {
     accent: metricVisuals.liabilityCosts.accent,

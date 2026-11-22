@@ -1,5 +1,6 @@
 export const metricLabels = {
   agencies: "Agencies",
+  activeTotal: "active / total",
   activeCases: "Active Cases",
   arrests: "Arrests",
   budget: "Budget",

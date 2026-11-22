@@ -180,14 +180,28 @@ const volunteerHref = buildHelpCollectHref(
   "agency",
   agencySlugSegment,
 );
+// Count of current assignments; moves to an intake database view
+// (supply-site-display-data). The headline personnel count is current
+// assignments, and the former count is ended assignments, as before.
+const personnelMeta =
+  counts.formerPersonnel > 0
+    ? `${formatCount(counts.formerPersonnel)} former on record`
+    : "Currently serving";
 const personnelCell =
-  counts.personnel > 0
+  counts.currentPersonnel > 0
     ? {
-        value: formatCount(counts.personnel),
+        value: formatCount(counts.currentPersonnel),
+        meta: personnelMeta,
         href: `${agencyPath}personnel/`,
         helpCollectHref: volunteerHref,
       }
-    : { helpCollectHref: volunteerHref };
+    : counts.formerPersonnel > 0
+      ? {
+          gloss: "No current personnel on record.",
+          helpCollectHref: `${agencyPath}personnel/`,
+          helpCollectLabel: `See ${formatCount(counts.formerPersonnel)} former on record →`,
+        }
+      : { helpCollectHref: volunteerHref };
 
 type RecentItem = {
   href: string;

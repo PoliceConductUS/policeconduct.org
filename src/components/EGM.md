@@ -371,9 +371,13 @@ of this directory.
   `entry.agency.page_type` is `agency`, using `requireAgencyCanonicalPath`.
   `[PersonnelAssignments.astro:requireAgencyCanonicalPath]`
 - `AgencyPersonnelList` shows each row's stored title and its stored start and
-  end years; it derives no current, former or uncertain status. It sorts rows
+  end years, with no per-row status label. Its summary line shows the total and
+  the current, former and (when above zero) uncertain counts, using
+  `isCurrentAssignment` and `isEndedAssignment`; uncertain is the total minus
+  the other two. It sorts rows
   by surname with a first-name fallback using `civicIndexCollator`.
   `[AgencyPersonnelList.astro:const tenure =]`
+  `[AgencyPersonnelList.astro:const uncertainCount = total - currentCount - formerCount;]`
   `[AgencyPersonnelList.astro:civicIndexCollator.compare(a.sortKey, b.sortKey)]`
 - `AgencyPersonnelList` always renders the "With discipline actions" checkbox;
   it filters on `personnelDisciplineCount`, while the per-row discipline link

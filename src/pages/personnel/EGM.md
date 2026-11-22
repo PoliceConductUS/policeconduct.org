@@ -10,7 +10,7 @@ Static Astro page for the route `/personnel/`. It shows a count of listed person
 - Loads personnel summaries with `loadPersonnelSummaries()` from `src/lib/data/summaries.js`. `[index.astro:const personnelRows = await loadPersonnelSummaries();]`
 - Loads federal agency summaries with `loadFederalAgencySummaries()` from `src/lib/data/federal-agencies.js`. `[index.astro:const federalAgencies = await loadFederalAgencySummaries();]`
 - Builds one stat per entry of `US_STATE_TILES` (from `src/lib/geo/states.js`): the state code, a count and a link. `[index.astro:const stateStats = US_STATE_TILES.map((state) => {]`
-- A state's count comes from `loadPersonnelCountsByStatePath()`: distinct people with any assignment at an agency located within the state, through `public.location_path_closure`; a person with assignments in two states counts in both. `[index.astro:personnelCountsByStatePath.get(]`
+- A state's count comes from `loadPersonnelCountsByStatePath()`: each listed person counts once, under the state of the agency on their latest-started open assignment. `[index.astro:personnelCountsByStatePath.get(]`
 - A state's link is `/{lowercase state code}/`. ``[index.astro:href: `/${state.code.toLowerCase()}/`,]``
 - The header slot shows the total personnel count. `[index.astro:{totalPersonnel} personnel]`
 - The header slot shows the number of states with at least one person. `[index.astro:{statesWithPersonnel} states covered]`

@@ -44,13 +44,13 @@ Astro dynamic page for the routes `/personnel/{slug}/`. It shows one person's pr
 - The portrait comes from `getPersonnelPhotoById` in `src/lib/personnel-photos.js`; when it returns nothing the image is `/img/personnel/default.webp`. `[index.astro:const personnelImageSrc = personnelPhoto || "/img/personnel/default.webp";]`
 - The agencies metric card shows the count of distinct agencies in the assignment history and links to `#agency-assignments`. `[index.astro:href: "#agency-assignments",]`
 - The current salary metric card always shows `--`. `[index.astro:label: metricVisuals.currentSalary.label,]`
-- The civil cases metric card shows the civil case count. `[index.astro:value: formatCount(civilCaseCount),]`
+- The civil cases metric card shows "active / total", where active means no `date_terminated`, with the detail `metricLabels.activeTotal`. ``[index.astro:value: `${formatCount(activeCivilCaseCount)} / ${formatCount(civilCaseCount)}`,]``
 - The civil cases metric card links to `/personnel/{slug}/civil-cases/` only when the person has at least one civil case. ``[index.astro:href: `${officerPath}civil-cases/`,]``
 - The liability costs metric card always shows `--`. `[index.astro:label: metricVisuals.liabilityCosts.label,]`
 - The arrests metric card shows "Available" and links to `#arrest-records` when there are arrest profiles; otherwise it shows `--`. `[index.astro:value: arrestProfiles.length ? "Available" : unavailableValue,]`
 - When there are arrest profiles, the arrests metric card also carries the detail "Recorded counts by agency assignment". `[index.astro:detail: "Recorded counts by agency assignment",]`
 - The reports metric card shows the report count and links to `/personnel/{slug}/reports/` only when the person has at least one report. ``[index.astro:href: `${officerPath}reports/`,]``
-- Metric labels, icons and accents come from `metricVisuals` in `src/lib/metric-vocabulary.js`; the card type is `MetricCardItem` from `src/components/metric-card-types.js`. `[index.astro:const personnelMetricCards: MetricCardItem[] = []`
+- Metric labels, icons and accents come from `metricVisuals` and `metricLabels` in `src/lib/metric-vocabulary.js`; the card type is `MetricCardItem` from `src/components/metric-card-types.js`. `[index.astro:const personnelMetricCards: MetricCardItem[] = []`
 - Counts are formatted with `Intl.NumberFormat("en-US")`. `[index.astro:new Intl.NumberFormat("en-US").format(value);]`
 - Structured data is a schema.org `@graph` built with `buildWebSite`, `buildContentPageNode`, `buildPublisherOrganization` and `buildPersonNode` from `src/lib/structured-data.js`; it has no organization node and no `worksFor`, because the database records no single current employer. `[index.astro:buildWebSite(siteUrl),]`
 - The content page node has the type `ProfilePage`, the id page URL plus `#profilepage`, and `dateModified` from the person's `updated_at`. `[index.astro:dateModified: String(data.officer.updated_at),]`

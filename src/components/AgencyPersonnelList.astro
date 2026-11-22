@@ -1,6 +1,10 @@
 ---
 import "#src/styles/civic-ledger.css";
 import { civicIndexCollator } from "#src/lib/data/civic-index.js";
+import {
+  isCurrentAssignment,
+  isEndedAssignment,
+} from "#src/lib/data/assignment-status.js";
 
 // The full agency roster on one page — a scannable research surface, not a bare
 // phone book. Every officer shows a quiet context line (rank · stored dates ·
@@ -12,6 +16,10 @@ type EmployeeLike = {
     end_date?: string | null;
     start_date?: string | null;
     title?: string | null;
+    data_source_values?: {
+      end_date?: { effective_value: unknown };
+      start_date?: { effective_value: unknown };
+    } | null;
   } | null;
   officer?: {
     first_name?: string | null;
@@ -82,6 +90,16 @@ rows.sort(
 );
 
 const total = rows.length;
+// Count of current assignments; moves to an intake database view
+// (supply-site-display-data). The current, former and uncertain counts keep
+// the meaning they had before; no per-row status label is shown.
+const currentCount = employees.filter(
+  (employee) => employee.entry && isCurrentAssignment(employee.entry),
+).length;
+const formerCount = employees.filter(
+  (employee) => employee.entry && isEndedAssignment(employee.entry),
+).length;
+const uncertainCount = total - currentCount - formerCount;
 const formatCount = (value: number) => value.toLocaleString("en-US");
 
 const alphaGroups = new Map<string, RosterRow[]>();
@@ -105,7 +123,7 @@ const showTools = total >= 15;
 <div class="roster" data-roster>
   <div class="roster-summary" data-roster-summary aria-live="polite">
     <strong>{formatCount(total)}</strong>
-    {" personnel"}
+    {` personnel · ${formatCount(currentCount)} current · ${formatCount(formerCount)} former${uncertainCount ? ` · ${formatCount(uncertainCount)} uncertain` : ""}`}
   </div>
 
   <div class="roster-controls">

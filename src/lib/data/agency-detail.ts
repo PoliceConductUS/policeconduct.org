@@ -1,5 +1,6 @@
 import { groupBy, mapBy } from "#src/lib/data.js";
 import { withDb } from "#src/lib/db.js";
+import { isCurrentAssignment, isEndedAssignment } from "./assignment-status.js";
 import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
@@ -617,6 +618,16 @@ const buildAgencyDetail = async (agencyId: string) => {
         data.disciplineLinks.map((link) => link.discipline_id),
       ).size,
       personnel: employees.length,
+      // Count of current assignments; moves to an intake database view
+      // (supply-site-display-data).
+      currentPersonnel: employees.filter((employee) =>
+        isCurrentAssignment(employee.entry),
+      ).length,
+      // Count of ended assignments; moves to an intake database view
+      // (supply-site-display-data).
+      formerPersonnel: employees.filter((employee) =>
+        isEndedAssignment(employee.entry),
+      ).length,
       coverage: coverageLinks.length,
     },
   };

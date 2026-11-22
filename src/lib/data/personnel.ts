@@ -66,10 +66,10 @@ export const loadPersonnelSummaries = async (): Promise<PersonnelSummary[]> => {
   return summaries;
 };
 
-// Distinct personnel with any agency_personnel row at an agency located within
-// each state, through the recorded agency location and the
-// location_path_closure projection. A person with assignments in two states
-// counts in both.
+// Count of current assignments; moves to an intake database view
+// (supply-site-display-data). Each listed person counts once, under the state
+// segment of the location path of the agency on their latest-started open
+// assignment (the same rule loadPersonnelSummaries lists by).
 export const loadPersonnelCountsByStatePath = async (): Promise<
   Map<string, number>
 > => {
@@ -78,15 +78,24 @@ export const loadPersonnelCountsByStatePath = async (): Promise<
       (
         await client.query(
           `
-            select state_lp.path, count(distinct ap.personnel_id)::int as total
-            from public.agency_personnel ap
-            join public.agency a on a.id = ap.agency_id
-            join public.location_path_closure closure
-              on closure.descendant_location_path_id = a.location_path_id
-            join public.location_path state_lp
-              on state_lp.location_path_id = closure.ancestor_location_path_id
-             and state_lp.level = 'state'
-            group by state_lp.path
+            with latest_open_assignment as (
+              select distinct on (ao.personnel_id) ao.personnel_id, ao.agency_id
+              from public.agency_personnel ao
+              where ${currentAssignmentSql("ao")}
+              order by ao.personnel_id, ao.start_date desc nulls last, ao.id desc
+            )
+            select
+              '/' || split_part(lp.path, '/', 2) || '/' as path,
+              count(*)::int as total
+            from latest_open_assignment latest
+            join public.personnel o on o.id = latest.personnel_id
+            join public.agency a on a.id = latest.agency_id
+            join public.location_path lp
+              on lp.location_path_id = a.location_path_id
+            join public.build_page_payload bpp
+              on bpp.page_type = 'agency'
+             and bpp.entity_id = latest.agency_id
+            group by split_part(lp.path, '/', 2)
           `,
         )
       ).rows,

@@ -363,7 +363,9 @@ const loadFederalAgencySummaryRows = async (slug: string | null) => {
             fa.name,
             fa.slug,
             count(distinct a.id) as branch_count,
-            count(distinct branch_assignment.personnel_id) as personnel_count,
+            -- Count of current assignments; moves to an intake database view
+            -- (supply-site-display-data).
+            count(distinct active_assignment.personnel_id) as personnel_count,
             count(distinct report_officer.review_id) as report_count,
             coalesce(
               array_agg(distinct civil_case_link.civil_case_id)
@@ -379,8 +381,9 @@ const loadFederalAgencySummaryRows = async (slug: string | null) => {
                and ${currentAssignmentSql("assignment")}
            )
            and a.parent_federal_agency_id is not null
-          left join public.agency_personnel branch_assignment
-            on branch_assignment.agency_id = a.id
+          left join public.agency_personnel active_assignment
+            on active_assignment.agency_id = a.id
+           and ${currentAssignmentSql("active_assignment")}
           left join public.agency_personnel report_assignment
             on report_assignment.agency_id = a.id
           left join public.review_personnel report_officer
@@ -476,7 +479,9 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
            and bpp.entity_id = a.id
           left join lateral (
             select
-              count(distinct branch_assignment.personnel_id) as personnel_count,
+              -- Count of current assignments; moves to an intake database view
+              -- (supply-site-display-data).
+              count(distinct active_assignment.personnel_id) as personnel_count,
               count(distinct report_officer.review_id) as report_count,
               coalesce(
                 array_agg(distinct civil_case_link.civil_case_id)
@@ -484,8 +489,9 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
                 '{}'
               ) as civil_case_ids
             from public.agency child_agency
-            left join public.agency_personnel branch_assignment
-              on branch_assignment.agency_id = child_agency.id
+            left join public.agency_personnel active_assignment
+              on active_assignment.agency_id = child_agency.id
+             and ${currentAssignmentSql("active_assignment")}
             left join public.agency_personnel report_assignment
               on report_assignment.agency_id = child_agency.id
             left join public.review_personnel report_officer
