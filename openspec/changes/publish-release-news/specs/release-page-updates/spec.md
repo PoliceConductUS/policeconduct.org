@@ -74,7 +74,7 @@ Coverage links SHALL attach to `AgencyPersonnel` assignments. Each agency page S
 
 ### Requirement: Attribute submissions to the originating form
 
-The website SHALL embed its release identity in each built form and submit it as `releaseId` through the configured environment-specific submission path. The Forms API SHALL save every submission, preserve its `releaseId` when present, log a mismatch when the release ID is missing or unknown, and record the Forms API version that processed it.
+The website SHALL embed its release identity in each built form and submit it as `releaseId` through the configured environment-specific submission path. The website SHALL submit the page's `data-data-version` as `dataVersion` beside `releaseId`. The Forms API SHALL save every submission, preserve its `releaseId` and `dataVersion` when present, log a mismatch when the release ID is missing or unknown or the data version is missing, and record the Forms API version that processed it.
 
 #### Scenario: An old form submits after deployment
 
@@ -95,6 +95,16 @@ The website SHALL embed its release identity in each built form and submit it as
 
 - **WHEN** a form on a page that has no `data-release-id` submits
 - **THEN** the submission is sent and saved without a `releaseId`, the Forms API logs the mismatch, and the stored record carries the Forms API version that processed it
+
+#### Scenario: A form sends its data version
+
+- **WHEN** a form on a page with `data-release-id` and `data-data-version` submits
+- **THEN** the stored submission carries both values as `releaseId` and `dataVersion`
+
+#### Scenario: A form from a page without a data version submits
+
+- **WHEN** a form on a page that has no `data-data-version` submits
+- **THEN** the submission is sent and saved without a `dataVersion`, the Forms API logs the mismatch, and the stored record carries the Forms API version that processed it
 
 #### Scenario: A form from the current release submits
 

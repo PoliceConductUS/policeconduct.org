@@ -18,7 +18,7 @@ Builds already land in per-commit folders and go live when a CloudFront KeyValue
 **Rebuilding a commit replaces its folder**
 
 - From: the release ID is the full commit. A second deploy of the same commit against newer data silently keeps the old pages, because uploads use `--no-overwrite`.
-- To: the release ID is still the full commit. A rebuild of the same commit uploads into the same folder and replaces its files; files the new build no longer produces are removed. `dynamic.json` is still uploaded last. The build records the data version it read in `.release/source.json` and in the uploaded release record `builds/<commit>/source.json`.
+- To: the release ID is still the full commit. A rebuild of the same commit uploads into the same folder and replaces its files; files the new build no longer produces are removed. `dynamic.json` is still uploaded last. The build records the data version it read: the `version` of the last applied entry in intake's `public.data_mutation_applied` ledger. Every page carries it in `data-data-version` on `<html>`, next to `data-release-id`, and `.release/source.json` records it as `dataVersion`.
 
 **Previews are PR builds only**
 
@@ -58,8 +58,9 @@ Builds already land in per-commit folders and go live when a CloudFront KeyValue
 
 ## Impact
 
-- `scripts/build-release.mjs`, `scripts/upload-release.sh`: record the data version and replace the folder's files on a rebuild.
+- `src/lib/data-version.js` (new), `src/layouts/SiteLayout.astro`, `scripts/build-release.mjs`: read the data version once from the ledger, render it on every page and record it in `.release/source.json`.
+- `scripts/upload-release.sh`: replace the folder's files on a rebuild.
 - `scripts/deploy.sh`, `infrastructure/bootstrap-policeconduct/functions/router.js`: PR-only preview labels.
 - `scripts/manage-release.mjs`, `scripts/cleanup-preview.mjs`, `.github/workflows/cleanup-preview.yml`, `package.json` (`deploy:delete`): lifecycle.
 - `README.md` deploy section, `infrastructure/bootstrap-policeconduct/functions/noindex.js` header comment: documentation.
-- Tests: `scripts/deploy-release-guard.test.mjs`, `scripts/cloudfront-router.test.mjs`, `scripts/manage-release.test.mjs`, plus a new test for `scripts/cleanup-preview.mjs`.
+- Tests: `src/lib/data-version.test.mjs` (new), `tests/e2e/content-pages-smoke.spec.ts`, `scripts/deploy-release-guard.test.mjs`, `scripts/cloudfront-router.test.mjs`, `scripts/manage-release.test.mjs`, plus a new test for `scripts/cleanup-preview.mjs`.
