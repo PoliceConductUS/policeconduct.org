@@ -302,7 +302,7 @@ test("shared chrome renders without any record-annotation dependency", async () 
 });
 
 for (const noPersonnel of ["", "1"]) {
-  test(`authority exclusions respect NO_PERSONNEL=${JSON.stringify(noPersonnel)} in the common HTML and CSV collector`, async () => {
+  test(`NO_PERSONNEL=${JSON.stringify(noPersonnel)} hides no annotations in the common HTML and CSV collector`, async () => {
     const { collectDataAnnotations } =
       await import("../../src/lib/data/data-annotations");
     const records = ["Personnel", "Agency"].map((kind) => ({
@@ -358,15 +358,13 @@ for (const noPersonnel of ["", "1"]) {
     try {
       process.env.NO_PERSONNEL = noPersonnel;
       const entries = await collectDataAnnotations(client);
-      expect(entries.map((entry) => entry.source_record_id).sort()).toEqual(
-        noPersonnel
-          ? ["synthetic-Agency-source"]
-          : ["synthetic-Agency-source", "synthetic-Personnel-source"],
-      );
+      expect(entries.map((entry) => entry.source_record_id).sort()).toEqual([
+        "synthetic-Agency-source",
+        "synthetic-Personnel-source",
+      ]);
       const csv = annotationsCsv(entries);
       expect(csv).toContain("synthetic-Agency-source");
-      if (noPersonnel) expect(csv).not.toContain("synthetic-Personnel-source");
-      else expect(csv).toContain("synthetic-Personnel-source");
+      expect(csv).toContain("synthetic-Personnel-source");
     } finally {
       if (previous === undefined) delete process.env.NO_PERSONNEL;
       else process.env.NO_PERSONNEL = previous;

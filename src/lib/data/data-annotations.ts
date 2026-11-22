@@ -74,9 +74,12 @@ export async function collectDataAnnotations(
         required(row[relationship[1]], relationship[1]),
       );
     if (kind === "Personnel") {
-      if ((process.env.NO_PERSONNEL || "").trim()) return null;
+      // NO_PERSONNEL only stops personnel pages from being built, so there is
+      // no page to link to.
       return {
-        url: `/personnel/${required(row.slug, "slug")}/`,
+        url: (process.env.NO_PERSONNEL || "").trim()
+          ? null
+          : `/personnel/${required(row.slug, "slug")}/`,
         label: [row.first_name, row.middle_name, row.last_name, row.suffix]
           .filter(Boolean)
           .join(" "),
@@ -153,15 +156,6 @@ export async function collectDataAnnotations(
   ).rows;
   for (const row of rows) {
     const annotation = annotationFromRecord(row);
-    if (
-      (process.env.NO_PERSONNEL || "").trim() &&
-      annotation.field === "excluded_records" &&
-      annotation.value !== null &&
-      typeof annotation.value === "object" &&
-      "kind" in annotation.value &&
-      annotation.value.kind === "Personnel"
-    )
-      continue;
     const kind = required(row.subject_kind, "subject_kind");
     const id = required(row.subject_id, "subject_id");
     const target = await owner(kind, id);
