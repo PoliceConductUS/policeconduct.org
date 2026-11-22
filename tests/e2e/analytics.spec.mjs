@@ -646,13 +646,13 @@ test("advanced consent remembers choices and withdrawal keeps advertising denied
     "https://policeconduct.org/about/contact/",
     { keepConsentOpen: true },
   );
-  const panel = page.getByRole("dialog", { name: "Manage cookie settings" });
+  const panel = page.getByRole("dialog", { name: "Your privacy choices" });
   const decline = page.getByRole("button", {
     name: "Decline all",
     exact: true,
   });
   const settings = page.getByRole("button", {
-    name: "Cookie settings",
+    name: "Your privacy choices",
     exact: true,
   });
   await expect(panel).toBeVisible();
@@ -750,7 +750,7 @@ test("unavailable choice storage defaults to denied and reports unsaved acceptan
     { keepConsentOpen: true },
   );
   await expect(
-    page.getByRole("dialog", { name: "Manage cookie settings" }),
+    page.getByRole("dialog", { name: "Your privacy choices" }),
   ).toBeVisible();
   expect(
     analytics.commands.find((entry) => entry[0] === "consent")[2]

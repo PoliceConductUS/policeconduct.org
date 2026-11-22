@@ -50,7 +50,7 @@ of this directory.
   to `/news/`, `/donate/`, `/report/new/` and `/volunteer/`.
   `[SiteLayout.astro:masthead-nav]`
 - Footer: organization social links, five link columns (About, Data and
-  methods, Partner, Support, Legal notices), a "Cookie settings" button
+  methods, Partner, Support, Legal notices), a "Your privacy choices" button
   (`data-privacy-settings`, rendered `hidden`), a data-removal request link,
   the site-wide information notice, a notice that connections between records
   are computer-generated and may be incorrect, the organization name and

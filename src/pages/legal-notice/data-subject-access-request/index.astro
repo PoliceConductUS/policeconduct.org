@@ -410,6 +410,12 @@ import PageShell from "#src/layouts/PageShell.astro";
       showFormLoadError({ formName: "dataSubjectAccessRequest", shell });
     } else {
       initRecaptcha();
+      // The footer "Do Not Sell or Share" link preselects the opt-out request.
+      if (
+        new URLSearchParams(window.location.search).get("action") === "opt-out"
+      )
+        (form.querySelector("#actionOptOut") as HTMLInputElement).checked =
+          true;
       form.addEventListener("submit", async function (event) {
         await submitJsonForm({
           event,

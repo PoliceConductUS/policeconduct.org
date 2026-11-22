@@ -10,7 +10,7 @@ The owner decided on 2026-11-18/19 to keep the advertising choice and make it re
 
 The board selected advanced consent mode on 2026-11-14. Deny analytics_storage
 until acceptance, load the Google tag on production hosts (https on policeconduct.org and www.policeconduct.org) for cookieless measurement even when declined,
-remember choices, and provide a Cookie settings button to change or withdraw them.
+remember choices, and provide a Your privacy choices button to change or withdraw them.
 
 Advertising is a separate category. Allow all and Decline all set both categories; Save preferences sets each one on its own. An advertising opt-in grants ad_storage, ad_user_data and ad_personalization and sets allow_google_signals and allow_ad_personalization_signals to true. Google Signals and regional ads personalization are turned on in each Google Analytics property so that an opt-in has an effect. Without an opt-in, every advertising permission stays denied.
 
@@ -27,6 +27,6 @@ The shared footer shows the build commit (first 12 characters of the SHA, with "
 
 ## Impact
 
-Adds a consent dialog and a Cookie settings button to the shared layout. No data or routing changes.
+Adds a consent dialog and a Your privacy choices button to the shared layout. No data or routing changes.
 Changes Google Analytics property settings (Google Signals and regional ads personalization) on both sites.
 Updates the privacy and cookie notices to match the dialog. Merge, deployment and GA Admin evidence are tracked in tasks.md.

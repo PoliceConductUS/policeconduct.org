@@ -479,7 +479,7 @@ const serializeStructuredData = (value: unknown) =>
                   data-privacy-settings
                   hidden
                 >
-                  Cookie settings
+                  Your privacy choices
                   <svg
                     width="18"
                     height="18"
@@ -506,6 +506,13 @@ const serializeStructuredData = (value: unknown) =>
             href="/legal-notice/data-subject-access-request/"
           >
             Request removal of my information
+          </a>
+          <span aria-hidden="true"> · </span>
+          <a
+            class="fw-semibold text-decoration-underline"
+            href="/legal-notice/data-subject-access-request/?action=opt-out"
+          >
+            Do Not Sell or Share My Personal Information
           </a>
         </p>
         <div class="col-lg-8 mx-auto text-center text-muted small">

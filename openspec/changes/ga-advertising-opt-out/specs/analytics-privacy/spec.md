@@ -55,7 +55,7 @@ settings let Google do.
 - **THEN** analytics_storage follows the Analytics cookies checkbox
 - **AND** ad_storage, ad_user_data, ad_personalization, allow_google_signals and allow_ad_personalization_signals follow the Advertising checkbox
 - **AND** both choices are remembered
-- **AND** the dialog closes and focus returns to the element that had focus before the dialog opened (Cookie settings when the visitor opened it from there)
+- **AND** the dialog closes and focus returns to the element that had focus before the dialog opened (Your privacy choices when the visitor opened it from there)
 
 #### Scenario: Storage unavailable
 

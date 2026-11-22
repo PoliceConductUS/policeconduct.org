@@ -18,7 +18,7 @@ categories: Necessary settings (always on), Analytics cookies and Advertising,
 and three equally styled buttons: Allow all, Save preferences and Decline all.
 Allow all grants both categories. Decline all denies both. Save preferences sets
 each category from its checkbox. The dialog opens on its own when no valid choice
-is saved. A Cookie settings button at the bottom of every page reopens it. The
+is saved. A Your privacy choices button at the bottom of every page reopens it. The
 dialog says that limited cookieless measurement continues after a decline, and
 it describes the Advertising choice as exactly what the property settings below
 let Google do. Withdrawal sends a consent update and removes the cookies of each
