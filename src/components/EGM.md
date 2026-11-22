@@ -189,7 +189,8 @@ of this directory.
 ### Action, analytics and prefill components
 
 - `AnalyticsConsent`: no props; renders a hidden `<dialog>` with analytics and
-  advertising checkboxes and three buttons.
+  advertising checkboxes, three buttons, and a hidden Global Privacy Control
+  note (`[data-gpc-note]`).
   `[AnalyticsConsent.astro:data-analytics-consent]`
 - `GoogleAnalytics`: no props; script only.
   `[GoogleAnalytics.astro:initializeAnalytics]`

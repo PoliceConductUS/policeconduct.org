@@ -819,3 +819,44 @@ test("advertising opt-in is independent, persists and can be withdrawn", async (
     allow_google_signals: false,
   });
 });
+
+test("a Global Privacy Control signal keeps advertising off", async ({
+  page,
+  baseURL,
+}) => {
+  await page.addInitScript(() =>
+    Object.defineProperty(Navigator.prototype, "globalPrivacyControl", {
+      get: () => true,
+    }),
+  );
+  await visitSite(page, baseURL, "https://policeconduct.org/about/contact/", {
+    keepConsentOpen: true,
+  });
+  await expect(page.locator("[data-advertising-enabled]")).toBeDisabled();
+  await expect(page.locator("[data-gpc-note]")).toBeVisible();
+  await page.locator('[data-analytics-choice="granted"]').click();
+  const latest = await page.evaluate(
+    () =>
+      Array.from(window.dataLayer)
+        .filter((entry) => entry[0] === "consent")
+        .at(-1)[2],
+  );
+  expect(latest).toEqual({
+    analytics_storage: "granted",
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+  });
+  const flags = await page.evaluate(
+    () =>
+      Array.from(window.dataLayer)
+        .filter(
+          (entry) => entry[0] === "set" && "allow_google_signals" in entry[1],
+        )
+        .at(-1)[1],
+  );
+  expect(flags).toEqual({
+    allow_ad_personalization_signals: false,
+    allow_google_signals: false,
+  });
+});

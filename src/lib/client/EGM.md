@@ -58,7 +58,8 @@ Browser-side modules shipped to the reader's browser. `site.js` is a side-effect
 ### `analytics-consent.js`
 
 - `readAnalyticsChoice()` returns `"granted"`, `"denied"`, or `null` when nothing valid is stored or storage cannot be read. `[analytics-consent.js:readAnalyticsChoice]`
-- `readAdvertisingChoice()` returns `"granted"` or `"denied"`, defaulting to `"denied"`; it never returns null. `[analytics-consent.js:readAdvertisingChoice]`
+- `readAdvertisingChoice()` returns `"granted"` or `"denied"`, defaulting to `"denied"`; it never returns null. It returns `"denied"` whenever `globalPrivacyControl()` is true, whatever was saved. `[analytics-consent.js:readAdvertisingChoice]`
+- `globalPrivacyControl()` is true when `navigator.globalPrivacyControl === true`. While it is true the consent dialog disables the Advertising checkbox, shows `[data-gpc-note]`, and saves advertising as `"denied"` for every button. `[analytics-consent.js:globalPrivacyControl]`
 - `advertisingSettings(choice)` is pure and returns `{ allow_ad_personalization_signals, allow_google_signals }`, both true only when `choice` is `"granted"`. `[analytics-consent.js:allow_ad_personalization_signals]`
 - `consentState(choice, advertising = "denied")` is pure and returns a Google consent object: `analytics_storage` follows `choice`; `ad_storage`, `ad_user_data` and `ad_personalization` follow `advertising`. `[analytics-consent.js:ad_personalization]`
 - `initializeConsentControls()` returns nothing. It un-hides the privacy-settings control, fills the checkboxes from the stored choice, opens the dialog when no analytics choice is stored, installs the listeners below, and clears Google cookies for any category not granted. `[analytics-consent.js:initializeConsentControls]`

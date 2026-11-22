@@ -12,10 +12,11 @@ const consentModule = readFileSync(
   new URL("../src/lib/client/analytics-consent.js", import.meta.url),
   "utf8",
 );
-function loadTag(choice) {
+function loadTag(choice, navigator = {}) {
   const atExternalLoad = [];
   const browser = {
     URL,
+    navigator,
     localStorage: { getItem: () => choice },
     document: {
       title: "Public records",
@@ -53,6 +54,24 @@ test("advertising is denied before the external tag can load", () => {
   for (const key of ["ad_storage", "ad_user_data", "ad_personalization"]) {
     assert.equal(consent[2][key], "denied");
   }
+});
+
+test("a Global Privacy Control signal overrides a saved advertising opt-in", () => {
+  const { browser } = loadTag(
+    JSON.stringify({ analytics: "granted", advertising: "granted" }),
+    { globalPrivacyControl: true },
+  );
+  const consent = browser.dataLayer.find(
+    (entry) => entry[0] === "consent" && entry[1] === "default",
+  )[2];
+  assert.equal(consent.analytics_storage, "granted");
+  for (const key of ["ad_storage", "ad_user_data", "ad_personalization"])
+    assert.equal(consent[key], "denied");
+  const flags = browser.dataLayer.find(
+    (entry) => entry[0] === "set" && "allow_google_signals" in entry[1],
+  )[1];
+  assert.equal(flags.allow_ad_personalization_signals, false);
+  assert.equal(flags.allow_google_signals, false);
 });
 
 test("page views default to advertising opt-out while retaining ordinary analytics", () => {

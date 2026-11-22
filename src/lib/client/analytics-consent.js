@@ -19,9 +19,15 @@ const readChoices = () => {
   }
 };
 
+/** True when the browser sends a Global Privacy Control signal. */
+export const globalPrivacyControl = () =>
+  window.navigator?.globalPrivacyControl === true;
+
 export const readAnalyticsChoice = () => readChoices()?.analytics ?? null;
+// A Global Privacy Control signal is an opt-out of advertising use, so it
+// overrides any saved advertising choice.
 export const readAdvertisingChoice = () =>
-  readChoices()?.advertising ?? "denied";
+  globalPrivacyControl() ? "denied" : (readChoices()?.advertising ?? "denied");
 
 export const advertisingSettings = (choice) => ({
   allow_ad_personalization_signals: choice === "granted",
@@ -58,6 +64,7 @@ export const initializeConsentControls = () => {
   const status = panel.querySelector("[data-consent-status]");
   const analytics = panel.querySelector("[data-analytics-enabled]");
   const advertising = panel.querySelector("[data-advertising-enabled]");
+  const gpcNote = panel.querySelector("[data-gpc-note]");
   const show = () => {
     panel.hidden = false;
     if (!panel.open) panel.showModal();
@@ -70,6 +77,8 @@ export const initializeConsentControls = () => {
     const choice = readAnalyticsChoice();
     analytics.checked = choice === "granted";
     advertising.checked = readAdvertisingChoice() === "granted";
+    advertising.disabled = globalPrivacyControl();
+    gpcNote.hidden = !globalPrivacyControl();
     status.textContent = "";
   };
   const apply = (choice, ads) => {
@@ -89,7 +98,8 @@ export const initializeConsentControls = () => {
     render();
     show();
   });
-  const save = (choice, ads) => {
+  const save = (choice, requestedAds) => {
+    const ads = globalPrivacyControl() ? "denied" : requestedAds;
     apply(choice, ads);
     advertising.checked = ads === "granted";
     analytics.checked = choice === "granted";

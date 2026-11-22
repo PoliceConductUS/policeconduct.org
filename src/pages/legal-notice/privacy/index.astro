@@ -1114,11 +1114,12 @@ const structuredData = buildWebPage({
     your privacy preference not to have data about your online browsing
     activities monitored and collected. At this stage, no uniform technology
     standard for recognizing and implementing DNT signals has been finalized. As
-    such, we do not currently respond to DNT browser signals or any other
-    mechanism that automatically communicates your choice not to be tracked
-    online. If a standard for online tracking is adopted that we must follow in
-    the future, we will inform you about that practice in a revised version of
-    this Privacy Notice.
+    such, we do not respond to DNT browser signals. We do honor Global Privacy
+    Control (GPC): if your browser sends a GPC signal, Advertising stays off and
+    cannot be turned on in Cookie settings. GPC does not turn off analytics; you
+    can decline analytics cookies in Cookie settings. If a standard for online
+    tracking is adopted that we must follow in the future, we will inform you
+    about that practice in a revised version of this Privacy Notice.
   </p>
   <p>
     California law requires us to let you know how we respond to web browser DNT
@@ -1246,6 +1247,13 @@ const structuredData = buildWebPage({
           Analytics cookies are used only if you allow them. If you decline,
           Google still receives limited measurements without cookies, such as
           the page viewed and your browser type.
+        </li>
+        <li>
+          If your browser sends a Global Privacy Control (GPC) signal, we treat
+          it as a request to opt out of sharing for advertising. Advertising
+          stays off and cannot be turned on in Cookie settings. GPC does not
+          turn off analytics; you can decline analytics cookies in Cookie
+          settings.
         </li>
       </ul>
       <p>
