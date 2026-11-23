@@ -8,7 +8,10 @@ import { transform } from "@astrojs/compiler-rs";
 import ts from "typescript";
 import { experimental_AstroContainer } from "astro/container";
 import type { PoolClient } from "pg";
-import { annotationsCsv } from "../../src/lib/data/annotation-values.js";
+import {
+  annotationDisplay,
+  annotationsCsv,
+} from "../../src/lib/data/annotation-values.js";
 import { currentAssignmentSql } from "../../src/lib/data/annotation-access.js";
 
 test("current assignment SQL distinguishes open dates from unrepresentable source dates", async () => {
@@ -47,15 +50,12 @@ test("personnel profiles show reported dates without calculated tenure", async (
   await expect(page.locator(".personnel-profile-aside")).toBeVisible();
 });
 
-test("agency findings without a public agency page remain visible through their source authority", async () => {
+test("agency findings without a public agency page stay in the index without a record link", async () => {
   const { collectDataAnnotations } =
     await import("../../src/lib/data/data-annotations");
   await withDb(async (client) => {
     await client.query("begin");
     try {
-      await client.query(
-        `update public.licensing_authority set source_namespaces = array_append(source_namespaces, 'fixture.no-page') where id = (select id from public.licensing_authority order by id limit 1)`,
-      );
       await client.query(
         `insert into public.agency (id, slug, name, state, location_path_id, address, city, zip_code, latitude, longitude) select $1::jsonb->>'id', $1::jsonb->>'slug', $1::jsonb->>'name', a.state, a.location_path_id, a.address, a.city, a.zip_code, a.latitude, a.longitude from public.agency a limit 1`,
         [
@@ -80,7 +80,7 @@ test("agency findings without a public agency page remain visible through their 
       const entries = await collectDataAnnotations(client);
       const unlisted = (
         await client.query(
-          `select a.id, count(*)::int as count from public.agency a join public.data_annotation da on da.subject_kind='Agency' and da.subject_id=a.id and da.status='active' where not exists (select 1 from public.agency_personnel ap where ap.agency_id=a.id and ${currentAssignmentSql("ap")}) group by a.id`,
+          `select a.id, count(*)::int as count from public.agency a join public.data_annotation da on da.subject_kind='Agency' and da.subject_id=a.id and da.status='active' where not exists (select 1 from public.build_page_payload p where p.page_type='agency' and p.entity_id=a.id) group by a.id`,
         )
       ).rows;
       for (const agency of unlisted) {
@@ -89,10 +89,7 @@ test("agency findings without a public agency page remain visible through their 
             entry.entity_kind === "Agency" && entry.canonical_id === agency.id,
         );
         expect(findings).toHaveLength(agency.count);
-        for (const finding of findings)
-          expect(finding.record_url).toMatch(
-            /^\/[^/]+\/licensing-authority\/data-annotations\/$/,
-          );
+        for (const finding of findings) expect(finding.record_url).toBeNull();
       }
       expect(
         entries.filter(
@@ -110,20 +107,7 @@ test("agency findings without a public agency page remain visible through their 
         source_record_id: "fixture-1",
         value: "invalid",
       });
-      const authority = (
-        await client.query(
-          `select lp.path from public.licensing_authority la join public.location_path lp on lp.location_path_id = la.location_path_id where 'fixture.no-page' = any(la.source_namespaces)`,
-        )
-      ).rows[0];
-      expect(finding?.record_url).toBe(
-        `${authority.path}licensing-authority/data-annotations/`,
-      );
-      await client.query(
-        "update public.licensing_authority set source_namespaces = array_remove(source_namespaces, 'fixture.no-page')",
-      );
-      await expect(collectDataAnnotations(client)).rejects.toThrow(
-        /source authority/,
-      );
+      expect(finding?.record_url).toBeNull();
     } finally {
       await client.query("rollback");
     }
@@ -210,12 +194,10 @@ test("active native annotations render in the public index and CSV", async ({
     (entry) => entry.field === "location_path_id",
   );
   expect(locations.length).toBeGreaterThan(0);
-  expect(exported).not.toContain("location_path_id");
-  expect(exported).toContain("Administrative area");
+  expect(exported).toContain("location_path_id");
   for (const entry of locations) {
     expect(exported).not.toContain(String(entry.replacement_value));
   }
-  await expect(page.locator("main")).not.toContainText("location_path_id");
 });
 
 const renderAnnotationFixture = async (
@@ -320,7 +302,7 @@ test("shared chrome renders without any record-annotation dependency", async () 
 });
 
 for (const noPersonnel of ["", "1"]) {
-  test(`authority exclusions respect NO_PERSONNEL=${JSON.stringify(noPersonnel)} in the common HTML and CSV collector`, async () => {
+  test(`NO_PERSONNEL=${JSON.stringify(noPersonnel)} hides no annotations in the common HTML and CSV collector`, async () => {
     const { collectDataAnnotations } =
       await import("../../src/lib/data/data-annotations");
     const records = ["Personnel", "Agency"].map((kind) => ({
@@ -341,19 +323,6 @@ for (const noPersonnel of ["", "1"]) {
     }));
     const client = {
       query: async (sql: string, values?: string[]) => {
-        if (
-          sql ===
-          "select id, name, source_namespaces from public.licensing_authority"
-        )
-          return {
-            rows: [
-              {
-                id: "synthetic-board",
-                name: "Synthetic board",
-                source_namespaces: ["synthetic.provider"],
-              },
-            ],
-          };
         if (sql.startsWith("select * from public.data_annotation"))
           return { rows: records };
         if (
@@ -389,15 +358,13 @@ for (const noPersonnel of ["", "1"]) {
     try {
       process.env.NO_PERSONNEL = noPersonnel;
       const entries = await collectDataAnnotations(client);
-      expect(entries.map((entry) => entry.source_record_id).sort()).toEqual(
-        noPersonnel
-          ? ["synthetic-Agency-source"]
-          : ["synthetic-Agency-source", "synthetic-Personnel-source"],
-      );
+      expect(entries.map((entry) => entry.source_record_id).sort()).toEqual([
+        "synthetic-Agency-source",
+        "synthetic-Personnel-source",
+      ]);
       const csv = annotationsCsv(entries);
       expect(csv).toContain("synthetic-Agency-source");
-      if (noPersonnel) expect(csv).not.toContain("synthetic-Personnel-source");
-      else expect(csv).toContain("synthetic-Personnel-source");
+      expect(csv).toContain("synthetic-Personnel-source");
     } finally {
       if (previous === undefined) delete process.env.NO_PERSONNEL;
       else process.env.NO_PERSONNEL = previous;
@@ -405,8 +372,12 @@ for (const noPersonnel of ["", "1"]) {
   });
 }
 
-for (const type of ["warning", "error"]) {
-  test(`record-page ${type} notes retain escaped supporting evidence`, async ({
+for (const [type, label] of [
+  ["warning", "Warning"],
+  ["error", "Data error"],
+  ["correction", "Correction"],
+]) {
+  test(`record-page ${type} annotations show only their label and message`, async ({
     page,
   }) => {
     await page.setContent(
@@ -416,60 +387,116 @@ for (const type of ["warning", "error"]) {
         [
           {
             field: "end_date",
-            value: "invalid",
+            value: "reported-value-1999",
             type,
             message: "Synthetic finding",
             source_namespace: "synthetic.provider",
             source_record_id: "synthetic-source",
             record_url: "/personnel/synthetic/",
-            evidence: [
-              {
-                note: '<img src=x onerror="window.fixtureExecuted=true">',
-                url: "https://example.invalid/evidence",
-              },
-            ],
+            ...(type === "correction"
+              ? { replacement_value: "replacement-value-2001" }
+              : {}),
+            evidence: [{ note: "synthetic-evidence-text" }],
           },
         ],
       ),
     );
-    const notes = page.getByRole("region", { name: "Source data annotations" });
-    await expect(notes).toContainText("Synthetic finding");
-    await expect(
-      notes.getByText("Supporting evidence", { exact: true }),
-    ).toBeVisible();
-    await notes.getByText("Supporting evidence", { exact: true }).click();
-    expect(JSON.parse(await notes.locator("pre").innerText())).toEqual([
-      {
-        note: '<img src=x onerror="window.fixtureExecuted=true">',
-        url: "https://example.invalid/evidence",
-      },
-    ]);
-    await expect(notes.locator("img")).toHaveCount(0);
-    await expect(notes).not.toContainText("Replacement:");
+    const annotations = page.getByRole("region", {
+      name: "Source data annotations",
+    });
+    await expect(annotations.locator("li")).toHaveText(
+      `${label}: Synthetic finding`,
+    );
+    await expect(annotations.locator("details")).toHaveCount(0);
   });
 }
 
-test("authority data-note index has only its paginated table and exports all matching notes", async ({
+test("record-page excluded_records annotations show the type label and stored message without the field name or JSON value", async ({
+  page,
+}) => {
+  await page.setContent(
+    await renderAnnotationFixture(
+      "src/components/RecordDataNotes.astro",
+      "/tx/licensing-authority/",
+      [
+        {
+          field: "excluded_records",
+          value: { key: "509914", kind: "Agency" },
+          type: "warning",
+          message: "Explicitly excluded Agency: placeholder address.",
+          source_namespace: "synthetic.provider",
+          source_record_id: "509914",
+          record_url: "/tx/licensing-authority/",
+        },
+      ],
+    ),
+  );
+  await expect(
+    page.getByRole("region", { name: "Source data annotations" }).locator("li"),
+  ).toHaveText(
+    /^\s*Warning:\s*Explicitly excluded Agency: placeholder address\.\s*$/,
+  );
+});
+
+test("licensing authority pages list no annotations and link to their paginated data-annotations page", async ({
+  page,
+  request,
+}) => {
+  const { collectDataAnnotations } =
+    await import("../../src/lib/data/data-annotations");
+  const byAuthority = Map.groupBy(
+    (await withDb(collectDataAnnotations)).filter(
+      (entry) => entry.entity_kind === "LicensingAuthority",
+    ),
+    (entry) => entry.record_url,
+  );
+  const [authorityUrl, filed] = [...byAuthority].find(
+    ([url, entries]) => url !== null && entries.length > 50,
+  )!;
+  expect(authorityUrl).toMatch(/^\/[a-z-]+\/licensing-authority\/$/);
+  await page.goto(authorityUrl!);
+  await expect(
+    page.getByRole("region", { name: "Source data annotations" }),
+  ).toHaveCount(0);
+  await expect(
+    page.locator(`main a[href="${authorityUrl}data-annotations/"]`),
+  ).toHaveCount(1);
+  await page.goto(`${authorityUrl}data-annotations/`);
+  await expect(page.locator("main table tbody tr")).toHaveCount(50);
+  await expect(
+    page.locator('nav[aria-label="Data notes pages"] a[href$="/page/2/"]'),
+  ).toHaveCount(1);
+  const csv = await (
+    await request.get(`${authorityUrl}data-annotations/data.csv`)
+  ).text();
+  for (const entry of filed) expect(csv).toContain(entry.source_record_id);
+});
+
+test("authority data-note index lists only notes on that authority and exports them all", async ({
   page,
   request,
 }) => {
   const { collectDataAnnotations } =
     await import("../../src/lib/data/data-annotations");
   const entries = await withDb(collectDataAnnotations);
-  const fallback = entries.find((entry) =>
-    entry.record_url.endsWith("/licensing-authority/data-annotations/"),
+  const owned = entries.filter(
+    (entry) => entry.entity_kind === "LicensingAuthority" && entry.record_url,
   );
-  expect(fallback).toBeDefined();
-  await page.goto(fallback!.record_url);
-  await expect(page.locator("main table tbody tr")).toHaveCount(50);
+  expect(owned.length).toBeGreaterThan(0);
+  const authorityUrl = owned[0].record_url!;
+  const notes = owned.filter((entry) => entry.record_url === authorityUrl);
+  const index = `${authorityUrl}data-annotations/`;
+  await page.goto(index);
+  await expect(page.locator("main table tbody tr")).toHaveCount(
+    Math.min(50, notes.length),
+  );
   await expect(
     page.getByRole("region", { name: "Source data annotations" }),
   ).toHaveCount(0);
-  const csv = await request.get(`${fallback!.record_url}data.csv`);
+  const csv = await request.get(`${index}data.csv`);
   expect(csv.ok()).toBe(true);
   const exported = await csv.text();
-  expect(exported).toContain(fallback!.source_record_id);
-  expect(exported.split("\r\n").length).toBeGreaterThan(52);
+  for (const note of notes) expect(exported).toContain(note.source_record_id);
 });
 
 test("record notes select only their exact canonical path and omit an empty section", async () => {
@@ -513,21 +540,25 @@ test("canonical record pages explicitly render their collected source notes", as
   const recordEntries = new Map<string, (typeof entries)[number]>();
   for (const entry of entries) {
     if (
+      entry.record_url &&
       !entry.record_url.endsWith("/data-annotations/") &&
+      entry.entity_kind !== "LicensingAuthority" &&
       !recordEntries.has(entry.entity_kind)
     )
       recordEntries.set(entry.entity_kind, entry);
   }
   expect(recordEntries.size).toBeGreaterThan(0);
   for (const entry of recordEntries.values()) {
-    await page.goto(entry.record_url);
-    const notes = page.getByRole("region", { name: "Source data annotations" });
-    await expect(notes).toHaveCount(1);
-    await expect(notes).toContainText(entry.source_record_id);
+    await page.goto(entry.record_url!);
+    const annotations = page.getByRole("region", {
+      name: "Source data annotations",
+    });
+    await expect(annotations).toHaveCount(1);
+    await expect(annotations).toContainText(annotationDisplay(entry).message);
   }
 });
 
-test("location findings link only to built location pages or the complete data-note index", async () => {
+test("location findings link only to built location pages and otherwise carry no link", async () => {
   const { collectDataAnnotations } =
     await import("../../src/lib/data/data-annotations");
   await withDb(async (client) => {
@@ -546,13 +577,9 @@ test("location findings link only to built location pages or the complete data-n
       ).rows.map((row) => row.path),
     );
     for (const entry of locations) {
-      expect(
-        entry.record_url === "/data-annotations/" ||
-          paths.has(entry.record_url),
-      ).toBe(true);
+      expect(entry.record_url === null || paths.has(entry.record_url)).toBe(
+        true,
+      );
     }
-    expect(
-      locations.some((entry) => entry.record_url === "/data-annotations/"),
-    ).toBe(true);
   });
 });

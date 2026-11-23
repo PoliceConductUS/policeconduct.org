@@ -28,7 +28,7 @@ Seven browser tests are skipped; some report tests still depend on an older repo
 
 `npm run build` with `build.concurrency: 8` passed environment/schema checks, refreshed 3,206 agency projections and 4,895 payloads, compiled static entrypoints, and rendered approximately 77,000 routes before failing:
 
-> Personnel brian-bammert-zd0w8x assignment eq7j7rxpm6yhs4md73ujovus references agency r8srs1nkant4b7hou96pg9fv without a required canonical path.
+> Personnel brian-bammert-zd0w8x has an assignment whose agency (`/mn/hennepin-county/fort-snelling-ut/metropolitan-airports-commission-6pg9fv/`) has no required canonical path.
 
 The referenced agency is Metropolitan Airports Commission. Its authoritative `agency.location_path_id` joins to `/mn/hennepin-county/` at `administrative_area` level. The projection query requires a place with an administrative-area parent, and the agency route loader requires four path segments. As a result, no agency payload is emitted. This is the only assigned agency missing a projection and affects 117 distinct personnel. Another 93 unprojected agencies have no assigned personnel.
 

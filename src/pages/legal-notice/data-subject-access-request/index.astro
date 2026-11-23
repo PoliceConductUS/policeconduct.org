@@ -49,7 +49,6 @@ import PageShell from "#src/layouts/PageShell.astro";
       <form
         name="dataSubjectAccessRequest"
         method="POST"
-        data-netlify-honeypot="organization"
         class="needs-validation"
         novalidate
       >
@@ -58,10 +57,15 @@ import PageShell from "#src/layouts/PageShell.astro";
           name="form-name"
           value="dataSubjectAccessRequest"
         />
-        <div class="honeypot visually-hidden">
+        <div class="honeypot visually-hidden" aria-hidden="true">
           <label>
             Organization
-            <input type="text" name="organization" />
+            <input
+              type="text"
+              name="organization"
+              tabindex="-1"
+              autocomplete="off"
+            />
           </label>
         </div>
 
@@ -406,6 +410,12 @@ import PageShell from "#src/layouts/PageShell.astro";
       showFormLoadError({ formName: "dataSubjectAccessRequest", shell });
     } else {
       initRecaptcha();
+      // The footer "Do Not Sell or Share" link preselects the opt-out request.
+      if (
+        new URLSearchParams(window.location.search).get("action") === "opt-out"
+      )
+        (form.querySelector("#actionOptOut") as HTMLInputElement).checked =
+          true;
       form.addEventListener("submit", async function (event) {
         await submitJsonForm({
           event,

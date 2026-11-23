@@ -81,7 +81,7 @@ const pageHref = (page: number) =>
           return (
             <tr>
               <td>
-                {entry.field === "excluded_records" ? (
+                {entry.field === "excluded_records" || !entry.record_url ? (
                   entry.record_label
                 ) : (
                   <a href={entry.record_url}>{entry.record_label}</a>

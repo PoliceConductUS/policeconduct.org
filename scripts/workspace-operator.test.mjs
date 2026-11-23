@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 import { operator } from "./workspace-operator.mjs";
 function fixture(overrides = {}) {
   const calls = [];
@@ -52,7 +53,7 @@ test("npm dry-run resolves bucket and preserves direction and dry-run", async ()
   assert.deepEqual(f.calls[0], [
     "terraform",
     [
-      "-chdir=infrastructure/intake-workspace",
+      `-chdir=${fileURLToPath(new URL("../infrastructure/intake-workspace", import.meta.url))}`,
       "output",
       "-raw",
       "intake_workspace_bucket_name",
@@ -77,12 +78,8 @@ test("pull uses download direction and configured bucket", async () => {
   assert.equal(f.calls.at(-1)[1].environment, undefined);
   assert.ok(!f.calls.some(([command]) => command === "terraform"));
 });
-for (const action of [
-  "get-bucket-versioning",
-  "get-bucket-tagging",
-  "get-public-access-block",
-  "get-bucket-encryption",
-])
+// runWorkspace owns the versioning and tag checks (intake-workspace-sync.test.mjs).
+for (const action of ["get-public-access-block", "get-bucket-encryption"])
   test(`unsafe ${action} stops before transfer`, async () => {
     const f = fixture({ [action]: {} });
     await assert.rejects(operator(["push"], f.dependencies));

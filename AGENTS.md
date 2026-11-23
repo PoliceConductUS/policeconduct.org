@@ -78,6 +78,18 @@ OpenSpec Usage
 - Use `/opsx:continue <change-name>`, `/opsx:apply <change-name>`, `/opsx:verify <change-name>`, and `/opsx:archive <change-name>` for the normal bridge lifecycle.
 - Review generated `proposal.md`, `design.md`, `tasks.md`, `plan.md`, `verify.md`, and retrospective artifacts before relying on them.
 
+The Site Is A View Of The Database
+
+- The site is a generated view of the database and nothing more. All logic about content and relationships belongs in intake and the database.
+- The site never filters, selects, connects, or otherwise decides anything about the content of a page. Every generated page reflects the current state of the database, without exception. When a page needs a connection or value the database does not hold, intake adds and populates it.
+- Stored text is shown as stored. Do not change its case, trim it, merge spellings, or relabel it.
+- The site never decides what is connected to what. A relationship exists only when a database row or foreign key records it. Do not infer one by matching names, slugs, namespaces, sources, text, dates or geography, and do not pick one row to stand for several (for example `rows[0]`).
+- The site never decides what a record says. Statuses, categories, labels, badges, messages and summaries come from database columns. Do not derive them with rules, regular expressions or text matching, and do not rewrite stored text.
+- The site never moves, re-attaches, hides or adds records by its own rules. When the data does not fit a page, stop and report it so intake or the database can change; do not add a site-side rule.
+- The site may read rows, follow recorded relationships, route by database-backed paths, and format values (dates, numbers, sort order, pagination, escaping).
+- Exception: build projections (`scripts/refresh-build-projections.mjs` and the `build_page_payload` rows it writes) may compute counts and rollups from recorded relationships. They follow the scope rules below and add no relationship that the database does not record.
+- When existing site code breaks this rule, remove the logic and move the fact into intake and the database.
+
 Data + Routing Conventions
 
 - URLs use database-backed slugs. Do not compute slugs during build/runtime.
@@ -86,7 +98,10 @@ Data + Routing Conventions
 - Agency location identity must come from `public.agency.location_path_id` joined to `public.location_path`. Do not reconstruct agency location, agency canonical URLs, or agency route parameters from parallel agency columns, derived slugs, `build_page_payload.path`, or generated path logic.
 - Seed data and data-loading code must use one authoritative representation for each fact or relationship. Keep required parent/reference identity in the same seed row whenever the table has that relationship column. Do not create parallel source-of-truth structures, derived relationship lists, split seed maps, or other drift-prone implementations unless the user has explicitly approved the architectural compromise.
 - Location-scoped reports and policy context must render only for the exact `location_path_id` they are attached to. Do not inherit, roll up, or cascade `location_reports` or similar location-scoped report records to child or parent locations unless inheritance is explicitly modeled in the database and approved for that report type.
-- Civil case geography has two distinct scopes. `public.civil_cases.location_path_id` is the incident-location geography and may be used only for geographic rollups where one case rolls up once by incident location. Agency, personnel, and federal civil-case scopes must use linked records through `public.civil_case_officers -> public.agency_officers -> public.agency -> public.location_path`; these relationship views may show the same case under multiple connected agencies or personnel. Pages must label which civil-case scope they use and must not mix incident-location metrics with agency/personnel-linked rows.
+- Civil-case counts are always distinct cases: one case record is one case, however many entities link to it. Scopes use linked records through `public.civil_case_personnel -> public.agency_personnel -> public.agency -> public.location_path`:
+  - Personnel: every case linked to any of that person's `agency_personnel` rows.
+  - Agency: cases linked to that agency's own `agency_personnel` rows only. A person's cases from assignments at other agencies do not count.
+  - Place, county, and state: cases linked to the `agency_personnel` rows of every agency located within that location. Do not roll up by the case's own `public.civil_cases.location_path_id` (incident location).
 - Report URLs use the stored incident location path, incident date, and required report slug: /{state}/{area}/{place}/reports/{year}/{month}/{day}/{slug}/.
 - Public report titles must be clean reader-facing titles. Do not include workflow, provenance, or processing prefixes such as "Processed submitted report:" or "Third-party AI review:" in `reviews.title`; put provenance/disclosure text in the report narrative or a dedicated disclosure field.
 - Agency canonical URLs use the joined location path plus the agency slug.
@@ -143,7 +158,7 @@ Validation Expectations
 - Account for every skipped test. Required coverage must run in the correct environment, including built and served Pagefind search. A skipped behavior did not pass. Any warning or coverage exception needs a linked, explicit human decision stating reason, affected check, scope, and duration. Silence or acknowledgment of a limitation is not permission.
 - Record final commit SHA, runtime and dependency verification, command, exit code, each stage outcome, test counts, warning/hint dispositions, skip accounting, task-specific checks, and actual CI status for that head. Inspect the final diff and preserve unrelated changes. PR descriptions and completion reports must reflect final scope and evidence.
 - Full final-build and sitemap verification are required before production release, not before PR merge. Keep task-relevant rendering/no-inline-CSS checks and required browser assets in merge verification without treating them as a full-build prerequisite.
-- Merge readiness, human-reviewed merge, deployment, and public release are separate states. Use feature branches and PRs only. Retain production-release and personnel-publication approval gates. Never claim deployment without deployed evidence.
+- Merge readiness, human-reviewed merge, deployment, and public release are separate states. Use feature branches and PRs only. Deploys and Terraform applies have no approval gate; apply production changes from `main` after the pull request merges. Publishing personnel has no approval gate either. Never claim deployment without deployed evidence.
 
 Legal Notices
 

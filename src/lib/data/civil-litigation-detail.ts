@@ -11,9 +11,6 @@ export type CivilCaseCoverageLink = {
   id: string;
   title: string;
   url: string;
-  source_name?: string | null;
-  published_at?: string | null;
-  notes?: string | null;
 };
 
 export type CivilCaseDetailOfficer = {
@@ -41,7 +38,6 @@ export type CivilCaseDetail = {
     slug: string;
     location_path: string | null;
     location_name: string | null;
-    state_or_territory_slug: string | null;
     title: string;
     cause_number: string;
     court: string | null;
@@ -67,8 +63,7 @@ export const loadCivilCaseDetail = async (
     const civilCase = (
       await client.query(
         `
-          select c.*, lp.path as location_path, lp.display_name as location_name,
-            split_part(lp.path, '/', 2) as state_or_territory_slug
+          select c.*, lp.path as location_path, lp.display_name as location_name
           from public.civil_cases c
           left join public.location_path lp
             on lp.location_path_id = c.location_path_id
@@ -141,10 +136,10 @@ export const loadCivilCaseDetail = async (
             agency.name,
             agency.slug,
             lp.display_name as city,
-            split_part(lp.path, '/', 2) as state,
+            agency.state,
             area_lp.display_name as administrative_area,
             lp.path as location_path,
-            bpp.path as canonical_path
+            lp.path || agency.slug || '/' as canonical_path
           from public.civil_case_personnel civil_case_officer
           join public.agency_personnel agency_officer
             on agency_officer.id = civil_case_officer.agency_personnel_id

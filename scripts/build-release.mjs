@@ -7,11 +7,12 @@ import { resolveTerraformEnv } from "./terraform-outputs.mjs";
 if (existsSync(".env")) process.loadEnvFile(".env");
 resolveTerraformEnv(["RECAPTCHA_SITE_KEY"]);
 
-// scripts/deploy-incremental.sh asks for this on a production release. The auth
+// scripts/deploy.sh asks for this on a production release. The auth
 // token is a secret, so it comes from Parameter Store and nowhere else.
 if (process.env.SENTRY_SOURCEMAPS === "upload") {
   resolveTerraformEnv(["SENTRY_ORG", "SENTRY_PROJECT"]);
-  process.env.SENTRY_AUTH_TOKEN = execFileSync(
+  // Text output is the type, a tab, then the value.
+  const [type, token] = execFileSync(
     "aws",
     [
       "ssm",
@@ -19,17 +20,23 @@ if (process.env.SENTRY_SOURCEMAPS === "upload") {
       "--region",
       "us-east-1",
       "--name",
-      "/policeconduct/secrets/SENTRY_AUTH_TOKEN",
+      "/policeconduct.org/default/secrets/SENTRY_AUTH_TOKEN",
       "--with-decryption",
       "--query",
-      "Parameter.Value",
+      "Parameter.[Type,Value]",
       "--output",
       "text",
     ],
     { encoding: "utf8" },
-  ).trim();
-  if (!process.env.SENTRY_AUTH_TOKEN)
-    throw new Error("SENTRY_AUTH_TOKEN in Parameter Store is empty");
+  )
+    .trim()
+    .split("\t");
+  if (type !== "SecureString")
+    throw new Error(
+      `SENTRY_AUTH_TOKEN in Parameter Store must be a SecureString, but its type is '${type}'`,
+    );
+  if (!token) throw new Error("SENTRY_AUTH_TOKEN in Parameter Store is empty");
+  process.env.SENTRY_AUTH_TOKEN = token;
 }
 
 const pr = process.env.PR_NUMBER;
@@ -62,8 +69,6 @@ writeFileSync(
   JSON.stringify({ commit, branch, pr: pr || null }),
 );
 execFileSync("npm", ["run", "build:site"], options);
-if (pr || process.env.PREVIEW_NAME)
-  writeFileSync("dist/robots.txt", "User-agent: *\nDisallow: /\n");
 execFileSync(process.execPath, ["scripts/write-release-news.mjs"], options);
 execFileSync(
   process.execPath,

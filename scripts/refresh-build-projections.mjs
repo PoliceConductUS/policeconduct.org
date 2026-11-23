@@ -372,6 +372,19 @@ const reportPayload = ({ report }) => {
   };
 };
 
+const assertUniquePayloadPaths = (rows) => {
+  const rowsByPath = new Map();
+  for (const row of rows) {
+    const existing = rowsByPath.get(row.path);
+    if (existing) {
+      throw new Error(
+        `Build payload path ${row.path} is claimed by ${existing.page_type} ${existing.entity_id} and ${row.page_type} ${row.entity_id}.`,
+      );
+    }
+    rowsByPath.set(row.path, row);
+  }
+};
+
 const insertJsonRow = async (client, row) => {
   await client.query(
     `
@@ -443,12 +456,10 @@ const fetchLocationRecordCounts = async (client, locations) => {
             on agency_location.path like target.path || '%'
           join public.agency scoped_agency
             on scoped_agency.location_path_id = agency_location.location_path_id
-          join public.agency_personnel target_assignment
-            on target_assignment.agency_id = scoped_agency.id
-          join public.agency_personnel case_assignment
-            on case_assignment.personnel_id = target_assignment.personnel_id
+          join public.agency_personnel scoped_assignment
+            on scoped_assignment.agency_id = scoped_agency.id
           join public.civil_case_personnel cco
-            on cco.agency_personnel_id = case_assignment.id
+            on cco.agency_personnel_id = scoped_assignment.id
           group by target.location_path_id
         )
         select
@@ -603,33 +614,16 @@ await withDb(async (client) => {
               on ro.agency_personnel_id = ao.id
             group by ao.agency_id
           ),
-          civil_case_links as (
+          civil_case_counts as (
             select
               ao.agency_id,
-              cco.civil_case_id
+              count(distinct cco.civil_case_id) as civil_case_count
             from public.agency_personnel ao
             join eligible_agencies ea
               on ea.id = ao.agency_id
             join public.civil_case_personnel cco
               on cco.agency_personnel_id = ao.id
-            union
-            select
-              target_ao.agency_id,
-              cco.civil_case_id
-            from public.agency_personnel target_ao
-            join eligible_agencies ea
-              on ea.id = target_ao.agency_id
-            join public.agency_personnel case_ao
-              on case_ao.personnel_id = target_ao.personnel_id
-            join public.civil_case_personnel cco
-              on cco.agency_personnel_id = case_ao.id
-          ),
-          civil_case_counts as (
-            select
-              agency_id,
-              count(distinct civil_case_id) as civil_case_count
-            from civil_case_links
-            group by agency_id
+            group by ao.agency_id
           )
           select
             a.id,
@@ -890,6 +884,9 @@ await withDb(async (client) => {
       );
       const incidentDate = normalizeReportDate(row.incident_date);
       const dateParts = getReportDateParts(incidentDate, reportId);
+      if (entries.every((entry) => entry.review_personnel_id == null)) {
+        throw new Error(`Report ${reportId} has no linked personnel.`);
+      }
       const primaryAgency = assertValue(
         agenciesById.get(row.agency_id),
         `Report ${reportId} references agency ${row.agency_id}, but that agency has no build projection.`,
@@ -909,9 +906,6 @@ await withDb(async (client) => {
         }
       }
       const personnel = [...personnelBySlug.values()];
-      if (!personnel.length) {
-        throw new Error(`Report ${reportId} has no linked personnel.`);
-      }
 
       return {
         id: reportId,
@@ -1235,6 +1229,7 @@ await withDb(async (client) => {
       payloadRows.push(reportPayload({ report }));
     }
 
+    assertUniquePayloadPaths(payloadRows);
     for (const row of payloadRows) {
       await insertJsonRow(client, row);
     }

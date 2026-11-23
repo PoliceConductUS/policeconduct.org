@@ -1,8 +1,8 @@
 import { mergeWorkspaceRedirects } from "./workspace-redirects.mjs";
-import { currentAssignmentSql } from "../src/lib/data/annotation-access.js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { statSync } from "node:fs";
 import path from "node:path";
+import { PAGE_SIZE } from "../src/lib/pagination.ts";
 import { getVideoEmbedUrl } from "../src/lib/video.ts";
 import { withDb } from "../src/lib/db.js";
 import { US_STATE_TILES } from "../src/lib/geo/states.ts";
@@ -19,12 +19,6 @@ const hasBuiltDestination = ({ to }) => {
   }
 };
 
-// Keep in sync with src/lib/pagination.ts PAGE_SIZE. That module can't be
-// imported here (this script runs under plain node, not the Astro/Vite
-// TypeScript resolver), so the value is mirrored as a constant instead.
-const PERSONNEL_PAGE_SIZE = 50;
-const AGENCY_PAGE_SIZE = 50;
-
 const normalizePath = (value) => {
   const trimmed = String(value || "").trim();
   if (!trimmed) {
@@ -35,96 +29,6 @@ const normalizePath = (value) => {
     ? withLeadingSlash
     : `${withLeadingSlash}/`;
 };
-
-// User-approved duplicate agencies: legacy routes resolve to retained agency IDs.
-const approvedDuplicateAgencyAliases = [
-  {
-    from: "/law-enforcement-agency/mn/brooklyn-center-police-department-mn-ypgp/",
-    retainedAgencyId: "f1vaatwf5ilk19pjizorn6ge",
-  },
-  {
-    from: "/law-enforcement-agency/mn/minneapolis-police-department-mn-n6rd/",
-    retainedAgencyId: "ikojqoawn6c4m5m23cgs3yan",
-  },
-  {
-    from: "/law-enforcement-agency/mn/minnesota-state-patrol-d4e5f6/",
-    retainedAgencyId: "amcwh94rl4evk2uvlej74k70",
-  },
-  {
-    from: "/law-enforcement-agency/mn/st-anthony-police-department-mn-tbh3/",
-    retainedAgencyId: "g0z448nl5vtavrvntebbzu2n",
-  },
-  {
-    from: "/law-enforcement-agency/tx/dallas-police-department-tx-woyv/",
-    retainedAgencyId: "cm76wpxb701ggvrvgmu50aa9n",
-  },
-  {
-    from: "/law-enforcement-agency/tx/fort-worth-police-department-tx-py90/",
-    retainedAgencyId: "cm7a0bgon037gewvgoqo5jqsu",
-  },
-  {
-    from: "/law-enforcement-agency/tx/texas-department-of-public-safety-tx-28dj/",
-    retainedAgencyId: "cm7a0bgoo03ekewvgxw2elv24",
-  },
-  {
-    from: "/law-enforcement-agency/federal/fbi/",
-    retainedAgencyId: "cm7a0bgot046gewvgtaafjyui",
-  },
-  {
-    from: "/law-enforcement-agency/federal/atf/",
-    retainedAgencyId: "cm7a0bgot046mewvgs6xyqymp",
-  },
-  {
-    from: "/law-enforcement-agency/federal/dea/",
-    retainedAgencyId: "cm7a0bgot046oewvgozeu75gj",
-  },
-  {
-    from: "/law-enforcement-agency/federal/usss/",
-    retainedAgencyId: "cm7a0bgot046iewvg5qs1f9cn",
-  },
-  {
-    from: "/law-enforcement-agency/federal/cbp/",
-    retainedAgencyId: "cufdb3i3jzsr5kkfuto7huqk",
-  },
-  {
-    from: "/law-enforcement-agency/federal/tsa/",
-    retainedAgencyId: "chvdwkxp1cjwertwzt6ll9b0",
-  },
-  {
-    from: "/law-enforcement-agency/federal/uscg/",
-    retainedAgencyId: "c887sm2ibjg8c2yp4e4f4es5",
-  },
-  {
-    from: "/law-enforcement-agency/federal/usms/",
-    retainedAgencyId: "cs2sz1y65zqybhahepchwol6",
-  },
-];
-
-const legacyReportSlugAliases = [
-  {
-    oldSlug: "2023-12-04-75039-1st-amendment-retaliation-arrest-2c545f",
-    newSlug: "first-amendment-retaliation-arrest-2c545f",
-  },
-  {
-    oldSlug: "2026-01-07-55401-death-of-renee-nicole-good-ice-shooting-d1e2f3",
-    newSlug: "death-of-renee-nicole-good-ice-shooting-d1e2f3",
-  },
-  {
-    oldSlug:
-      "2026-01-24-55404-death-of-alex-pretti-federal-officers-shooting-g4h5i6",
-    newSlug: "death-of-alex-pretti-federal-officers-shooting-g4h5i6",
-  },
-  {
-    oldSlug:
-      "2022-06-21-55422-mn-state-patrol-trooper-spenser-stockwell-speeding-j7k8l9",
-    newSlug: "mn-state-patrol-trooper-spenser-stockwell-speeding-j7k8l9",
-  },
-  {
-    oldSlug:
-      "2022-08-02-55422-mn-state-patrol-lt-john-farmakes-voicemail-m0n1o2",
-    newSlug: "mn-state-patrol-lt-john-farmakes-voicemail-m0n1o2",
-  },
-];
 
 const normalizeReportDate = (value) => {
   if (!value) return "";
@@ -226,34 +130,6 @@ const generatedRedirects = await withDb(async (client) => {
     )
   ).rows;
 
-  // Mirrors the per-officer "most recent active assignment" grouping done by
-  // loadPersonnelSummaries() (src/lib/data/personnel.ts): for each officer,
-  // pick their active (end_date is null) agency assignment with the latest
-  // start_date, then bucket by that agency's state. Reimplemented as SQL
-  // here (rather than imported) because personnel.ts pulls in TS modules
-  // that resolve via Astro/tsconfig path aliases, which plain node can't
-  // resolve when this script runs standalone.
-  const personnelCategoryCounts = (
-    await client.query(
-      `
-        with active_assignments as (
-          select distinct on (ao.personnel_id)
-            ao.personnel_id,
-            lower(a.state) as category
-          from public.agency_personnel ao
-          join public.agency a on a.id = ao.agency_id
-          where ${currentAssignmentSql("ao")}
-            and a.state is not null
-          order by ao.personnel_id, ao.start_date desc
-        )
-        select category, count(*)::int as total
-        from active_assignments
-        group by category
-        order by category
-      `,
-    )
-  ).rows;
-
   // Parity with the retired "agencies" topic of
   // src/pages/personnel/[slug]/[topic]/: it generated
   // /personnel/{slug}/agencies/ for every officer with more than one distinct
@@ -272,98 +148,6 @@ const generatedRedirects = await withDb(async (client) => {
     )
   ).rows;
 
-  const retainedAgencyRows = (
-    await client.query(
-      `
-        select a.id, a.slug, lp.path as location_path,
-          (select count(*) from public.agency_personnel ap
-           where ap.agency_id = a.id and ${currentAssignmentSql("ap")} ) as assignment_count
-        from public.agency a
-        join public.location_path lp
-          on lp.location_path_id = a.location_path_id
-        where a.id = any($1::text[])
-      `,
-      [approvedDuplicateAgencyAliases.map((alias) => alias.retainedAgencyId)],
-    )
-  ).rows;
-  const retainedAgenciesById = new Map(
-    retainedAgencyRows.map((agency) => [agency.id, agency]),
-  );
-  const approvedDuplicateRedirects = approvedDuplicateAgencyAliases.flatMap(
-    (alias) => {
-      const agency = retainedAgenciesById.get(alias.retainedAgencyId);
-      if (!agency) {
-        throw new Error(
-          `Missing retained agency ${alias.retainedAgencyId} for approved duplicate redirect ${alias.from}.`,
-        );
-      }
-      if (Number(agency.assignment_count) === 0) return [];
-      return [
-        {
-          from: alias.from,
-          to: normalizePath(`${agency.location_path}${agency.slug}/`),
-          status: 301,
-          source: "approved duplicate agency alias",
-        },
-      ];
-    },
-  );
-
-  const retainedFarmakes = (
-    await client.query("select slug from public.personnel where id = $1", [
-      "lo3ghx7mu1k0k7aj2cl2v4t3",
-    ])
-  ).rows[0];
-  if (!retainedFarmakes) {
-    throw new Error(
-      "Missing retained John Farmakes profile for duplicate redirect.",
-    );
-  }
-  const farmakesRedirect = {
-    from: "/personnel/john-farmakes-k0l1m2/",
-    to: normalizePath(`/personnel/${retainedFarmakes.slug}/`),
-    status: 301,
-    source: "approved duplicate personnel alias",
-  };
-
-  const reportsBySlug = new Map(
-    reportRows.map((report) => [report.slug, report]),
-  );
-  const legacyReportRedirects = legacyReportSlugAliases.flatMap((alias) => {
-    const report = reportsBySlug.get(alias.newSlug);
-    if (!report) {
-      // No current report was found under this slug. An alias to a missing
-      // report cannot produce a valid redirect target, so skip it with a warning.
-      // verify-redirect-coverage.mjs separately requires coverage against prior
-      // sitemaps; reconcile this alias when the warning appears.
-      console.warn(
-        `Skipping legacy report slug alias ${alias.oldSlug}: no current report with slug ${alias.newSlug}.`,
-      );
-      return [];
-    }
-    return [
-      farmakesRedirect,
-      {
-        from: normalizePath(`/report/${report.state}/${alias.oldSlug}/`),
-        to: buildReportPath(report),
-        status: 301,
-        source: "legacy report slug alias",
-      },
-      {
-        from: normalizePath(`/report/${alias.oldSlug}/`),
-        to: buildReportPath(report),
-        status: 301,
-        source: "legacy report slug alias",
-      },
-      {
-        from: buildReportPath({ ...report, slug: alias.oldSlug }),
-        to: buildReportPath(report),
-        status: 301,
-        source: "legacy report slug alias",
-      },
-    ];
-  });
-
   const watchRedirects = [
     ...civilCaseRows.flatMap((civilCase) =>
       civilCase.videos
@@ -379,32 +163,21 @@ const generatedRedirects = await withDb(async (client) => {
           source: "civil_case_links.id and civil_cases.slug",
         })),
     ),
-    ...reportRows.flatMap((report) => {
-      const slugs = [
-        report.slug,
-        ...legacyReportSlugAliases
-          .filter((alias) => alias.newSlug === report.slug)
-          .map((alias) => alias.oldSlug),
-      ];
-      return report.videos
+    ...reportRows.flatMap((report) =>
+      report.videos
         .filter((video) => getVideoEmbedUrl(video.url))
         .flatMap((video) =>
-          slugs.flatMap((slug) =>
-            [
-              `/report/${report.state}/${slug}/watch/${video.id}/`,
-              `/report/${slug}/watch/${video.id}/`,
-              ...(slug !== report.slug
-                ? [`${buildReportPath({ ...report, slug })}watch/${video.id}/`]
-                : []),
-            ].map((from) => ({
-              from: normalizePath(from),
-              to: normalizePath(`${buildReportPath(report)}watch/${video.id}/`),
-              status: 301,
-              source: "review_links.id and reviews.slug",
-            })),
-          ),
-        );
-    }),
+          [
+            `/report/${report.state}/${report.slug}/watch/${video.id}/`,
+            `/report/${report.slug}/watch/${video.id}/`,
+          ].map((from) => ({
+            from: normalizePath(from),
+            to: normalizePath(`${buildReportPath(report)}watch/${video.id}/`),
+            status: 301,
+            source: "review_links.id and reviews.slug",
+          })),
+        ),
+    ),
   ];
 
   return [
@@ -423,7 +196,6 @@ const generatedRedirects = await withDb(async (client) => {
       status: 301,
       source: "agency.parent_federal_agency_id legacy agency route",
     })),
-    ...approvedDuplicateRedirects,
     ...civilCaseRows.map((civilCase) => ({
       from: normalizePath(
         `/civil-litigation/${civilCase.state}/${civilCase.slug}/`,
@@ -438,7 +210,6 @@ const generatedRedirects = await withDb(async (client) => {
       status: 301,
       source: "reviews.slug",
     })),
-    ...legacyReportRedirects,
     ...reportRows.map((report) => ({
       from: normalizePath(`/report/${report.slug}/`),
       to: buildReportPath(report),
@@ -591,7 +362,7 @@ const generatedRedirects = await withDb(async (client) => {
       (category) => {
         const pageCount = Math.ceil(
           agencyRows.filter(({ state }) => state === category).length /
-            AGENCY_PAGE_SIZE,
+            PAGE_SIZE,
         );
         return Array.from(
           { length: Math.max(0, pageCount - 1) },
@@ -611,19 +382,6 @@ const generatedRedirects = await withDb(async (client) => {
     // generated a redirect stub for every pagination page 2..N per
     // category, where N is derived from the personnel count for that
     // category chunked by PAGE_SIZE.
-    ...personnelCategoryCounts.flatMap(({ category, total }) => {
-      const pageCount = Math.ceil(Number(total) / PERSONNEL_PAGE_SIZE);
-      const pages = [];
-      for (let page = 2; page <= pageCount; page += 1) {
-        pages.push({
-          from: normalizePath(`/personnel/${category}/page/${page}/`),
-          to: normalizePath(`/${category}/`),
-          status: 301,
-          source: "personnel pagination route retired",
-        });
-      }
-      return pages.filter(hasBuiltDestination);
-    }),
     ...multiAgencyPersonnelRows
       .map(({ slug }) => ({
         from: normalizePath(`/personnel/${slug}/agencies/`),

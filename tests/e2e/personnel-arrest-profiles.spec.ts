@@ -115,7 +115,13 @@ test("personnel page displays every recorded arrest row and share", async ({
   await expect(section).toContainText(row.coverage.firstMonth);
   await expect(section).toContainText(row.coverage.lastMonth);
   for (const [key, buckets] of Object.entries(row.breakdowns).filter(
-    ([key]) => key !== "cells" && key !== "residential_income_by_tract",
+    ([key]) =>
+      key !== "cells" &&
+      key !== "residential_income_by_tract" &&
+      key !== "by_arrest_beat" &&
+      key !== "by_income_status" &&
+      key !== "by_beat_status" &&
+      key !== "by_residential_tract",
   )) {
     const table = section.locator(`table[data-breakdown="${key}"]`);
     expect(await table.locator("tbody tr").count()).toBe(
@@ -183,6 +189,13 @@ test("death notice links the optional source and omits an absent source", async 
   );
   await expect(page.getByRole("link")).toHaveCount(0);
   await expect(page.locator("body")).toContainText("Recorded death notice");
+  await page.setContent(
+    await renderComponent("PersonnelDeceasedNotice", {
+      message: null,
+      source: null,
+    }),
+  );
+  await expect(page.locator("body")).toHaveText("Status: Deceased.");
 });
 
 test("recorded name and former agency label retain exact license relationship", async ({
@@ -267,7 +280,7 @@ test("mobile arrest tables show every column without horizontal scrolling", asyn
       details.forEach((detail) => detail.setAttribute("open", "")),
     );
   const tables = section.locator("table");
-  expect(await tables.count()).toBe(16);
+  expect(await tables.count()).toBe(12);
   for (const table of await tables.all()) {
     const size = await table.evaluate((element) => {
       const container = element.parentElement!;
@@ -334,12 +347,24 @@ test("every live arrest profile renders exactly its stored breakdowns and bucket
       expect(actual.tables.map((table) => table.key).sort()).toEqual(
         Object.keys(row.breakdowns)
           .filter(
-            (key) => key !== "cells" && key !== "residential_income_by_tract",
+            (key) =>
+              key !== "cells" &&
+              key !== "residential_income_by_tract" &&
+              key !== "by_arrest_beat" &&
+              key !== "by_income_status" &&
+              key !== "by_beat_status" &&
+              key !== "by_residential_tract",
           )
           .sort(),
       );
       for (const [key, buckets] of Object.entries(row.breakdowns).filter(
-        ([key]) => key !== "cells" && key !== "residential_income_by_tract",
+        ([key]) =>
+          key !== "cells" &&
+          key !== "residential_income_by_tract" &&
+          key !== "by_arrest_beat" &&
+          key !== "by_income_status" &&
+          key !== "by_beat_status" &&
+          key !== "by_residential_tract",
       )) {
         const actualRows = actual.tables.find(
           (table) => table.key === key,

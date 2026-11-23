@@ -1,6 +1,5 @@
 ---
 import type { GetStaticPathsOptions } from "astro";
-import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import Pagination from "#src/components/Pagination.astro";
 import PageShell from "#src/layouts/PageShell.astro";
@@ -87,7 +86,6 @@ const pageDescription =
       currentPage={page.currentPage}
       lastPage={page.lastPage}
     />
-    <CivilCaseScopeNote />
   </section>
 </PageShell>
 <style>

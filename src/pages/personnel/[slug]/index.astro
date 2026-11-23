@@ -12,11 +12,7 @@ import PrefillNavButton from "#src/components/PrefillNavButton.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import { withDb } from "#src/lib/db.js";
 import { mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
-import {
-  selectHeadlineAssignment,
-  getAssignmentStatus,
-  formatAssignmentDate,
-} from "#src/lib/data/assignment-status.js";
+import { formatAssignmentDate } from "#src/lib/data/assignment-status.js";
 import { formatShortDate } from "#src/lib/format.js";
 import type { ReportNewPrefill } from "#src/lib/forms/prefill";
 import { metricLabels, metricVisuals } from "#src/lib/metric-vocabulary.js";
@@ -76,12 +72,34 @@ const data = await withDb(async (client) => {
     throw new Error(`Personnel ${slug} not found.`);
   }
   const officerId = officer.id;
+  // Each assignment's employment status comes from the intake view
+  // site_agency_personnel_employment.
   const agencyOfficers = (
     await client.query(
-      "select * from public.agency_personnel where personnel_id = $1",
+      `select ap.*, employment.employment_status
+       from public.agency_personnel ap
+       join public.site_agency_personnel_employment employment
+         on employment.agency_personnel_id = ap.id
+       where ap.personnel_id = $1`,
       [officerId],
     )
   ).rows;
+  // The assignment the page names as the person's agency comes from the
+  // intake view site_personnel_headline_assignment; the page selects none.
+  const headline = (
+    await client.query(
+      `select agency_personnel_id, agency_id, badge_number, employment_status,
+              to_char(end_date, 'YYYY-MM-DD') as end_date, headline_basis
+       from public.site_personnel_headline_assignment
+       where personnel_id = $1`,
+      [officerId],
+    )
+  ).rows[0];
+  if (!headline) {
+    throw new Error(
+      `Personnel ${slug} has no site_personnel_headline_assignment row.`,
+    );
+  }
   const agencyIds = agencyOfficers.map(
     (entry: { agency_id: string }) => entry.agency_id,
   );
@@ -150,12 +168,26 @@ const data = await withDb(async (client) => {
         )
       ).rows
     : [];
+  // Civil case counts come from the intake view site_personnel_count.
+  const civilCaseCounts = (
+    await client.query(
+      `select civil_case_count, open_civil_case_count
+       from public.site_personnel_count
+       where personnel_id = $1`,
+      [officerId],
+    )
+  ).rows[0];
+  if (!civilCaseCounts) {
+    throw new Error(`Personnel ${slug} has no site_personnel_count row.`);
+  }
   return {
     officer,
     agencyOfficers,
     agencies,
     reports,
     civilCases,
+    civilCaseCounts,
+    headline,
   };
 });
 const coverageLinks = await loadCoverageLinksForOfficer(data.officer.id);
@@ -170,55 +202,53 @@ const missingAgencyAssignment = history.find(
 );
 if (missingAgencyAssignment) {
   throw new Error(
-    `Personnel ${data.officer.slug} assignment ${missingAgencyAssignment.id} references agency ${missingAgencyAssignment.agency_id} without a required canonical path.`,
+    `Personnel ${data.officer.slug} assignment ${missingAgencyAssignment.id} references agency ${missingAgencyAssignment.agency_id}, which the agency query did not return with a location path.`,
   );
 }
-const assignmentHistory = history
-  .map((entry) => ({
-    ...entry,
-    agency: agenciesById[entry.agency_id],
-  }))
-  .filter((entry) => entry.agency);
-// Which assignment this page headlines is decided by `end_date`, never by
-// array position. `history[history.length - 1]` used to win here, which
-// published present-tense employment for assignments our own source records as
-// ended (INS-63 / INS-75).
-const headline = selectHeadlineAssignment(history);
-const currentAssignment = headline.assignment;
-if (!currentAssignment) {
+const assignmentHistory = history.map((entry) => ({
+  ...entry,
+  agency: agenciesById[entry.agency_id],
+}));
+const headlineWording = {
+  Current: { label: "Current agency", titlePrefix: null, status: "Active" },
+  "Most recent": {
+    label: "Most recent agency",
+    titlePrefix: "Most recent",
+    status: "Former",
+  },
+  Recorded: {
+    label: "Recorded agency",
+    titlePrefix: "Recorded",
+    status: "Status uncertain",
+  },
+} as const;
+const headline: {
+  agency_personnel_id: string;
+  agency_id: string;
+  badge_number: string | null;
+  employment_status: string;
+  end_date: string | null;
+  headline_basis: keyof typeof headlineWording;
+} = data.headline;
+const wording = headlineWording[headline.headline_basis];
+if (!wording) {
   throw new Error(
-    `Personnel ${data.officer.slug} is missing required agency assignment history.`,
+    `Personnel ${data.officer.slug} has unknown headline_basis ${headline.headline_basis}.`,
   );
 }
-const hasCurrentAssignment = headline.isCurrent;
+const hasCurrentAssignment = headline.headline_basis === "Current";
 const headlineEndDateDisplay =
-  headline.isEnded && headline.endDate
-    ? formatAssignmentDate(headline.endDate)
+  headline.employment_status === "Former" && headline.end_date
+    ? formatAssignmentDate(headline.end_date)
     : null;
-const currentBadge = currentAssignment?.badge_number || null;
-const currentTitle =
-  typeof currentAssignment?.title === "string"
-    ? currentAssignment.title.trim()
-    : "";
-const currentAgency = currentAssignment
-  ? agenciesById[currentAssignment.agency_id]
-  : null;
+const currentBadge = headline.badge_number || null;
+const currentAgency = agenciesById[headline.agency_id];
 if (!currentAgency) {
   throw new Error(
-    `Personnel ${data.officer.slug} assignment ${currentAssignment.id} is missing required agency ${currentAssignment.agency_id}.`,
+    `Personnel ${data.officer.slug} assignment ${headline.agency_personnel_id} is missing required agency ${headline.agency_id}.`,
   );
 }
 const currentAgencyPrefillName = currentAgency.name.toLocaleUpperCase("en-US");
-const isPlaceholderPersonnel =
-  data.officer.slug === "unknown-personnel-935d1d" ||
-  (data.officer.first_name === "Unknown" &&
-    data.officer.last_name === "Personnel");
-if (!isPlaceholderPersonnel && !currentTitle) {
-  throw new Error(
-    `Personnel ${data.officer.slug} is missing required title on agency_personnel ${currentAssignment?.id || "unknown"}`,
-  );
-}
-
 const civilCasesWithPaths = data.civilCases.map(
   (caseItem: {
     id: string;
@@ -275,34 +305,24 @@ const deceasedOnDisplay = deceasedOnValue
   ? formatShortDate(String(deceasedOnValue))
   : null;
 const deceasedPublicMessage =
-  (typeof data.officer.deceased_message === "string"
-    ? data.officer.deceased_message.trim()
-    : "") ||
-  (deceasedOnDisplay
-    ? `Reported deceased on ${deceasedOnDisplay}.`
-    : "This individual is reported deceased.");
-const assignmentStatusLabel = hasCurrentAssignment
-  ? "Current agency"
-  : headline.hasUncertainHistory
-    ? "Recorded agency"
-    : "Most recent agency";
-const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${hasCurrentAssignment ? currentAgency!.name : `${headline.hasUncertainHistory ? "Recorded" : "Most recent"}: ${currentAgency!.name}`} | PoliceConduct.org`;
+  typeof data.officer.deceased_message === "string"
+    ? data.officer.deceased_message
+    : null;
+const assignmentStatusLabel = wording.label;
+const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${wording.titlePrefix ? `${wording.titlePrefix}: ${currentAgency.name}` : currentAgency.name} | PoliceConduct.org`;
 const pageDescription = isDeceased
   ? `${officerName} personnel profile with agency assignments, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`
   : // The snippet is the claim most readers see, so the qualifier and the end
     // date have to survive into it rather than only appearing on the page.
-    `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency!.name}${
+    `${officerName} personnel profile with ${assignmentStatusLabel.toLowerCase()} ${currentAgency.name}${
       !hasCurrentAssignment && headlineEndDateDisplay
         ? ` (assignment ended ${headlineEndDateDisplay})`
         : ""
     }, agency assignments, public reports, coverage, and civil litigation records.`;
 const pastEmployerSummary = assignmentHistory
-  .filter((entry) => getAssignmentStatus(entry).isEnded)
-  .map((entry) => ({
-    ...entry,
-  }))
+  .filter((entry) => entry.employment_status === "Former")
   .map((entry) => {
-    const segments = [entry.agency?.name];
+    const segments = [entry.agency.name];
     const dateRange = [
       entry.start_date ? formatAssignmentDate(entry.start_date) : null,
       entry.end_date != null ? formatAssignmentDate(entry.end_date) : null,
@@ -321,7 +341,7 @@ const pastEmployerSummary = assignmentHistory
 const civilLitigationSummary = civilCasesWithPaths
   .map((caseItem) => {
     const segments = [
-      caseItem.title || "Civil case",
+      caseItem.title!,
       caseItem.cause_number || null,
       caseItem.court || null,
       caseItem.caseUrl,
@@ -338,7 +358,7 @@ const reportNewPrefillPayload = JSON.stringify({
 } satisfies ReportNewPrefill);
 const addCivilCaseHref = "/civil-cases/new/";
 const addCivilCasePrefillPayload = JSON.stringify({
-  jurisdiction: String(currentAgency?.state || "").toLowerCase(),
+  jurisdiction: String(currentAgency.state || "").toLowerCase(),
   defendants: [officerName, currentAgencyPrefillName]
     .filter(Boolean)
     .join("\n"),
@@ -354,8 +374,8 @@ const pastEmployerPrefillPayload = JSON.stringify({
   suffix: data.officer.suffix || "",
   badgeNumber: currentBadge || "",
   currentAgency: hasCurrentAssignment ? currentAgencyPrefillName : "",
-  currentAgencyCity: hasCurrentAssignment ? currentAgency?.city || "" : "",
-  currentAgencyState: hasCurrentAssignment ? currentAgency?.state || "" : "",
+  currentAgencyCity: hasCurrentAssignment ? currentAgency.city || "" : "",
+  currentAgencyState: hasCurrentAssignment ? currentAgency.state || "" : "",
   pastEmployers: pastEmployerSummary,
   civilLitigation: civilLitigationSummary,
   reportLinks: reportLinksSummary,
@@ -378,24 +398,19 @@ const claimProfilePrefillPayload = JSON.stringify({
 const personnelPhoto = await getPersonnelPhotoById(data.officer.id);
 const personnelImageSrc = personnelPhoto || "/img/personnel/default.webp";
 const hasPersonnelPhoto = Boolean(personnelPhoto);
-const civilCaseCount = data.civilCases.length;
-const activeCivilCaseCount = civilCasesWithPaths.filter(
-  (caseItem) => !caseItem.date_terminated,
-).length;
+const civilCaseCount: number = data.civilCaseCounts.civil_case_count;
+const activeCivilCaseCount: number = data.civilCaseCounts.open_civil_case_count;
 const associatedAgencyCount = new Set(
   assignmentHistory.map((entry) => entry.agency_id),
 ).size;
-const currentAgencyPath = requireAgencyCanonicalPath(currentAgency!);
-const currentAgencyLocation = [currentAgency!.city, currentAgency!.state]
+const currentAgencyPath =
+  currentAgency.page_type === "agency"
+    ? requireAgencyCanonicalPath(currentAgency)
+    : null;
+const currentAgencyLocation = [currentAgency.city, currentAgency.state]
   .filter(Boolean)
   .join(", ");
-const statusLabel = isDeceased
-  ? "Deceased"
-  : hasCurrentAssignment
-    ? "Active"
-    : headline.isEnded && !headline.hasUncertainHistory
-      ? "Former"
-      : "Status uncertain";
+const statusLabel = isDeceased ? "Deceased" : wording.status;
 const formatCount = (value: number) =>
   new Intl.NumberFormat("en-US").format(value);
 const unavailableValue = "--";
@@ -475,18 +490,16 @@ const personnelMetricCards: MetricCardItem[] = [
 const siteUrl = getSiteUrl(Astro.site);
 const pageUrl = new URL(officerPath, siteUrl).toString();
 const profilePageId = `${pageUrl}#profilepage`;
-const agencyUrl =
-  currentAgency.page_type === "agency"
-    ? new URL(requireAgencyCanonicalPath(currentAgency), siteUrl).toString()
-    : null;
-const organization =
-  currentAgency && agencyUrl
-    ? buildGovernmentOrganizationNode({
-        siteUrl,
-        url: agencyUrl,
-        name: currentAgency.name,
-      })
-    : null;
+const agencyUrl = currentAgencyPath
+  ? new URL(currentAgencyPath, siteUrl).toString()
+  : null;
+const organization = agencyUrl
+  ? buildGovernmentOrganizationNode({
+      siteUrl,
+      url: agencyUrl,
+      name: currentAgency.name,
+    })
+  : null;
 const person = buildPersonNode({
   siteUrl,
   url: pageUrl,
@@ -497,14 +510,9 @@ const person = buildPersonNode({
   mainEntityOfPageId: profilePageId,
   deathDate: isDeceased ? String(deceasedOnValue) : undefined,
   // `worksFor` is a present-tense employment assertion, so it is emitted only
-  // for an assignment our source still records as open. For an ended
-  // association the organization node stays in the graph (the page links to
-  // the agency, and that association is real) but no employment edge is made
-  // to it — a crawler that flattens the graph must not be able to read
-  // "currently employed by" off a separation we already hold. Encoding it as
-  // `worksFor` → `OrganizationRole` with an `endDate` was considered and
-  // rejected: consumers routinely flatten the Role wrapper, which would
-  // reintroduce exactly the false claim this fixes.
+  // when the headline assignment is Current. For any other headline the
+  // organization node stays in the graph (the page links to the agency) but no
+  // employment edge is made to it.
   worksForId:
     organization && hasCurrentAssignment ? organization["@id"] : undefined,
 });
@@ -549,7 +557,7 @@ const structuredData = {
         <h1 class="ipc-page-title">{officerName}</h1>
         <p class="personnel-current-line">
           {assignmentStatusLabel}:{" "}
-          {currentAgency.page_type === "agency" ? (
+          {currentAgencyPath ? (
             <a href={currentAgencyPath}>{currentAgency.name}</a>
           ) : (
             currentAgency.name
@@ -620,7 +628,7 @@ const structuredData = {
           <div>
             <dt>{assignmentStatusLabel}</dt>
             <dd>
-              {currentAgency.page_type === "agency" ? (
+              {currentAgencyPath ? (
                 <a href={currentAgencyPath}>{currentAgency.name}</a>
               ) : (
                 currentAgency.name
@@ -745,9 +753,7 @@ const structuredData = {
               {civilCasesWithPaths.slice(0, 4).map((caseItem) => (
                 <tr>
                   <th scope="row">
-                    <a href={caseItem.caseUrl}>
-                      {caseItem.title || "Civil case"}
-                    </a>
+                    <a href={caseItem.caseUrl}>{caseItem.title!}</a>
                   </th>
                   <td>
                     {caseItem.filed_date
@@ -766,7 +772,6 @@ const structuredData = {
 
     <PersonnelAssignments
       assignmentHistory={assignmentHistory}
-      currentTitle={currentTitle}
       licensing={licensing}
     />
   </div>

@@ -1,36 +1,21 @@
-## Advanced consent verification
+## Merge state (recorded 2026-11-19)
 
-- Node 24.22.3; locked install successful; 21 focused node tests pass.
-- Three integrated Playwright checks pass: pre-load ordering, consent lifecycle
-  with cookie removal, and unavailable browser storage.
-- Cross-site Chromium check passes on both integrated layouts: fresh default,
-  acceptance, returning choice, withdrawal, cross-tab sync and saved rejection.
-  All Google and other external requests are intercepted; this is integration
-  evidence, not proof of Google's real network behavior.
-- Local review: PoliceConduct port 4329 at /about/contact/; section1983 port
-  4330 at /about/. Inspect Allow/Decline and reopen Privacy settings.
-- Aggregate validation passes formatting, lint, types and shell checks, then
-  fails schema validation: review_links.title and review_links.url must be
-  NOT NULL. Later stages did not run. No checks were weakened.
-- section1983 lint passes and build produces 594 pages. Its locked dependency
-  audit reports 65 vulnerabilities (including one critical), retained as a
-  release concern; dependency upgrades are not silently bundled into this fix.
-- GitHub CLI reports missing capability; remote PR and CI state are unverified.
-- No merge into default branch or deployment. Real deployed cookie/network
-  checks and existing release gates remain required.
+- Merged to main in d6c17a66857d6bc8c6f4605462c16f047f99b808 (PR #44, 2026-11-15); consent dialog polish in dc5b38c9e8c4536d37729d69fc0c27a9d5b5220d (PR #52, 2026-11-16).
+- CI for PR #44 head (`gh pr checks 44`): every check passed (CodeQL, Analyze JavaScript/TypeScript, Scan for personal data, coverage-javascript, upload-coverage-javascript, copilot-setup-steps, cleanup).
+- CI for PR #52 head (`gh pr checks 52`): every check passed (CodeQL, Analyze JavaScript/TypeScript, Scan for personal data, coverage-javascript, upload-coverage-javascript, cleanup).
 
-## TrailViewr dialog continuation
+## Verification <YYYY-MM-DD>, commit <full SHA>
 
-- Inspected the reference consent component and utility before adapting the UI.
-- Three targeted Chromium tests pass, including checkbox Save, consent ordering,
-  cookie deletion, focus restoration and unavailable storage.
-- Both integrated sites pass intercepted-host browser checks for Save, returning
-  choice, withdrawal, cross-tab propagation and saved rejection.
-- Reviewed the desktop dialog screenshot: readable category labels and all three
-  actions visible; native dialog supplies focus containment.
-- section1983 lint and production build pass (594 pages).
-- Aggregate validation passes format, lint, types and shell, then fails the
-  existing review_links title/url NOT NULL schema contract. No checks weakened.
-- GitHub connection can read PRs even though local CLI credentials are missing.
-  No open consent PR exists in either repository at this check.
-- No merge or deployment. Local URLs remain ports 4329 and 4330.
+Fill this section from a fresh run on the final head of the follow-up PR.
+
+- Runtime: Node 26.13.1 (mise.toml); npm ci; installed versions match package-lock.json.
+- Database: before npm run validate, the local database had all migrations applied (npx supabase migration up); it was not reset.
+- `npm run validate`: exit <code>; stages <each stage and outcome>; tests <counts>; skipped <count and reason each>; warnings <each and disposition>.
+- Consent e2e tests in tests/e2e/analytics.spec.mjs: <test names>, <pass counts>.
+- Google requests are intercepted in these tests, so they check our code, not Google's real cookies or network traffic. Deployed checks: see tasks.md.
+- Follow-up PR: PR #58 (ddl-openspec); CI <result for final head>.
+- policeconduct.org GA manual settings PR (config/analytics-manual.json): <link>.
+- section1983.org GA manual settings PR (config/analytics-manual.json): <link>.
+- section1983.org PR: <link>; CI <result for final head>; dependency audit <result>.
+- Deployed checks (after deploy), policeconduct.org: <per-state gcs, gcd, npa and cookies>; apex https://policeconduct.org/ redirect <status and Location>.
+- Deployed checks (after deploy), section1983.org: <per-state gcs, gcd, npa and cookies>; apex https://section1983.org/ redirect <status and Location, or canonical host>.

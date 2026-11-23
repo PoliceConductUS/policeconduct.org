@@ -5,7 +5,6 @@ import {
   annotationRecordLabel,
   type AnnotationEntry,
 } from "./annotation-values.js";
-import { currentAssignmentSql } from "./annotation-access.js";
 import type { PoolClient } from "pg";
 
 type Row = Record<string, unknown>;
@@ -39,22 +38,6 @@ function required(value: unknown, field: string): string {
 export async function collectDataAnnotations(
   client: PoolClient,
 ): Promise<AnnotationEntry[]> {
-  const authorities = (
-    await client.query<{
-      id: string;
-      name: string;
-      source_namespaces: string[];
-    }>("select id, name, source_namespaces from public.licensing_authority")
-  ).rows;
-  const providers = new Map<string, { id: string; name: string }>();
-  for (const authority of authorities)
-    for (const namespace of authority.source_namespaces) {
-      if (providers.has(namespace))
-        throw new Error(
-          `Multiple licensing authorities claim source ${namespace}.`,
-        );
-      providers.set(namespace, authority);
-    }
   const owners = new Map<string, Promise<Owner | null>>();
   async function owner(
     kind: string,
@@ -91,9 +74,12 @@ export async function collectDataAnnotations(
         required(row[relationship[1]], relationship[1]),
       );
     if (kind === "Personnel") {
-      if ((process.env.NO_PERSONNEL || "").trim()) return null;
+      // NO_PERSONNEL only stops personnel pages from being built, so there is
+      // no page to link to.
       return {
-        url: `/personnel/${required(row.slug, "slug")}/`,
+        url: (process.env.NO_PERSONNEL || "").trim()
+          ? null
+          : `/personnel/${required(row.slug, "slug")}/`,
         label: [row.first_name, row.middle_name, row.last_name, row.suffix]
           .filter(Boolean)
           .join(" "),
@@ -126,14 +112,6 @@ export async function collectDataAnnotations(
         url: `/civil-cases/${required(row.slug, "slug")}/`,
         label: required(row.title, "title"),
       };
-    if (kind === "Agency") {
-      const { rows } = await client.query<{ eligible: boolean }>(
-        `select exists(select 1 from public.agency_personnel ap where ap.agency_id=$1 and ${currentAssignmentSql("ap")}) as eligible`,
-        [id],
-      );
-      if (!rows[0].eligible)
-        return { url: null, label: required(row.name, "name") };
-    }
     if (kind === "Agency" || kind === "Review") {
       const pageType = kind === "Agency" ? "agency" : "report_summary";
       const paths = (
@@ -142,8 +120,14 @@ export async function collectDataAnnotations(
           [id, pageType],
         )
       ).rows;
-      if (paths.length !== 1)
-        throw new Error(`Expected one public page for ${kind}:${id}.`);
+      if (paths.length > 1)
+        throw new Error(`Expected at most one public page for ${kind}:${id}.`);
+      const label =
+        kind === "Agency"
+          ? required(row.name, "name")
+          : required(row.title, "title");
+      // A record without a built page has no link.
+      if (!paths.length) return { url: null, label };
       if (kind === "Agency") {
         const location = await owner(
           "LocationPath",
@@ -153,22 +137,15 @@ export async function collectDataAnnotations(
           throw new Error(`Agency ${id} requires a location path.`);
         return {
           url: `${location.url}${required(row.slug, "slug")}/`,
-          label: required(row.name, "name"),
+          label,
         };
       }
-      return { url: paths[0].path, label: required(row.title, "title") };
+      return { url: paths[0].path, label };
     }
-    if (kind === "CoverageLink") {
-      const links = (
-        await client.query<{ agency_personnel_id: string }>(
-          "select agency_personnel_id from public.coverage_link_agency_personnel where coverage_link_id=$1 order by agency_personnel_id",
-          [id],
-        )
-      ).rows;
-      if (!links.length)
-        throw new Error(`Coverage link ${id} has no public record owner.`);
-      return owner("AgencyPersonnel", links[0].agency_personnel_id);
-    }
+    // A coverage link has no page of its own and the database records no
+    // single display record for it, so its notes carry no record link.
+    if (kind === "CoverageLink")
+      return { url: null, label: required(row.title, "title") };
     throw new Error(`No public annotation owner for ${kind}:${id}.`);
   }
   const entries: AnnotationEntry[] = [];
@@ -179,15 +156,6 @@ export async function collectDataAnnotations(
   ).rows;
   for (const row of rows) {
     const annotation = annotationFromRecord(row);
-    if (
-      (process.env.NO_PERSONNEL || "").trim() &&
-      annotation.field === "excluded_records" &&
-      annotation.value !== null &&
-      typeof annotation.value === "object" &&
-      "kind" in annotation.value &&
-      annotation.value.kind === "Personnel"
-    )
-      continue;
     const kind = required(row.subject_kind, "subject_kind");
     const id = required(row.subject_id, "subject_id");
     const target = await owner(kind, id);
@@ -202,21 +170,8 @@ export async function collectDataAnnotations(
         "select exists(select 1 from public.build_page_payload where page_type='location' and path=$1) as eligible",
         [recordUrl],
       );
-      // Keep findings discoverable without creating pages for thin locations.
-      if (!rows[0].eligible) recordUrl = "/data-annotations/";
-    }
-    if (recordUrl === null) {
-      const provider = providers.get(annotation.source_namespace);
-      if (!provider)
-        throw new Error(
-          `No source authority for ${kind}:${id} from ${annotation.source_namespace}.`,
-        );
-      const authority = await owner("LicensingAuthority", provider.id);
-      if (!authority?.url)
-        throw new Error(
-          `Source authority ${provider.id} requires a public page.`,
-        );
-      recordUrl = `${authority.url}data-annotations/`;
+      // A location without a built page has no link.
+      if (!rows[0].eligible) recordUrl = null;
     }
     entries.push({
       ...annotation,
@@ -227,9 +182,7 @@ export async function collectDataAnnotations(
         ...annotation,
         record_label: target.label,
       }),
-      source_provider:
-        providers.get(annotation.source_namespace)?.name ??
-        annotation.source_namespace,
+      source_provider: annotation.source_namespace,
     });
   }
   const order = (entry: AnnotationEntry) =>
@@ -248,6 +201,9 @@ export async function collectDataAnnotations(
 }
 let collected: Promise<AnnotationEntry[]> | undefined;
 export function loadDataAnnotations() {
-  collected ??= withDb(collectDataAnnotations);
+  collected ??= withDb(collectDataAnnotations).catch((error: unknown) => {
+    collected = undefined;
+    throw error;
+  });
   return collected;
 }

@@ -107,8 +107,6 @@ function verificationFailureMessage(reason) {
   }
 
   switch (reason) {
-    case "missing_origin":
-      return "We received your submission, but this environment could not build the email confirmation link. Confirm your email address to continue. Please contact hello@policeconduct.org if you need help.";
     case "missing_email":
       return "We received your submission, but no email address was present in the request. Confirm your email address to continue. Please contact hello@policeconduct.org if you need help.";
     case "invalid_email":
@@ -466,6 +464,34 @@ async function recordVerificationSend(key, record, sendResult, config) {
   }
 }
 
+/** S3 reports a missing object by name in SDK v3 and by code in older shapes. */
+function isNoSuchKey(error) {
+  return (
+    Boolean(error) &&
+    typeof error === "object" &&
+    (error.code === "NoSuchKey" || error.name === "NoSuchKey")
+  );
+}
+
+/**
+ * True when a caller-supplied value is safe as one S3 key segment: a non-empty
+ * string that is not "." or "..", has no slash or backslash, and has no
+ * control characters.
+ */
+function isSafeKeySegment(value) {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value !== "." &&
+    value !== ".." &&
+    !/[\\/]/.test(value) &&
+    !Array.from(value).some(
+      (character) =>
+        character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
+    )
+  );
+}
+
 async function readJsonObject(bucket, key) {
   let raw;
   try {
@@ -477,11 +503,7 @@ async function readJsonObject(bucket, key) {
     );
     raw = object?.Body ? await object.Body.transformToString("utf8") : "";
   } catch (error) {
-    if (
-      error &&
-      typeof error === "object" &&
-      (error.code === "NoSuchKey" || error.name === "NoSuchKey")
-    ) {
+    if (isNoSuchKey(error)) {
       return null;
     }
     throw error;
@@ -700,7 +722,9 @@ function submissionNotificationBody({
     `submissionId: ${submissionId}`,
     `occurredAt:   ${occurredAt}`,
     `bucket:       ${bucket}`,
-    `key:          ${key}`,
+    key
+      ? `key:          ${key}`
+      : `key:          not recorded; find */${formName}/${submissionId}.json under the submissions prefix`,
   ];
 
   if (CLOCKED_FORM_NAMES.has(formName)) {
@@ -727,9 +751,10 @@ function submissionNotificationBody({
  * Deliberately non-fatal: by the time this runs the submission is already
  * durably stored, and failing the request would only push the submitter to
  * resubmit and create a duplicate record. A failure here is surfaced through
- * the `forms.notify.*` log lines, which have CloudWatch metric filters and
- * alarms behind them, and through the independent S3 event notification on the
- * bucket, which fires whether or not this code path ran.
+ * the `forms.notify.publish_failed` log line, which a CloudWatch metric filter
+ * and alarm read (infrastructure/bootstrap-policeconduct/main.tf), and through
+ * the independent S3 event notification on the bucket, which fires whether or
+ * not this code path ran.
  */
 async function publishSubmissionNotification({
   eventType,
@@ -746,8 +771,9 @@ async function publishSubmissionNotification({
 
   if (!topicArn) {
     // This is the INS-20 state: a submission lands and nobody is told. It is
-    // logged at warn with its own message so it can alarm rather than sit
-    // silently in a log group.
+    // logged at warn with its own message so a search can find it. No alarm
+    // reads this line; when it leaves nobody told, forms.notify.nobody_told
+    // alarms.
     console.warn(
       JSON.stringify({
         msg: "forms.notify.topic_not_configured",
@@ -866,7 +892,8 @@ async function sendSubmissionNotificationEmail({
 
   if (recipients.length === 0) {
     // The INS-20 state, stated out loud: a submission landed and there is
-    // nobody to tell. Alarmed on, not merely logged.
+    // nobody to tell. Logged with its own message. No alarm reads this line;
+    // when it leaves nobody told, forms.notify.nobody_told alarms.
     console.warn(
       JSON.stringify({
         msg: "forms.notify.recipients_not_configured",
@@ -1077,7 +1104,9 @@ async function writeNotificationReceipt({
  * Every step is non-fatal. By the time this runs the submission is durably
  * stored; failing the request would only push the submitter to resubmit and
  * create a duplicate record about a named person. Failures surface through the
- * `forms.notify.*` log lines, their alarms, and the receipt.
+ * `forms.notify.*` log lines and the receipt. A CloudWatch metric filter and
+ * alarm read each error-level line: nobody_told, publish_failed, email_failed,
+ * email_misconfigured and receipt_failed (infrastructure/bootstrap-policeconduct/main.tf).
  */
 async function notifySubmissionEvent({
   eventType,
@@ -1090,7 +1119,7 @@ async function notifySubmissionEvent({
   requestId,
 }) {
   // Board direction: receipt alone must never notify staff. Keep this gate
-  // ahead of every transport, receipt write, and delivery-failure alarm.
+  // ahead of every transport, receipt write, and delivery-failure log line.
   if (eventType !== "verified") return;
 
   const sns = await publishSubmissionNotification({
@@ -1114,8 +1143,8 @@ async function notifySubmissionEvent({
   });
 
   // Nothing reached a human. This is the condition the whole issue exists to
-  // prevent, so it gets its own log line and its own alarm rather than being
-  // inferred from the absence of a success line.
+  // prevent, so it gets its own log line rather than being inferred from the
+  // absence of a success line. A CloudWatch alarm reads this log line.
   if (!sns.published && !email.sent) {
     console.error(
       JSON.stringify({
@@ -1230,7 +1259,7 @@ function buildRecaptchaWifCredentials() {
 
 async function getRecaptchaClient() {
   if (!recaptchaClientPromise) {
-    recaptchaClientPromise = (async () => {
+    const pending = (async () => {
       const scopes = ["https://www.googleapis.com/auth/cloud-platform"];
       const authClient = ExternalAccountClient.fromJSON({
         ...buildRecaptchaWifCredentials(),
@@ -1239,6 +1268,13 @@ async function getRecaptchaClient() {
       const auth = new GoogleAuth({ authClient, scopes });
       return new RecaptchaEnterpriseServiceClient({ auth });
     })();
+    recaptchaClientPromise = pending;
+    // Do not keep a failed client: the next request builds a new one.
+    pending.catch(() => {
+      if (recaptchaClientPromise === pending) {
+        recaptchaClientPromise = undefined;
+      }
+    });
   }
   return recaptchaClientPromise;
 }
@@ -1344,6 +1380,9 @@ async function saveDraft(event) {
     return json(413, { error: "Draft payload too large." });
   }
 
+  if (payload?.draftId && !isSafeKeySegment(payload.draftId)) {
+    return json(400, { error: "Invalid draftId." });
+  }
   const draftId = payload?.draftId || crypto.randomUUID();
   const key = `${prefix}${draftId}.json`;
   const updatedAt = new Date().toISOString();
@@ -1377,6 +1416,9 @@ async function getDraft(event) {
   if (!draftId) {
     return json(200, {});
   }
+  if (!isSafeKeySegment(draftId)) {
+    return json(400, { error: "Invalid draftId." });
+  }
 
   const key = `${prefix}${draftId}.json`;
   let rawDraft;
@@ -1390,7 +1432,7 @@ async function getDraft(event) {
     );
     rawDraft = object?.Body ? await object.Body.transformToString("utf8") : "";
   } catch (error) {
-    if (error && typeof error === "object" && error.code === "NoSuchKey") {
+    if (isNoSuchKey(error)) {
       return json(200, {});
     }
     throw error;
@@ -1451,7 +1493,7 @@ async function markDraftSubmitted(draftId, submissionId, requestId, formName) {
       }
     }
   } catch (error) {
-    if (error && typeof error === "object" && error.code === "NoSuchKey") {
+    if (isNoSuchKey(error)) {
       return;
     }
     throw error;
@@ -1524,6 +1566,9 @@ async function getSubmissionStatus(event, requestId) {
 
   if (!submissionId) {
     return json(200, pendingStatusPayload(""));
+  }
+  if (!isSafeKeySegment(submissionId)) {
+    return json(400, { error: "Invalid submission id." });
   }
 
   const bucket = process.env.SUBMISSIONS_BUCKET;
@@ -1643,12 +1688,18 @@ async function verifySubmissionLink(event, requestId) {
   await saveSubmissionStatus(record.submissionId, "in_review", verificationId);
 
   // Notify staff after the verified record and review status are persisted.
+  // A record written before submissionKey was stored has no key. Its received
+  // date is not on the record, so the key is not guessed: the notification says
+  // the key was not recorded and how to find the object.
   await notifySubmissionEvent({
     eventType: "verified",
     formName: record.formName || "unknown",
     submissionId: record.submissionId,
     bucket: config.bucket,
-    key: `${config.prefix}status/${record.submissionId}.json`,
+    key:
+      typeof record.submissionKey === "string" && record.submissionKey
+        ? record.submissionKey
+        : null,
     kmsKeyId: config.kmsKeyId,
     occurredAt: verifiedAt,
     requestId,
@@ -1698,15 +1749,8 @@ async function resendVerificationLink(event, requestId) {
     });
   }
 
+  // The handler already rejected every POST without an allowed origin.
   const origin = getSiteOrigin(event);
-  if (!origin) {
-    return json(400, {
-      reason: "missing_origin",
-      message: verificationLinkFailureMessage(
-        "We could not build a new link for this request.",
-      ),
-    });
-  }
 
   const { config, key, record } = await loadVerificationRecord(verificationId);
   if (!record) {
@@ -1854,17 +1898,7 @@ async function resendVerificationLink(event, requestId) {
 }
 
 async function isKnownFormRelease(releaseId) {
-  if (
-    typeof releaseId !== "string" ||
-    !releaseId ||
-    releaseId === "." ||
-    releaseId === ".." ||
-    /[\\/]/.test(releaseId) ||
-    Array.from(releaseId).some(
-      (character) =>
-        character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
-    )
-  ) {
+  if (!isSafeKeySegment(releaseId)) {
     return false;
   }
   const bucket = process.env.RELEASE_DATA_BUCKET;
@@ -1944,6 +1978,17 @@ async function submitForm(event, requestId) {
     );
     return json(400, { error: "Unsupported formName." });
   }
+  if (draftId && !isSafeKeySegment(draftId)) {
+    console.info(
+      JSON.stringify({
+        msg: "forms.submit.validation_failed",
+        requestId,
+        reason: "invalid_draft_id",
+        formName,
+      }),
+    );
+    return json(400, { error: "Invalid draftId." });
+  }
 
   const expectedAction = `${formName}Submit`;
 
@@ -1988,6 +2033,10 @@ async function submitForm(event, requestId) {
       error: "This form has an unrecognized website release.",
     });
   }
+
+  // Read the email configuration before anything is stored, so a missing
+  // setting fails the request instead of saving a submission nobody can confirm.
+  const config = verificationConfig();
 
   const submissionId = createId();
   const receivedAt = new Date().toISOString();
@@ -2066,14 +2115,13 @@ async function submitForm(event, requestId) {
     }),
   );
 
+  // The handler already rejected every POST without an allowed origin.
   const origin = getSiteOrigin(event);
   const verificationEmail = getVerificationEmail(data, formName);
-  if (!verificationEmail || !isValidEmail(verificationEmail) || !origin) {
-    const verificationFailureReason = !origin
-      ? "missing_origin"
-      : !verificationEmail
-        ? "missing_email"
-        : "invalid_email";
+  if (!verificationEmail || !isValidEmail(verificationEmail)) {
+    const verificationFailureReason = !verificationEmail
+      ? "missing_email"
+      : "invalid_email";
     captureLambdaException(
       new Error(`Verification email not sent: ${verificationFailureReason}`),
       baseLogContext(event, requestId),
@@ -2090,7 +2138,6 @@ async function submitForm(event, requestId) {
         msg: "forms.submit.verification_email_not_sent",
         requestId,
         formName,
-        hasOrigin: Boolean(origin),
         hasVerificationEmail: Boolean(verificationEmail),
         verificationEmailDomain: emailDomain(verificationEmail),
         verificationFailureReason,
@@ -2102,7 +2149,6 @@ async function submitForm(event, requestId) {
 
   const verificationId = createId();
   const secret = createVerificationSecret();
-  const config = verificationConfig();
   const createdAt = new Date().toISOString();
   const expiresAt = new Date(Date.now() + config.ttlMs).toISOString();
 
@@ -2118,6 +2164,10 @@ async function submitForm(event, requestId) {
     ),
     resendCount: 0,
     submissionId,
+    // The staff notification points at this object once the email address is
+    // confirmed. Store the key itself: it holds the received date, which is not
+    // recoverable from the verification record's own timestamps.
+    submissionKey: key,
     usedAt: null,
     verificationId,
     verifiedAt: null,
@@ -2168,8 +2218,7 @@ async function submitForm(event, requestId) {
   }
 
   return json(200, {
-    message:
-      "We received your submission. Check your email and open the link within 15 minutes to confirm your email address. Please contact hello@policeconduct.org if you need help.",
+    message: `We received your submission. Check your email and open the link within ${formatApproximateDuration(config.ttlMs)} to confirm your email address. Please contact hello@policeconduct.org if you need help.`,
     verificationPending: true,
   });
 }
@@ -2300,7 +2349,7 @@ export const handler = async (event) => {
     );
     return withCors(
       json(500, {
-        error: info.message || "Internal server error",
+        error: "Internal server error",
         requestId,
       }),
       allowedOrigin,

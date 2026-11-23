@@ -1,5 +1,4 @@
 ---
-import RecordDataNotes from "#src/components/RecordDataNotes.astro";
 import PageShell from "#src/layouts/PageShell.astro";
 import LicensingAuthorityRecords from "#src/components/LicensingAuthorityRecords.astro";
 import {
@@ -21,6 +20,7 @@ const pagePath = `${authority.statePath}licensing-authority/`;
   title={`${authority.name} | PoliceConduct.org`}
   description={`Licenses, license actions, and discipline records from ${authority.name}.`}
   pagePath={pagePath}
+  canonicalUrl={pagePath}
   heading={authority.name}
   breadcrumbs={[
     { label: authority.stateName, href: authority.statePath },
@@ -36,5 +36,4 @@ const pagePath = `${authority.statePath}licensing-authority/`;
     <a href={`${pagePath}data-annotations/`}>Source data notes and downloads</a>
   </p>
   <LicensingAuthorityRecords {...records} />
-  <RecordDataNotes recordPath={pagePath} />
 </PageShell>

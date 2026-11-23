@@ -1,3 +1,3 @@
 # Scope
 
-The board directed removal of the entire monitor and dead code. Keep actual verified-submission notifications. No new monitoring requirements.
+The board directed removal of the daily delivery probe and its dead code (INS-94). Keep verified-submission notifications. Add no new monitoring requirements.

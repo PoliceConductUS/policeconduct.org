@@ -1,5 +1,6 @@
 ---
 import PageShell from "#src/layouts/PageShell.astro";
+import { formatNewsDate } from "#src/lib/news.js";
 import { buildNewsArticle, getSiteUrl } from "#src/lib/structured-data.js";
 import { newsMeta } from "./_metadata";
 
@@ -27,7 +28,7 @@ const structuredData = buildNewsArticle({
 >
   <Fragment slot="header">
     <p class="text-muted">
-      <time datetime={newsMeta.date}>October 24, 2026</time>
+      <time datetime={newsMeta.date}>{formatNewsDate(newsMeta.date)}</time>
     </p>
     <p class="lead mb-0">
       A question about policing rarely ends with one record. You might start

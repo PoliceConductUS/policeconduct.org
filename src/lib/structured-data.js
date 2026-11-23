@@ -1,5 +1,6 @@
 import {
   ORG_ADDRESS,
+  ORG_ALTERNATE_NAME,
   ORG_DESCRIPTION,
   ORG_EIN,
   ORG_LEGAL_NAME,
@@ -45,7 +46,7 @@ export const buildPublisherOrganization = (siteUrl) => {
     "@type": "Organization",
     "@id": organizationId(siteUrl),
     name: ORG_LEGAL_NAME,
-    alternateName: "PoliceConduct.org",
+    alternateName: ORG_ALTERNATE_NAME,
     url,
     description: ORG_DESCRIPTION,
     logo: new URL("/img/apple-touch-icon.png", siteUrl).toString(),
@@ -68,7 +69,7 @@ export const buildWebSite = (siteUrl) => {
     "@type": "WebSite",
     "@id": url,
     url,
-    name: "PoliceConduct.org",
+    name: ORG_ALTERNATE_NAME,
     publisher: { "@id": organizationId(siteUrl) },
   };
 };

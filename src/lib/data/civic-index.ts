@@ -76,20 +76,18 @@ export const buildHelpCollectHref = (
 };
 
 /**
- * One cell in the merged stat band. A cell is either populated data
- * (value set; href when the count drills down), or pending (value null)
- * with a visible contribution path. Personnel is never linked at
- * state/county/place scope: rosters are only browsable per agency.
+ * One cell in the merged stat band: the recorded count, with an href when the
+ * count drills down. Personnel is never linked at state/county/place scope:
+ * rosters are only browsable per agency.
  */
 export type CivicStatCell = {
   key: string;
   label: string;
-  value: string | null;
+  value: string;
   meta?: string;
   href?: string;
   actionLabel?: string;
   role?: CivicTopicRole;
-  pendingHelp?: { href: string; label: string };
 };
 
 export type CivicJumpCell = {
@@ -294,7 +292,7 @@ const buildAgencyMapPoints = (
       label: agency.name,
       lat: agency.mapPoint!.lat,
       lng: agency.mapPoint!.lng,
-      meta: agency.address || "Agency",
+      meta: agency.address!,
     }));
 
 const getCoverageCount = (
@@ -357,106 +355,67 @@ type StatCellsInput = {
   coverage: CivicCoverageMetric[];
   pagePath: string;
   scope: Exclude<CivicIndexScope, "agency">;
-  entitySlug: string;
 };
 
 /**
  * The merged stat band for geography pages: coverage facts and drill-down
- * links are the same cells. A zero count means the records have not been
- * collected yet, so the cell goes quiet ("--") and carries a contribution
- * path instead of implying the jurisdiction has none.
+ * links are the same cells. Each cell shows the recorded count, including 0.
  */
 export const buildStatCells = ({
   coverage,
   pagePath,
   scope,
-  entitySlug,
 }: StatCellsInput): CivicStatCell[] => {
   const agencies = getCoverageCount(coverage, "agencies");
   const personnel = getCoverageCount(coverage, "personnel");
   const reports = getCoverageCount(coverage, "reports");
   const civilCases = getCoverageCount(coverage, "civil_cases");
-  const help = {
-    href: buildHelpCollectHref(pagePath, scope, entitySlug),
-    label: "Help collect this →",
-  };
 
   const cells: CivicStatCell[] = [];
 
   if (scope !== "place") {
-    cells.push(
-      agencies > 0
-        ? {
-            key: "agencies",
-            label: metricLabels.agencies,
-            value: formatMetricValue(agencies),
-            meta: scope === "state" ? "Statewide" : "Countywide",
-          }
-        : {
-            key: "agencies",
-            label: metricLabels.agencies,
-            value: null,
-            pendingHelp: help,
-          },
-    );
+    cells.push({
+      key: "agencies",
+      label: metricLabels.agencies,
+      value: formatMetricValue(agencies),
+      meta: scope === "state" ? "Statewide" : "Countywide",
+    });
   }
 
-  cells.push(
-    personnel > 0
-      ? {
-          key: "personnel",
-          label: metricLabels.personnelRecords,
-          value: formatMetricValue(personnel),
-          meta: "Currently serving",
-        }
-      : {
-          key: "personnel",
-          label: metricLabels.personnelRecords,
-          value: null,
-          pendingHelp: help,
-        },
-  );
+  cells.push({
+    key: "personnel",
+    label: metricLabels.personnelRecords,
+    value: formatMetricValue(personnel),
+    meta: "Currently serving",
+  });
 
-  cells.push(
-    reports > 0
+  cells.push({
+    key: "reports",
+    label: metricLabels.reports,
+    value: formatMetricValue(reports),
+    meta: "Shared by the public",
+    // Drill-down pages exist only where the count is above zero.
+    ...(reports > 0
       ? {
-          key: "reports",
-          label: metricLabels.reports,
-          value: formatMetricValue(reports),
-          meta: "Shared by the public",
           href: scopedDetailHref(pagePath, "reports"),
           actionLabel: "View reports →",
         }
-      : {
-          key: "reports",
-          label: metricLabels.reports,
-          value: null,
-          pendingHelp: {
-            href: "/report/new/",
-            label: "Share an experience →",
-          },
-        },
-  );
+      : {}),
+  });
 
-  cells.push(
-    civilCases > 0
+  cells.push({
+    key: "civil_cases",
+    label: metricLabels.civilCases,
+    value: formatMetricValue(civilCases),
+    meta: "Court records",
+    role: "civil",
+    ...(civilCases > 0
       ? {
-          key: "civil_cases",
-          label: metricLabels.civilCases,
-          value: formatMetricValue(civilCases),
-          meta: "Court records",
           href: scopedDetailHref(pagePath, "civil-cases"),
           actionLabel: "View civil cases →",
-          role: "civil",
         }
-      : {
-          key: "civil_cases",
-          label: metricLabels.civilCases,
-          value: null,
-          role: "civil",
-          pendingHelp: help,
-        },
-  );
+      : {}),
+  });
 
   return cells;
 };
@@ -577,7 +536,6 @@ export const buildStateCivicIndex = async (
       coverage,
       pagePath: state.path,
       scope: "state",
-      entitySlug: stateSlug,
     }),
     title: `${state.stateLabel} Police Records | PoliceConduct.org`,
   };
@@ -636,7 +594,6 @@ export const buildAdministrativeAreaCivicIndex = async (
       coverage,
       pagePath: area.path,
       scope: "administrative_area",
-      entitySlug: areaSlug,
     }),
     title: `${area.administrativeArea}, ${area.stateLabel} Police Records | PoliceConduct.org`,
   };
@@ -693,7 +650,6 @@ export const buildPlaceCivicIndex = async (
       coverage,
       pagePath: place.path,
       scope: "place",
-      entitySlug: placeSlug,
     }),
     title: `${place.displayName}, ${place.administrativeArea}, ${stateCode} Police Records | PoliceConduct.org`,
   };

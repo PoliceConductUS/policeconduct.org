@@ -18,6 +18,9 @@ const loadEducatedPersonnelSet = (): Promise<Set<string>> => {
         `select distinct personnel_id from public.personnel_education`,
       );
       return new Set(rows.map((row) => row.personnel_id));
+    }).catch((error: unknown) => {
+      educatedPersonnelPromise = null;
+      throw error;
     });
   }
   return educatedPersonnelPromise;

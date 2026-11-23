@@ -1,4 +1,4 @@
-import { getReportDateParts, parseLocationPathParts } from "./report-paths.js";
+import { getReportDateParts } from "./report-paths.js";
 import type { ReportSummary } from "./types.js";
 
 export type ReportArchiveScope = "state" | "county" | "place";
@@ -80,12 +80,11 @@ const pathFor = (
   scope: ReportArchiveScope,
   parts: string[],
 ) => {
-  const location = parseLocationPathParts(report.locationPath, report.id);
   const prefix =
     scope === "state"
-      ? `/${location.state}/reports/`
+      ? `/${report.state}/reports/`
       : scope === "county"
-        ? `/${location.state}/${location.administrativeArea}/reports/`
+        ? `/${report.state}/${report.administrativeAreaSlug}/reports/`
         : `${report.locationPath}reports/`;
   return parts.length ? `${prefix}${parts.join("/")}/` : prefix;
 };
@@ -95,14 +94,13 @@ const paramsFor = (
   scope: ReportArchiveScope,
   parts: string[],
 ) => {
-  const location = parseLocationPathParts(report.locationPath, report.id);
   return {
-    category: location.state,
+    category: report.state,
     administrativeArea:
       scope === "county" || scope === "place"
-        ? location.administrativeArea
+        ? report.administrativeAreaSlug
         : undefined,
-    place: scope === "place" ? location.place : undefined,
+    place: scope === "place" ? report.placeSlug : undefined,
     parts: parts.length ? parts.join("/") : undefined,
   };
 };
@@ -112,15 +110,16 @@ const matchesScope = (
   scope: ReportArchiveScope,
   params: Record<string, string | undefined>,
 ) => {
-  const location = parseLocationPathParts(report.locationPath, report.id);
-  if (location.state !== params.category) return false;
+  // Scope membership uses the location fields the build projection recorded
+  // for the report, not the site's own parsing of its path.
+  if (report.state !== params.category) return false;
   if (
     (scope === "county" || scope === "place") &&
-    location.administrativeArea !== params.administrativeArea
+    report.administrativeAreaSlug !== params.administrativeArea
   ) {
     return false;
   }
-  if (scope === "place" && location.place !== params.place) return false;
+  if (scope === "place" && report.placeSlug !== params.place) return false;
   const dateParts = params.parts?.split("/").filter(Boolean) || [];
   const reportDateParts = getReportDateParts(report.incidentDate, report.id);
   return dateParts.every((part, index) => {

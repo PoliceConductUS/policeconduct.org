@@ -1,9 +1,7 @@
 ---
-import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import DataPanel from "#src/components/DataPanel.astro";
 import HelpCollectDataButton from "#src/components/HelpCollectDataButton.astro";
 import MetricGrid from "#src/components/MetricGrid.astro";
-import OutcomesByIncomePanel from "#src/components/OutcomesByIncomePanel.astro";
 import SampleMeasurementChart from "#src/components/SampleMeasurementChart.astro";
 import TableScroll from "#src/components/TableScroll.astro";
 import PageShell from "#src/layouts/PageShell.astro";
@@ -25,13 +23,7 @@ const structuredData = buildWebPage({
   description: model.description,
   type: "CollectionPage",
 });
-const showCivilCaseScopeNote = model.pagePath.includes("/civil-cases/");
-const isFederalTopicPage =
-  /\/(personnel|reports|budget|civil-cases|liability-costs|outcomes-by-income)\/$/.test(
-    model.pagePath,
-  );
 const isOutcomesByIncomePage = model.pagePath.includes("/outcomes-by-income/");
-const outcomesByIncomeHref = `${model.pagePath}outcomes-by-income/`;
 const sampleRows = [
   { label: "Current", value: "--", width: 62 },
   { label: "Previous", value: "--", width: 46 },
@@ -61,6 +53,11 @@ const sampleRows = [
         placeholder={model.searchPlaceholder}
         data-civic-hierarchy-filter-input
       />
+      <span
+        class="visually-hidden"
+        role="status"
+        data-civic-hierarchy-filter-status
+      ></span>
     </label>
   </Fragment>
 
@@ -86,21 +83,16 @@ const sampleRows = [
   ) : null}
 
   <div class="entity-chart-grid">
-    {!isFederalTopicPage ? (
-      <OutcomesByIncomePanel href={outcomesByIncomeHref} />
-    ) : null}
-    {isOutcomesByIncomePage ? (
-      <OutcomesByIncomePanel />
-    ) : (
-      model.charts.map((chartTitle) => (
-        <DataPanel title={chartTitle} description="Records for this view">
-          <SampleMeasurementChart
-            ariaLabel={`Sample ${chartTitle} chart`}
-            rows={sampleRows}
-          />
-        </DataPanel>
-      ))
-    )}
+    {isOutcomesByIncomePage
+      ? null
+      : model.charts.map((chartTitle) => (
+          <DataPanel title={chartTitle} description="Records for this view">
+            <SampleMeasurementChart
+              ariaLabel={`Sample ${chartTitle} chart`}
+              rows={sampleRows}
+            />
+          </DataPanel>
+        ))}
   </div>
 
   {model.isFieldOfficesTable ? (
@@ -185,14 +177,15 @@ const sampleRows = [
                   );
                 })}
                 <td>
-                  <a href={row.href}>View</a>
+                  <a href={row.href}>
+                    View<span class="visually-hidden"> {row.label}</span>
+                  </a>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {showCivilCaseScopeNote ? <CivilCaseScopeNote /> : null}
     </section>
   )}
   <script is:inline>
@@ -201,15 +194,26 @@ const sampleRows = [
       .forEach((input) => {
         input.addEventListener("input", () => {
           const query = input.value.trim().toLowerCase();
-          document
-            .querySelectorAll("[data-civic-hierarchy-filter-item]")
-            .forEach((item) => {
-              const text =
-                item
-                  .getAttribute("data-civic-hierarchy-filter-text")
-                  ?.toLowerCase() || "";
-              item.hidden = Boolean(query) && !text.includes(query);
-            });
+          const items = document.querySelectorAll(
+            "[data-civic-hierarchy-filter-item]",
+          );
+          let shown = 0;
+          items.forEach((item) => {
+            const text =
+              item
+                .getAttribute("data-civic-hierarchy-filter-text")
+                ?.toLowerCase() || "";
+            item.hidden = Boolean(query) && !text.includes(query);
+            if (!item.hidden) shown += 1;
+          });
+          const status = input
+            .closest("label")
+            ?.querySelector("[data-civic-hierarchy-filter-status]");
+          if (status) {
+            status.textContent = query
+              ? `${shown} of ${items.length} shown`
+              : "";
+          }
         });
       });
   </script>

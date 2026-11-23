@@ -3,6 +3,8 @@ import RecordDataNotes from "#src/components/RecordDataNotes.astro";
 import "#src/styles/civic-ledger.css";
 import { contactEmailsForDisplay } from "#src/lib/contact-emails.js";
 import { agencyStatusPresentation } from "#src/lib/agency-status";
+import ArrestBeatMap from "#src/components/ArrestBeatMap.astro";
+import { loadArrestProfilesForAgency } from "#src/lib/data/arrest-profiles.js";
 import CoverageLinks from "#src/components/CoverageLinks.astro";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import PrefillBootstrap from "#src/components/PrefillBootstrap.astro";
@@ -30,15 +32,13 @@ export async function getStaticPaths() {
 
 type AgencyDetail = Awaited<ReturnType<typeof loadAgencyDetailByRouteParams>>;
 type CivilCaseRecord = AgencyDetail["civilCases"][number];
-type PersonnelLinkedCivilCaseRecord =
-  AgencyDetail["personnelLinkedCivilCases"][number];
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
+const arrestProfiles = await loadArrestProfilesForAgency(data.agency.id);
 
 const {
   agencyName,
   agencyState,
-  categorySlug,
   categoryLabel,
   agencyPath,
   administrativeArea,
@@ -54,7 +54,7 @@ const status = agencyStatusPresentation(
   data.agency.status,
   data.agency.status_date,
 );
-const pageTitle = `${agencyName}${status.prominence === "notice" ? ` — ${status.label}` : ""} | PoliceConduct.org`;
+const pageTitle = `${agencyName} | PoliceConduct.org`;
 const pageDescription = [
   `${agencyName} agency profile.`,
   status.summary,
@@ -62,7 +62,6 @@ const pageDescription = [
 ]
   .filter(Boolean)
   .join(" ");
-const civilCaseTotal = counts.civilCases + counts.personnelLinkedCivilCases;
 const addressAvailable =
   data.agency.address ||
   data.agency.city ||
@@ -86,22 +85,14 @@ const contactPoints = data.agencyPhones.map(
   }),
 );
 const agencyPrefillName = agencyName.toLocaleUpperCase("en-US");
-const civilLitigationRecords = [
-  ...civilCases.map((record: CivilCaseRecord) => ({
-    ...record,
-    caseUrl: `/civil-cases/${record.slug}/`,
-  })),
-  ...data.personnelLinkedCivilCases.map(
-    (record: PersonnelLinkedCivilCaseRecord) => ({
-      ...record,
-      caseUrl: `/civil-cases/${record.slug}/`,
-    }),
-  ),
-];
+const civilLitigationRecords = civilCases.map((record: CivilCaseRecord) => ({
+  ...record,
+  caseUrl: `/civil-cases/${record.slug}/`,
+}));
 const civilLitigationSummary = civilLitigationRecords
   .map((record) => {
     const segments = [
-      record.title || "Civil case",
+      record.title!,
       record.cause_number || null,
       record.court || null,
       record.caseUrl,
@@ -118,7 +109,6 @@ const reportNewPrefillPayload = JSON.stringify({
   },
 } satisfies ReportNewPrefill);
 const addCivilCasePrefillPayload = JSON.stringify({
-  jurisdiction: categorySlug,
   defendants: agencyPrefillName,
   summary: `${agencyPrefillName} agency profile: ${agencyPath}`,
   links: [
@@ -133,7 +123,6 @@ const addCivilCasePrefillPayload = JSON.stringify({
 const suggestEditPrefillPayload = JSON.stringify({
   agencyPath,
   agencyName: agencyPrefillName,
-  jurisdiction: categorySlug,
   departmentHead: data.agency.contact_name || "",
   civilLitigation: civilLitigationSummary,
 });
@@ -158,17 +147,6 @@ const federalAgency = data.federalAgency
       path: `/federal/${data.federalAgency.slug}/`,
     }
   : null;
-const toDisplayName = (value: string) =>
-  value === value.toUpperCase()
-    ? value
-        .toLocaleLowerCase("en-US")
-        .replace(/\b[a-z]/g, (letter) => letter.toLocaleUpperCase("en-US"))
-    : value;
-const agencyDisplayName = toDisplayName(agencyName);
-const cityDisplayName = data.agency.city
-  ? toDisplayName(data.agency.city)
-  : null;
-
 const formatCount = (value: number) => value.toLocaleString("en-US");
 const formatDate = (value: string | Date) =>
   new Date(value).toLocaleDateString("en-US", {
@@ -181,9 +159,7 @@ const formatDate = (value: string | Date) =>
 const addressLine = [
   data.agency.address,
   [
-    [cityDisplayName, (agencyState || "").toUpperCase()]
-      .filter(Boolean)
-      .join(", "),
+    [data.agency.city, agencyState].filter(Boolean).join(", "),
     data.agency.zip_code || "",
   ]
     .filter(Boolean)
@@ -204,14 +180,26 @@ const volunteerHref = buildHelpCollectHref(
   "agency",
   agencySlugSegment,
 );
-// The headline personnel count is currently-serving officers; note any former
-// officers still on record (browsable via the roster's status filter).
+// The current and former counts come from the intake view site_agency_count.
 const personnelMeta =
   counts.formerPersonnel > 0
     ? `${formatCount(counts.formerPersonnel)} former on record`
-    : counts.currentPersonnel > 0
-      ? "Currently serving"
-      : null;
+    : "Currently serving";
+const personnelCell =
+  counts.currentPersonnel > 0
+    ? {
+        value: formatCount(counts.currentPersonnel),
+        meta: personnelMeta,
+        href: `${agencyPath}personnel/`,
+        helpCollectHref: volunteerHref,
+      }
+    : counts.formerPersonnel > 0
+      ? {
+          gloss: "No current personnel on record.",
+          helpCollectHref: `${agencyPath}personnel/`,
+          helpCollectLabel: `See ${formatCount(counts.formerPersonnel)} former on record →`,
+        }
+      : { helpCollectHref: volunteerHref };
 
 type RecentItem = {
   href: string;
@@ -220,28 +208,23 @@ type RecentItem = {
   sortDate: number;
 };
 
-const recentCaseItems: RecentItem[] = civilLitigationRecords
-  .filter(
-    (record, index, records) =>
-      records.findIndex((entry) => entry.slug === record.slug) === index,
-  )
-  .map((record) => ({
-    href: record.caseUrl,
-    title: record.title || "Civil case",
-    meta: [
-      "Civil case",
-      record.court || null,
-      record.filed_date ? `Filed ${formatDate(record.filed_date)}` : null,
-      record.outcome || null,
-    ]
-      .filter(Boolean)
-      .join(" · "),
-    sortDate: record.filed_date ? new Date(record.filed_date).getTime() : 0,
-  }));
+const recentCaseItems: RecentItem[] = civilLitigationRecords.map((record) => ({
+  href: record.caseUrl,
+  title: record.title!,
+  meta: [
+    "Civil case",
+    record.court || null,
+    record.filed_date ? `Filed ${formatDate(record.filed_date)}` : null,
+    record.outcome || null,
+  ]
+    .filter(Boolean)
+    .join(" · "),
+  sortDate: record.filed_date ? new Date(record.filed_date).getTime() : 0,
+}));
 const recentReportItems: RecentItem[] = data.reportedReports.map(
   (report: { incidentDate: string; title?: string; url: string }) => ({
     href: report.url,
-    title: report.title || "Public report",
+    title: report.title!,
     meta: `Report · Incident ${formatDate(report.incidentDate)}`,
     sortDate: new Date(report.incidentDate).getTime(),
   }),
@@ -300,29 +283,24 @@ const structuredData = {
   structuredData={structuredData}
   breadcrumbs={[
     { label: "Home", href: "/" },
-    { label: categoryLabel, href: `/${categorySlug}/` },
+    { label: categoryLabel, href: data.categoryPath },
     {
       label: administrativeArea,
-      href: `/${categorySlug}/${data.administrativeAreaSlug}/`,
+      href: data.administrativeAreaPath,
     },
     {
       label: placeLabel,
       href: placePath,
     },
-    { label: agencyDisplayName, href: agencyPath },
+    { label: agencyName, href: agencyPath },
   ]}
   eyebrow="Department profile"
-  heading={agencyDisplayName}
+  heading={agencyName}
 >
   <PrefillBootstrap />
   <Fragment slot="header">
     {status.label || status.dateLabel ? (
-      <div
-        class:list={[
-          "agency-status",
-          { "agency-status--notice": status.prominence === "notice" },
-        ]}
-      >
+      <div class="agency-status">
         {status.label ? (
           <p>
             <strong>Status: {status.label}</strong>
@@ -350,22 +328,17 @@ const structuredData = {
         <p class="entity-contact-links">
           {data.agencyPhones.map(
             (phone: { phone_number: string; description?: string | null }) => {
-              const label = (phone.description || "").trim();
-              const showLabel = label && label.toLowerCase() !== "phone";
-              // A fax number is not something to dial from a phone.
-              if (label.toLowerCase() === "fax") {
-                return <span>{`${label}: ${phone.phone_number}`}</span>;
-              }
+              const label = phone.description;
               return (
                 <a
                   href={`tel:${phone.phone_number}`}
                   aria-label={
-                    showLabel
+                    label
                       ? `${label}: ${phone.phone_number}`
                       : phone.phone_number
                   }
                 >
-                  {showLabel
+                  {label
                     ? `${label}: ${phone.phone_number}`
                     : phone.phone_number}
                 </a>
@@ -376,7 +349,7 @@ const structuredData = {
       ) : null}
       {data.agency.contact_name ? (
         <p class="entity-contact-person">
-          Contact name: {toDisplayName(data.agency.contact_name)}
+          Contact name: {data.agency.contact_name}
         </p>
       ) : null}
       {contactEmails.length ? (
@@ -458,18 +431,11 @@ const structuredData = {
     </ul>
   </aside>
 
-  <StatStrip ariaLabel={`${agencyDisplayName} record totals`} columns="five">
+  <StatStrip ariaLabel={`${agencyName} record totals`} columns="five">
     <StatCell
       label="Personnel"
-      value={
-        counts.currentPersonnel > 0
-          ? formatCount(counts.currentPersonnel)
-          : null
-      }
-      meta={personnelMeta || undefined}
-      href={counts.personnel > 0 ? `${agencyPath}personnel/` : undefined}
       actionLabel="View personnel →"
-      helpCollectHref={volunteerHref}
+      {...personnelCell}
     />
     <StatCell
       label="Reports"
@@ -482,9 +448,9 @@ const structuredData = {
     />
     <StatCell
       label="Civil Cases"
-      value={civilCaseTotal > 0 ? formatCount(civilCaseTotal) : null}
+      value={counts.civilCases > 0 ? formatCount(counts.civilCases) : null}
       meta="Court records"
-      href={civilCaseTotal > 0 ? `${agencyPath}civil-cases/` : undefined}
+      href={counts.civilCases > 0 ? `${agencyPath}civil-cases/` : undefined}
       actionLabel="View civil cases →"
       role="civil"
       helpCollectHref={volunteerHref}
@@ -510,6 +476,19 @@ const structuredData = {
       </a>
       {" linked to this agency’s personnel."}
     </p>
+  )}
+
+  {arrestProfiles.map(
+    (profile) =>
+      profile.beatMap && (
+        <ArrestBeatMap
+          data={profile.beatMap}
+          agencyName={profile.agency.name}
+          firstMonth={profile.coverage.firstMonth}
+          lastMonth={profile.coverage.lastMonth}
+          source={profile.coverage.source}
+        />
+      ),
   )}
 
   {recentReports.length ? (
@@ -552,11 +531,6 @@ const structuredData = {
 
   <CoverageLinks links={data.coverageLinks} />
 
-  <section class="civic-section civic-section--last">
-    <p class="civic-limit-note">
-      Counts show items available on this site. They are not a rating.
-    </p>
-  </section>
   <RecordDataNotes recordPath={agencyPath} />
 </PageShell>
 
@@ -569,11 +543,5 @@ const structuredData = {
   .agency-status p {
     margin: 0;
     color: inherit;
-  }
-
-  .agency-status--notice {
-    padding: 0.75rem 1rem;
-    background: var(--ipc-color-ink);
-    color: var(--ipc-color-paper-raised);
   }
 </style>

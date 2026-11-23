@@ -436,6 +436,14 @@ test("CLI rejects missing credentials and unknown commands with exit 2", async (
   }
 });
 
+test("CLI usage names every npm analytics command", async () => {
+  const errors = [];
+  assert.equal(await runCli([], { stderr: (line) => errors.push(line) }), 2);
+  for (const command of ["compare", "apply", "pull", "push"]) {
+    assert.match(errors.join("\n"), new RegExp(`analytics:${command}\\b`));
+  }
+});
+
 test("CLI compare returns 0 for match, 1 for drift, apply 0 only after verification and 2 on errors", async () => {
   // Read the fixed repository config just as the CLI does, while the transport
   // supplies live resource identities instead of contacting Google.

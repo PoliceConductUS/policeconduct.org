@@ -31,6 +31,7 @@ const reportHref = (report: AgencyReportSummary) => {
 ---
 
 <AgencyTopicPage
+  currentPage={currentPage}
   data={data}
   topicLabel="Reports"
   topicSlug="reports"
@@ -56,8 +57,4 @@ const reportHref = (report: AgencyReportSummary) => {
       lastPage={lastPage}
     />
   ) : null}
-  <p class="civic-limit-note">
-    Reports reflect the submitter's account and linked public records.
-    Publication is not a court finding.
-  </p>
 </AgencyTopicPage>

@@ -1,3 +1,4 @@
+import { buildBeatMap, type BeatMap } from "./arrest-beats.js";
 import { withDb } from "#src/lib/db.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
 
@@ -18,6 +19,7 @@ export type ArrestProfileRecord = {
       "by_year" | "by_month" | "by_iso_week" | "by_day_of_week",
       Record<string, number>
     >;
+  beatMap?: BeatMap;
   updatedAt: string;
 };
 export type ArrestProfile = ArrestProfileRecord & { assignmentId: string };
@@ -31,7 +33,7 @@ export const loadArrestProfilesForPersonnel = async (
   profilesByPersonnel ??= withDb(async (client) => {
     const { rows } =
       await client.query(`select profile.*, assignment.personnel_id,
-      agency.name as agency_name, agency.slug, location.path as location_path,
+      agency.id as agency_id, agency.name as agency_name, agency.slug, location.path as location_path,
       profile.updated_at::text as updated_at
       from public.arrest_profile profile
       join public.agency_personnel assignment on assignment.id = profile.agency_personnel_id
@@ -55,6 +57,9 @@ export const loadArrestProfilesForPersonnel = async (
       map.set(row.personnel_id, profiles);
     }
     return map;
+  }).catch((error: unknown) => {
+    profilesByPersonnel = undefined;
+    throw error;
   });
   return (await profilesByPersonnel).get(personnelId) ?? [];
 };
@@ -78,6 +83,13 @@ export const loadArrestProfilesForAgency = async (
       profiles.push({
         id: row.id,
         agencyId: row.agency_id,
+        beatMap: Object.hasOwn(row.breakdowns, "by_arrest_beat")
+          ? buildBeatMap(
+              row.breakdowns.arrest_beat_boundaries,
+              row.breakdowns.by_arrest_beat,
+              row.coverage.totalArrests,
+            )
+          : undefined,
         agency: {
           name: row.agency_name,
           href: requireAgencyCanonicalPath(row),
@@ -89,6 +101,9 @@ export const loadArrestProfilesForAgency = async (
       map.set(row.agency_id, profiles);
     }
     return map;
+  }).catch((error: unknown) => {
+    profilesByAgency = undefined;
+    throw error;
   });
   return (await profilesByAgency).get(agencyId) ?? [];
 };

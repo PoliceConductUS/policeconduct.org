@@ -1,7 +1,41 @@
-## 1. Remove monitoring
+## 1. Remove the daily delivery probe
 
-- [x] Delete monitor source, tests, configuration, and dedicated infrastructure.
-- [x] Keep actual verified-submission notifications.
-- [x] Run scoped checks and review the deletion plan.
-- [ ] Obtain manual merge and production deployment approval.
-- [ ] Record human preview receipts and verify deployed removal.
+- [x] Delete the probe source, tests, configuration, and Terraform resources (PR #30).
+- [x] Keep verified-submission notifications.
+- [x] Run scoped checks and review the deletion plan on the PR #30 head (see verify.md).
+- [x] Merge PR #30 (merged 2026-10-26, commit 93b62da).
+
+## 2. Clean up what PR #30 left
+
+- [ ] `infrastructure/bootstrap-policeconduct/logs.tf`: remove `/aws/lambda/policeconduct-notification-canary` from the `for_each` set, delete its `import` block, and replace the line 2 comment with `# account tagging, retention, or encryption.` Pass: `terraform -chdir=infrastructure/bootstrap-policeconduct validate` passes.
+- [ ] `infrastructure/bootstrap-policeconduct/EGM.md:253-254`: describe `aws_cloudwatch_log_group.existing_lambda` as the two forms API log groups only. Pass: no "canary" in the file.
+- [ ] `.gitignore`: delete the `notification-canary.zip` line. Pass (covers this task and the two above it): `git grep -n canary -- infrastructure/ .gitignore` finds nothing.
+- [ ] `infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.mjs`: keep the verified-only gate in `notifySubmissionEvent`. In `submissionNotificationSubject` (line 691), remove `eventType` from the destructured parameters (callers may keep passing it) and replace line 695 with `const action = "VERIFIED";`. That is the only branch a non-`"verified"` event can reach after the gate. Pass: `grep -n '"received"' index.mjs` finds nothing; `npx eslint infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.mjs` reports no problems.
+- [ ] `infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.test.mjs`: delete the test "received and verified are distinguishable in the subject line" (lines 578-593). In the receipts test (lines 855-861), change the input to `eventType: "verified"` and the expected key to `notifications/2026-09-16/sub_abc123-verified.json`. Change every other test that passes `eventType: "received"` to `"verified"`. Reword the section comment at lines 538-542 to say staff can tell a DSAR from a volunteer signup by the subject line, dropping "and can tell a first arrival from a verification transition". Keep the gate regression loop at line 1232 (`["received", "unexpected"]`) unchanged, and keep the test that every error-level `forms.notify` line has a CloudWatch alarm. Pass: `node --test` in that folder passes with 0 skipped.
+- [ ] `infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.mjs:1017-1019`: the comment says the S3 notification filters on `submissions/2` and `submissions/status/`. Change it to say the S3 event notification filters on `submissions/status/`; keeping receipts out of `submissions/` means no rule on that prefix can fire on a receipt and send a notification about a notification. Keep the INS-20 paragraph as it is.
+- [ ] `infrastructure/submission-notifications/EGM.md` "Callers": replace "the value is passed by the operator, not read automatically" with: `scripts/apply.sh` reads it from this root's output and refuses to apply if it cannot (cite `../bootstrap-policeconduct/scripts/apply.sh:resolve_submission_notifications_topic_arn`). Replace the last bullet with: no script plans or applies this root; `scripts/terraform-outputs.mjs` reads its `submission_notifications_topic_arn` output as `SUBMISSION_NOTIFICATIONS_TOPIC_ARN`, cited as `[../../scripts/terraform-outputs.mjs:SUBMISSION_NOTIFICATIONS_TOPIC_ARN]` in place of the existing `const policeconduct` citation.
+- [ ] `infrastructure/submission-notifications/README.md`: replace "Manual merge and production deployment require approval." with "Apply from `main` after the pull request merges; there is no approval gate." Replace "after the approved apply" with "after the apply".
+- [ ] `infrastructure/submission-notifications/versions.tf:11`: replace the comment with `# Existing state for the notification resources.`
+- [ ] Make these edits on one new branch that is a child of `ddl-openspec` (line numbers above are `ddl-openspec`'s), so they reach `main` with or after PR #58. Run `npm run validate` on the pull request head and record the AGENTS.md "Validation Expectations" fields in verify.md. Open a pull request; merge it when the user names it and directs the merge.
+
+## 3. Apply and check in AWS
+
+- [x] Apply `infrastructure/submission-notifications` (2026-11-18): 0 to add, 2 to change, 0 to destroy (see verify.md).
+- [ ] Run each command in the `verify_commands` output of `infrastructure/submission-notifications`. Record that every subscription reads Confirmed and that each submissions bucket has exactly one rule, filtered on `submissions/status/`.
+- [ ] Check the 16 retired addresses in AWS. The six `notify[...]` addresses are checked by state only: `verify.md` "After merge" records that none are in `infrastructure/submission-notifications` state; rerun `terraform -chdir=infrastructure/submission-notifications state list` and record that it lists no `canary`, `canary_alerts`, `submissions_without_notification` or `notify` address. First record in verify.md the IAM role name and EventBridge rule name from `git show 93b62da^:infrastructure/submission-notifications/main.tf`. Then run and record:
+  - `aws lambda get-function --function-name policeconduct-notification-canary`: fails with `ResourceNotFoundException` (also covers `aws_lambda_permission.canary`).
+  - `aws events describe-rule --name <rule name>`: fails with `ResourceNotFoundException` (also covers `aws_cloudwatch_event_target.canary`).
+  - `aws iam get-role --role-name <role name>`: fails with `NoSuchEntity` (also covers `aws_iam_role_policy.canary`).
+  - `aws sns list-topics --query "Topics[?ends_with(TopicArn, ':policeconduct-notification-canary-alerts')]"`: returns `[]` (also covers `aws_sns_topic_subscription.canary_alerts`).
+  - `aws cloudwatch describe-alarms --alarm-names policeconduct-notification-canary-delivery-failed policeconduct-submissions-without-notification --query MetricAlarms`: returns `[]`.
+- [ ] Preconditions: PR #58 (`ddl-openspec`, including commit `1c1bb48`) and the section 2 pull request are merged into `main`. From a clean checkout of `main`, run the bootstrap root only through its wrapper; never run raw `terraform plan` or `terraform apply` on this root:
+      `TERRAFORM_APPROVED_DESTROYS='aws_cloudwatch_log_group.existing_lambda["/aws/lambda/policeconduct-notification-canary"]' bash infrastructure/bootstrap-policeconduct/scripts/apply.sh`
+      Before answering the script's `yes` prompt, record in verify.md the commit SHA and every planned address with its action (create, update, replace, destroy). Expected: the one approved destroy; in-place updates to `aws_lambda_function.forms_api_prod` and `aws_lambda_function.forms_api_preview` (new code from section 2); no change to either Lambda's `SUBMISSION_NOTIFICATIONS_TOPIC_ARN` or to their `sns:Publish` policy; no destroy of any `forms_api_*_notify_failed` resource. Other creates and updates come from changes merged with PR #58; next to each, record the change it belongs to. If the wrapper refuses another destroy, or a planned address cannot be traced to a merged change, answer no, record the address, and stop. Do not add addresses to `TERRAFORM_APPROVED_DESTROYS`. After the apply, record that `aws logs describe-log-groups --log-group-name-prefix /aws/lambda/policeconduct-notification-canary` returns an empty `logGroups` list.
+- [ ] After the bootstrap apply, check that both forms Lambdas run `main`'s code: for `policeconduct-forms-api-preview` and `policeconduct-forms-api-prod`, download the code (`aws lambda get-function --function-name <fn> --query Code.Location --output text`), extract `index.mjs`, and compare its sha256 with `shasum -a 256 infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.mjs` on the applied commit (method from `scripts/deploy-forms-api.sh` "Verify"). Do not compare `CodeSha256`. Record both hashes in verify.md. If either differs, rerun the wrapper apply in the task above from `main`.
+- [ ] A person submits one clearly synthetic request through the preview form (`infrastructure/submission-notifications/README.md` "Verify"). Record in verify.md: the submitter verification email arrived; no staff email and no SNS message before verification; staff email and SNS message after verification; the notification receipt key (`notifications/<date>/<id>-verified.json`), `snsPublished`, `emailSent`, and the Resend message id. Record no request content.
+
+## 4. Close
+
+- [ ] After the section 3 records and retrospective are written, open a pull request for the change folder, run `npm run validate` on its head, and record the AGENTS.md "Validation Expectations" fields in verify.md.
+- [ ] Finish retrospective.md.
+- [ ] Archive this change after `notify-staff-after-verification` is archived.

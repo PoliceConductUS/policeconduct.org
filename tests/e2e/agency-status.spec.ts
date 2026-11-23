@@ -1,4 +1,16 @@
 import { expect, test } from "@playwright/test";
+import { withDb } from "../../src/lib/db.js";
+
+const storedStatus = async (slug: string) =>
+  withDb(
+    async (client) =>
+      (
+        await client.query<{ status: string }>(
+          "select status from public.agency where slug = $1",
+          [slug],
+        )
+      ).rows[0].status,
+  );
 
 const inactivePath =
   "/tx/el-paso-county/el-paso/el-paso-county-criminal-court-at-law-2-x599gm/";
@@ -6,15 +18,18 @@ const inactivePath =
 test("inactive agency status agrees across its header and search metadata", async ({
   page,
 }) => {
+  const stored = await storedStatus(
+    "el-paso-county-criminal-court-at-law-2-x599gm",
+  );
   await page.goto(inactivePath);
-  const status = page.locator(".agency-status--notice");
-  await expect(status).toContainText("Status: Inactive");
+  const status = page.locator(".agency-status");
+  await expect(status).toContainText(`Status: ${stored}`);
   await expect(status).toContainText("Status date: January 7, 2004");
   await expect(status.locator("time")).toHaveAttribute(
     "datetime",
     "2004-01-07",
   );
-  await expect(page).toHaveTitle(/Inactive/);
+  await expect(page).not.toHaveTitle(new RegExp(stored));
   for (const selector of [
     'meta[name="description"]',
     'meta[property="og:description"]',
@@ -22,14 +37,8 @@ test("inactive agency status agrees across its header and search metadata", asyn
   ]) {
     await expect(page.locator(selector)).toHaveAttribute(
       "content",
-      /Status: Inactive\. Status date: January 7, 2004\./,
+      new RegExp(`Status: ${stored}\\. Status date: January 7, 2004\\.`),
     );
-  }
-  for (const selector of [
-    'meta[property="og:title"]',
-    'meta[name="twitter:title"]',
-  ]) {
-    await expect(page.locator(selector)).toHaveAttribute("content", /Inactive/);
   }
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
@@ -46,7 +55,7 @@ test("inactive agency status agrees across its header and search metadata", asyn
   for (const type of ["GovernmentOrganization", "ProfilePage"]) {
     const node = nodes.find((item) => item["@type"] === type);
     expect(node.description).toContain(
-      "Status: Inactive. Status date: January 7, 2004.",
+      `Status: ${stored}. Status date: January 7, 2004.`,
     );
     expect(node).not.toHaveProperty("dissolutionDate");
     expect(node).not.toHaveProperty("foundingDate");
@@ -54,20 +63,20 @@ test("inactive agency status agrees across its header and search metadata", asyn
   }
   expect(
     nodes.find((item) => item["@type"] === "GovernmentOrganization").name,
-  ).not.toContain("Inactive");
+  ).not.toContain(stored);
 });
 
-test("active agency preserves its stored 1899 calendar date without a notice", async ({
+test("active agency preserves its stored 1899 calendar date", async ({
   page,
 }) => {
+  const stored = await storedStatus("irving-police-department-049f9a");
   await page.goto("/tx/dallas-county/irving/irving-police-department-049f9a/");
   const status = page.locator(".agency-status");
-  await expect(status).toContainText("Status: Active");
+  await expect(status).toContainText(`Status: ${stored}`);
   await expect(status).toContainText("Status date: December 31, 1899");
   await expect(status.locator("time")).toHaveAttribute(
     "datetime",
     "1899-12-31",
   );
-  await expect(page.locator(".agency-status--notice")).toHaveCount(0);
-  await expect(page).not.toHaveTitle(/Active/);
+  await expect(page).not.toHaveTitle(new RegExp(stored));
 });

@@ -1,7 +1,8 @@
 import contract from "./annotation-contract.json" with { type: "json" };
+import { PAGE_SIZE } from "../pagination.ts";
 
 /** @typedef {{field:string,value:unknown,type:'warning'|'error'|'correction',message:string,source_namespace:string,source_record_id:string,replacement_value?:unknown,evidence?:Record<string,unknown>[]}} DataAnnotation */
-/** @typedef {DataAnnotation & {canonical_id:string,entity_kind:string,record_url:string,record_label:string,source_provider:string}} AnnotationEntry */
+/** @typedef {DataAnnotation & {canonical_id:string,entity_kind:string,record_url:string|null,record_label:string,source_provider:string}} AnnotationEntry */
 
 // Validate the exact JSON Schema exported by intake, including recursive JSON values.
 function matches(value, schema, root) {
@@ -65,14 +66,6 @@ export function parseAnnotations(value) {
   return value;
 }
 
-export function parseSourceValues(value) {
-  if (!matches(value, contract.sourceValues, contract.sourceValues))
-    throw new Error(
-      "Stored source evidence does not satisfy the intake contract.",
-    );
-  return value;
-}
-
 export function annotationValue(value) {
   return typeof value === "string" ? value : JSON.stringify(value);
 }
@@ -93,24 +86,12 @@ function publicEvidence(value) {
 export function annotationDisplay(entry) {
   const reference = internalReferenceField(entry.field);
   return {
-    field:
-      entry.field === "location_path_id"
-        ? "Administrative area"
-        : reference
-          ? entry.field.replace(/_id$/, "").replaceAll("_", " ")
-          : entry.field,
+    field: entry.field,
     showValues: !reference,
     ...(reference
       ? {}
       : { value: entry.value, replacement_value: entry.replacement_value }),
-    message:
-      entry.field === "excluded_records" && /\bduplicate\b/i.test(entry.message)
-        ? "Excluded duplicate of an existing record."
-        : reference &&
-            entry.message ===
-              "Applied an explicit conditional source correction."
-          ? "Applied an explicit administrative correction."
-          : entry.message,
+    message: entry.message,
     ...(entry.evidence === undefined
       ? {}
       : { evidence: publicEvidence(entry.evidence) }),
@@ -131,10 +112,10 @@ export function paginateAnnotations(entries, page) {
   if (
     !Number.isSafeInteger(page) ||
     page < 1 ||
-    page > Math.max(1, Math.ceil(entries.length / 50))
+    page > Math.max(1, Math.ceil(entries.length / PAGE_SIZE))
   )
     throw new Error("Invalid annotation page.");
-  return entries.slice((page - 1) * 50, page * 50);
+  return entries.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 }
 
 /** @param {AnnotationEntry[]} entries */
@@ -175,7 +156,8 @@ export function annotationsCsv(entries) {
   ].join("\r\n");
 }
 
-export function reportedDate(stored, evidence) {
+/** Format a stored DATE column as its calendar date; other values pass through. */
+export function storedDate(stored) {
   // pg parses DATE at local midnight; retain its calendar fields, not UTC offset.
   if (stored instanceof Date) {
     if (!Number.isFinite(stored.getTime()))
@@ -186,9 +168,7 @@ export function reportedDate(stored, evidence) {
       String(stored.getDate()).padStart(2, "0"),
     ].join("-");
   }
-  return stored === null && evidence !== undefined
-    ? evidence.effective_value
-    : stored;
+  return stored;
 }
 
 export function isReportedDate(value) {
@@ -202,12 +182,11 @@ export function isReportedDate(value) {
 }
 
 /** @param {AnnotationEntry[]} entries */
-export function authorityAnnotations(entries, namespaces, authorityId) {
+export function authorityAnnotations(entries, authorityId) {
   return entries.filter(
     (entry) =>
-      namespaces.includes(entry.source_namespace) ||
-      (entry.entity_kind === "LicensingAuthority" &&
-        entry.canonical_id === authorityId),
+      entry.entity_kind === "LicensingAuthority" &&
+      entry.canonical_id === authorityId,
   );
 }
 
@@ -241,14 +220,9 @@ export function annotationRecordLabel(entry) {
 }
 
 export function annotationNoteLabel(entry) {
-  if (entry.field === "excluded_records") {
-    return /\bduplicate\b/i.test(entry.message)
-      ? "Excluded duplicate"
-      : "Excluded record";
-  }
   return entry.type === "warning"
-    ? "Our warning"
+    ? "Warning"
     : entry.type === "error"
       ? "Data error"
-      : "Our correction";
+      : "Correction";
 }

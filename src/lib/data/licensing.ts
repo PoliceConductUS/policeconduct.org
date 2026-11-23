@@ -23,7 +23,6 @@ export type LicenseTimelineEntry = {
   status: string | null;
   licenseId: string;
   licenseType: string;
-  isAdverse: boolean;
 };
 
 export type PersonnelLicensing = {
@@ -54,46 +53,6 @@ export type DisciplineRecord = {
 const trimOrNull = (value: unknown): string | null => {
   const text = String(value ?? "").trim();
   return text ? text : null;
-};
-
-// license.status is inconsistently cased/spelled across sources.
-const STATUS_DISPLAY: Record<string, string> = {
-  active: "Active",
-  inactive: "Inactive",
-  expired: "Expired",
-  deceased: "Deceased",
-};
-
-export const normalizeLicenseStatus = (value: unknown): string | null => {
-  const text = trimOrNull(value);
-  if (!text) return null;
-  return STATUS_DISPLAY[text.toLowerCase()] ?? text;
-};
-
-// License types are already canonical in authority_license.name (intake collapses
-// whitespace and drops a trailing " License"); just trim for display.
-export const normalizeLicenseType = (value: unknown): string =>
-  trimOrNull(value) ?? "";
-
-// Actions that reflect discipline / compliance problems, distinguished from
-// routine lifecycle events (Granted, Reactivated, expirations) for emphasis.
-const ADVERSE_ACTION_PATTERNS: RegExp[] = [
-  /reprimand/i,
-  /\bhold\b/i,
-  /noncompliant/i,
-  /non-compliant/i,
-  /out of compliance/i,
-  /suspend/i,
-  /revok/i,
-  /surrender/i,
-  /\bdenied\b/i,
-  /probation/i,
-  /cancel(?:l)?ed for cause/i,
-];
-
-export const isAdverseLicenseAction = (action: unknown): boolean => {
-  const text = String(action ?? "");
-  return ADVERSE_ACTION_PATTERNS.some((pattern) => pattern.test(text));
 };
 
 type RawLicense = {
@@ -181,6 +140,9 @@ const loadAllLicensing = () => {
       }
 
       return { licensesByPersonnel, actionsByLicense };
+    }).catch((error: unknown) => {
+      allLicensingPromise = null;
+      throw error;
     });
   }
   return allLicensingPromise;
@@ -197,8 +159,8 @@ export const loadLicensingForPersonnel = async (
 
   const licenses: License[] = licenseRows.map((row) => ({
     id: row.id,
-    licenseType: normalizeLicenseType(row.license_type),
-    status: normalizeLicenseStatus(row.status),
+    licenseType: row.license_type,
+    status: row.status,
     firstAwarded: row.first_awarded ? String(row.first_awarded) : null,
     authority: row.authority_id
       ? {
@@ -212,7 +174,7 @@ export const loadLicensingForPersonnel = async (
   }));
 
   const licenseTypeById = new Map(
-    licenseRows.map((row) => [row.id, normalizeLicenseType(row.license_type)]),
+    licenseRows.map((row) => [row.id, row.license_type]),
   );
 
   const timeline: LicenseTimelineEntry[] = [];
@@ -222,10 +184,9 @@ export const loadLicensingForPersonnel = async (
         id: row.id,
         action: row.action,
         actionDate: row.action_date ? String(row.action_date) : null,
-        status: normalizeLicenseStatus(row.status),
+        status: row.status,
         licenseId: row.license_id,
         licenseType: licenseTypeById.get(row.license_id) ?? "",
-        isAdverse: isAdverseLicenseAction(row.action),
       });
     }
   }
@@ -252,6 +213,9 @@ const loadDisciplinedPersonnelSet = (): Promise<Set<string>> => {
         )
       ).rows;
       return new Set<string>(rows.map((row) => row.personnel_id));
+    }).catch((error: unknown) => {
+      disciplinedPersonnelPromise = null;
+      throw error;
     });
   }
   return disciplinedPersonnelPromise;

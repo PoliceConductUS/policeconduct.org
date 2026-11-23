@@ -1,4 +1,3 @@
-import { currentAssignmentSql } from "./annotation-access.js";
 import {
   buildPendingTopics,
   civicIndexCollator,
@@ -14,9 +13,15 @@ import {
 
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
 
+// A civil case linked to several agencies counts once in any total.
+const distinctCivilCaseIds = (items: { civilCaseIds: string[] }[]) => [
+  ...new Set(items.flatMap((item) => item.civilCaseIds)),
+];
+
 export type FederalAgencySummary = {
   branchCount: number;
   civilCaseCount: number;
+  civilCaseIds: string[];
   id: string;
   name: string;
   path: string;
@@ -30,6 +35,7 @@ export type FederalAgencyBranch = {
   administrativeArea?: string | null;
   city?: string | null;
   civilCaseCount: number;
+  civilCaseIds: string[];
   id: string;
   name: string;
   path: string;
@@ -113,20 +119,17 @@ const isFederalFinancialTopic = (kind: FederalAgencyTopicKind) =>
 const federalTopicConfig = {
   personnel: {
     label: metricLabels.personnel,
-    description:
-      "Personnel records connected through federal child agencies currently available.",
+    describe: (scope) => `Current personnel at ${scope}.`,
     charts: ["Personnel Over Time", "Personnel by Child Agency", "Record Mix"],
   },
   reports: {
     label: metricLabels.reports,
-    description:
-      "Published public reports connected through federal child agencies currently available.",
+    describe: (scope) => `Public reports that name personnel of ${scope}.`,
     charts: ["Reports Over Time", "Reports by Child Agency", "Record Mix"],
   },
   budget: {
     label: metricLabels.budget,
-    description:
-      "Direct federal-agency budget records. Location-derived financial rollups are not projected.",
+    describe: (scope) => `Budget records for ${scope}.`,
     charts: [
       "Budget Over Time",
       "Revenue Sources Over Time",
@@ -135,14 +138,12 @@ const federalTopicConfig = {
   },
   "civil-cases": {
     label: metricLabels.civilCases,
-    description:
-      "Civil cases connected through federal child agencies and personnel.",
+    describe: (scope) => `Civil cases that name personnel of ${scope}.`,
     charts: ["Civil Cases Over Time", "Case Types", "Cases by Child Agency"],
   },
   "liability-costs": {
     label: metricLabels.liabilityCosts,
-    description:
-      "Direct federal-agency liability cost records. Location-derived financial rollups are not projected.",
+    describe: (scope) => `Liability cost records for ${scope}.`,
     charts: [
       "Liability Costs Over Time",
       "Cost Components Over Time",
@@ -151,12 +152,12 @@ const federalTopicConfig = {
   },
   "outcomes-by-income": {
     label: metricLabels.outcomesByIncome,
-    description: "Case outcomes by income band.",
+    describe: (scope) => `Case outcomes by income band for ${scope}.`,
     charts: [],
   },
 } satisfies Record<
   FederalAgencyTopicKind,
-  { charts: string[]; description: string; label: string }
+  { charts: string[]; describe: (scope: string) => string; label: string }
 >;
 
 const generalFederalCharts = [
@@ -191,21 +192,21 @@ const topicMetricsFor = (
       },
       {
         ...metricVisuals.agencies,
-        detail: "Assignment history coverage is not projected yet",
+        detail: "Where personnel have worked",
         key: "assignments",
-        value: "$--",
+        value: "--",
       },
       {
         ...metricVisuals.reports,
-        detail: "Public reports connected through linked agencies",
+        detail: "Reports that name these agencies' personnel",
         key: "reports",
         value: formatCount(totals.reports),
       },
       {
         ...metricVisuals.latestPersonnelUpdate,
-        detail: "Personnel update recency is not projected yet",
+        detail: "Most recent change to a personnel record",
         key: "latestPersonnelUpdate",
-        value: "$--",
+        value: "--",
       },
     ];
   }
@@ -214,7 +215,7 @@ const topicMetricsFor = (
     return [
       {
         ...metricVisuals.reports,
-        detail: "Public reports connected through linked agencies",
+        detail: "Reports that name these agencies' personnel",
         key: "reports",
         actionKind: "button",
         value: formatCount(totals.reports),
@@ -233,9 +234,9 @@ const topicMetricsFor = (
       },
       {
         ...metricVisuals.latestRecordedYear,
-        detail: "Report recency is not projected yet",
+        detail: "Year of the most recent report",
         key: "latestRecordedYear",
-        value: "$--",
+        value: "--",
       },
     ];
   }
@@ -244,34 +245,34 @@ const topicMetricsFor = (
     return [
       {
         ...metricVisuals.civilCases,
-        detail: "Civil cases connected through linked agencies",
+        detail: "Cases that name these agencies' personnel",
         key: "civilCases",
         actionKind: "button",
         value: formatCount(totals.civilCases),
       },
       {
         ...metricVisuals.caseTypes,
-        detail: "Case type coverage is not projected yet",
+        detail: "Kinds of claims in these cases",
         key: "caseTypes",
-        value: "$--",
+        value: "--",
       },
       {
         ...metricVisuals.caseOutcomes,
-        detail: "Outcome coverage is not projected yet",
+        detail: "How these cases ended",
         key: "caseOutcomes",
-        value: "$--",
+        value: "--",
       },
       {
         ...metricVisuals.reports,
-        detail: "Public reports connected through linked agencies",
+        detail: "Reports that name these agencies' personnel",
         key: "reports",
         value: formatCount(totals.reports),
       },
       {
         ...metricVisuals.latestCaseActivity,
-        detail: "Case activity recency is not projected yet",
+        detail: "Most recent filing or ruling",
         key: "latestCaseActivity",
-        value: "$--",
+        value: "--",
       },
     ];
   }
@@ -280,36 +281,34 @@ const topicMetricsFor = (
     return [
       {
         ...metricVisuals.budget,
-        detail:
-          "Direct federal-agency budget totals are not projected yet; child-location totals are excluded",
+        detail: "Total budget",
         key: "budget",
         actionKind: "button",
         value: "$--",
       },
       {
         ...metricVisuals.operatingSpend,
-        detail: "Direct federal-agency operating spend is not projected yet",
+        detail: "Day-to-day spending",
         key: "operatingSpend",
         value: "$--",
       },
       {
         ...metricVisuals.overtime,
-        detail: "Direct federal-agency overtime spending is not projected yet",
+        detail: "Overtime pay",
         key: "overtime",
         value: "$--",
       },
       {
         ...metricVisuals.reports,
-        detail: "Public reports connected through linked agencies",
+        detail: "Reports that name these agencies' personnel",
         key: "reports",
         value: formatCount(totals.reports),
       },
       {
         ...metricVisuals.latestFiscalYear,
-        detail:
-          "Direct federal-agency fiscal-year coverage is not projected yet",
+        detail: "Most recent budget year",
         key: "latestFiscalYear",
-        value: "$--",
+        value: "--",
       },
     ];
   }
@@ -321,41 +320,39 @@ const topicMetricsFor = (
   return [
     {
       ...metricVisuals.liabilityCosts,
-      detail:
-        "Direct federal-agency liability cost totals are not projected yet; child-location totals are excluded",
+      detail: "Claims, settlements and judgments paid",
       key: "liabilityCosts",
       actionKind: "button",
       value: "$--",
     },
     {
       ...metricVisuals.settlements,
-      detail: "Direct federal-agency settlement totals are not projected yet",
+      detail: "Paid to settle claims",
       key: "settlements",
       value: "$--",
     },
     {
       ...metricVisuals.judgments,
-      detail: "Direct federal-agency judgment totals are not projected yet",
+      detail: "Paid after court judgments",
       key: "judgments",
       value: "$--",
     },
     {
       ...metricVisuals.reports,
-      detail: "Public reports connected through linked agencies",
+      detail: "Reports that name these agencies' personnel",
       key: "reports",
       value: formatCount(totals.reports),
     },
     {
       ...metricVisuals.latestRecordedYear,
-      detail:
-        "Direct federal-agency liability-cost recency is not projected yet",
+      detail: "Year of the most recent payment",
       key: "latestRecordedYear",
-      value: "$--",
+      value: "--",
     },
   ];
 };
 
-export const loadFederalAgencySummaries = async () => {
+const loadFederalAgencySummaryRows = async (slug: string | null) => {
   const rows = await withDb(async (client) => {
     return (
       await client.query(
@@ -365,43 +362,40 @@ export const loadFederalAgencySummaries = async () => {
             fa.name,
             fa.slug,
             count(distinct a.id) as branch_count,
-            count(distinct active_assignment.personnel_id) as personnel_count,
+            federal_count.current_personnel_count as personnel_count,
             count(distinct report_officer.review_id) as report_count,
-            count(distinct civil_case_link.civil_case_id) as civil_case_count
+            coalesce(
+              array_agg(distinct civil_case_link.civil_case_id)
+                filter (where civil_case_link.civil_case_id is not null),
+              '{}'
+            ) as civil_case_ids
           from public.federal_agency fa
+          join public.site_federal_agency_count federal_count
+            on federal_count.federal_agency_id = fa.id
           left join public.agency a
             on a.parent_federal_agency_id = fa.id
            and exists (
-             select 1 from public.agency_personnel assignment
-             where assignment.agency_id = a.id
-               and ${currentAssignmentSql("assignment")}
+             select 1 from public.site_agency_count branch_count
+             where branch_count.agency_id = a.id
+               and branch_count.current_personnel_count > 0
            )
            and a.parent_federal_agency_id is not null
-          left join public.agency_personnel active_assignment
-            on active_assignment.agency_id = a.id
-           and ${currentAssignmentSql("active_assignment")}
           left join public.agency_personnel report_assignment
             on report_assignment.agency_id = a.id
           left join public.review_personnel report_officer
             on report_officer.agency_personnel_id = report_assignment.id
           left join lateral (
             select cco.civil_case_id
-            from public.agency_personnel direct_assignment
-            join public.civil_case_personnel cco
-              on cco.agency_personnel_id = direct_assignment.id
-            where direct_assignment.agency_id = a.id
-            union
-            select cco.civil_case_id
-            from public.agency_personnel target_assignment
-            join public.agency_personnel case_assignment
-              on case_assignment.personnel_id = target_assignment.personnel_id
+            from public.agency_personnel case_assignment
             join public.civil_case_personnel cco
               on cco.agency_personnel_id = case_assignment.id
-            where target_assignment.agency_id = a.id
+            where case_assignment.agency_id = a.id
           ) civil_case_link on true
-          group by fa.id, fa.name, fa.slug
+          where $1::text is null or fa.slug = $1
+          group by fa.id, fa.name, fa.slug, federal_count.current_personnel_count
           order by fa.name
         `,
+        [slug],
       )
     ).rows;
   });
@@ -413,22 +407,26 @@ export const loadFederalAgencySummaries = async () => {
         name: string;
         slug: string;
         branch_count: string | number;
-        civil_case_count: string | number;
-        personnel_count: string | number;
+        civil_case_ids: string[];
+        personnel_count: number;
         report_count: string | number;
       }): FederalAgencySummary => ({
         branchCount: Number(row.branch_count || 0),
-        civilCaseCount: Number(row.civil_case_count || 0),
+        civilCaseCount: row.civil_case_ids.length,
+        civilCaseIds: row.civil_case_ids,
         id: String(row.id),
         name: String(row.name),
         path: federalAgencyPath(String(row.slug)),
-        personnelCount: Number(row.personnel_count || 0),
+        personnelCount: row.personnel_count,
         reportCount: Number(row.report_count || 0),
         slug: String(row.slug),
       }),
     )
     .sort((left, right) => nameCollator.compare(left.name, right.name));
 };
+
+export const loadFederalAgencySummaries = () =>
+  loadFederalAgencySummaryRows(null);
 
 export const loadFederalAgencyDetailBySlug = async (slug: string) => {
   const row = await withDb(async (client) => {
@@ -444,16 +442,18 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
                 jsonb_build_object(
                   'id', a.id,
                   'name', a.name,
-                  'path', bpp.path,
+                  'path', case
+                    when bpp.entity_id is not null then lp.path || a.slug || '/'
+                  end,
                   'address', a.address,
                   'city', lp.display_name,
-                  'state', split_part(lp.path, '/', 2),
+                  'state', a.state,
                   'administrativeArea', area_lp.display_name,
-                  'personnelCount', coalesce(branch_counts.personnel_count, 0),
+                  'personnelCount', branch_staff.current_personnel_count,
                   'reportCount', coalesce(branch_counts.report_count, 0),
-                  'civilCaseCount', coalesce(branch_counts.civil_case_count, 0)
+                  'civilCaseIds', branch_counts.civil_case_ids
                 )
-                order by split_part(lp.path, '/', 2), lp.display_name, a.name
+                order by a.state, lp.display_name, a.name
               ) filter (where a.id is not null),
               '[]'::jsonb
             ) as branches
@@ -461,10 +461,12 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
           left join public.agency a
             on a.parent_federal_agency_id = fa.id
            and exists (
-             select 1 from public.agency_personnel assignment
-             where assignment.agency_id = a.id
-               and ${currentAssignmentSql("assignment")}
+             select 1 from public.site_agency_count branch_count
+             where branch_count.agency_id = a.id
+               and branch_count.current_personnel_count > 0
            )
+          left join public.site_agency_count branch_staff
+            on branch_staff.agency_id = a.id
           left join public.location_path lp
             on lp.location_path_id = a.location_path_id
           left join public.location_path area_lp
@@ -475,31 +477,23 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
            and bpp.entity_id = a.id
           left join lateral (
             select
-              count(distinct active_assignment.personnel_id) as personnel_count,
               count(distinct report_officer.review_id) as report_count,
-              count(distinct civil_case_link.civil_case_id) as civil_case_count
+              coalesce(
+                array_agg(distinct civil_case_link.civil_case_id)
+                  filter (where civil_case_link.civil_case_id is not null),
+                '{}'
+              ) as civil_case_ids
             from public.agency child_agency
-            left join public.agency_personnel active_assignment
-              on active_assignment.agency_id = child_agency.id
-             and ${currentAssignmentSql("active_assignment")}
             left join public.agency_personnel report_assignment
               on report_assignment.agency_id = child_agency.id
             left join public.review_personnel report_officer
               on report_officer.agency_personnel_id = report_assignment.id
             left join lateral (
               select cco.civil_case_id
-              from public.agency_personnel direct_assignment
-              join public.civil_case_personnel cco
-                on cco.agency_personnel_id = direct_assignment.id
-              where direct_assignment.agency_id = child_agency.id
-              union
-              select cco.civil_case_id
-              from public.agency_personnel target_assignment
-              join public.agency_personnel case_assignment
-                on case_assignment.personnel_id = target_assignment.personnel_id
+              from public.agency_personnel case_assignment
               join public.civil_case_personnel cco
                 on cco.agency_personnel_id = case_assignment.id
-              where target_assignment.agency_id = child_agency.id
+              where case_assignment.agency_id = child_agency.id
             ) civil_case_link on true
             where child_agency.id = a.id
           ) branch_counts on true
@@ -525,35 +519,33 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
         address: branch.address || null,
         administrativeArea: branch.administrativeArea || null,
         city: branch.city || null,
-        civilCaseCount: Number(branch.civilCaseCount || 0),
+        civilCaseCount: branch.civilCaseIds.length,
+        civilCaseIds: branch.civilCaseIds,
         id: String(branch.id),
         name: String(branch.name),
         path: String(branch.path),
-        personnelCount: Number(branch.personnelCount || 0),
+        personnelCount: branch.personnelCount,
         reportCount: Number(branch.reportCount || 0),
         state: branch.state || null,
       };
     },
   );
 
+  const [totals] = await loadFederalAgencySummaryRows(String(row.slug));
+  if (!totals) {
+    throw new Error(`Federal agency ${row.slug} has no summary totals.`);
+  }
+
   return {
     branchCount: branches.length,
     branches,
-    civilCaseCount: branches.reduce(
-      (total, branch) => total + branch.civilCaseCount,
-      0,
-    ),
+    civilCaseCount: totals.civilCaseCount,
+    civilCaseIds: totals.civilCaseIds,
     id: String(row.id),
     name: String(row.name),
     path: federalAgencyPath(String(row.slug)),
-    personnelCount: branches.reduce(
-      (total, branch) => total + branch.personnelCount,
-      0,
-    ),
-    reportCount: branches.reduce(
-      (total, branch) => total + branch.reportCount,
-      0,
-    ),
+    personnelCount: totals.personnelCount,
+    reportCount: totals.reportCount,
     slug: String(row.slug),
   } satisfies FederalAgencyDetail;
 };
@@ -564,11 +556,15 @@ export const buildFederalCivicIndex = (
   const pagePath = "/federal/";
   const totals = federalAgencies.reduce(
     (accumulator, agency) => ({
-      civilCases: accumulator.civilCases + agency.civilCaseCount,
+      ...accumulator,
       personnel: accumulator.personnel + agency.personnelCount,
       reports: accumulator.reports + agency.reportCount,
     }),
-    { civilCases: 0, personnel: 0, reports: 0 },
+    {
+      civilCases: distinctCivilCaseIds(federalAgencies).length,
+      personnel: 0,
+      reports: 0,
+    },
   );
   const count = (value: number) => value.toLocaleString("en-US");
   const rows = federalAgencies
@@ -677,12 +673,17 @@ export const buildFederalAgencyIndexModel = (
   }));
   const totals = federalAgencies.reduce(
     (accumulator, agency) => ({
-      civilCases: accumulator.civilCases + agency.civilCaseCount,
+      ...accumulator,
       leafAgencies: accumulator.leafAgencies + agency.branchCount,
       personnel: accumulator.personnel + agency.personnelCount,
       reports: accumulator.reports + agency.reportCount,
     }),
-    { civilCases: 0, leafAgencies: 0, personnel: 0, reports: 0 },
+    {
+      civilCases: distinctCivilCaseIds(federalAgencies).length,
+      leafAgencies: 0,
+      personnel: 0,
+      reports: 0,
+    },
   );
 
   return {
@@ -723,7 +724,7 @@ export const buildFederalAgencyIndexModel = (
       },
       {
         ...metricVisuals.civilCases,
-        detail: "Civil cases connected through linked agencies",
+        detail: "Cases that name these agencies' personnel",
         href: `${pagePath}civil-cases/`,
         actionLabel: "View details",
         key: "civilCases",
@@ -731,7 +732,7 @@ export const buildFederalAgencyIndexModel = (
       },
       {
         ...metricVisuals.reports,
-        detail: "Public reports connected through linked agencies",
+        detail: "Reports that name these agencies' personnel",
         href: `${pagePath}reports/`,
         actionLabel: "View details",
         key: "reports",
@@ -783,7 +784,7 @@ export const buildFederalAgencyDetailIndexModel = (
     },
     {
       ...metricVisuals.civilCases,
-      detail: "Civil cases connected through linked agencies",
+      detail: "Cases that name these agencies' personnel",
       href: `${federalAgency.path}civil-cases/`,
       actionLabel: "View details",
       key: "civilCases",
@@ -791,7 +792,7 @@ export const buildFederalAgencyDetailIndexModel = (
     },
     {
       ...metricVisuals.reports,
-      detail: "Public reports connected through linked agencies",
+      detail: "Reports that name these agencies' personnel",
       href: `${federalAgency.path}reports/`,
       actionLabel: "View details",
       key: "reports",
@@ -858,12 +859,17 @@ export const buildFederalAgencyTopicIndexModel = (
   }));
   const totals = federalAgencies.reduce(
     (accumulator, agency) => ({
-      civilCases: accumulator.civilCases + agency.civilCaseCount,
+      ...accumulator,
       leafAgencies: accumulator.leafAgencies + agency.branchCount,
       personnel: accumulator.personnel + agency.personnelCount,
       reports: accumulator.reports + agency.reportCount,
     }),
-    { civilCases: 0, leafAgencies: 0, personnel: 0, reports: 0 },
+    {
+      civilCases: distinctCivilCaseIds(federalAgencies).length,
+      leafAgencies: 0,
+      personnel: 0,
+      reports: 0,
+    },
   );
 
   return {
@@ -890,7 +896,7 @@ export const buildFederalAgencyTopicIndexModel = (
           { key: "reports", label: metricLabels.reports, numeric: true },
           { key: "civilCases", label: metricLabels.civilCases, numeric: true },
         ],
-    description: `Federal ${topic.description.toLowerCase()}`,
+    description: topic.describe("federal agencies"),
     heading: `Federal ${topic.label}`,
     metrics: topicMetricsFor(kind, totals),
     pagePath: `/federal/${kind}/`,
@@ -940,7 +946,7 @@ export const buildFederalAgencyDetailTopicIndexModel = (
           { key: "reports", label: metricLabels.reports, numeric: true },
           { key: "civilCases", label: metricLabels.civilCases, numeric: true },
         ],
-    description: `${federalAgency.name} ${topic.description.toLowerCase()}`,
+    description: topic.describe(`the ${federalAgency.name}`),
     heading: `${federalAgency.name} ${topic.label}`,
     metrics: topicMetricsFor(kind, totals),
     pagePath: `${federalAgency.path}${kind}/`,

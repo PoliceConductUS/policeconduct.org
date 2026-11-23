@@ -17,10 +17,80 @@ resource "aws_s3_bucket_public_access_block" "release_data" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_ownership_controls" "release_data" {
+  for_each = aws_s3_bucket.release_data
+  bucket   = each.value.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "release_data" {
+  for_each = aws_s3_bucket.release_data
+  bucket   = each.value.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "release_data" {
+  for_each = aws_s3_bucket.release_data
+  bucket   = each.value.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# These buckets had no bucket policy before this one, so there is nothing to merge.
+data "aws_iam_policy_document" "release_data_tls_only" {
+  for_each = aws_s3_bucket.release_data
+
+  statement {
+    sid    = "DenyInsecureTransport"
+    effect = "Deny"
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    actions = ["s3:*"]
+    resources = [
+      each.value.arn,
+      "${each.value.arn}/*",
+    ]
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "release_data_tls_only" {
+  for_each = aws_s3_bucket.release_data
+  bucket   = each.value.id
+  policy   = data.aws_iam_policy_document.release_data_tls_only[each.key].json
+}
+
 data "archive_file" "release_api" {
   type        = "zip"
   source_dir  = "${path.module}/lambdas/release-api"
   output_path = "${path.module}/lambdas/release-api.zip"
+  # Runtime files only, never docs, lock files, or local tests.
+  excludes = setsubtract(
+    fileset("${path.module}/lambdas/release-api", "**"),
+    setunion(
+      toset(["index.mjs", "service.mjs", "package.json"]),
+      fileset("${path.module}/lambdas/release-api", "node_modules/**")
+    )
+  )
 }
 
 resource "aws_iam_role" "release_api" {
@@ -141,6 +211,26 @@ data "aws_iam_policy_document" "intake_news" {
     actions   = ["cloudfront:GetInvalidation"]
     resources = [aws_cloudfront_distribution.site.arn]
   }
+  statement {
+    actions = ["ssm:GetParameter"]
+    resources = [
+      for name in ["SERPAPI_KEY", "SEARCH_CONSOLE_CREDENTIALS", "NEWS_INFERENCE_API_KEY"] :
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/policeconduct/secrets/${name}"
+    ]
+  }
+  statement {
+    actions   = ["kms:Decrypt"]
+    resources = [data.aws_kms_alias.ssm.target_key_arn]
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["ssm.${var.aws_region}.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_kms_alias" "ssm" {
+  name = "alias/aws/ssm"
 }
 
 resource "aws_iam_role_policy" "intake_news" {

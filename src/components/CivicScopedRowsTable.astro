@@ -1,5 +1,4 @@
 ---
-import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import TableScroll from "#src/components/TableScroll.astro";
 import type {
   CivicCivilCaseRecord,
@@ -40,7 +39,6 @@ const formatDate = (value: string) =>
             <th scope="col">Case</th>
             <th scope="col">Court</th>
             <th scope="col">Filed</th>
-            <th scope="col">Connection</th>
             <th scope="col">Agencies</th>
           </tr>
         </thead>
@@ -54,7 +52,6 @@ const formatDate = (value: string) =>
               </td>
               <td>{row.court || ""}</td>
               <td>{formatDate(row.filedDate)}</td>
-              <td>{row.connectionType}</td>
               <td>
                 {row.agencies.map((agency, index) => (
                   <>
@@ -72,7 +69,6 @@ const formatDate = (value: string) =>
     </TableScroll>
     <div class="list-foot">
       <span>Sorted by filing date, newest first</span>
-      <CivilCaseScopeNote />
     </div>
   </div>
 ) : null}

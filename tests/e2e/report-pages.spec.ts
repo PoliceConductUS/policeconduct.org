@@ -146,9 +146,10 @@ test.describe("report detail page", () => {
     await expect(
       factList.locator("dt").filter({ hasText: "Incident date" }),
     ).toHaveCount(1);
+    // The database records no single report agency, so none is shown.
     await expect(
       factList.locator("dt").filter({ hasText: "Agency" }),
-    ).toHaveCount(1);
+    ).toHaveCount(0);
 
     // Known-absent optional facts (this dev fixture has no stored charges,
     // case number, or setting) render no row at all -- no placeholder, no
@@ -250,4 +251,32 @@ test("report case relationships render current case titles and internal links", 
   } finally {
     await client.end();
   }
+});
+
+test("Reports Over Time counts the listed reports by incident year", async ({
+  page,
+}) => {
+  await page.goto("/tx/reports/");
+  const chart = page.getByRole("group", { name: "Reports over time chart" });
+  await expect(chart).toBeVisible();
+  const values = await chart.locator(".measure-value").allTextContents();
+  expect(values.length).toBeGreaterThan(0);
+  expect(values.every((value) => /^\d[\d,]*$/.test(value))).toBe(true);
+  const listed = await page
+    .locator('a[href*="/reports/"]')
+    .evaluateAll(
+      (links) =>
+        new Set(
+          links
+            .map((link) => link.getAttribute("href") || "")
+            .filter((href) =>
+              /\/reports\/\d{4}\/\d{2}\/\d{2}\/[^/]+\/$/.test(href),
+            ),
+        ).size,
+    );
+  const total = values.reduce(
+    (sum, value) => sum + Number(value.replace(/,/g, "")),
+    0,
+  );
+  expect(total).toBe(listed);
 });

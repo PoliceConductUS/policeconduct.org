@@ -1,122 +1,229 @@
 ## ADDED Requirements
 
-### Requirement: Immutable per-build folders with pointer promotion
+### Requirement: Each commit has one build folder per bucket
 
-The system SHALL publish each build to an immutable folder and select the live
-production build via a pointer, without mutating previously published builds.
+The system SHALL store each uploaded build, preview or release, in one folder per bucket named by its release ID, the full 40-character commit. A build SHALL write only the build-owned prefixes `<commit>/build/` in the site bucket and `builds/<commit>/build/` in the release data bucket. A rebuild of the same commit SHALL leave those two prefixes equal to the latest build. The build SHALL NOT upload the data it read. Each build SHALL record the data version it read.
 
-#### Scenario: Publishing a production build
+#### Scenario: Folder layout
 
-- **WHEN** a merge commit to main is built
-- **THEN** its output is written to an immutable `builds/<sha>/` prefix
-- **AND** previously published `builds/<sha>/` folders are left unchanged
+- **WHEN** a release uploads
+- **THEN** site files go to `<commit>/build/` and build artifacts for the daily job go to `builds/<commit>/build/`
+- **AND** `builds/<commit>/build/release.json`, holding `commit`, `branch`, `pr` and `dataVersion`, is uploaded last as the completion marker
 
-#### Scenario: Promoting a build
+#### Scenario: The build uploads no data
 
-- **WHEN** a build is promoted
-- **THEN** a single pointer update makes the apex domain serve that build
-- **AND** no CloudFront invalidation is required for the change to take effect
+- **WHEN** a release uploads
+- **THEN** no page data, roster or alias file is uploaded to any bucket
 
-#### Scenario: Rolling back
+#### Scenario: Unclean tree or other branch
 
-- **WHEN** a previously promoted build id is promoted again
-- **THEN** the apex domain serves that earlier build immediately
+- **WHEN** the working tree has uncommitted or untracked changes, or a `prod` deploy runs from a branch other than `main`
+- **THEN** the deploy stops before building
 
-### Requirement: Per-request folder routing for prod and previews
+#### Scenario: Release ID is the commit
 
-A single CloudFront Function SHALL resolve which folder serves a request — the
-production pointer for the apex domain and the PR label for preview hosts — from
-one distribution and bucket.
+- **WHEN** a commit is deployed
+- **THEN** its release ID is the full 40-character commit
 
-#### Scenario: Apex request
+#### Scenario: Redeploying a commit against newer data
 
-- **WHEN** a request arrives for the apex domain
-- **THEN** the router serves the folder named by the production pointer
-- **AND** the viewer-facing URL is unchanged (no folder prefix is exposed)
+- **WHEN** a commit that already has a release folder is deployed again
+- **THEN** the new build uploads into the same `<commit>/build/` and `builds/<commit>/build/` prefixes
+- **AND** files the new build changed are replaced
+- **AND** files the new build no longer produces are removed from those two prefixes only
+- **AND** `release.json` is uploaded last
 
-#### Scenario: Build request by id
+#### Scenario: PR builds stay in the preview buckets
 
-- **WHEN** a request arrives for `<id>.builds.<domain>` (`<id>` = `pr-<n>` or a sha)
-- **THEN** the router serves that build's `builds/<id>/` folder
-- **AND** the router rejects a host label that is not `^[a-z0-9-]+$`
+- **WHEN** a deploy runs for any environment other than `prod`
+- **THEN** it uploads only to the preview site bucket and the preview release data bucket
 
-#### Scenario: Per-build redirect on any host
+#### Scenario: Only a main build selects `current:main`
 
-- **WHEN** a request path matches that build's redirect map
-- **THEN** the router returns a 301 to the mapped path
-- **AND** this holds on the apex and on every `<id>.builds.<domain>` host, so no
-  host returns 404 for a mapped legacy URL
+- **WHEN** a deploy that is not a `prod` deploy from `main` runs
+- **THEN** it does not write `current:main`
+- **AND** this scenario is replaced when `openspec/changes/release-hosts/` removes the `current:main` mirror
 
-### Requirement: Every prior URL has an explicit disposition
+#### Scenario: Data version recorded
 
-The coverage check SHALL require every prior sitemap URL to exist in the current
-sitemap, redirect directly to a terminal current route, or have an exact path and
-nonempty reason in `route-absences.json`. Missing intake data SHALL NOT imply
-permanent removal. Recorded absences permit the existing 404 response without
-creating redirects, pages, or 410 responses.
+- **WHEN** a release builds
+- **THEN** the build reads the data version once: the `version` of the newest row in `public.data_mutation_applied`, which is the one row that no row names as `previous_version`
+- **AND** every built page renders it as `data-data-version` on `<html>`, next to `data-release-id`
+- **AND** `.release/source.json` and `builds/<commit>/build/release.json` record the same value as `dataVersion`
 
-#### Scenario: Personnel not populated by intake
+#### Scenario: Data version cannot be read
 
-- **WHEN** a missing prior personnel URL has an explicit absence entry
-- **THEN** the coverage check passes for that URL and counts it as absent (404)
-- **AND** no return date or permanent-removal status is inferred
+- **WHEN** `public.data_mutation_applied` is missing, has no row that no other row names as `previous_version`, or has more than one such row
+- **THEN** the build stops with an error and no page is built with a fallback value
 
-#### Scenario: Unaccounted gap
+#### Scenario: Resuming an interrupted upload
 
-- **WHEN** a prior URL is missing without a redirect or exact absence entry
-- **THEN** the coverage check fails
-- **AND** an entry for a parent or another personnel URL does not cover the gap
+- **WHEN** `npm run deploy -- <environment> --skip-build` reruns with the same build
+- **THEN** the upload sends only files that differ and ends with the folder equal to that build
 
-#### Scenario: Profile returns
+### Requirement: A rebuild never touches daily output
 
-- **WHEN** a previously absent URL is present in the current sitemap
-- **THEN** it counts as a current route even if its absence entry remains
+A build or rebuild SHALL NOT write, delete or read `<commit>/override/` in the site bucket or `builds/<commit>/data/` in the release data bucket. Those prefixes belong to the daily job.
 
-#### Scenario: Invalid redirect or absence list
+#### Scenario: A rebuild leaves daily output alone
 
-- **WHEN** a redirect has a missing or nonterminal destination, or the absence
-  list is missing, malformed, or contains an invalid entry
-- **THEN** the coverage check fails
+- **WHEN** a commit whose `<commit>/override/` and `builds/<commit>/data/` hold daily job output is deployed again
+- **THEN** every object under those two prefixes is unchanged
+- **AND** no deploy command writes, deletes or reads them
 
-#### Scenario: Deployment coverage gate
+#### Scenario: Rebuild of a release that has overrides
 
-- **WHEN** preview sync or production incremental deployment runs, including
-  standalone preview sync and production `--skip-build`
-- **THEN** `npm run validate:redirects` runs after the build (when requested) and
-  the output directory check
-- **AND** a failed check stops deployment before any S3 write, redirect-store
-  publication, or CloudFront invalidation
+- **WHEN** a commit whose release has overrides is rebuilt into its folder
+- **THEN** its `<commit>/override/` objects and `o:<commit>:` keys are unchanged
+- **AND** each overridden page keeps the `data-data-version` of the build it was rendered from
 
-### Requirement: Non-canonical hosts are not indexed
+### Requirement: Promotion moves a pointer
 
-The system SHALL suppress search-engine indexing of non-canonical build hosts at
-the CDN response layer, not in the built HTML, because a build is served
-unchanged on both the canonical apex and the build hosts.
+Promoting a release SHALL check that the release is complete, copy its `404.html` to the bucket root, move the host's pointer with the KVS ETag guard, and invalidate `/*`. Promotion SHALL NOT write redirect keys. Every `npm run deploy -- prod` SHALL promote the release it uploads, with no approval step. Every preview deploy SHALL point `current:pr-<N>` at its build with the same steps: completeness check, `404.html` copy, ETag-guarded pointer move and `/*` invalidation.
 
-#### Scenario: Response on a build subdomain
+#### Scenario: Promoting a release
 
-- **WHEN** a response is served for a `<id>.builds.<domain>` host
+- **WHEN** a complete release is promoted
+- **THEN** the pointer for that host names the release
+- **AND** the release's `404.html` is copied to the bucket root
+- **AND** CloudFront is invalidated for `/*`
+
+#### Scenario: Promoting an earlier release
+
+- **WHEN** an earlier complete release is promoted again with `npm run deploy:promote -- <release-id>`
+- **THEN** that release serves after the KVS change reaches the edge locations and the invalidation completes
+- **AND** its own `404.html` is restored at the bucket root
+
+#### Scenario: Incomplete release
+
+- **WHEN** a release has never completed an upload, so `builds/<release-id>/build/release.json` or `<release-id>/build/index.html` is missing
+- **THEN** promotion stops before any pointer change
+
+#### Scenario: Release folder from before the storage split
+
+- **WHEN** a release folder was uploaded before this change and has no `builds/<release-id>/build/release.json`
+- **THEN** it cannot be promoted and gets no release host
+- **AND** no tool writes a `release.json` for it
+
+#### Scenario: Production deploy mirrors to bare preview
+
+- **WHEN** `npm run deploy -- prod` runs
+- **THEN** it uploads the same build to the preview site and preview release data buckets and points `current:main` at it before promoting `current`
+- **AND** this scenario is replaced by `openspec/changes/release-hosts/` ("Production deploys write only production resources")
+
+### Requirement: Previews are PR builds only
+
+A deploy to any environment other than `prod` SHALL require `PR_NUMBER` matching `^[1-9][0-9]*$` and SHALL use the label `pr-<PR_NUMBER>`.
+
+#### Scenario: Preview deploy without a PR number
+
+- **WHEN** `npm run deploy -- preview` runs without `PR_NUMBER`, with or without `PREVIEW_NAME`, and with or without `--skip-build`
+- **THEN** the deploy stops before building or uploading
+
+#### Scenario: Invalid PR number
+
+- **WHEN** `PR_NUMBER` is `0` or not a positive integer
+- **THEN** the deploy stops before building or uploading
+
+### Requirement: The router serves the promoted release per host
+
+The shared CloudFront router SHALL pick the release for each request from a KVS pointer for that host and SHALL keep the release folder out of the viewer URL. Redirects SHALL follow `shared-redirects` semantics: on both distributions, a miss in the release folder fails over to that build's own `redirect/<commit>/` folder in the same bucket. The router SHALL NOT read `r:` keys or look up redirects.
+
+#### Scenario: Canonical host
+
+- **WHEN** a request arrives for the canonical host
+- **THEN** the router serves `/<current>/build/<path>`, or `/<current>/override/<path>` when `o:<current>:<path>` exists
+
+#### Scenario: Apex host
+
+- **WHEN** a request arrives for the apex and the apex is not the canonical host
+- **THEN** the router returns a 301 to the canonical host with the same path and query string
+
+#### Scenario: Preview host
+
+- **WHEN** a request arrives for `pr-<N>.preview.<domain>`
+- **THEN** the router uses the `current:pr-<N>` pointer
+- **AND** returns 404 when that pointer does not exist
+
+#### Scenario: Bare preview host
+
+- **WHEN** a request arrives for `preview.<domain>`
+- **THEN** the router uses the `current:main` pointer
+- **AND** returns 404 when that pointer does not exist
+- **AND** this scenario is replaced by `openspec/changes/release-hosts/` (bare `preview.` redirects to `www`)
+
+#### Scenario: Unknown host or unsafe path
+
+- **WHEN** the host matches no rule, the preview label is not `pr-<N>`, or the decoded path is reserved (`/builds`, `/data`, `/evidence`, `/news-discovery`, `/com/serpapi/landing-page-search`, or `/<segment>/build` or `/<segment>/override`, each followed by `/` or the end of the path) or contains `.` or `..` segments, `\` or `%`
+- **THEN** the router returns 404
+
+#### Scenario: Redirect object
+
+- **WHEN** the object the router requests is missing from the release folder and its failover object in `redirect/<commit>/` carries `x-amz-meta-redirect-location`
+- **THEN** the viewer-response function returns a 301 to that target with the query string kept
+- **AND** the response does not carry `x-amz-meta-redirect-location`
+
+### Requirement: Overrides stay with their release
+
+An override SHALL serve only while its release is the one a pointer names. Promotion SHALL NOT copy overrides between releases.
+
+#### Scenario: New release promoted
+
+- **WHEN** a new release is promoted
+- **THEN** pages serve from its `build/` folder until the release API publishes overrides for it
+- **AND** the previous release's overrides no longer serve
+
+#### Scenario: Earlier release promoted again
+
+- **WHEN** an earlier release is promoted again
+- **THEN** its own overrides serve again
+
+### Requirement: Non-production hosts are not indexed
+
+The system SHALL send `X-Robots-Tag: noindex, nofollow` on every preview distribution response and SHALL answer `/robots.txt` with deny-all on every host except the apex and the canonical host.
+
+#### Scenario: Preview distribution response
+
+- **WHEN** any response is served by the preview distribution
 - **THEN** it carries `X-Robots-Tag: noindex, nofollow`
 
-#### Scenario: Response on the apex
+#### Scenario: robots.txt on a non-production host
 
-- **WHEN** a response is served for the apex domain
-- **THEN** it does not carry a `noindex` robots directive
+- **WHEN** `/robots.txt` is requested on a host other than the apex or canonical host
+- **THEN** the router returns a deny-all `robots.txt`
 
-### Requirement: Incremental rendering against the previous build
+#### Scenario: Production host
 
-The build SHALL re-render only pages whose content changed since the previously
-promoted build, reusing unchanged pages from that build.
+- **WHEN** a response is served for the canonical host
+- **THEN** it carries no `noindex` directive
 
-#### Scenario: Small data change
+### Requirement: Releases are kept and previews end with their PR
 
-- **WHEN** a build runs after a change affecting a subset of pages
-- **THEN** only pages whose `content_hash` differs from the previous build's
-  manifest are re-rendered
-- **AND** unchanged pages are carried forward from the previous build folder
-- **AND** the published build is identical to a full build of the same commit
+Release folders in the production site bucket and their production release data SHALL never be deleted. When a PR closes, the system SHALL delete its `current:pr-<N>` pointer and then every release folder `<release-id>/` and redirect folder `redirect/<release-id>/` in the preview site bucket and every `builds/<release-id>/` in the preview release data bucket whose release ID no remaining `current*` pointer in the preview store names. KVS keys for a removed preview SHALL be removed by hand.
 
-#### Scenario: No previous build
+#### Scenario: PR closes
 
-- **WHEN** no previous build manifest is available
-- **THEN** a full build is performed
+- **WHEN** a PR closes
+- **THEN** `current:pr-<N>` is deleted
+- **AND** every preview site folder, preview `redirect/<release-id>/` and preview `builds/<release-id>/` that no remaining `current*` pointer names is deleted, including the folders of the PR's earlier pushes
+- **AND** its `o:` keys stay until removed with `npm run deploy:delete -- <release-id>`
+
+#### Scenario: Shared preview folder
+
+- **WHEN** a PR closes and another preview pointer names the same release ID
+- **THEN** that folder and its preview release data are kept
+
+#### Scenario: Interrupted cleanup
+
+- **WHEN** a folder delete fails and the cleanup is run again
+- **THEN** the second run deletes every folder that no pointer names
+
+#### Scenario: Removing keys of a named release
+
+- **WHEN** `npm run deploy:delete -- <release-id>` runs and a preview pointer names that release
+- **THEN** it stops without deleting any key
+
+#### Scenario: Deleting a production release
+
+- **WHEN** an operator tries to delete a production release folder with the release tools
+- **THEN** no tool offers that operation

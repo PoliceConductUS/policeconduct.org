@@ -23,30 +23,6 @@ bash "${ROOT_DIR}/../../scripts/require-terraform-state.sh" "${ROOT_DIR}"
 DOTENV_FILE="${REPO_ROOT}/.env"
 PHASE="${PHASE:-full}"
 
-parse_github_repo_path() {
-  local origin_url="$1"
-  local repo_path=""
-  case "${origin_url}" in
-    git@github.com:*)
-      repo_path="${origin_url#git@github.com:}"
-      ;;
-    https://github.com/*)
-      repo_path="${origin_url#https://github.com/}"
-      ;;
-    ssh://git@github.com/*)
-      repo_path="${origin_url#ssh://git@github.com/}"
-      ;;
-    git://github.com/*)
-      repo_path="${origin_url#git://github.com/}"
-      ;;
-  esac
-  repo_path="${repo_path%.git}"
-  if [[ "${repo_path}" == */* ]]; then
-    printf "%s\n" "${repo_path}"
-  fi
-  return 0
-}
-
 load_env_file_if_present() {
   local file_path="$1"
   if [[ ! -f "${file_path}" ]]; then
@@ -96,12 +72,6 @@ map_common_env_to_tf_vars() {
   if [[ -n "${RECAPTCHA_WIF_AUDIENCE+x}" ]] && [[ -z "${TF_VAR_recaptcha_wif_audience+x}" ]]; then
     export TF_VAR_recaptcha_wif_audience="${RECAPTCHA_WIF_AUDIENCE}"
   fi
-  if [[ -n "${RECAPTCHA_MIN_SCORE+x}" ]] && [[ -z "${TF_VAR_recaptcha_min_score+x}" ]]; then
-    export TF_VAR_recaptcha_min_score="${RECAPTCHA_MIN_SCORE}"
-  fi
-  if [[ -n "${RESEND_API_KEY+x}" ]] && [[ -z "${TF_VAR_forms_email_resend_api_key+x}" ]]; then
-    export TF_VAR_forms_email_resend_api_key="${RESEND_API_KEY}"
-  fi
 }
 
 preflight_recaptcha_requirements() {
@@ -130,63 +100,27 @@ preflight_recaptcha_requirements() {
   fi
 }
 
-set_github_tf_vars_from_origin() {
-  local origin_url repo_path github_org github_repo
-
-  if [[ -n "${TF_VAR_github_org+x}" ]] && [[ -n "${TF_VAR_github_repo+x}" ]]; then
-    return 0
-  fi
-
-  origin_url="$(git -C "${REPO_ROOT}" remote get-url origin 2>/dev/null || true)"
-  if [[ -z "${origin_url}" ]]; then
-    return 0
-  fi
-
-  repo_path="$(parse_github_repo_path "${origin_url}")"
-  if [[ "${repo_path}" != */* ]]; then
-    return 0
-  fi
-
-  github_org="${repo_path%%/*}"
-  github_repo="${repo_path##*/}"
-
-  if [[ -z "${TF_VAR_github_org+x}" ]]; then
-    export TF_VAR_github_org="${github_org}"
-  fi
-  if [[ -z "${TF_VAR_github_repo+x}" ]]; then
-    export TF_VAR_github_repo="${github_repo}"
-  fi
-}
-
-preflight_explicit_tf_var_secrets() {
-  # Prevent silently ignoring a common secret name that Terraform will not read.
-  if [[ -n "${SENTRY_AUTH_TOKEN+x}" ]] \
-    && [[ -z "${TF_VAR_sentry_auth_token+x}" ]]; then
-    echo "Error: SENTRY_AUTH_TOKEN is set, but Terraform reads TF_VAR_sentry_auth_token." >&2
-    echo "Set TF_VAR_sentry_auth_token before apply." >&2
+# The submission-notifications root owns the topic. Its output is the only
+# source of the ARN: an empty value would clear SUBMISSION_NOTIFICATIONS_TOPIC_ARN
+# on both forms Lambdas and remove their sns:Publish grant. A value already set
+# in the shell or .env must equal the output.
+resolve_submission_notifications_topic_arn() {
+  local preset="${TF_VAR_submission_notifications_topic_arn-}"
+  local topic_env
+  unset SUBMISSION_NOTIFICATIONS_TOPIC_ARN
+  if ! topic_env="$(cd "${REPO_ROOT}" && node scripts/terraform-outputs.mjs SUBMISSION_NOTIFICATIONS_TOPIC_ARN)"; then
+    echo "Error: refusing apply: could not read the submission_notifications_topic_arn output of infrastructure/submission-notifications." >&2
+    echo "Apply infrastructure/submission-notifications first, then rerun this script." >&2
     exit 1
   fi
-}
-
-warn_if_sentry_tf_var_missing() {
-  if [[ -z "${TF_VAR_sentry_auth_token+x}" ]]; then
-    echo "Warning: TF_VAR_sentry_auth_token is not set." >&2
-    echo "Warning: Bootstrap will not write GitHub environment secret SENTRY_AUTH_TOKEN." >&2
-    echo "Warning: Deploy/preview workflows will fail at Sentry sourcemap upload." >&2
-  fi
-}
-
-preflight_resend_requirements() {
-  if [[ -z "${RESEND_API_KEY+x}" && -z "${TF_VAR_forms_email_resend_api_key+x}" ]]; then
-    echo "Error: missing RESEND_API_KEY for the forms Lambda send path." >&2
-    echo "Store it in Parameter Store as /policeconduct/secrets/RESEND_API_KEY." >&2
+  eval "${topic_env}"
+  if [[ -n "${preset}" && "${preset}" != "${SUBMISSION_NOTIFICATIONS_TOPIC_ARN}" ]]; then
+    echo "Error: refusing apply: TF_VAR_submission_notifications_topic_arn does not match the submission_notifications_topic_arn output of infrastructure/submission-notifications." >&2
+    echo "Remove TF_VAR_submission_notifications_topic_arn from the shell and .env; this script reads the output." >&2
     exit 1
   fi
-  if [[ -z "${RESEND_API_KEY_FULL_ACCESS+x}" ]]; then
-    echo "Error: missing RESEND_API_KEY_FULL_ACCESS for Resend domain bootstrap." >&2
-    echo "Store it in Parameter Store as /policeconduct/secrets/RESEND_API_KEY_FULL_ACCESS." >&2
-    exit 1
-  fi
+  export TF_VAR_submission_notifications_topic_arn="${SUBMISSION_NOTIFICATIONS_TOPIC_ARN}"
+  unset SUBMISSION_NOTIFICATIONS_TOPIC_ARN
 }
 
 preflight_account_check() {
@@ -259,6 +193,8 @@ run_foundation_apply() {
     "aws_kms_alias.forms_submissions_preview"
     "aws_iam_role.forms_lambda"
     "aws_iam_role_policy.forms_lambda_permissions"
+    "aws_iam_role.forms_lambda_preview"
+    "aws_iam_role_policy.forms_lambda_preview_permissions"
     "aws_lambda_function.forms_api_prod"
     "aws_lambda_function_url.forms_api_prod"
     "aws_lambda_permission.forms_api_function_url_prod"
@@ -277,12 +213,21 @@ run_foundation_apply() {
 }
 
 load_dotenv_if_present
+resolve_submission_notifications_topic_arn
+# Every /policeconduct.org/ parameter must be a SecureString.
+node "${REPO_ROOT}/scripts/audit-parameter-store.mjs"
 # Secrets come only from Parameter Store. Drop any Terraform copy the .env files
 # set, so the stored values are the ones Terraform receives.
 # shellcheck source=scripts/parameter-store-secrets.sh
 source "${REPO_ROOT}/scripts/parameter-store-secrets.sh"
-load_parameter_store_secrets RESEND_API_KEY RESEND_API_KEY_FULL_ACCESS SENTRY_AUTH_TOKEN GITHUB_TOKEN
-unset TF_VAR_sentry_auth_token TF_VAR_forms_email_resend_api_key
+# scripts/bootstrap-resend-domain.mjs reads RESEND_API_KEY_FULL_ACCESS itself.
+load_parameter_store_secrets SENTRY_AUTH_TOKEN GITHUB_TOKEN
+unset TF_VAR_sentry_auth_token
+# Each forms Lambda gets its own environment's Resend key. A missing key stops
+# the apply; one environment never falls back to the other's key.
+TF_VAR_forms_email_resend_api_key_production="$(read_parameter_store_secret /policeconduct.org/production/secrets/RESEND_API_KEY)"
+TF_VAR_forms_email_resend_api_key_preview="$(read_parameter_store_secret /policeconduct.org/preview/secrets/RESEND_API_KEY)"
+export TF_VAR_forms_email_resend_api_key_production TF_VAR_forms_email_resend_api_key_preview
 # The reCAPTCHA stack's outputs are inputs to this stack.
 unset RECAPTCHA_PROJECT_ID RECAPTCHA_SITE_KEY RECAPTCHA_SERVICE_ACCOUNT_EMAIL RECAPTCHA_WIF_PROVIDER_RESOURCE_NAME RECAPTCHA_WIF_AUDIENCE
 unset TF_VAR_recaptcha_project_id TF_VAR_recaptcha_site_key TF_VAR_recaptcha_service_account_email TF_VAR_recaptcha_wif_provider_resource_name TF_VAR_recaptcha_wif_audience
@@ -290,10 +235,6 @@ recaptcha_env="$(cd "${REPO_ROOT}" && node scripts/terraform-outputs.mjs RECAPTC
 eval "${recaptcha_env}"
 map_common_env_to_tf_vars
 preflight_recaptcha_requirements
-set_github_tf_vars_from_origin
-preflight_explicit_tf_var_secrets
-warn_if_sentry_tf_var_missing
-preflight_resend_requirements
 preflight_account_check
 prepare_forms_lambda_package
 npm --prefix "${ROOT_DIR}/lambdas/release-api" ci --omit=dev --no-audit --no-fund

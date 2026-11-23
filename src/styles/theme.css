@@ -2916,6 +2916,7 @@ textarea.form-control.is-valid {
 }
 
 .was-validated :invalid ~ .invalid-feedback,
+.was-validated .form-check:has(:invalid) ~ .invalid-feedback,
 .was-validated :invalid ~ .invalid-tooltip,
 .is-invalid ~ .invalid-feedback,
 .is-invalid ~ .invalid-tooltip {

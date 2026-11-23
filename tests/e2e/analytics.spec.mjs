@@ -69,9 +69,12 @@ async function visitSite(page, baseURL, url, options = {}) {
       requested.hostname === "preview.example.org" ||
       requested.origin === new URL(baseURL).origin
     ) {
+      // The dev server resets an idle keep-alive connection that is reused
+      // while it renders a slow page for the other worker. maxRetries resends
+      // only after that reset (ECONNRESET), never after an HTTP error.
       const response = await page.request.fetch(
         new URL(requested.pathname + requested.search, baseURL).href,
-        { method: request.method() },
+        { method: request.method(), maxRetries: 3 },
       );
       await route.fulfill({ response });
       return;
@@ -643,13 +646,13 @@ test("advanced consent remembers choices and withdrawal keeps advertising denied
     "https://policeconduct.org/about/contact/",
     { keepConsentOpen: true },
   );
-  const panel = page.getByRole("dialog", { name: "Manage cookie settings" });
+  const panel = page.getByRole("dialog", { name: "Your privacy choices" });
   const decline = page.getByRole("button", {
     name: "Decline all",
     exact: true,
   });
   const settings = page.getByRole("button", {
-    name: "Cookie settings",
+    name: "Your privacy choices",
     exact: true,
   });
   await expect(panel).toBeVisible();
@@ -747,7 +750,7 @@ test("unavailable choice storage defaults to denied and reports unsaved acceptan
     { keepConsentOpen: true },
   );
   await expect(
-    page.getByRole("dialog", { name: "Manage cookie settings" }),
+    page.getByRole("dialog", { name: "Your privacy choices" }),
   ).toBeVisible();
   expect(
     analytics.commands.find((entry) => entry[0] === "consent")[2]
@@ -803,6 +806,47 @@ test("advertising opt-in is independent, persists and can be withdrawn", async (
     "denied",
     "denied",
   ]);
+  const flags = await page.evaluate(
+    () =>
+      Array.from(window.dataLayer)
+        .filter(
+          (entry) => entry[0] === "set" && "allow_google_signals" in entry[1],
+        )
+        .at(-1)[1],
+  );
+  expect(flags).toEqual({
+    allow_ad_personalization_signals: false,
+    allow_google_signals: false,
+  });
+});
+
+test("a Global Privacy Control signal keeps advertising off", async ({
+  page,
+  baseURL,
+}) => {
+  await page.addInitScript(() =>
+    Object.defineProperty(Navigator.prototype, "globalPrivacyControl", {
+      get: () => true,
+    }),
+  );
+  await visitSite(page, baseURL, "https://policeconduct.org/about/contact/", {
+    keepConsentOpen: true,
+  });
+  await expect(page.locator("[data-advertising-enabled]")).toBeDisabled();
+  await expect(page.locator("[data-gpc-note]")).toBeVisible();
+  await page.locator('[data-analytics-choice="granted"]').click();
+  const latest = await page.evaluate(
+    () =>
+      Array.from(window.dataLayer)
+        .filter((entry) => entry[0] === "consent")
+        .at(-1)[2],
+  );
+  expect(latest).toEqual({
+    analytics_storage: "granted",
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+  });
   const flags = await page.evaluate(
     () =>
       Array.from(window.dataLayer)

@@ -13,7 +13,7 @@ const hidden = entries.slice(initialCount);
 
 const renderEntry = (entry: LicenseTimelineEntry) => ({
   ...entry,
-  dateLabel: entry.actionDate ? formatShortDate(entry.actionDate) : "Undated",
+  dateLabel: entry.actionDate ? formatShortDate(entry.actionDate) : null,
 });
 ---
 
@@ -22,18 +22,12 @@ const renderEntry = (entry: LicenseTimelineEntry) => ({
     {shown.map((raw) => {
       const entry = renderEntry(raw);
       return (
-        <li
-          class:list={[
-            "license-timeline-item",
-            { "is-adverse": entry.isAdverse },
-          ]}
-        >
+        <li class="license-timeline-item">
           <span class="license-timeline-marker" aria-hidden="true" />
           <div class="license-timeline-body">
             <div class="license-timeline-head">
-              <span class="license-timeline-date">{entry.dateLabel}</span>
-              {entry.isAdverse ? (
-                <span class="license-timeline-flag">Adverse action</span>
+              {entry.dateLabel ? (
+                <span class="license-timeline-date">{entry.dateLabel}</span>
               ) : null}
             </div>
             <p class="license-timeline-action">{entry.action}</p>
@@ -53,21 +47,13 @@ const renderEntry = (entry: LicenseTimelineEntry) => ({
             {hidden.map((raw) => {
               const entry = renderEntry(raw);
               return (
-                <li
-                  class:list={[
-                    "license-timeline-item",
-                    { "is-adverse": entry.isAdverse },
-                  ]}
-                >
+                <li class="license-timeline-item">
                   <span class="license-timeline-marker" aria-hidden="true" />
                   <div class="license-timeline-body">
                     <div class="license-timeline-head">
-                      <span class="license-timeline-date">
-                        {entry.dateLabel}
-                      </span>
-                      {entry.isAdverse ? (
-                        <span class="license-timeline-flag">
-                          Adverse action
+                      {entry.dateLabel ? (
+                        <span class="license-timeline-date">
+                          {entry.dateLabel}
                         </span>
                       ) : null}
                     </div>
@@ -119,14 +105,6 @@ const renderEntry = (entry: LicenseTimelineEntry) => ({
     width: 0.7rem;
   }
 
-  .license-timeline-item.is-adverse {
-    border-left-color: var(--ipc-color-deep-red, #901117);
-  }
-
-  .license-timeline-item.is-adverse .license-timeline-marker {
-    background: var(--ipc-color-deep-red, #901117);
-  }
-
   .license-timeline-body {
     grid-column: 2;
   }
@@ -143,17 +121,6 @@ const renderEntry = (entry: LicenseTimelineEntry) => ({
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.02em;
-  }
-
-  .license-timeline-flag {
-    background: var(--ipc-color-deep-red, #901117);
-    border-radius: 999px;
-    color: #fff;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    padding: 0.1rem 0.5rem;
-    text-transform: uppercase;
   }
 
   .license-timeline-action {

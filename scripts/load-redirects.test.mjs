@@ -256,11 +256,7 @@ test("rejects a desired store exceeding 5 MB including other namespaces before w
   assert.equal(writes(result).length, 0);
 });
 
-function deploy(
-  scriptName,
-  args = [],
-  { unchanged = false, failSync = false, workspaceChoice = "skip" } = {},
-) {
+function deploy(args = [], { unchanged = false, failSync = false } = {}) {
   const dir = mkdtempSync(join(resolve(tmpdir()), "redirect-deploy-"));
   try {
     for (const name of [
@@ -273,10 +269,7 @@ function deploy(
     ])
       mkdirSync(join(dir, name));
     for (const name of [
-      "deploy-preview.sh",
-      "deploy-preview-sync.sh",
-      "deploy-incremental.sh",
-      "workspace-sync.sh",
+      "deploy.sh",
       "upload-release.sh",
       "promote.sh",
       "release-files.mjs",
@@ -319,7 +312,7 @@ function deploy(
       join(dir, ".release/source.json"),
       JSON.stringify({
         commit: releaseId,
-        branch: scriptName.startsWith("deploy-preview") ? "feature" : "main",
+        branch: args[0] === "preview" ? "feature" : "main",
         pr: null,
       }),
     );
@@ -330,7 +323,6 @@ function deploy(
     );
     writeFileSync(join(dir, ".release/data/dynamic.json"), "{}");
     writeFileSync(join(dir, "dist/index.html"), "content");
-    writeFileSync(join(dir, "dist/robots.txt"), "User-agent: *\nDisallow: /\n");
     writeFileSync(
       join(dir, "dist/_redirect-map.json"),
       JSON.stringify({ redirects: [] }),
@@ -370,7 +362,7 @@ printf '%s\\n' '${tool} '"$*" >> "$TEST_LOG"\n${tool === "aws" && failSync ? 'if
       );
     const result = spawnSync(
       "bash",
-      [join(dir, "scripts", scriptName), ...args],
+      [join(dir, "scripts", "deploy.sh"), ...args],
       {
         encoding: "utf8",
         env: {
@@ -378,9 +370,6 @@ printf '%s\\n' '${tool} '"$*" >> "$TEST_LOG"\n${tool === "aws" && failSync ? 'if
           // Shell startup files must not replace the fixture command PATH.
           BASH_ENV: "/dev/null",
           ENV: "/dev/null",
-          WORKSPACE_SYNC: workspaceChoice,
-          INTAKE_WORKSPACE: dir,
-          INTAKE_WORKSPACE_BUCKET: "fixture-workspaces",
           PATH: `${dir}/bin:${process.env.PATH}`,
           TEST_NODE: process.execPath,
           TEST_LOG: log,
@@ -410,15 +399,15 @@ printf '%s\\n' '${tool} '"$*" >> "$TEST_LOG"\n${tool === "aws" && failSync ? 'if
   }
 }
 
-for (const [script, args, namespace, bucket, pointer] of [
-  ["deploy-preview-sync.sh", [], "pr-12", "preview", "current:pr-12"],
-  ["deploy-incremental.sh", ["--skip-build"], "prod", "prod", "current"],
+for (const [args, namespace, bucket, pointer] of [
+  [["preview", "--skip-build"], "pr-12", "preview", "current:pr-12"],
+  [["prod", "--skip-build"], "prod", "prod", "current"],
 ]) {
   test(
     namespace +
       " uploads a complete release and private roster before selecting it",
     () => {
-      const { releaseId, status, stderr, calls } = deploy(script, args);
+      const { releaseId, status, stderr, calls } = deploy(args);
       assert.equal(status, 0, stderr);
       const prefix = "builds/" + releaseId;
       assert.ok(
@@ -459,13 +448,13 @@ for (const [script, args, namespace, bucket, pointer] of [
 }
 
 test("failed preview sync does not publish redirects", () => {
-  const result = deploy("deploy-preview-sync.sh", [], { failSync: true });
+  const result = deploy(["preview", "--skip-build"], { failSync: true });
   assert.equal(result.status, 23, result.stderr);
   assert.equal(result.calls.length, 1);
 });
 
 test("production publishes redirects even without content changes", () => {
-  const result = deploy("deploy-incremental.sh", ["--skip-build"], {
+  const result = deploy(["prod", "--skip-build"], {
     unchanged: true,
   });
   assert.equal(result.status, 0, result.stderr);
@@ -479,18 +468,16 @@ test("production publishes redirects even without content changes", () => {
 
 test("production dry-run never mutates AWS or invokes loader", () => {
   for (const unchanged of [false, true]) {
-    const result = deploy(
-      "deploy-incremental.sh",
-      ["--skip-build", "--dry-run"],
-      { unchanged },
-    );
+    const result = deploy(["prod", "--skip-build", "--dry-run"], {
+      unchanged,
+    });
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(result.calls, []);
   }
 });
 
 test("failed production sync does not publish redirects", () => {
-  const result = deploy("deploy-incremental.sh", ["--skip-build"], {
+  const result = deploy(["prod", "--skip-build"], {
     failSync: true,
   });
   assert.equal(result.status, 23, result.stderr);
@@ -527,32 +514,18 @@ test("shrinks existing values before growing values to stay within capacity duri
   assert.equal(result.status, 0, result.stderr);
 });
 
-for (const [script, args] of [
-  ["deploy-preview.sh", []],
-  ["deploy-preview-sync.sh", []],
-  ["deploy-incremental.sh", ["--skip-build"]],
-]) {
-  test(`${script} accepted workspace upload follows hosting exactly once`, () => {
-    const result = deploy(script, args, { workspaceChoice: "upload" });
-    assert.equal(result.status, 0, result.stderr);
-    const hosting = result.calls.findIndex((call) =>
-      call.startsWith("aws s3 sync "),
-    );
-    const syncs = result.calls.filter((call) =>
-      call.includes("intake-workspace-sync.mjs sync"),
-    );
-    assert.equal(syncs.length, 1);
-    assert.doesNotMatch(syncs[0], /--environment/);
-    assert.match(
-      syncs[0],
-      /sync --direction upload --bucket fixture-workspaces/,
-    );
-    assert.ok(result.calls.indexOf(syncs[0]) > hosting);
-  });
-  test(`${script} missing automated choice prevents hosting upload`, () => {
-    const result = deploy(script, args, { workspaceChoice: "" });
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /WORKSPACE_SYNC/);
+test("deploy refuses a missing environment or an unknown argument before any call", () => {
+  for (const args of [[], ["--skip-build"], ["prod", "--force"]]) {
+    const result = deploy(args);
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /Usage: deploy\.sh <environment>/);
     assert.deepEqual(result.calls, []);
-  });
-}
+  }
+});
+
+test("deploy stops before any call when an environment has no Terraform outputs", () => {
+  const result = deploy(["staging", "--skip-build"]);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /S3_BUCKET_STAGING/);
+  assert.deepEqual(result.calls, []);
+});

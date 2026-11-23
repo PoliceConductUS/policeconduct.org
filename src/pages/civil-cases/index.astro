@@ -1,5 +1,4 @@
 ---
-import CivilCaseScopeNote from "#src/components/CivilCaseScopeNote.astro";
 import EntityActionBar from "#src/components/EntityActionBar.astro";
 import Pagination from "#src/components/Pagination.astro";
 import PageShell from "#src/layouts/PageShell.astro";
@@ -104,7 +103,6 @@ const structuredData = {
       ))}
     </div>
     <Pagination basePath={pagePath} currentPage={1} lastPage={totalPages} />
-    <CivilCaseScopeNote />
   </section>
 </PageShell>
 <style>

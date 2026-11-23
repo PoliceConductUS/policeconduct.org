@@ -53,28 +53,28 @@ const externalLinks = [
   },
 ];
 
-function serveReport(t, links) {
+const reportRow = {
+  id: "report",
+  slug: "stored-report-slug",
+  incident_date: "2025-01-02",
+  location_path: "/tx/area/place/",
+  state_or_territory_path: "/tx/",
+  administrative_area_path: "/tx/area/",
+  state_or_territory_name: "Texas",
+  administrative_area_name: "Area",
+  place_name: "Place",
+};
+
+function serveReport(t, links, report = reportRow) {
   t.mock.method(Pool.prototype, "connect", async () => ({
     release() {},
     async query(sql, parameters) {
       if (sql.includes("from public.reviews r")) {
         assert.deepEqual(parameters, ["stored-report-slug"]);
-        return {
-          rows: [
-            {
-              id: "report",
-              slug: "stored-report-slug",
-              incident_date: "2025-01-02",
-              location_path: "/tx/area/place/",
-              state_or_territory_slug: "tx",
-              administrative_area_slug: "area",
-              place_slug: "place",
-              state_or_territory_name: "Texas",
-              administrative_area_name: "Area",
-              place_name: "Place",
-            },
-          ],
-        };
+        assert.match(sql, /state_lp\.path as state_or_territory_path/);
+        assert.match(sql, /area_lp\.path as administrative_area_path/);
+        assert.doesNotMatch(sql, /split_part/);
+        return { rows: [report] };
       }
       if (sql.includes("from public.review_links")) {
         assert.deepEqual(parameters, ["report"]);
@@ -94,14 +94,22 @@ function serveReport(t, links) {
         };
       }
       if (sql.includes("from public.personnel")) {
+        assert.deepEqual(parameters, ["report"]);
+        assert.match(sql, /where rp\.review_id = \$1/);
         return { rows: [{ id: "personnel", slug: "stored-personnel-slug" }] };
       }
       if (sql.includes("from public.agency a")) {
+        assert.deepEqual(parameters, ["report"]);
+        assert.match(sql, /where rp\.review_id = \$1/);
+        assert.match(sql, /lp\.path \|\| a\.slug \|\| '\/' as canonical_path/);
+        assert.doesNotMatch(sql, /bpp\.path/);
         return {
           rows: [{ id: "agency", canonical_path: "/tx/area/place/agency/" }],
         };
       }
       if (sql.includes("from public.agency_personnel")) {
+        assert.deepEqual(parameters, ["report"]);
+        assert.match(sql, /where rp\.review_id = \$1/);
         return {
           rows: [
             {
@@ -178,5 +186,33 @@ test("case relationships fail loudly for missing required case or link data", as
         /Missing .*(?:review_links|civil case)/,
       );
     }
+  }
+});
+
+test("report officers resolve agency paths from the agency location join", async (t) => {
+  serveReport(t, []);
+  const detail = await loadReportDetail("stored-report-slug");
+  assert.equal(
+    detail.officers[0].agency.canonicalPath,
+    "/tx/area/place/agency/",
+  );
+  assert.equal(detail.officers[0].path, "/personnel/stored-personnel-slug/");
+});
+
+test("report breadcrumbs use the stored parent location paths", async (t) => {
+  serveReport(t, []);
+  const detail = await loadReportDetail("stored-report-slug");
+  assert.equal(detail.locationBreadcrumbs.state.href, "/tx/");
+  assert.equal(detail.locationBreadcrumbs.administrativeArea.href, "/tx/area/");
+});
+
+test("an incomplete report location path fails loudly", async (t) => {
+  for (const field of ["state_or_territory_path", "administrative_area_path"]) {
+    serveReport(t, [], { ...reportRow, [field]: null });
+    await assert.rejects(
+      loadReportDetail("stored-report-slug"),
+      new RegExp(`missing ${field}`),
+    );
+    t.mock.restoreAll();
   }
 });

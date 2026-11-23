@@ -349,6 +349,53 @@ const requiredTables = {
     ],
     notNull: ["id", "personnel_id", "name"],
   },
+  // Intake views (20261122000000_site_public_counts.sql) that supply the
+  // public staff and civil-case counts. View columns report as nullable, so
+  // only their presence is checked.
+  site_agency_personnel_employment: {
+    columns: [
+      "agency_personnel_id",
+      "agency_id",
+      "personnel_id",
+      "employment_status",
+    ],
+  },
+  site_agency_count: {
+    columns: [
+      "agency_id",
+      "assignment_count",
+      "current_assignment_count",
+      "former_assignment_count",
+      "unknown_assignment_count",
+      "current_personnel_count",
+      "personnel_count",
+      "former_personnel_count",
+      "unknown_personnel_count",
+    ],
+  },
+  site_federal_agency_count: {
+    columns: ["federal_agency_id", "current_personnel_count"],
+  },
+  site_personnel_state_count: {
+    columns: ["state_location_path_id", "state_path", "listed_personnel_count"],
+  },
+  site_personnel_count: {
+    columns: ["personnel_id", "civil_case_count", "open_civil_case_count"],
+  },
+  // Intake view (20261122200000_site_personnel_headline_assignment.sql) that
+  // names the assignment a personnel page uses as the person's agency.
+  site_personnel_headline_assignment: {
+    columns: [
+      "personnel_id",
+      "agency_personnel_id",
+      "agency_id",
+      "title",
+      "badge_number",
+      "employment_status",
+      "end_date",
+      "headline_basis",
+    ],
+  },
   review_links: {
     columns: ["id", "review_id", "title", "url", "civil_case_id"],
     notNull: ["id", "review_id"],
@@ -462,6 +509,8 @@ const validate = async () => {
           where namespace.nspname = 'public'
             and table_class.relname = any($1)
             and index_info.indisunique
+            -- A partial index enforces uniqueness only for some rows.
+            and index_info.indpred is null
           group by table_class.relname, index_class.relname
         `,
         [tableNames],

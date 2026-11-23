@@ -1,6 +1,7 @@
 ---
 import PageShell from "#src/layouts/PageShell.astro";
 import { loadPersonnelSummaries } from "#src/lib/data/summaries.js";
+import { loadPersonnelCountsByStatePath } from "#src/lib/data/personnel.js";
 import { loadFederalAgencySummaries } from "#src/lib/data/federal-agencies.js";
 import UsaChoroplethMap from "#src/components/UsaChoroplethMap.astro";
 import { US_STATE_TILES } from "#src/lib/geo/states.js";
@@ -12,10 +13,10 @@ import {
 
 const personnelRows = await loadPersonnelSummaries();
 const federalAgencies = await loadFederalAgencySummaries();
+const personnelCountsByStatePath = await loadPersonnelCountsByStatePath();
 const stateStats = US_STATE_TILES.map((state) => {
-  const count = personnelRows.filter(
-    (person) => person.agencyState?.toUpperCase() === state.code,
-  ).length;
+  const count =
+    personnelCountsByStatePath.get(`/${state.code.toLowerCase()}/`) ?? 0;
   return {
     code: state.code,
     count,
@@ -39,14 +40,10 @@ const personnelItems = personnelRows.slice(0, 25).map((person, index) => ({
       person.nameSuffix ? ` ${person.nameSuffix}` : ""
     }`,
     url: new URL(`/personnel/${person.slug}/`, siteUrl).toString(),
-    ...(person.agencyName
-      ? {
-          worksFor: {
-            "@type": "GovernmentOrganization",
-            name: person.agencyName,
-          },
-        }
-      : {}),
+    worksFor: {
+      "@type": "GovernmentOrganization",
+      name: person.agencyName,
+    },
   },
 }));
 const structuredData = buildWebPage({
@@ -76,7 +73,11 @@ if (personnelItemList) {
   lede="Profiles of law enforcement personnel with listed agencies."
 >
   <Fragment slot="header">
-    <div class="ipc-hero-summary mt-3" aria-label="Personnel summary">
+    <div
+      class="ipc-hero-summary mt-3"
+      role="group"
+      aria-label="Personnel summary"
+    >
       <span class="badge bg-light text-dark border rounded-0">
         {totalPersonnel} personnel
       </span>

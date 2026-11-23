@@ -39,7 +39,7 @@ locals {
   preview_wildcard_domain              = "*.preview.${var.domain_name}"
   distribution_aliases                 = local.include_www ? [var.domain_name, local.www_domain] : [var.domain_name]
   preview_distribution_aliases         = ["preview.${var.domain_name}", local.preview_wildcard_domain]
-  certificate_san_names                = local.include_www ? [local.www_domain, local.preview_wildcard_domain] : [local.preview_wildcard_domain]
+  certificate_san_names                = local.include_www ? [local.www_domain] : []
   origin_id                            = "s3-${local.site_bucket_name}"
   preview_origin_id                    = "s3-${local.preview_bucket_name}"
   forms_api_origin_id                  = "forms-api-prod-url"
@@ -54,7 +54,7 @@ locals {
   manage_hosted_zone                   = local.provided_hosted_zone_id == null
   route53_zone_id                      = local.manage_hosted_zone ? aws_route53_zone.site[0].zone_id : local.provided_hosted_zone_id
   cloudfront_hosted_zone_id            = "Z2FDTNDATAQYW2"
-  acm_validation_domains               = local.include_www ? [var.domain_name, local.preview_wildcard_domain, local.www_domain] : [var.domain_name, local.preview_wildcard_domain]
+  acm_validation_domains               = local.include_www ? [var.domain_name, local.www_domain] : [var.domain_name]
   unmanaged_acm_validation_domains = [
     for domain in local.certificate_san_names : domain
     if !contains(local.acm_validation_domains, domain)
@@ -96,10 +96,9 @@ locals {
     if trimspace(endpoint) != ""
   ])
   # Submission notifications (INS-35) live in their OWN stack —
-  # infrastructure/submission-notifications — because they are all-new
-  # resources and that stack has real Terraform state, while this one has none
-  # (INS-39). This stack only has to know the topic ARN so the forms API can
-  # publish to it; it neither creates nor owns the topic.
+  # infrastructure/submission-notifications — which owns the topic and the S3
+  # event notifications. This stack only has to know the topic ARN so the forms
+  # API can publish to it; it neither creates nor owns the topic.
   normalized_submission_notification_emails = distinct([
     for endpoint in var.submission_notification_email_endpoints : trimspace(endpoint)
     if trimspace(endpoint) != ""
@@ -893,8 +892,15 @@ data "aws_iam_policy_document" "forms_lambda_assume_role" {
   }
 }
 
+# The production and preview forms Lambdas each have their own role, so neither
+# can reach the other environment's buckets, keys or logs.
 resource "aws_iam_role" "forms_lambda" {
   name               = "${var.project_name}-forms-lambda"
+  assume_role_policy = data.aws_iam_policy_document.forms_lambda_assume_role.json
+}
+
+resource "aws_iam_role" "forms_lambda_preview" {
+  name               = "${var.project_name}-forms-lambda-preview"
   assume_role_policy = data.aws_iam_policy_document.forms_lambda_assume_role.json
 }
 
@@ -907,12 +913,12 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
   statement {
     sid       = "IdentifyKnownFormReleases"
     actions   = ["s3:GetObject"]
-    resources = [for bucket in aws_s3_bucket.release_data : "${bucket.arn}/builds/*/data/dynamic.json"]
+    resources = ["${aws_s3_bucket.release_data["prod"].arn}/builds/*/data/dynamic.json"]
   }
   statement {
     sid       = "DistinguishMissingFormReleases"
     actions   = ["s3:ListBucket"]
-    resources = [for bucket in aws_s3_bucket.release_data : bucket.arn]
+    resources = [aws_s3_bucket.release_data["prod"].arn]
   }
 
   statement {
@@ -923,7 +929,10 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
       "logs:CreateLogStream",
       "logs:PutLogEvents",
     ]
-    resources = ["arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:*"]
+    resources = [
+      "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.project_name}-forms-api-prod",
+      "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.project_name}-forms-api-prod:*",
+    ]
   }
 
   statement {
@@ -962,36 +971,6 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
       "s3:GetObject",
     ]
     resources = ["${aws_s3_bucket.forms_submissions.arn}/*"]
-  }
-
-  statement {
-    sid    = "PreviewDraftBucketWriteRead"
-    effect = "Allow"
-    actions = [
-      "s3:PutObject",
-      "s3:PutObjectTagging",
-      "s3:GetObject",
-    ]
-    resources = ["${aws_s3_bucket.forms_drafts_preview.arn}/*"]
-  }
-
-  statement {
-    sid    = "PreviewSubmissionBucketWrite"
-    effect = "Allow"
-    actions = [
-      "s3:PutObject",
-      "s3:PutObjectTagging",
-    ]
-    resources = ["${aws_s3_bucket.forms_submissions_preview.arn}/*"]
-  }
-
-  statement {
-    sid    = "PreviewSubmissionBucketRead"
-    effect = "Allow"
-    actions = [
-      "s3:GetObject",
-    ]
-    resources = ["${aws_s3_bucket.forms_submissions_preview.arn}/*"]
   }
 
   statement {
@@ -1034,6 +1013,93 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
       "kms:DescribeKey",
     ]
     resources = [aws_kms_key.forms_submissions.arn]
+  }
+
+  statement {
+    sid       = "SesSendVerificationEmail"
+    effect    = "Allow"
+    actions   = ["ses:SendEmail"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "ses:FromAddress"
+      values   = [var.forms_email_verification_from_address]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = local.enable_submission_notifications ? [1] : []
+
+    content {
+      sid       = "PublishSubmissionNotifications"
+      effect    = "Allow"
+      actions   = ["sns:Publish"]
+      resources = [trimspace(var.submission_notifications_topic_arn)]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "forms_lambda_permissions" {
+  name   = "${var.project_name}-forms-lambda"
+  role   = aws_iam_role.forms_lambda.id
+  policy = data.aws_iam_policy_document.forms_lambda_permissions.json
+}
+
+data "aws_iam_policy_document" "forms_lambda_preview_permissions" {
+  statement {
+    sid       = "IdentifyKnownFormReleases"
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.release_data["preview"].arn}/builds/*/data/dynamic.json"]
+  }
+  statement {
+    sid       = "DistinguishMissingFormReleases"
+    actions   = ["s3:ListBucket"]
+    resources = [aws_s3_bucket.release_data["preview"].arn]
+  }
+
+  statement {
+    sid    = "CloudWatchLogsWrite"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+    resources = [
+      "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.project_name}-forms-api-preview",
+      "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.project_name}-forms-api-preview:*",
+    ]
+  }
+
+  statement {
+    sid    = "PreviewDraftBucketWriteRead"
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+      "s3:GetObject",
+    ]
+    resources = ["${aws_s3_bucket.forms_drafts_preview.arn}/*"]
+  }
+
+  statement {
+    sid    = "PreviewSubmissionBucketWrite"
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+    ]
+    resources = ["${aws_s3_bucket.forms_submissions_preview.arn}/*"]
+  }
+
+  statement {
+    sid    = "PreviewSubmissionBucketRead"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = ["${aws_s3_bucket.forms_submissions_preview.arn}/*"]
   }
 
   statement {
@@ -1082,6 +1148,7 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
     }
   }
 
+  # Preview shares the notification topic so the pipe can be exercised end to end.
   dynamic "statement" {
     for_each = local.enable_submission_notifications ? [1] : []
 
@@ -1094,10 +1161,10 @@ data "aws_iam_policy_document" "forms_lambda_permissions" {
   }
 }
 
-resource "aws_iam_role_policy" "forms_lambda_permissions" {
-  name   = "${var.project_name}-forms-lambda"
-  role   = aws_iam_role.forms_lambda.id
-  policy = data.aws_iam_policy_document.forms_lambda_permissions.json
+resource "aws_iam_role_policy" "forms_lambda_preview_permissions" {
+  name   = "${var.project_name}-forms-lambda-preview"
+  role   = aws_iam_role.forms_lambda_preview.id
+  policy = data.aws_iam_policy_document.forms_lambda_preview_permissions.json
 }
 
 data "aws_iam_policy_document" "forms_readonly_assume_role" {
@@ -1193,7 +1260,7 @@ resource "aws_lambda_function" "forms_api_prod" {
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
       EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
-      RESEND_API_KEY                       = var.forms_email_resend_api_key == null ? "" : var.forms_email_resend_api_key
+      RESEND_API_KEY                       = var.forms_email_resend_api_key_production == null ? "" : var.forms_email_resend_api_key_production
       EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
       EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
@@ -1211,7 +1278,7 @@ resource "aws_lambda_function" "forms_api_prod" {
 
 resource "aws_lambda_function" "forms_api_preview" {
   function_name = "${var.project_name}-forms-api-preview"
-  role          = aws_iam_role.forms_lambda.arn
+  role          = aws_iam_role.forms_lambda_preview.arn
   handler       = "index.handler"
   runtime       = var.lambda_nodejs_runtime
   timeout       = 10
@@ -1240,7 +1307,7 @@ resource "aws_lambda_function" "forms_api_preview" {
       DRAFT_ACTIVE_WINDOW_MS               = tostring(var.forms_draft_active_window_seconds * 1000)
       MAX_DRAFT_BYTES                      = tostring(var.forms_draft_max_bytes)
       EMAIL_VERIFICATION_FROM_ADDRESS      = var.forms_email_verification_from_address
-      RESEND_API_KEY                       = var.forms_email_resend_api_key == null ? "" : var.forms_email_resend_api_key
+      RESEND_API_KEY                       = var.forms_email_resend_api_key_preview == null ? "" : var.forms_email_resend_api_key_preview
       EMAIL_VERIFICATION_HMAC_SECRET       = random_password.forms_email_verification_hmac_secret.result
       EMAIL_VERIFICATION_TTL_SECONDS       = tostring(var.forms_email_verification_ttl_seconds)
       SUBMISSIONS_VERIFY_PREFIX            = "submissions/verify/"
@@ -1673,6 +1740,91 @@ resource "aws_cloudwatch_metric_alarm" "forms_api_preview_verification_email_not
   alarm_description   = "Forms API preview Lambda could not prepare a verification email."
   namespace           = "${var.project_name}/FormsApi"
   metric_name         = aws_cloudwatch_log_metric_filter.forms_api_preview_verification_email_not_sent.metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "preview"
+  }
+}
+
+# The forms API logs these staff-notification failures at error level. Each one
+# gets a metric filter and alarm per environment, like the verification email
+# alarms above. The warn-level configuration lines (topic_not_configured,
+# recipients_not_configured) get no alarm of their own: when they leave nobody
+# told, nobody_told is logged and alarms.
+locals {
+  forms_notify_failure_alarms = {
+    nobody_told         = "did not tell anyone about a confirmed submission"
+    publish_failed      = "failed to publish a submission notification to SNS"
+    email_failed        = "failed to send the staff notification email"
+    email_misconfigured = "is missing staff notification email settings"
+    receipt_failed      = "failed to write a notification receipt"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "forms_api_prod_notify_failed" {
+  for_each = local.forms_notify_failure_alarms
+
+  name           = "${var.project_name}-forms-api-prod-notify-${replace(each.key, "_", "-")}"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_prod.function_name}"
+  pattern        = "{ $.msg = \"forms.notify.${each.key}\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-prod-notify-${replace(each.key, "_", "-")}"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_prod_notify_failed" {
+  for_each = local.forms_notify_failure_alarms
+
+  alarm_name          = "${var.project_name}-forms-api-prod-notify-${replace(each.key, "_", "-")}"
+  alarm_description   = "Forms API prod Lambda ${each.value}."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_prod_notify_failed[each.key].metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = local.effective_alarm_actions
+  ok_actions          = local.effective_alarm_actions
+
+  tags = {
+    Environment = "production"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "forms_api_preview_notify_failed" {
+  for_each = local.forms_notify_failure_alarms
+
+  name           = "${var.project_name}-forms-api-preview-notify-${replace(each.key, "_", "-")}"
+  log_group_name = "/aws/lambda/${aws_lambda_function.forms_api_preview.function_name}"
+  pattern        = "{ $.msg = \"forms.notify.${each.key}\" }"
+
+  metric_transformation {
+    name      = "${var.project_name}-forms-api-preview-notify-${replace(each.key, "_", "-")}"
+    namespace = "${var.project_name}/FormsApi"
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "forms_api_preview_notify_failed" {
+  for_each = local.forms_notify_failure_alarms
+
+  alarm_name          = "${var.project_name}-forms-api-preview-notify-${replace(each.key, "_", "-")}"
+  alarm_description   = "Forms API preview Lambda ${each.value}."
+  namespace           = "${var.project_name}/FormsApi"
+  metric_name         = aws_cloudwatch_log_metric_filter.forms_api_preview_notify_failed[each.key].metric_transformation[0].name
   statistic           = "Sum"
   period              = 300
   evaluation_periods  = 1
@@ -2369,7 +2521,7 @@ resource "aws_cloudfront_key_value_store" "preview_redirects" {
 resource "aws_cloudfront_function" "preview_router" {
   name    = local.preview_router_function_name
   runtime = "cloudfront-js-2.0"
-  comment = "Route preview/build subdomains to their S3 prefix; apply per-build redirects."
+  comment = "Route preview subdomains to their S3 prefix; apply per-build redirects."
   publish = true
 
   key_value_store_associations = [
@@ -2737,13 +2889,6 @@ resource "github_actions_environment_secret" "sentry_auth_token" {
 #
 # Those resources are NOT here. They live in
 # infrastructure/submission-notifications, which has its own Terraform state.
-#
-# They were originally written into this file, which cannot be applied: this
-# stack has no state at all (INS-39), so `terraform apply` here plans a
-# create-from-scratch of the entire live estate. Everything INS-35 adds is a
-# brand-new resource with nothing to import, so it costs nothing to give it a
-# state file of its own — and buys a reviewable `terraform plan` instead of a
-# hand-run script.
 #
 # What stays here is only the part that modifies resources THIS stack owns: the
 # forms API Lambda environment and its sns:Publish grant, both driven by

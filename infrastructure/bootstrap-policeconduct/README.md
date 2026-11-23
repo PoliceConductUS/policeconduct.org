@@ -78,6 +78,8 @@ Run reCAPTCHA bootstrap first so WIF outputs are available to this stack:
 bash infrastructure/bootstrap-recaptcha/scripts/apply.sh
 ```
 
+Apply `infrastructure/submission-notifications` before this stack, as its README describes. `scripts/apply.sh` reads `submission_notifications_topic_arn` from that stack's output and refuses to apply when the output is missing or empty, or when `TF_VAR_submission_notifications_topic_arn` is already set to a different value.
+
 Then run this stack:
 
 ```bash
@@ -98,7 +100,7 @@ If reCAPTCHA apply fails with Google auth errors (`invalid_grant` /
 ## Where values come from
 
 - **Inputs** for each stack are tracked in its `*.auto.tfvars` file.
-- **Secrets** live only in AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`.
+- **Secrets** live only in AWS Systems Manager Parameter Store, as SecureString parameters. A secret every environment shares is named `/policeconduct.org/default/secrets/<NAME>`. A secret that differs by environment is named `/policeconduct.org/<environment>/secrets/<NAME>`, where the environment is `production` or `preview`.
 - **Deployed resource names** (buckets, CloudFront IDs, redirect stores, the preview forms API URL, the reCAPTCHA site key) are Terraform outputs. Scripts read them at run time through `scripts/terraform-outputs.mjs`; nothing copies them into a file. A value already set in the environment is kept, which is how CI passes them in.
 - **Machine settings** go in the git-ignored `.env` at the repo root: `AWS_PROFILE`, `DATABASE_URL`, `INTAKE_WORKSPACE`, and the public `PUBLIC_GA_MEASUREMENT_ID`, `PUBLIC_SENTRY_DSN` and `PUBLIC_SENTRY_ENVIRONMENT`.
 
@@ -115,7 +117,7 @@ Before it changes anything, `scripts/apply.sh`:
 
 ## Shared redirect rollout
 
-Production and preview use `functions/router.js` with separate CloudFront KeyValueStores. Local deployments load the built `_redirect-map.json` after uploading content. `KVS_ARN` selects the production store (`r:prod:`); `KVS_ARN_PREVIEW` selects the preview store (`r:pr-N:`). Terraform outputs and `scripts/sync-env.sh` supply these values.
+Production and preview use `functions/router.js` with separate CloudFront KeyValueStores. Local deployments load the built `_redirect-map.json` after uploading content. `KVS_ARN` selects the production store (`r:prod:`); `KVS_ARN_PREVIEW` selects the preview store (`r:pr-N:`). `scripts/deploy.sh` reads these values from Terraform outputs, and GitHub Actions reads them from the environment variables Terraform writes.
 
 For the first activation in each environment, **populate the store before publishing the router**. Do not run a full Terraform apply against an empty store: both function resources publish immediately. Use this order:
 
@@ -192,14 +194,18 @@ If a previous bootstrap wrote incorrect doubled-`mail` Route 53 records such as
 `send.mail.mail.policeconduct.org`, inspect the exact DNS diff and prepare a scoped
 change with rollback. Do not run an untargeted Terraform apply for email repairs.
 
-`infrastructure/bootstrap-policeconduct/scripts/apply.sh` reads its secrets from AWS Systems Manager Parameter Store, as SecureString parameters named `/policeconduct/secrets/<NAME>`. It does not use a secret from a `.env` file; the stored value always wins.
+`infrastructure/bootstrap-policeconduct/scripts/apply.sh` reads its secrets from AWS Systems Manager Parameter Store, as SecureString parameters. It does not use a secret from a `.env` file; the stored value always wins. A secret stored as any type other than SecureString stops the script, and stops the production release build that reads `SENTRY_AUTH_TOKEN`.
 
-- `RESEND_API_KEY`: send-only key used by the forms Lambda verification-email path
-- `RESEND_API_KEY_FULL_ACCESS`: full-access key used only by `scripts/bootstrap-resend-domain.mjs` for Resend Domains API calls
-- `SENTRY_AUTH_TOKEN`: written to the GitHub `production` environment only, with `SENTRY_ORG` and `SENTRY_PROJECT`. `npm run deploy:prod` also reads it from Parameter Store so the production release build uploads its sourcemaps to Sentry
+- `RESEND_API_KEY`: send-only key the forms Lambda uses to send email. Each environment has its own key, at `/policeconduct.org/production/secrets/RESEND_API_KEY` and `/policeconduct.org/preview/secrets/RESEND_API_KEY`. `apply.sh` stops if either is missing; one environment never uses the other's key
+- `RESEND_API_KEY_FULL_ACCESS`: full-access key used only by `scripts/bootstrap-resend-domain.mjs` for Resend Domains API calls. The script reads it from Parameter Store on every run and ignores any value in the environment
+- `SENTRY_AUTH_TOKEN`: written to the GitHub `production` environment only, with `SENTRY_ORG` and `SENTRY_PROJECT`. `npm run deploy -- prod` also reads it from Parameter Store so the production release build uploads its sourcemaps to Sentry
 - `GITHUB_TOKEN`: used by the Terraform GitHub provider
 
-To change one, run `aws ssm put-parameter --overwrite --type SecureString --name /policeconduct/secrets/<NAME> --value file://<file>`.
+To add or change a shared secret, run `npm run secret:set -- <NAME> < <file>`. For a secret that differs by environment, name the environment first: `npm run secret:set -- preview RESEND_API_KEY < <file>`. The command reads the value from standard input and always stores it as a SecureString.
+
+The production and preview forms Lambdas run under separate IAM roles, `policeconduct-forms-lambda` and `policeconduct-forms-lambda-preview`. Each role reaches only its own environment's buckets, encryption keys, release data and log group.
+
+`apply.sh` first checks every parameter under `/policeconduct.org/` and stops if any is not a SecureString. This repo keeps only secrets in Parameter Store. Run the same check at any time with `npm run validate:parameter-store`.
 
 Example:
 
@@ -215,8 +221,6 @@ updates, or triggers verification of the Resend domain.
 To inspect the domain manually:
 
 ```bash
-source scripts/parameter-store-secrets.sh
-load_parameter_store_secrets RESEND_API_KEY_FULL_ACCESS
 node scripts/bootstrap-resend-domain.mjs --read
 ```
 
@@ -226,16 +230,12 @@ or triggers verification. Configure tracking separately through the Resend
 Domains API or dashboard after inspecting the current settings. After obtaining the applicable production approval, run:
 
 ```bash
-source scripts/parameter-store-secrets.sh
-load_parameter_store_secrets RESEND_API_KEY_FULL_ACCESS
 node scripts/bootstrap-resend-domain.mjs --apply
 ```
 
 If you want to trigger a Resend verification pass manually after DNS changes:
 
 ```bash
-source scripts/parameter-store-secrets.sh
-load_parameter_store_secrets RESEND_API_KEY_FULL_ACCESS
 node scripts/bootstrap-resend-domain.mjs --verify
 ```
 

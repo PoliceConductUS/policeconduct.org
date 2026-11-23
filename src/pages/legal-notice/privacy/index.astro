@@ -3,7 +3,7 @@ import PageShell from "#src/layouts/PageShell.astro";
 import { buildWebPage, getSiteUrl } from "#src/lib/structured-data.js";
 const privacyCategories = [
   {
-    category: "A. Identcan ifiers",
+    category: "A. Identifiers",
     examples:
       "Contact details, such as real name, alias, postal address, telephone or mobile contact number, unique personal identifier, online identifier, Internet Protocol address, email address, and account name",
     collected: true,
@@ -69,7 +69,6 @@ const privacyCategories = [
   },
   {
     category: "L. Sensitive personal Information",
-    examples: "",
     collected: false,
   },
 ];
@@ -207,7 +206,7 @@ const structuredData = buildWebPage({
   <p>
     <strong>How do you exercise your rights?</strong> The easiest way to
     exercise your rights is by submitting a
-    <a href="/legal-notice/data-subject-access-request">
+    <a href="/legal-notice/data-subject-access-request/">
       data subject access request
     </a>
     , or by contacting us. We will consider and act upon any request in
@@ -828,9 +827,14 @@ const structuredData = buildWebPage({
     functions.
   </p>
   <p>
-    We may allow service providers to use online tracking technologies for
-    analytics so we can understand usage and improve the Services. We do not use
-    cookies for targeted advertising or shopping cart reminders.
+    We use Google Analytics to learn how the Services are used. Analytics
+    cookies are set only if you allow them in Your privacy choices, at the
+    bottom of every page. If you decline, Google still receives limited
+    measurements without analytics cookies. Advertising cookies and data use are
+    off unless you turn on Advertising in Your privacy choices. If you turn it
+    on, Google may use cookies and your visit data for ad measurement and to
+    personalize ads you see on other sites. We do not show ads on this site, and
+    we do not use cookies for shopping cart reminders.
   </p>
   <p>
     If our use of tracking technologies changes in the future, we will update
@@ -842,11 +846,16 @@ const structuredData = buildWebPage({
   </p>
   <h3>Google Analytics</h3>
   <p>
-    We may share your information with Google Analytics to track and analyze the
-    use of the Services. The Google Analytics Advertising Features that we may
-    use include: Remarketing with Google Analytics, Google Display Network
-    Impressions Reporting and Google Analytics Demographics and Interests
-    Reporting. To opt out of being tracked by Google Analytics across the
+    Google Analytics collects information about how you use the Services. What
+    Google receives depends on your choices in Your privacy choices; see
+    <a href="#do-united-states-residents-have-specific-privacy-rights">
+      the US privacy rights section
+    </a>
+    and our <a href="/legal-notice/cookie/">Cookie Notice</a>. Some state
+    privacy laws may call this "sharing" personal information. The Google
+    Analytics Advertising Features we use, Google Signals and ads
+    personalization, apply only if you turn on Advertising in Your privacy
+    choices. To opt out of being tracked by Google Analytics across the
     Services, visit
     <a href="https://tools.google.com/dlpage/gaoptout">
       https://tools.google.com/dlpage/gaoptout
@@ -898,7 +907,7 @@ const structuredData = buildWebPage({
     information may be transferred to, stored by, and processed by us in our
     facilities and in the facilities of the third parties with whom we may share
     your personal information (see "
-    <a href="#whoshare">
+    <a href="#when-and-with-whom-do-we-share-your-personal-information">
       WHEN AND WITH WHOM DO WE SHARE YOUR PERSONAL INFORMATION?
     </a>
     " above), in the United States, and other countries.
@@ -923,7 +932,9 @@ const structuredData = buildWebPage({
     implemented similar appropriate safeguards with our third-party service
     providers and partners and further details can be provided upon request.
   </p>
-  <h2>9. HOW LONG DO WE KEEP YOUR INFORMATION?</h2>
+  <h2 id="how-long-do-we-keep-your-information">
+    9. HOW LONG DO WE KEEP YOUR INFORMATION?
+  </h2>
   <p>
     <strong>
       <em>In Short:</em>
@@ -949,7 +960,9 @@ const structuredData = buildWebPage({
     information and isolate it from any further processing until deletion is
     possible.
   </p>
-  <h2>10. DO WE COLLECT INFORMATION FROM MINORS?</h2>
+  <h2 id="do-we-collect-information-from-minors">
+    10. DO WE COLLECT INFORMATION FROM MINORS?
+  </h2>
   <p>
     <strong>
       <em>In Short:</em>
@@ -961,17 +974,17 @@ const structuredData = buildWebPage({
   </p>
   <p>
     We do not knowingly collect, solicit data from, or market to children under
-    18 years of age, nor do we knowingly sell such personal information. By
-    using the Services, you represent that you are at least 18 or that you are
-    the parent or guardian of such a minor and consent to such minor dependent's
-    use of the Services. If we learn that personal information from users less
-    than 18 years of age has been collected, we will deactivate the account and
-    take reasonable measures to promptly delete such data from our records. If
-    you become aware of any data we may have collected from children under age
-    18, please contact us at
+    18 years of age, and we do not sell personal information. By using the
+    Services, you represent that you are at least 18 or that you are the parent
+    or guardian of such a minor and consent to such minor dependent's use of the
+    Services. If we learn that personal information from users less than 18
+    years of age has been collected, we will deactivate the account and take
+    reasonable measures to promptly delete such data from our records. If you
+    become aware of any data we may have collected from children under age 18,
+    please contact us at
     <a href="mailto:privacy@policeconduct.org"> privacy@policeconduct.org </a>.
   </p>
-  <h2>11. WHAT ARE YOUR PRIVACY RIGHTS?</h2>
+  <h2 id="what-are-your-privacy-rights">11. WHAT ARE YOUR PRIVACY RIGHTS?</h2>
   <p>
     <strong>
       <em>In Short:</em>
@@ -995,7 +1008,11 @@ const structuredData = buildWebPage({
     circumstances, you may also have the right to object to the processing of
     your personal information. You can make such a request by contacting us by
     using the contact details provided in the section "
-    <a href="#contact"> HOW CAN YOU CONTACT US ABOUT THIS NOTICE? </a>" below.
+    <a href="#how-can-you-contact-us-about-this-notice">
+      {" "}
+      HOW CAN YOU CONTACT US ABOUT THIS NOTICE?{" "}
+    </a>
+    " below.
   </p>
   <p>
     We will consider and act upon any request in accordance with applicable data
@@ -1021,13 +1038,17 @@ const structuredData = buildWebPage({
     </a>
     .
   </p>
-  <p>
+  <p id="withdrawing-your-consent">
     <strong>Withdrawing your consent:</strong> If we are relying on your consent
     to process your personal information, which may be express and/or implied
     consent depending on the applicable law, you have the right to withdraw your
     consent at any time. You can withdraw your consent at any time by contacting
     us by using the contact details provided in the section "
-    <a href="#contact"> HOW CAN YOU CONTACT US ABOUT THIS NOTICE? </a>" below.
+    <a href="#how-can-you-contact-us-about-this-notice">
+      {" "}
+      HOW CAN YOU CONTACT US ABOUT THIS NOTICE?{" "}
+    </a>
+    " below.
   </p>
   <p>
     However, please note that this will not affect the lawfulness of the
@@ -1041,11 +1062,14 @@ const structuredData = buildWebPage({
     time by clicking on the unsubscribe link in the emails that we send,
     replying "STOP" or "UNSUBSCRIBE" to the SMS messages that we send, or by
     contacting us using the details provided in the section "
-    <a href="#contact"> HOW CAN YOU CONTACT US ABOUT THIS NOTICE? </a>" below.
-    You will then be removed from the marketing lists. However, we may still
-    communicate with you — for example, to send you service-related messages
-    that are necessary for the administration and use of your account, to
-    respond to service requests, or for other non-marketing purposes.
+    <a href="#how-can-you-contact-us-about-this-notice">
+      {" "}
+      HOW CAN YOU CONTACT US ABOUT THIS NOTICE?{" "}
+    </a>
+    " below. You will then be removed from the marketing lists. However, we may
+    still communicate with you — for example, to send you service-related
+    messages that are necessary for the administration and use of your account,
+    to respond to service requests, or for other non-marketing purposes.
   </p>
   <h3>Account Information</h3>
   <p>
@@ -1082,25 +1106,31 @@ const structuredData = buildWebPage({
     If you have questions or comments about your privacy rights, you may email
     us at privacy@policeconduct.org.
   </p>
-  <h2>12. CONTROLS FOR DO-NOT-TRACK FEATURES</h2>
+  <h2 id="controls-for-do-not-track-features">
+    12. CONTROLS FOR DO-NOT-TRACK FEATURES
+  </h2>
   <p>
     Most web browsers and some mobile operating systems and mobile applications
     include a Do-Not-Track ("DNT") feature or setting you can activate to signal
     your privacy preference not to have data about your online browsing
     activities monitored and collected. At this stage, no uniform technology
     standard for recognizing and implementing DNT signals has been finalized. As
-    such, we do not currently respond to DNT browser signals or any other
-    mechanism that automatically communicates your choice not to be tracked
-    online. If a standard for online tracking is adopted that we must follow in
-    the future, we will inform you about that practice in a revised version of
-    this Privacy Notice.
+    such, we do not respond to DNT browser signals. We do honor Global Privacy
+    Control (GPC): if your browser sends a GPC signal, Advertising stays off and
+    cannot be turned on in Your privacy choices. GPC does not turn off
+    analytics; you can decline analytics cookies in Your privacy choices. If a
+    standard for online tracking is adopted that we must follow in the future,
+    we will inform you about that practice in a revised version of this Privacy
+    Notice.
   </p>
   <p>
     California law requires us to let you know how we respond to web browser DNT
     signals. Because there currently is not an industry or legal standard for
     recognizing or honoring DNT signals, we do not respond to them at this time.
   </p>
-  <h2>13. DO UNITED STATES RESIDENTS HAVE SPECIFIC PRIVACY RIGHTS?</h2>
+  <h2 id="do-united-states-residents-have-specific-privacy-rights">
+    13. DO UNITED STATES RESIDENTS HAVE SPECIFIC PRIVACY RIGHTS?
+  </h2>
   <p>
     <span>In Short: </span>
     If you are a resident of California, Colorado, Connecticut, Delaware,
@@ -1124,7 +1154,7 @@ const structuredData = buildWebPage({
       {privacyCategories.map((item) => (
         <div class="mb-3">
           <h4>{item.category}</h4>
-          <p>{item.examples || "Not listed."}</p>
+          {item.examples && <p>{item.examples}</p>}
           <p>Collected: {item.collected ? "YES" : "NO"}</p>
         </div>
       ))}
@@ -1167,13 +1197,21 @@ const structuredData = buildWebPage({
       <h3>Sources of Personal Information</h3>
       <p>
         Learn more about the sources of personal information we collect in "
-        <a href="#infocollect"> WHAT INFORMATION DO WE COLLECT? </a>"
+        <a href="#what-information-do-we-collect">
+          {" "}
+          WHAT INFORMATION DO WE COLLECT?{" "}
+        </a>
+        "
       </p>
 
       <h3>How We Use and Share Personal Information</h3>
       <p>
         Learn about how we use your personal information in the section, "
-        <a href="#infouse"> HOW DO WE PROCESS YOUR INFORMATION? </a>"
+        <a href="#how-do-we-process-your-information">
+          {" "}
+          HOW DO WE PROCESS YOUR INFORMATION?{" "}
+        </a>
+        "
       </p>
 
       <h3>Will your information be shared with anyone else?</h3>
@@ -1182,7 +1220,7 @@ const structuredData = buildWebPage({
         pursuant to a written contract between us and each service provider.
         Learn more about how we disclose personal information to in the section,
         "
-        <a href="#whoshare">
+        <a href="#when-and-with-whom-do-we-share-your-personal-information">
           WHEN AND WITH WHOM DO WE SHARE YOUR PERSONAL INFORMATION?
         </a>
         "
@@ -1194,10 +1232,35 @@ const structuredData = buildWebPage({
         information.
       </p>
       <p>
-        We have not disclosed, sold, or shared any personal information to third
-        parties for a business or commercial purpose in the preceding twelve
-        (12) months. We will not sell or share personal information in the
-        future belonging to website visitors, users, and other consumers.
+        We do not sell your personal information for money. We use Google
+        Analytics to learn how this site is used. Some state privacy laws may
+        call this "sharing" personal information, especially when advertising is
+        on. You control what Google receives in Your privacy choices, at the
+        bottom of every page:
+      </p>
+      <ul>
+        <li>
+          Advertising is off unless you turn it on. If you turn it on, Google
+          may use cookies and your visit data for ad measurement and to
+          personalize ads you see on other sites. Some state laws call this
+          "sharing" for targeted advertising. You can turn it off at any time.
+        </li>
+        <li>
+          Analytics cookies are used only if you allow them. If you decline,
+          Google still receives limited measurements without cookies, such as
+          the page viewed and your browser type.
+        </li>
+        <li>
+          If your browser sends a Global Privacy Control (GPC) signal, we treat
+          it as a request to opt out of sharing for advertising. Advertising
+          stays off and cannot be turned on in Your privacy choices. GPC does
+          not turn off analytics; you can decline analytics cookies in Cookie
+          settings.
+        </li>
+      </ul>
+      <p>
+        Google may use the information it receives under its own policies, and
+        it may sell or share that information.
       </p>
     </div>
 
@@ -1285,7 +1348,7 @@ const structuredData = buildWebPage({
     <p>
       <strong>How to Exercise Your Rights</strong> To submit a request to
       exercise any of these rights, please visit our
-      <a href="/legal-notice/data-subject-access-request">
+      <a href="/legal-notice/data-subject-access-request/">
         Privacy Rights Request Portal
       </a>
       or email us at
@@ -1304,7 +1367,7 @@ const structuredData = buildWebPage({
   <h3>How to Exercise Your Rights</h3>
   <p>
     To exercise these rights, you can contact us by submitting a
-    <a href="/legal-notice/data-subject-access-request">
+    <a href="/legal-notice/data-subject-access-request/">
       data subject access request
     </a>
     , by emailing us at privacy@policeconduct.org, or by referring to the
@@ -1338,9 +1401,15 @@ const structuredData = buildWebPage({
     year. If you are a California resident and would like to make such a
     request, please submit your request in writing to us by using the contact
     details provided in the section "
-    <a href="#contact"> HOW CAN YOU CONTACT US ABOUT THIS NOTICE? </a>"
+    <a href="#how-can-you-contact-us-about-this-notice">
+      {" "}
+      HOW CAN YOU CONTACT US ABOUT THIS NOTICE?{" "}
+    </a>
+    "
   </p>
-  <h2>14. DO OTHER REGIONS HAVE SPECIFIC PRIVACY RIGHTS?</h2>
+  <h2 id="do-other-regions-have-specific-privacy-rights">
+    14. DO OTHER REGIONS HAVE SPECIFIC PRIVACY RIGHTS?
+  </h2>
   <p>
     <em>
       <strong>In Short:</strong> You may have additional rights based on the
@@ -1374,7 +1443,7 @@ const structuredData = buildWebPage({
     At any time, you have the right to request access to or correction of your
     personal information. You can make such a request by contacting us by using
     the contact details provided in the section "
-    <a href="#request">
+    <a href="#how-can-you-review-update-or-delete-the-data-we-collect-from-you">
       HOW CAN YOU REVIEW, UPDATE, OR DELETE THE DATA WE COLLECT FROM YOU?
     </a>
     "
@@ -1397,7 +1466,7 @@ const structuredData = buildWebPage({
     At any time, you have the right to request access to or correction of your
     personal information. You can make such a request by contacting us by using
     the contact details provided in the section "
-    <a href="#request">
+    <a href="#how-can-you-review-update-or-delete-the-data-we-collect-from-you">
       HOW CAN YOU REVIEW, UPDATE, OR DELETE THE DATA WE COLLECT FROM YOU?
     </a>
     "
@@ -1428,7 +1497,9 @@ const structuredData = buildWebPage({
       POPIAComplaints@inforegulator.org.za
     </a>
   </p>
-  <h2>15. DO WE MAKE UPDATES TO THIS NOTICE?</h2>
+  <h2 id="do-we-make-updates-to-this-notice">
+    15. DO WE MAKE UPDATES TO THIS NOTICE?
+  </h2>
   <p>
     <em>
       <strong>In Short:</strong> Yes, we will update this notice as necessary to
@@ -1443,7 +1514,9 @@ const structuredData = buildWebPage({
     sending you a notification. We encourage you to review this Privacy Notice
     frequently to be informed of how we are protecting your information.
   </p>
-  <h2>16. HOW CAN YOU CONTACT US ABOUT THIS NOTICE?</h2>
+  <h2 id="how-can-you-contact-us-about-this-notice">
+    16. HOW CAN YOU CONTACT US ABOUT THIS NOTICE?
+  </h2>
   <p>
     If you have questions or comments about this notice, you may email us at
     <a href="mailto:privacy@policeconduct.org"> privacy@policeconduct.org </a>
@@ -1458,7 +1531,7 @@ const structuredData = buildWebPage({
     <br />
     United States
   </address>
-  <h2>
+  <h2 id="how-can-you-review-update-or-delete-the-data-we-collect-from-you">
     17. HOW CAN YOU REVIEW, UPDATE, OR DELETE THE DATA WE COLLECT FROM YOU?
   </h2>
   <p>
@@ -1470,7 +1543,7 @@ const structuredData = buildWebPage({
     information. These rights may be limited in some circumstances by applicable
     law. To request to review, update, or delete your personal information,
     please fill out and submit a
-    <a href="/legal-notice/data-subject-access-request">
+    <a href="/legal-notice/data-subject-access-request/">
       data subject access request
     </a>
     .

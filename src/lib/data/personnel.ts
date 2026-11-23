@@ -1,7 +1,4 @@
-import { currentAssignmentSql } from "#src/lib/data/annotation-access.js";
 import { withDb } from "#src/lib/db.js";
-import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
-import { requireAgencyCanonicalPath } from "./location-paths.js";
 import type { PersonnelSummary } from "./types.js";
 
 const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
@@ -9,178 +6,56 @@ const nameCollator = new Intl.Collator("en", { sensitivity: "base" });
 const compareNullable = (left?: string | null, right?: string | null) =>
   nameCollator.compare(left || "", right || "");
 
-type PersonnelOptions = {
-  agencyId?: string | null;
-};
-
-export const loadPersonnelSummaries = async (
-  options: PersonnelOptions = {},
-): Promise<PersonnelSummary[]> => {
-  const { agencyId = null } = options;
-  const data = await withDb(
-    async (
-      client,
-    ): Promise<{
-      agencyOfficers: {
-        personnel_id: string;
-        agency_id: string;
-        start_date: string | null;
-        end_date: string | null;
-        title: string | null;
-      }[];
-      officers: {
-        id: string;
-        slug: string;
-        first_name: string;
-        last_name: string | null;
-        suffix: string | null;
-      }[];
-      agencies: {
-        id: string;
-        name: string;
-        state: string;
-        canonical_path: string;
-      }[];
-      reportCounts: { personnel_id: string; report_count: string | number }[];
-      civilCaseCounts: {
-        personnel_id: string;
-        civil_case_count: string | number;
-      }[];
-    }> => {
-      const params: Array<string> = [];
-      const filters = [currentAssignmentSql("ao")];
-      if (agencyId) {
-        params.push(agencyId);
-        filters.push(`ao.agency_id = $${params.length}`);
-      }
-      const where = filters.length ? `where ${filters.join(" and ")}` : "";
-      const agencyOfficers = (
+export const loadPersonnelSummaries = async (): Promise<PersonnelSummary[]> => {
+  const officers: {
+    id: string;
+    slug: string;
+    first_name: string;
+    last_name: string | null;
+    suffix: string | null;
+    agency_name: string;
+  }[] = await withDb(
+    async (client) =>
+      // Selection rule kept as it was (move into a database view): a person
+      // is listed when the latest-started current assignment, by the intake
+      // view site_agency_personnel_employment, is at an agency that has a
+      // built page. The agency name shown for the person comes from the intake
+      // view site_personnel_headline_assignment.
+      (
         await client.query(
-          `select * from public.agency_personnel ao ${where}`,
-          params,
+          `
+            with latest_open_assignment as (
+              select distinct on (ao.personnel_id) ao.personnel_id, ao.agency_id
+              from public.agency_personnel ao
+              join public.site_agency_personnel_employment employment
+                on employment.agency_personnel_id = ao.id
+               and employment.employment_status = 'Current'
+              order by ao.personnel_id, ao.start_date desc nulls last, ao.id desc
+            )
+            select o.id, o.slug, o.first_name, o.last_name, o.suffix,
+                   headline_agency.name as agency_name
+            from latest_open_assignment latest
+            join public.personnel o on o.id = latest.personnel_id
+            join public.build_page_payload bpp
+              on bpp.page_type = 'agency'
+             and bpp.entity_id = latest.agency_id
+            join public.site_personnel_headline_assignment headline
+              on headline.personnel_id = latest.personnel_id
+            join public.agency headline_agency
+              on headline_agency.id = headline.agency_id
+          `,
         )
-      ).rows;
-      const officerIds = [
-        ...new Set(
-          agencyOfficers.map(
-            (entry: { personnel_id: string }) => entry.personnel_id,
-          ),
-        ),
-      ];
-      const agencyIds = [
-        ...new Set(
-          agencyOfficers.map((entry: { agency_id: string }) => entry.agency_id),
-        ),
-      ];
-      const officers = officerIds.length
-        ? (
-            await client.query(
-              "select * from public.personnel where id = any($1)",
-              [officerIds],
-            )
-          ).rows
-        : [];
-      const agencies = agencyIds.length
-        ? (
-            await client.query(
-              `
-                select a.*, lp.path as location_path, bpp.path as canonical_path
-                from public.agency a
-                join public.location_path lp
-                  on lp.location_path_id = a.location_path_id
-                join public.build_page_payload bpp
-                  on bpp.page_type = 'agency'
-                 and bpp.entity_id = a.id
-                where a.id = any($1)
-              `,
-              [agencyIds],
-            )
-          ).rows
-        : [];
-      // Count reports per officer by joining through agency_personnel
-      const reportCounts = officerIds.length
-        ? (
-            await client.query(
-              `select ao.personnel_id, count(distinct ro.review_id) as report_count
-             from public.review_personnel ro
-             join public.agency_personnel ao on ao.id = ro.agency_personnel_id
-             where ao.personnel_id = any($1)
-             group by ao.personnel_id`,
-              [officerIds],
-            )
-          ).rows
-        : [];
-      const civilCaseCounts = officerIds.length
-        ? (
-            await client.query(
-              `select ao.personnel_id, count(distinct cco.civil_case_id) as civil_case_count
-             from public.civil_case_personnel cco
-             join public.agency_personnel ao on ao.id = cco.agency_personnel_id
-             where ao.personnel_id = any($1)
-             group by ao.personnel_id`,
-              [officerIds],
-            )
-          ).rows
-        : [];
-      return {
-        agencyOfficers,
-        officers,
-        agencies,
-        reportCounts,
-        civilCaseCounts,
-      };
-    },
+      ).rows,
   );
 
-  const officersById = mapBy(data.officers, "id");
-  const agenciesById = mapBy(data.agencies, "id");
-  const agencyOfficersByOfficer = groupBy(data.agencyOfficers, "personnel_id");
-  const reportCountsByOfficer = mapBy(data.reportCounts || [], "personnel_id");
-  const civilCaseCountsByOfficer = mapBy(
-    data.civilCaseCounts || [],
-    "personnel_id",
-  );
-  const summaries = Object.keys(agencyOfficersByOfficer)
-    .map((officerId) => {
-      const officer = officersById[officerId];
-      if (!officer) {
-        return null;
-      }
-      const history = normalizeAgencyHistory<
-        (typeof data.agencyOfficers)[number]
-      >(agencyOfficersByOfficer[officerId] || []);
-      const activeAssignments = history.filter(
-        (entry) => entry.end_date == null,
-      );
-      if (activeAssignments.length === 0) {
-        return null;
-      }
-      // Use most recent active assignment
-      const eligibleAssignment =
-        activeAssignments[activeAssignments.length - 1];
-      const agency = agenciesById[eligibleAssignment.agency_id];
-      if (!agency) {
-        return null;
-      }
-      return {
-        id: officer.id,
-        slug: officer.slug,
-        lastName: officer.last_name || "",
-        firstName: officer.first_name,
-        nameSuffix: officer.suffix || null,
-        title: eligibleAssignment?.title || null,
-        agencyName: agency.name,
-        agencyState: String(agency.state || "").toLowerCase(),
-        agencyCanonicalPath: requireAgencyCanonicalPath(agency),
-        reportCount: Number(
-          reportCountsByOfficer[officer.id]?.report_count || 0,
-        ),
-        civilCaseCount: Number(
-          civilCaseCountsByOfficer[officer.id]?.civil_case_count || 0,
-        ),
-      };
-    })
-    .filter(Boolean) as PersonnelSummary[];
+  const summaries: PersonnelSummary[] = officers.map((officer) => ({
+    id: officer.id,
+    slug: officer.slug,
+    lastName: officer.last_name || "",
+    firstName: officer.first_name,
+    nameSuffix: officer.suffix || null,
+    agencyName: officer.agency_name,
+  }));
 
   summaries.sort((a, b) => {
     const lastNameCompare = nameCollator.compare(a.lastName, b.lastName);
@@ -199,4 +74,26 @@ export const loadPersonnelSummaries = async (
   });
 
   return summaries;
+};
+
+// Listed personnel per state, from the intake view site_personnel_state_count:
+// each listed person counts once, under the state of the agency on their
+// latest-started current assignment (the same rule loadPersonnelSummaries
+// lists by).
+export const loadPersonnelCountsByStatePath = async (): Promise<
+  Map<string, number>
+> => {
+  const rows: { state_path: string; listed_personnel_count: number }[] =
+    await withDb(
+      async (client) =>
+        (
+          await client.query(
+            `select state_path, listed_personnel_count
+             from public.site_personnel_state_count`,
+          )
+        ).rows,
+    );
+  return new Map(
+    rows.map((row) => [row.state_path, row.listed_personnel_count]),
+  );
 };

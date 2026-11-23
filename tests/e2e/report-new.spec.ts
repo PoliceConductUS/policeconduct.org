@@ -342,6 +342,33 @@ test.describe("report new", () => {
     );
   });
 
+  test("explains each missing required answer next to its field", async ({
+    page,
+  }) => {
+    await page.goto("/report/new/");
+    await page.getByRole("button", { name: "Submit my experience" }).click();
+
+    const requiredFields = page.locator(
+      "[data-report-form-shell] :is(input, select, textarea)[required]",
+    );
+    await expect(requiredFields.first()).toBeFocused();
+    await expect(page.locator("[data-form-validation-summary]")).toContainText(
+      "Start with Did this happen to you?.",
+    );
+    const count = await requiredFields.count();
+    expect(count).toBeGreaterThan(0);
+    for (let index = 0; index < count; index += 1) {
+      const field = requiredFields.nth(index);
+      await expect(field).toHaveAttribute("aria-invalid", "true");
+      const describedBy = await field.getAttribute("aria-describedby");
+      const feedbackId = describedBy
+        ?.split(" ")
+        .find((id) => id.startsWith("form-field-feedback-"));
+      expect(feedbackId).toBeTruthy();
+      await expect(page.locator(`#${feedbackId}`)).toBeVisible();
+    }
+  });
+
   test("restores draft data for new flow fields", async ({ page }) => {
     let savedDraftData: Record<string, unknown> | null = null;
 

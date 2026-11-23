@@ -166,6 +166,7 @@ const serializeStructuredData = (value: unknown) =>
 
     <footer class="border-top mt-auto d-print-none" data-pagefind-ignore>
       <div class="container py-5">
+        <h2 class="visually-hidden">Site links</h2>
         <div class="d-flex flex-wrap justify-content-center align-items-center gap-4 mb-4">
           {ORG_SOCIAL_LINKS.map((social) => (
             <a
@@ -318,7 +319,7 @@ const serializeStructuredData = (value: unknown) =>
                   class="text-muted text-decoration-none"
                   href="/partner/nonprofit"
                 >
-                  Non profit / advocacy group
+                  Nonprofit / advocacy group
                 </a>
               </li>
             </ul>
@@ -478,7 +479,7 @@ const serializeStructuredData = (value: unknown) =>
                   data-privacy-settings
                   hidden
                 >
-                  Cookie settings
+                  Your privacy choices
                   <svg
                     width="18"
                     height="18"
@@ -506,11 +507,18 @@ const serializeStructuredData = (value: unknown) =>
           >
             Request removal of my information
           </a>
+          <span aria-hidden="true"> · </span>
+          <a
+            class="fw-semibold text-decoration-underline"
+            href="/legal-notice/data-subject-access-request/?action=opt-out"
+          >
+            Do Not Sell or Share My Personal Information
+          </a>
         </p>
         <div class="col-lg-8 mx-auto text-center text-muted small">
           <p class="mb-1">
             All information on this site is compiled from public records and
-            community submitted information. We do not verify information on
+            community-submitted information. We do not verify information on
             this site. Information may be incorrect.
           </p>
           <p class="mb-1">

@@ -8,9 +8,8 @@ export type CivilCaseRow = {
   filed_date?: string | null;
   date_terminated?: string | null;
   court?: string | null;
-  outcome: string;
+  outcome?: string | null;
   caseUrl: string;
-  type: "Direct" | "Personnel-linked" | "Direct + personnel-linked";
   personnel: CivilCasePersonnelRef[];
   personnelNames: string[];
 };
@@ -26,10 +25,6 @@ type CivilCaseOfficer = {
   id?: string | null;
   last_name?: string | null;
   slug?: string | null;
-};
-
-type CivilCaseOfficerLink = {
-  officer: CivilCaseOfficer;
 };
 
 const getOfficerName = (officer: CivilCaseOfficer) =>
@@ -57,20 +52,6 @@ const uniquePersonnel = (personnel: CivilCasePersonnelRef[]) => {
   return [...byId.values()];
 };
 
-// Prefer the recorded disposition. Absent one, a case with no termination date
-// is still in litigation ("Ongoing"); a terminated case whose disposition we
-// never captured has missing data, shown as the neutral "--" placeholder
-// (never a fabricated "Unknown").
-const getOutcomeLabel = (caseItem: {
-  outcome?: string | null;
-  date_terminated?: string | null;
-}) => {
-  const text =
-    typeof caseItem.outcome === "string" ? caseItem.outcome.trim() : "";
-  if (text) return text;
-  return caseItem.date_terminated ? "--" : "Ongoing";
-};
-
 const isPersonnelRef = (
   person: CivilCasePersonnelRef | null,
 ): person is CivilCasePersonnelRef => Boolean(person);
@@ -94,43 +75,8 @@ export const buildAgencyCivilCaseRows = (
       filed_date: caseItem.filed_date,
       date_terminated: caseItem.date_terminated,
       court: caseItem.court,
-      outcome: getOutcomeLabel(caseItem),
+      outcome: caseItem.outcome,
       caseUrl: caseItem.caseUrl,
-      type: "Direct",
-      personnel,
-      personnelNames: personnel.map((person) => person.name),
-    });
-  }
-
-  for (const caseItem of data.personnelLinkedCivilCases) {
-    const existing = casesById.get(caseItem.id);
-    const personnel = uniquePersonnel(
-      (caseItem.links || [])
-        .map((link: CivilCaseOfficerLink) => getPersonnelRef(link.officer))
-        .filter(isPersonnelRef),
-    );
-
-    if (existing) {
-      existing.type = "Direct + personnel-linked";
-      existing.personnel = uniquePersonnel([
-        ...existing.personnel,
-        ...personnel,
-      ]);
-      existing.personnelNames = existing.personnel.map((person) => person.name);
-      continue;
-    }
-
-    casesById.set(caseItem.id, {
-      id: caseItem.id,
-      slug: caseItem.slug,
-      title: caseItem.title,
-      cause_number: caseItem.cause_number,
-      filed_date: caseItem.filed_date,
-      date_terminated: caseItem.date_terminated,
-      court: caseItem.court,
-      outcome: getOutcomeLabel(caseItem),
-      caseUrl: caseItem.caseUrl,
-      type: "Personnel-linked",
       personnel,
       personnelNames: personnel.map((person) => person.name),
     });

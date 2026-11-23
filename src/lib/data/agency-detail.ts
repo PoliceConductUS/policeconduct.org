@@ -1,52 +1,10 @@
-import { currentAssignmentSql } from "./annotation-access.js";
-import { groupBy, mapBy, normalizeAgencyHistory } from "#src/lib/data.js";
+import { groupBy, mapBy } from "#src/lib/data.js";
 import { withDb } from "#src/lib/db.js";
-import { US_STATE_TILES } from "#src/lib/geo/states.js";
-import { isEndedAssignment, isCurrentAssignment } from "./assignment-status.js";
 import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
-import { normalizeLicenseStatus, normalizeLicenseType } from "./licensing.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
 
-type PersonnelLinkedCivilCaseRow = {
-  civil_case_id: string;
-  slug: string;
-  title: string;
-  filed_date: string;
-  personnel_id: string;
-  officer_slug: string;
-  first_name: string;
-  case_agency_id: string;
-  case_agency_name: string;
-  case_agency_slug: string;
-  case_agency_location_path: string;
-  case_agency_canonical_path: string;
-  cause_number: string | null;
-  date_terminated: string | null;
-  court: string | null;
-  outcome: string | null;
-  primary_source_url: string | null;
-  last_name: string | null;
-  suffix: string | null;
-  case_title: string | null;
-  target_title: string | null;
-  target_start_date: string | null;
-  target_end_date: string | null;
-  target_is_current: boolean;
-  target_source_values: {
-    start_date?: { effective_value: unknown };
-    end_date?: { effective_value: unknown };
-  };
-};
-
-export type AgencyScopedTopicKind =
-  | "personnel"
-  | "reports"
-  | "budget"
-  | "civil-cases"
-  | "fatal-force-incidents"
-  | "liability-costs"
-  | "outcomes-by-income";
+export type AgencyScopedTopicKind = "personnel" | "reports" | "civil-cases";
 
 export const requireAgencyText = (
   value: unknown,
@@ -60,142 +18,65 @@ export const requireAgencyText = (
   return text;
 };
 
-export const loadAgencyStaticPaths = async () => {
-  const agencies = await withDb(async (client) => {
-    return (
-      await client.query(
-        `select
-           payload
-         from public.build_page_payload
-         where page_type = 'agency'`,
-      )
-    ).rows;
-  });
-
-  return agencies.map(
-    (row: {
-      payload: {
-        agency?: { id: string; state: string; slug: string; path: string };
-      };
-    }) => {
-      const agency = row.payload?.agency;
-      const agencyId = requireAgencyText(agency?.id, "id", "unknown");
-
-      return {
-        params: {
-          category: requireAgencyText(agency?.state, "state", agencyId),
-          slug: requireAgencyText(agency?.slug, "slug", agencyId),
-        },
-        props: {
-          canonicalAgencyPath: requireAgencyText(
-            agency?.path,
-            "canonical path",
-            agencyId,
-          ),
-        },
-      };
-    },
-  );
-};
-
-export const loadAgencyLocationStaticPaths = async () => {
-  const agencies = await withDb(async (client) => {
-    return (
-      await client.query(
-        `select
-           path,
-           entity_id
-         from public.build_page_payload
-         where page_type = 'agency'
-         order by path`,
-      )
-    ).rows;
-  });
-
-  return agencies.map((agency: { entity_id: string; path: string }) => {
-    const agencyId = requireAgencyText(agency.entity_id, "id", "unknown");
-    const pathParts = requireAgencyText(agency.path, "path", agencyId)
-      .split("/")
-      .filter(Boolean);
-    if (pathParts.length !== 4) {
-      throw new Error(
-        `Agency ${agencyId} has malformed projected canonical path ${agency.path}.`,
-      );
-    }
-    return {
-      params: {
-        category: pathParts[0],
-        administrativeArea: pathParts[1],
-        place: pathParts[2],
-        agencySlug: pathParts[3],
-      },
-    };
-  });
-};
-
+// Route params come from the agency's location_path plus its slug. The
+// build_page_payload join only limits the list to agencies that have a page.
 const agencyLocationStaticPathSelect = `
   select
-    bpp.path,
-    bpp.entity_id
-  from public.build_page_payload bpp
+    a.id,
+    lp.path || a.slug || '/' as canonical_path
+  from public.agency a
+  join public.location_path lp
+    on lp.location_path_id = a.location_path_id
+  join public.build_page_payload bpp
+    on bpp.page_type = 'agency'
+   and bpp.entity_id = a.id
 `;
 
 const agencyTopicWhereSql = (kind: AgencyScopedTopicKind) => {
   if (kind === "personnel") {
     return `
-      where bpp.page_type = 'agency'
-        and exists (
-          select 1
-          from public.agency_personnel ao
-          where ao.agency_id = bpp.entity_id
-        )
+      where exists (
+        select 1
+        from public.agency_personnel ao
+        where ao.agency_id = a.id
+      )
     `;
   }
 
   if (kind === "reports") {
     return `
-      where bpp.page_type = 'agency'
-        and exists (
-          select 1
-          from public.agency_personnel ao
-          join public.review_personnel ro
-            on ro.agency_personnel_id = ao.id
-          where ao.agency_id = bpp.entity_id
-        )
-    `;
-  }
-
-  if (kind === "civil-cases") {
-    return `
-      where bpp.page_type = 'agency'
-        and exists (
-          select 1
-          from public.agency_personnel target_ao
-          join public.agency_personnel case_ao
-            on case_ao.personnel_id = target_ao.personnel_id
-          join public.civil_case_personnel cco
-            on cco.agency_personnel_id = case_ao.id
-          where target_ao.agency_id = bpp.entity_id
-        )
+      where exists (
+        select 1
+        from public.agency_personnel ao
+        join public.review_personnel ro
+          on ro.agency_personnel_id = ao.id
+        where ao.agency_id = a.id
+      )
     `;
   }
 
   return `
-    where false
+    where exists (
+      select 1
+      from public.agency_personnel ao
+      join public.civil_case_personnel cco
+        on cco.agency_personnel_id = ao.id
+      where ao.agency_id = a.id
+    )
   `;
 };
 
 const toAgencyLocationStaticPath = (agency: {
-  entity_id: string | null;
-  path: string | null;
+  id: string | null;
+  canonical_path: string | null;
 }) => {
-  const agencyId = requireAgencyText(agency.entity_id, "id", "unknown");
-  const pathParts = requireAgencyText(agency.path, "path", agencyId)
+  const agencyId = requireAgencyText(agency.id, "id", "unknown");
+  const pathParts = requireAgencyText(agency.canonical_path, "path", agencyId)
     .split("/")
     .filter(Boolean);
   if (pathParts.length !== 4) {
     throw new Error(
-      `Agency ${agencyId} has malformed projected canonical path ${agency.path}.`,
+      `Agency ${agencyId} has malformed canonical path ${agency.canonical_path}.`,
     );
   }
   return {
@@ -208,6 +89,21 @@ const toAgencyLocationStaticPath = (agency: {
   };
 };
 
+export const loadAgencyLocationStaticPaths = async () => {
+  const agencies = await withDb(async (client) => {
+    return (
+      await client.query(
+        `
+          ${agencyLocationStaticPathSelect}
+          order by canonical_path
+        `,
+      )
+    ).rows;
+  });
+
+  return agencies.map(toAgencyLocationStaticPath);
+};
+
 export const loadAgencyLocationStaticPathsForTopic = async (
   kind: AgencyScopedTopicKind,
 ) => {
@@ -217,7 +113,7 @@ export const loadAgencyLocationStaticPathsForTopic = async (
         `
           ${agencyLocationStaticPathSelect}
           ${agencyTopicWhereSql(kind)}
-          order by bpp.path
+          order by canonical_path
         `,
       )
     ).rows;
@@ -301,19 +197,22 @@ const loadAgencyRows = async (agencyId: string) =>
             a.*,
             a.status,
             a.status_date::text as status_date,
-            bpp.path as canonical_path,
+            lp.path || a.slug || '/' as canonical_path,
             lp.path as location_path,
-            split_part(lp.path, '/', 2) as state,
             area_lp.display_name as administrative_area,
-            split_part(lp.path, '/', 3) as location_administrative_area_slug,
-            lp.display_name as city,
-            split_part(lp.path, '/', 4) as location_place_slug
+            area_lp.path as administrative_area_path,
+            state_lp.display_name as state_display_name,
+            state_lp.path as state_path,
+            lp.display_name as city
           from public.agency a
           join public.location_path lp
             on lp.location_path_id = a.location_path_id
           left join public.location_path area_lp
             on area_lp.location_path_id = lp.parent_location_path_id
            and area_lp.level = 'administrative_area'
+          left join public.location_path state_lp
+            on state_lp.location_path_id = area_lp.parent_location_path_id
+           and state_lp.level = 'state'
           join public.build_page_payload bpp
             on bpp.page_type = 'agency'
            and bpp.entity_id = a.id
@@ -322,17 +221,36 @@ const loadAgencyRows = async (agencyId: string) =>
         [agencyId],
       )
     ).rows[0];
+    if (!agency) {
+      throw new Error(
+        `Agency ${agencyId} was not found with a location_path and an agency build projection.`,
+      );
+    }
+    // Staff counts of distinct people come from the intake view
+    // site_agency_count.
+    const staffCounts = (
+      await client.query(
+        `select personnel_count, current_personnel_count,
+                former_personnel_count, unknown_personnel_count
+         from public.site_agency_count
+         where agency_id = $1`,
+        [agencyId],
+      )
+    ).rows[0];
+    if (!staffCounts) {
+      throw new Error(`Agency ${agencyId} has no site_agency_count row.`);
+    }
     const agencyPhones = (
       await client.query(
         `select * from public.agency_phone_numbers
          where agency_id = $1
-         order by (description ilike 'fax') asc, created_at asc, id asc`,
+         order by created_at asc, id asc`,
         [agencyId],
       )
     ).rows;
     const agencyOfficers = (
       await client.query(
-        "select * from public.agency_personnel where agency_id = $1",
+        "select * from public.agency_personnel where agency_id = $1 order by id",
         [agencyId],
       )
     ).rows;
@@ -397,22 +315,6 @@ const loadAgencyRows = async (agencyId: string) =>
         [agencyId],
       )
     ).rows;
-    // Primary license per personnel for the roster context line — prefer an
-    // active license, then the most-recently-awarded.
-    const licenses = officerIds.length
-      ? (
-          await client.query(
-            `select distinct on (l.personnel_id)
-               l.personnel_id, al.name as license_type, l.status
-             from public.license l
-             join public.authority_license al on al.id = l.authority_license_id
-             where l.personnel_id = any($1)
-             order by l.personnel_id, (l.status ilike 'active') desc,
-               l.first_awarded desc nulls last`,
-            [officerIds],
-          )
-        ).rows
-      : [];
     const agencyOfficerIds = agencyOfficers.map(
       (entry: { id: string }) => entry.id,
     );
@@ -475,87 +377,9 @@ const loadAgencyRows = async (agencyId: string) =>
           )
         ).rows
       : [];
-    const targetOfficerIds = [
-      ...new Set(
-        agencyOfficers
-          .map((entry: { personnel_id?: string | null }) => entry.personnel_id)
-          .filter(Boolean),
-      ),
-    ];
-    const personnelLinkedCivilCases = targetOfficerIds.length
-      ? (
-          await client.query<PersonnelLinkedCivilCaseRow>(
-            `
-              select
-                c.id as civil_case_id,
-                c.slug,
-                c.title,
-                c.cause_number,
-                c.filed_date,
-                c.date_terminated,
-                c.court,
-                c.outcome,
-                c.primary_source_url,
-                o.id as personnel_id,
-                o.slug as officer_slug,
-                o.first_name,
-                o.last_name,
-                o.suffix,
-                case_ao.title as case_title,
-                case_agency.id as case_agency_id,
-                case_agency.name as case_agency_name,
-                case_agency.slug as case_agency_slug,
-                case_location.path as case_agency_location_path,
-                case_bpp.path as case_agency_canonical_path,
-                target_ao.title as target_title,
-                target_ao.start_date as target_start_date,
-                target_ao.end_date as target_end_date,
-                target_ao.data_source_values as target_source_values,
-                ${currentAssignmentSql("target_ao")} as target_is_current
-              from public.civil_case_personnel cco
-              join public.civil_cases c
-                on c.id = cco.civil_case_id
-              join public.agency_personnel case_ao
-                on case_ao.id = cco.agency_personnel_id
-              join public.personnel o
-                on o.id = case_ao.personnel_id
-              join public.agency case_agency
-                on case_agency.id = case_ao.agency_id
-              join public.location_path case_location
-                on case_location.location_path_id = case_agency.location_path_id
-              join public.build_page_payload case_bpp
-                on case_bpp.page_type = 'agency'
-               and case_bpp.entity_id = case_agency.id
-              join lateral (
-                select *
-                from public.agency_personnel target_assignment
-                where target_assignment.agency_id = $1
-                  and target_assignment.personnel_id = case_ao.personnel_id
-                order by
-                  (${currentAssignmentSql("target_assignment")}) desc,
-                  coalesce(target_assignment.end_date, target_assignment.start_date) desc nulls last,
-                  target_assignment.id
-                limit 1
-              ) target_ao on true
-              where case_ao.personnel_id = any($2)
-                and case_ao.agency_id <> $1
-                and not exists (
-                  select 1
-                  from public.civil_case_personnel direct_cco
-                  join public.agency_personnel direct_ao
-                    on direct_ao.id = direct_cco.agency_personnel_id
-                  where direct_cco.civil_case_id = c.id
-                    and direct_ao.agency_id = $1
-                )
-              order by c.filed_date desc, c.title asc, o.last_name asc
-            `,
-            [agencyId, targetOfficerIds],
-          )
-        ).rows
-      : [];
-
     return {
       agency,
+      staffCounts,
       agencyPhones,
       agencyOfficers,
       federalAgency,
@@ -563,12 +387,10 @@ const loadAgencyRows = async (agencyId: string) =>
       reportCounts,
       disciplineLinks,
       personnelDisciplineCounts,
-      licenses,
       reportIds,
       civilCases,
       civilCaseOfficers,
       civilOfficers,
-      personnelLinkedCivilCases,
     };
   });
 
@@ -592,30 +414,29 @@ const buildAgencyDetail = async (agencyId: string) => {
     "slug",
     agencyRequiredId,
   );
-  const categorySlug = agencyState.toLowerCase();
-  const categoryMeta = US_STATE_TILES.find(
-    (entry) => entry.code.toLowerCase() === categorySlug,
+  const categoryLabel = requireAgencyText(
+    data.agency.state_display_name,
+    "state display_name",
+    agencyRequiredId,
   );
-  const categoryLabel = categoryMeta?.name || agencyState.toUpperCase();
-  const categoryPath = `/${categorySlug}/`;
+  const categoryPath = requireAgencyText(
+    data.agency.state_path,
+    "state path",
+    agencyRequiredId,
+  );
   const administrativeArea = requireAgencyText(
     data.agency.administrative_area,
     "administrative_area",
     agencyRequiredId,
   );
-  const administrativeAreaSlug = requireAgencyText(
-    data.agency.location_administrative_area_slug,
-    "administrative_area_slug",
+  const administrativeAreaPath = requireAgencyText(
+    data.agency.administrative_area_path,
+    "administrative_area path",
     agencyRequiredId,
   );
   const placeLabel = requireAgencyText(
     data.agency.city,
     "city",
-    agencyRequiredId,
-  );
-  const placeSlug = requireAgencyText(
-    data.agency.location_place_slug,
-    "place_slug",
     agencyRequiredId,
   );
   const placePath = requireAgencyText(
@@ -636,7 +457,6 @@ const buildAgencyDetail = async (agencyId: string) => {
     data.disciplineLinks,
     "personnel_id",
   );
-  const licenseByOfficerId = mapBy(data.licenses, "personnel_id");
   const civilCaseOfficersByCase = groupBy(
     data.civilCaseOfficers,
     "civil_case_id",
@@ -696,7 +516,7 @@ const buildAgencyDetail = async (agencyId: string) => {
     );
   };
 
-  const employees = normalizeAgencyHistory(data.agencyOfficers)
+  const employees = data.agencyOfficers
     .map(
       (entry: {
         personnel_id: string;
@@ -707,7 +527,6 @@ const buildAgencyDetail = async (agencyId: string) => {
       }) => {
         const officer = officersById[entry.personnel_id];
         const reportCountRow = reportCountsByOfficerId[entry.personnel_id];
-        const licenseRow = licenseByOfficerId[entry.personnel_id];
         return {
           entry,
           officer,
@@ -720,22 +539,10 @@ const buildAgencyDetail = async (agencyId: string) => {
           // Per-personnel rating came from the dropped officers_stats table;
           // no rating aggregate exists in the current schema.
           rating: null as number | null,
-          license: licenseRow
-            ? {
-                type: normalizeLicenseType(licenseRow.license_type),
-                status: normalizeLicenseStatus(licenseRow.status),
-              }
-            : null,
         };
       },
     )
     .sort(comparePersonnelEntry);
-  const currentEmployees = employees.filter((employee) =>
-    isCurrentAssignment(employee.entry),
-  );
-  const formerEmployees = employees.filter((employee) =>
-    isEndedAssignment(employee.entry),
-  );
 
   const civilCases = data.civilCases.map(
     (record: {
@@ -768,60 +575,6 @@ const buildAgencyDetail = async (agencyId: string) => {
       };
     },
   );
-
-  const personnelLinkedCivilCases = (
-    Object.values(
-      groupBy(data.personnelLinkedCivilCases || [], "civil_case_id"),
-    ) as (typeof data.personnelLinkedCivilCases)[]
-  ).map((entries) => {
-    const record = entries[0];
-    return {
-      id: record.civil_case_id,
-      slug: record.slug,
-      title: record.title,
-      cause_number: record.cause_number,
-      filed_date: record.filed_date,
-      date_terminated: record.date_terminated,
-      court: record.court,
-      outcome: record.outcome,
-      primary_source_url: record.primary_source_url,
-      caseUrl: `/civil-cases/${record.slug}/`,
-      links: entries.map((entry) => ({
-        officer: {
-          id: entry.personnel_id,
-          slug: entry.officer_slug,
-          first_name: entry.first_name,
-          last_name: entry.last_name,
-          suffix: entry.suffix,
-          title: entry.case_title || null,
-        },
-        caseAgency: {
-          id: entry.case_agency_id,
-          name: entry.case_agency_name,
-          slug: entry.case_agency_slug,
-          location_path: entry.case_agency_location_path,
-          canonicalPath: requireAgencyCanonicalPath({
-            id: entry.case_agency_id,
-            canonical_path: entry.case_agency_canonical_path,
-          }),
-        },
-        targetAgencyAssignment: {
-          title: entry.target_title || null,
-          startDate: entry.target_start_date || null,
-          endDate: entry.target_end_date || null,
-          relationship: entry.target_is_current
-            ? "current"
-            : isEndedAssignment({
-                  start_date: entry.target_start_date,
-                  end_date: entry.target_end_date,
-                  data_source_values: entry.target_source_values,
-                })
-              ? "former"
-              : "uncertain",
-        },
-      })),
-    };
-  });
 
   const reportSummariesById = mapBy(
     await loadReportSummaryBuildPayloads(),
@@ -858,35 +611,30 @@ const buildAgencyDetail = async (agencyId: string) => {
   return {
     ...data,
     employees,
-    currentEmployees,
-    formerEmployees,
     civilCases,
-    personnelLinkedCivilCases,
     reportedReports,
     coverageLinks,
     agencyName,
     agencyState,
     agencySlug,
-    categorySlug,
     categoryLabel,
     categoryPath,
     agencyPath,
     canonicalAgencyPath,
     administrativeArea,
-    administrativeAreaSlug,
+    administrativeAreaPath,
     placeLabel,
-    placeSlug,
     placePath,
     counts: {
       civilCases: civilCases.length,
-      personnelLinkedCivilCases: personnelLinkedCivilCases.length,
       reports: reportedReports.length,
       discipline: new Set(
         data.disciplineLinks.map((link) => link.discipline_id),
       ).size,
-      personnel: employees.length,
-      currentPersonnel: currentEmployees.length,
-      formerPersonnel: formerEmployees.length,
+      personnel: data.staffCounts.personnel_count as number,
+      currentPersonnel: data.staffCounts.current_personnel_count as number,
+      formerPersonnel: data.staffCounts.former_personnel_count as number,
+      uncertainPersonnel: data.staffCounts.unknown_personnel_count as number,
       coverage: coverageLinks.length,
     },
   };
@@ -904,7 +652,10 @@ export const loadAgencyDetail = async (agencyId: string) => {
 
   let cached = agencyDetailCache.get(agencyId);
   if (!cached) {
-    cached = buildAgencyDetail(agencyId);
+    cached = buildAgencyDetail(agencyId).catch((error: unknown) => {
+      agencyDetailCache.delete(agencyId);
+      throw error;
+    });
     agencyDetailCache.set(agencyId, cached);
   }
   return cached;

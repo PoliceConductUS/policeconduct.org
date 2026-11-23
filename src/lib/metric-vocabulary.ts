@@ -11,12 +11,10 @@ export const metricLabels = {
   closedCases: "Closed Cases",
   courts: "Courts",
   currentSalary: "Current Salary",
-  currentPersonnel: "Current Personnel",
   counties: "Counties",
   daylightNighttimeStops: "Daylight vs Nighttime Stops",
   federalAgencies: "Federal Agencies",
   fatalForceIncidents: "Fatal Force Incidents",
-  formerPersonnel: "Former Personnel",
   judgments: "Judgments",
   latestCaseActivity: "Latest Case Activity",
   latestFiscalYear: "Latest Fiscal Year",
@@ -27,7 +25,6 @@ export const metricLabels = {
   outcomesByIncome: "Outcomes by Income",
   overtime: "Overtime",
   personnel: "Personnel",
-  personnelLinked: "Personnel Linked",
   personnelRecords: "Personnel",
   places: "Places",
   racialBreakdownStopsArrests: "Racial Breakdown of Stops or Arrests",
@@ -181,6 +178,3 @@ export const metricVisuals = {
     label: metricLabels.settlements,
   },
 } as const satisfies Partial<Record<MetricLabelKey, MetricVisual>>;
-
-export const getMetricVisual = (key: keyof typeof metricVisuals) =>
-  metricVisuals[key];
