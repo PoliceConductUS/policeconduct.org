@@ -143,12 +143,25 @@ const data = await withDb(async (client) => {
         )
       ).rows
     : [];
+  // Civil case counts come from the intake view site_personnel_count.
+  const civilCaseCounts = (
+    await client.query(
+      `select civil_case_count, open_civil_case_count
+       from public.site_personnel_count
+       where personnel_id = $1`,
+      [officerId],
+    )
+  ).rows[0];
+  if (!civilCaseCounts) {
+    throw new Error(`Personnel ${slug} has no site_personnel_count row.`);
+  }
   return {
     officer,
     agencyOfficers,
     agencies,
     reports,
     civilCases,
+    civilCaseCounts,
   };
 });
 const coverageLinks = await loadCoverageLinksForOfficer(data.officer.id);
@@ -283,12 +296,8 @@ const claimProfilePrefillPayload = JSON.stringify({
 const personnelPhoto = await getPersonnelPhotoById(data.officer.id);
 const personnelImageSrc = personnelPhoto || "/img/personnel/default.webp";
 const hasPersonnelPhoto = Boolean(personnelPhoto);
-const civilCaseCount = data.civilCases.length;
-// Count of open civil cases (no date_terminated); moves to an intake database
-// view (supply-site-display-data).
-const activeCivilCaseCount = civilCasesWithPaths.filter(
-  (caseItem) => !caseItem.date_terminated,
-).length;
+const civilCaseCount: number = data.civilCaseCounts.civil_case_count;
+const activeCivilCaseCount: number = data.civilCaseCounts.open_civil_case_count;
 const associatedAgencyCount = new Set(
   assignmentHistory.map((entry) => entry.agency_id),
 ).size;

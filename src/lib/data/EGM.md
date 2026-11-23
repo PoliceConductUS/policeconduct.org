@@ -47,7 +47,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - `loadAgencyDetail` reads those cases from `public.civil_cases`. [agency-detail.ts:order by filed_date desc, title asc, cause_number asc]
 - `loadAgencyDetail` reads every person linked to those cases, from any agency. [agency-detail.ts:select cco.civil_case_id, ao.personnel_id, ao.title]
 - `loadAgencyDetail` also calls `loadCoverageLinksForAgency(agencyId)` and `loadReportSummaryBuildPayloads()`. [agency-detail.ts:loadCoverageLinksForAgency]
-- Derived fields returned by `loadAgencyDetail`: `employees`, `civilCases`, `reportedReports`, `coverageLinks`, `agencyName`, `agencyState` (the stored `agency.state`), `agencySlug`, `categoryLabel`, `categoryPath`, `agencyPath`, `canonicalAgencyPath`, `administrativeArea`, `administrativeAreaPath`, `placeLabel`, `placePath`, and `counts` (`civilCases`, `reports`, `discipline`, `personnel`, `currentPersonnel`, `formerPersonnel`, `coverage`). `personnel` is the number of the agency's `agency_personnel` rows; `currentPersonnel` is the number that pass `isCurrentAssignment` and `formerPersonnel` the number that pass `isEndedAssignment` (counts kept as before commit 84c5cec until they move to an intake database view). [agency-detail.ts:administrativeAreaPath] [agency-detail.ts:currentPersonnel: employees.filter]
+- Derived fields returned by `loadAgencyDetail`: `employees`, `civilCases`, `reportedReports`, `coverageLinks`, `agencyName`, `agencyState` (the stored `agency.state`), `agencySlug`, `categoryLabel`, `categoryPath`, `agencyPath`, `canonicalAgencyPath`, `administrativeArea`, `administrativeAreaPath`, `placeLabel`, `placePath`, and `counts` (`civilCases`, `reports`, `discipline`, `personnel`, `currentPersonnel`, `formerPersonnel`, `coverage`). `personnel`, `currentPersonnel`, `formerPersonnel` and `uncertainPersonnel` are the agency's row of the intake view `public.site_agency_count`: `assignment_count`, `current_assignment_count`, `former_assignment_count` and `unknown_assignment_count`. The site computes no staff count. A missing view row throws `Agency {id} has no site_agency_count row.` [agency-detail.ts:administrativeAreaPath] [agency-detail.ts:from public.site_agency_count]
 - Each `employees` item has `entry` (the stored `agency_personnel` row), `officer`, `reportCount`, `personnelDisciplineCount`, `disciplineCount` and `rating` (always `null`). [agency-detail.ts:rating: null as number | null]
 - Each `civilCases` item is the case row plus `caseUrl` and `officers` (the linked person rows, each with the assignment `title`). [agency-detail.ts:officers: officerLinks.filter(Boolean)]
 - Each `reportedReports` item is the report summary payload plus `url` and `officers`. [agency-detail.ts:url: report.canonicalPath]
@@ -61,7 +61,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 ### annotation-access.js
 
-- `currentAssignmentSql(alias = "")` returns a SQL predicate string for an open assignment. It requires `end_date is null`, a null `end_date` effective value in `data_source_values`, and either a `start_date` on or before the database's UTC date or a null `start_date` with a null effective value. It runs no query. [annotation-access.js:currentAssignmentSql]
+- `currentAssignmentSql(alias = "")` returns a SQL predicate string for an open assignment. It requires `end_date is null`, a null `end_date` effective value in `data_source_values`, and either a `start_date` on or before the database's UTC date or a null `start_date` with a null effective value. It runs no query. Only `scripts/refresh-build-projections.mjs` and the e2e test `tests/e2e/data-annotations.spec.ts` still use it; no file in this directory does. [annotation-access.js:currentAssignmentSql]
 
 ### annotation-contract.json
 
@@ -112,8 +112,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 ### assignment-status.js
 
-- `formatAssignmentDate(value)` formats a valid `YYYY-MM-DD` date as a short `en-US` date in UTC and returns any other value unchanged. [assignment-status.js:formatAssignmentDate]
-- `isCurrentAssignment(assignment, options = {})` and `isEndedAssignment(assignment, options = {})` return booleans used only to count current and ended assignments for agency personnel counts; no label or assignment pick uses them. `options.now` replaces the system clock. [assignment-status.js:export const isCurrentAssignment] [assignment-status.js:export const isEndedAssignment]
+- `formatAssignmentDate(value)` formats a valid `YYYY-MM-DD` date as a short `en-US` date in UTC and returns any other value unchanged. The file has no other export: it does not compute current, former or uncertain employment. [assignment-status.js:formatAssignmentDate]
 - `formatAssignmentDate(value)` formats a valid reported date as, for example, "Jan 5, 2024" in UTC, and returns any other value unchanged. [assignment-status.js:formatAssignmentDate]
 
 ### build-payloads.ts
@@ -268,8 +267,8 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 ### personnel.ts
 
-- `loadPersonnelSummaries(): Promise<PersonnelSummary[]>` returns one summary (`id`, `slug`, `lastName`, `firstName`, `nameSuffix`) per listed person. The selection rule is unchanged: a person is listed when their latest-started open assignment (`currentAssignmentSql`) is at an agency with an `agency` build page. Nothing from that assignment is shown. [personnel.ts:with latest_open_assignment as (]
-- `loadPersonnelCountsByStatePath()` returns a map from a state path (`/` + the first segment of the agency's joined `location_path.path` + `/`) to the number of listed people: each person whose latest-started open assignment (`currentAssignmentSql`) is at an agency with an `agency` build page counts once, under that agency's state. The per-state counts add up to the `loadPersonnelSummaries` list. [personnel.ts:export const loadPersonnelCountsByStatePath] [personnel.ts:'/' || split_part(lp.path, '/', 2) || '/' as path]
+- `loadPersonnelSummaries(): Promise<PersonnelSummary[]>` returns one summary (`id`, `slug`, `lastName`, `firstName`, `nameSuffix`) per listed person. The selection rule is unchanged: a person is listed when their latest-started assignment with `employment_status = 'Current'` in the intake view `public.site_agency_personnel_employment` is at an agency with an `agency` build page. Nothing from that assignment is shown. [personnel.ts:with latest_open_assignment as (] [personnel.ts:employment.employment_status = 'Current']
+- `loadPersonnelCountsByStatePath()` returns a map from `state_path` to `listed_personnel_count`, read from the intake view `public.site_personnel_state_count`. The view counts each listed person once, under the state `location_path` row that is the parent of the agency place's `administrative_area` parent; it uses the same rule as `loadPersonnelSummaries`, so the per-state counts add up to that list. [personnel.ts:export const loadPersonnelCountsByStatePath] [personnel.ts:from public.site_personnel_state_count]
 
 ### release-news.ts
 
@@ -413,11 +412,6 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - Profiles for one person are ordered by `coverage.firstMonth`, then `id`. [arrest-profiles.ts:order by assignment.personnel_id]
 - Profiles for one agency are ordered by `coverage.firstMonth`, then `id`. [arrest-profiles.ts:order by profile.agency_id]
 
-### assignment-status.js
-
-- An assignment is current when it has no end date (stored, or the `data_source_values` effective value when the stored date is null) and its start date is not invalid or in the future. [assignment-status.js:isCurrent: endDate === null && !startUncertain]
-- An assignment is ended when its end date is valid and before today (UTC), its start date is not uncertain, and the end date is not before the start date. An assignment can be neither current nor ended. [assignment-status.js:toISOString().slice(0, 10)]
-
 ### build-payloads.ts
 
 - Every caller receives the same array instance, so a caller that changes the array changes it for all callers. [build-payloads.ts:locationPayloadCache ??=]
@@ -510,7 +504,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 - `loadFederalAgencyDetailBySlug` returns `null` for an unknown slug. [federal-agencies.ts:if (!row) return null]
 - Throws `Federal agency {slug} has linked agency {id} without a required canonical path.` when a child agency has no agency page payload. [federal-agencies.ts:without a required canonical path.]
-- A child agency is included only when it has at least one current assignment (a selection rule kept as is). Branch and federal agency personnel counts are distinct people with a current assignment (`currentAssignmentSql`) at the branch. [federal-agencies.ts:and ${currentAssignmentSql("assignment")}] [federal-agencies.ts:and ${currentAssignmentSql("active_assignment")}]
+- A child agency is included only when its `public.site_agency_count.current_personnel_count` is above zero (the selection rule kept as is). A branch's personnel count is its `site_agency_count.current_personnel_count`; a federal agency's is `public.site_federal_agency_count.current_personnel_count`. Both are distinct people with a `Current` assignment, from intake views. [federal-agencies.ts:branch_count.current_personnel_count > 0] [federal-agencies.ts:federal_count.current_personnel_count as personnel_count]
 - Every federal agency's `path` is `/federal/{slug}/`. [federal-agencies.ts:const federalAgencyPath]
 - A child agency's civil cases are the cases linked to its own assignment rows. The two loaders count people and reports differently: summaries count distinct people and reports across all child agencies, while the detail adds up per-child counts. Civil cases count once in a federal agency total and in the all-federal totals, through the union of `civilCaseIds`. [federal-agencies.ts:const distinctCivilCaseIds]
 - Summaries are sorted by name with `Intl.Collator("en", { sensitivity: "base" })`; branches are ordered by state, city, then name. [federal-agencies.ts:order by split_part(lp.path, '/', 2), lp.display_name, a.name]
@@ -598,7 +592,6 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - Console output: `loadAgencyDetail` writes one `console.warn` for each report id that has no build projection. No other file logs. [agency-detail.ts:console.warn]
 - File access: no file reads or writes files at run time. `annotation-values.js` and `data-annotations.ts` import `annotation-contract.json` as a JSON module. [annotation-values.js:with { type: "json" }]
 - Network: no file makes a network call other than the database connection. `ai-complaint-summary.ts` and `release-news.ts` only parse URLs. [release-news.ts:new URL(]
-- System clock: `isCurrentAssignment` and `isEndedAssignment` read the current time when `options.now` is not given. [assignment-status.js:new Date()]
 - Process-wide cache in `build-payloads.ts`: location payloads. [build-payloads.ts:locationPayloadCache]
 - Process-wide cache in `build-payloads.ts`: report summary payloads. [build-payloads.ts:reportSummaryPayloadCache]
 - Process-wide caches in `arrest-profiles.ts`: profiles by person and by agency. [arrest-profiles.ts:profilesByAgency]
@@ -613,7 +606,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 Commands are defined in the repository root `package.json`.
 
-- Run: `npm run test:data`. It runs `src/lib/data/assignment-status.test.mjs` (covers `assignment-status.js`) and `scripts/release-news.test.mjs` (covers `release-news.ts`).
+- Run: `npm run test:data`. It runs `src/lib/data/assignment-status.test.mjs` (covers `assignment-status.js`), `scripts/report-detail.test.mjs` and `scripts/release-news.test.mjs` (covers `release-news.ts`).
 - In the same group, `scripts/report-detail.test.mjs` loads `src/lib/report-detail.ts`, which imports `location-paths.ts` and `report-paths.ts` from this directory. [../../../scripts/report-detail.test.mjs:"./data/location-paths.js", "./data/report-paths.js"]
 - Run: `npm test`. It runs every test group. The groups that reference files in this directory are:
   - `test:data`, as above.

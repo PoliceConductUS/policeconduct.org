@@ -54,11 +54,59 @@ const renderComponent = async (
   }
 };
 
+// Staff counts come from the intake view site_agency_count through
+// loadAgencyDetail; the roster shows them as given.
+const counts = {
+  personnel: 3,
+  currentPersonnel: 1,
+  formerPersonnel: 1,
+  uncertainPersonnel: 1,
+};
+
+test("roster summary shows the staff counts it is given", async ({ page }) => {
+  await page.setContent(
+    await renderComponent("AgencyPersonnelList", {
+      counts: {
+        personnel: 4,
+        currentPersonnel: 2,
+        formerPersonnel: 1,
+        uncertainPersonnel: 1,
+      },
+      employees: [
+        {
+          entry: {},
+          officer: { first_name: "Jane", last_name: "Doe", slug: "jane-doe" },
+          disciplineCount: 0,
+          personnelDisciplineCount: 0,
+        },
+      ],
+    }),
+  );
+  await expect(page.locator("[data-roster-summary]")).toHaveText(
+    "4 personnel · 2 current · 1 former · 1 uncertain",
+  );
+  await page.setContent(
+    await renderComponent("AgencyPersonnelList", {
+      counts: {
+        personnel: 3,
+        currentPersonnel: 2,
+        formerPersonnel: 1,
+        uncertainPersonnel: 0,
+      },
+      employees: [],
+    }),
+  );
+  await expect(page.locator("[data-roster-summary]")).toHaveText(
+    "3 personnel · 2 current · 1 former",
+  );
+});
+
 test("roster links agency-specific discipline counts and omits zero counts", async ({
   page,
 }) => {
   await page.setContent(
     await renderComponent("AgencyPersonnelList", {
+      counts,
       employees: [
         {
           entry: {},
@@ -100,6 +148,7 @@ test("discipline filter includes personnel without agency-linked records and res
 }) => {
   await page.setContent(
     await renderComponent("AgencyPersonnelList", {
+      counts,
       employees: [
         {
           entry: {},
@@ -140,6 +189,7 @@ test("discipline filter includes personnel without agency-linked records and res
 test("discipline filter combines with the name filter", async ({ page }) => {
   await page.setContent(
     await renderComponent("AgencyPersonnelList", {
+      counts,
       employees: Array.from({ length: 16 }, (_, index) => ({
         entry: index === 1 ? { end_date: "2025-01-01" } : {},
         officer: {

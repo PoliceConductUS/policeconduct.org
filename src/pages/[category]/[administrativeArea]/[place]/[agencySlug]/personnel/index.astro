@@ -11,7 +11,7 @@ export async function getStaticPaths() {
 }
 
 const data = await loadAgencyDetailByRouteParams(Astro.params);
-const { employees } = data;
+const { employees, counts } = data;
 ---
 
 <AgencyTopicPage
@@ -20,5 +20,5 @@ const { employees } = data;
   topicSlug="personnel"
   description="Personnel linked to this agency."
 >
-  <AgencyPersonnelList employees={employees} />
+  <AgencyPersonnelList employees={employees} counts={counts} />
 </AgencyTopicPage>

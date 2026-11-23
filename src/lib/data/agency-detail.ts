@@ -1,6 +1,5 @@
 import { groupBy, mapBy } from "#src/lib/data.js";
 import { withDb } from "#src/lib/db.js";
-import { isCurrentAssignment, isEndedAssignment } from "./assignment-status.js";
 import { loadReportSummaryBuildPayloads } from "./build-payloads.js";
 import { loadCoverageLinksForAgency } from "./coverage.js";
 import { requireAgencyCanonicalPath } from "./location-paths.js";
@@ -227,6 +226,19 @@ const loadAgencyRows = async (agencyId: string) =>
         `Agency ${agencyId} was not found with a location_path and an agency build projection.`,
       );
     }
+    // Staff counts come from the intake view site_agency_count.
+    const staffCounts = (
+      await client.query(
+        `select assignment_count, current_assignment_count,
+                former_assignment_count, unknown_assignment_count
+         from public.site_agency_count
+         where agency_id = $1`,
+        [agencyId],
+      )
+    ).rows[0];
+    if (!staffCounts) {
+      throw new Error(`Agency ${agencyId} has no site_agency_count row.`);
+    }
     const agencyPhones = (
       await client.query(
         `select * from public.agency_phone_numbers
@@ -366,6 +378,7 @@ const loadAgencyRows = async (agencyId: string) =>
       : [];
     return {
       agency,
+      staffCounts,
       agencyPhones,
       agencyOfficers,
       federalAgency,
@@ -617,17 +630,10 @@ const buildAgencyDetail = async (agencyId: string) => {
       discipline: new Set(
         data.disciplineLinks.map((link) => link.discipline_id),
       ).size,
-      personnel: employees.length,
-      // Count of current assignments; moves to an intake database view
-      // (supply-site-display-data).
-      currentPersonnel: employees.filter((employee) =>
-        isCurrentAssignment(employee.entry),
-      ).length,
-      // Count of ended assignments; moves to an intake database view
-      // (supply-site-display-data).
-      formerPersonnel: employees.filter((employee) =>
-        isEndedAssignment(employee.entry),
-      ).length,
+      personnel: data.staffCounts.assignment_count as number,
+      currentPersonnel: data.staffCounts.current_assignment_count as number,
+      formerPersonnel: data.staffCounts.former_assignment_count as number,
+      uncertainPersonnel: data.staffCounts.unknown_assignment_count as number,
       coverage: coverageLinks.length,
     },
   };

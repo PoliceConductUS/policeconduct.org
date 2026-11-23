@@ -1,4 +1,3 @@
-import { currentAssignmentSql } from "#src/lib/data/annotation-access.js";
 import { withDb } from "#src/lib/db.js";
 import type { PersonnelSummary } from "./types.js";
 
@@ -17,15 +16,18 @@ export const loadPersonnelSummaries = async (): Promise<PersonnelSummary[]> => {
   }[] = await withDb(
     async (client) =>
       // Selection rule kept as it was (move into a database view): a person
-      // is listed when the latest-started open assignment is at an agency
-      // that has a built page. Nothing from that assignment is displayed.
+      // is listed when the latest-started current assignment, by the intake
+      // view site_agency_personnel_employment, is at an agency that has a
+      // built page. Nothing from that assignment is displayed.
       (
         await client.query(
           `
             with latest_open_assignment as (
               select distinct on (ao.personnel_id) ao.personnel_id, ao.agency_id
               from public.agency_personnel ao
-              where ${currentAssignmentSql("ao")}
+              join public.site_agency_personnel_employment employment
+                on employment.agency_personnel_id = ao.id
+               and employment.employment_status = 'Current'
               order by ao.personnel_id, ao.start_date desc nulls last, ao.id desc
             )
             select o.id, o.slug, o.first_name, o.last_name, o.suffix
@@ -66,39 +68,24 @@ export const loadPersonnelSummaries = async (): Promise<PersonnelSummary[]> => {
   return summaries;
 };
 
-// Count of current assignments; moves to an intake database view
-// (supply-site-display-data). Each listed person counts once, under the state
-// segment of the location path of the agency on their latest-started open
-// assignment (the same rule loadPersonnelSummaries lists by).
+// Listed personnel per state, from the intake view site_personnel_state_count:
+// each listed person counts once, under the state of the agency on their
+// latest-started current assignment (the same rule loadPersonnelSummaries
+// lists by).
 export const loadPersonnelCountsByStatePath = async (): Promise<
   Map<string, number>
 > => {
-  const rows: { path: string; total: number }[] = await withDb(
-    async (client) =>
-      (
-        await client.query(
-          `
-            with latest_open_assignment as (
-              select distinct on (ao.personnel_id) ao.personnel_id, ao.agency_id
-              from public.agency_personnel ao
-              where ${currentAssignmentSql("ao")}
-              order by ao.personnel_id, ao.start_date desc nulls last, ao.id desc
-            )
-            select
-              '/' || split_part(lp.path, '/', 2) || '/' as path,
-              count(*)::int as total
-            from latest_open_assignment latest
-            join public.personnel o on o.id = latest.personnel_id
-            join public.agency a on a.id = latest.agency_id
-            join public.location_path lp
-              on lp.location_path_id = a.location_path_id
-            join public.build_page_payload bpp
-              on bpp.page_type = 'agency'
-             and bpp.entity_id = latest.agency_id
-            group by split_part(lp.path, '/', 2)
-          `,
-        )
-      ).rows,
+  const rows: { state_path: string; listed_personnel_count: number }[] =
+    await withDb(
+      async (client) =>
+        (
+          await client.query(
+            `select state_path, listed_personnel_count
+             from public.site_personnel_state_count`,
+          )
+        ).rows,
+    );
+  return new Map(
+    rows.map((row) => [row.state_path, row.listed_personnel_count]),
   );
-  return new Map(rows.map((row) => [row.path, row.total]));
 };

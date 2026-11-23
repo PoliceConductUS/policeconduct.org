@@ -116,10 +116,12 @@ of this directory.
 
 ### Agency, personnel and record components
 
-- `AgencyPersonnelList`: prop `employees` (each with optional `entry`,
+- `AgencyPersonnelList`: props `employees` (each with optional `entry`,
   `officer`, `reportCount`, and required `disciplineCount` and
-  `personnelDisciplineCount`); renders the whole agency roster grouped by
-  first letter. `[AgencyPersonnelList.astro:EmployeeLike]`
+  `personnelDisciplineCount`) and `counts` (`personnel`, `currentPersonnel`,
+  `formerPersonnel`, `uncertainPersonnel`); renders the whole agency roster
+  grouped by first letter. `[AgencyPersonnelList.astro:EmployeeLike]`
+  `[AgencyPersonnelList.astro:type StaffCounts]`
 - `ArrestBeatMap`: props `data: BeatMap`, `agencyName`, `firstMonth`,
   `lastMonth`, `source`; it labels the counts as agency arrests.
   `[ArrestBeatMap.astro:Agency arrests]`
@@ -371,13 +373,13 @@ of this directory.
   `entry.agency.page_type` is `agency`, using `requireAgencyCanonicalPath`.
   `[PersonnelAssignments.astro:requireAgencyCanonicalPath]`
 - `AgencyPersonnelList` shows each row's stored title and its stored start and
-  end years, with no per-row status label. Its summary line shows the total and
-  the current, former and (when above zero) uncertain counts, using
-  `isCurrentAssignment` and `isEndedAssignment`; uncertain is the total minus
-  the other two. It sorts rows
+  end years, with no per-row status label. Its summary line shows the
+  `counts` prop as given: the total and the current, former and (when above
+  zero) uncertain counts, which come from the intake view `site_agency_count`
+  through `loadAgencyDetail`. It computes no count. It sorts rows
   by surname with a first-name fallback using `civicIndexCollator`.
   `[AgencyPersonnelList.astro:const tenure =]`
-  `[AgencyPersonnelList.astro:const uncertainCount = total - currentCount - formerCount;]`
+  `[AgencyPersonnelList.astro:counts.uncertainPersonnel ?]`
   `[AgencyPersonnelList.astro:civicIndexCollator.compare(a.sortKey, b.sortKey)]`
 - `AgencyPersonnelList` always renders the "With discipline actions" checkbox;
   it filters on `personnelDisciplineCount`, while the per-row discipline link

@@ -180,9 +180,7 @@ const volunteerHref = buildHelpCollectHref(
   "agency",
   agencySlugSegment,
 );
-// Count of current assignments; moves to an intake database view
-// (supply-site-display-data). The headline personnel count is current
-// assignments, and the former count is ended assignments, as before.
+// The current and former counts come from the intake view site_agency_count.
 const personnelMeta =
   counts.formerPersonnel > 0
     ? `${formatCount(counts.formerPersonnel)} former on record`

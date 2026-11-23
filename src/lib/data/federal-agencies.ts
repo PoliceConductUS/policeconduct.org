@@ -1,4 +1,3 @@
-import { currentAssignmentSql } from "./annotation-access.js";
 import {
   buildPendingTopics,
   civicIndexCollator,
@@ -363,9 +362,7 @@ const loadFederalAgencySummaryRows = async (slug: string | null) => {
             fa.name,
             fa.slug,
             count(distinct a.id) as branch_count,
-            -- Count of current assignments; moves to an intake database view
-            -- (supply-site-display-data).
-            count(distinct active_assignment.personnel_id) as personnel_count,
+            federal_count.current_personnel_count as personnel_count,
             count(distinct report_officer.review_id) as report_count,
             coalesce(
               array_agg(distinct civil_case_link.civil_case_id)
@@ -373,17 +370,16 @@ const loadFederalAgencySummaryRows = async (slug: string | null) => {
               '{}'
             ) as civil_case_ids
           from public.federal_agency fa
+          join public.site_federal_agency_count federal_count
+            on federal_count.federal_agency_id = fa.id
           left join public.agency a
             on a.parent_federal_agency_id = fa.id
            and exists (
-             select 1 from public.agency_personnel assignment
-             where assignment.agency_id = a.id
-               and ${currentAssignmentSql("assignment")}
+             select 1 from public.site_agency_count branch_count
+             where branch_count.agency_id = a.id
+               and branch_count.current_personnel_count > 0
            )
            and a.parent_federal_agency_id is not null
-          left join public.agency_personnel active_assignment
-            on active_assignment.agency_id = a.id
-           and ${currentAssignmentSql("active_assignment")}
           left join public.agency_personnel report_assignment
             on report_assignment.agency_id = a.id
           left join public.review_personnel report_officer
@@ -396,7 +392,7 @@ const loadFederalAgencySummaryRows = async (slug: string | null) => {
             where case_assignment.agency_id = a.id
           ) civil_case_link on true
           where $1::text is null or fa.slug = $1
-          group by fa.id, fa.name, fa.slug
+          group by fa.id, fa.name, fa.slug, federal_count.current_personnel_count
           order by fa.name
         `,
         [slug],
@@ -412,7 +408,7 @@ const loadFederalAgencySummaryRows = async (slug: string | null) => {
         slug: string;
         branch_count: string | number;
         civil_case_ids: string[];
-        personnel_count: string | number;
+        personnel_count: number;
         report_count: string | number;
       }): FederalAgencySummary => ({
         branchCount: Number(row.branch_count || 0),
@@ -421,7 +417,7 @@ const loadFederalAgencySummaryRows = async (slug: string | null) => {
         id: String(row.id),
         name: String(row.name),
         path: federalAgencyPath(String(row.slug)),
-        personnelCount: Number(row.personnel_count || 0),
+        personnelCount: row.personnel_count,
         reportCount: Number(row.report_count || 0),
         slug: String(row.slug),
       }),
@@ -453,7 +449,7 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
                   'city', lp.display_name,
                   'state', a.state,
                   'administrativeArea', area_lp.display_name,
-                  'personnelCount', coalesce(branch_counts.personnel_count, 0),
+                  'personnelCount', branch_staff.current_personnel_count,
                   'reportCount', coalesce(branch_counts.report_count, 0),
                   'civilCaseIds', branch_counts.civil_case_ids
                 )
@@ -465,10 +461,12 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
           left join public.agency a
             on a.parent_federal_agency_id = fa.id
            and exists (
-             select 1 from public.agency_personnel assignment
-             where assignment.agency_id = a.id
-               and ${currentAssignmentSql("assignment")}
+             select 1 from public.site_agency_count branch_count
+             where branch_count.agency_id = a.id
+               and branch_count.current_personnel_count > 0
            )
+          left join public.site_agency_count branch_staff
+            on branch_staff.agency_id = a.id
           left join public.location_path lp
             on lp.location_path_id = a.location_path_id
           left join public.location_path area_lp
@@ -479,9 +477,6 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
            and bpp.entity_id = a.id
           left join lateral (
             select
-              -- Count of current assignments; moves to an intake database view
-              -- (supply-site-display-data).
-              count(distinct active_assignment.personnel_id) as personnel_count,
               count(distinct report_officer.review_id) as report_count,
               coalesce(
                 array_agg(distinct civil_case_link.civil_case_id)
@@ -489,9 +484,6 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
                 '{}'
               ) as civil_case_ids
             from public.agency child_agency
-            left join public.agency_personnel active_assignment
-              on active_assignment.agency_id = child_agency.id
-             and ${currentAssignmentSql("active_assignment")}
             left join public.agency_personnel report_assignment
               on report_assignment.agency_id = child_agency.id
             left join public.review_personnel report_officer
@@ -532,7 +524,7 @@ export const loadFederalAgencyDetailBySlug = async (slug: string) => {
         id: String(branch.id),
         name: String(branch.name),
         path: String(branch.path),
-        personnelCount: Number(branch.personnelCount || 0),
+        personnelCount: branch.personnelCount,
         reportCount: Number(branch.reportCount || 0),
         state: branch.state || null,
       };
