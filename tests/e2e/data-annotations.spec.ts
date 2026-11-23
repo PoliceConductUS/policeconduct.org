@@ -373,9 +373,9 @@ for (const noPersonnel of ["", "1"]) {
 }
 
 for (const [type, label] of [
-  ["warning", "Our warning"],
+  ["warning", "Warning"],
   ["error", "Data error"],
-  ["correction", "Our correction"],
+  ["correction", "Correction"],
 ]) {
   test(`record-page ${type} annotations show only their label and message`, async ({
     page,
@@ -411,7 +411,7 @@ for (const [type, label] of [
   });
 }
 
-test("record-page excluded_records annotations hide the field name and JSON value", async ({
+test("record-page excluded_records annotations show the type label and stored message without the field name or JSON value", async ({
   page,
 }) => {
   await page.setContent(
@@ -434,7 +434,7 @@ test("record-page excluded_records annotations hide the field name and JSON valu
   await expect(
     page.getByRole("region", { name: "Source data annotations" }).locator("li"),
   ).toHaveText(
-    "Excluded record: Explicitly excluded Agency: placeholder address.",
+    /^\s*Warning:\s*Explicitly excluded Agency: placeholder address\.\s*$/,
   );
 });
 

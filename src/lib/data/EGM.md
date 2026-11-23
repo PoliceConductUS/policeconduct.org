@@ -88,7 +88,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 - `authorityAnnotations(entries, authorityId)` keeps entries whose `entity_kind` is `LicensingAuthority` with `canonical_id` equal to `authorityId`; the site never assigns a note to an authority by its source. [annotation-values.js:authorityAnnotations]
 - `annotationFromRecord(record)` projects a stored annotation row to a `DataAnnotation` and validates it with `parseAnnotations`. [annotation-values.js:annotationFromRecord]
 - `annotationRecordLabel(entry)` returns the excluded record's `name` (or its `kind` and `key`) for the field `excluded_records`, otherwise `entry.record_label`. [annotation-values.js:annotationRecordLabel]
-- `annotationNoteLabel(entry)` returns `Our warning`, `Data error` or `Our correction` from the stored `type`. [annotation-values.js:annotationNoteLabel]
+- `annotationNoteLabel(entry)` returns `Warning`, `Data error` or `Correction` from the stored `type`. [annotation-values.js:annotationNoteLabel]
 
 ### annotation-views.ts
 

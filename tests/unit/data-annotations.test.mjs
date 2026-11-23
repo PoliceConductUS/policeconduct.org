@@ -230,7 +230,7 @@ test("exclusions display their original subject and the note label for their typ
     record_label: "Licensing Board",
   };
   assert.equal(annotationRecordLabel(entry), "Excluded Agency");
-  assert.equal(annotationNoteLabel(entry), "Our warning");
+  assert.equal(annotationNoteLabel(entry), "Warning");
   assert.equal(
     annotationRecordLabel({
       ...entry,

@@ -172,9 +172,9 @@ of this directory.
   `annotationPages` result), `filters` (the `annotationFilters` result).
   `[DataAnnotationIndex.astro:view.filterParts]`
 - `DataAnnotations`: props `annotations: unknown` and optional `field`; labels
-  entries of type `warning`, `error` and `correction` as "Our warning", "Data
-  error" and "Our correction". `[DataAnnotations.astro:parseAnnotations]`
-  `[DataAnnotations.astro:correction: "Our correction"]`
+  entries of type `warning`, `error` and `correction` as "Warning", "Data
+  error" and "Correction". `[DataAnnotations.astro:parseAnnotations]`
+  `[annotation-values.js:annotationNoteLabel]`
 - `RecordDataNotes`: prop `recordPath`; shows the data notes whose
   `record_url` equals `recordPath`. `[RecordDataNotes.astro:recordPath]`
 - `ReportDisclaimer`: no props; fixed text linking to

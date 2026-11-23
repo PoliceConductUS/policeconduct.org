@@ -221,8 +221,8 @@ export function annotationRecordLabel(entry) {
 
 export function annotationNoteLabel(entry) {
   return entry.type === "warning"
-    ? "Our warning"
+    ? "Warning"
     : entry.type === "error"
       ? "Data error"
-      : "Our correction";
+      : "Correction";
 }

@@ -278,7 +278,7 @@ test("mobile arrest tables show every column without horizontal scrolling", asyn
       details.forEach((detail) => detail.setAttribute("open", "")),
     );
   const tables = section.locator("table");
-  expect(await tables.count()).toBe(13);
+  expect(await tables.count()).toBe(12);
   for (const table of await tables.all()) {
     const size = await table.evaluate((element) => {
       const container = element.parentElement!;
