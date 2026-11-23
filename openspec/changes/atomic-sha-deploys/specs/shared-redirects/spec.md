@@ -2,7 +2,7 @@
 
 ### Requirement: Redirect semantics are shared across environments
 
-Every host the production distribution serves (the canonical host, the apex through its 301 to the canonical host, and release hosts) SHALL use the same redirect mechanism. Redirects SHALL be redirect files: empty S3 objects in the production site bucket, in the folder `redirect/<commit>/` of the release they belong to, each at `redirect/` followed by the exact key the router requests from the release folder for the old path, each carrying its target in the S3 metadata header `x-amz-meta-redirect-location`. The production distribution SHALL serve them through an origin group whose primary origin is the site bucket and whose failover origin is the same bucket with `origin_path = "/redirect"`, failing over on 403 and 404. A viewer-response CloudFront Function SHALL turn a response that carries that header into a 301. Redirects SHALL NOT be stored as KVS keys, the router SHALL NOT look up redirects, and there SHALL be no wildcard redirects. Previews SHALL serve no redirects.
+Every host either distribution serves (the canonical host, the apex through its 301 to the canonical host, release hosts, and `pr-<N>.preview.<domain>` hosts) SHALL use the same redirect mechanism. Redirects SHALL be redirect files: empty S3 objects in the site bucket of the distribution (the production site bucket for releases, the preview site bucket for previews), in the folder `redirect/<commit>/` of the build they belong to, each at `redirect/` followed by the exact key the router requests from the release folder for the old path, each carrying its target in the S3 metadata header `x-amz-meta-redirect-location`. Each distribution SHALL serve them through an origin group whose primary origin is its site bucket and whose failover origin is the same bucket with `origin_path = "/redirect"`, failing over on 403 and 404. A viewer-response CloudFront Function SHALL turn a response that carries that header into a 301. Redirects SHALL NOT be stored as KVS keys, the router SHALL NOT look up redirects, and there SHALL be no wildcard redirects.
 
 #### Scenario: A mapped legacy URL is requested
 
@@ -33,14 +33,20 @@ Every host the production distribution serves (the canonical host, the apex thro
 
 #### Scenario: A preview host is requested
 
-- **WHEN** a request for a path with no object arrives on a preview host
+- **WHEN** a request on `pr-<N>.preview.<domain>` has no object in the build `current:pr-<N>` names and has a redirect file in `redirect/<release-id>/` of the preview site bucket
+- **THEN** the response is HTTP 301 to the stored target, preserving query parameters
+- **AND** it carries `X-Robots-Tag: noindex, nofollow`
+
+#### Scenario: A preview host has no redirect file for the path
+
+- **WHEN** a request for a path with no object and no redirect file arrives on a preview host
 - **THEN** the response is the normal 404 with `X-Robots-Tag: noindex, nofollow`
 
 ## REMOVED Requirements
 
 ### Requirement: Local publication loads redirects safely
 
-**Reason**: Publication no longer loads redirects. The release build and promotion write no redirects; the redirect build writes redirect files to their own folder (see "The redirect build writes only its own folder"). Previews serve no redirects.
+**Reason**: Publication no longer loads redirects. The release build and promotion write no redirects; the redirect build writes redirect files to their own folder (see "The redirect build writes only its own folder").
 
 **Migration**: KVS `r:` keys are deleted once by hand after the cutover. `scripts/load-redirects.mjs` and its store-limit checks are deleted.
 
@@ -60,7 +66,7 @@ Every host the production distribution serves (the canonical host, the apex thro
 
 ### Requirement: The redirect build writes only its own folder
 
-The redirect build SHALL write only redirect files, and only under `redirect/<commit>/` in the production site bucket. It SHALL NOT write, delete or read `<commit>/build/` or `<commit>/override/`. A rerun for the same commit SHALL leave `redirect/<commit>/` equal to the latest run's set.
+The redirect build SHALL write only redirect files, and only under `redirect/<commit>/` in the site bucket of its target: the production site bucket for a release, the preview site bucket for an open-PR preview. A preview run SHALL NOT write the production site bucket. It SHALL NOT write, delete or read `<commit>/build/` or `<commit>/override/` in either bucket. A rerun for the same target SHALL leave `redirect/<commit>/` equal to the latest run's set.
 
 #### Scenario: Invalid redirect set
 
@@ -81,7 +87,7 @@ The redirect build SHALL write only redirect files, and only under `redirect/<co
 
 ### Requirement: A redirect build derives the redirect set
 
-`npm run redirects:build -- [<commit>]` SHALL derive the full redirect set for a target release (default: the tip of `main`) every time, with nothing committed. It SHALL compare the `www` sitemap with the target, read from a local build of that commit or else from `<commit>.release.<domain>`. It SHALL map each missing `www` path to the target page of the record the old page names, and SHALL carry forward the redirects of the release `www` serves.
+`npm run redirects:build -- [<commit>]` SHALL derive the full redirect set for a target release (default: the tip of `main`) every time, with nothing committed. It SHALL compare the `www` sitemap with the target (a local build of that commit, or else `<commit>.release.<domain>`). It SHALL map each missing `www` path to the target page of the record the old page names, SHALL carry forward the redirects of the release `www` serves, and SHALL report every old path with no target and why.
 
 #### Scenario: A page moved
 
@@ -94,6 +100,12 @@ The redirect build SHALL write only redirect files, and only under `redirect/<co
 - **WHEN** the record has no page in the target, the old page returns 404 on `www`, or the path is an old video page
 - **THEN** no redirect file is written, so the path returns 404
 - **AND** the redirect build records the path with a reason naming the cause
+
+#### Scenario: Carried redirects come from the served release's folder
+
+- **WHEN** the redirect build reads production's current redirects
+- **THEN** it lists the redirect files under `redirect/<www commit>/` in the production site bucket and reads each one's target
+- **AND** a listing or read failure stops it before it writes
 
 #### Scenario: Old pagination page
 
@@ -125,6 +137,32 @@ The redirect build SHALL write only redirect files, and only under `redirect/<co
 - **THEN** the redirect build for the uploaded release runs after the upload and before promotion
 - **AND** a failed redirect build stops the deploy before promotion
 
+### Requirement: Redirect exclusions return 404
+
+The committed file `route-absences.json`, with entries `{ path, reason }` of exact paths, SHALL list the redirect exclusions: old URLs that may return 404. The redirect build SHALL create no redirect for, and carry forward no redirect from, a listed path. The coverage check SHALL require that no redirect starts at a listed path.
+
+#### Scenario: Excluded path
+
+- **WHEN** an old path, from the `www` sitemap or from a carried redirect, is listed in `route-absences.json`
+- **THEN** no redirect file is written for it, so it returns 404
+- **AND** the redirect build records it with that entry's reason
+
+#### Scenario: Redirect from an excluded path
+
+- **WHEN** the redirect set holds a redirect whose old path is listed in `route-absences.json`
+- **THEN** the coverage check fails
+
+### Requirement: A preview has its own redirect build
+
+`npm run redirects:build:preview -- <pr-number>` SHALL run the same redirect build, with the same `www` inputs, carried redirects and exclusions, for the build `current:pr-<N>` names. It SHALL read target pages from a local build of that commit or else from `pr-<N>.preview.<domain>`, and SHALL write only under `redirect/<release-id>/` in the preview site bucket.
+
+#### Scenario: Preview target
+
+- **WHEN** `npm run redirects:build:preview -- <N>` runs
+- **THEN** the target is the release ID in the `data-release-id` of `pr-<N>.preview.<domain>`
+- **AND** redirect files are written only under `redirect/<release-id>/` in the preview site bucket, and the preview distribution is invalidated
+- **AND** nothing is written to the production site bucket
+
 ### Requirement: Pages name their record
 
 Each page rendered from an intake page view SHALL name its record, by the kind and id the page view gives, in an ld+json `identifier`. Each page of a paginated list SHALL name its listed records, in page order, in an ld+json `ItemList`.
@@ -141,7 +179,7 @@ Each page rendered from an intake page view SHALL name its record, by the kind a
 
 ### Requirement: Every prior URL has an explicit disposition
 
-The coverage check (`npm run validate:redirects -- <commit>`) SHALL check the redirect build's output for one target commit. It SHALL require every `www` sitemap path to be a route in the target (in the target sitemap or a generated HTML route), to have exactly one redirect to a terminal target route, or to have no target with a nonempty recorded reason. It SHALL require the redirect files under `redirect/<commit>/` to equal the redirect set. The redirect build SHALL run it as its last step.
+The coverage check (`npm run validate:redirects -- <commit> [--preview]`) SHALL check the redirect build's output for one target. It SHALL require every `www` sitemap path to be a target route, to have exactly one redirect to a terminal target route, or to have no target with a nonempty recorded reason. It SHALL require the redirect files under `redirect/<commit>/` in the target's site bucket to equal the redirect set. The redirect build SHALL run it as its last step.
 
 #### Scenario: Personnel not populated by intake
 

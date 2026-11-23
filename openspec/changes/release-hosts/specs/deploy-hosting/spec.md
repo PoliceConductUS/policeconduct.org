@@ -2,7 +2,7 @@
 
 ### Requirement: The router serves the promoted release per host
 
-The shared CloudFront router SHALL pick the release for the apex, the canonical host and `pr-<N>.preview.<domain>` from that host's KVS pointer. For `<commit>.release.<domain>` it SHALL pick the release from `release:<prefix>` keys. It SHALL keep the release folder out of the viewer URL. Redirects SHALL follow `shared-redirects` semantics: on the production distribution, a miss in the release folder fails over to the release's own `redirect/<commit>/` folder. The router SHALL NOT read `r:` keys or look up redirects.
+The shared CloudFront router SHALL pick the release for the apex, the canonical host and `pr-<N>.preview.<domain>` from that host's KVS pointer. For `<commit>.release.<domain>` it SHALL pick the release from `release:<prefix>` keys. It SHALL keep the release folder out of the viewer URL. Redirects SHALL follow `shared-redirects` semantics: on both distributions, a miss in the release folder fails over to that build's own `redirect/<commit>/` folder in the same bucket. The router SHALL NOT read `r:` keys or look up redirects.
 
 #### Scenario: Canonical host
 
@@ -48,12 +48,12 @@ An override SHALL serve wherever its release is served: on a host whose pointer 
 
 ### Requirement: Releases are kept and previews end with their PR
 
-Release folders in the production site bucket and their data in the production release data bucket SHALL never be deleted. When a PR closes, the system SHALL delete its `current:pr-<N>` pointer and, when no other preview pointer names the same release ID, its preview folder and preview release data. KVS keys for a removed preview SHALL be removed by hand.
+Release folders in the production site bucket and their data in the production release data bucket SHALL never be deleted. When a PR closes, the system SHALL delete its `current:pr-<N>` pointer and, when no other preview pointer names the same release ID, its preview folder, its preview redirect folder and its preview release data. KVS keys for a removed preview SHALL be removed by hand.
 
 #### Scenario: PR closes
 
 - **WHEN** a PR closes and no other preview pointer names its release ID
-- **THEN** `current:pr-<N>`, `<release-id>/` in the preview site bucket and `builds/<release-id>/` in the preview release data bucket are deleted
+- **THEN** `current:pr-<N>`, `<release-id>/` and `redirect/<release-id>/` in the preview site bucket and `builds/<release-id>/` in the preview release data bucket are deleted
 - **AND** its `o:` keys stay until removed with `npm run deploy:delete -- <release-id>`
 
 #### Scenario: Shared preview folder
