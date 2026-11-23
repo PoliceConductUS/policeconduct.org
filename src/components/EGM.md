@@ -375,8 +375,8 @@ of this directory.
 - `AgencyPersonnelList` shows each row's stored title and its stored start and
   end years, with no per-row status label. Its summary line shows the
   `counts` prop as given: the total and the current, former and (when above
-  zero) uncertain counts, which come from the intake view `site_agency_count`
-  through `loadAgencyDetail`. It computes no count. It sorts rows
+  zero) uncertain counts of distinct people, which come from the intake view
+  `site_agency_count` through `loadAgencyDetail`. It computes no count. It sorts rows
   by surname with a first-name fallback using `civicIndexCollator`.
   `[AgencyPersonnelList.astro:const tenure =]`
   `[AgencyPersonnelList.astro:counts.uncertainPersonnel ?]`

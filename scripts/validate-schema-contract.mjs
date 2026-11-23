@@ -368,6 +368,9 @@ const requiredTables = {
       "former_assignment_count",
       "unknown_assignment_count",
       "current_personnel_count",
+      "personnel_count",
+      "former_personnel_count",
+      "unknown_personnel_count",
     ],
   },
   site_federal_agency_count: {

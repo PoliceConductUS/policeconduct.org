@@ -6,7 +6,9 @@ import { withDb } from "../../src/lib/db.js";
 // These checks compare the rendered text with the view rows.
 const formatCount = (value: number) => value.toLocaleString("en-US");
 
-test("agency page and roster show the site_agency_count staff counts", async ({
+// The agency page and roster show distinct people, so the check uses an
+// agency where some person has more than one agency_personnel row.
+test("agency page and roster show the site_agency_count distinct-people counts", async ({
   page,
 }) => {
   const [agency] = await withDb(
@@ -14,22 +16,23 @@ test("agency page and roster show the site_agency_count staff counts", async ({
       (
         await client.query<{
           canonical_path: string;
-          assignment_count: number;
-          current_assignment_count: number;
-          former_assignment_count: number;
-          unknown_assignment_count: number;
+          personnel_count: number;
+          current_personnel_count: number;
+          former_personnel_count: number;
+          unknown_personnel_count: number;
         }>(`
           select lp.path || a.slug || '/' as canonical_path,
-                 c.assignment_count, c.current_assignment_count,
-                 c.former_assignment_count, c.unknown_assignment_count
+                 c.personnel_count, c.current_personnel_count,
+                 c.former_personnel_count, c.unknown_personnel_count
           from public.site_agency_count c
           join public.agency a on a.id = c.agency_id
           join public.location_path lp on lp.location_path_id = a.location_path_id
           join public.build_page_payload bpp
             on bpp.page_type = 'agency' and bpp.entity_id = a.id
-          where c.current_assignment_count > 0
-            and c.former_assignment_count > 0
-          order by c.assignment_count, a.id
+          where c.current_personnel_count > 0
+            and c.former_personnel_count > 0
+            and c.personnel_count < c.assignment_count
+          order by c.personnel_count, a.id
           limit 1
         `)
       ).rows,
@@ -39,17 +42,17 @@ test("agency page and roster show the site_agency_count staff counts", async ({
   expect(response?.status()).toBe(200);
   await expect(
     page.getByText(
-      `${formatCount(agency.former_assignment_count)} former on record`,
+      `${formatCount(agency.former_personnel_count)} former on record`,
       { exact: true },
     ),
   ).toBeVisible();
 
   await page.goto(`${agency.canonical_path}personnel/`);
-  const uncertain = agency.unknown_assignment_count
-    ? ` · ${formatCount(agency.unknown_assignment_count)} uncertain`
+  const uncertain = agency.unknown_personnel_count
+    ? ` · ${formatCount(agency.unknown_personnel_count)} uncertain`
     : "";
   await expect(page.locator("[data-roster-summary]")).toHaveText(
-    `${formatCount(agency.assignment_count)} personnel · ${formatCount(agency.current_assignment_count)} current · ${formatCount(agency.former_assignment_count)} former${uncertain}`,
+    `${formatCount(agency.personnel_count)} personnel · ${formatCount(agency.current_personnel_count)} current · ${formatCount(agency.former_personnel_count)} former${uncertain}`,
   );
 });
 

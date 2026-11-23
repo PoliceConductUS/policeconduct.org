@@ -54,8 +54,8 @@ const renderComponent = async (
   }
 };
 
-// Staff counts come from the intake view site_agency_count through
-// loadAgencyDetail; the roster shows them as given.
+// Staff counts of distinct people come from the intake view site_agency_count
+// through loadAgencyDetail; the roster shows them as given.
 const counts = {
   personnel: 3,
   currentPersonnel: 1,
