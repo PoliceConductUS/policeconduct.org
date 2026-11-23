@@ -382,6 +382,20 @@ const requiredTables = {
   site_personnel_count: {
     columns: ["personnel_id", "civil_case_count", "open_civil_case_count"],
   },
+  // Intake view (20261122200000_site_personnel_headline_assignment.sql) that
+  // names the assignment a personnel page uses as the person's agency.
+  site_personnel_headline_assignment: {
+    columns: [
+      "personnel_id",
+      "agency_personnel_id",
+      "agency_id",
+      "title",
+      "badge_number",
+      "employment_status",
+      "end_date",
+      "headline_basis",
+    ],
+  },
   review_links: {
     columns: ["id", "review_id", "title", "url", "civil_case_id"],
     notNull: ["id", "review_id"],

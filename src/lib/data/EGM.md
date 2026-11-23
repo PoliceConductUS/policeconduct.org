@@ -267,7 +267,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 ### personnel.ts
 
-- `loadPersonnelSummaries(): Promise<PersonnelSummary[]>` returns one summary (`id`, `slug`, `lastName`, `firstName`, `nameSuffix`) per listed person. The selection rule is unchanged: a person is listed when their latest-started assignment with `employment_status = 'Current'` in the intake view `public.site_agency_personnel_employment` is at an agency with an `agency` build page. Nothing from that assignment is shown. [personnel.ts:with latest_open_assignment as (] [personnel.ts:employment.employment_status = 'Current']
+- `loadPersonnelSummaries(): Promise<PersonnelSummary[]>` returns one summary (`id`, `slug`, `lastName`, `firstName`, `nameSuffix`, `agencyName`) per listed person. The selection rule is unchanged: a person is listed when their latest-started assignment with `employment_status = 'Current'` in the intake view `public.site_agency_personnel_employment` is at an agency with an `agency` build page. `agencyName` is the name of the agency on the person's row in the intake view `public.site_personnel_headline_assignment`. [personnel.ts:join public.site_personnel_headline_assignment headline] [personnel.ts:with latest_open_assignment as (] [personnel.ts:employment.employment_status = 'Current']
 - `loadPersonnelCountsByStatePath()` returns a map from `state_path` to `listed_personnel_count`, read from the intake view `public.site_personnel_state_count`. The view counts each listed person once, under the state `location_path` row that is the parent of the agency place's `administrative_area` parent; it uses the same rule as `loadPersonnelSummaries`, so the per-state counts add up to that list. [personnel.ts:export const loadPersonnelCountsByStatePath] [personnel.ts:from public.site_personnel_state_count]
 
 ### release-news.ts
@@ -307,7 +307,7 @@ Citations have the form `[file:text]`. `file` is relative to this directory and 
 
 ### types.ts
 
-- Type `PersonnelSummary`: `id`, `slug`, `lastName`, `firstName`, and optional `nameSuffix`. [types.ts:export type PersonnelSummary]
+- Type `PersonnelSummary`: `id`, `slug`, `lastName`, `firstName`, optional `nameSuffix`, and `agencyName`. [types.ts:export type PersonnelSummary]
 - Type `AgencyFinderResult`: `id`, `name`, `state`, `canonicalPath`, and optional `city`, `administrativeArea`, `zipCode`. [types.ts:export type AgencyFinderResult]
 - Type `ReportSummary`: `id`, `slug`, `state`, `locationPath`, `canonicalPath`, `year`, `month`, `day`, `administrativeAreaName`, `administrativeAreaSlug`, `placeName`, `placeSlug`, `stateName`, `title`, `incidentDate`, `agencySlug`, `agencyName`, `agencyCanonicalPath`, and optional `address`, `latitude`, `longitude`, `ratingOverall`, `personnelSlugs`, `personnel`. [types.ts:export type ReportSummary]
 

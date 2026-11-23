@@ -211,7 +211,7 @@ export const buildContentPageNode = ({
  * Person graph node for an officer/individual. Minimal by default
  * ({ name, url } with a `#person` @id); optional fields cover the richer
  * personnel profile. Pass either an absolute `url` or a `path` to resolve.
- * @param {{ siteUrl: URL; path?: string; url?: string; name: string; image?: string; mainEntityOfPageId?: string; deathDate?: string }} params
+ * @param {{ siteUrl: URL; path?: string; url?: string; name: string; image?: string; mainEntityOfPageId?: string; deathDate?: string; worksForId?: string }} params
  * @returns {Record<string, any>}
  */
 export const buildPersonNode = ({
@@ -222,6 +222,7 @@ export const buildPersonNode = ({
   image,
   mainEntityOfPageId,
   deathDate,
+  worksForId,
 }) => {
   if (!url && !path) {
     throw new Error("buildPersonNode requires either `url` or `path`");
@@ -242,6 +243,9 @@ export const buildPersonNode = ({
   }
   if (deathDate) {
     data.deathDate = deathDate;
+  }
+  if (worksForId) {
+    data.worksFor = { "@id": worksForId };
   }
   return data;
 };

@@ -40,6 +40,10 @@ const personnelItems = personnelRows.slice(0, 25).map((person, index) => ({
       person.nameSuffix ? ` ${person.nameSuffix}` : ""
     }`,
     url: new URL(`/personnel/${person.slug}/`, siteUrl).toString(),
+    worksFor: {
+      "@type": "GovernmentOrganization",
+      name: person.agencyName,
+    },
   },
 }));
 const structuredData = buildWebPage({

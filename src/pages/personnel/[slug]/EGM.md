@@ -2,7 +2,7 @@
 
 ## Overview
 
-Astro dynamic page for the routes `/personnel/{slug}/`. It shows one person's profile: metric cards, arrest records, coverage links, licenses, license history, discipline, education, civil cases and assignment history, plus buttons that carry prefill data to the site's forms. The page has no form of its own, no pagination and no client script of its own. The subdirectories hold the per-person topic pages.
+Astro dynamic page for the routes `/personnel/{slug}/`. It shows one person's profile: the headline agency assignment and status, metric cards, arrest records, coverage links, licenses, license history, discipline, education, civil cases and assignment history, plus buttons that carry prefill data to the site's forms. The page has no form of its own, no pagination and no client script of its own. The subdirectories hold the per-person topic pages.
 
 ## Interface
 
@@ -13,7 +13,8 @@ Astro dynamic page for the routes `/personnel/{slug}/`. It shows one person's pr
 - Each emitted path has the single param `slug` and no props. `[index.astro:params: { slug: officer.slug },]`
 - The only route param is `slug`. `[index.astro:const { slug } = Astro.params;]`
 - The render reloads the person with a SQL query on `public.personnel` by `slug`. `[index.astro:await client.query("select * from public.personnel where slug = $1", [slug])]`
-- The render loads all of the person's rows from `public.agency_personnel`. `[index.astro:"select * from public.agency_personnel where personnel_id = $1",]`
+- The render loads all of the person's rows from `public.agency_personnel`, each with its `employment_status` from the intake view `public.site_agency_personnel_employment`. `[index.astro:join public.site_agency_personnel_employment employment]`
+- The render loads the person's row from the intake view `public.site_personnel_headline_assignment`: `agency_personnel_id`, `agency_id`, `badge_number`, `employment_status`, `end_date` (as `YYYY-MM-DD`) and `headline_basis`. The page names the person's agency only from this row and selects no assignment itself. `[index.astro:from public.site_personnel_headline_assignment]`
 - The render loads the assigned agencies from `public.agency` joined to `public.location_path` on `location_path_id`, adding `location_path`. `[index.astro:select a.*, lp.path as location_path, bpp.page_type]`
 - The agency query left-joins `public.build_page_payload` for page type `agency`, adding `page_type`. `[index.astro:on bpp.page_type = 'agency']`
 - The render loads `public.review_personnel` rows for the person's assignment ids. `[index.astro:"select * from public.review_personnel where agency_personnel_id = any($1)",]`
@@ -32,16 +33,24 @@ Astro dynamic page for the routes `/personnel/{slug}/`. It shows one person's pr
 - Each report gets a link from `buildReportCanonicalPath` (`src/lib/data/report-paths.js`), which receives `id`, `incidentDate`, `locationPath` and `slug`. `[index.astro:url: buildReportCanonicalPath({]`
 - The person is treated as deceased when `deceased_on` has a value. `[index.astro:const isDeceased = Boolean(deceasedOnValue);]`
 - The deceased message is the stored `deceased_message`, or `null`; the page never generates one. `[index.astro:const deceasedPublicMessage =]`
-- The page title is "Deceased: " for a deceased person, then "Personnel" and the name, then the site name; it names no agency. ``[index.astro:const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | PoliceConduct.org`;]``
-- The page description names the profile and, for a deceased person with a known date, the reported date of death; it names no agency. `[index.astro:const pageDescription =]`
+- The headline agency is the `agency_id` of the headline row, looked up among the loaded agencies. `[index.astro:const currentAgency = agenciesById[headline.agency_id];]`
+- `headlineWording` maps `headline_basis` to the assignment label, title prefix and status label: `Current` to "Current agency", no prefix, "Active"; `Most recent` to "Most recent agency", "Most recent", "Former"; `Recorded` to "Recorded agency", "Recorded", "Status uncertain". `[index.astro:const headlineWording = {]`
+- The headline end date is the headline row's `end_date`, formatted with `formatAssignmentDate` from `src/lib/data/assignment-status.js`, only when the row's `employment_status` is `Former`. `[index.astro:headline.employment_status === "Former" && headline.end_date]`
+- The agency name used in prefill payloads is the headline agency name upper-cased for `en-US`. `[index.astro:const currentAgencyPrefillName = currentAgency.name.toLocaleUpperCase("en-US");]`
+- The page title starts with "Deceased: " for a deceased person, then "Personnel" and the name, then the headline agency name (prefixed "Most recent:" or "Recorded:" when the basis is not `Current`), then the site name. ``[index.astro:const pageTitle = `${isDeceased ? "Deceased: " : ""}Personnel ${officerName} | ${wording.titlePrefix ? `${wording.titlePrefix}: ${currentAgency.name}` : currentAgency.name} | PoliceConduct.org`;]``
+- For a deceased person the page description names the profile and, when known, the reported date of death. ``[index.astro:? `${officerName} personnel profile with agency assignments, public reports, and civil litigation records${deceasedOnDisplay ? `; reported deceased on ${deceasedOnDisplay}` : ""}.`]``
+- Otherwise the page description includes the assignment label, the headline agency name and, for a non-current headline with an end date, "(assignment ended ...)". ``[index.astro:? ` (assignment ended ${headlineEndDateDisplay})`]``
+- The past employer summary lists the assignments whose `employment_status` is `Former` as agency name, date range and badge number. `[index.astro:.filter((entry) => entry.employment_status === "Former")]`
 - The civil litigation summary lists each case as title (or "Civil case"), cause number, court and case link. `[index.astro:caseItem.title || "Civil case",]`
 - The report links summary is the report links joined by newlines. `[index.astro:const reportLinksSummary = reportItems.map((report) => report.url).join("\n");]`
-- The `/report/new/` prefill payload is JSON with `officer.name`, typed as `ReportNewPrefill` from `src/lib/forms/prefill`. `[index.astro:} satisfies ReportNewPrefill);]`
-- The `/civil-cases/new/` prefill payload is JSON with `defendants` (the name), `summary` (the name and profile path) and `links` (the profile path plus up to three report links). ``[index.astro:summary: `${officerName} profile: ${officerPath}`,]``
-- The `/personnel/new/` prefill payload is JSON with `firstName`, `lastName`, `suffix`, `civilLitigation` and `reportLinks`. `[index.astro:const pastEmployerPrefillPayload = JSON.stringify({]`
-- The `/personnel/suggest-edit/` prefill payload is JSON with `officerPath`, `officerName` and `civilLitigation`. `[index.astro:const suggestEditPrefillPayload = JSON.stringify({]`
+- The `/report/new/` prefill payload is JSON with `officer.department` (upper-cased headline agency name) and `officer.name`, typed as `ReportNewPrefill` from `src/lib/forms/prefill`. `[index.astro:} satisfies ReportNewPrefill);]`
+- The `/civil-cases/new/` prefill payload is JSON with `jurisdiction` (lower-cased headline agency state), `defendants` (the name and the upper-cased agency name), `summary` (the name, profile path, assignment label and agency) and `links` (the profile path plus up to three report links). `[index.astro:jurisdiction: String(currentAgency.state || "").toLowerCase(),]`
+- The `/personnel/new/` prefill payload is JSON with `firstName`, `lastName`, `suffix`, `badgeNumber`, `currentAgency`, `currentAgencyCity`, `currentAgencyState`, `pastEmployers`, `civilLitigation` and `reportLinks`. `[index.astro:const pastEmployerPrefillPayload = JSON.stringify({]`
+- In that payload the three current agency fields are empty strings unless `headline_basis` is `Current`. `[index.astro:currentAgency: hasCurrentAssignment ? currentAgencyPrefillName : "",]`
+- The `/personnel/suggest-edit/` prefill payload is JSON with `officerPath`, `officerName`, `badgeNumber`, `currentEmployer` (empty unless `Current`), `pastEmployers` and `civilLitigation`. `[index.astro:currentEmployer: hasCurrentAssignment ? currentAgencyPrefillName : "",]`
 - The claim profile prefill payload for `/about/contact/` is JSON with `whoami: "Profile Owner"` and a message that names the profile path. `[index.astro:whoami: "Profile Owner",]`
 - The portrait comes from `getPersonnelPhotoById` in `src/lib/personnel-photos.js`; when it returns nothing the image is `/img/personnel/default.webp`. `[index.astro:const personnelImageSrc = personnelPhoto || "/img/personnel/default.webp";]`
+- The status label is "Deceased" for a deceased person, otherwise the `headlineWording` status label. `[index.astro:const statusLabel = isDeceased ? "Deceased" : wording.status;]`
 - The agencies metric card shows the count of distinct agencies in the assignment history and links to `#agency-assignments`. `[index.astro:href: "#agency-assignments",]`
 - The current salary metric card always shows `--`. `[index.astro:label: metricVisuals.currentSalary.label,]`
 - The civil cases metric card shows "active / total" from the person's row of the intake view `public.site_personnel_count`: `open_civil_case_count` (cases with no `date_terminated`) over `civil_case_count` (distinct cases linked to any of the person's `agency_personnel` rows), with the detail `metricLabels.activeTotal`. A missing view row throws `Personnel {slug} has no site_personnel_count row.` ``[index.astro:value: `${formatCount(activeCivilCaseCount)} / ${formatCount(civilCaseCount)}`,]`` `[index.astro:from public.site_personnel_count]`
@@ -52,7 +61,9 @@ Astro dynamic page for the routes `/personnel/{slug}/`. It shows one person's pr
 - The reports metric card shows the report count and links to `/personnel/{slug}/reports/` only when the person has at least one report. ``[index.astro:href: `${officerPath}reports/`,]``
 - Metric labels, icons and accents come from `metricVisuals` and `metricLabels` in `src/lib/metric-vocabulary.js`; the card type is `MetricCardItem` from `src/components/metric-card-types.js`. `[index.astro:const personnelMetricCards: MetricCardItem[] = []`
 - Counts are formatted with `Intl.NumberFormat("en-US")`. `[index.astro:new Intl.NumberFormat("en-US").format(value);]`
-- Structured data is a schema.org `@graph` built with `buildWebSite`, `buildContentPageNode`, `buildPublisherOrganization` and `buildPersonNode` from `src/lib/structured-data.js`; it has no organization node and no `worksFor`, because the database records no single current employer. `[index.astro:buildWebSite(siteUrl),]`
+- Structured data is a schema.org `@graph` built with `buildWebSite`, `buildContentPageNode`, `buildPublisherOrganization`, `buildGovernmentOrganizationNode` and `buildPersonNode` from `src/lib/structured-data.js`. `[index.astro:buildWebSite(siteUrl),]`
+- The government organization node is built only when the headline agency has `page_type` equal to `agency`. `[index.astro:currentAgency.page_type === "agency"]`
+- The person node gets `worksForId` only when the organization node exists and `headline_basis` is `Current`. `[index.astro:organization && hasCurrentAssignment ? organization["@id"] : undefined,]`
 - The content page node has the type `ProfilePage`, the id page URL plus `#profilepage`, and `dateModified` from the person's `updated_at`. `[index.astro:dateModified: String(data.officer.updated_at),]`
 - The person node gets `image` only when a mapped photo exists. `[index.astro:image: hasPersonnelPhoto]`
 - The person node gets `deathDate` only for a deceased person. `[index.astro:deathDate: isDeceased ? String(deceasedOnValue) : undefined,]`
@@ -61,12 +72,19 @@ Astro dynamic page for the routes `/personnel/{slug}/`. It shows one person's pr
 - `PageShell` prop `breadcrumbs` is Home, Personnel (`/personnel/`), then the person's name. `[index.astro:{ label: officerName, href: officerPath },]`
 - Renders `PrefillBootstrap` (`src/components/PrefillBootstrap.astro`). `[index.astro:<PrefillBootstrap />]`
 - The `hero` slot holds the page `h1` with the person's name. `[index.astro:<h1 class="ipc-page-title">{officerName}</h1>]`
+- The hero line shows the assignment label and the headline agency name; the name is a link to the agency's canonical path (from `requireAgencyCanonicalPath` in `src/lib/data/location-paths.js`) only when the agency `page_type` is `agency`. `[index.astro:<a href={currentAgencyPath}>{currentAgency.name}</a>]`
+- The hero line shows the agency city and state. `[index.astro:{currentAgencyLocation}]`
+- The hero line shows "assignment ended" plus the date for a non-current headline with an end date. `[index.astro:assignment ended {headlineEndDateDisplay}]`
 - The hero shows the fixed note "Combined career data aggregated across all known agencies." `[index.astro:Combined career data aggregated across all known agencies.]`
 - For a deceased person the hero renders `PersonnelDeceasedNotice` (`src/components/PersonnelDeceasedNotice.astro`) with the props `message` and `source` (`deceased_source`). `[index.astro:source={data.officer.deceased_source}]`
 - The hero `EntityActionBar` (`src/components/EntityActionBar.astro`) holds `HelpCollectDataButton` (`src/components/HelpCollectDataButton.astro`) with `context` (name), `sourcePage` (profile path) and `topic="Personnel"`. `[index.astro:topic="Personnel"]`
 - The hero action bar holds a `PrefillNavButton` (`src/components/PrefillNavButton.astro`) "Suggest edit" to `/personnel/suggest-edit/` with the suggest-edit payload. `[index.astro:payload={suggestEditPrefillPayload}]`
 - The hero action bar holds a `PrefillNavButton` "Share an experience" to `/report/new/` with the report payload. `[index.astro:payload={reportNewPrefillPayload}]`
 - The portrait image has the alt text "Portrait of" plus the name. ``[index.astro:<img src={personnelImageSrc} alt={`Portrait of ${officerName}`} />]``
+- The hero aside always shows "Status" with the status label. `[index.astro:<span class="personnel-status-pill">{statusLabel}</span>]`
+- The hero aside shows "Badge Number" only when the headline row has a badge number. `[index.astro:<dt>Badge Number</dt>]`
+- The hero aside always shows the assignment label with the agency name, linked to the agency's canonical path only when the agency `page_type` is `agency`. `[index.astro:<dt>{assignmentStatusLabel}</dt>]`
+- The hero aside shows "Assignment ended" only for a non-current headline with an end date. `[index.astro:<dt>Assignment ended</dt>]`
 - The hero aside always shows "Updated" with `updated_at` formatted by `formatShortDate` from `src/lib/format.js`. `[index.astro:<dd>{formatShortDate(data.officer.updated_at)}</dd>]`
 - Renders `MetricGrid` (`src/components/MetricGrid.astro`) with the prop `metrics`. `[index.astro:<MetricGrid metrics={personnelMetricCards} />]`
 - Renders `PersonnelArrestProfiles` (`src/components/PersonnelArrestProfiles.astro`) with the prop `profiles`. `[index.astro:<PersonnelArrestProfiles profiles={arrestProfiles} />]`
@@ -94,6 +112,11 @@ Astro dynamic page for the routes `/personnel/{slug}/`. It shows one person's pr
 - The render throws when the `slug` param is missing. `[index.astro:throw new Error("Personnel route requires a slug.");]`
 - The render throws when no personnel row matches the slug, or when the loaded row's slug differs from the param. `[index.astro:if (!officer || officer.slug !== slug) {]`
 - The render throws when any assignment references an agency that the agency query did not return; that query joins `public.location_path`, so an agency without a location path is also missing. `[index.astro:which the agency query did not return with a location path.]`
+- The render throws when the person has no `site_personnel_headline_assignment` row. ``[index.astro:`Personnel ${slug} has no site_personnel_headline_assignment row.`,]``
+- The render throws when `headline_basis` is not one of `Current`, `Most recent` or `Recorded`. `[index.astro:has unknown headline_basis]`
+- The render throws when the headline agency is missing from the loaded agencies. ``[index.astro:`Personnel ${data.officer.slug} assignment ${headline.agency_personnel_id} is missing required agency ${headline.agency_id}.`,]``
+- `requireAgencyCanonicalPath` runs for the headline agency only when its `page_type` is `agency`, the only case where the page links to it; it throws when that agency has no `location_path_id`-backed canonical path. `[index.astro:? requireAgencyCanonicalPath(currentAgency)]`
+- `worksFor` is a present-tense employment claim and is emitted only when `headline_basis` is `Current`. ``[index.astro:// `worksFor` is a present-tense employment assertion, so it is emitted only]``
 - The default portrait is never included in structured data. `[index.astro:const hasPersonnelPhoto = Boolean(personnelPhoto);]`
 - Agency location identity comes from `public.agency.location_path_id` joined to `public.location_path`. `[index.astro:on lp.location_path_id = a.location_path_id]`
 - Reports and civil cases are reached only through the person's `agency_personnel` assignments. `[index.astro:join public.agency_personnel ao on ao.id = cco.agency_personnel_id]`
@@ -104,7 +127,7 @@ Astro dynamic page for the routes `/personnel/{slug}/`. It shows one person's pr
 
 - `getStaticPaths` reads `process.env.NO_PERSONNEL`. `[index.astro:process.env.NO_PERSONNEL]`
 - `getStaticPaths` reads the database tables `public.personnel` and `public.agency_personnel` through `withDb`. `[index.astro:const officers = await withDb(async (client) => {]`
-- Each rendered page reads `public.personnel`, `public.agency_personnel`, `public.agency`, `public.location_path`, `public.build_page_payload`, `public.review_personnel`, `public.reviews`, `public.civil_case_personnel` and `public.civil_cases` through `withDb`. `[index.astro:const data = await withDb(async (client) => {]`
+- Each rendered page reads `public.personnel`, `public.agency_personnel`, the intake views `public.site_agency_personnel_employment`, `public.site_personnel_headline_assignment` and `public.site_personnel_count`, `public.agency`, `public.location_path`, `public.build_page_payload`, `public.review_personnel`, `public.reviews`, `public.civil_case_personnel` and `public.civil_cases` through `withDb`. `[index.astro:const data = await withDb(async (client) => {]`
 - Each rendered page calls the coverage, arrest profile, licensing, discipline and education loaders and `getPersonnelPhotoById`; any data or file access happens inside them. `[index.astro:const personnelPhoto = await getPersonnelPhotoById(data.officer.id);]`
 
 ## Verification

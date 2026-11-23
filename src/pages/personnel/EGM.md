@@ -17,7 +17,7 @@ Static Astro page for the route `/personnel/`. It shows a count of listed person
 - Structured data is built with `buildWebPage` from `src/lib/structured-data.js` as a `CollectionPage` named "Personnel". `[index.astro:type: "CollectionPage",]`
 - The structured data item list covers only the first 25 personnel rows. `[index.astro:const personnelItems = personnelRows.slice(0, 25).map((person, index) => ({]`
 - Each item is a `Person` with a name built from `firstName`, `lastName` and optional `nameSuffix`, and the URL `/personnel/{slug}/`. ``[index.astro:url: new URL(`/personnel/${person.slug}/`, siteUrl).toString(),]``
-- A `Person` item has `name` and `url` only; it carries no `worksFor`. ``[index.astro:url: new URL(`/personnel/${person.slug}/`, siteUrl).toString(),]``
+- Each `Person` item gets `worksFor`: a `GovernmentOrganization` with the row's `agencyName`. `[index.astro:"@type": "GovernmentOrganization",]`
 - The item list from `buildItemList` is attached as `mainEntity` only when it is not empty. `[index.astro:structuredData.mainEntity = personnelItemList;]`
 - `PageShell` (`src/layouts/PageShell.astro`) receives `title`, `description`, `pagePath`, `canonicalUrl`, `structuredData`, `breadcrumbs`, `heading` and `lede`. `[index.astro:canonicalUrl={pagePath}]`
 - `PageShell` prop `title` is "Personnel". `[index.astro:title="Personnel"]`

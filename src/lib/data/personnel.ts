@@ -13,12 +13,14 @@ export const loadPersonnelSummaries = async (): Promise<PersonnelSummary[]> => {
     first_name: string;
     last_name: string | null;
     suffix: string | null;
+    agency_name: string;
   }[] = await withDb(
     async (client) =>
       // Selection rule kept as it was (move into a database view): a person
       // is listed when the latest-started current assignment, by the intake
       // view site_agency_personnel_employment, is at an agency that has a
-      // built page. Nothing from that assignment is displayed.
+      // built page. The agency name shown for the person comes from the intake
+      // view site_personnel_headline_assignment.
       (
         await client.query(
           `
@@ -30,12 +32,17 @@ export const loadPersonnelSummaries = async (): Promise<PersonnelSummary[]> => {
                and employment.employment_status = 'Current'
               order by ao.personnel_id, ao.start_date desc nulls last, ao.id desc
             )
-            select o.id, o.slug, o.first_name, o.last_name, o.suffix
+            select o.id, o.slug, o.first_name, o.last_name, o.suffix,
+                   headline_agency.name as agency_name
             from latest_open_assignment latest
             join public.personnel o on o.id = latest.personnel_id
             join public.build_page_payload bpp
               on bpp.page_type = 'agency'
              and bpp.entity_id = latest.agency_id
+            join public.site_personnel_headline_assignment headline
+              on headline.personnel_id = latest.personnel_id
+            join public.agency headline_agency
+              on headline_agency.id = headline.agency_id
           `,
         )
       ).rows,
@@ -47,6 +54,7 @@ export const loadPersonnelSummaries = async (): Promise<PersonnelSummary[]> => {
     lastName: officer.last_name || "",
     firstName: officer.first_name,
     nameSuffix: officer.suffix || null,
+    agencyName: officer.agency_name,
   }));
 
   summaries.sort((a, b) => {

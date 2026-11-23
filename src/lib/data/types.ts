@@ -4,6 +4,7 @@ export type PersonnelSummary = {
   lastName: string;
   firstName: string;
   nameSuffix?: string | null;
+  agencyName: string;
 };
 
 export type AgencyFinderResult = {
