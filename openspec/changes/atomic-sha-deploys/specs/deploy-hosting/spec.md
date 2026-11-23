@@ -158,11 +158,6 @@ The shared CloudFront router SHALL pick the release for each request from a KVS 
 - **WHEN** the host matches no rule, the preview label is not `pr-<N>`, or the decoded path is reserved (`/builds`, `/data`, `/evidence`, `/news-discovery`, `/com/serpapi/landing-page-search`, or `/<segment>/build` or `/<segment>/override`, each followed by `/` or the end of the path) or contains `.` or `..` segments, `\` or `%`
 - **THEN** the router returns 404
 
-#### Scenario: Retired prefix
-
-- **WHEN** the decoded path matches a pattern in `functions/redirect-prefixes.json`
-- **THEN** the router rewrites the request to `/<current>/build/<matched prefix>index.html`
-
 #### Scenario: Redirect object
 
 - **WHEN** the object the router requests carries `x-amz-meta-redirect-location`

@@ -73,7 +73,7 @@ Probe URL table (step 3 of 6.4). `<id>` is the folder `current` names.
 | ------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------- |
 | `https://policeconduct.org`                             | `/`                                                    | 200, `data-release-id="<id>"`                        |
 | `https://policeconduct.org`                             | a personnel profile from the roster                    | 200                                                  |
-| `https://policeconduct.org`                             | a retired path in `.release/redirects.json`            | 301 to its target, no `x-amz-meta-redirect-location` |
+| `https://policeconduct.org`                             | an old path in the committed `redirects.json`          | 301 to its target, no `x-amz-meta-redirect-location` |
 | `https://policeconduct.org`                             | `/builds/<id>/data/dynamic.json`                       | 404                                                  |
 | `https://policeconduct.org`                             | `/builds/<id>/build/release.json`                      | 404                                                  |
 | `https://policeconduct.org`                             | `/data/`                                               | 404                                                  |

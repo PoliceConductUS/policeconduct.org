@@ -25,11 +25,6 @@ The shared CloudFront router SHALL pick the release for the apex, the canonical 
 - **WHEN** the host matches no rule (other than bare `preview.<domain>` and bare `release.<domain>`, which redirect), the preview label is not `pr-<N>`, or the decoded path is reserved (`/builds/`, `/data/`, `/<id>/build/`, `/<id>/override/` and the other reserved prefixes) or contains `.` or `..` segments, `\` or `%`
 - **THEN** the router returns 404
 
-#### Scenario: Retired prefix
-
-- **WHEN** the decoded path matches a pattern in `functions/redirect-prefixes.json`
-- **THEN** the router rewrites the request to `/<release-id>/build/<matched prefix>index.html` for the release that host serves
-
 #### Scenario: Redirect object
 
 - **WHEN** the object the router requests carries `x-amz-meta-redirect-location`

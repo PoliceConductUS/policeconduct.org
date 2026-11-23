@@ -56,7 +56,7 @@ Order in `handler`, with the new steps marked:
    - `<label>.preview.<apex>`: `current:<label>` (unchanged here; `atomic-sha-deploys` narrows the label to `pr-<N>`);
    - **new:** `<label>.release.<apex>` where the label matches `^[0-9a-f]{7,40}$`: the release ID from `releaseForCommit(label)`; 404 when it returns `null`;
    - anything else: 404.
-6. Release ID validation, the retired prefix rewrite, override and build rewrite (unchanged from `atomic-sha-deploys`).
+6. Release ID validation, override and build rewrite (unchanged from `atomic-sha-deploys`, which has no redirect prefix rule).
 
 The router lower-cases the `Host` header before matching (`router.js`, `handler`), so an upper-case SHA works.
 
