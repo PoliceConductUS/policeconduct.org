@@ -2,113 +2,128 @@
 
 ### Requirement: Redirect semantics are shared across environments
 
-Production and preview SHALL use the same redirect routing implementation and the same redirect files, with environment-specific storage selection only. Each release SHALL hold its own redirect files in `<release-id>/build/`, one per entry of the committed `redirects.json` of its commit. A redirect file SHALL sit at the exact object key the router requests for its old path and SHALL carry its target in the S3 metadata header `x-amz-meta-redirect-location`. A viewer-response CloudFront Function SHALL turn a response that carries that header into a 301. Redirects SHALL NOT be stored as KVS keys, and there SHALL be no wildcard redirects.
+Every host the production distribution serves (the canonical host, the apex through its 301 to the canonical host, and release hosts) SHALL use the same redirect mechanism. Redirects SHALL be redirect files: empty S3 objects in the production site bucket, in the folder `redirect/<commit>/` of the release they belong to, each at `redirect/` followed by the exact key the router requests from the release folder for the old path, each carrying its target in the S3 metadata header `x-amz-meta-redirect-location`. The production distribution SHALL serve them through an origin group whose primary origin is the site bucket and whose failover origin is the same bucket with `origin_path = "/redirect"`, failing over on 403 and 404. A viewer-response CloudFront Function SHALL turn a response that carries that header into a 301. Redirects SHALL NOT be stored as KVS keys, the router SHALL NOT look up redirects, and there SHALL be no wildcard redirects. Previews SHALL serve no redirects.
 
 #### Scenario: A mapped legacy URL is requested
 
-- **WHEN** a request path has a redirect file in the served release
-- **THEN** the response is HTTP 301 to the stored target on that environment's host, preserving query parameters
+- **WHEN** a request path has no object in the served release folder and has a redirect file in that release's `redirect/<commit>/` folder
+- **THEN** the response is HTTP 301 to the stored target on the same host, preserving query parameters
 - **AND** the response does not carry `x-amz-meta-redirect-location`
 
-#### Scenario: A path under an old wildcard is requested
+#### Scenario: Missing key answers 403
 
-- **WHEN** a request path matched a `/*` entry of the old redirect map (for example under `/videos/`) and is not a key in `redirects.json`
-- **THEN** the response is the normal 404
+- **WHEN** the primary origin answers 403 for a missing object, because the site bucket grants CloudFront no `s3:ListBucket`
+- **THEN** CloudFront retries the same rewritten path on the failover origin
+- **AND** returns the normal 404 page when the failover object is missing too
 
 #### Scenario: A current page is requested
 
-- **WHEN** no redirect file matches
-- **THEN** the request resolves to its current environment's file layout
+- **WHEN** the served release folder has the object the router requests
+- **THEN** the primary origin serves it, even if a redirect file exists for the same path
 
-#### Scenario: An older release host is requested
+#### Scenario: A path under an old wildcard is requested
 
-- **WHEN** a release host serves an earlier release
-- **THEN** that release's own redirect files answer its redirects
+- **WHEN** a request path matched a `/*` entry of the old redirect map (for example under `/videos/`) and has no redirect file
+- **THEN** the response is the normal 404
 
-### Requirement: Local publication loads redirects safely
+#### Scenario: A release host is requested
 
-A separate build step after the full site build (`scripts/write-redirect-files.mjs`, run by `scripts/build-release.mjs` after `npm run build:site`) SHALL write the redirect files from the committed `redirects.json` only. The release build SHALL NOT read `www`. Upload SHALL put every redirect file with its own metadata into the build-owned `<release-id>/build/` prefix before `release.json`.
+- **WHEN** a release host serves release `<commit>` and the path has a redirect file in `redirect/<commit>/`
+- **THEN** that release's own redirect file answers with a 301
 
-#### Scenario: A map is malformed
+#### Scenario: A preview host is requested
 
-- **WHEN** `redirects.json` is missing or malformed, a path is invalid, a target is not a route in the build or is itself an old path, a redirect file would replace a built file, two old paths share one object key, or a path holds a character outside printable ASCII
-- **THEN** the build stops before writing any redirect file
-
-#### Scenario: The build does not read www
-
-- **WHEN** the release build runs, with `www` reachable or not
-- **THEN** it makes no request to `www`
-- **AND** its redirect files equal the entries of the committed `redirects.json`
-
-#### Scenario: A redirect upload fails
-
-- **WHEN** a redirect file still fails to upload after its retries
-- **THEN** the deploy stops before `release.json` is uploaded and before promotion
-
-#### Scenario: Preview redirects are verified
-
-- **WHEN** a preview is deployed
-- **THEN** representative legacy production paths return the expected HTTP redirect and resolve to available preview destinations
+- **WHEN** a request for a path with no object arrives on a preview host
+- **THEN** the response is the normal 404 with `X-Robots-Tag: noindex, nofollow`
 
 ## REMOVED Requirements
 
+### Requirement: Local publication loads redirects safely
+
+**Reason**: Publication no longer loads redirects. The release build and promotion write no redirects; the redirect build writes redirect files to their own folder (see "The redirect build writes only its own folder"). Previews serve no redirects.
+
+**Migration**: KVS `r:` keys are deleted once by hand after the cutover. `scripts/load-redirects.mjs` and its store-limit checks are deleted.
+
 ### Requirement: Approved duplicate agency URLs retain navigation
 
-**Reason**: The redirect generator and its merge of the intake workspace `redirects.json` are deleted. Redirects live in the committed `redirects.json`, updated by `npm run redirects:update`.
+**Reason**: The redirect generator and its merge of the intake workspace `redirects.json` are deleted. Redirects come from the redirect build.
 
-**Migration**: The first run of `npm run redirects:update` carries every exact entry of the live `/_redirect-map.json`, including these mappings, into `redirects.json`. Nothing reads the workspace file afterwards.
+**Migration**: The first redirect build carries every exact entry of the live `/_redirect-map.json`, including these mappings, into the first release's `redirect/<commit>/` folder. Later redirect builds carry them forward from the folder of the release `www` serves. Nothing reads the workspace file afterwards.
 
 ### Requirement: Legacy agency collections reach existing civic indexes
 
 **Reason**: The redirect generator that derived these redirects from database counts is deleted, and wildcard patterns go away (owner decision, 2026-11-22).
 
-**Migration**: The first run of `npm run redirects:update` carries the exact collection and pagination entries of the live `/_redirect-map.json` into `redirects.json`, re-pointed to current paths. The pagination wildcards are dropped; old page numbers that no sitemap listed return 404.
+**Migration**: The first redirect build carries the exact collection and pagination entries of the live `/_redirect-map.json`, re-pointed to current paths. The pagination wildcards are dropped; old page numbers that no sitemap listed return 404.
 
 ## ADDED Requirements
 
-### Requirement: The redirect list is updated by a command and committed
+### Requirement: The redirect build writes only its own folder
 
-The website SHALL keep its redirects in the committed repository-root `redirects.json`, one entry per line from old path to current path. `npm run redirects:update` SHALL update it and `route-absences.json` against a local build of the current commit. It SHALL read only the sitemap and old pages of `www` (the current production build), and SHALL map each missing `www` sitemap path to the build's page for the record the old page names. It SHALL NOT read the database or the intake workspace.
+The redirect build SHALL write only redirect files, and only under `redirect/<commit>/` in the production site bucket. It SHALL NOT write, delete or read `<commit>/build/` or `<commit>/override/`. A rerun for the same commit SHALL leave `redirect/<commit>/` equal to the latest run's set.
+
+#### Scenario: Invalid redirect set
+
+- **WHEN** a path is invalid or holds a character outside printable ASCII, a target is not a route in the target release or is itself an old path, or two old paths share one object key
+- **THEN** the redirect build stops before writing any redirect file
+
+#### Scenario: Rerun for the same commit
+
+- **WHEN** the redirect build runs again for a commit
+- **THEN** redirect files the new run does not produce are deleted from `redirect/<commit>/` only
+- **AND** no object under `<commit>/build/` or `<commit>/override/` is written or deleted
+
+#### Scenario: A redirect write fails
+
+- **WHEN** a redirect file still fails to upload after its retries
+- **THEN** the redirect build exits non-zero
+- **AND** `npm run deploy -- prod` stops before promotion
+
+### Requirement: A redirect build derives the redirect set
+
+`npm run redirects:build -- [<commit>]` SHALL derive the full redirect set for a target release (default: the tip of `main`) every time, with nothing committed. It SHALL compare the `www` sitemap with the target, read from a local build of that commit or else from `<commit>.release.<domain>`. It SHALL map each missing `www` path to the target page of the record the old page names, and SHALL carry forward the redirects of the release `www` serves.
 
 #### Scenario: A page moved
 
-- **WHEN** a `www` sitemap path is not in the local build and its old page names a record whose page is in the build
-- **THEN** `redirects.json` gets an entry from that path to the record's page
+- **WHEN** a `www` sitemap path is not a route in the target and its old page names a record whose page is in the target
+- **THEN** a redirect file from that path to the record's page is written
+- **AND** the database and the intake workspace are not read
 
 #### Scenario: No target
 
-- **WHEN** the record has no page in the build, the old page returns 404 on `www`, or the path is an old video page
-- **THEN** no redirect is added
-- **AND** `route-absences.json` gets an entry for the path with a reason naming the cause, so the path returns 404
+- **WHEN** the record has no page in the target, the old page returns 404 on `www`, or the path is an old video page
+- **THEN** no redirect file is written, so the path returns 404
+- **AND** the redirect build records the path with a reason naming the cause
 
 #### Scenario: Old pagination page
 
 - **WHEN** a missing `www` path is `<list>page/<n>/`
-- **THEN** its target is the page of `<list>` in the build that lists the old page's first listed record, or no target when none lists it
+- **THEN** its target is the page of `<list>` in the target that lists the old page's first listed record, or no target when none lists it
 
-#### Scenario: Existing entry re-pointed
+#### Scenario: Carried redirect re-pointed
 
-- **WHEN** an entry's target is no longer a route in the build
-- **THEN** the entry points to that target's record's page in the build, so no chain remains
-- **AND** the entry is deleted when that record has no page, or when the entry's old path is itself a route in the build
+- **WHEN** a redirect of the release `www` serves points to a path that is no longer a route in the target
+- **THEN** the new redirect points to that path's own target, so no chain remains
+- **AND** no file is written when that path has no target, or when the old path is itself a route in the target
 
 #### Scenario: www unreachable
 
 - **WHEN** a request to `www` fails after its retries
-- **THEN** the command reports that `www` is unreachable, changes no file, and exits non-zero
+- **THEN** the redirect build reports that `www` is unreachable, writes nothing, and exits non-zero
+- **AND** the existing `redirect/<commit>/` folder is unchanged
 
-#### Scenario: A redirect is removed
+#### Scenario: Old pages without a record
 
-- **WHEN** a commit deletes an entry's line from `redirects.json`
-- **THEN** releases built from that commit on return 404 for that old path
-- **AND** a later run does not add it back unless that path is again a `www` sitemap path missing from the build
+- **WHEN** the release `www` serves has no `redirect/<commit>/` folder, or an old page names no record
+- **THEN** the redirect build starts from the exact entries of `www`'s `/_redirect-map.json` and drops its `/*` entries
+- **AND** derives an old page's record from its URL, slug, other ld+json and `<h1>` when exactly one record in the target matches
+- **AND** skips each page it cannot resolve, then opens it in the owner's default browser and uses the owner's answer for that run as a redirect or as no target
 
-#### Scenario: First run from the live site
+#### Scenario: Promotion order
 
-- **WHEN** `redirects.json` does not exist, or an old page names no record
-- **THEN** the command starts from the exact entries of `www`'s `/_redirect-map.json` and drops its `/*` entries
-- **AND** derives an old page's record from its URL, slug, other ld+json and content when exactly one record in the build matches
-- **AND** skips each page it cannot resolve, writes it to `.release/redirects-unresolved.json`, then opens it in the owner's default browser and records the owner's answer for that run as an entry or an absence entry
+- **WHEN** `npm run deploy -- prod` runs
+- **THEN** the redirect build for the uploaded release runs after the upload and before promotion
+- **AND** a failed redirect build stops the deploy before promotion
 
 ### Requirement: Pages name their record
 
@@ -126,44 +141,31 @@ Each page rendered from an intake page view SHALL name its record, by the kind a
 
 ### Requirement: Every prior URL has an explicit disposition
 
-The coverage check SHALL read the committed `redirects.json` and resolve each path as the router does. It SHALL require every prior sitemap URL to be a route in the current build (in the current sitemap or a generated HTML route), redirect directly to a terminal current route, or have an exact path and nonempty reason in `route-absences.json`.
+The coverage check (`npm run validate:redirects -- <commit>`) SHALL check the redirect build's output for one target commit. It SHALL require every `www` sitemap path to be a route in the target (in the target sitemap or a generated HTML route), to have exactly one redirect to a terminal target route, or to have no target with a nonempty recorded reason. It SHALL require the redirect files under `redirect/<commit>/` to equal the redirect set. The redirect build SHALL run it as its last step.
 
 #### Scenario: Personnel not populated by intake
 
-- **WHEN** a missing prior personnel URL has an explicit absence entry
-- **THEN** the coverage check passes for that URL and counts it as absent (404)
+- **WHEN** a missing `www` personnel URL's record has no page in the target
+- **THEN** the coverage check passes for that URL and counts it as absent (404) with its recorded reason
 - **AND** no return date or permanent-removal status is inferred
 
-#### Scenario: Absence entries create nothing
+#### Scenario: No target creates nothing
 
-- **WHEN** a prior URL is covered only by its `route-absences.json` entry
-- **THEN** it keeps the existing 404 response
+- **WHEN** a `www` sitemap path has no target
+- **THEN** it keeps the normal 404 response
 - **AND** no redirect, page or 410 response is created for it
-- **AND** missing intake data is not treated as permanent removal
 
-#### Scenario: Unaccounted gap
+#### Scenario: Unresolved path
 
-- **WHEN** a prior URL is missing without a redirect or exact absence entry
-- **THEN** the coverage check fails, naming `npm run redirects:update`
-- **AND** an entry for a parent or another personnel URL does not cover the gap
+- **WHEN** a `www` sitemap path is still unresolved at the end of the redirect build
+- **THEN** the coverage check fails, naming the path and `npm run redirects:build -- <commit>`
 
-#### Scenario: Profile returns
+#### Scenario: Incomplete upload
 
-- **WHEN** a previously absent URL is a route in the current build
-- **THEN** it counts as a current route even if its absence entry remains
-
-#### Scenario: Invalid redirect or absence list
-
-- **WHEN** a redirect has a missing or nonterminal destination, or the absence list is missing, malformed, or contains an invalid entry
+- **WHEN** the keys under `redirect/<commit>/` differ from the redirect set in the redirect build's output
 - **THEN** the coverage check fails
 
-#### Scenario: Deployment coverage gate
+#### Scenario: Invalid redirect
 
-- **WHEN** `npm run deploy -- <environment>` runs, with or without `--skip-build` or `--dry-run`
-- **THEN** `npm run validate:redirects` runs after the build (when the build runs) and before `scripts/upload-release.sh`
-- **AND** a failed check stops the deploy before the output check, any S3 write, any redirect load, any pointer change, and any CloudFront invalidation
-
-#### Scenario: First deploy bypass
-
-- **WHEN** `PRIOR_SITEMAP=skip` is set
-- **THEN** the coverage check logs the bypass and passes without reading a prior sitemap
+- **WHEN** a redirect has a target that is not a target route or is itself a redirect source, or the redirect build's output is missing or malformed
+- **THEN** the coverage check fails

@@ -12,9 +12,9 @@ A release can only be seen while it is promoted to `www`. Nobody can open an ear
 
 **Release lookup keys**
 
-- From: the production KVS holds `current` and `o:<release-id>:` override markers. Redirects are redirect files in each release folder (`atomic-sha-deploys`).
+- From: the production KVS holds `current` and `o:<release-id>:` override markers. Redirects are redirect files in each release's own `redirect/<commit>/` folder, written by the redirect build and served through the production distribution's origin group (`atomic-sha-deploys`).
 - To: it also holds `release:<prefix>` keys. A production deploy writes them after promotion. A one-time backfill writes them for existing complete release folders. Folders uploaded before the `atomic-sha-deploys` storage split have no `release.json`. They are left out: not promotable, no release host (`.egm-reviews/owner-decisions-round1.md`, 'Round 2 answers (owner, 2026-11-22)').
-- Each release host serves its own release's redirect files, so old release hosts keep their redirects.
+- Each release host serves its own release's `redirect/<commit>/` folder through the same origin group, once that commit's redirect build has run, so old release hosts keep their redirects.
 - Impact: non-breaking; the old router ignores the keys.
 
 **Bare hosts**

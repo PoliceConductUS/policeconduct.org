@@ -2,7 +2,7 @@
 
 ### Requirement: The router serves the promoted release per host
 
-The shared CloudFront router SHALL pick the release for the apex, the canonical host and `pr-<N>.preview.<domain>` from that host's KVS pointer. For `<commit>.release.<domain>` it SHALL pick the release from `release:<prefix>` keys. It SHALL keep the release folder out of the viewer URL. Redirects SHALL follow `shared-redirects` semantics, served from the release's own redirect files. The router SHALL NOT read `r:` keys.
+The shared CloudFront router SHALL pick the release for the apex, the canonical host and `pr-<N>.preview.<domain>` from that host's KVS pointer. For `<commit>.release.<domain>` it SHALL pick the release from `release:<prefix>` keys. It SHALL keep the release folder out of the viewer URL. Redirects SHALL follow `shared-redirects` semantics: on the production distribution, a miss in the release folder fails over to the release's own `redirect/<commit>/` folder. The router SHALL NOT read `r:` keys or look up redirects.
 
 #### Scenario: Canonical host
 
@@ -27,7 +27,7 @@ The shared CloudFront router SHALL pick the release for the apex, the canonical 
 
 #### Scenario: Redirect object
 
-- **WHEN** the object the router requests carries `x-amz-meta-redirect-location`
+- **WHEN** the object the router requests is missing from the release folder and its failover object in `redirect/<commit>/` carries `x-amz-meta-redirect-location`
 - **THEN** the viewer-response function returns a 301 to that target with the query string kept
 - **AND** the response does not carry `x-amz-meta-redirect-location`
 
@@ -109,7 +109,7 @@ The production distribution SHALL serve `<commit>.release.<domain>`, where `<com
 
 #### Scenario: Release host redirect and override
 
-- **WHEN** a release host serves release `<release-id>` and the request path has a redirect file in `<release-id>/build/`, or `o:<release-id>:<path>` exists
+- **WHEN** a release host serves release `<release-id>` and the request path has no object in `<release-id>/build/` and a redirect file in `redirect/<release-id>/`, or `o:<release-id>:<path>` exists
 - **THEN** the response is a 301 from that release's redirect file, or the router serves `/<release-id>/override/<path>`, as for the canonical host
 
 #### Scenario: Folder from before the storage split
@@ -156,7 +156,7 @@ After a production deploy promotes its release, it SHALL write that release's `r
 #### Scenario: Keys are written after promotion
 
 - **WHEN** a production deploy runs
-- **THEN** `release:` keys are written only after the release's redirect files and `release.json` are uploaded and `promote.sh` has moved `current`
+- **THEN** `release:` keys are written only after `release.json` is uploaded, the release's redirect build has run, and `promote.sh` has moved `current`
 
 #### Scenario: Rerun with nothing to change
 

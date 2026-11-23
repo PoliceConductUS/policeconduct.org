@@ -38,8 +38,8 @@ The bare `preview.<domain>` host and the `current:main` mirror are baseline beha
 - Serve previews only for open PRs.
 - Keep every release folder; remove a preview folder when its PR closes.
 - Document that overrides stay with their release.
-- Move the route coverage rule into `shared-redirects`.
-- Serve redirects from redirect files in each release folder instead of KVS `r:` keys, from a committed redirect list that a separate command updates from the `www` sitemap.
+- Move the route coverage rule into `shared-redirects`, checked against the redirect build's output.
+- Serve redirects from redirect files in their own `redirect/<commit>/` folder instead of KVS `r:` keys, derived each time by a separate redirect build that compares the `www` sitemap with a target release.
 
 ## Non-Goals
 
@@ -61,7 +61,7 @@ The release ID stays the full 40-character commit. A rebuild of the same commit 
 - A rerun with `--skip-build` resumes an interrupted upload: sync uploads only files that differ.
 - The same rules apply to every bucket the deploy writes (for `prod`, the production and the preview site and release data buckets).
 - `scripts/release-files.mjs --verify` keeps its check that the release ID and `.release/source.json` `commit` equal the current commit. Its completion inventory covers `dist/` and `.release/build/`.
-- `promote.sh` checks `builds/<id>/build/release.json` (task 2.7). The release API routing needs no change. Redirects move to files (see "Redirect files").
+- `promote.sh` checks `builds/<id>/build/release.json` (task 2.7). The release API routing needs no change. Redirects move to their own folder (see "Redirect build").
 - Existing release folders are already named by the bare commit. Nothing is migrated.
 
 ## Build and daily storage
@@ -78,7 +78,7 @@ Owner decision, 2026-11-22: a rebuild of a commit cannot and will not overwrite 
 - `builds/<commit>/build/` holds only build-specific artifacts meant for the daily job, plus `release.json`. Today `release.json` is the only file. A later change may add artifacts such as templates there.
 - `release.json` is `{commit, branch, pr, dataVersion}`. It is uploaded last. Its presence marks a complete release for `promote.sh`, the Forms API release check (`publish-release-news` task 7.11) and `scripts/load-release-hosts.mjs` (`release-hosts`).
 - The build writes no page data, roster or aliases anywhere. `scripts/write-release-news.mjs` is deleted (task 2.6). If the daily job needs a roster or page list, it derives it from the original pages (`publish-release-news` task 7.13). The site adds no substitute.
-- Release folders uploaded before this change have `builds/<commit>/data/dynamic.json` and no `release.json`. They are left out (owner decision, 2026-11-22). They cannot be promoted, and they get no release host. Nothing deletes or rewrites their files, and nothing writes a `release.json` for them. They also have no redirect files.
+- Release folders uploaded before this change have `builds/<commit>/data/dynamic.json` and no `release.json`. They are left out (owner decision, 2026-11-22). They cannot be promoted, and they get no release host. Nothing deletes or rewrites their files, and nothing writes a `release.json` for them. A redirect build can still run for them, but they cannot be promoted.
 
 ## Data version
 
@@ -111,49 +111,27 @@ A rebuild of the same commit keeps that release's overrides. Each override keeps
 - KVS keys are removed by hand. `npm run deploy:delete -- <release-id>` removes `o:<release-id>:` keys from the preview store, and refuses when any preview pointer names the release.
 - Preview pointers from before this change that are neither `current:main` nor `current:pr-<N>` return 404 after the router change. Task 4.4 deletes them once, so the sweep can remove their folders.
 
-## Route absence accounting
+## Route coverage
 
-The coverage checker reads the required repository-root `route-absences.json` array of `{ path, reason }` entries. Exact paths only; no wildcard exemptions. Existing routes and redirects take precedence; otherwise a listed missing route counts as an accounted-for 404. The list does not generate content or change HTTP routing. Missing or malformed lists fail validation. An intake gap (a prior URL whose record intake has not loaded yet) has no assumed end date and does not imply retirement. See `docs/route-coverage.md`.
+The shipped rule says every prior URL exists in the new build, redirects to a current route, or is listed in `route-absences.json`. With redirects derived every time (see "Redirect build"), the redirect build gives every missing `www` sitemap path a disposition itself: a redirect file, or no file (404) with a reason it records. `route-absences.json` is no longer needed and is deleted. Its entries (the empty state pages and the personnel URLs of the 2026-09-20 reconciliation) need no list: a path still in the `www` sitemap and missing from the target gets a disposition from the redirect build like any other path, and a path not in the `www` sitemap needs none. An intake gap (a record intake has not loaded yet) is a path with no target, recorded with the reason "No page in the target shows the record this page showed."; no return date or retirement is inferred. `docs/route-coverage.md` is rewritten to say this.
 
-`npm run redirects:update` adds an entry, with a reason, for each `www` sitemap path that has no target (see "Redirect files"). Entries added by hand stay valid.
+`npm run validate:redirects` (`scripts/verify-redirect-coverage.mjs`) keeps the invariant and checks the redirect build's output for one target commit (see "Coverage check"). It no longer runs in `npm run deploy` before the upload, because redirects are no longer part of the release build. `PRIOR_SITEMAP` is removed: the prior sitemap is always `www`.
 
-`PRIOR_SITEMAP=skip` bypasses the check for a first deploy (`scripts/verify-redirect-coverage.mjs`).
+## Redirect build
 
-## Redirect files
+Owner decision, 2026-11-22 ("Redirect layer", `.egm-reviews/owner-decisions-round1.md`), which supersedes the committed `redirects.json` list and the redirect files written into `<commit>/build/`:
 
-Owner decisions, 2026-11-22 (`.egm-reviews/owner-decisions-round1.md`, "Round 2 answers"):
+- A separate redirect build compares the `www` sitemap (current production) with a target release commit and derives the full redirect set every time. Nothing is committed.
+- It writes only redirect files, to their own folder `redirect/<commit>/` in the site bucket.
+- CloudFront serves them through an origin group: a 404 or 403 from the release path is retried under `redirect/`, where the redirect file answers 301.
+- The release build (`<commit>/build/`), the overrides (`<commit>/override/`, daily job) and the redirects (`redirect/<commit>/`, redirect build) are three independent folders. None of the three writers touches another's folder.
+- KVS `r:` keys and the router's redirect lookup go away. Overrides keep their `o:` keys.
 
-- Redirects are redirect files, not KVS redirect keys. A separate step after the full site build writes them into the build's own folder. Pruning redirect keys is dropped.
-- Redirects are found automatically from the standard sitemap on `www`. There is no page map, and wildcard patterns go away.
-- The website's own scripts build the redirect list, and the accumulated list is committed in this repository. Removing a redirect means deleting its line in a commit.
-
-Today `scripts/generate-redirect-map.mjs` (inside `npm run build:site`) writes `dist/_redirect-map.json` from the database and the intake workspace `redirects.json` (`scripts/workspace-redirects.mjs`). `scripts/promote.sh` loads it into the KVS `r:<release-id>:` namespace with `scripts/load-redirects.mjs`. The router answers 301 from `r:` keys, including `/*` wildcard keys. A real build's map has about 25,668 redirects, about 3 MB of keys. The 5 MB store fits one release, and releases are kept forever.
+Today `scripts/generate-redirect-map.mjs` (inside `npm run build:site`) writes `dist/_redirect-map.json` from the database and the intake workspace `redirects.json` (`scripts/workspace-redirects.mjs`). `scripts/promote.sh` loads it into the KVS `r:<release-id>:` namespace with `scripts/load-redirects.mjs`. The router answers 301 from `r:` keys, including `/*` wildcard keys found through a prefix list (`mappedTarget`). A real build's map has about 25,668 redirects, about 3 MB of keys. The 5 MB store fits one release, and releases are kept forever.
 
 ### Why not Astro `redirects`
 
 For static output, Astro writes each redirect as an HTML page with a meta refresh, served with status 200. It sends no `Location` header and no 301 (`node_modules/astro/dist/core/build/generate.js` warns: "A static build sends no `Location` header"). An S3 object with a redirect target in its metadata, turned into a 301 at the edge, gives a real 301.
-
-### Two steps
-
-1. **Update the committed list.** `npm run redirects:update` (`scripts/update-redirects.mjs`) is a separate command. It runs by hand against a local build of the tree being changed. It reads the `www` sitemap and the old pages it needs, and rewrites the committed repository-root files `redirects.json` and `route-absences.json`. Its changes are committed like any other change, normally in the PR or on `main` before a deploy. It is the only redirect code that reads `www`.
-2. **Write the redirect files.** The release build runs `scripts/write-redirect-files.mjs` after `npm run build:site`. It reads only the committed `redirects.json` and writes one redirect object per entry. It never reads `www`. A deploy requires a clean, commit-bound tree, so the redirects a release serves are exactly the `redirects.json` of its commit.
-
-`redirects.json` sits at the repository root beside `route-absences.json`, the existing place for committed route accounting. The intake workspace also has a file named `redirects.json`, read today by `scripts/workspace-redirects.mjs`. That is a different file. This change deletes `scripts/workspace-redirects.mjs`, and nothing reads the workspace file any more.
-
-### The committed list
-
-`redirects.json` is one JSON object. Each key is an old path and each value is the current path it redirects to:
-
-```json
-{
-  "/tx/example-city/old-agency-slug/": "/tx/example-city/example-police-department/"
-}
-```
-
-- Keys are sorted by code point, and each entry is on one line. Removing a redirect is deleting its line (and the comma before it when it was the last line) in a commit. From the next release built from that commit on, the old path returns 404.
-- Paths start with one `/`, end in `/` unless the last segment holds a `.`, and hold no whitespace, `?`, `#`, `\`, control characters or characters outside printable ASCII (S3 user metadata cannot carry them).
-- Every value is a route in the build of the same commit, and no value is also a key, so there are no chains.
-- `npm run redirects:update` does not add a deleted entry back, except when that path is again in the `www` sitemap and missing from the local build. That can happen only while the promoted release still serves the path as a page.
 
 ### Records in pages
 
@@ -163,88 +141,85 @@ Owner decision, 2026-11-22: each page names the record it shows, by kind and id,
 - The first page of a paginated list carries the list's own identifier. Every page of the list, the first included, also carries an `ItemList` whose `itemListElement` entries name, in page order, each listed record with the same `identifier` shape. A `/page/<n>/` page carries no identifier of its own.
 - A page not rendered from a page view (for example the FAQ) carries no identifier.
 
-The sitemap does not carry the identifier. `npm run redirects:update` reads it from the old page.
+The sitemap does not carry the identifier. The redirect build reads it from the pages. `scripts/page-records.mjs` exports `pageRecord(html)` (the page's `identifier` as `{ kind, id }`, or `null`) and `listedRecords(html)` (the `ItemList` records in page order). The redirect build uses the same functions for old pages and target pages.
 
-### `npm run redirects:update`
+### `npm run redirects:build`
 
-`scripts/update-redirects.mjs` reads:
+`npm run redirects:build -- [<commit>]` (`scripts/build-redirects.mjs`). `<commit>` is the target release: a full 40-character commit. The default is the tip of `main`: `git rev-parse origin/main` after `git fetch origin main`. It needs the production AWS credentials a production deploy uses (`S3_BUCKET`, `DISTRIBUTION_ID`, resolved from Terraform outputs as `scripts/upload-release.sh` does).
 
-- the local build in `dist/`: every built route, an index from each record (kind and id) to the path of the page whose `identifier` names it, and each paginated list's `ItemList` entries. Two pages that name the same record stop the command. A missing `dist/`, or a `.release/source.json` whose `commit` is not `HEAD`, stops it;
-- `https://www.policeconduct.org/sitemap-index.xml` and its child sitemaps: the current production build only, never a release host or another commit. `--www <origin>` replaces the origin for tests only;
-- the HTML of each old page it must resolve, from the same origin;
-- the committed `redirects.json` and `route-absences.json`.
+It reads:
+
+- **Production.** `https://www.policeconduct.org/sitemap-index.xml` and its child sitemaps, the old pages it must resolve, and the `data-release-id` on `<html>` of `https://www.policeconduct.org/` (the commit `www` serves). `www` is the only source of production pages; the command never reads another host for them. `--www <origin>` and `--release-origin <origin>` replace the `www` and release-host origins for tests only.
+- **Target pages.** A local build of the target commit when one is present: `dist/` with a `.release/source.json` whose `commit` is the target. Otherwise the target's release host, `https://<commit>.release.policeconduct.org` (`openspec/changes/release-hosts/`; until that change lands, a local build is required, and without one the command stops). From the target it takes every route (the target sitemap's URLs and, for a local build, every generated HTML route), an index from each record (kind and id) to the path of the page whose `identifier` names it, and each paginated list's `ItemList` entries. From a release host this reads every page in the target sitemap (one request each, 16 at a time); a local build avoids those requests. From a release host, a carried redirect's target that is not in the target sitemap (a generated page left out of the sitemap, such as a form) counts as a route when a request for it answers 200. Two target pages that name the same record stop the command.
+- **Production's current redirects.** Every object under `redirect/<www commit>/` in the production site bucket (`list-objects-v2`, then `head-object` for each to read `redirect-location`). These are carried forward (owner decision "Redirect generation", 2026-11-22: production's existing redirects are carried forward, re-pointed to current URLs).
 
 Steps:
 
-1. Read the `www` sitemap. When any `www` request fails after 3 tries (a network error, a timeout, a status other than 200, or for an old page a status other than 200 or 404), the command prints that `www` is unreachable, changes no file, and exits non-zero.
-2. The old paths are the `www` sitemap paths that are not routes in `dist/`, plus every `redirects.json` value that is not a route in `dist/`.
-3. Each old path gets a target or no target:
-   - **Video page**: a path that starts with `/videos/` or `/video/`, or ends in `/watch/<segment>/`. No target (owner: old video URLs are ignored).
-   - **Pagination page** `<list>page/<n>/`: read the old page's first listed record from its `ItemList`. The target is the page of list `<list>` in `dist/` whose `ItemList` names that record (`<list>` itself when it is on the first page). No listed record, or no page lists it: no target.
-   - **Any other page**: read the record from the old page's `identifier`, and take the path of the page in `dist/` that names it. The old page returns 404 on `www`, or its record has no page in `dist/`: no target. An old page with no `identifier` is resolved as in "First run".
-4. The command updates the two files:
-   - a `www` sitemap path with a target gets the entry `"<path>": "<target>"`;
-   - a `www` sitemap path with no target gets a `route-absences.json` entry `{ path, reason }` when it has none. The reason names the cause: "Old video page; old video URLs are not redirected.", "The old page was missing on www.", "No page in this build shows the record this page showed." or "No page in this build lists the first record of this old page.";
-   - an entry whose value is not a route in `dist/` gets that value's target, so chains collapse. When the value has no target, the entry is deleted and its old path returns 404;
-   - an entry whose key is a route in `dist/` is deleted, so a page is never hidden by a redirect.
-5. It writes both files: `redirects.json` sorted; new `route-absences.json` entries appended in path order, existing entries kept in place. It prints the number of entries added, re-pointed and deleted and of new absence entries, then lists each change.
+1. Read `www`. When any `www` request fails after 3 tries (a network error, a timeout, a status other than 200, or for an old page a status other than 200 or 404), the command prints that `www` is unreachable, writes nothing, and exits non-zero. It writes to the bucket only in step 5, so a failed run changes nothing.
+2. The old paths are the `www` sitemap paths that are not routes in the target, plus every carried redirect's old path that is not a route in the target.
+3. Each `www` sitemap old path gets a target or no target:
+   - **Video page**: a path that starts with `/videos/` or `/video/`, or ends in `/watch/<segment>/`. No target and no page read (owner: old video URLs are ignored).
+   - **Pagination page** `<list>page/<n>/`: read the old page's first listed record from its `ItemList`. The target is the page of list `<list>` in the target whose `ItemList` names that record (`<list>` itself when it is on the first page). No listed record, or no page lists it: no target.
+   - **Any other page**: read the record from the old page's `identifier`, and take the path of the target page that names it. The old page returns 404 on `www`, or its record has no page in the target: no target. An old page with no `identifier` is resolved as in "Pages without identifiers".
+4. Each carried redirect `old -> T` gets `old -> T` when `T` is a route in the target, `old -> T'` when `T` is a `www` sitemap old path whose target is `T'` (so chains collapse), and no file otherwise. A carried old path that is a route in the target gets no file.
+5. Write (see "Redirect files"), then run the coverage check (see "Coverage check").
 
-`scripts/page-records.mjs` exports `pageRecord(html)` (the page's `identifier` as `{ kind, id }`, or `null`) and `listedRecords(html)` (the `ItemList` records in page order). The local build index and the old pages use the same functions.
+The command prints the number of redirect files written, carried, re-pointed and removed, and of paths with no target by reason. It writes its result to `.release/redirect-build/<commit>.json` (git-ignored): the `www` commit, the `www` sitemap paths, the target routes, every redirect `{ from, to }`, every path with no target `{ path, reason }`, and every unresolved path. The reasons are: "Old video page; old video URLs are not redirected.", "The old page was missing on www.", "No page in the target shows the record this page showed.", "No page in the target lists the first record of this old page." and "Owner: no current page shows this record.".
 
-The command never reads or writes the database and never reads the intake workspace.
+It never reads or writes the database, the intake workspace, `<commit>/build/` or `<commit>/override/`.
 
-### First run: pages without identifiers
+### Pages without identifiers (one-time fallback)
 
 The live site today was built before task 7.13, so its pages carry no `identifier`. Until a release built with task 7.13 is promoted, `www` pages lack one.
 
-- **Starting list.** When `redirects.json` does not exist, the command first reads `https://www.policeconduct.org/_redirect-map.json`, the map today's live build publishes, and takes its exact entries (a `from` without `*`) as the starting list. Its `/*` entries are dropped. Step 4 then re-points those entries like any other. This carries production's existing redirects, including the approved duplicate agency URLs from the workspace file, into `redirects.json` once.
-- **Derived record.** When an old page has no `identifier`, the command derives its record from the route shape of the URL and its last segment (the slug), the page's other ld+json (`@type`, `name`, `url`) and its content (the `<h1>` text), matched against the records in `dist/`. Exactly one matching record gives the target. Each derived target, with the clues that matched, is written to `.release/redirects-derived.json` for spot checks.
-- **Unresolved pages.** Zero or several matches leave the old path unresolved. The command skips it and writes it to `.release/redirects-unresolved.json`. After every other path is resolved, it opens each unresolved page in the owner's default browser (`open <url>` on macOS) and asks in the terminal for the path of the page in this build that shows the same record, or Enter for none. An answer must be a route in `dist/`; otherwise it asks again. A path answer becomes the entry. "None" gives a `route-absences.json` entry with the reason "Owner: no current page shows this record." for a sitemap path, or deletes the entry for a `redirects.json` value. The answers are used for that run only; they remain as the committed entries. At end of input, the rest stay unresolved: no entry is written, and the coverage check fails for those sitemap paths until a later run answers them.
+- **Starting list.** When `redirect/<www commit>/` holds no objects (the release `www` serves predates this change), the command reads `https://www.policeconduct.org/_redirect-map.json`, the map today's live build publishes, and takes its exact entries (a `from` without `*`) as the carried redirects. Its `/*` entries are dropped. This carries production's existing redirects, including the approved duplicate agency URLs from the workspace file, once.
+- **Derived record.** When an old page has no `identifier`, the command derives its record from the route shape of the URL and its last segment (the slug), the page's other ld+json (`@type`, `name`, `url`) and its content (the `<h1>` text), matched against the target's records. Exactly one matching record gives the target. Each derived target, with the clues that matched, is written to `.release/redirect-build/<commit>.derived.json` for spot checks.
+- **Unresolved pages.** Zero or several matches leave the old path unresolved. The command skips it. After every other path is resolved, it opens each unresolved page in the owner's default browser (`open <url>` on macOS) and asks in the terminal for the path of the target page that shows the same record, or Enter for none. An answer must be a target route; otherwise it asks again. A path answer becomes a redirect; "none" gives no file, with the reason "Owner: no current page shows this record.". At end of input the rest stay unresolved and get no file; the coverage check then fails for them, and a later run asks again. Answers apply to that run. A later run against an unchanged `www` asks again; once a release with identifiers is promoted, `www` pages carry identifiers and nothing is asked.
 
-`.release/` is git-ignored, so neither file is committed.
+### Redirect files
 
-### `_redirects.json`
+A redirect file is an empty S3 object in the site bucket whose user metadata `redirect-location` holds the target path. Its key is `redirect/` followed by the exact key the router requests from the release folder for the old path: `redirect/<commit>/build/<redirectObjectKey(old path)>`. The `build` segment is part of the router's rewritten request path, which CloudFront retries unchanged under `redirect/`; it is not the release build folder, and nothing is written to `<commit>/build/`.
 
-Not used. The next `npm run redirects:update` reads the committed `redirects.json`, so no build needs to publish a redirect list. Nothing publishes `/_redirects.json`, and `dist/_redirect-map.json` is no longer written.
-
-### Object key
-
-A redirect object sits at the exact key the router requests for its old path, under `<commit>/build/`. `scripts/redirect-object-key.mjs` exports `redirectObjectKey(path)`, which applies the router's index rule:
+`scripts/redirect-object-key.mjs` exports `redirectObjectKey(path)`, which applies the router's index rule:
 
 - `/a/b/` becomes `a/b/index.html`;
 - `/a/b` (no `.` in the last segment) becomes `a/b/index.html`;
 - `/a/b.xml` stays `a/b.xml`.
 
-The writer, the uploader and the coverage check use this function. A router test checks that the router's rewrite equals it.
+The redirect build and the coverage check use this function. A router test checks that the router's rewrite equals `/<commit>/build/` plus it.
 
-### The writer
+Paths start with one `/`, end in `/` unless the last segment holds a `.`, and hold no whitespace, `?`, `#`, `\`, control characters or characters outside printable ASCII (S3 user metadata cannot carry them). Every target is a route in the target and is not itself an old path. A path that breaks a rule, or two old paths with one key, stop the command before it writes anything.
 
-`scripts/write-redirect-files.mjs` runs from `scripts/build-release.mjs` right after `npm run build:site`, so every `npm run build` runs it. It reads the committed `redirects.json` and writes `.release/redirects/<key>`, one file per entry. The body is a short HTML page with `<meta name="robots" content="noindex">` and a link to the target, so a reader who somehow gets the 200 can still go on. No inline CSS.
-
-It removes `.release/redirects/` first. It stops with an error, before writing anything, when:
-
-- `redirects.json` is missing, is not valid JSON, or is not one object of string values;
-- a key or value fails the path rules in "The committed list";
-- a value is not a route in `dist/`, or is also a key;
-- a key's object key equals a file in `dist/` (a redirect would hide a page);
-- two keys give the same object key.
-
-`scripts/release-files.mjs` adds `.release/redirects/` to the completion inventory.
-
-### Upload
-
-`aws s3 sync` applies one set of metadata to every file in a call, so it cannot give each object its own target. `scripts/upload-redirects.mjs <bucket> <release-id>` reads `redirects.json` and runs, for each entry:
+`aws s3 sync` applies one set of metadata to every file in a call, so it cannot give each object its own target. For each redirect the command runs:
 
 ```text
-aws s3api put-object --bucket <bucket> --key <release-id>/build/<key> \
-  --body .release/redirects/<key> --content-type "text/html; charset=utf-8" \
-  --cache-control no-cache \
-  --metadata '{"redirect-location":"<target>","build-commit":"<release-id>","build-dirty":"0"}'
+aws s3api put-object --bucket <site bucket> --key redirect/<commit>/build/<key> \
+  --content-type "text/html; charset=utf-8" --cache-control no-cache \
+  --metadata '{"redirect-location":"<target>"}'
 ```
 
-It runs 16 puts at a time and retries each failed put up to 5 times. Any put that still fails makes it exit non-zero, and the deploy stops before `release.json`.
+It runs 16 puts at a time and retries each failed put up to 5 times. Then it deletes every object under `redirect/<commit>/` that the new set does not hold, so a rerun leaves the folder equal to the latest run. Any put or delete that still fails makes it exit non-zero. The command writes and deletes only under `redirect/<commit>/`.
 
-`scripts/upload-release.sh` order: sync `dist/` to `<commit>/build/` with `--delete`; run `upload-redirects.mjs`; sync `.release/build/`; upload `release.json` last. The `dist/` sync removes the previous build's redirect objects, because they are not in `dist/`. The uploader puts the new set back right after, so a redirect whose line was deleted is gone. `--skip-build` reruns put every redirect object again.
+When the target commit is the one `www` serves, the command then invalidates `/*` on the production distribution, so cached 404s and old redirects clear. Otherwise the promotion that follows invalidates `/*`.
+
+The redirect build writes only to the production site bucket. Previews serve no redirects: the preview distribution has no origin group, and no redirect build writes to the preview site bucket.
+
+### Serving: origin group and failover
+
+The production distribution (`aws_cloudfront_distribution.site`, which also serves the apex and, with `release-hosts`, every `<commit>.release` host) gets a second S3 origin and an origin group:
+
+- Origin `local.origin_id` (unchanged): the site bucket, through `aws_cloudfront_origin_access_control.site`.
+- Origin `local.redirect_origin_id` (new, `"s3-${local.site_bucket_name}-redirect"`): the same bucket, the same origin access control, `origin_path = "/redirect"`.
+- `origin_group` `local.site_origin_group_id` (new): primary member `local.origin_id`, failover member `local.redirect_origin_id`, `failover_criteria { status_codes = [403, 404] }`.
+- `default_cache_behavior.target_origin_id` becomes `local.site_origin_group_id`. The behavior already allows only `GET` and `HEAD`, which origin groups require. The `/api/*` behavior is unchanged.
+
+The router is unchanged in how it rewrites: `/<commit>/build/<key>`, or `/<commit>/override/<key>` when an `o:` key exists. When that object is missing, CloudFront sends the same rewritten path to the failover origin, which reads `redirect/<commit>/build/<key>`. A redirect file there answers 200 with `x-amz-meta-redirect-location`, and the viewer-response function turns it into a 301. When the failover object is missing too, the existing `custom_error_response` entries (403 and 404 to `/404.html`, status 404) apply as today. A page in the release folder always wins over a redirect file, because the primary origin answers first.
+
+**403, not 404, for a missing key.** The site bucket policy (`data.aws_iam_policy_document.site_bucket_policy` in `infrastructure/bootstrap-policeconduct/main.tf`) grants the CloudFront service principal only `s3:GetObject`, on `*/build/*`, `*/override/*` and `404.html`, and grants no `s3:ListBucket`. Without `s3:ListBucket`, S3 answers a request for a missing key with 403 AccessDenied, not 404. So the failover criteria include 403, and a request for a missing page today reaches the viewer through the 403 `custom_error_response`. 404 stays in the criteria so failover still works if the policy later grants `s3:ListBucket`. `release.tf` does not change the site bucket policy (its policies are on the release data buckets).
+
+**Bucket policy.** `site_bucket_policy` adds `"${aws_s3_bucket.site.arn}/redirect/*"` to the resources of its one statement, with the same `AWS:SourceArn` and `AWS:SourceAccount` conditions. The preview bucket policy does not change.
+
+The viewer cannot request a redirect file directly: every viewer path is rewritten under `/<commit>/build/` or `/<commit>/override/`, so a request for `/redirect/x/` is looked up as `<commit>/build/redirect/x/index.html` and then `redirect/<commit>/build/redirect/x/index.html`.
 
 ### Viewer-response function
 
@@ -260,23 +235,39 @@ Two functions use this source. CloudFront allows one function per event type per
 | `aws_cloudfront_function.site_response`    | `${var.project_name}-site-response`    | `{}`                                     | `aws_cloudfront_distribution.site`, default behavior, viewer-response    |
 | `aws_cloudfront_function.preview_response` | `${var.project_name}-preview-response` | `{"x-robots-tag" = "noindex, nofollow"}` | `aws_cloudfront_distribution.preview`, default behavior, viewer-response |
 
-`aws_cloudfront_function.preview_noindex` and `functions/noindex.js` are deleted. Every preview response still carries `X-Robots-Tag: noindex, nofollow`, a redirect included. The router's deny-all `robots.txt` on non-production hosts does not change. Release hosts are on the production distribution, so they get no `noindex` header, as before; they keep the deny-all `robots.txt`.
+`aws_cloudfront_function.preview_noindex` and `functions/noindex.js` are deleted. Every preview response still carries `X-Robots-Tag: noindex, nofollow`. The router's deny-all `robots.txt` on non-production hosts does not change. Release hosts are on the production distribution, so they get no `noindex` header, as before; they keep the deny-all `robots.txt`.
 
-CloudFront runs viewer-response functions on cache hits too, so a cached redirect object still returns 301. Responses the router makes itself (apex 301, robots, 404) and S3 errors carry no redirect header and pass through unchanged.
+CloudFront runs viewer-response functions on cache hits too, so a cached redirect file still returns 301. Responses the router makes itself (apex 301, robots, 404) and S3 errors carry no redirect header and pass through unchanged.
 
-### Router and promotion
+### Router and removed code
 
-- The router drops `mappedTarget` and every `r:` read. It has no prefix list and no wildcard rule; a path with no object returns the normal 404. It still reads `current*`, `o:` and (with `release-hosts`) `release:` keys.
+- The router drops `mappedTarget`, the wildcard prefix list and every `r:` read. A path with no object in the release folder or in `redirect/` returns the normal 404. It still reads `current*`, `o:` and (with `release-hosts`) `release:` keys.
 - `scripts/promote.sh` no longer downloads `_redirect-map.json` or runs `load-redirects.mjs`. `scripts/load-redirects.mjs`, its test and its KVS size checks are deleted.
-- `scripts/generate-redirect-map.mjs`, `scripts/workspace-redirects.mjs` and their tests are deleted, and `npm run build:site` no longer runs the generator.
+- `scripts/generate-redirect-map.mjs`, `scripts/workspace-redirects.mjs` and their tests are deleted, and `npm run build:site` no longer runs the generator. `dist/_redirect-map.json` is no longer written. Nothing reads the intake workspace `redirects.json` any more.
+- Nothing writes redirect files into `<commit>/build/`. `route-absences.json` is deleted (see "Route coverage").
 
 ### Coverage check
 
-`npm run validate:redirects` (`scripts/verify-redirect-coverage.mjs`) keeps its invariant: every prior sitemap URL is a route in this build, redirects directly to a route that is not itself a redirect, or has an exact entry in `route-absences.json`. It reads the committed `redirects.json` instead of `dist/_redirect-map.json`, and resolves each path with `redirectObjectKey`. The prior sitemap is still `www` by default; this check is the deploy gate that runs after the build, not part of the build. An unaccounted prior URL fails the check with a message to run `npm run redirects:update` and commit the result. A missing or malformed `redirects.json` fails the check. `route-absences.json` and `PRIOR_SITEMAP=skip` do not change.
+`npm run validate:redirects -- <commit>` (`scripts/verify-redirect-coverage.mjs`) checks the redirect build's output for one target commit. The redirect build runs it as its last step. It reads `.release/redirect-build/<commit>.json` and the keys under `redirect/<commit>/` in the production site bucket, and fails unless:
+
+- every `www` sitemap path is a target route, has exactly one redirect, or has exactly one no-target entry with a nonempty reason;
+- every redirect's target is a target route and is not itself a redirect source (no chains);
+- no path is unresolved;
+- the keys under `redirect/<commit>/` equal `redirect/<commit>/build/<redirectObjectKey(from)>` for exactly the redirects in the result.
+
+A failure names the unaccounted paths and the command to rerun: `npm run redirects:build -- <commit>`. A missing or malformed result file fails the check.
+
+### Promotion order
+
+Run the redirect build for a commit before promoting it. No approval gate.
+
+- `npm run deploy -- prod` runs, in order: build, upload (`scripts/upload-release.sh` up to `release.json`), `npm run redirects:build -- <release-id>` against the local build just made, then promotion. A failed redirect build stops the deploy before promotion; rerun with `--skip-build`.
+- Before `npm run deploy:promote -- <release-id>` (promoting an earlier release), run `npm run redirects:build -- <release-id>`. It reads the target from the release host, or from a local build of that commit. `deploy:promote` does not run it, so a release can still be promoted when `www` is down (for example, a rollback during an outage); that release then serves no new redirects until its redirect build runs.
+- Preview deploys run no redirect build.
 
 ### Release hosts
 
-Each release has its own redirect objects in `<commit>/build/`. A release host serves the redirects of the release it serves, so old release hosts keep their redirects.
+A release host serves the release folder of its commit through the same origin group, so it serves `redirect/<commit>/` once that commit's redirect build has run. Each release keeps its own redirects: an earlier release host keeps the redirects of its last redirect build, computed against the `www` of that time.
 
 ### KVS contents
 
@@ -284,7 +275,7 @@ Each store keeps only the `current*` pointers, `o:` override keys and, in produc
 
 ### Cutover
 
-Before merge, the first run of `npm run redirects:update` runs on this change's branch, against a local build that includes task 7.13, and its `redirects.json` and `route-absences.json` are committed (task 7.15). After merge, the Terraform apply publishes the router without `r:` reads. The release that `current` names was uploaded before this change, so it has no redirect files, and its redirects stop. The next `npm run deploy -- prod`, run right after the apply, promotes a release with redirect files. Then the `r:` keys are deleted.
+After merge, the Terraform apply publishes the router without `r:` reads, the origin group and the bucket policy. The release that `current` names was uploaded before this change and has no `redirect/<commit>/` folder, so its redirects stop. The next `npm run deploy -- prod`, run right after the apply, runs the first redirect build (with the one-time fallback, the owner answering each unresolved page) and promotes a release with redirect files. Then the `r:` keys are deleted.
 
 ## Alternatives considered
 
@@ -298,9 +289,12 @@ Before merge, the first run of `npm run redirects:update` runs on this change's 
 - Redirects in the KVS (`r:` keys) vs redirect files: files chosen (owner decision, 2026-11-22). One release's keys fill most of the 5 MB store.
 - Astro `redirects` vs redirect files: Astro writes meta-refresh pages with status 200, not 301.
 - Expanding `/*` entries from database counts, or a retired prefix list in the router, vs no wildcards: no wildcards (owner decision, 2026-11-22, "wildcard patterns go away"). Old video URLs and old page numbers that no sitemap listed return 404.
-- A redirect list generated in every release build from `www` and published as `/_redirects.json` for the next build, vs a list updated by a separate command and committed: committed (owner refinement, 2026-11-22). A deploy builds a clean commit, so the build cannot change the list; a committed list is reviewed in the PR, a redirect is removed by deleting its line, and the release build never depends on `www` being up.
-- A removal list kept in intake vs deleting the line in `redirects.json`: deleting the line (owner refinement, 2026-11-22). The list is the website's own data.
 - A page map (old URL to record) vs reading the record from the old page: the old page (owner decision, 2026-11-22, "no page map").
+- A redirect list committed in this repository and updated by a separate command, or redirect files written into `<commit>/build/` by the release build, vs a separate redirect build that derives the full set each time into its own `redirect/<commit>/` folder: the redirect build (owner decision "Redirect layer", 2026-11-22). The release build, the overrides and the redirects stay three independent folders, a rebuild of a commit never touches its redirects, and the release build never depends on `www`.
+- Redirect lookup in the router (KVS keys or a HEAD per request) vs a CloudFront origin group that retries a miss under `redirect/`: origin group (same decision). The router stays unchanged in how it rewrites, and only misses pay for a second origin request.
+- Failover on 404 only vs 403 and 404: both. The site bucket grants CloudFront no `s3:ListBucket`, so a missing key answers 403.
+- A manifest of the redirect set written next to the redirect files vs listing and reading the redirect files: listing (the redirect build writes only redirect files).
+- Redirects on previews: none. The redirect build compares `www` with a release; previews are not releases.
 
 ## Risks and mitigations
 
@@ -311,8 +305,15 @@ Before merge, the first run of `npm run redirects:update` runs on this change's 
 - Daily output on a rebuild: a rebuild never touches `<commit>/override/` or `builds/<commit>/data/`. An override built from the old original stays served for its path until the daily job republishes it from the new original.
 - Concurrent deploys: two deploys of the same commit write the same folder, and it can hold a mix of both builds until the last one finishes. Run one deploy of a commit at a time; rerun the deploy to make the folder equal one build. Pointer updates use the KVS ETag; the second writer fails and must rerun.
 - Redirect cutover gap: between the Terraform apply and the next production deploy, the promoted release serves no redirects. Run the deploy right after the apply.
-- Redirect upload time: about 25,668 `put-object` calls, 16 at a time, run on every deploy. A failed put stops the deploy before `release.json`; rerun with `--skip-build`.
-- Redirect gap on a rebuild: the `dist/` sync removes a served commit's redirect objects before the uploader puts them back. Requests in that window get 404. This is part of the rebuild risk above.
+- Redirect build not yet run for a promoted commit: a release promoted without its redirect build (for example with `npm run deploy:promote` while `www` is down) serves 404 for every moved URL until `npm run redirects:build -- <commit>` runs for it. `npm run deploy -- prod` runs the redirect build before promotion, so this happens only when a release is promoted another way.
+- `www` down: the redirect build fails, writes nothing and changes nothing; the existing `redirect/<commit>/` folder stays as it was. `npm run deploy -- prod` then stops before promotion. Rerun when `www` answers.
+- Failover latency: a request whose object is missing from the release folder makes a second origin request, to `redirect/`. Only misses pay this (redirects and 404s); pages found in the release folder are served from the primary origin as before. Missing-object answers stay cached for 60 seconds (`error_caching_min_ttl`).
+- Redirect build time: about 25,000 `put-object` calls (16 at a time) and, for carried redirects, one `head-object` each. Reading a target from a release host adds one request per target page (about 188,000); a local build avoids it.
+- Old page missing on `www`: a sitemap path whose page returns 404 gets no file, with the reason "The old page was missing on www.", and returns 404.
+- Wrong record on an old page: the redirect build trusts the `identifier` in the old page. A wrong identifier gives a wrong redirect, which the coverage check cannot detect (the target is a real route). Fix the page view in intake, rebuild, and rerun the redirect build.
+- Wrong derived record in the one-time fallback: a derived target needs exactly one matching record, and every derived target is listed with its clues in `.release/redirect-build/<commit>.derived.json` for spot checks. A wrong one is corrected by rerunning after the page data is fixed; the fallback ends once `www` pages carry identifiers.
+- Manual review in the one-time fallback: every unresolved page is opened in the browser and needs an answer, in every run until a release with identifiers is promoted. The count is unknown until the first run. Stopping early leaves the rest unresolved and the coverage check fails, so `npm run deploy -- prod` stops before promotion.
+- Lost wildcards: `/videos/*`, `/video/*` and the pagination wildcards are dropped. Old URLs they matched that no sitemap listed return 404 from the first release served with this change.
 - Completion marker on a rebuild: `release.json` from the earlier build stays in place until the rebuild's last step. An interrupted rebuild leaves a folder that mixes both builds and still passes the `promote.sh` marker check, so `npm run deploy:promote` would accept it. The marker is not deleted first, because the Forms API release check and `release-hosts` read it while the folder serves. Accepted (the owner accepts breakage that is fixed later). Recovery: rerun `npm run deploy -- <environment> --skip-build` with the same build.
 - A rebuild replaces the earlier build of that commit. Nothing keeps the earlier build. If a rebuild of the live commit uses bad data, rollback means promoting an earlier release (older code) or rebuilding the commit again after the data is fixed.
 - Data changing during a build: the data version is read once, before `npm run build:site`. If intake applies a data mutation to the shared local database while the build runs, some pages reflect newer data than the recorded version. AGENTS.md "Database Expectations" forbids loading data into a database that has a rebuild in progress. Pause intake for the build.
@@ -320,12 +321,3 @@ Before merge, the first run of `npm run redirects:update` runs on this change's 
 - Cleanup race: the sweep at PR close deletes every preview folder no pointer names at that moment. A preview deploy whose upload is in progress, and whose pointer has not moved yet, loses its folder. Accepted (owner, 2026-11-22). Rerun that deploy.
 - CI gains delete rights on preview release data: the `github_actions` role can delete `builds/*` in the preview release data bucket. It gets no right on the production release data bucket.
 - Storage: one build is about 7.6 GB of site files (local build, 2026-11-15, 188,094 files in `dist/`). A rebuild re-uploads every file, because a fresh build changes every file's modification time, and that leaves a full set of noncurrent versions in the versioned buckets. In the preview buckets, noncurrent versions expire after 7 days (INS-106; `aws_s3_bucket_lifecycle_configuration.preview` in `main.tf`, and the new rule for the preview release data bucket in task 4.1). The production site and release data buckets have no expiry rule, so each production rebuild adds about 7.6 GB of noncurrent versions that stay billed. This change does not add a production rule.
-- `www` unreachable during `npm run redirects:update`: the command changes no file and exits non-zero. Rerun it when `www` answers. The release build does not read `www`, so it is not affected. The deploy coverage check reads the `www` sitemap as before and fails closed when it cannot (`PRIOR_SITEMAP=skip` bypasses it).
-- Stale list: when another release is promoted after `npm run redirects:update` ran, or the data behind the local build changes before the release build, a `www` URL can lack a disposition or a value can stop being a route. The writer stops on a value that is not a route, and the coverage check fails on an unaccounted URL. Rerun the command against a fresh build and commit.
-- Old page missing on `www`: a sitemap path whose page returns 404 gets an absence entry ("The old page was missing on www.") and returns 404.
-- Wrong record on an old page: the command trusts the `identifier` in the old page. A wrong identifier gives a wrong redirect, which the coverage check cannot detect (the target is a real route). Fix: correct the page view in intake, then delete or edit the line in `redirects.json`.
-- Wrong derived record on the first run: a derived target needs exactly one matching record, and every derived target is listed with its clues in `.release/redirects-derived.json`. A wrong one is fixed by editing its line before the commit.
-- First-run manual review: every unresolved page is opened in the browser and needs an answer. The count is unknown until the first run. Stopping early leaves the rest unresolved, the coverage check fails for them, and a later run asks again.
-- Lost wildcards: `/videos/*`, `/video/*` and the pagination wildcards are dropped in the first run. Old URLs they matched that no sitemap listed return 404 from the first release built with this change.
-- File size: the first run commits about 25,000 lines in `redirects.json`, all public paths of published pages. `npm run scan:personal-data` must pass on it like any other committed file.
-- Deleted line comes back: a deleted entry is added again only if its old path is again a `www` sitemap path missing from the local build, which happens only while the promoted release still serves it as a page. Delete the line again after that release is replaced.

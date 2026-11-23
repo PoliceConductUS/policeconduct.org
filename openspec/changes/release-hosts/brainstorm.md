@@ -37,7 +37,7 @@ The brainstorm took place with the owner on 2026-11-18 and 2026-11-19 (`.egm-rev
 
 ## Agreed Approach
 
-Option C. Release hosts are aliases of the production distribution, which already serves every release folder (with its redirect files) and holds every release's `o:` overrides in its KVS. The shared router gets one new host branch. The production deploy writes the lookup keys after promotion. The production deploy stops copying itself to the preview bucket, because nothing serves `current:main` any more.
+Option C. Release hosts are aliases of the production distribution, which already serves every release folder (and, through its origin group, every release's `redirect/<commit>/` folder) and holds every release's `o:` overrides in its KVS. The shared router gets one new host branch. The production deploy writes the lookup keys after promotion. The production deploy stops copying itself to the preview bucket, because nothing serves `current:main` any more.
 
 ## Key Decisions
 

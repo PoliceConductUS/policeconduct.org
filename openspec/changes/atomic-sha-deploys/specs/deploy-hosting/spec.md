@@ -8,7 +8,6 @@ The system SHALL store each uploaded build, preview or release, in one folder pe
 
 - **WHEN** a release uploads
 - **THEN** site files go to `<commit>/build/` and build artifacts for the daily job go to `builds/<commit>/build/`
-- **AND** redirect objects go to `<commit>/build/` after the site files
 - **AND** `builds/<commit>/build/release.json`, holding `commit`, `branch`, `pr` and `dataVersion`, is uploaded last as the completion marker
 
 #### Scenario: The build uploads no data
@@ -128,7 +127,7 @@ A deploy to any environment other than `prod` SHALL require `PR_NUMBER` matching
 
 ### Requirement: The router serves the promoted release per host
 
-The shared CloudFront router SHALL pick the release for each request from a KVS pointer for that host and SHALL keep the release folder out of the viewer URL. Redirects SHALL follow `shared-redirects` semantics, served from the release's own redirect files. The router SHALL NOT read `r:` keys.
+The shared CloudFront router SHALL pick the release for each request from a KVS pointer for that host and SHALL keep the release folder out of the viewer URL. Redirects SHALL follow `shared-redirects` semantics: on the production distribution, a miss in the release folder fails over to the release's own `redirect/<commit>/` folder. The router SHALL NOT read `r:` keys or look up redirects.
 
 #### Scenario: Canonical host
 
@@ -160,7 +159,7 @@ The shared CloudFront router SHALL pick the release for each request from a KVS 
 
 #### Scenario: Redirect object
 
-- **WHEN** the object the router requests carries `x-amz-meta-redirect-location`
+- **WHEN** the object the router requests is missing from the release folder and its failover object in `redirect/<commit>/` carries `x-amz-meta-redirect-location`
 - **THEN** the viewer-response function returns a 301 to that target with the query string kept
 - **AND** the response does not carry `x-amz-meta-redirect-location`
 
@@ -185,7 +184,7 @@ The system SHALL send `X-Robots-Tag: noindex, nofollow` on every preview distrib
 
 #### Scenario: Preview distribution response
 
-- **WHEN** any response is served by the preview distribution, a redirect included
+- **WHEN** any response is served by the preview distribution
 - **THEN** it carries `X-Robots-Tag: noindex, nofollow`
 
 #### Scenario: robots.txt on a non-production host

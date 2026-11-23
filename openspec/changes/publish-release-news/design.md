@@ -20,7 +20,7 @@ Intake owns discovery, evidence, ranking and search-position behavior. Their req
 - **The release-api**: the `release_api` Lambda in `infrastructure/bootstrap-policeconduct/release.tf`, with operations `release-snapshot` and `publish-page`.
 - **The page publisher**: Intake `publication.ts`.
 - **Original page**: the page the build wrote at `<release-id>/build<path>index.html`. It is the daily Action's only source for a release.
-- **`o:` keys**: KVS keys. `o:<release-id>:<path>index.html` marks a published override. (Redirects are files in the build folder, not KVS keys; `atomic-sha-deploys` task 7.12 deletes the old `r:` redirect keys.)
+- **`o:` keys**: KVS keys. `o:<release-id>:<path>index.html` marks a published override. (Redirects are redirect files in each release's own `redirect/<release-id>/` folder in the site bucket, written by the redirect build, not KVS keys; `atomic-sha-deploys` task 7.12 deletes the old `r:` redirect keys.)
 - **Roster**: in this design, the personnel profile paths, names, agency names, states and assignments that Daily reads from the original pages. The build uploads no roster file.
 
 ## Goals and non-goals
@@ -183,7 +183,7 @@ Build and deploy scripts require a clean repository and use its full current Git
 
 A rebuild of the same commit goes to the same folder (owner decision Q4). It replaces `<release-id>/build/` and `builds/<release-id>/build/` and leaves `<release-id>/override/`, `builds/<release-id>/data/` and the `o:<release-id>:` keys untouched (see "Build and daily storage").
 
-Promotion checks the release-completion marker (`builds/<release-id>/build/release.json`) and `build/index.html`, selects the existing KVS pointer and invalidates CloudFront. Promotion writes no redirect keys. Each release serves redirects from its own redirect files (`atomic-sha-deploys`, "Redirect files"). Release folders are kept forever (owner decision Q7). Closing a PR removes its host pointer and its preview folder unless another preview pointer still selects that folder; `atomic-sha-deploys` tasks 4.1 and 4.2 implement this.
+Promotion checks the release-completion marker (`builds/<release-id>/build/release.json`) and `build/index.html`, selects the existing KVS pointer and invalidates CloudFront. Promotion writes no redirect keys. Each release serves redirects from its own `redirect/<release-id>/` folder, which the redirect build writes before promotion (`atomic-sha-deploys`, "Redirect build"). Release folders are kept forever (owner decision Q7). Closing a PR removes its host pointer and its preview folder unless another preview pointer still selects that folder; `atomic-sha-deploys` tasks 4.1 and 4.2 implement this.
 
 ### Production cutover status
 
@@ -209,7 +209,7 @@ Following owner decision Q10, the bucket's previous root content was copied into
 
 - **False officer links.** Mitigated by exact roster-name matching plus inference. Corrections are flagged.
 - **SerpApi cost.** Searches stop for the run when the free plan's searches are used up. Terms are skipped until the allowance resets, so a day can search fewer than five terms.
-- **KVS capacity.** Redirects are files in each release's build folder, not KVS keys (owner decision, 2026-11-22; `atomic-sha-deploys` "Redirect files"), so promotion adds no keys. Only `o:` keys accumulate, one per published override path per release, against the 5 MB store limit. Keys are not pruned (owner decision, 2026-11-22), because release hosts serve every kept release with its own overrides. If the store fills, `publish-page` writes fail.
+- **KVS capacity.** Redirects are files in each release's own `redirect/<release-id>/` folder, not KVS keys (owner decision "Redirect layer", 2026-11-22; `atomic-sha-deploys` "Redirect build"), so promotion adds no keys. Only `o:` keys accumulate, one per published override path per release, against the 5 MB store limit. Keys are not pruned (owner decision, 2026-11-22), because release hosts serve every kept release with its own overrides. If the store fills, `publish-page` writes fail.
 - **ETag contention.** `promote.sh` and `publish-page` each make one conditional KVS update and fail on a conflict; neither retries. A failed promotion must be rerun; `current` is unchanged. Until `atomic-sha-deploys` task 7.5 lands, a failed promotion has already loaded the release's `r:` keys and replaced the root `404.html`. A failed `publish-page` throws, and the next daily run replays every destination from the source checkpoint.
 - **IAM reach.** The `intake_news` role can write `*/override/*` in any folder, but `publish-page` marks only `current`.
 - **Invalidation volume.** Each published page invalidates at most five paths. A term's article publishes to every profile and agency page it supports and to the homepage when it ranks, and at most five terms run a day.
